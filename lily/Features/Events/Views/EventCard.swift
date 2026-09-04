@@ -1,0 +1,33 @@
+import SwiftUI
+
+struct EventCard: View {
+    let event: SportEvent
+
+    var body: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+                HStack {
+                    SportChip(sport: event.sport)
+                    Spacer()
+                    Text(event.startsAt, format: .relative(presentation: .named))
+                        .font(LilyTheme.Fonts.caption)
+                        .foregroundStyle(.secondary)
+                }
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                    Text(event.title).font(LilyTheme.Fonts.cardTitle)
+                    Label(event.locationName, systemImage: DesignTokens.Symbols.location)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                CapacityBar(event: event)
+            }
+        }
+    }
+}
+
+#Preview {
+    ZStack {
+        AuroraBackground(intensity: DesignTokens.Opacity.faint)
+        EventCard(event: MockEventFixtures.make(now: .now, count: 1)[0]).padding()
+    }
+}
