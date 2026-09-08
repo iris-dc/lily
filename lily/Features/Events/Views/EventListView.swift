@@ -36,7 +36,9 @@ struct EventListView: View {
             .searchableIfNeeded(searchable, text: $viewModel.searchText)
             .toolbar {
                 if showsMap {
+                    // iOS 26 gives every toolbar item its own glass; the segmented picker already draws one.
                     ToolbarItem(placement: .topBarTrailing) { presentationPicker }
+                        .sharedBackgroundVisibility(.hidden)
                 }
             }
         }
