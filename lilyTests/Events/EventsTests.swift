@@ -31,6 +31,12 @@ struct MockEventRepositoryTests {
         #expect(events.allSatisfy { $0.startsAt > now })
         #expect(events.map(\.startsAt) == events.map(\.startsAt).sorted())
     }
+
+    /// The map UI test taps a pin by its title, and templates repeat once the feed outgrows them.
+    @Test func feedSizedFixturesHaveUniqueTitles() {
+        let titles = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize).map(\.title)
+        #expect(Set(titles).count == titles.count)
+    }
 }
 
 @MainActor

@@ -65,7 +65,6 @@ struct EventListView: View {
             emptyState
         } else if presentation == .map {
             EventsMapView(viewModel: viewModel)
-                .ignoresSafeArea(edges: .bottom)
         } else {
             ScrollView {
                 LazyVStack(spacing: DesignTokens.Spacing.md) {
