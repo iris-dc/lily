@@ -80,3 +80,25 @@ Use a single logging facade (behind an interface) so the sink can change without
 
 - Keep `README.md` current: setup, how to run locally, how to run tests, folder layout, AWS deployment steps.
 - Document architectural decisions briefly when they are non-obvious.
+
+## Planned Backend
+
+- **Identity stays in Cognito** (Apple, Google, email + password). The backend never issues credentials; it validates Cognito JWTs (`spring-boot-starter-oauth2-resource-server` against the user-pool JWKS) and reads the user id from the `sub` claim. The iOS `AuthService` interface is shaped 1:1 after Amplify.Auth for this reason.
+- **Business logic and data live in a Java Spring backend**, most likely hosted on AWS ECS (Fargate), with a database behind it (DynamoDB is the default choice for cost; revisit if relational queries dominate). Keep it to one small task while traffic is low, and watch idle cost against the serverless alternative (Lambda + SnapStart).
+- The backend will get its own folder (`backend/`) and its own CI job on a Linux runner; iOS CI stays on macOS.
+
+## Notes for AI Agents
+
+Facts that cost time to learn and are not obvious from the code:
+
+- **Build and test with `./scripts/ci.sh [lint|build|unit|ui|all]`.** SwiftLint runs in strict mode from `.swiftlint.yml`; fix violations rather than disabling rules. It picks a simulator, writes logs and `.xcresult` bundles to `build/results/`, and is exactly what GitHub Actions runs. If `xcrun` cannot find `simctl`, `xcode-select` has fallen back to the Command Line Tools; ask the user to run `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`.
+- **Never touch CoreSimulatorService with `launchctl` or `pkill`.** It broke the simulator for the whole login session once and required a reboot. If runtimes show as unavailable, ask the user to reboot.
+- **Never seed app state with `simctl spawn <udid> defaults write`.** The value lands outside the app container: the app can read it but not clear it, and test clones inherit it. Use the launch arguments in `AppConfig.LaunchArguments` instead (`-reset-session`, `-start-as-guest`, `-mock-location`). UI tests already pass them.
+- **UI tests run with `-parallel-testing-enabled NO`.** Simulator clones intermittently failed to launch the test runner.
+- **No `.pbxproj` edits are needed for new files.** The project uses synchronized folder groups; anything under `lily/`, `lilyTests/`, `lilyUITests/` joins its target automatically. Info.plist is generated, so plist keys go in as `INFOPLIST_KEY_*` build settings (the location usage text is one).
+- **Concurrency:** the app target compiles with default `@MainActor` isolation and approachable concurrency; the test targets do not. Mark test suites `@MainActor`, and mark plain data types `nonisolated` so they stay `Sendable` and usable from tests.
+- **Asset symbols are generated:** colorsets are `Color.lilyAccent`, `Color.lilySecondary`, `Color.lilySurface`, `Color.lilyInk`, ... and images `Image(.googleLogo)`. Add a colorset, get the symbol. They are compiled into the app module, so they are `@MainActor`-isolated: reference them only from views and other main-actor types, never from a `nonisolated` enum or struct.
+- **Design language, decided with the user:** SF Pro only with tight tracking (a serif wordmark was tried and rejected), red accent `#FF6363` with amber as a sparingly used secondary, Liquid Glass surfaces, dark-first but both appearances supported, 48pt buttons. The landing sells the product and enters the app as a guest in one tap; sign-in is optional and lives in a sheet.
+- **Where things go:** `App/AppDependencies.swift` is the only place that knows concrete types. `SessionController` owns the session state machine. `ErrorCenter` is the single funnel for user-facing errors. `AppBranding` holds product copy, `AppConfig` non-visual constants, `DesignTokens` visual ones.
+- **Fixtures are geographic:** mock events are scattered around `AppConfig.Location.mockCenter` (Berlin). Set the simulator location there to see realistic distances.
+- **Before committing, follow the workflow above:** spawn the review agent, run `./scripts/ci.sh all`, keep `README.md` current. Only commit when the user asks.

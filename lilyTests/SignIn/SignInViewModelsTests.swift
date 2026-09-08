@@ -41,7 +41,7 @@ struct EmailSignInViewModelTests {
         #expect(harness.controller.state == .signedIn(TestFixtures.user))
     }
 
-    @Test func submitFailureKeepsSheetOpen() async {
+    @Test func submitFailureKeepsFormOpen() async {
         let harness = SessionHarness()
         harness.auth.signInResult = .failure(.invalidCredentials)
         let viewModel = EmailSignInViewModel(session: harness.controller)
@@ -54,21 +54,18 @@ struct EmailSignInViewModelTests {
 }
 
 @MainActor
-struct WelcomeViewModelTests {
+struct SignInViewModelTests {
     @Test func providerActionsDelegateToSession() async {
         let harness = SessionHarness()
-        let viewModel = WelcomeViewModel(session: harness.controller)
+        let viewModel = SignInViewModel(session: harness.controller)
 
         await viewModel.signInWithApple()
         #expect(harness.auth.signInProviders == [.apple])
 
-        viewModel.presentEmailSignIn()
-        #expect(viewModel.isEmailSheetPresented)
-    }
+        await viewModel.signInWithGoogle()
+        #expect(harness.auth.signInProviders == [.apple, .google])
 
-    @Test func guestPathEntersApp() {
-        let harness = SessionHarness()
-        WelcomeViewModel(session: harness.controller).continueAsGuest()
-        #expect(harness.controller.state == .guest)
+        viewModel.presentEmailForm()
+        #expect(viewModel.isEmailFormPresented)
     }
 }

@@ -7,7 +7,7 @@ final class OSLogLogger: Logging {
 
     init(subsystem: String = AppConfig.Logging.subsystem) {
         var loggers: [LogCategory: os.Logger] = [:]
-        for category in [LogCategory.auth, .events, .chat, .network, .cache, .ui] {
+        for category in LogCategory.allCases {
             loggers[category] = os.Logger(subsystem: subsystem, category: category.rawValue)
         }
         self.loggers = loggers

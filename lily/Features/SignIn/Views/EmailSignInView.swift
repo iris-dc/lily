@@ -1,8 +1,8 @@
 import SwiftUI
 
-struct EmailSignInSheet: View {
+/// Email + password form, pushed inside the sign-in sheet.
+struct EmailSignInView: View {
     @State private var viewModel: EmailSignInViewModel
-    @Environment(\.dismiss) private var dismiss
     @FocusState private var focusedField: Field?
 
     private enum Field { case email, password }
@@ -12,26 +12,18 @@ struct EmailSignInSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AuroraBackground(intensity: DesignTokens.Opacity.faint)
-                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                    ScreenTitle(text: viewModel.mode.title, subtitle: "Use your email and a password.")
-                    fields
-                    submitButton
-                    modeToggle
-                    Spacer()
-                }
-                .padding(DesignTokens.Spacing.xl)
+        ZStack {
+            AuroraBackground(intensity: DesignTokens.Opacity.faint)
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
+                ScreenTitle(text: viewModel.mode.title, subtitle: "Use your email and a password.")
+                fields
+                submitButton
+                modeToggle
+                Spacer()
             }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
+            .padding(DesignTokens.Spacing.xl)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear { focusedField = .email }
     }
 
@@ -50,7 +42,7 @@ struct EmailSignInSheet: View {
                 .textContentType(viewModel.mode == .signUp ? .newPassword : .password)
                 .focused($focusedField, equals: .password)
                 .submitLabel(.go)
-                .onSubmit { Task { await submit() } }
+                .onSubmit { Task { await viewModel.submit() } }
                 .lilyField()
             Text(viewModel.passwordHint)
                 .font(LilyTheme.Fonts.caption)
@@ -61,7 +53,7 @@ struct EmailSignInSheet: View {
 
     private var submitButton: some View {
         Button {
-            Task { await submit() }
+            Task { await viewModel.submit() }
         } label: {
             HStack {
                 Text(viewModel.mode.submitLabel)
@@ -82,10 +74,6 @@ struct EmailSignInSheet: View {
         .foregroundStyle(Color.lilyAccent)
         .frame(maxWidth: .infinity)
     }
-
-    private func submit() async {
-        if await viewModel.submit() { dismiss() }
-    }
 }
 
 private struct LilyFieldStyle: ViewModifier {
@@ -102,5 +90,5 @@ private extension View {
 }
 
 #Preview {
-    EmailSignInSheet(session: AppDependencies.makeMock().sessionController)
+    NavigationStack { EmailSignInView(session: AppDependencies.makeMock().sessionController) }
 }

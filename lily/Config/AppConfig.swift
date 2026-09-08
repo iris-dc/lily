@@ -20,10 +20,33 @@ nonisolated enum AppConfig {
 
     enum Events {
         static let mockFeedSize = 8
+        /// Fill ratio at which an event is called "nearly full" and highlighted.
+        static let nearlyFullRatio = 0.75
+        /// Number of upcoming events previewed on the landing screen.
+        static let landingPreviewCount = 3
+    }
+
+    enum Location {
+        /// Demo centre for mock location and fixture events (Berlin, Mitte).
+        static let mockCenter = Coordinate(latitude: 52.5200, longitude: 13.4050)
+        /// Radius (in degrees) within which fixture events are scattered.
+        static let fixtureSpreadDegrees = 0.03
+        /// Waiting longer than this for a GPS fix falls back to a map centred on the events.
+        static let fixTimeout: Duration = .seconds(8)
     }
 
     enum ErrorPopup {
         static let autoDismissDelay: Duration = .seconds(4)
+    }
+
+    /// Process arguments recognised at launch (used by UI tests).
+    enum LaunchArguments {
+        /// Clears any stored session so the app starts on the welcome screen.
+        static let resetSession = "-reset-session"
+        /// Uses the mock location service so UI tests never hit the system permission prompt.
+        static let mockLocation = "-mock-location"
+        /// Starts inside the app as a guest (after any reset), so UI tests and screenshots skip the landing.
+        static let startAsGuest = "-start-as-guest"
     }
 
     enum Logging {

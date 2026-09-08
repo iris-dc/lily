@@ -27,23 +27,26 @@ nonisolated enum DesignTokens {
         static let auroraCycle: TimeInterval = 18
         /// Redraw cadence of the aurora mesh; 30 fps is plenty for a slow drift and halves GPU work.
         static let auroraFrameInterval: TimeInterval = 1.0 / 30
-        static let sportGlyphCycle: TimeInterval = 2.6
+        /// Delay between each preview card appearing on the landing screen.
+        static let previewCardStagger: TimeInterval = 0.12
     }
 
     enum Layout {
-        static let buttonHeight: CGFloat = 54
+        static let buttonHeight: CGFloat = 48
         static let controlHeight: CGFloat = 44
         static let dismissButtonSize: CGFloat = 30
         static let swipeDismissDistance: CGFloat = 20
         static let chipVerticalPadding: CGFloat = 6
         static let providerIconSize: CGFloat = 22
-        /// Text-based provider glyphs (the Google "G") render slightly smaller than symbol glyphs.
-        static let providerTextGlyphSize: CGFloat = 18
         static let avatarSize: CGFloat = 72
         static let capacityBarHeight: CGFloat = 6
         static let popupMaxWidth: CGFloat = 520
-        static let heroGlyphSize: CGFloat = 56
-        static let heroGlyphBadge: CGFloat = 112
+        /// Landing preview deck: card offsets and tilt for the stacked event cards.
+        static let previewCardTilt: Double = 2
+        static let previewCardShift: CGFloat = 18
+        static let previewCardWidth: CGFloat = 310
+        static let mapPinSize: CGFloat = 40
+        static let mapSelectedCardWidth: CGFloat = 340
         /// How far (in unit-square terms) the aurora's interior mesh points wander.
         static let auroraDriftAmplitude: Float = 0.18
     }
@@ -53,22 +56,34 @@ nonisolated enum DesignTokens {
         static let subtle: Double = 0.65
         static let faint: Double = 0.35
         static let auroraLight: Double = 0.55
+        /// Aurora strength on the landing screen, calmer than on the launch screen.
+        static let auroraLanding: Double = 0.8
+        /// How strongly the secondary color tints its glass badges.
+        static let secondaryGlassTint: Double = 0.28
+        /// Secondary-colored hint in the aurora, kept subtle so red stays dominant.
+        static let auroraSecondaryHint: Double = 0.22
     }
 
     enum Typography {
-        static let wordmarkSize: CGFloat = 76
-        static let wordmarkTracking: CGFloat = -4
+        static let wordmarkSize: CGFloat = 28
+        static let wordmarkTracking: CGFloat = -1.2
+        static let headlineSize: CGFloat = 44
+        static let headlineTracking: CGFloat = -1.8
+        static let headlineLineSpacing: CGFloat = -4
         static let titleTracking: CGFloat = -0.5
     }
 
     /// SF Symbol names, so icons stay consistent across screens.
     enum Symbols {
         static let location = "mappin.and.ellipse"
+        static let distance = "location"
+        static let list = "list.bullet"
+        static let map = "map"
         static let time = "clock"
         static let error = "exclamationmark.circle.fill"
         static let dismiss = "xmark"
         static let apple = "apple.logo"
-        static let email = "envelope.fill"
+        static let email = "envelope"
         static let explore = "sparkles"
         static let myEvents = "calendar"
         static let addEvent = "calendar.badge.plus"

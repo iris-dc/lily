@@ -27,35 +27,109 @@ final class MockEventRepository: EventRepository {
 }
 
 nonisolated enum MockEventFixtures {
-    private static let firstEventHoursAhead = 3
-    private static let hoursBetweenEvents = 7
-    private static let secondsPerHour: TimeInterval = 3600
+    private struct Template {
+        let title: String
+        let sport: SportType
+        let location: String
+        let capacity: Int
+        let host: String
+        /// Offset from the demo centre as a fraction of `AppConfig.Location.fixtureSpreadDegrees`.
+        let offset: (lat: Double, lon: Double)
+    }
 
-    private static let templates: [(title: String, sport: SportType, location: String, capacity: Int, host: String)] = [
-        ("Sunset 5-a-side", .football, "Riverside Pitch 2", 10, "Marta"),
-        ("Pickup at the Cage", .basketball, "Westside Courts", 8, "Dev"),
-        ("Doubles, all levels", .tennis, "Park Tennis Club", 4, "Ines"),
-        ("Padel after work", .padel, "Padel Hub North", 4, "Tom"),
-        ("Easy 8k loop", .running, "Canal Path", 12, "Aiko"),
-        ("Beach volley social", .volleyball, "City Beach", 12, "Luca"),
-        ("Hills ride", .cycling, "Old Mill Car Park", 15, "Sam"),
-        ("Bouldering intro", .climbing, "Crux Climbing", 6, "Noor"),
+    private static let templates: [Template] = [
+        Template(
+            title: "Sunset 5-a-side",
+            sport: .football,
+            location: "Riverside Pitch 2",
+            capacity: 10,
+            host: "Marta",
+            offset: (0.3, -0.6)
+        ),
+        Template(
+            title: "Pickup at the Cage",
+            sport: .basketball,
+            location: "Westside Courts",
+            capacity: 8,
+            host: "Dev",
+            offset: (-0.5, -0.9)
+        ),
+        Template(
+            title: "Doubles, all levels",
+            sport: .tennis,
+            location: "Park Tennis Club",
+            capacity: 4,
+            host: "Ines",
+            offset: (0.8, 0.4)
+        ),
+        Template(
+            title: "Padel after work",
+            sport: .padel,
+            location: "Padel Hub North",
+            capacity: 4,
+            host: "Tom",
+            offset: (1.0, -0.2)
+        ),
+        Template(
+            title: "Easy 8k loop",
+            sport: .running,
+            location: "Canal Path",
+            capacity: 12,
+            host: "Aiko",
+            offset: (-0.2, 0.7)
+        ),
+        Template(
+            title: "Beach volley social",
+            sport: .volleyball,
+            location: "City Beach",
+            capacity: 12,
+            host: "Luca",
+            offset: (-0.9, 0.3)
+        ),
+        Template(
+            title: "Hills ride",
+            sport: .cycling,
+            location: "Old Mill Car Park",
+            capacity: 15,
+            host: "Sam",
+            offset: (0.5, 1.0)
+        ),
+        Template(
+            title: "Bouldering intro",
+            sport: .climbing,
+            location: "Crux Climbing",
+            capacity: 6,
+            host: "Noor",
+            offset: (-0.7, -0.3)
+        ),
     ]
+
+    /// Hours until the first fixture starts, and the gap between consecutive fixtures.
+    private static let firstStartHours = 3.0
+    private static let hoursBetweenEvents = 7.0
+    private static let secondsPerHour = 3600.0
 
     static func make(now: Date, count: Int) -> [SportEvent] {
         (0..<count).map { index in
             let template = templates[index % templates.count]
-            let hoursAhead = TimeInterval(firstEventHoursAhead + index * hoursBetweenEvents)
+            let hoursAhead = firstStartHours + Double(index) * hoursBetweenEvents
             return SportEvent(
                 id: "mock-event-\(index)",
                 title: template.title,
                 sport: template.sport,
                 startsAt: now.addingTimeInterval(hoursAhead * secondsPerHour),
-                locationName: template.location,
+                location: EventLocation(name: template.location, coordinate: coordinate(for: template)),
                 capacity: template.capacity,
                 participantCount: min(template.capacity, (index * 3) % (template.capacity + 1)),
                 hostName: template.host
             )
         }
+    }
+
+    private static func coordinate(for template: Template) -> Coordinate {
+        let center = AppConfig.Location.mockCenter
+        let spread = AppConfig.Location.fixtureSpreadDegrees
+        return Coordinate(latitude: center.latitude + template.offset.lat * spread,
+                          longitude: center.longitude + template.offset.lon * spread)
     }
 }

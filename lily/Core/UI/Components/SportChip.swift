@@ -8,6 +8,6 @@ struct SportChip: View {
             .font(LilyTheme.Fonts.caption)
             .padding(.horizontal, DesignTokens.Spacing.md)
             .padding(.vertical, DesignTokens.Layout.chipVerticalPadding)
-            .glassEffect(.regular.tint(Color.lilyAccent.opacity(DesignTokens.Opacity.glassTint)), in: .capsule)
+            .glassEffect(.regular.tint(Color.lilySecondary.opacity(DesignTokens.Opacity.secondaryGlassTint)), in: .capsule)
     }
 }

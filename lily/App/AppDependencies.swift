@@ -8,16 +8,19 @@ final class AppDependencies {
     let authService: any AuthService
     let sessionController: SessionController
     let eventRepository: any EventRepository
+    let locationService: any LocationService
 
     init(logger: any Logging,
          sessionStore: any SessionStore,
          authService: any AuthService,
-         eventRepository: any EventRepository) {
+         eventRepository: any EventRepository,
+         locationService: any LocationService) {
         self.logger = logger
         self.errorCenter = ErrorCenter(logger: logger)
         self.sessionStore = sessionStore
         self.authService = authService
         self.eventRepository = eventRepository
+        self.locationService = locationService
         self.sessionController = SessionController(authService: authService,
                                                    sessionStore: sessionStore,
                                                    errorCenter: errorCenter,
@@ -25,13 +28,26 @@ final class AppDependencies {
     }
 
     /// Production wiring. Swap `MockAuthService` for `CognitoAuthService` once Amplify is configured.
-    static func makeDefault() -> AppDependencies {
+    static func makeDefault(arguments: [String] = CommandLine.arguments,
+                            defaults: UserDefaults = .standard) -> AppDependencies {
         let logger = OSLogLogger()
-        let store = UserDefaultsSessionStore()
+        let store = UserDefaultsSessionStore(defaults: defaults)
+        if arguments.contains(AppConfig.LaunchArguments.resetSession) {
+            logger.info(.auth, "Launch argument requested a session reset")
+            store.clear()
+        }
+        if arguments.contains(AppConfig.LaunchArguments.startAsGuest) {
+            logger.info(.auth, "Launch argument requested guest mode")
+            store.save(.guest)
+        }
+        let locationService: any LocationService = arguments.contains(AppConfig.LaunchArguments.mockLocation)
+            ? MockLocationService()
+            : CoreLocationService(logger: logger)
         return AppDependencies(logger: logger,
                                sessionStore: store,
                                authService: MockAuthService(store: store),
-                               eventRepository: MockEventRepository(logger: logger))
+                               eventRepository: MockEventRepository(logger: logger),
+                               locationService: locationService)
     }
 
     /// Isolated in-memory wiring for previews and tests.
@@ -43,10 +59,15 @@ final class AppDependencies {
         return AppDependencies(logger: logger,
                                sessionStore: store,
                                authService: MockAuthService(behavior: authBehavior, delay: authDelay, store: store),
-                               eventRepository: MockEventRepository(logger: logger))
+                               eventRepository: MockEventRepository(logger: logger),
+                               locationService: MockLocationService())
     }
 
     func makeEventListViewModel(scope: EventScope) -> EventListViewModel {
-        EventListViewModel(scope: scope, repository: eventRepository, errorCenter: errorCenter, logger: logger)
+        EventListViewModel(scope: scope,
+                           repository: eventRepository,
+                           locationService: locationService,
+                           errorCenter: errorCenter,
+                           logger: logger)
     }
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Thin red bar showing how full an event is, with a spots-left label.
+/// Thin bar showing how full an event is: red normally, amber when nearly full, muted when full.
 struct CapacityBar: View {
     let event: SportEvent
 
@@ -11,7 +11,7 @@ struct CapacityBar: View {
                 .overlay(alignment: .leading) {
                     GeometryReader { proxy in
                         Capsule()
-                            .fill(event.isFull ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.lilyAccent))
+                            .fill(fillStyle)
                             .frame(width: proxy.size.width * event.fillRatio)
                     }
                 }
@@ -21,5 +21,11 @@ struct CapacityBar: View {
                 .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
+    }
+
+    private var fillStyle: AnyShapeStyle {
+        if event.isFull { return AnyShapeStyle(.secondary) }
+        if event.isNearlyFull { return AnyShapeStyle(Color.lilySecondary) }
+        return AnyShapeStyle(Color.lilyAccent)
     }
 }
