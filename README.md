@@ -35,7 +35,7 @@ xcodebuild -scheme lily -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
 
 Tests use Swift Testing and fakes for every interface (`lilyTests/Support/TestDoubles.swift`).
-UI smoke tests in `lilyUITests/` launch the real app with the `-reset-session` and `-mock-location` arguments (see `AppConfig.LaunchArguments`; `-start-as-guest` skips the landing) and walk the landing → Explore and landing → sign-in sheet → mock Apple → Explore paths.
+UI smoke tests in `lilyUITests/` launch the real app with the `-reset-session` and `-mock-location` arguments (see `AppConfig.LaunchArguments`; `-start-as-guest` skips the landing) and walk the landing → Explore and landing → sign-in sheet → mock Apple → Explore paths, plus the Explore map: switching list → map, and selecting a pin, which asserts the preview card stays clear of the floating tab bar.
 
 Run everything the way CI does:
 

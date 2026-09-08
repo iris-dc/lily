@@ -12,6 +12,15 @@ struct EventsMapView: View {
     }
 
     var body: some View {
+        // The map bleeds under the floating tab bar; the card stays inside the safe area, above it.
+        ZStack(alignment: .bottom) {
+            map
+            selectedEventCard
+        }
+        .animation(.spring(duration: DesignTokens.Duration.normal), value: selectedEventID)
+    }
+
+    private var map: some View {
         Map(position: $position, selection: $selectedEventID) {
             UserAnnotation()
             ForEach(viewModel.filteredEvents) { event in
@@ -23,19 +32,22 @@ struct EventsMapView: View {
         }
         .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
         .mapControls { MapUserLocationButton() }
-        .overlay(alignment: .bottom) {
-            if let selectedEvent {
-                NavigationLink(value: selectedEvent) {
-                    EventPreviewCard(event: selectedEvent, detail: viewModel.distanceText(for: selectedEvent))
-                        .frame(maxWidth: DesignTokens.Layout.mapSelectedCardWidth)
-                }
-                .buttonStyle(.plain)
-                .padding(DesignTokens.Spacing.lg)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .animation(.spring(duration: DesignTokens.Duration.normal), value: selectedEventID)
+        .ignoresSafeArea(edges: .bottom)
         .accessibilityIdentifier("events-map")
+    }
+
+    @ViewBuilder
+    private var selectedEventCard: some View {
+        if let selectedEvent {
+            NavigationLink(value: selectedEvent) {
+                EventPreviewCard(event: selectedEvent, detail: viewModel.distanceText(for: selectedEvent))
+                    .frame(maxWidth: DesignTokens.Layout.mapSelectedCardWidth)
+            }
+            .buttonStyle(.plain)
+            .padding(DesignTokens.Spacing.lg)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .accessibilityIdentifier("map-selected-card")
+        }
     }
 }
 
