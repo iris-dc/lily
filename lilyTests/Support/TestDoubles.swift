@@ -4,10 +4,16 @@ import Foundation
 /// Records log lines so tests can assert on key events.
 @MainActor
 final class SpyLogger: Logging {
-    private(set) var entries: [(level: LogLevel, category: LogCategory, message: String)] = []
+    struct Entry {
+        let level: LogLevel
+        let category: LogCategory
+        let message: String
+    }
+
+    private(set) var entries: [Entry] = []
 
     func log(_ level: LogLevel, _ category: LogCategory, _ message: String) {
-        entries.append((level, category, message))
+        entries.append(Entry(level: level, category: category, message: message))
     }
 
     func messages(in category: LogCategory) -> [String] {

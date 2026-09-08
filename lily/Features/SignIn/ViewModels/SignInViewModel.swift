@@ -1,9 +1,10 @@
 import Foundation
 import Observation
 
+/// Drives the sign-in sheet: provider buttons plus the push into the email form.
 @Observable
-final class WelcomeViewModel {
-    var isEmailSheetPresented = false
+final class SignInViewModel {
+    var isEmailFormPresented = false
     private let session: SessionController
 
     init(session: SessionController) {
@@ -15,6 +16,5 @@ final class WelcomeViewModel {
 
     func signInWithApple() async { await session.signIn(with: .apple) }
     func signInWithGoogle() async { await session.signIn(with: .google) }
-    func presentEmailSignIn() { isEmailSheetPresented = true }
-    func continueAsGuest() { session.continueAsGuest() }
+    func presentEmailForm() { isEmailFormPresented = true }
 }

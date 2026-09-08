@@ -12,7 +12,7 @@ struct AppRootView: View {
             case .loading:
                 LaunchView()
             case .signedOut:
-                WelcomeView(session: session)
+                LandingView(dependencies: dependencies)
             case .guest, .signedIn:
                 MainTabView(dependencies: dependencies)
             }
@@ -28,7 +28,7 @@ private struct LaunchView: View {
     var body: some View {
         ZStack {
             AuroraBackground()
-            Wordmark()
+            Wordmark(size: DesignTokens.Typography.headlineSize)
         }
     }
 }

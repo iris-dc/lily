@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Semantic styling that isn't a plain color asset. Colors live in `Assets.xcassets` (`Color.lily*`).
-nonisolated enum LilyTheme {
+enum LilyTheme {
     enum Fonts {
-        static var wordmark: Font {
-            .system(size: DesignTokens.Typography.wordmarkSize, weight: .heavy, design: .default)
-        }
-        static var screenTitle: Font { .system(.largeTitle, design: .default, weight: .bold) }
+        /// SF Pro Display with tight tracking everywhere: the wordmark, the landing headline and screen titles.
+        static var wordmark: Font { .system(size: DesignTokens.Typography.wordmarkSize, weight: .semibold) }
+        static var headline: Font { .system(size: DesignTokens.Typography.headlineSize, weight: .bold) }
+        static var screenTitle: Font { .system(.largeTitle, weight: .bold) }
         static var cardTitle: Font { .system(.title3, design: .default, weight: .semibold) }
         static var button: Font { .system(.body, design: .default, weight: .semibold) }
         static var caption: Font { .system(.footnote, design: .default, weight: .medium) }
@@ -19,13 +19,13 @@ nonisolated enum LilyTheme {
             [
                 .lilySurface, .lilyAccentDeep.opacity(0.55), .lilySurface,
                 .lilyAccentDeep.opacity(0.35), .lilyAccent.opacity(0.75), .lilySurface,
-                .lilySurface, .lilySurface, .lilyAccentDeep.opacity(0.3),
+                .lilySurface, .lilySurface, .lilySecondary.opacity(DesignTokens.Opacity.auroraSecondaryHint),
             ]
         default:
             [
                 .lilySurface, .lilyAccent.opacity(0.28), .lilySurface,
                 .lilyAccent.opacity(0.14), .lilyAccent.opacity(DesignTokens.Opacity.auroraLight), .lilySurface,
-                .lilySurface, .lilySurface, .lilyAccentDeep.opacity(0.18),
+                .lilySurface, .lilySurface, .lilySecondary.opacity(DesignTokens.Opacity.auroraSecondaryHint),
             ]
         }
     }

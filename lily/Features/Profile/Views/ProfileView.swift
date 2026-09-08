@@ -21,7 +21,7 @@ struct ProfileView: View {
             .navigationTitle("Profile")
         }
         .sheet(isPresented: $isSignInPresented) {
-            WelcomeView(session: session)
+            SignInSheet(session: session)
         }
     }
 
@@ -51,7 +51,7 @@ struct ProfileView: View {
                 Text("Sign in to create events, join games and chat with players.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Button("Sign in") { isSignInPresented = true }
+                Button(AppBranding.signInAction) { isSignInPresented = true }
                     .font(LilyTheme.Fonts.button)
                     .lilyProminentButton()
                     .controlSize(.large)

@@ -1,43 +1,61 @@
-//
-//  lilyUITests.swift
-//  lilyUITests
-//
-//  Created by Hryniewicz, Maksym on 26/08/2026.
-//
-
 import XCTest
 
-final class lilyUITests: XCTestCase {
+/// End-to-end smoke tests against the real app in the simulator.
+final class LilySmokeTests: XCTestCase {
+    private let app = XCUIApplication()
 
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
-
-    @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
+        // Mirrors AppConfig.LaunchArguments (UI tests cannot import the app module).
+        app.launchArguments = ["-reset-session", "-mock-location"]
         app.launch()
-
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
     }
 
     @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+    func testLandingExplainsProductAndOffersEntry() {
+        XCTAssertTrue(app.staticTexts["lily"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Play tonight."].exists)
+        XCTAssertTrue(app.buttons["Find a game near you"].exists)
+        XCTAssertTrue(app.buttons["Sign in"].exists)
+    }
+
+    @MainActor
+    func testPrimaryActionReachesExploreFeed() {
+        let enter = app.buttons["Find a game near you"]
+        XCTAssertTrue(enter.waitForExistence(timeout: 5))
+        enter.tap()
+
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Sunset 5-a-side"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testExploreCanSwitchToMap() {
+        app.terminate()
+        app.launchArguments.append("-start-as-guest")
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
+
+        // Segments expose their SF Symbol name as identifier (DesignTokens.Symbols.map).
+        app.segmentedControls["events-presentation"].buttons["map"].tap()
+        XCTAssertTrue(app.maps.firstMatch.waitForExistence(timeout: 10))
+        sleep(2)
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "explore-map"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
+    @MainActor
+    func testMockAppleSignInFromSheetLandsInApp() {
+        let signIn = app.buttons["Sign in"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
+        signIn.tap()
+
+        let apple = app.buttons["Continue with Apple"]
+        XCTAssertTrue(apple.waitForExistence(timeout: 5))
+        apple.tap()
+
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
     }
 }

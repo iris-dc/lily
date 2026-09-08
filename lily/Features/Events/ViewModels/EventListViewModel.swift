@@ -1,21 +1,28 @@
 import Foundation
 import Observation
 
-/// Drives every list of events (explore, my events, search). Scope decides which slice is loaded.
+/// Drives every list and map of events (explore, my events, search). Scope decides which slice is loaded.
 @Observable
 final class EventListViewModel {
     private(set) var events: [SportEvent] = []
     private(set) var isLoading = false
+    private(set) var userLocation: Coordinate?
     var searchText = ""
 
     private let scope: EventScope
     private let repository: any EventRepository
+    private let locationService: any LocationService
     private let errorCenter: ErrorCenter
     private let logger: any Logging
 
-    init(scope: EventScope, repository: any EventRepository, errorCenter: ErrorCenter, logger: any Logging) {
+    init(scope: EventScope,
+         repository: any EventRepository,
+         locationService: any LocationService,
+         errorCenter: ErrorCenter,
+         logger: any Logging) {
         self.scope = scope
         self.repository = repository
+        self.locationService = locationService
         self.errorCenter = errorCenter
         self.logger = logger
     }
@@ -30,6 +37,12 @@ final class EventListViewModel {
         }
     }
 
+    /// Distance from the user, formatted for the current locale, or `nil` while location is unknown.
+    func distanceText(for event: SportEvent) -> String? {
+        event.distance(from: userLocation)?
+            .formatted(.measurement(width: .abbreviated, usage: .road))
+    }
+
     func load() async {
         guard !isLoading else { return }
         isLoading = true
@@ -41,5 +54,12 @@ final class EventListViewModel {
             logger.error(.events, "Loading events failed for scope \(scope): \(error)")
             errorCenter.report(AppError.eventsUnavailable)
         }
+    }
+
+    /// Location is optional context: failures leave `userLocation` nil and the UI simply omits distances.
+    func loadUserLocation() async {
+        guard userLocation == nil else { return }
+        userLocation = await locationService.currentLocation()
+        logger.info(.location, userLocation == nil ? "No user location" : "User location available")
     }
 }

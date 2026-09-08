@@ -1,22 +1,26 @@
 import SwiftUI
 
-/// One list for Explore, My Events and Search. Behaviour differs only by scope and copy.
+/// One screen for Explore, My Events and Search: a list, optionally switchable to a map.
 struct EventListView: View {
     let title: String
     let subtitle: String?
     let emptyState: EmptyStateView
     let searchable: Bool
+    let showsMap: Bool
+    @State private var presentation: EventsPresentation = .list
     @State private var viewModel: EventListViewModel
 
     init(title: String,
          subtitle: String? = nil,
          emptyState: EmptyStateView,
          searchable: Bool = false,
+         showsMap: Bool = false,
          viewModel: EventListViewModel) {
         self.title = title
         self.subtitle = subtitle
         self.emptyState = emptyState
         self.searchable = searchable
+        self.showsMap = showsMap
         _viewModel = State(initialValue: viewModel)
     }
 
@@ -27,10 +31,28 @@ struct EventListView: View {
                 content
             }
             .navigationTitle(title)
+            .navigationBarTitleDisplayMode(presentation == .map ? .inline : .large)
             .navigationDestination(for: SportEvent.self) { EventDetailView(event: $0) }
             .searchableIfNeeded(searchable, text: $viewModel.searchText)
+            .toolbar {
+                if showsMap {
+                    ToolbarItem(placement: .topBarTrailing) { presentationPicker }
+                }
+            }
         }
         .task { await viewModel.load() }
+        .task { await viewModel.loadUserLocation() }
+    }
+
+    private var presentationPicker: some View {
+        Picker("View", selection: $presentation) {
+            ForEach(EventsPresentation.allCases, id: \.self) { option in
+                Label(option.title, systemImage: option.symbolName).tag(option)
+            }
+        }
+        .pickerStyle(.segmented)
+        .fixedSize()
+        .accessibilityIdentifier("events-presentation")
     }
 
     @ViewBuilder
@@ -39,6 +61,9 @@ struct EventListView: View {
             ProgressView()
         } else if viewModel.filteredEvents.isEmpty {
             emptyState
+        } else if presentation == .map {
+            EventsMapView(viewModel: viewModel)
+                .ignoresSafeArea(edges: .bottom)
         } else {
             ScrollView {
                 LazyVStack(spacing: DesignTokens.Spacing.md) {
@@ -49,7 +74,9 @@ struct EventListView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     ForEach(viewModel.filteredEvents) { event in
-                        NavigationLink(value: event) { EventCard(event: event) }
+                        NavigationLink(value: event) {
+                            EventCard(event: event, distance: viewModel.distanceText(for: event))
+                        }
                             .buttonStyle(.plain)
                     }
                 }
@@ -68,6 +95,25 @@ private extension View {
             searchable(text: text, prompt: "Sport, place or title")
         } else {
             self
+        }
+    }
+}
+
+/// List or map, as chosen in the toolbar.
+nonisolated enum EventsPresentation: CaseIterable, Hashable, Sendable {
+    case list, map
+
+    var title: String {
+        switch self {
+        case .list: "List"
+        case .map: "Map"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .list: DesignTokens.Symbols.list
+        case .map: DesignTokens.Symbols.map
         }
     }
 }

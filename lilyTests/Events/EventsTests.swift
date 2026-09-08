@@ -35,9 +35,14 @@ struct MockEventRepositoryTests {
 
 @MainActor
 struct EventListViewModelTests {
-    private func makeViewModel(_ repository: FakeEventRepository) -> (EventListViewModel, ErrorCenter) {
+    private func makeViewModel(_ repository: FakeEventRepository,
+                               location: Coordinate? = nil) -> (EventListViewModel, ErrorCenter) {
         let center = ErrorCenter(logger: SpyLogger())
-        let viewModel = EventListViewModel(scope: .upcoming, repository: repository, errorCenter: center, logger: SpyLogger())
+        let viewModel = EventListViewModel(scope: .upcoming,
+                                           repository: repository,
+                                           locationService: MockLocationService(coordinate: location),
+                                           errorCenter: center,
+                                           logger: SpyLogger())
         return (viewModel, center)
     }
 
@@ -65,6 +70,26 @@ struct EventListViewModelTests {
         #expect(viewModel.events.isEmpty)
     }
 
+    @Test func userLocationEnablesDistanceText() async {
+        let repository = FakeEventRepository()
+        let events = MockEventFixtures.make(now: .now, count: 1)
+        repository.result = .success(events)
+        let (viewModel, _) = makeViewModel(repository, location: AppConfig.Location.mockCenter)
+        await viewModel.load()
+
+        #expect(viewModel.distanceText(for: events[0]) == nil)
+        await viewModel.loadUserLocation()
+        #expect(viewModel.userLocation == AppConfig.Location.mockCenter)
+        #expect(viewModel.distanceText(for: events[0])?.isEmpty == false)
+    }
+
+    @Test func missingLocationLeavesDistanceEmpty() async {
+        let (viewModel, _) = makeViewModel(FakeEventRepository(), location: nil)
+        await viewModel.loadUserLocation()
+        #expect(viewModel.userLocation == nil)
+        #expect(viewModel.distanceText(for: MockEventFixtures.make(now: .now, count: 1)[0]) == nil)
+    }
+
     @Test func searchFiltersByTitleSportAndLocation() async {
         let repository = FakeEventRepository()
         repository.result = .success(MockEventFixtures.make(now: .now, count: 8))
@@ -83,9 +108,36 @@ struct EventListViewModelTests {
 }
 
 struct SportEventTests {
+    @Test func fixturesLieWithinTheDemoRadius() {
+        let center = AppConfig.Location.mockCenter
+        for event in MockEventFixtures.make(now: .now, count: 8) {
+            #expect(event.location.coordinate.distance(to: center) < 5_000)
+        }
+    }
+
+    @Test func distanceIsNilWithoutOrigin() {
+        let event = MockEventFixtures.make(now: .now, count: 1)[0]
+        #expect(event.distance(from: nil) == nil)
+        #expect(event.distance(from: event.location.coordinate)?.value == 0)
+    }
+
+    @Test func nearlyFullFollowsConfiguredRatio() {
+        #expect(!makeEvent(capacity: 4, participants: 1).isNearlyFull)
+        #expect(makeEvent(capacity: 4, participants: 3).isNearlyFull)
+        #expect(!makeEvent(capacity: 4, participants: 4).isNearlyFull)
+    }
+
     private func makeEvent(capacity: Int, participants: Int) -> SportEvent {
-        SportEvent(id: "e", title: "t", sport: .tennis, startsAt: .now, locationName: "l",
-                   capacity: capacity, participantCount: participants, hostName: "h")
+        SportEvent(
+            id: "e",
+            title: "t",
+            sport: .tennis,
+            startsAt: .now,
+            location: EventLocation(name: "l", coordinate: AppConfig.Location.mockCenter),
+            capacity: capacity,
+            participantCount: participants,
+            hostName: "h"
+        )
     }
 
     @Test func capacityMath() {

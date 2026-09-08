@@ -12,6 +12,7 @@ struct MainTabView: View {
                     emptyState: EmptyStateView(symbolName: DesignTokens.Symbols.explore,
                                                title: "Nothing yet",
                                                message: "New games show up here as people create them."),
+                    showsMap: true,
                     viewModel: dependencies.makeEventListViewModel(scope: .upcoming)
                 )
             }
