@@ -14,7 +14,7 @@ struct LandingView: View {
 
     var body: some View {
         ZStack {
-            AuroraBackground(intensity: DesignTokens.Opacity.auroraLanding)
+            AuroraBackground(intensity: DesignTokens.Aurora.landingIntensity)
             VStack(alignment: .leading, spacing: 0) {
                 Wordmark()
                     .padding(.top, DesignTokens.Spacing.md)

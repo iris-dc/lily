@@ -6,7 +6,7 @@ struct EventDetailView: View {
 
     var body: some View {
         ZStack {
-            AuroraBackground(intensity: DesignTokens.Opacity.faint)
+            AuroraBackground(intensity: DesignTokens.Aurora.contentIntensity)
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     SportChip(sport: event.sport)

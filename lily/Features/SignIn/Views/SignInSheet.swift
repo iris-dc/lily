@@ -14,7 +14,7 @@ struct SignInSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AuroraBackground(intensity: DesignTokens.Opacity.faint)
+                AuroraBackground(intensity: DesignTokens.Aurora.contentIntensity)
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     ScreenTitle(text: AppBranding.signInSheetTitle, subtitle: AppBranding.signInSheetSubtitle)
                     providers
