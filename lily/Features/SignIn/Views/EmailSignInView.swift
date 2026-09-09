@@ -13,7 +13,7 @@ struct EmailSignInView: View {
 
     var body: some View {
         ZStack {
-            AuroraBackground(intensity: DesignTokens.Opacity.faint)
+            AuroraBackground(intensity: DesignTokens.Aurora.contentIntensity)
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                 ScreenTitle(text: viewModel.mode.title, subtitle: "Use your email and a password.")
                 fields

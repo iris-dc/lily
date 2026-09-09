@@ -23,10 +23,6 @@ nonisolated enum DesignTokens {
         static let fast: TimeInterval = 0.2
         static let normal: TimeInterval = 0.35
         static let slow: TimeInterval = 0.6
-        /// One full drift cycle of the aurora background.
-        static let auroraCycle: TimeInterval = 18
-        /// Redraw cadence of the aurora mesh; 30 fps is plenty for a slow drift and halves GPU work.
-        static let auroraFrameInterval: TimeInterval = 1.0 / 30
         /// Delay between each preview card appearing on the landing screen.
         static let previewCardStagger: TimeInterval = 0.12
     }
@@ -47,21 +43,73 @@ nonisolated enum DesignTokens {
         static let previewCardWidth: CGFloat = 310
         static let mapPinSize: CGFloat = 40
         static let mapSelectedCardWidth: CGFloat = 340
-        /// How far (in unit-square terms) the aurora's interior mesh points wander.
-        static let auroraDriftAmplitude: Float = 0.18
     }
 
     enum Opacity {
         static let glassTint: Double = 0.22
         static let subtle: Double = 0.65
-        static let faint: Double = 0.35
-        static let auroraLight: Double = 0.55
-        /// Aurora strength on the landing screen, calmer than on the launch screen.
-        static let auroraLanding: Double = 0.8
         /// How strongly the secondary color tints its glass badges.
         static let secondaryGlassTint: Double = 0.28
-        /// Secondary-colored hint in the aurora, kept subtle so red stays dominant.
-        static let auroraSecondaryHint: Double = 0.22
+    }
+
+    /// The ember mesh behind every screen (full strength on launch, `landingIntensity` and `contentIntensity` elsewhere): a 4x4
+    /// `MeshGradient` whose points drift and whose red carries a slow travelling brightness ripple, under live film grain.
+    /// Slow but plainly visible: the user should see the red flow within a few seconds without it fighting the headline.
+    enum Aurora {
+        /// Mesh strength on the landing screen, calmer than the full-strength launch screen.
+        static let landingIntensity: Double = 0.85
+        /// Mesh strength behind content screens (lists, details, profile, sign-in), where text and cards sit on top.
+        static let contentIntensity: Double = 0.55
+        /// Redraw cadence; 30 fps is plenty for a slow drift and halves GPU work.
+        static let frameInterval: TimeInterval = 1.0 / 30
+        /// Bicubic color smoothing: the glows melt into the dark like a blurred light, no visible cell edges.
+        static let smoothsColors = true
+        /// The whole background fades in from nothing when a screen appears, so the glow arrives rather than pops.
+        static let revealDuration: TimeInterval = 3.5
+        /// Drift periods in seconds. Pairwise incommensurate, so the combined motion never visibly repeats.
+        static let driftPeriods: [TimeInterval] = [19, 23, 29, 37]
+        /// Period of the core glow breathing.
+        static let glowPeriod: TimeInterval = 23
+        /// How far (in unit-square terms) an interior mesh point wanders on each axis.
+        static let driftAmplitude: Float = 0.15
+        /// How far an edge point slides along its edge; smaller so the silhouette only breathes.
+        static let edgeDriftAmplitude: Float = 0.08
+        /// Weights of the sines summed per axis, largest first; they add up to one so the drift amplitude is exact.
+        static let driftWeights: [Float] = [0.5, 0.3, 0.2]
+        /// Peak-to-center swing of the core opacity while it breathes.
+        static let glowSwing: Double = 0.2
+        /// Period of the brightness wave that travels down the main diagonal of the mesh, so the red visibly flows.
+        static let ripplePeriod: TimeInterval = 29
+        /// Peak-to-center swing of a cell's opacity as the main ripple passes over it.
+        static let rippleSwing: Double = 0.25
+        /// Period of a second, slower wave across the other diagonal that breaks the regular beat of the first.
+        static let rippleCrossPeriod: TimeInterval = 41
+        /// Peak-to-center swing of the cross wave, half the main one so it only modulates the flow.
+        static let rippleCrossSwing: Double = 0.12
+        /// Phase lag per diagonal step (row + column) between neighbouring cells, in radians: about one wave on screen.
+        static let rippleSpacing: Double = 0.9
+        /// Core (hot `lilyAccent`) opacity before the glow swing is applied.
+        static let coreOpacity: Double = 0.55
+        /// Opacity of the densest part of the maroon mass.
+        static let massDense: Double = 0.55
+        /// Opacity where the mass thins out towards the middle of the screen.
+        static let massMid: Double = 0.38
+        /// Opacity of the outer fringe of the mass, just before it fades into the surface.
+        static let massThin: Double = 0.18
+        /// The single amber ember in the bottom-left corner, faint so red stays dominant.
+        static let emberOpacity: Double = 0.2
+        /// Side length in noise pixels of each tiled film-grain texture.
+        static let grainTileSize = 128
+        /// Device pixels per noise pixel: 2 makes the grain coarse enough to read as film rather than dither.
+        static let grainPixelSize: CGFloat = 2
+        /// Pre-generated grain tiles cycled while animating; random noise at this count never reads as a loop.
+        static let grainFrameCount = 12
+        /// How often the grain changes tile: film-like flicker, under the mesh's own redraw rate.
+        static let grainFrameRate: Double = 24
+        /// Film grain strength; the noise adds light (`plusLighter`) onto the near-black surface, a whisper, not dirt.
+        static let grainOpacity: Double = 0.08
+        /// Seed of the deterministic grain noise, so every launch and every test sees the same texture.
+        static let grainSeed: UInt64 = 0x4C69_6C79
     }
 
     enum Typography {

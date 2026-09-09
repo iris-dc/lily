@@ -7,7 +7,7 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AuroraBackground(intensity: DesignTokens.Opacity.faint)
+                AuroraBackground(intensity: DesignTokens.Aurora.contentIntensity)
                 VStack(spacing: DesignTokens.Spacing.xl) {
                     if let user = session.state.user {
                         signedIn(user)

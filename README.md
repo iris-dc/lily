@@ -1,7 +1,7 @@
 # Lily
 
 Meetup-style iOS app for sport events: sign in, create and join events, chat with participants.
-iOS 26+, SwiftUI, Liquid Glass, dark-first design with a red accent. Backend will run on AWS (Cognito, API Gateway, Lambda, DynamoDB) on a tight budget.
+iOS 26+, SwiftUI, Liquid Glass, dark-only design (for now) with a dark-raspberry accent over maroon. Backend will run on AWS (Cognito, API Gateway, Lambda, DynamoDB) on a tight budget.
 
 ## Status
 
@@ -66,7 +66,8 @@ lily/
     Logging/     Logging facade + OSLogLogger
     Location/    Coordinate model, LocationService interface, CoreLocation and mock implementations
     Validation/  CredentialsValidator
-    UI/          Theme (fonts, aurora palette), Components (glass cards, button modifiers, provider buttons, error popup, wordmark, ...)
+    UI/          Theme (fonts, aurora role-to-color mapping), Effects (aurora geometry, roles, film grain: pure, testable math),
+                 Components (aurora background, glass cards, button modifiers, provider buttons, error popup, wordmark, ...)
   Features/
     Landing/     First screen: headline, event preview deck, primary action (Views + ViewModels)
     SignIn/      Sign-in sheet with provider buttons and the email form (Views + ViewModels)
@@ -89,9 +90,10 @@ Rules: interfaces and implementations live in separate folders, constants live u
 - **Auth interface mirrors Amplify.Auth.** `restoreSession`, `signIn(with:)`, `signUp`, `signOut` map 1:1 to `fetchAuthSession`, `signInWithWebUI` / `signIn(username:password:)`, `signUp`, `signOut`, so `CognitoAuthService` will replace `MockAuthService` without touching callers.
 - **SessionStore is a hint, not truth.** In production it only stores the guest choice; Amplify keeps tokens in the Keychain. The mock also stores its fake session there.
 - **Branding lives in `Config/AppBranding.swift`:** app name, landing headline and copy, button titles. Change them there and every screen follows.
-- **Colors** are asset catalog colorsets with light and dark variants, exposed via generated symbols (`Color.lilyAccent`, `Color.lilySecondary`, `Color.lilySurface`, ...). Red is the accent; amber (`lilySecondary`) is used sparingly for sport chips, the hero badge and the "nearly full" capacity state.
+- **Colors** are asset catalog colorsets with light and dark variants, exposed via generated symbols (`Color.lilyAccent`, `Color.lilySecondary`, `Color.lilySurface`, ...). Dark raspberry `#B31B3F` is the accent, maroon `#5E0C26` the deep tone behind it; amber (`lilySecondary`) is used sparingly for sport chips, the hero badge and the "nearly full" capacity state.
 - **Location:** `LocationService` returns one fix or `nil`; the app never blocks on it. `CoreLocationService` uses `CLLocationUpdate.liveUpdates`, which prompts for when-in-use permission (usage text is set as an `INFOPLIST_KEY_` build setting). Events carry a `Coordinate`; distance is computed on-device with a haversine, no network.
 - **Typography:** SF Pro only, with tight tracking on the wordmark and headline (sizes and tracking in `DesignTokens.Typography`).
+- **Aurora background** is a 4x4 `MeshGradient` in a 30 fps `TimelineView`, in the spirit of the Raycast home page: a near-black surface with soft luminous red glows and a whisper of grain. Two maroon masses, upper-left behind the headline and lower-right behind the button, are joined by a thin diagonal with a darker valley on either side (`AuroraPalette.roles`), drawn with bicubic smoothing so no cell edge shows. Corners are pinned, edge points slide along their edge, interior points wander on paths that sum three sines drawn from four incommensurate periods (19, 23, 29, 37 s) with golden-angle phase offsets. The red visibly flows because a brightness ripple travels down the main diagonal every 29 s and a weaker one crosses the other diagonal every 41 s (`AuroraGeometry.cellIntensities`), while the raspberry core, kept on the top edge so its peak never swallows the red headline line, breathes every 23 s. The whole background fades in from nothing over 3.5 s (ease-in-out) when a screen appears. Numbers live in `DesignTokens.Aurora`; the math lives in `Core/UI/Effects` (`AuroraGeometry`, `AuroraPalette`, `FilmGrain`) and is unit tested; `LilyTheme` maps roles to asset colors and the view only draws. Every screen adds live film grain: 12 seeded 128 px noise tiles with a squared distribution (sparse bright speckle, blacks stay black), generated once, drawn at 2 device pixels per noise pixel without interpolation and cycled at 24 fps, blended `plusLighter` at 8%. Content screens draw the mesh at `contentIntensity` (0.55), the landing at 0.85, the launch screen at full strength. Reduce Motion freezes the first frame (the fade-in stays, being a crossfade). The app is forced to dark mode via the `INFOPLIST_KEY_UIUserInterfaceStyle` build setting; colorsets keep their light variants for when the light theme returns. Phases are reduced modulo their period in `Double` before becoming `Float`: `timeIntervalSinceReferenceDate` cast to `Float` only resolves steps of several radians, and the old mesh stood still for a minute at a time.
 - **Liquid Glass layering.** Two rules that iOS 26 enforces and that are easy to get wrong. A toolbar item already draws its own glass capsule, so the segmented list/map `Picker` sets `.sharedBackgroundVisibility(.hidden)` on its `ToolbarItem` to avoid a doubled background. The tab bar floats above content, so `EventsMapView` lets only the `Map` ignore the bottom safe area and keeps the selected-event card as a `ZStack` sibling inside the safe area; a UI test asserts the card stays above the tab bar.
 - **Provider glyphs:** Apple and Email are SF Symbols in the ink color; Google uses its official multicolor "G" as a vector asset (`GoogleLogo`). The Apple button must meet Apple's Sign in with Apple guidelines (or use `SignInWithAppleButton`) once real auth lands.
 

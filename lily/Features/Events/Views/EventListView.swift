@@ -27,7 +27,7 @@ struct EventListView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AuroraBackground(intensity: DesignTokens.Opacity.faint)
+                AuroraBackground(intensity: DesignTokens.Aurora.contentIntensity)
                 content
             }
             .navigationTitle(title)

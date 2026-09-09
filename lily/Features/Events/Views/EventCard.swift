@@ -34,7 +34,7 @@ struct EventCard: View {
 
 #Preview {
     ZStack {
-        AuroraBackground(intensity: DesignTokens.Opacity.faint)
+        AuroraBackground(intensity: DesignTokens.Aurora.contentIntensity)
         EventCard(event: MockEventFixtures.make(now: .now, count: 1)[0]).padding()
     }
 }
