@@ -5,7 +5,8 @@ import Testing
 struct ErrorMessageMapperTests {
     private static let allErrors: [AppError] = [
         .authCancelled, .authFailed(provider: .apple), .invalidCredentials,
-        .sessionExpired, .network, .eventsUnavailable, .unknown,
+        .sessionExpired, .network, .eventsUnavailable, .eventNotFound, .eventFull,
+        .alreadyJoined, .notAParticipant, .hostCannotLeave, .unknown,
     ]
 
     @Test(arguments: allErrors)

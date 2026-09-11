@@ -6,8 +6,9 @@ final class LilySmokeTests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        // Mirrors AppConfig.LaunchArguments (UI tests cannot import the app module).
-        app.launchArguments = ["-reset-session", "-mock-location"]
+        // Mirrors AppConfig.LaunchArguments (UI tests cannot import the app module). `-mock-events` keeps these
+        // runs independent of a running backend.
+        app.launchArguments = ["-reset-session", "-mock-location", "-mock-events"]
         app.launch()
     }
 

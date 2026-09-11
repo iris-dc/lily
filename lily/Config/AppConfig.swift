@@ -45,6 +45,41 @@ nonisolated enum AppConfig {
         static let autoDismissDelay: Duration = .seconds(4)
     }
 
+    /// The Laurel backend. Paths are relative to `baseURL`; the request shapes are documented in the README.
+    enum API {
+        /// Local Laurel instance. The simulator shares the host's loopback, so `localhost` reaches it directly
+        /// (ATS exempts unqualified host names, so plain HTTP needs no Info.plist exception).
+        static let baseURL = URL(string: "http://localhost:8080")!
+        static let requestTimeout: TimeInterval = 15
+        /// Debug builds identify the signed-in user to the local backend with `Headers.localUserID` (it runs without
+        /// Cognito). Release builds never send it; they will carry a Cognito token instead.
+        #if DEBUG
+        static let sendsLocalUserHeader = true
+        #else
+        static let sendsLocalUserHeader = false
+        #endif
+
+        enum Headers {
+            static let localUserID = "X-Local-User-Id"
+            static let accept = "Accept"
+            static let contentType = "Content-Type"
+            static let json = "application/json"
+        }
+
+        enum Paths {
+            static let events = "/api/events"
+            static let profile = "/api/profile"
+
+            static func participants(eventId: String) -> String {
+                "\(events)/\(eventId)/participants"
+            }
+        }
+
+        enum Query {
+            static let scope = "scope"
+        }
+    }
+
     /// Process arguments recognised at launch (used by UI tests).
     enum LaunchArguments {
         /// Clears any stored session so the app starts on the welcome screen.
@@ -55,6 +90,8 @@ nonisolated enum AppConfig {
         static let startAsGuest = "-start-as-guest"
         /// Makes every mock auth call fail with a network error, so UI tests can check the error popup.
         static let mockAuthFail = "-mock-auth-fail"
+        /// Serves the fixture events and accepts profile updates in memory, so UI tests and demos need no backend.
+        static let mockEvents = "-mock-events"
     }
 
     enum Logging {

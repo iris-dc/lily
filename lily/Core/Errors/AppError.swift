@@ -10,6 +10,11 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case sessionExpired
     case network
     case eventsUnavailable
+    case eventNotFound
+    case eventFull
+    case alreadyJoined
+    case notAParticipant
+    case hostCannotLeave
     case unknown
 
     /// Normalises any thrown error into an `AppError`.
@@ -18,5 +23,10 @@ nonisolated enum AppError: Error, Equatable, Sendable {
         if error is CancellationError { return .authCancelled }
         if (error as? URLError) != nil { return .network }
         return .unknown
+    }
+
+    /// The caller left mid-request (screen dismissed, task cancelled): not a failure, never shown.
+    static func isCancellation(_ error: any Error) -> Bool {
+        Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled
     }
 }
