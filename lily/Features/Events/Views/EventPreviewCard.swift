@@ -8,7 +8,7 @@ struct EventPreviewCard: View {
 
     var body: some View {
         HStack(spacing: DesignTokens.Spacing.md) {
-            Image(systemName: event.sport.symbolName)
+            Image(systemName: event.type.symbolName)
                 .font(.title3.weight(.medium))
                 .foregroundStyle(Color.lilySecondary)
                 .frame(width: DesignTokens.Layout.controlHeight, height: DesignTokens.Layout.controlHeight)
@@ -17,7 +17,7 @@ struct EventPreviewCard: View {
                 Text(event.title)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
-                Text("\(event.startsAt, format: .relative(presentation: .named)) · \(event.availabilityText)")
+                Text(caption)
                     .font(LilyTheme.Fonts.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -31,5 +31,12 @@ struct EventPreviewCard: View {
         }
         .padding(DesignTokens.Spacing.md)
         .glassEffect(.regular, in: .rect(cornerRadius: DesignTokens.Radius.md))
+    }
+
+    /// "in 3 hours · 4 spots left", plus the price when the game costs something.
+    private var caption: String {
+        var parts = [event.startsAt.formatted(.relative(presentation: .named)), event.availabilityText]
+        if !event.isFree { parts.append(event.priceText) }
+        return parts.joined(separator: AppBranding.Events.captionSeparator)
     }
 }

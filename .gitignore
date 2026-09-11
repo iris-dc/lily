@@ -17,3 +17,6 @@ build/
 # Secrets / generated AWS config (never commit)
 amplifyconfiguration.json
 amplify_outputs.json
+
+# Claude Code local settings and agent worktrees
+.claude/

@@ -7,10 +7,50 @@ nonisolated enum AppBranding {
     /// Copy shared by every event surface, so a preview card and a capacity bar can never disagree.
     enum Events {
         static let full = "Full"
-        /// Open-spot counts: `%ld` is the number of spots, and in the long form also the capacity.
+        /// Open-spot counts for compact cards: `%ld` is the number of spots.
         static let oneSpotLeftFormat = "%ld spot left"
         static let spotsLeftFormat = "%ld spots left"
-        static let spotsOfCapacityLeftFormat = "%ld of %ld spots left"
+        /// Under the capacity bar, counting the same way the bar fills: `%ld` participants of `%ld` capacity.
+        static let joinedOfCapacityFormat = "%ld of %ld joined"
+
+        /// Filter panel on Explore, dropped down from the toolbar button.
+        enum Filter {
+            static let title = "Filters"
+            static let eventType = "Event type"
+            static let anyType = "Any type"
+            /// The reference point is the user's position for now; a chosen place is the intended next step.
+            static let distance = "Distance from me"
+            static let anywhere = "Any"
+            /// Shown while the user's position is unknown: still pending, timed out or denied.
+            static let locationUnavailable = "Distance needs your location"
+            static let maxPrice = "Max price"
+            static let anyPrice = "Any"
+            static let freeOnly = "Free only"
+            static let level = "Level"
+            static let anyLevel = "Any level"
+            static let dates = "Specific dates"
+            static let from = "From"
+            static let until = "Until"
+            static let openSpotsOnly = "Open spots only"
+            static let reset = "Reset"
+            static let done = "Done"
+            static let emptyTitle = "Nothing matches"
+            static let emptyMessage = "Try fewer filters, or show all events."
+            static let showAll = "Show all events"
+            /// VoiceOver value of the toolbar button: whether any criterion is active.
+            static let activeValue = "On"
+            static let inactiveValue = "Off"
+        }
+
+        /// Optional event details on the detail screen. `free` is the model fallback in `SportEvent.priceText` and
+        /// `Price.text`; cards and the detail screen check
+        /// `isFree` first and never render it.
+        static let free = "Free"
+        /// Joins the parts of a one-line caption ("in 3 hours · 4 spots left · €5").
+        static let captionSeparator = " · "
+        static let perPersonFormat = "%@ per person"
+        static let levelFormat = "%@ level"
+        static let lookingForTitle = "Looking for"
 
         static let loadFailedTitle = "Couldn't load events"
         static let loadFailedMessage = "Pull down to try again."
@@ -19,8 +59,16 @@ nonisolated enum AppBranding {
             String(format: count == 1 ? oneSpotLeftFormat : spotsLeftFormat, count)
         }
 
-        static func spotsLeft(_ count: Int, of capacity: Int) -> String {
-            String(format: spotsOfCapacityLeftFormat, count, capacity)
+        static func joined(_ count: Int, of capacity: Int) -> String {
+            String(format: joinedOfCapacityFormat, count, capacity)
+        }
+
+        static func perPerson(_ priceText: String) -> String {
+            String(format: perPersonFormat, priceText)
+        }
+
+        static func level(_ levelName: String) -> String {
+            String(format: levelFormat, levelName)
         }
     }
 
@@ -45,6 +93,8 @@ nonisolated enum AppBranding {
         String(format: signInButtonFormat, providerName)
     }
 
+    /// VoiceOver value of a provider button while its sign-in is in flight.
+    static let signingInStatus = "Signing in"
     static let dismissAction = "Dismiss"
     static let signOutAction = "Sign out"
 

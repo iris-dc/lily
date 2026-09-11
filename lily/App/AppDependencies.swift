@@ -68,13 +68,16 @@ final class AppDependencies {
                                locationService: MockLocationService())
     }
 
+    /// Explore starts from the default filter (10 km around the user); a list without a filter button, such as
+    /// My Events, must never hide a game, so it starts from `.everything`.
     func makeEventListViewModel(scope: EventScope) -> EventListViewModel {
         EventListViewModel(scope: scope,
                            repository: eventRepository,
                            locationService: locationService,
                            changes: eventChanges,
                            errorCenter: errorCenter,
-                           logger: logger)
+                           logger: logger,
+                           initialFilter: scope == .upcoming ? EventFilter() : .everything)
     }
 
     func makeEventDetailViewModel(for event: SportEvent,

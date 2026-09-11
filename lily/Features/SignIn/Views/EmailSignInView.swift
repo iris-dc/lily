@@ -60,7 +60,6 @@ struct EmailSignInView: View {
                 Text(viewModel.mode.submitLabel)
                 if viewModel.isSubmitting { ProgressView().controlSize(.small) }
             }
-            .fullWidthButtonLabel()
         }
         .lilyProminentButton()
         .disabled(!viewModel.canSubmit)
@@ -72,10 +71,10 @@ struct EmailSignInView: View {
         } label: {
             Text(viewModel.mode.toggleLabel)
                 .frame(maxWidth: .infinity)
-                .tappableTextLabel()
+                .tappableLabel()
         }
         .font(LilyTheme.Fonts.caption)
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
         .foregroundStyle(Color.lilyAccent)
     }
 }
@@ -85,7 +84,7 @@ private struct LilyFieldStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(.horizontal, DesignTokens.Spacing.lg)
-            .frame(minHeight: DesignTokens.Layout.buttonHeight)
+            .frame(minHeight: DesignTokens.Layout.fieldHeight)
             .glassEffect(.regular, in: .capsule)
     }
 }

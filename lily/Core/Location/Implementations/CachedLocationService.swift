@@ -36,6 +36,12 @@ final class CachedLocationService: LocationService {
         remembered = RememberedFix(coordinate: coordinate, takenAt: now())
         return coordinate
     }
+
+    func forgetMissingFix() {
+        guard let remembered, remembered.coordinate == nil else { return }
+        self.remembered = nil
+        logger.debug(.cache, "Location cache invalidated: forgot the missing fix")
+    }
 }
 
 /// A result and when it was taken. A missing fix expires sooner, so a later GPS fix is picked up quickly.

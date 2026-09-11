@@ -5,6 +5,8 @@ import Observation
 @Observable
 final class EventListViewModel {
     private(set) var events: [SportEvent] = []
+    /// Narrows `events` to `visibleEvents` on device; the map and the list read the same slice.
+    private(set) var filter: EventFilter
     private(set) var isLoading = false
     /// True from a failed load until the next successful one, so the screen can say so instead of "nothing yet".
     private(set) var loadFailed = false
@@ -27,7 +29,9 @@ final class EventListViewModel {
          changes: EventChangeTracker,
          errorCenter: ErrorCenter,
          logger: any Logging,
-         now: @escaping () -> Date = { .now }) {
+         now: @escaping () -> Date = { .now },
+         initialFilter: EventFilter = EventFilter()) {
+        self.filter = initialFilter
         self.scope = scope
         self.repository = repository
         self.locationService = locationService
@@ -40,10 +44,42 @@ final class EventListViewModel {
     /// The very first load, before any result exists. Later loads keep the current content (and its refresh spinner) on screen.
     var isInitialLoad: Bool { isLoading && lastLoadedAt == nil && !loadFailed }
 
+    /// Distance is judged from the user's position; while that is unknown the distance criterion is skipped.
+    var visibleEvents: [SportEvent] { events.filter { filter.matches($0, from: userLocation) } }
+
+    /// Events were loaded but the filter hides all of them, so the screen offers to clear it instead of saying "nothing yet".
+    var isEverythingFilteredOut: Bool { !events.isEmpty && visibleEvents.isEmpty }
+
+    /// Types in the loaded events, plus any selected type a reload has since dropped so it can still be deselected,
+    /// in the canonical `EventType` order.
+    var availableTypes: [EventType] {
+        let present = Set(events.map(\.type))
+        return EventType.allCases.filter { present.contains($0) || filter.includes($0) }
+    }
+
+    func toggleType(_ type: EventType) {
+        updateFilter { $0.toggle(type) }
+    }
+
+    /// The one way views change the filter, so every change is logged and the filter stays `private(set)`.
+    func updateFilter(_ change: (inout EventFilter) -> Void) {
+        change(&filter)
+        logger.debug(.events, "Filter changed; active: \(filter.isActive), visible: \(visibleEvents.count) of \(events.count)")
+    }
+
+    /// Back to the defaults (which still limit distance).
+    func clearFilter() {
+        updateFilter { $0.clear() }
+    }
+
+    /// Lifts every criterion, the default radius included: the way out when the defaults alone hide every event.
+    func showEverything() {
+        updateFilter { $0 = .everything }
+    }
+
     /// Distance from the user, formatted for the current locale, or `nil` while location is unknown.
     func distanceText(for event: SportEvent) -> String? {
-        event.distance(from: userLocation)?
-            .formatted(.measurement(width: .abbreviated, usage: .road))
+        event.distance(from: userLocation)?.roadText
     }
 
     /// Loads once per `AppConfig.Events.listStaleAfter`, or sooner when another screen changed an event meanwhile,
@@ -98,6 +134,14 @@ final class EventListViewModel {
         guard userLocation == nil else { return }
         userLocation = await locationService.currentLocation()
         logger.info(.location, userLocation == nil ? "No user location" : "User location available")
+    }
+
+    /// For moments when permission may have changed (the app came back to the foreground): a remembered "no fix"
+    /// is dropped first, so the retry really asks CoreLocation instead of hitting the cache.
+    func retryUserLocationIfMissing() async {
+        guard userLocation == nil else { return }
+        locationService.forgetMissingFix()
+        await loadUserLocation()
     }
 
     private var isStale: Bool {
