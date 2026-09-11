@@ -45,6 +45,8 @@ nonisolated enum AppBranding {
         String(format: signInButtonFormat, providerName)
     }
 
+    /// VoiceOver value of a provider button while its sign-in is in flight.
+    static let signingInStatus = "Signing in"
     static let dismissAction = "Dismiss"
     static let signOutAction = "Sign out"
 

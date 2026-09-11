@@ -28,13 +28,9 @@ struct EventDetailView: View {
 
     private var joinButton: some View {
         VStack(spacing: DesignTokens.Spacing.sm) {
-            Button {
-            } label: {
-                Text(event.isFull ? AppBranding.eventFullAction : AppBranding.joinAction)
-                    .fullWidthButtonLabel()
-            }
-            .lilyProminentButton()
-            .disabled(true)
+            Button(event.isFull ? AppBranding.eventFullAction : AppBranding.joinAction) {}
+                .lilyProminentButton()
+                .disabled(true)
             Text(AppBranding.joinComingSoon)
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)

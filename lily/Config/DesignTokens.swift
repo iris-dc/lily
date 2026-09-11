@@ -28,7 +28,9 @@ nonisolated enum DesignTokens {
         /// Horizontal inset of screen content, equal to the leading margin of a large navigation title on iPhone,
         /// so text laid directly on a screen lines up with its title.
         static let screenMargin: CGFloat = Spacing.lg
-        static let buttonHeight: CGFloat = 48
+        /// Minimum height of a glass text field: the height of a `.large` system button, so a field and the submit
+        /// button under it read as one set. Buttons themselves take their size from `controlSize`, not from here.
+        static let fieldHeight: CGFloat = 50
         static let controlHeight: CGFloat = 44
         static let swipeDismissDistance: CGFloat = 20
         static let chipVerticalPadding: CGFloat = 6
@@ -133,7 +135,7 @@ nonisolated enum DesignTokens {
         static let error = "exclamationmark.circle.fill"
         static let dismiss = "xmark"
         static let apple = "apple.logo"
-        static let email = "envelope"
+        static let email = "envelope.fill"
         static let explore = "sparkles"
         static let myEvents = "calendar"
         static let addEvent = "calendar.badge.plus"
