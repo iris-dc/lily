@@ -5,11 +5,11 @@ nonisolated struct EventLocation: Hashable, Codable, Sendable {
     let coordinate: Coordinate
 }
 
-/// Decodes the backend's `Event` directly. The only renamed field is `sport`, which the API calls `type`.
+/// Decodes the backend's `Event` directly: same keys, same optionality.
 nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     let id: String
     let title: String
-    let sport: SportType
+    let type: EventType
     let startsAt: Date
     let location: EventLocation
     let capacity: Int
@@ -19,25 +19,31 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     let hostUserId: String?
     /// Whether the caller participates, as the backend saw it; `nil` when nobody has said (fixtures).
     let isJoined: Bool?
-
-    private enum CodingKeys: String, CodingKey {
-        case id, title, startsAt, location, capacity, participantCount, hostName, hostUserId, isJoined
-        case sport = "type"
-    }
+    /// Optional details a host may add. All decode as `nil` when a payload omits them, so older data keeps loading.
+    let description: String?
+    /// Who the host still needs, in their words ("two defenders, one keeper").
+    let lookingFor: String?
+    let skillLevel: SkillLevel?
+    /// `nil` means free.
+    let price: Price?
 
     init(id: String,
          title: String,
-         sport: SportType,
+         type: EventType,
          startsAt: Date,
          location: EventLocation,
          capacity: Int,
          participantCount: Int,
          hostName: String,
          hostUserId: String? = nil,
-         isJoined: Bool? = nil) {
+         isJoined: Bool? = nil,
+         description: String? = nil,
+         lookingFor: String? = nil,
+         skillLevel: SkillLevel? = nil,
+         price: Price? = nil) {
         self.id = id
         self.title = title
-        self.sport = sport
+        self.type = type
         self.startsAt = startsAt
         self.location = location
         self.capacity = capacity
@@ -45,6 +51,10 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
         self.hostName = hostName
         self.hostUserId = hostUserId
         self.isJoined = isJoined
+        self.description = description
+        self.lookingFor = lookingFor
+        self.skillLevel = skillLevel
+        self.price = price
     }
 
     var locationName: String { location.name }
@@ -53,6 +63,11 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     var isNearlyFull: Bool { !isFull && fillRatio >= AppConfig.Events.nearlyFullRatio }
     var fillRatio: Double { capacity > 0 ? min(1, Double(participantCount) / Double(capacity)) : 0 }
     var participates: Bool { isJoined ?? false }
+    var isFree: Bool { price?.isFree ?? true }
+    /// "Free" or the per-person amount; the one formatter for every surface that shows a price. Surfaces check `isFree`
+    /// first and show nothing for free games, so "Free" is the model fallback, not screen copy (the filter's price cap
+    /// treats 0 as free only).
+    var priceText: String { price?.text ?? AppBranding.Events.free }
 
     func isHosted(by userId: String?) -> Bool {
         hostUserId != nil && hostUserId == userId
@@ -67,14 +82,18 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     func updatingParticipation(count: Int, isJoined: Bool) -> SportEvent {
         SportEvent(id: id,
                    title: title,
-                   sport: sport,
+                   type: type,
                    startsAt: startsAt,
                    location: location,
                    capacity: capacity,
                    participantCount: count,
                    hostName: hostName,
                    hostUserId: hostUserId,
-                   isJoined: isJoined)
+                   isJoined: isJoined,
+                   description: description,
+                   lookingFor: lookingFor,
+                   skillLevel: skillLevel,
+                   price: price)
     }
 }
 
@@ -85,9 +104,9 @@ extension SportEvent {
         isFull ? AppBranding.Events.full : AppBranding.Events.spotsLeft(spotsLeft)
     }
 
-    /// Long form under the capacity bar: "Full" or "3 of 10 spots left".
+    /// Long form under the capacity bar: "Full" or "7 of 10 joined", counting the way the bar fills.
     var capacityText: String {
-        isFull ? AppBranding.Events.full : AppBranding.Events.spotsLeft(spotsLeft, of: capacity)
+        isFull ? AppBranding.Events.full : AppBranding.Events.joined(participantCount, of: capacity)
     }
 }
 

@@ -111,6 +111,32 @@ final class LilySmokeTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Apple Tester"].waitForExistence(timeout: 5))
     }
 
+    @MainActor
+    func testFilterPanelNarrowsListAndMap() {
+        relaunchAsGuest()
+        XCTAssertTrue(app.staticTexts["Pickup at the Cage"].waitForExistence(timeout: 5))
+
+        app.buttons["events-filter"].tap()
+        let football = app.buttons["filter-type-football"]
+        XCTAssertTrue(football.waitForExistence(timeout: 5), "the filter panel should drop down")
+        football.tap()
+        app.buttons["Done"].tap()
+        XCTAssertTrue(app.staticTexts["Pickup at the Cage"].waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Sunset 5-a-side"].exists)
+
+        showMap()
+        // Annotations are not descendants of the map element, so query the whole app.
+        XCTAssertTrue(app.descendants(matching: .any)["Sunset 5-a-side"].firstMatch.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.descendants(matching: .any)["Pickup at the Cage"].firstMatch.exists)
+
+        app.buttons["events-filter"].tap()
+        let reset = app.buttons["Reset"]
+        XCTAssertTrue(reset.waitForExistence(timeout: 5))
+        reset.tap()
+        app.buttons["Done"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["Pickup at the Cage"].firstMatch.waitForExistence(timeout: 10))
+    }
+
     // MARK: - Helpers
 
     @MainActor

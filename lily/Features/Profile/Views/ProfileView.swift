@@ -38,10 +38,8 @@ struct ProfileView: View {
                     Text(email).font(.subheadline).foregroundStyle(.secondary)
                 }
             }
-            Button { Task { await session.signOut() } } label: {
-                Text(AppBranding.signOutAction).fullWidthButtonLabel()
-            }
-            .lilyGlassButton()
+            Button(AppBranding.signOutAction) { Task { await session.signOut() } }
+                .lilyGlassButton()
         }
     }
 
@@ -52,11 +50,9 @@ struct ProfileView: View {
             Text(AppBranding.guestProfileMessage)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Button { isSignInPresented = true } label: {
-                Text(AppBranding.signInAction).fullWidthButtonLabel()
-            }
-            .lilyProminentButton()
-            .padding(.top, DesignTokens.Spacing.sm)
+            Button(AppBranding.signInAction) { isSignInPresented = true }
+                .lilyProminentButton()
+                .padding(.top, DesignTokens.Spacing.sm)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

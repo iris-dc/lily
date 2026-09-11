@@ -1,7 +1,7 @@
 import Foundation
 
-/// The backend's `type` field, value for value. `other` covers sports without a glyph of their own.
-nonisolated enum SportType: String, CaseIterable, Codable, Sendable {
+/// What kind of game an event is. `other` covers anything the list does not name yet.
+nonisolated enum EventType: String, CaseIterable, Codable, Sendable {
     case football, basketball, tennis, padel, running, volleyball, cycling, climbing, other
 
     var displayName: String { rawValue.capitalized }

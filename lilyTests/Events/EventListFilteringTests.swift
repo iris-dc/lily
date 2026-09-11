@@ -1,0 +1,149 @@
+import Foundation
+import Testing
+@testable import lily
+
+/// The filter as seen through the view model: what the list and map render, which types the panel offers, and how the
+/// distance criterion waits for the user's position.
+@MainActor
+struct EventListFilteringTests {
+    private func makeViewModel(_ repository: FakeEventRepository) -> (EventListViewModel, ErrorCenter) {
+        let center = ErrorCenter(logger: SpyLogger())
+        let viewModel = EventListViewModel(scope: .upcoming,
+                                           repository: repository,
+                                           locationService: MockLocationService(coordinate: nil),
+                                           changes: EventChangeTracker(),
+                                           errorCenter: center,
+                                           logger: SpyLogger())
+        return (viewModel, center)
+    }
+
+    @Test func visibleEventsFollowTheFilterWhileEventsStayComplete() async {
+        let repository = FakeEventRepository()
+        let events = MockEventFixtures.make(now: .now, count: 4)
+        repository.result = .success(events)
+        let (viewModel, _) = makeViewModel(repository)
+        await viewModel.load()
+
+        viewModel.toggleType(.football)
+        #expect(viewModel.visibleEvents.map(\.type) == [.football])
+        #expect(viewModel.events == events)
+        #expect(!viewModel.isEverythingFilteredOut)
+
+        viewModel.clearFilter()
+        #expect(viewModel.visibleEvents == events)
+    }
+
+    @Test func availableTypesAreTheLoadedOnesInCanonicalOrder() async {
+        let repository = FakeEventRepository()
+        let events = MockEventFixtures.make(now: .now, count: 8).filter { [.padel, .football, .climbing].contains($0.type) }
+        repository.result = .success(events.reversed())
+        let (viewModel, _) = makeViewModel(repository)
+        await viewModel.load()
+
+        #expect(viewModel.availableTypes == [.football, .padel, .climbing])
+    }
+
+    @Test func everythingFilteredOutOnlyWhenEventsExistButNoneMatch() async {
+        let repository = FakeEventRepository()
+        repository.result = .success(MockEventFixtures.make(now: .now, count: 1))
+        let (viewModel, _) = makeViewModel(repository)
+        #expect(!viewModel.isEverythingFilteredOut)
+
+        await viewModel.load()
+        viewModel.toggleType(.climbing)
+        #expect(viewModel.isEverythingFilteredOut)
+        #expect(viewModel.visibleEvents.isEmpty)
+
+        viewModel.clearFilter()
+        #expect(!viewModel.isEverythingFilteredOut)
+    }
+
+    @Test func filterSurvivesAReload() async {
+        let repository = FakeEventRepository()
+        repository.result = .success(MockEventFixtures.make(now: .now, count: 3))
+        let (viewModel, _) = makeViewModel(repository)
+        await viewModel.load()
+        viewModel.toggleType(.basketball)
+
+        await viewModel.load()
+        #expect(viewModel.filter.includes(.basketball))
+        #expect(viewModel.visibleEvents.map(\.type) == [.basketball])
+    }
+
+    @Test func availableTypesKeepASelectedTypeThatAReloadDropped() async {
+        let repository = FakeEventRepository()
+        let all = MockEventFixtures.make(now: .now, count: 8)
+        repository.result = .success(all.filter { [.football, .basketball].contains($0.type) })
+        let (viewModel, _) = makeViewModel(repository)
+        await viewModel.load()
+        viewModel.toggleType(.basketball)
+
+        repository.result = .success(all.filter { $0.type == .football })
+        await viewModel.load()
+
+        #expect(viewModel.availableTypes == [.football, .basketball])
+        #expect(viewModel.isEverythingFilteredOut)
+        viewModel.toggleType(.basketball)
+        #expect(viewModel.visibleEvents.map(\.type) == [.football])
+    }
+
+    @Test func distanceCriterionUsesTheUserPositionOnceKnown() async {
+        let repository = FakeEventRepository()
+        repository.result = .success(MockEventFixtures.make(now: .now, count: 8))
+        let center = ErrorCenter(logger: SpyLogger())
+        let viewModel = EventListViewModel(scope: .upcoming,
+                                           repository: repository,
+                                           locationService: MockLocationService(coordinate: AppConfig.Location.mockCenter),
+                                           changes: EventChangeTracker(),
+                                           errorCenter: center,
+                                           logger: SpyLogger())
+        await viewModel.load()
+        viewModel.updateFilter { $0.maxDistanceMeters = 2_500 }
+        #expect(viewModel.visibleEvents.count == 8, "no position yet, so distance is not judged")
+
+        await viewModel.loadUserLocation()
+        #expect(viewModel.visibleEvents.count < 8)
+        #expect(viewModel.visibleEvents.allSatisfy {
+            $0.location.coordinate.distance(to: AppConfig.Location.mockCenter) <= 2_500
+        })
+    }
+
+    /// My Events has no filter button, so it must start from `.everything` and never hide a joined game far away.
+    @Test func aListStartedFromEverythingShowsFarAwayGames() async {
+        let repository = FakeEventRepository()
+        repository.result = .success(MockEventFixtures.make(now: .now, count: 3))
+        let far = Coordinate(latitude: AppConfig.Location.mockCenter.latitude + 0.5,
+                             longitude: AppConfig.Location.mockCenter.longitude)
+        let viewModel = EventListViewModel(scope: .joined,
+                                           repository: repository,
+                                           locationService: MockLocationService(coordinate: far),
+                                           changes: EventChangeTracker(),
+                                           errorCenter: ErrorCenter(logger: SpyLogger()),
+                                           logger: SpyLogger(),
+                                           initialFilter: .everything)
+        await viewModel.load()
+        await viewModel.loadUserLocation()
+        #expect(viewModel.visibleEvents.count == 3)
+        #expect(!viewModel.isEverythingFilteredOut)
+    }
+
+    @Test func showEverythingIsTheWayOutWhenTheDefaultsHideEveryGame() async {
+        let repository = FakeEventRepository()
+        repository.result = .success(MockEventFixtures.make(now: .now, count: 3))
+        let far = Coordinate(latitude: AppConfig.Location.mockCenter.latitude + 0.5,
+                             longitude: AppConfig.Location.mockCenter.longitude)
+        let viewModel = EventListViewModel(scope: .upcoming,
+                                           repository: repository,
+                                           locationService: MockLocationService(coordinate: far),
+                                           changes: EventChangeTracker(),
+                                           errorCenter: ErrorCenter(logger: SpyLogger()),
+                                           logger: SpyLogger())
+        await viewModel.load()
+        await viewModel.loadUserLocation()
+        #expect(viewModel.isEverythingFilteredOut)
+        #expect(!viewModel.filter.isActive, "the defaults alone hide everything, so Reset would not help")
+
+        viewModel.showEverything()
+        #expect(viewModel.visibleEvents.count == 3)
+    }
+}

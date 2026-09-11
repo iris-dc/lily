@@ -82,4 +82,11 @@ struct AppDependenciesTests {
         await dependencies.sessionController.signOut()
         #expect(dependencies.identity.currentUserID == nil)
     }
+
+    /// My Events has no filter button, so it must never hide a game; Explore starts from the default filter.
+    @Test func myEventsStartsFromEverythingAndExploreFromTheDefaults() {
+        let dependencies = AppDependencies.makeMock()
+        #expect(dependencies.makeEventListViewModel(scope: .joined).filter == .everything)
+        #expect(dependencies.makeEventListViewModel(scope: .upcoming).filter == EventFilter())
+    }
 }

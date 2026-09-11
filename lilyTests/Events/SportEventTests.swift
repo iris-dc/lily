@@ -5,7 +5,7 @@ import Testing
 struct SportEventTests {
     @Test func fixturesLieWithinTheDemoRadius() {
         let center = AppConfig.Location.mockCenter
-        for event in MockEventFixtures.make(now: .now, count: 8) {
+        for event in MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize) {
             #expect(event.location.coordinate.distance(to: center) < 5_000)
         }
     }
@@ -23,16 +23,7 @@ struct SportEventTests {
     }
 
     private func makeEvent(capacity: Int, participants: Int) -> SportEvent {
-        SportEvent(
-            id: "e",
-            title: "t",
-            sport: .tennis,
-            startsAt: .now,
-            location: EventLocation(name: "l", coordinate: AppConfig.Location.mockCenter),
-            capacity: capacity,
-            participantCount: participants,
-            hostName: "h"
-        )
+        .fixture(capacity: capacity, participants: participants)
     }
 
     @Test func capacityMath() {
@@ -69,11 +60,11 @@ struct SportEventTests {
 
         let oneLeft = makeEvent(capacity: 4, participants: 3)
         #expect(oneLeft.availabilityText == "1 spot left")
-        #expect(oneLeft.capacityText == "1 of 4 spots left")
+        #expect(oneLeft.capacityText == "3 of 4 joined")
 
         let manyLeft = makeEvent(capacity: 4, participants: 1)
         #expect(manyLeft.availabilityText == "3 spots left")
-        #expect(manyLeft.capacityText == "3 of 4 spots left")
+        #expect(manyLeft.capacityText == "1 of 4 joined")
     }
 
     @Test func participationDefaultsToNotJoined() {
@@ -86,16 +77,7 @@ struct SportEventTests {
         #expect(!fixture.isHosted(by: nil))
         #expect(!fixture.isHosted(by: "u-1"))
 
-        let hosted = SportEvent(id: "e",
-                                title: "t",
-                                sport: .tennis,
-                                startsAt: .now,
-                                location: fixture.location,
-                                capacity: 4,
-                                participantCount: 1,
-                                hostName: "h",
-                                hostUserId: "u-1",
-                                isJoined: true)
+        let hosted = SportEvent.fixture(hostUserId: "u-1", isJoined: true)
         #expect(hosted.isHosted(by: "u-1"))
         #expect(!hosted.isHosted(by: "u-2"))
         #expect(!hosted.isHosted(by: nil))
@@ -117,7 +99,7 @@ struct SportEventCodingTests {
     @Test func decodesTheContractEvent() throws {
         let event = try decoder.decode(SportEvent.self, from: Data(ContractSamples.event.utf8))
         #expect(event.id == "evt_01J")
-        #expect(event.sport == .football)
+        #expect(event.type == .football)
         #expect(event.startsAt == Date(timeIntervalSince1970: 1_789_318_800))
         #expect(event.location.coordinate == Coordinate(latitude: 52.529, longitude: 13.387))
         #expect(event.capacity == 10)
@@ -125,21 +107,29 @@ struct SportEventCodingTests {
         #expect(event.hostUserId == "seed-marta")
         #expect(event.hostName == "Marta")
         #expect(event.isJoined == false)
+        #expect(event.description == "Bring both colours")
+        #expect(event.lookingFor == nil)
+        #expect(event.skillLevel == .intermediate)
+        #expect(event.price == Price(amount: 7.5, currencyCode: "EUR"))
     }
 
-    /// Optional fields are absent rather than `null`, and the fields the app does not use yet are ignored.
+    /// Optional fields are absent rather than `null`.
     @Test func optionalFieldsMayBeAbsent() throws {
         let event = try decoder.decode(SportEvent.self, from: Data(ContractSamples.minimalEvent.utf8))
         #expect(event.hostUserId == nil)
         #expect(event.isJoined == nil)
         #expect(!event.participates)
-        #expect(event.sport == .other)
+        #expect(event.type == .other)
+        #expect(event.description == nil)
+        #expect(event.price == nil)
     }
 
-    @Test func encodesTheSportAsType() throws {
+    /// The wire keys are the property names; `type` in particular must not drift back to "sport".
+    @Test func wireKeysMatchTheContract() throws {
         let event = MockEventFixtures.make(now: .now, count: 1)[0]
         let json = try #require(String(bytes: APIJSONCoding.makeEncoder().encode(event), encoding: .utf8))
         #expect(json.contains(#""type":"football""#))
+        #expect(json.contains(#""participantCount":6"#))
         #expect(!json.contains(#""sport""#))
     }
 }

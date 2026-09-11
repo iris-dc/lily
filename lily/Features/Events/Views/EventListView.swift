@@ -1,22 +1,26 @@
 import SwiftUI
 
-/// One screen for Explore and My Events: a list, optionally switchable to a map.
+/// One screen for Explore and My Events: a list, optionally switchable to a map and narrowable through a filter panel dropped down from the toolbar.
 struct EventListView: View {
     let title: String
     let emptyState: EmptyStateView
     let showsMap: Bool
+    let filterable: Bool
     private let dependencies: AppDependencies
     @State private var presentation: EventsPresentation = .list
     @State private var viewModel: EventListViewModel
+    @Environment(\.scenePhase) private var scenePhase
 
     init(title: String,
          emptyState: EmptyStateView,
          showsMap: Bool = false,
+         filterable: Bool = false,
          scope: EventScope,
          dependencies: AppDependencies) {
         self.title = title
         self.emptyState = emptyState
         self.showsMap = showsMap
+        self.filterable = filterable
         self.dependencies = dependencies
         _viewModel = State(initialValue: dependencies.makeEventListViewModel(scope: scope))
     }
@@ -33,6 +37,9 @@ struct EventListView: View {
                 EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event, onChange: viewModel.replace))
             }
             .toolbar {
+                if filterable {
+                    ToolbarItem(placement: .topBarTrailing) { EventFilterButton(viewModel: viewModel) }
+                }
                 if showsMap {
                     // iOS 26 gives every toolbar item its own glass; the segmented picker already draws one.
                     ToolbarItem(placement: .topBarTrailing) { presentationPicker }
@@ -42,6 +49,11 @@ struct EventListView: View {
         }
         .task { await viewModel.loadIfStale() }
         .task { await viewModel.loadUserLocation() }
+        // Coming back to the foreground is the one moment location permission may have changed (Settings), so a
+        // missing position is asked for again; a known one is kept. Foregrounding is rare, so this is cheap.
+        .onChange(of: scenePhase) {
+            if scenePhase == .active { Task { await viewModel.retryUserLocationIfMissing() } }
+        }
     }
 
     private var presentationPicker: some View {
@@ -65,6 +77,8 @@ struct EventListView: View {
                 (viewModel.loadFailed ? loadFailedState : emptyState)
                     .containerRelativeFrame(.vertical)
             }
+        } else if viewModel.isEverythingFilteredOut {
+            refreshableScroll { filteredOutState.containerRelativeFrame(.vertical) }
         } else if presentation == .map {
             EventsMapView(viewModel: viewModel)
         } else {
@@ -74,7 +88,7 @@ struct EventListView: View {
 
     private var eventList: some View {
         LazyVStack(spacing: DesignTokens.Spacing.md) {
-            ForEach(viewModel.events) { event in
+            ForEach(viewModel.visibleEvents) { event in
                 NavigationLink(value: event) {
                     EventCard(event: event, distance: viewModel.distanceText(for: event))
                 }
@@ -83,6 +97,15 @@ struct EventListView: View {
         }
         .padding(.horizontal, DesignTokens.Layout.screenMargin)
         .padding(.bottom, DesignTokens.Spacing.xxl)
+    }
+
+    /// The defaults alone (10 km) can hide every event while nothing is "active", so the way out widens to everything.
+    private var filteredOutState: EmptyStateView {
+        EmptyStateView(symbolName: DesignTokens.Symbols.filter,
+                       title: AppBranding.Events.Filter.emptyTitle,
+                       message: AppBranding.Events.Filter.emptyMessage,
+                       actionTitle: AppBranding.Events.Filter.showAll,
+                       action: viewModel.showEverything)
     }
 
     private var loadFailedState: EmptyStateView {

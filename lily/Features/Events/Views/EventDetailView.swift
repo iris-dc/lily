@@ -14,9 +14,15 @@ struct EventDetailView: View {
         ContentScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                    SportChip(sport: event.sport)
+                    EventTypeChip(type: event.type)
                     ScreenTitle(text: event.title, subtitle: AppBranding.hostedByTitle(for: event.hostName))
-                    GlassCard { details }
+                    if let description = event.description {
+                        Text(description).font(.body)
+                    }
+                    facts
+                    if let lookingFor = event.lookingFor {
+                        lookingForCard(lookingFor)
+                    }
                     participationControl
                 }
                 .padding(DesignTokens.Spacing.xl)
@@ -25,11 +31,33 @@ struct EventDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var details: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-            Label(event.startsAt.formatted(date: .abbreviated, time: .shortened), systemImage: DesignTokens.Symbols.time)
-            Label(event.locationName, systemImage: DesignTokens.Symbols.location)
-            CapacityBar(event: event)
+    /// Time, place, price and level, then how full it is. Price only when the game costs something, level only when set.
+    private var facts: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+                Label(event.startsAt.formatted(date: .abbreviated, time: .shortened), systemImage: DesignTokens.Symbols.time)
+                Label(event.locationName, systemImage: DesignTokens.Symbols.location)
+                if !event.isFree {
+                    Label(AppBranding.Events.perPerson(event.priceText), systemImage: DesignTokens.Symbols.price)
+                }
+                if let level = event.skillLevel {
+                    Label(AppBranding.Events.level(level.displayName), systemImage: DesignTokens.Symbols.level)
+                }
+                CapacityBar(event: event)
+            }
+            .labelStyle(.iconColumn)
+        }
+    }
+
+    private func lookingForCard(_ text: String) -> some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+                Label(AppBranding.Events.lookingForTitle, systemImage: DesignTokens.Symbols.lookingFor)
+                    .labelStyle(.iconColumn)
+                    .font(LilyTheme.Fonts.caption)
+                    .foregroundStyle(.secondary)
+                Text(text).font(.body)
+            }
         }
     }
 
@@ -54,18 +82,21 @@ struct EventDetailView: View {
         }
     }
 
-    /// Full-width action with a spinner beside its title while the request runs. Without an action it is disabled.
+    /// Action with a spinner beside its title while the request runs. Without an action it is disabled. The caller
+    /// applies the button style, which also sets the full width and height (see the Buttons note in CLAUDE.md).
     private func actionButton(_ title: String, action: (() async -> Void)? = nil) -> some View {
         Button {
             Task { await action?() }
         } label: {
-            HStack(spacing: DesignTokens.Spacing.md) {
+            HStack(spacing: DesignTokens.Spacing.sm) {
                 Text(title)
                 if viewModel.isBusy {
-                    ProgressView().controlSize(.small)
+                    // The button's `.large` control size would inflate the spinner past the text height.
+                    ProgressView()
+                        .controlSize(.regular)
+                        .accessibilityHidden(true)
                 }
             }
-            .fullWidthButtonLabel()
         }
         .disabled(action == nil || viewModel.isBusy)
     }

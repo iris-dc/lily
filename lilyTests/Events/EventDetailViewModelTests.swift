@@ -50,16 +50,7 @@ struct EventDetailViewModelTests {
                                   participants: Int,
                                   hostUserId: String? = "host",
                                   isJoined: Bool? = false) -> SportEvent {
-        SportEvent(id: "e",
-                   title: "t",
-                   sport: .tennis,
-                   startsAt: .now,
-                   location: EventLocation(name: "l", coordinate: AppConfig.Location.mockCenter),
-                   capacity: capacity,
-                   participantCount: participants,
-                   hostName: "h",
-                   hostUserId: hostUserId,
-                   isJoined: isJoined)
+        .fixture(capacity: capacity, participants: participants, hostUserId: hostUserId, isJoined: isJoined)
     }
 
     @Test func participationFollowsTheCallerAndTheEvent() {
