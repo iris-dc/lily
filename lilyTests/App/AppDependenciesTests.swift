@@ -11,7 +11,7 @@ struct AppDependenciesTests {
 
     @Test func resetSessionLaunchArgumentClearsStoredSession() {
         let defaults = makeDefaults()
-        let store = UserDefaultsSessionStore(defaults: defaults)
+        let store = UserDefaultsSessionStore(defaults: defaults, logger: SpyLogger())
         store.save(.guest)
 
         _ = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession], defaults: defaults)
@@ -21,7 +21,7 @@ struct AppDependenciesTests {
 
     @Test func defaultLaunchKeepsStoredSession() {
         let defaults = makeDefaults()
-        let store = UserDefaultsSessionStore(defaults: defaults)
+        let store = UserDefaultsSessionStore(defaults: defaults, logger: SpyLogger())
         store.save(.guest)
 
         _ = AppDependencies.makeDefault(arguments: [], defaults: defaults)
@@ -34,13 +34,23 @@ struct AppDependenciesTests {
         _ = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
                                                     AppConfig.LaunchArguments.startAsGuest],
                                         defaults: defaults)
-        #expect(UserDefaultsSessionStore(defaults: defaults).load() == .guest)
+        #expect(UserDefaultsSessionStore(defaults: defaults, logger: SpyLogger()).load() == .guest)
+    }
+
+    @Test func mockAuthFailLaunchArgumentMakesSignInFailWithAPopup() async {
+        let failing = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
+                                                              AppConfig.LaunchArguments.mockAuthFail],
+                                                  defaults: makeDefaults())
+        let signedIn = await failing.sessionController.signIn(with: .apple)
+        #expect(!signedIn)
+        #expect(failing.errorCenter.current != nil)
+        #expect(failing.sessionController.state.user == nil)
     }
 
     @Test func mockLocationLaunchArgumentSelectsMockService() {
         let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockLocation], defaults: makeDefaults())
         #expect(mocked.locationService is MockLocationService)
         let real = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
-        #expect(real.locationService is CoreLocationService)
+        #expect((real.locationService as? CachedLocationService)?.upstream is CoreLocationService)
     }
 }

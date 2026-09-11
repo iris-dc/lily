@@ -16,7 +16,7 @@ struct CapacityBar: View {
                     }
                 }
                 .frame(height: DesignTokens.Layout.capacityBarHeight)
-            Text(event.isFull ? "Full" : "\(event.spotsLeft) of \(event.capacity) spots left")
+            Text(event.capacityText)
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
         }

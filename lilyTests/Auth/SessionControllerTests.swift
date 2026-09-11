@@ -30,6 +30,17 @@ struct SessionControllerTests {
         #expect(harness.controller.state == .signedOut)
     }
 
+    /// The store is a hint: a stale `.signedIn` the auth service no longer recognises must not sign the user in.
+    @Test func restoreIgnoresStaleStoredSignInWhenAuthServiceHasNoSession() async {
+        let harness = SessionHarness()
+        harness.auth.restoreResult = .success(nil)
+        harness.store.stored = .signedIn(TestFixtures.session)
+
+        await harness.controller.restore()
+
+        #expect(harness.controller.state == .signedOut)
+    }
+
     @Test func restoreFailureFallsBackToStoredChoice() async {
         let harness = SessionHarness()
         harness.auth.restoreResult = .failure(.network)
@@ -39,6 +50,17 @@ struct SessionControllerTests {
 
         #expect(harness.controller.state == .guest)
         #expect(harness.errorCenter.current == nil)
+    }
+
+    @Test func restoreFailureWithNothingStoredSignsOut() async {
+        let harness = SessionHarness()
+        harness.auth.restoreResult = .failure(.network)
+
+        await harness.controller.restore()
+
+        #expect(harness.controller.state == .signedOut)
+        #expect(harness.errorCenter.current == nil)
+        #expect(harness.logger.messages(in: .auth).contains { $0.contains("restore failed") })
     }
 
     @Test func signInSuccessUpdatesStateAndLogs() async {
@@ -79,7 +101,7 @@ struct SessionControllerTests {
         let success = await harness.controller.signUp(email: "a@b.co", password: "long-enough")
 
         #expect(success)
-        #expect(harness.auth.signInProviders == [.email])
+        #expect(harness.auth.signInProviders == [.email(EmailCredentials(email: "a@b.co", password: "long-enough"))])
         #expect(harness.controller.state == .signedIn(TestFixtures.user))
     }
 
@@ -91,6 +113,7 @@ struct SessionControllerTests {
 
         #expect(!success)
         #expect(harness.auth.signInProviders.isEmpty)
+        #expect(harness.controller.authenticatingProvider == nil)
         #expect(harness.errorCenter.current?.error == .invalidCredentials)
     }
 
@@ -119,37 +142,77 @@ struct SessionControllerTests {
 /// Runs the controller against the real mock auth service to cover behaviour the scripted fake cannot.
 @MainActor
 struct SessionControllerWithMockAuthTests {
-    private func makeController(delay: Duration) -> (SessionController, SpyLogger) {
+    @MainActor private struct Harness {
         let store = InMemorySessionStore()
         let logger = SpyLogger()
-        let controller = SessionController(authService: MockAuthService(delay: delay, store: store),
+        let controller: SessionController
+
+        init(delay: Duration) {
+            controller = SessionController(authService: MockAuthService(delay: delay, store: store),
                                            sessionStore: store,
                                            errorCenter: ErrorCenter(logger: logger),
                                            logger: logger)
-        return (controller, logger)
+        }
     }
 
-    @Test func onlyOneSignInRunsAtATime() async {
-        let (controller, _) = makeController(delay: .milliseconds(200))
+    /// Long enough that a second call started right after the first is still overlapping it.
+    private let networkDelay: Duration = .milliseconds(200)
 
-        async let apple = controller.signIn(with: .apple)
-        async let google = controller.signIn(with: .google)
+    @Test func onlyOneSignInRunsAtATime() async {
+        let harness = Harness(delay: networkDelay)
+
+        async let apple = harness.controller.signIn(with: .apple)
+        async let google = harness.controller.signIn(with: .google)
         let (appleSucceeded, googleSucceeded) = await (apple, google)
 
         #expect(appleSucceeded != googleSucceeded)
-        #expect(controller.authenticatingProvider == nil)
-        #expect(controller.state.user != nil)
+        #expect(harness.controller.authenticatingProvider == nil)
+        #expect(harness.controller.state.user != nil)
+        #expect(harness.logger.messages(in: .auth).contains { $0.contains("Ignored authentication") })
+    }
+
+    /// A provider tap landing during the sign-up network call must be rejected, not swallow the sign-up.
+    @Test func signUpHoldsTheAuthenticationSlotForItsWholeDuration() async {
+        let harness = Harness(delay: networkDelay)
+        let credentials = TestFixtures.credentials
+
+        // `signUp` runs first and claims the slot before its first suspension; the task then lands mid-flight.
+        let apple = Task { await harness.controller.signIn(with: .apple) }
+        let signedUp = await harness.controller.signUp(email: credentials.email, password: credentials.password)
+        let appleSucceeded = await apple.value
+
+        #expect(signedUp)
+        #expect(!appleSucceeded)
+        #expect(harness.controller.authenticatingProvider == nil)
+        #expect(harness.controller.state.user == MockUsers.user(for: .email(credentials)))
+    }
+
+    /// A duplicate sign-out that finishes late must not wipe a guest choice made after the first one returned.
+    @Test func lateDuplicateSignOutCannotUndoGuestChoiceMadeMeanwhile() async {
+        let harness = Harness(delay: networkDelay)
+
+        let first = Task { await harness.controller.signOut() }
+        let second = Task {
+            try? await Task.sleep(for: networkDelay / 2)
+            await harness.controller.signOut()
+        }
+        await first.value
+        harness.controller.continueAsGuest()
+        await second.value
+
+        #expect(harness.controller.state == .guest)
+        #expect(harness.store.stored == .guest)
     }
 
     @Test func logLinesNeverContainCredentials() async {
-        let (controller, logger) = makeController(delay: .zero)
+        let harness = Harness(delay: .zero)
         let credentials = TestFixtures.credentials
 
-        await controller.signUp(email: credentials.email, password: credentials.password)
-        await controller.restore()
-        await controller.signOut()
+        await harness.controller.signUp(email: credentials.email, password: credentials.password)
+        await harness.controller.restore()
+        await harness.controller.signOut()
 
-        let lines = logger.entries.map(\.message)
+        let lines = harness.logger.entries.map(\.message)
         #expect(lines.count >= 4)
         for line in lines {
             #expect(!line.localizedCaseInsensitiveContains(credentials.email), "leaked email in: \(line)")

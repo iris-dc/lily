@@ -60,4 +60,20 @@ struct ErrorCenterTests {
         center.dismiss()
         #expect(center.current == nil)
     }
+
+    @Test func onlyTheLatestPresenterDraws() {
+        let center = ErrorCenter(logger: SpyLogger())
+        let root = UUID()
+        let sheet = UUID()
+
+        center.beginPresenting(root)
+        #expect(center.isTopPresenter(root))
+
+        center.beginPresenting(sheet)
+        #expect(center.isTopPresenter(sheet))
+        #expect(!center.isTopPresenter(root))
+
+        center.endPresenting(sheet)
+        #expect(center.isTopPresenter(root))
+    }
 }

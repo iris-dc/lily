@@ -9,14 +9,11 @@ nonisolated enum DesignTokens {
         static let lg: CGFloat = 16
         static let xl: CGFloat = 24
         static let xxl: CGFloat = 32
-        static let hero: CGFloat = 48
     }
 
     enum Radius {
-        static let sm: CGFloat = 10
         static let md: CGFloat = 16
         static let card: CGFloat = 22
-        static let lg: CGFloat = 28
     }
 
     enum Duration {
@@ -28,9 +25,11 @@ nonisolated enum DesignTokens {
     }
 
     enum Layout {
+        /// Horizontal inset of screen content, equal to the leading margin of a large navigation title on iPhone,
+        /// so text laid directly on a screen lines up with its title.
+        static let screenMargin: CGFloat = Spacing.lg
         static let buttonHeight: CGFloat = 48
         static let controlHeight: CGFloat = 44
-        static let dismissButtonSize: CGFloat = 30
         static let swipeDismissDistance: CGFloat = 20
         static let chipVerticalPadding: CGFloat = 6
         static let providerIconSize: CGFloat = 22
@@ -41,13 +40,16 @@ nonisolated enum DesignTokens {
         static let previewCardTilt: Double = 2
         static let previewCardShift: CGFloat = 18
         static let previewCardWidth: CGFloat = 310
+        /// Starting scale of a preview card before it settles into the deck.
+        static let previewCardEntranceScale: CGFloat = 0.94
         static let mapPinSize: CGFloat = 40
+        /// Growth of a map pin when selected.
+        static let mapPinSelectedScale: CGFloat = 1.15
         static let mapSelectedCardWidth: CGFloat = 340
     }
 
     enum Opacity {
         static let glassTint: Double = 0.22
-        static let subtle: Double = 0.65
         /// How strongly the secondary color tints its glass badges.
         static let secondaryGlassTint: Double = 0.28
     }
@@ -88,7 +90,7 @@ nonisolated enum DesignTokens {
         static let rippleCrossSwing: Double = 0.12
         /// Phase lag per diagonal step (row + column) between neighbouring cells, in radians: about one wave on screen.
         static let rippleSpacing: Double = 0.9
-        /// Core (hot `lilyAccent`) opacity before the glow swing is applied.
+        /// Core (hot `lilyAuroraCore`) opacity before the glow swing is applied.
         static let coreOpacity: Double = 0.55
         /// Opacity of the densest part of the maroon mass.
         static let massDense: Double = 0.55
@@ -136,6 +138,5 @@ nonisolated enum DesignTokens {
         static let myEvents = "calendar"
         static let addEvent = "calendar.badge.plus"
         static let profile = "person.crop.circle"
-        static let search = "magnifyingglass"
     }
 }

@@ -13,8 +13,7 @@ final class LilySmokeTests: XCTestCase {
 
     @MainActor
     func testLandingExplainsProductAndOffersEntry() {
-        XCTAssertTrue(app.staticTexts["lily"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Play tonight."].exists)
+        XCTAssertTrue(app.staticTexts["Play tonight."].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Find a game near you"].exists)
         XCTAssertTrue(app.buttons["Sign in"].exists)
     }
@@ -71,6 +70,44 @@ final class LilySmokeTests: XCTestCase {
         apple.tap()
 
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    func testSignInFailureShowsThePopupAboveTheSheet() {
+        app.terminate()
+        app.launchArguments.append("-mock-auth-fail")
+        app.launch()
+        let signIn = app.buttons["Sign in"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
+        signIn.tap()
+
+        let apple = app.buttons["Continue with Apple"]
+        XCTAssertTrue(apple.waitForExistence(timeout: 5))
+        apple.tap()
+
+        // The popup combines its children into one element, so match on the label.
+        let popup = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "You're offline")).firstMatch
+        XCTAssertTrue(popup.waitForExistence(timeout: 10), "a failed sign-in must show the shared error popup")
+        waitUntilHittableAndStill(popup)
+        XCTAssertTrue(popup.isHittable, "the popup must sit above the sheet, not behind it")
+        XCTAssertTrue(apple.exists, "the sheet stays open after a failed sign-in")
+    }
+
+    @MainActor
+    func testSignInFromProfileDismissesTheSheet() {
+        relaunchAsGuest()
+        app.tabBars.buttons["Profile"].tap()
+        let signIn = app.buttons["Sign in"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
+        signIn.tap()
+
+        let apple = app.buttons["Continue with Apple"]
+        XCTAssertTrue(apple.waitForExistence(timeout: 5))
+        apple.tap()
+
+        XCTAssertTrue(apple.waitForNonExistence(timeout: 10), "the sheet must close once the guest is signed in")
+        XCTAssertTrue(app.staticTexts["Apple Tester"].waitForExistence(timeout: 5))
     }
 
     // MARK: - Helpers
