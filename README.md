@@ -50,7 +50,7 @@ Logs and `.xcresult` bundles land in `build/results/`.
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request to `main` on a `macos-26` runner: it selects the newest Xcode 26, then runs `scripts/ci.sh` in four steps (lint, build, unit tests, UI tests) and uploads the result bundles as an artifact. The runner needs Xcode 26.5 or newer because the deployment target is iOS 26.5.
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request to `main` on a `macos-26` runner: it selects the newest Xcode 26, installs SwiftLint with Homebrew (the runner image does not ship it), then runs `scripts/ci.sh` in four steps (lint, build, unit tests, UI tests) and uploads the result bundles as an artifact. The runner needs Xcode 26.5 or newer because the deployment target is iOS 26.5.
 
 To make the mock auth fail and see the error popup, launch with `-mock-auth-fail` (previews can use `AppDependencies.makeMock(authBehavior: .fail(.network))`).
 

@@ -25,6 +25,9 @@ jobs:
           sudo xcode-select -s "$XCODE"
           xcodebuild -version
 
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
       - name: Lint
         run: ./scripts/ci.sh lint
 
