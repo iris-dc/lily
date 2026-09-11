@@ -12,6 +12,7 @@ struct MainTabView: View {
                                                title: AppBranding.exploreEmptyTitle,
                                                message: AppBranding.exploreEmptyMessage),
                     showsMap: true,
+                    filterable: true,
                     viewModel: dependencies.makeEventListViewModel(scope: .upcoming)
                 )
             }

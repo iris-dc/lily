@@ -171,3 +171,30 @@ final class ManualClock {
         now = now.advanced(by: duration)
     }
 }
+
+extension SportEvent {
+    /// A minimal event at the demo centre; every optional detail absent unless given, so tests state only what they test.
+    static func fixture(capacity: Int = 4,
+                        participants: Int = 1,
+                        type: EventType = .tennis,
+                        startsAt: Date = .now,
+                        description: String? = nil,
+                        lookingFor: String? = nil,
+                        skillLevel: SkillLevel? = nil,
+                        price: Price? = nil) -> SportEvent {
+        SportEvent(
+            id: "e",
+            title: "t",
+            type: type,
+            startsAt: startsAt,
+            location: EventLocation(name: "l", coordinate: AppConfig.Location.mockCenter),
+            capacity: capacity,
+            participantCount: participants,
+            hostName: "h",
+            description: description,
+            lookingFor: lookingFor,
+            skillLevel: skillLevel,
+            price: price
+        )
+    }
+}

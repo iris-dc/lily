@@ -29,78 +29,120 @@ final class MockEventRepository: EventRepository {
 nonisolated enum MockEventFixtures {
     private struct Template {
         let title: String
-        let sport: SportType
+        let type: EventType
         let location: String
         let capacity: Int
+        /// Fixed per template so the feed shows every capacity state: empty-ish, half, nearly full (amber) and full.
+        let participants: Int
         let host: String
         /// Offset from the demo centre as a fraction of `AppConfig.Location.fixtureSpreadDegrees`.
         let offset: (lat: Double, lon: Double)
+        /// Optional details, left out on some templates so every surface is seen with and without them.
+        var description: String?
+        var lookingFor: String?
+        var skillLevel: SkillLevel?
+        var priceAmount: Decimal?
     }
 
     private static let templates: [Template] = [
         Template(
             title: "Sunset 5-a-side",
-            sport: .football,
+            type: .football,
             location: "Riverside Pitch 2",
             capacity: 10,
+            participants: 6,
             host: "Marta",
-            offset: (0.3, -0.6)
+            offset: (0.3, -0.6),
+            description: "Friendly 5-a-side on the small pitch by the river. Teams are split on the spot; two 25-minute halves.",
+            lookingFor: "Two more players, ideally one who likes to keep goal.",
+            skillLevel: .intermediate,
+            priceAmount: 5
         ),
         Template(
             title: "Pickup at the Cage",
-            sport: .basketball,
+            type: .basketball,
             location: "Westside Courts",
             capacity: 8,
+            participants: 7,
             host: "Dev",
-            offset: (-0.5, -0.9)
+            offset: (-0.5, -0.9),
+            description: "Half-court pickup under the lights. Winners stay on.",
+            skillLevel: .beginner
         ),
         Template(
             title: "Doubles, all levels",
-            sport: .tennis,
+            type: .tennis,
             location: "Park Tennis Club",
             capacity: 4,
+            participants: 1,
             host: "Ines",
-            offset: (0.8, 0.4)
+            offset: (0.8, 0.4),
+            lookingFor: "One more doubles partner who can serve and volley.",
+            priceAmount: 12
         ),
         Template(
             title: "Padel after work",
-            sport: .padel,
+            type: .padel,
             location: "Padel Hub North",
             capacity: 4,
+            participants: 4,
             host: "Tom",
-            offset: (1.0, -0.2)
+            offset: (1.0, -0.2),
+            description: "Court booked from six. Rackets available to borrow.",
+            priceAmount: 7.5
         ),
         Template(
             title: "Easy 8k loop",
-            sport: .running,
+            type: .running,
             location: "Canal Path",
             capacity: 12,
+            participants: 5,
             host: "Aiko",
-            offset: (-0.2, 0.7)
+            offset: (-0.2, 0.7),
+            description: "Conversational pace along the canal, about 8 km. Nobody gets dropped.",
+            lookingFor: "Anyone who wants company on an easy run.",
+            skillLevel: .beginner
         ),
         Template(
             title: "Beach volley social",
-            sport: .volleyball,
+            type: .volleyball,
             location: "City Beach",
             capacity: 12,
+            participants: 9,
             host: "Luca",
-            offset: (-0.9, 0.3)
+            offset: (-0.9, 0.3),
+            lookingFor: "Three more to fill two courts; mixed teams."
         ),
         Template(
             title: "Hills ride",
-            sport: .cycling,
+            type: .cycling,
             location: "Old Mill Car Park",
             capacity: 15,
+            participants: 3,
             host: "Sam",
-            offset: (0.5, 1.0)
+            offset: (0.5, 1.0),
+            description: "60 km with two proper climbs. Bring lights for the way back.",
+            skillLevel: .advanced
         ),
         Template(
             title: "Bouldering intro",
-            sport: .climbing,
+            type: .climbing,
             location: "Crux Climbing",
             capacity: 6,
+            participants: 2,
             host: "Noor",
             offset: (-0.7, -0.3)
+        ),
+        Template(
+            title: "Sunrise yoga",
+            type: .other,
+            location: "Tempelhofer Feld",
+            capacity: 20,
+            participants: 11,
+            host: "Priya",
+            offset: (-1.0, 0.1),
+            description: "Mats on the grass, an hour of slow flow. Bring your own mat and a warm layer.",
+            skillLevel: .beginner
         ),
     ]
 
@@ -116,12 +158,16 @@ nonisolated enum MockEventFixtures {
             return SportEvent(
                 id: "mock-event-\(index)",
                 title: template.title,
-                sport: template.sport,
+                type: template.type,
                 startsAt: now.addingTimeInterval(hoursAhead * secondsPerHour),
                 location: EventLocation(name: template.location, coordinate: coordinate(for: template)),
                 capacity: template.capacity,
-                participantCount: min(template.capacity, (index * 3) % (template.capacity + 1)),
-                hostName: template.host
+                participantCount: template.participants,
+                hostName: template.host,
+                description: template.description,
+                lookingFor: template.lookingFor,
+                skillLevel: template.skillLevel,
+                price: template.priceAmount.map { Price(amount: $0, currencyCode: AppConfig.Events.marketCurrencyCode) }
             )
         }
     }

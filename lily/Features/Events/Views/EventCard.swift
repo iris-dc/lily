@@ -7,12 +7,17 @@ struct EventCard: View {
     var body: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                HStack {
-                    SportChip(sport: event.sport)
+                // Chips stay whole at large Dynamic Type; the relative time wraps, its first line level with the chip labels.
+                HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.sm) {
+                    EventTypeChip(type: event.type).fixedSize()
+                    if !event.isFree {
+                        Text(event.priceText).lilyChip(.regular).fixedSize()
+                    }
                     Spacer()
                     Text(event.startsAt, format: .relative(presentation: .named))
                         .font(LilyTheme.Fonts.caption)
                         .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.trailing)
                 }
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                     Text(event.title).font(LilyTheme.Fonts.cardTitle)

@@ -71,7 +71,7 @@ struct EmailSignInView: View {
         } label: {
             Text(viewModel.mode.toggleLabel)
                 .frame(maxWidth: .infinity)
-                .tappableTextLabel()
+                .tappableLabel()
         }
         .font(LilyTheme.Fonts.caption)
         .buttonStyle(.borderless)

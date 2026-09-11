@@ -14,6 +14,16 @@ enum LilyTheme {
         static var caption: Font { .system(.footnote, design: .default, weight: .medium) }
     }
 
+    /// The one selected look for toggling controls (map pins, `ChoiceChip`): accent glass with a white label when on,
+    /// plain glass with an ink label when off.
+    static func selectionGlass(isSelected: Bool) -> Glass {
+        isSelected ? .regular.tint(Color.lilyAccent) : .regular
+    }
+
+    static func selectionLabelColor(isSelected: Bool) -> Color {
+        isSelected ? .white : .lilyInk
+    }
+
     /// Ember mesh colors, row by row, for the 4x4 aurora. `intensities` scale each cell's opacity (ripple and breath).
     /// The app is dark-only for now, so there is a single palette: maroon mass, raspberry core, amber ember on near-black.
     /// The core has its own colorset (`LilyAuroraCore`) so retuning the interactive accent leaves the background alone.

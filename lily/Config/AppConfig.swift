@@ -19,11 +19,18 @@ nonisolated enum AppConfig {
     }
 
     enum Events {
-        static let mockFeedSize = 8
+        static let mockFeedSize = 9
         /// Fill ratio at which an event is called "nearly full" and highlighted.
         static let nearlyFullRatio = 0.75
         /// Number of upcoming events previewed on the landing screen.
         static let landingPreviewCount = 3
+        /// Distance choices in the Explore filter, in metres from the reference point, and the one applied by default.
+        static let filterRadiiMeters: [Double] = [2_000, 5_000, 10_000, 25_000]
+        static let defaultFilterRadiusMeters: Double = 10_000
+        /// Length of the date range the filter proposes when dates are switched on.
+        static let defaultFilterDateSpanDays = 7
+        /// Currency of every event until the backend carries one per event; fixtures and the price filter use it.
+        static let marketCurrencyCode = "EUR"
         /// A tab that reappears reuses events loaded more recently than this; pull-to-refresh always reloads.
         static let listStaleAfter: TimeInterval = 60
     }

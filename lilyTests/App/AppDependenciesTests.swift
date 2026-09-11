@@ -53,4 +53,11 @@ struct AppDependenciesTests {
         let real = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
         #expect((real.locationService as? CachedLocationService)?.upstream is CoreLocationService)
     }
+
+    /// My Events has no filter button, so it must never hide a game; Explore starts from the default filter.
+    @Test func myEventsStartsFromEverythingAndExploreFromTheDefaults() {
+        let dependencies = AppDependencies.makeMock()
+        #expect(dependencies.makeEventListViewModel(scope: .joined).filter == .everything)
+        #expect(dependencies.makeEventListViewModel(scope: .upcoming).filter == EventFilter())
+    }
 }
