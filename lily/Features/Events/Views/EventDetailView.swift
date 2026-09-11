@@ -5,12 +5,11 @@ struct EventDetailView: View {
     let event: SportEvent
 
     var body: some View {
-        ZStack {
-            AuroraBackground(intensity: DesignTokens.Aurora.contentIntensity)
+        ContentScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     SportChip(sport: event.sport)
-                    ScreenTitle(text: event.title, subtitle: "Hosted by \(event.hostName)")
+                    ScreenTitle(text: event.title, subtitle: AppBranding.hostedByTitle(for: event.hostName))
                     GlassCard {
                         VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
                             Label(event.startsAt.formatted(date: .abbreviated, time: .shortened),
@@ -31,12 +30,12 @@ struct EventDetailView: View {
         VStack(spacing: DesignTokens.Spacing.sm) {
             Button {
             } label: {
-                Text(event.isFull ? "Event is full" : "Join")
+                Text(event.isFull ? AppBranding.eventFullAction : AppBranding.joinAction)
                     .fullWidthButtonLabel()
             }
             .lilyProminentButton()
             .disabled(true)
-            Text("Joining arrives with the backend.")
+            Text(AppBranding.joinComingSoon)
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
         }

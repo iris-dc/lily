@@ -2,12 +2,12 @@ import SwiftUI
 
 struct ProfileView: View {
     let session: SessionController
+    let errorCenter: ErrorCenter
     @State private var isSignInPresented = false
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                AuroraBackground(intensity: DesignTokens.Aurora.contentIntensity)
+            ContentScreen {
                 VStack(spacing: DesignTokens.Spacing.xl) {
                     if let user = session.state.user {
                         signedIn(user)
@@ -16,12 +16,13 @@ struct ProfileView: View {
                     }
                     Spacer()
                 }
-                .padding(DesignTokens.Spacing.xl)
+                .padding(.horizontal, DesignTokens.Layout.screenMargin)
+                .padding(.vertical, DesignTokens.Spacing.xl)
             }
-            .navigationTitle("Profile")
+            .navigationTitle(AppBranding.profileTitle)
         }
         .sheet(isPresented: $isSignInPresented) {
-            SignInSheet(session: session)
+            SignInSheet(session: session, errorCenter: errorCenter)
         }
     }
 
@@ -37,25 +38,26 @@ struct ProfileView: View {
                     Text(email).font(.subheadline).foregroundStyle(.secondary)
                 }
             }
-            Button("Sign out") { Task { await session.signOut() } }
-                .font(LilyTheme.Fonts.button)
-                .lilyGlassButton()
-                .controlSize(.large)
+            Button { Task { await session.signOut() } } label: {
+                Text(AppBranding.signOutAction).fullWidthButtonLabel()
+            }
+            .lilyGlassButton()
         }
     }
 
+    /// Laid straight on the screen, not in a card, so the heading shares the navigation title's leading edge.
     private var guest: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                Text("You're browsing as a guest").font(LilyTheme.Fonts.cardTitle)
-                Text("Sign in to create events, join games and chat with players.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Button(AppBranding.signInAction) { isSignInPresented = true }
-                    .font(LilyTheme.Fonts.button)
-                    .lilyProminentButton()
-                    .controlSize(.large)
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+            Text(AppBranding.guestProfileTitle).font(LilyTheme.Fonts.cardTitle)
+            Text(AppBranding.guestProfileMessage)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Button { isSignInPresented = true } label: {
+                Text(AppBranding.signInAction).fullWidthButtonLabel()
             }
+            .lilyProminentButton()
+            .padding(.top, DesignTokens.Spacing.sm)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

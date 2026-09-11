@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Large section title with tight tracking, used on every top-level screen.
+/// In-content title with tight tracking for pushed and sheet screens (event detail, sign-in).
+/// Tab roots use `.navigationTitle` instead.
 struct ScreenTitle: View {
     let text: String
     var subtitle: String?

@@ -14,7 +14,7 @@ struct EventPreviewDeck: View {
                     .rotationEffect(.degrees(tilt(for: index)))
                     .offset(x: shift(for: index))
                     .opacity(revealed ? 1 : 0)
-                    .scaleEffect(revealed ? 1 : 0.94)
+                    .scaleEffect(revealed ? 1 : DesignTokens.Layout.previewCardEntranceScale)
                     .animation(entrance(delayIndex: index), value: revealed)
             }
         }
@@ -37,39 +37,5 @@ struct EventPreviewDeck: View {
         guard !reduceMotion else { return nil }
         return .spring(duration: DesignTokens.Duration.slow)
             .delay(Double(delayIndex) * DesignTokens.Duration.previewCardStagger)
-    }
-}
-
-/// Compact one-row summary of an event, used in the landing deck and as the map's selected-pin card.
-struct EventPreviewCard: View {
-    let event: SportEvent
-    /// Optional trailing detail such as distance.
-    var detail: String?
-
-    var body: some View {
-        HStack(spacing: DesignTokens.Spacing.md) {
-            Image(systemName: event.sport.symbolName)
-                .font(.title3.weight(.medium))
-                .foregroundStyle(Color.lilySecondary)
-                .frame(width: DesignTokens.Layout.controlHeight, height: DesignTokens.Layout.controlHeight)
-                .glassEffect(.regular.tint(Color.lilySecondary.opacity(DesignTokens.Opacity.glassTint)), in: .circle)
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-                Text(event.title)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                Text("\(event.startsAt, format: .relative(presentation: .named)) · \(event.spotsLeft) spots left")
-                    .font(LilyTheme.Fonts.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            Spacer(minLength: 0)
-            if let detail {
-                Text(detail)
-                    .font(LilyTheme.Fonts.caption)
-                    .foregroundStyle(Color.lilyAccent)
-            }
-        }
-        .padding(DesignTokens.Spacing.md)
-        .glassEffect(.regular, in: .rect(cornerRadius: DesignTokens.Radius.md))
     }
 }

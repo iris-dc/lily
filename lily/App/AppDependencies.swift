@@ -31,7 +31,7 @@ final class AppDependencies {
     static func makeDefault(arguments: [String] = CommandLine.arguments,
                             defaults: UserDefaults = .standard) -> AppDependencies {
         let logger = OSLogLogger()
-        let store = UserDefaultsSessionStore(defaults: defaults)
+        let store = UserDefaultsSessionStore(defaults: defaults, logger: logger)
         if arguments.contains(AppConfig.LaunchArguments.resetSession) {
             logger.info(.auth, "Launch argument requested a session reset")
             store.clear()
@@ -42,23 +42,26 @@ final class AppDependencies {
         }
         let locationService: any LocationService = arguments.contains(AppConfig.LaunchArguments.mockLocation)
             ? MockLocationService()
-            : CoreLocationService(logger: logger)
+            : CachedLocationService(upstream: CoreLocationService(logger: logger), logger: logger)
+        let authBehavior: MockAuthBehavior = arguments.contains(AppConfig.LaunchArguments.mockAuthFail)
+            ? .fail(.network)
+            : .succeed
+        if case .fail = authBehavior { logger.info(.auth, "Launch argument requested failing mock auth") }
         return AppDependencies(logger: logger,
                                sessionStore: store,
-                               authService: MockAuthService(store: store),
+                               authService: MockAuthService(behavior: authBehavior, store: store),
                                eventRepository: MockEventRepository(logger: logger),
                                locationService: locationService)
     }
 
     /// Isolated in-memory wiring for previews and tests.
-    static func makeMock(authBehavior: MockAuthBehavior = .succeed,
-                         authDelay: Duration = .zero) -> AppDependencies {
+    static func makeMock(authBehavior: MockAuthBehavior = .succeed) -> AppDependencies {
         let logger = OSLogLogger()
         let defaults = UserDefaults(suiteName: AppConfig.Storage.previewSuitePrefix + UUID().uuidString) ?? .standard
-        let store = UserDefaultsSessionStore(defaults: defaults)
+        let store = UserDefaultsSessionStore(defaults: defaults, logger: logger)
         return AppDependencies(logger: logger,
                                sessionStore: store,
-                               authService: MockAuthService(behavior: authBehavior, delay: authDelay, store: store),
+                               authService: MockAuthService(behavior: authBehavior, delay: .zero, store: store),
                                eventRepository: MockEventRepository(logger: logger),
                                locationService: MockLocationService())
     }

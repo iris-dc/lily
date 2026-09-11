@@ -4,7 +4,9 @@ import SwiftUI
 enum LilyTheme {
     enum Fonts {
         /// SF Pro Display with tight tracking everywhere: the wordmark, the landing headline and screen titles.
-        static var wordmark: Font { .system(size: DesignTokens.Typography.wordmarkSize, weight: .semibold) }
+        static func wordmark(size: CGFloat = DesignTokens.Typography.wordmarkSize) -> Font {
+            .system(size: size, weight: .semibold)
+        }
         static var headline: Font { .system(size: DesignTokens.Typography.headlineSize, weight: .bold) }
         static var screenTitle: Font { .system(.largeTitle, weight: .bold) }
         static var cardTitle: Font { .system(.title3, design: .default, weight: .semibold) }
@@ -14,6 +16,7 @@ enum LilyTheme {
 
     /// Ember mesh colors, row by row, for the 4x4 aurora. `intensities` scale each cell's opacity (ripple and breath).
     /// The app is dark-only for now, so there is a single palette: maroon mass, raspberry core, amber ember on near-black.
+    /// The core has its own colorset (`LilyAuroraCore`) so retuning the interactive accent leaves the background alone.
     static func auroraColors(intensities: [Double]) -> [Color] {
         zip(AuroraPalette.roles, intensities).map { auroraColor(for: $0, intensity: $1) }
     }
@@ -25,7 +28,7 @@ enum LilyTheme {
         case .mass(let density):
             return scaled(.lilyAccentDeep, opacity: AuroraPalette.massOpacity(density), by: intensity)
         case .core:
-            return scaled(.lilyAccent, opacity: DesignTokens.Aurora.coreOpacity, by: intensity)
+            return scaled(.lilyAuroraCore, opacity: DesignTokens.Aurora.coreOpacity, by: intensity)
         case .ember:
             return scaled(.lilySecondary, opacity: DesignTokens.Aurora.emberOpacity, by: intensity)
         }

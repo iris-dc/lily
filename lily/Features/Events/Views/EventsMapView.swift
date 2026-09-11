@@ -8,7 +8,7 @@ struct EventsMapView: View {
     @State private var selectedEventID: SportEvent.ID?
 
     private var selectedEvent: SportEvent? {
-        viewModel.filteredEvents.first { $0.id == selectedEventID }
+        viewModel.events.first { $0.id == selectedEventID }
     }
 
     var body: some View {
@@ -23,7 +23,7 @@ struct EventsMapView: View {
     private var map: some View {
         Map(position: $position, selection: $selectedEventID) {
             UserAnnotation()
-            ForEach(viewModel.filteredEvents) { event in
+            ForEach(viewModel.events) { event in
                 Annotation(event.title, coordinate: event.location.coordinate.clCoordinate, anchor: .bottom) {
                     EventMapPin(sport: event.sport, isSelected: event.id == selectedEventID)
                 }
@@ -62,12 +62,6 @@ struct EventMapPin: View {
             .foregroundStyle(isSelected ? Color.white : Color.lilyInk)
             .frame(width: DesignTokens.Layout.mapPinSize, height: DesignTokens.Layout.mapPinSize)
             .glassEffect(isSelected ? .regular.tint(Color.lilyAccent) : .regular, in: .circle)
-            .scaleEffect(isSelected ? 1.15 : 1)
-    }
-}
-
-extension Coordinate {
-    var clCoordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+            .scaleEffect(isSelected ? DesignTokens.Layout.mapPinSelectedScale : 1)
     }
 }

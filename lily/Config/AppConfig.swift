@@ -24,6 +24,8 @@ nonisolated enum AppConfig {
         static let nearlyFullRatio = 0.75
         /// Number of upcoming events previewed on the landing screen.
         static let landingPreviewCount = 3
+        /// A tab that reappears reuses events loaded more recently than this; pull-to-refresh always reloads.
+        static let listStaleAfter: TimeInterval = 60
     }
 
     enum Location {
@@ -33,6 +35,10 @@ nonisolated enum AppConfig {
         static let fixtureSpreadDegrees = 0.03
         /// Waiting longer than this for a GPS fix falls back to a map centred on the events.
         static let fixTimeout: Duration = .seconds(8)
+        /// A fix is reused for this long, so screens re-appearing and sibling tabs share one CoreLocation stream.
+        static let fixTTL: Duration = .seconds(300)
+        /// A missing fix (denied or timed out) is remembered this long: short, so a later GPS fix is picked up soon.
+        static let failedFixTTL: Duration = .seconds(30)
     }
 
     enum ErrorPopup {
@@ -47,6 +53,8 @@ nonisolated enum AppConfig {
         static let mockLocation = "-mock-location"
         /// Starts inside the app as a guest (after any reset), so UI tests and screenshots skip the landing.
         static let startAsGuest = "-start-as-guest"
+        /// Makes every mock auth call fail with a network error, so UI tests can check the error popup.
+        static let mockAuthFail = "-mock-auth-fail"
     }
 
     enum Logging {

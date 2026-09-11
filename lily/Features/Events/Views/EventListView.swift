@@ -1,39 +1,31 @@
 import SwiftUI
 
-/// One screen for Explore, My Events and Search: a list, optionally switchable to a map.
+/// One screen for Explore and My Events: a list, optionally switchable to a map.
 struct EventListView: View {
     let title: String
-    let subtitle: String?
     let emptyState: EmptyStateView
-    let searchable: Bool
     let showsMap: Bool
     @State private var presentation: EventsPresentation = .list
     @State private var viewModel: EventListViewModel
 
     init(title: String,
-         subtitle: String? = nil,
          emptyState: EmptyStateView,
-         searchable: Bool = false,
          showsMap: Bool = false,
          viewModel: EventListViewModel) {
         self.title = title
-        self.subtitle = subtitle
         self.emptyState = emptyState
-        self.searchable = searchable
         self.showsMap = showsMap
         _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                AuroraBackground(intensity: DesignTokens.Aurora.contentIntensity)
+            ContentScreen {
                 content
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(presentation == .map ? .inline : .large)
             .navigationDestination(for: SportEvent.self) { EventDetailView(event: $0) }
-            .searchableIfNeeded(searchable, text: $viewModel.searchText)
             .toolbar {
                 if showsMap {
                     // iOS 26 gives every toolbar item its own glass; the segmented picker already draws one.
@@ -42,7 +34,7 @@ struct EventListView: View {
                 }
             }
         }
-        .task { await viewModel.load() }
+        .task { await viewModel.loadIfStale() }
         .task { await viewModel.loadUserLocation() }
     }
 
@@ -59,44 +51,44 @@ struct EventListView: View {
 
     @ViewBuilder
     private var content: some View {
-        if viewModel.isLoading && viewModel.events.isEmpty {
+        if viewModel.isInitialLoad {
             ProgressView()
-        } else if viewModel.filteredEvents.isEmpty {
-            emptyState
+        } else if viewModel.events.isEmpty {
+            // Scrollable so the "pull to refresh" the error copy promises is possible from here.
+            refreshableScroll {
+                (viewModel.loadFailed ? loadFailedState : emptyState)
+                    .containerRelativeFrame(.vertical)
+            }
         } else if presentation == .map {
             EventsMapView(viewModel: viewModel)
         } else {
-            ScrollView {
-                LazyVStack(spacing: DesignTokens.Spacing.md) {
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    ForEach(viewModel.filteredEvents) { event in
-                        NavigationLink(value: event) {
-                            EventCard(event: event, distance: viewModel.distanceText(for: event))
-                        }
-                            .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, DesignTokens.Spacing.lg)
-                .padding(.bottom, DesignTokens.Spacing.xxl)
-            }
-            .refreshable { await viewModel.load() }
+            refreshableScroll { eventList }
         }
     }
-}
 
-private extension View {
-    @ViewBuilder
-    func searchableIfNeeded(_ enabled: Bool, text: Binding<String>) -> some View {
-        if enabled {
-            searchable(text: text, prompt: "Sport, place or title")
-        } else {
-            self
+    private var eventList: some View {
+        LazyVStack(spacing: DesignTokens.Spacing.md) {
+            ForEach(viewModel.events) { event in
+                NavigationLink(value: event) {
+                    EventCard(event: event, distance: viewModel.distanceText(for: event))
+                }
+                    .buttonStyle(.plain)
+            }
         }
+        .padding(.horizontal, DesignTokens.Layout.screenMargin)
+        .padding(.bottom, DesignTokens.Spacing.xxl)
+    }
+
+    private var loadFailedState: EmptyStateView {
+        EmptyStateView(symbolName: DesignTokens.Symbols.error,
+                       title: AppBranding.Events.loadFailedTitle,
+                       message: AppBranding.Events.loadFailedMessage)
+    }
+
+    /// The one place that declares the pull-to-refresh gesture and what it reloads.
+    private func refreshableScroll(@ViewBuilder _ content: () -> some View) -> some View {
+        ScrollView { content() }
+            .refreshable { await viewModel.load() }
     }
 }
 

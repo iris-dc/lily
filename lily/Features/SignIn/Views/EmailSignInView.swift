@@ -12,10 +12,9 @@ struct EmailSignInView: View {
     }
 
     var body: some View {
-        ZStack {
-            AuroraBackground(intensity: DesignTokens.Aurora.contentIntensity)
+        ContentScreen {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                ScreenTitle(text: viewModel.mode.title, subtitle: "Use your email and a password.")
+                ScreenTitle(text: viewModel.mode.title, subtitle: AppBranding.emailSignInSubtitle)
                 fields
                 submitButton
                 modeToggle
@@ -25,11 +24,13 @@ struct EmailSignInView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { focusedField = .email }
+        // The sheet cannot reach this view model, so the form stops its own submit when it goes away.
+        .onDisappear { viewModel.cancel() }
     }
 
     private var fields: some View {
         VStack(spacing: DesignTokens.Spacing.md) {
-            TextField("Email", text: $viewModel.email)
+            TextField(AppBranding.emailFieldPlaceholder, text: $viewModel.email)
                 .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
@@ -38,11 +39,11 @@ struct EmailSignInView: View {
                 .submitLabel(.next)
                 .onSubmit { focusedField = .password }
                 .lilyField()
-            SecureField("Password", text: $viewModel.password)
+            SecureField(AppBranding.passwordFieldPlaceholder, text: $viewModel.password)
                 .textContentType(viewModel.mode == .signUp ? .newPassword : .password)
                 .focused($focusedField, equals: .password)
                 .submitLabel(.go)
-                .onSubmit { Task { await viewModel.submit() } }
+                .onSubmit { viewModel.submit() }
                 .lilyField()
             Text(viewModel.passwordHint)
                 .font(LilyTheme.Fonts.caption)
@@ -53,7 +54,7 @@ struct EmailSignInView: View {
 
     private var submitButton: some View {
         Button {
-            Task { await viewModel.submit() }
+            viewModel.submit()
         } label: {
             HStack {
                 Text(viewModel.mode.submitLabel)
@@ -66,21 +67,25 @@ struct EmailSignInView: View {
     }
 
     private var modeToggle: some View {
-        Button(viewModel.mode.toggleLabel) {
+        Button {
             withAnimation(.smooth(duration: DesignTokens.Duration.fast)) { viewModel.toggleMode() }
+        } label: {
+            Text(viewModel.mode.toggleLabel)
+                .frame(maxWidth: .infinity)
+                .tappableTextLabel()
         }
         .font(LilyTheme.Fonts.caption)
         .buttonStyle(.plain)
         .foregroundStyle(Color.lilyAccent)
-        .frame(maxWidth: .infinity)
     }
 }
 
+/// Glass capsule around a text field. A minimum rather than a fixed height, so large Dynamic Type stays inside it.
 private struct LilyFieldStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(.horizontal, DesignTokens.Spacing.lg)
-            .frame(height: DesignTokens.Layout.buttonHeight)
+            .frame(minHeight: DesignTokens.Layout.buttonHeight)
             .glassEffect(.regular, in: .capsule)
     }
 }

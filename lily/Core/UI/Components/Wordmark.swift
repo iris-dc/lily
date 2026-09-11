@@ -6,7 +6,7 @@ struct Wordmark: View {
 
     var body: some View {
         Text(AppBranding.name)
-            .font(.system(size: size, weight: .semibold))
+            .font(LilyTheme.Fonts.wordmark(size: size))
             .tracking(DesignTokens.Typography.wordmarkTracking * size / DesignTokens.Typography.wordmarkSize)
             .foregroundStyle(Color.lilyInk)
     }

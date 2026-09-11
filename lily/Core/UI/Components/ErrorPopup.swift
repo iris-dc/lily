@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// The single user-facing error surface. Mount once at the root with `.errorPopup(errorCenter)`.
+/// The single user-facing error surface. Mount it at the root and on the root of every sheet with
+/// `.errorPopup(errorCenter)`: a sheet is drawn above the root, so the root copy alone would sit behind it.
+/// Only the mount that appeared last draws, so the error never shows twice.
 struct ErrorPopupView: View {
     let presented: PresentedError
     let onDismiss: () -> Void
@@ -19,10 +21,10 @@ struct ErrorPopupView: View {
             Button(action: onDismiss) {
                 Image(systemName: DesignTokens.Symbols.dismiss)
                     .font(.footnote.weight(.bold))
-                    .frame(width: DesignTokens.Layout.dismissButtonSize, height: DesignTokens.Layout.dismissButtonSize)
+                    .frame(width: DesignTokens.Layout.controlHeight, height: DesignTokens.Layout.controlHeight)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Dismiss")
+            .accessibilityLabel(AppBranding.dismissAction)
         }
         .padding(DesignTokens.Spacing.lg)
         .glassEffect(.regular.tint(Color.lilyAccent.opacity(DesignTokens.Opacity.glassTint)),
@@ -35,10 +37,11 @@ struct ErrorPopupView: View {
 
 private struct ErrorPopupModifier: ViewModifier {
     let errorCenter: ErrorCenter
+    @State private var presenter = UUID()
 
     func body(content: Content) -> some View {
         content.overlay(alignment: .top) {
-            if let presented = errorCenter.current {
+            if errorCenter.isTopPresenter(presenter), let presented = errorCenter.current {
                 ErrorPopupView(presented: presented) { errorCenter.dismiss(presented.id) }
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .gesture(dismissSwipe(for: presented))
@@ -50,6 +53,8 @@ private struct ErrorPopupModifier: ViewModifier {
             }
         }
         .animation(.spring(duration: DesignTokens.Duration.normal), value: errorCenter.current?.id)
+        .onAppear { errorCenter.beginPresenting(presenter) }
+        .onDisappear { errorCenter.endPresenting(presenter) }
     }
 
     private func dismissSwipe(for presented: PresentedError) -> some Gesture {

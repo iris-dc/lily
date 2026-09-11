@@ -6,22 +6,22 @@ nonisolated enum EmailAuthMode: Hashable, Sendable {
 
     var title: String {
         switch self {
-        case .signIn: "Welcome back"
-        case .signUp: "Create your account"
+        case .signIn: AppBranding.signInSheetTitle
+        case .signUp: AppBranding.signUpSheetTitle
         }
     }
 
     var submitLabel: String {
         switch self {
-        case .signIn: "Sign in"
-        case .signUp: "Sign up"
+        case .signIn: AppBranding.signInAction
+        case .signUp: AppBranding.signUpAction
         }
     }
 
     var toggleLabel: String {
         switch self {
-        case .signIn: "New here? Create an account"
-        case .signUp: "Already have an account? Sign in"
+        case .signIn: AppBranding.signUpPrompt
+        case .signUp: "\(AppBranding.signInPrompt) \(AppBranding.signInAction)"
         }
     }
 
@@ -34,6 +34,8 @@ final class EmailSignInViewModel {
     var password = ""
     var mode: EmailAuthMode = .signIn
     private(set) var isSubmitting = false
+    /// The in-flight submit, kept so a dismissed form can cancel it.
+    private(set) var submitTask: Task<Void, Never>?
 
     private let session: SessionController
 
@@ -46,22 +48,35 @@ final class EmailSignInViewModel {
     }
 
     var passwordHint: String {
-        "At least \(AppConfig.Auth.minimumPasswordLength) characters"
+        AppBranding.passwordHint(minimumLength: AppConfig.Auth.minimumPasswordLength)
     }
 
     func toggleMode() { mode = mode.toggled }
 
-    /// Returns `true` when the user is now signed in and the sheet can close.
-    func submit() async -> Bool {
-        guard canSubmit else { return false }
+    /// Signs in or signs up with the form's credentials. Ignored while the form is invalid or a submit is running;
+    /// the keyboard's return key can reach this even though the button is disabled.
+    func submit() {
+        guard canSubmit else { return }
         isSubmitting = true
-        defer { isSubmitting = false }
+        submitTask = Task {
+            defer { isSubmitting = false }
+            await authenticate()
+        }
+    }
+
+    /// Stops an in-flight submit, for example when the form goes away before the provider answers.
+    func cancel() {
+        submitTask?.cancel()
+        submitTask = nil
+    }
+
+    private func authenticate() async {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         switch mode {
         case .signIn:
-            return await session.signIn(with: .email(EmailCredentials(email: trimmedEmail, password: password)))
+            await session.signIn(with: .email(EmailCredentials(email: trimmedEmail, password: password)))
         case .signUp:
-            return await session.signUp(email: trimmedEmail, password: password)
+            await session.signUp(email: trimmedEmail, password: password)
         }
     }
 }
