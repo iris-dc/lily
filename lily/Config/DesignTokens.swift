@@ -34,10 +34,17 @@ nonisolated enum DesignTokens {
         static let controlHeight: CGFloat = 44
         static let swipeDismissDistance: CGFloat = 20
         static let chipVerticalPadding: CGFloat = 6
+        /// Width reserved for the glyph of stacked fact rows at the default type size (scaled with Dynamic Type by the
+        /// label style), so their text shares one edge whatever the glyph width.
+        static let labelIconColumn: CGFloat = 24
         static let providerIconSize: CGFloat = 22
         static let avatarSize: CGFloat = 72
         static let capacityBarHeight: CGFloat = 6
         static let popupMaxWidth: CGFloat = 520
+        /// Width of the filter panel dropped down from the Explore toolbar.
+        static let filterPanelWidth: CGFloat = 340
+        /// Width of the price input in the filter panel.
+        static let filterPriceFieldWidth: CGFloat = 96
         /// Landing preview deck: card offsets and tilt for the stacked event cards.
         static let previewCardTilt: Double = 2
         static let previewCardShift: CGFloat = 18
@@ -52,6 +59,9 @@ nonisolated enum DesignTokens {
 
     enum Opacity {
         static let glassTint: Double = 0.22
+        /// Track behind the capacity bar's fill. Faint on purpose: `.quaternary` read as a full grey bar, so an empty event
+        /// looked full and a full event's muted fill looked empty.
+        static let capacityTrack: Double = 0.12
         /// How strongly the secondary color tints its glass badges.
         static let secondaryGlassTint: Double = 0.28
     }
@@ -130,8 +140,13 @@ nonisolated enum DesignTokens {
         static let location = "mappin.and.ellipse"
         static let distance = "location"
         static let list = "list.bullet"
+        static let filter = "line.3.horizontal.decrease.circle"
+        static let filterActive = "line.3.horizontal.decrease.circle.fill"
         static let map = "map"
         static let time = "clock"
+        static let price = "banknote"
+        static let level = "chart.bar"
+        static let lookingFor = "person.2"
         static let error = "exclamationmark.circle.fill"
         static let dismiss = "xmark"
         static let apple = "apple.logo"

@@ -5,7 +5,7 @@ import Testing
 struct SportEventTests {
     @Test func fixturesLieWithinTheDemoRadius() {
         let center = AppConfig.Location.mockCenter
-        for event in MockEventFixtures.make(now: .now, count: 8) {
+        for event in MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize) {
             #expect(event.location.coordinate.distance(to: center) < 5_000)
         }
     }
@@ -23,16 +23,7 @@ struct SportEventTests {
     }
 
     private func makeEvent(capacity: Int, participants: Int) -> SportEvent {
-        SportEvent(
-            id: "e",
-            title: "t",
-            sport: .tennis,
-            startsAt: .now,
-            location: EventLocation(name: "l", coordinate: AppConfig.Location.mockCenter),
-            capacity: capacity,
-            participantCount: participants,
-            hostName: "h"
-        )
+        .fixture(capacity: capacity, participants: participants)
     }
 
     @Test func capacityMath() {
@@ -69,10 +60,10 @@ struct SportEventTests {
 
         let oneLeft = makeEvent(capacity: 4, participants: 3)
         #expect(oneLeft.availabilityText == "1 spot left")
-        #expect(oneLeft.capacityText == "1 of 4 spots left")
+        #expect(oneLeft.capacityText == "3 of 4 joined")
 
         let manyLeft = makeEvent(capacity: 4, participants: 1)
         #expect(manyLeft.availabilityText == "3 spots left")
-        #expect(manyLeft.capacityText == "3 of 4 spots left")
+        #expect(manyLeft.capacityText == "1 of 4 joined")
     }
 }

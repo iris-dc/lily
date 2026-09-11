@@ -8,7 +8,7 @@ struct EventsMapView: View {
     @State private var selectedEventID: SportEvent.ID?
 
     private var selectedEvent: SportEvent? {
-        viewModel.events.first { $0.id == selectedEventID }
+        viewModel.visibleEvents.first { $0.id == selectedEventID }
     }
 
     var body: some View {
@@ -18,14 +18,19 @@ struct EventsMapView: View {
             selectedEventCard
         }
         .animation(.spring(duration: DesignTokens.Duration.normal), value: selectedEventID)
+        // A pin the filter hides must drop its selection too, or its card would pop out unanimated and pop back
+        // already selected when the type returns.
+        .onChange(of: viewModel.filter) {
+            if selectedEvent == nil { selectedEventID = nil }
+        }
     }
 
     private var map: some View {
         Map(position: $position, selection: $selectedEventID) {
             UserAnnotation()
-            ForEach(viewModel.events) { event in
+            ForEach(viewModel.visibleEvents) { event in
                 Annotation(event.title, coordinate: event.location.coordinate.clCoordinate, anchor: .bottom) {
-                    EventMapPin(sport: event.sport, isSelected: event.id == selectedEventID)
+                    EventMapPin(type: event.type, isSelected: event.id == selectedEventID)
                 }
                 .tag(event.id)
             }
@@ -51,17 +56,17 @@ struct EventsMapView: View {
     }
 }
 
-/// Glass pin carrying the sport glyph; grows and turns red when selected.
+/// Glass pin carrying the event type glyph; grows and turns red when selected.
 struct EventMapPin: View {
-    let sport: SportType
+    let type: EventType
     let isSelected: Bool
 
     var body: some View {
-        Image(systemName: sport.symbolName)
+        Image(systemName: type.symbolName)
             .font(.callout.weight(.semibold))
-            .foregroundStyle(isSelected ? Color.white : Color.lilyInk)
+            .foregroundStyle(LilyTheme.selectionLabelColor(isSelected: isSelected))
             .frame(width: DesignTokens.Layout.mapPinSize, height: DesignTokens.Layout.mapPinSize)
-            .glassEffect(isSelected ? .regular.tint(Color.lilyAccent) : .regular, in: .circle)
+            .glassEffect(LilyTheme.selectionGlass(isSelected: isSelected), in: .circle)
             .scaleEffect(isSelected ? DesignTokens.Layout.mapPinSelectedScale : 1)
     }
 }

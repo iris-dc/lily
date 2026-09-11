@@ -1,13 +1,14 @@
 import SwiftUI
 
-/// Thin bar showing how full an event is: red normally, amber when nearly full, muted when full.
+/// Thin bar filled with the occupied share of an event: red normally, amber when nearly full, muted when full.
+/// The track is faint so that an empty event reads as empty.
 struct CapacityBar: View {
     let event: SportEvent
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
             Capsule()
-                .fill(.quaternary)
+                .fill(Color.lilyInk.opacity(DesignTokens.Opacity.capacityTrack))
                 .overlay(alignment: .leading) {
                     GeometryReader { proxy in
                         Capsule()

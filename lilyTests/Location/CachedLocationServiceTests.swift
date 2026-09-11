@@ -51,6 +51,27 @@ struct CachedLocationServiceTests {
         #expect(upstream.callCount == 2)
     }
 
+    @Test func forgetMissingFixAsksAgainBeforeTheTTL() async {
+        upstream.result = nil
+        let service = makeService()
+        _ = await service.currentLocation()
+
+        service.forgetMissingFix()
+        upstream.result = berlin
+        #expect(await service.currentLocation() == berlin)
+        #expect(upstream.callCount == 2)
+    }
+
+    @Test func forgetMissingFixKeepsAKnownFix() async {
+        upstream.result = berlin
+        let service = makeService()
+        _ = await service.currentLocation()
+
+        service.forgetMissingFix()
+        #expect(await service.currentLocation() == berlin)
+        #expect(upstream.callCount == 1)
+    }
+
     @Test func concurrentCallersShareOneUpstreamRequest() async {
         upstream.result = berlin
         upstream.holdsRequests = true

@@ -43,6 +43,13 @@ struct MockEventRepositoryTests {
         let events = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize)
         #expect(events.contains { $0.isFull })
     }
+
+    /// The feed should show every capacity state of the bar: an open, a nearly full (amber) and a full event.
+    @Test func feedSizedFixturesCoverEveryCapacityState() {
+        let events = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize)
+        #expect(events.contains { $0.isNearlyFull })
+        #expect(events.contains { !$0.isNearlyFull && !$0.isFull && $0.participantCount > 0 })
+    }
 }
 
 @MainActor
@@ -232,5 +239,20 @@ struct EventListViewModelTests {
         await viewModel.loadUserLocation()
         #expect(viewModel.userLocation == nil)
         #expect(viewModel.distanceText(for: MockEventFixtures.make(now: .now, count: 1)[0]) == nil)
+    }
+
+    @Test func retryAsksAgainOnlyWhileThePositionIsMissing() async {
+        let service = FakeLocationService()
+        service.result = nil
+        let (viewModel, _) = makeViewModel(FakeEventRepository(), locationService: service)
+        await viewModel.loadUserLocation()
+        #expect(viewModel.userLocation == nil && service.callCount == 1)
+
+        service.result = AppConfig.Location.mockCenter
+        await viewModel.retryUserLocationIfMissing()
+        #expect(viewModel.userLocation == AppConfig.Location.mockCenter && service.callCount == 2)
+
+        await viewModel.retryUserLocationIfMissing()
+        #expect(service.callCount == 2)
     }
 }
