@@ -35,23 +35,15 @@ struct LandingView: View {
         }
     }
 
+    /// Two stacked full-width capsules: the prominent way in, and sign-in as a quieter glass button under it.
     private var actions: some View {
-        VStack(spacing: DesignTokens.Spacing.md) {
-            Button { viewModel.enterApp() } label: {
-                Text(AppBranding.landingPrimaryAction).fullWidthButtonLabel()
+        GlassEffectContainer(spacing: DesignTokens.Spacing.md) {
+            VStack(spacing: DesignTokens.Spacing.md) {
+                Button(AppBranding.landingPrimaryAction) { viewModel.enterApp() }
+                    .lilyProminentButton()
+                Button(AppBranding.signInAction) { viewModel.presentSignIn() }
+                    .lilyGlassButton(labelColor: .lilyInk)
             }
-            .lilyProminentButton()
-            HStack(spacing: DesignTokens.Spacing.xs) {
-                Text(AppBranding.signInPrompt)
-                    .foregroundStyle(.secondary)
-                Button { viewModel.presentSignIn() } label: {
-                    Text(AppBranding.signInAction).tappableTextLabel()
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.lilyInk)
-                .fontWeight(.semibold)
-            }
-            .font(LilyTheme.Fonts.caption)
         }
     }
 }
