@@ -75,4 +75,71 @@ struct SportEventTests {
         #expect(manyLeft.availabilityText == "3 spots left")
         #expect(manyLeft.capacityText == "3 of 4 spots left")
     }
+
+    @Test func participationDefaultsToNotJoined() {
+        #expect(!makeEvent(capacity: 4, participants: 1).participates)
+        #expect(makeEvent(capacity: 4, participants: 1).updatingParticipation(count: 2, isJoined: true).participates)
+    }
+
+    @Test func hostIsRecognisedOnlyByAKnownId() {
+        let fixture = makeEvent(capacity: 4, participants: 1)
+        #expect(!fixture.isHosted(by: nil))
+        #expect(!fixture.isHosted(by: "u-1"))
+
+        let hosted = SportEvent(id: "e",
+                                title: "t",
+                                sport: .tennis,
+                                startsAt: .now,
+                                location: fixture.location,
+                                capacity: 4,
+                                participantCount: 1,
+                                hostName: "h",
+                                hostUserId: "u-1",
+                                isJoined: true)
+        #expect(hosted.isHosted(by: "u-1"))
+        #expect(!hosted.isHosted(by: "u-2"))
+        #expect(!hosted.isHosted(by: nil))
+    }
+
+    @Test func updatingParticipationKeepsEverythingElse() {
+        let event = makeEvent(capacity: 4, participants: 1).updatingParticipation(count: 1, isJoined: false)
+        let joined = event.updatingParticipation(count: 2, isJoined: true)
+        #expect(joined.participantCount == 2)
+        #expect(joined.isJoined == true)
+        #expect(joined.updatingParticipation(count: 1, isJoined: false) == event)
+    }
+}
+
+/// `SportEvent` is the wire shape of the backend's `Event`.
+struct SportEventCodingTests {
+    private let decoder = APIJSONCoding.makeDecoder()
+
+    @Test func decodesTheContractEvent() throws {
+        let event = try decoder.decode(SportEvent.self, from: Data(ContractSamples.event.utf8))
+        #expect(event.id == "evt_01J")
+        #expect(event.sport == .football)
+        #expect(event.startsAt == Date(timeIntervalSince1970: 1_789_318_800))
+        #expect(event.location.coordinate == Coordinate(latitude: 52.529, longitude: 13.387))
+        #expect(event.capacity == 10)
+        #expect(event.participantCount == 6)
+        #expect(event.hostUserId == "seed-marta")
+        #expect(event.hostName == "Marta")
+        #expect(event.isJoined == false)
+    }
+
+    /// Optional fields are absent rather than `null`, and the fields the app does not use yet are ignored.
+    @Test func optionalFieldsMayBeAbsent() throws {
+        let event = try decoder.decode(SportEvent.self, from: Data(ContractSamples.minimalEvent.utf8))
+        #expect(event.hostUserId == nil)
+        #expect(event.isJoined == nil)
+        #expect(!event.participates)
+        #expect(event.sport == .other)
+    }
+
+    @Test func encodesTheSportAsType() throws {
+        let event = MockEventFixtures.make(now: .now, count: 1)[0]
+        let json = try #require(String(bytes: APIJSONCoding.makeEncoder().encode(event), encoding: .utf8))
+        #expect(json.contains(#""type":"football""#))
+        #expect(!json.contains(#""sport""#))
+    }
 }

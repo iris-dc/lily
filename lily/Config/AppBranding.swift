@@ -74,8 +74,9 @@ nonisolated enum AppBranding {
 
     /// Event detail. `%@` in `hostedByFormat` is the host's display name.
     static let joinAction = "Join"
+    static let leaveAction = "Leave"
     static let eventFullAction = "Event is full"
-    static let joinComingSoon = "Joining arrives with the backend."
+    static let hostingNotice = "You host this game"
     static let hostedByFormat = "Hosted by %@"
 
     static func hostedByTitle(for hostName: String) -> String {

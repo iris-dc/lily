@@ -5,10 +5,11 @@ iOS 26+, SwiftUI, Liquid Glass, dark-only design (for now) with a rust-leaning r
 
 ## Status
 
-Initial skeleton. Auth and events are **mocked**; no AWS resources exist yet.
+Early days. Auth is **mocked**; events and profiles come from the Laurel backend when it runs locally (see [Backend](#backend)) or from in-memory mocks with `-mock-events`. No AWS resources exist yet.
 
 - Landing screen that explains the product (headline, live preview of upcoming events) with one tap into the app. Sign-in (Apple / Google / Email) is optional and lives in a sheet.
-- Tabbed shell (Explore, My Events, Profile) fed by fixture events. Explore switches between a list (with distance from the user) and a map with one glass pin per event; selecting a pin shows a preview card that opens the event detail. My Events asks a guest to sign in instead of requesting a user-scoped list.
+- Tabbed shell (Explore, My Events, Profile). Explore switches between a list (with distance from the user) and a map with one glass pin per event; selecting a pin shows a preview card that opens the event detail. My Events asks a guest to sign in instead of requesting a user-scoped list.
+- Event detail with join and leave for signed-in users: the button follows the caller's relation to the event (Join, Leave, "Event is full", "You host this game"; nothing for guests), the count and capacity bar update from the server's answer, and the list behind it reflects the change on the way back.
 - Session persistence across relaunch (guest choice and mock session).
 - Shared error popup, typed errors, logging facade, unit tests for all business logic.
 
@@ -35,7 +36,7 @@ xcodebuild -scheme lily -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
 
 Tests use Swift Testing and fakes for every interface (`lilyTests/Support/TestDoubles.swift`).
-UI smoke tests in `lilyUITests/` launch the real app with the `-reset-session` and `-mock-location` arguments (see `AppConfig.LaunchArguments`; `-start-as-guest` skips the landing) and walk the landing → Explore and landing → sign-in sheet → mock Apple → Explore paths, plus the Explore map: switching list → map, and selecting a pin, which asserts the preview card stays clear of the floating tab bar. Two more cover the sign-in sheet: with `-mock-auth-fail` a failed sign-in must show the error popup *above* the sheet, and signing in from the guest Profile tab must close the sheet.
+UI smoke tests in `lilyUITests/` launch the real app with the `-reset-session`, `-mock-location` and `-mock-events` arguments (see `AppConfig.LaunchArguments`; `-start-as-guest` skips the landing; `-mock-events` serves the fixture events in memory so no backend needs to run) and walk the landing → Explore and landing → sign-in sheet → mock Apple → Explore paths, plus the Explore map: switching list → map, and selecting a pin, which asserts the preview card stays clear of the floating tab bar. Two more cover the sign-in sheet: with `-mock-auth-fail` a failed sign-in must show the error popup *above* the sheet, and signing in from the guest Profile tab must close the sheet.
 
 Run everything the way CI does:
 
@@ -54,6 +55,16 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request 
 
 To make the mock auth fail and see the error popup, launch with `-mock-auth-fail` (previews can use `AppDependencies.makeMock(authBehavior: .fail(.network))`).
 
+## Backend
+
+Events and profiles come from **Laurel**, the Spring Boot backend (its own repository), which the app reaches at `AppConfig.API.baseURL`, `http://localhost:8080`. The simulator shares the Mac's loopback interface, so a Laurel started locally with its `local` profile (DynamoDB Local, auth bypass, seeded with the same nine fixture events the mocks produce) is all that is needed: start it, run the app, and Explore shows the seeded events. Plain HTTP to `localhost` needs no App Transport Security exception, because ATS exempts unqualified host names.
+
+Without a backend, launch with `-mock-events`: `MockEventRepository` serves the fixtures and joins and leaves in memory, and `MockProfileRepository` accepts every display name. Previews use the same mocks through `AppDependencies.makeMock()`, and the UI tests pass the argument so they never depend on a running server. Without either, the lists show the refreshable "Couldn't load events" state and joining reports "You're offline".
+
+**Identity.** The user id is the Cognito `sub`. Locally the backend has no Cognito, so a **debug build** identifies the signed-in user with the `X-Local-User-Id` header (`AppConfig.API.sendsLocalUserHeader`, `true` only under `#if DEBUG`); release builds never send it and will carry a Cognito token instead. A guest sends no identity and gets the backend's `local-dev` identity, which may read but not join. The header value comes from an `IdentityProvider` (`SessionIdentityProvider` reads `SessionController.state.user?.id`), so the client never depends on the session controller. Right after a successful sign-in the app `PUT`s the user's display name to the profile endpoint, fire and forget, so the backend can stamp the host's name onto events; a failure is logged, never shown.
+
+**Contract, in words.** JSON, UTF-8, ISO-8601 instants in UTC (`2026-09-13T17:00:00Z`; the app also reads fractional seconds and always writes without). `GET /api/events?scope=upcoming|joined` returns events (ascending by start, at most 100; `joined` includes hosted ones). `POST /api/events/{id}/participants` joins and `DELETE` on the same path leaves; both return the updated event. `PUT /api/profile` with `{"displayName"}` returns the profile. An event carries `id`, `title`, `type` (the sport; decoded into `SportEvent.sport`), `startsAt`, `location {name, coordinate {latitude, longitude}}`, `capacity`, `participantCount`, `hostUserId`, `hostName`, `isJoined` (whether the caller participates) and optional `description`, `lookingFor`, `skillLevel`, `price` that the app ignores for now; optional fields are absent, never `null`. Failures carry `{"code", "message"}`: `EVENT_NOT_FOUND` (404), `EVENT_FULL`, `ALREADY_JOINED`, `NOT_A_PARTICIPANT`, `HOST_CANNOT_LEAVE` (409) and `VALIDATION_FAILED` (400); the first five map to their own `AppError` cases and copy, anything else becomes `.eventsUnavailable`, and a transport failure becomes `.network`.
+
 ## Folder layout
 
 ```
@@ -61,9 +72,12 @@ lily/
   App/           LilyApp (entry), AppRootView (state switch), AppDependencies (composition root)
   Config/        AppConfig (non-visual constants), AppBranding (product copy), DesignTokens (spacing, radii, durations, SF Symbol names)
   Core/
-    Auth/        Models, Interfaces (AuthService, SessionStore), Implementations (Mock*, UserDefaults*), SessionController
+    Auth/        Models, Interfaces (AuthService, SessionStore, IdentityProvider), Implementations (Mock*, UserDefaults*,
+                 SessionIdentityProvider), SessionController
     Errors/      AppError, ErrorMessageMapper (single copy source), ErrorCenter (drives the popup)
     Logging/     Logging facade + OSLogLogger
+    Networking/  APIClient interface, APIRequest/APIError models, URLSessionAPIClient + JSON conventions,
+                 APIFailureMapping (backend codes to AppError)
     Location/    Coordinate model (+ CoreLocation bridge), LocationFix, interfaces (LocationService, LocationUpdateSource),
                  implementations (CoreLocation update source and service, caching decorator, mock)
     Validation/  CredentialsValidator
@@ -73,8 +87,9 @@ lily/
     Landing/     First screen: headline, event preview deck, primary action (Views + ViewModels)
     SignIn/      Sign-in sheet with provider buttons and the email form (Views + ViewModels)
     Shell/       MainTabView, MyEventsTab (sign-in prompt for guests, joined list for users), MyEventsContent
-    Events/      Models, Interfaces, Implementations (mock repository), ViewModels, Views (cards, list, map, detail, preview card)
-    Profile/     Guest and signed-in profile
+    Events/      Models (SportEvent, Participation), Interfaces, Implementations (remote and mock repositories), ViewModels
+                 (list, detail), Views (cards, list, map, detail, preview card), EventChangeTracker
+    Profile/     Guest and signed-in profile; ProfileRepository interface, remote and mock implementations, Profile models
 lilyTests/       Mirrors the above; Support/ holds fakes and fixtures
 lilyUITests/     LilySmokeTests: end-to-end walks against the real app in a simulator
 scripts/         ci.sh, the single entry point for lint, build and tests
@@ -93,7 +108,9 @@ Rules: interfaces and implementations live in separate folders, constants live u
 - **Branding lives in `Config/AppBranding.swift`:** app name, landing headline and copy, tab titles, empty states, sign-in and profile copy, button titles. `AppBranding.Events` holds the capacity copy ("Full", "N spots left", "N of M spots left") and `SportEvent.availabilityText` / `capacityText` are the only formatters, so the landing preview card and the capacity bar cannot disagree. Change copy there and every screen follows; UI tests match on the same literals.
 - **Colors** are asset catalog colorsets with light and dark variants, exposed via generated symbols (`Color.lilyAccent`, `Color.lilySecondary`, `Color.lilySurface`, ...). Rust-leaning red `#B72734` is the accent, maroon `#5E0C26` the deep tone behind it, and the aurora core keeps the original raspberry `#B31B3F` in its own colorset (`LilyAuroraCore`) so the accent can be retuned without moving the background; amber (`lilySecondary`) is used sparingly for sport chips, the hero badge and the "nearly full" capacity state.
 - **Location:** `LocationService` returns one fix or `nil`; the app never blocks on it. `CoreLocationService` reads a `LocationUpdateSource` (`CoreLocationUpdateSource` wraps `CLLocationUpdate.liveUpdates`, which prompts for when-in-use permission; the usage text is an `INFOPLIST_KEY_` build setting) and races the first fix against `AppConfig.Location.fixTimeout` in a task group, so cancelling its caller closes the stream. The seam lets the timeout, denied and first-fix paths be unit tested with a scripted fake. `CachedLocationService` wraps it in production: concurrent callers share one upstream request (which deliberately outlives any single caller's cancellation, bounded by `fixTimeout`, so the fix it obtains is cached for the next screen), a fix is reused for `fixTTL` (300 s) and a missing fix for `failedFixTTL` (30 s), so sibling tabs never open two CoreLocation streams. `Coordinate` stays Foundation-only; the CoreLocation bridge lives in `Coordinate+CoreLocation.swift`. Distance is computed on-device with a haversine, no network.
-- **Events list caching:** `EventListViewModel.loadIfStale()` (used by `.task`) reuses events loaded within `AppConfig.Events.listStaleAfter` (60 s) when a tab reappears; pull-to-refresh calls `load()` and always reloads; a cancelled load is logged, not reported; a failed load shows a refreshable "Couldn't load events" state instead of the empty state. This view-model-level check is interim until the cached `EventRepository` ships.
+- **Events list caching:** `EventListViewModel.loadIfStale()` (used by `.task`) reuses events loaded within `AppConfig.Events.listStaleAfter` (60 s) when a tab reappears; pull-to-refresh calls `load()` and always reloads; a cancelled load is logged, not reported; a failed load shows a refreshable "Couldn't load events" state instead of the empty state. A join or leave on the detail screen comes back through `replace(_:)`, which updates the list in place (and drops the event from a joined-only list when the user left), and bumps the shared `EventChangeTracker`; every other list compares the version it loaded against it and reloads on its next appearance, so My Events shows a join made from Explore without waiting out the 60 s. This view-model-level check is interim until the cached `EventRepository` ships.
+- **Networking seam:** repositories depend on the `APIClient` protocol and describe a call as an `APIRequest` (method, path, query items, optional `Encodable` body, response type). `URLSessionAPIClient` builds the URL from `AppConfig.API.baseURL`, sends and decodes JSON with the shared conventions in `APIJSONCoding`, adds `X-Local-User-Id` in debug builds when a user is signed in, and turns non-2xx answers into `APIError.http(status:body:)` with the backend's `{code, message}`; transport failures stay `URLError`. `APIClient.send(_:failingWith:)` then maps known backend codes to their `AppError`, other `URLError`s to `.network` and anything else to the caller's fallback, while cancellation passes through untouched so a screen the user left never raises the popup. Request failures are logged with method, path and status (never bodies or headers).
+- **Join and leave:** `EventDetailViewModel` owns the event on screen, runs one change at a time (`isBusy`), replaces the event with the server's answer and hands it to the list; failures go to `ErrorCenter`. `Participation` decides the control from the event and the caller: hidden for guests, `hosting` when `hostUserId` is the caller, `leave` when `isJoined`, `full` when no spots remain, otherwise `join`. The detail reads the caller through the same `IdentityProvider` the API client uses.
 - **Sign-in flow:** the sheet mounts its own `.errorPopup`, because a sheet is drawn above the root where the shared popup lives (`ErrorCenter` tracks the mounts and only the topmost draws), and it dismisses when `session.state.user` appears, which also works for guests who are already inside the app. `SignInViewModel` and `EmailSignInViewModel` own their sign-in `Task` and cancel it when the sheet disappears; `SessionController` treats `CancellationError` as a quiet exit, holds one authentication slot for sign-in and sign-up alike, and `signOut()` clears local state before the remote call and ignores re-entry. `UserDefaultsSessionStore` logs cache hit, miss and invalidation and discards an unreadable blob with a warning.
 - **Accessibility:** buttons and text fields use a 48pt *minimum* height so Dynamic Type can grow them, and plain text buttons get a 44pt tappable area through `tappableTextLabel()`.
 - **Typography:** SF Pro only, with tight tracking on the wordmark and headline (sizes and tracking in `DesignTokens.Typography`).
@@ -103,4 +120,4 @@ Rules: interfaces and implementations live in separate folders, constants live u
 
 ## AWS deployment
 
-Not yet. The plan: a Cognito user pool with Apple and Google identity providers (Amplify Swift wired into `AppDependencies.makeDefault()`), then a Java Spring backend on AWS ECS with a database behind it, validating Cognito JWTs and owning events and chat. See `CLAUDE.md` for the reasoning. `amplifyconfiguration.json` is git-ignored.
+Not yet. The plan: a Cognito user pool with Apple and Google identity providers (Amplify Swift wired into `AppDependencies.makeDefault()`), then the Laurel Spring backend (today only local, see [Backend](#backend)) on AWS ECS with DynamoDB behind it, validating Cognito JWTs and owning events and chat. Once that exists, `AppConfig.API.baseURL` points at it and the API client carries the Cognito token instead of the debug-only local identity header. See `CLAUDE.md` for the reasoning. `amplifyconfiguration.json` is git-ignored.

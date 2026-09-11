@@ -74,16 +74,28 @@ final class FakeEventRepository: EventRepository {
     var thrownError: (any Error)?
     /// While true, `events(in:)` records the scope and then suspends until `releaseRequests()`.
     var holdsRequests = false
+    /// Thrown by `join` and `leave` when set; otherwise they answer with the event from `result`, adjusted.
+    var participationError: (any Error)?
     private var pending: [CheckedContinuation<Void, Never>] = []
     private(set) var requestedScopes: [EventScope] = []
+    private(set) var joinedEventIDs: [String] = []
+    private(set) var leftEventIDs: [String] = []
 
     func events(in scope: EventScope) async throws -> [SportEvent] {
         requestedScopes.append(scope)
-        if holdsRequests {
-            await withCheckedContinuation { pending.append($0) }
-        }
+        await holdIfRequested()
         if let thrownError { throw thrownError }
         return try result.get()
+    }
+
+    func join(eventId: String) async throws -> SportEvent {
+        joinedEventIDs.append(eventId)
+        return try await participationResult(for: eventId, delta: 1, isJoined: true)
+    }
+
+    func leave(eventId: String) async throws -> SportEvent {
+        leftEventIDs.append(eventId)
+        return try await participationResult(for: eventId, delta: -1, isJoined: false)
     }
 
     /// Lets every held request through and stops holding new ones.
@@ -91,6 +103,42 @@ final class FakeEventRepository: EventRepository {
         holdsRequests = false
         pending.forEach { $0.resume() }
         pending.removeAll()
+    }
+
+    private func holdIfRequested() async {
+        if holdsRequests {
+            await withCheckedContinuation { pending.append($0) }
+        }
+    }
+
+    private func participationResult(for eventId: String, delta: Int, isJoined: Bool) async throws -> SportEvent {
+        await holdIfRequested()
+        if let participationError { throw participationError }
+        guard let event = try result.get().first(where: { $0.id == eventId }) else { throw AppError.eventNotFound }
+        return event.updatingParticipation(count: event.participantCount + delta, isJoined: isJoined)
+    }
+}
+
+@MainActor
+final class FakeProfileRepository: ProfileRepository {
+    var error: AppError?
+    /// Simulated latency, a suspension point so cancellation can be observed.
+    var delay: Duration = .zero
+    private(set) var syncedNames: [String] = []
+
+    func syncDisplayName(_ name: String) async throws {
+        syncedNames.append(name)
+        if delay > .zero { try await Task.sleep(for: delay) }
+        if let error { throw error }
+    }
+}
+
+@MainActor
+final class FakeIdentityProvider: IdentityProvider {
+    var currentUserID: String?
+
+    init(currentUserID: String? = nil) {
+        self.currentUserID = currentUserID
     }
 }
 
@@ -105,13 +153,18 @@ enum TestFixtures {
 struct SessionHarness {
     let auth = FakeAuthService()
     let store = InMemorySessionStore()
+    let profile = FakeProfileRepository()
     let logger = SpyLogger()
     let errorCenter: ErrorCenter
     let controller: SessionController
 
     init() {
         errorCenter = ErrorCenter(logger: logger)
-        controller = SessionController(authService: auth, sessionStore: store, errorCenter: errorCenter, logger: logger)
+        controller = SessionController(authService: auth,
+                                       sessionStore: store,
+                                       profileRepository: profile,
+                                       errorCenter: errorCenter,
+                                       logger: logger)
     }
 }
 

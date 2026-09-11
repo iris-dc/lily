@@ -137,6 +137,59 @@ struct SessionControllerTests {
         #expect(harness.store.stored == nil)
         #expect(harness.auth.signOutCount == 1)
     }
+
+    @Test func signInSyncsTheDisplayNameOnce() async {
+        let harness = SessionHarness()
+
+        await harness.controller.signIn(with: .apple)
+        await harness.controller.profileSync?.value
+
+        #expect(harness.profile.syncedNames == [TestFixtures.user.displayName])
+        #expect(harness.logger.messages(in: .auth).contains { $0.contains("Profile synced") })
+    }
+
+    @Test func signUpSyncsTheDisplayNameOnce() async {
+        let harness = SessionHarness()
+
+        await harness.controller.signUp(email: "a@b.co", password: "long-enough")
+        await harness.controller.profileSync?.value
+
+        #expect(harness.profile.syncedNames == [TestFixtures.user.displayName])
+    }
+
+    @Test func failedSignInDoesNotSyncTheProfile() async {
+        let harness = SessionHarness()
+        harness.auth.signInResult = .failure(.network)
+
+        await harness.controller.signIn(with: .apple)
+
+        #expect(harness.controller.profileSync == nil)
+        #expect(harness.profile.syncedNames.isEmpty)
+    }
+
+    /// The user did sign in; a backend that cannot take the name is a log line, never a popup.
+    @Test func failedProfileSyncIsLoggedNotShown() async {
+        let harness = SessionHarness()
+        harness.profile.error = .network
+
+        let success = await harness.controller.signIn(with: .apple)
+        await harness.controller.profileSync?.value
+
+        #expect(success)
+        #expect(harness.controller.state == .signedIn(TestFixtures.user))
+        #expect(harness.errorCenter.current == nil)
+        #expect(harness.logger.messages(in: .auth).contains { $0.contains("Profile sync failed") })
+    }
+
+    @Test func signOutCancelsAPendingProfileSync() async {
+        let harness = SessionHarness()
+        harness.profile.delay = .seconds(5)
+
+        await harness.controller.signIn(with: .apple)
+        await harness.controller.signOut()
+
+        #expect(harness.controller.profileSync?.isCancelled == true)
+    }
 }
 
 /// Runs the controller against the real mock auth service to cover behaviour the scripted fake cannot.
@@ -150,6 +203,7 @@ struct SessionControllerWithMockAuthTests {
         init(delay: Duration) {
             controller = SessionController(authService: MockAuthService(delay: delay, store: store),
                                            sessionStore: store,
+                                           profileRepository: MockProfileRepository(logger: logger),
                                            errorCenter: ErrorCenter(logger: logger),
                                            logger: logger)
         }

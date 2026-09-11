@@ -12,7 +12,8 @@ struct MainTabView: View {
                                                title: AppBranding.exploreEmptyTitle,
                                                message: AppBranding.exploreEmptyMessage),
                     showsMap: true,
-                    viewModel: dependencies.makeEventListViewModel(scope: .upcoming)
+                    scope: .upcoming,
+                    dependencies: dependencies
                 )
             }
             Tab(AppBranding.myEventsTitle, systemImage: DesignTokens.Symbols.myEvents) {

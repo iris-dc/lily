@@ -7,19 +7,24 @@ final class SessionController {
     private(set) var state: SessionState = .loading
     /// Provider currently mid sign-in, so buttons can show a spinner without a second source of truth.
     private(set) var authenticatingProvider: AuthProvider.Kind?
+    /// Display-name sync started by the last sign-in. Sign-in never waits for it; sign-out cancels it.
+    private(set) var profileSync: Task<Void, Never>?
     private var isSigningOut = false
 
     private let authService: any AuthService
     private let sessionStore: any SessionStore
+    private let profileRepository: any ProfileRepository
     private let errorCenter: ErrorCenter
     private let logger: any Logging
 
     init(authService: any AuthService,
          sessionStore: any SessionStore,
+         profileRepository: any ProfileRepository,
          errorCenter: ErrorCenter,
          logger: any Logging) {
         self.authService = authService
         self.sessionStore = sessionStore
+        self.profileRepository = profileRepository
         self.errorCenter = errorCenter
         self.logger = logger
     }
@@ -84,6 +89,7 @@ final class SessionController {
         }
         isSigningOut = true
         defer { isSigningOut = false }
+        profileSync?.cancel()
         sessionStore.clear()
         state = .signedOut
         logger.info(.auth, "Signed out")
@@ -110,6 +116,7 @@ final class SessionController {
             let session = try await authService.signIn(with: provider)
             logger.info(.auth, "Sign-in succeeded via \(provider.kind.rawValue)")
             state = .signedIn(session.user)
+            syncProfile(for: session.user)
             return true
         } catch is CancellationError {
             // The user backed out (dismissed the sheet); not an error to show.
@@ -119,6 +126,20 @@ final class SessionController {
             logger.error(.auth, "Sign-in failed via \(provider.kind.rawValue): \(error)")
             errorCenter.report(mapSignInError(error, provider: provider))
             return false
+        }
+    }
+
+    /// The backend copies the host's name onto events, so it must know it before the user hosts one. Fire and forget:
+    /// the user did sign in, so a failure here is logged and never shown.
+    private func syncProfile(for user: AuthUser) {
+        profileSync?.cancel()
+        profileSync = Task { [profileRepository, logger] in
+            do {
+                try await profileRepository.syncDisplayName(user.displayName)
+                logger.info(.auth, "Profile synced for user \(user.id)")
+            } catch {
+                logger.warning(.auth, "Profile sync failed for user \(user.id): \(error)")
+            }
         }
     }
 

@@ -15,7 +15,8 @@ struct MyEventsTab: View {
                 emptyState: EmptyStateView(symbolName: DesignTokens.Symbols.addEvent,
                                            title: AppBranding.myEventsEmptyTitle,
                                            message: AppBranding.myEventsEmptyMessage),
-                viewModel: dependencies.makeEventListViewModel(scope: .joined)
+                scope: .joined,
+                dependencies: dependencies
             )
         }
     }

@@ -5,17 +5,20 @@ struct EventListView: View {
     let title: String
     let emptyState: EmptyStateView
     let showsMap: Bool
+    private let dependencies: AppDependencies
     @State private var presentation: EventsPresentation = .list
     @State private var viewModel: EventListViewModel
 
     init(title: String,
          emptyState: EmptyStateView,
          showsMap: Bool = false,
-         viewModel: EventListViewModel) {
+         scope: EventScope,
+         dependencies: AppDependencies) {
         self.title = title
         self.emptyState = emptyState
         self.showsMap = showsMap
-        _viewModel = State(initialValue: viewModel)
+        self.dependencies = dependencies
+        _viewModel = State(initialValue: dependencies.makeEventListViewModel(scope: scope))
     }
 
     var body: some View {
@@ -25,7 +28,10 @@ struct EventListView: View {
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(presentation == .map ? .inline : .large)
-            .navigationDestination(for: SportEvent.self) { EventDetailView(event: $0) }
+            .navigationDestination(for: SportEvent.self) { event in
+                // A join or leave on the detail comes back through `replace`, so this list is right on return.
+                EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event, onChange: viewModel.replace))
+            }
             .toolbar {
                 if showsMap {
                     // iOS 26 gives every toolbar item its own glass; the segmented picker already draws one.

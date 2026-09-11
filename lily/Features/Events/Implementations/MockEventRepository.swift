@@ -1,28 +1,54 @@
 import Foundation
 
-/// Deterministic fixture data until the backend exists.
+/// Fixture events with in-memory joins, for previews, UI tests and `-mock-events` runs without a backend.
 final class MockEventRepository: EventRepository {
-    /// Every n-th fixture counts as "joined" so the My Events tab has content.
+    /// Every n-th fixture starts out joined so the My Events tab has content.
     private static let joinedStride = 3
 
-    private let fixtures: [SportEvent]
+    private var events: [SportEvent]
     private let logger: any Logging
 
     init(now: Date = .now, count: Int = AppConfig.Events.mockFeedSize, logger: any Logging) {
-        self.fixtures = MockEventFixtures.make(now: now, count: count)
+        self.events = MockEventFixtures.make(now: now, count: count).enumerated().map { index, event in
+            // A joined event has at least its one participant; the fixtures themselves stay as the backend seeds them.
+            let joined = index.isMultiple(of: Self.joinedStride)
+            return event.updatingParticipation(count: joined ? max(1, event.participantCount) : event.participantCount,
+                                               isJoined: joined)
+        }
         self.logger = logger
     }
 
     func events(in scope: EventScope) async throws -> [SportEvent] {
         logger.debug(.cache, "Mock events served for scope \(scope)")
         switch scope {
-        case .upcoming:
-            return fixtures
-        case .joined:
-            return fixtures.enumerated()
-                .filter { $0.offset % Self.joinedStride == 0 }
-                .map(\.element)
+        case .upcoming: return events
+        case .joined: return events.filter(\.participates)
         }
+    }
+
+    func join(eventId: String) async throws -> SportEvent {
+        let event = try find(eventId)
+        guard !event.participates else { throw AppError.alreadyJoined }
+        guard !event.isFull else { throw AppError.eventFull }
+        return store(event.updatingParticipation(count: event.participantCount + 1, isJoined: true))
+    }
+
+    func leave(eventId: String) async throws -> SportEvent {
+        let event = try find(eventId)
+        guard event.participates else { throw AppError.notAParticipant }
+        return store(event.updatingParticipation(count: event.participantCount - 1, isJoined: false))
+    }
+
+    private func find(_ eventId: String) throws -> SportEvent {
+        guard let event = events.first(where: { $0.id == eventId }) else { throw AppError.eventNotFound }
+        return event
+    }
+
+    private func store(_ event: SportEvent) -> SportEvent {
+        if let index = events.firstIndex(where: { $0.id == event.id }) {
+            events[index] = event
+        }
+        return event
     }
 }
 

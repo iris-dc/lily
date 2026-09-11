@@ -55,6 +55,7 @@ struct EventListViewModelTests {
         let viewModel = EventListViewModel(scope: .upcoming,
                                            repository: repository,
                                            locationService: locationService ?? MockLocationService(coordinate: location),
+                                           changes: EventChangeTracker(),
                                            errorCenter: center,
                                            logger: SpyLogger(),
                                            now: now)
