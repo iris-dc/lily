@@ -28,17 +28,10 @@ jobs:
       - name: Install SwiftLint
         run: brew install swiftlint
 
-      - name: Lint
-        run: ./scripts/ci.sh lint
-
-      - name: Build for testing
-        run: ./scripts/ci.sh build
-
-      - name: Unit tests
-        run: ./scripts/ci.sh unit
-
-      - name: UI tests
-        run: ./scripts/ci.sh ui
+      # One stage, the same one agents run locally: lint, build for testing once, then run both test bundles
+      # without rebuilding. Separate unit and ui steps each rebuilt the test bundles.
+      - name: Lint, build for testing, unit and UI tests
+        run: ./scripts/ci.sh all
 
       - name: Upload test results
         if: always()

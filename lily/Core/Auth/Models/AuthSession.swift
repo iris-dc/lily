@@ -2,7 +2,6 @@ import Foundation
 
 nonisolated struct AuthSession: Codable, Hashable, Sendable {
     let user: AuthUser
-    let issuedAt: Date
 }
 
 /// What survives app relaunch. The real Cognito implementation keeps tokens in the Keychain itself,

@@ -14,7 +14,7 @@ struct EventFilterButton: View {
         } label: {
             Label(Copy.title, systemImage: iconName)
         }
-        .accessibilityIdentifier("events-filter")
+        .accessibilityIdentifier(AccessibilityIdentifiers.eventsFilter)
         // The filled glyph is the only visual cue that the feed is narrowed; VoiceOver needs it as a value.
         .accessibilityValue(viewModel.filter.isActive ? Copy.activeValue : Copy.inactiveValue)
         .popover(isPresented: $isPresented, arrowEdge: .top) {

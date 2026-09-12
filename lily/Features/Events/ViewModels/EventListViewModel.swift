@@ -14,17 +14,31 @@ final class EventListViewModel {
 
     private let scope: EventScope
     private let repository: any EventRepository
+    private let identity: any IdentityProvider
     private let locationService: any LocationService
     private let changes: EventChangeTracker
     private let errorCenter: ErrorCenter
     private let logger: any Logging
     private let now: () -> Date
     private var lastLoadedAt: Date?
+    /// The load that failed last: when, and what it asked for. Cleared by a success. Not retried before
+    /// `AppConfig.Events.retryAfterFailure` unless something that changes the answer happened since.
+    private var failedAttempt: FailedAttempt?
+
+    private struct FailedAttempt {
+        let at: Date
+        let version: Int
+        let userID: String?
+    }
     /// `changes.version` the current content reflects; a different value means another screen changed an event.
     private var loadedVersion: Int?
+    /// Who the current content was loaded for. `isJoined` is the server's answer for that caller, so a sign-in or
+    /// sign-out makes the content stale even though nothing else changed.
+    private var loadedUserID: String?
 
     init(scope: EventScope,
          repository: any EventRepository,
+         identity: any IdentityProvider,
          locationService: any LocationService,
          changes: EventChangeTracker,
          errorCenter: ErrorCenter,
@@ -34,6 +48,7 @@ final class EventListViewModel {
         self.filter = initialFilter
         self.scope = scope
         self.repository = repository
+        self.identity = identity
         self.locationService = locationService
         self.changes = changes
         self.errorCenter = errorCenter
@@ -82,13 +97,21 @@ final class EventListViewModel {
         event.distance(from: userLocation)?.roadText
     }
 
-    /// Loads once per `AppConfig.Events.listStaleAfter`, or sooner when another screen changed an event meanwhile,
-    /// so a tab that reappears reuses what it already has.
+    /// Loads once per `AppConfig.Events.listStaleAfter`, or sooner when another screen changed an event meanwhile
+    /// or the caller changed (sign-in or sign-out; `isJoined` is per caller), so a tab that reappears reuses what
+    /// it already has. A failed load is retried only after `AppConfig.Events.retryAfterFailure`, so switching tabs
+    /// while the backend is down does not hammer it, unless an event changed elsewhere or the caller changed
+    /// meanwhile, which proves the backend is up and the answer different; `load()` (pull-to-refresh) never waits.
     func loadIfStale() async {
-        guard isStale else {
+        guard !isWaitingToRetry else {
+            logger.debug(.cache, "Events for scope \(scope) failed to load recently; not retrying yet")
+            return
+        }
+        guard let reason = stalenessReason else {
             logger.debug(.cache, "Events for scope \(scope) are fresh; skipping reload")
             return
         }
+        logger.debug(.cache, "Events for scope \(scope) are stale (\(reason)); reloading")
         await load()
     }
 
@@ -97,12 +120,16 @@ final class EventListViewModel {
         guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
-        // Taken before the request: a change landing mid-flight may be missing from the answer, and must reload.
+        // Both taken before the request: a change or a sign-in landing mid-flight may be missing from the answer,
+        // and must reload.
         let version = changes.version
+        let userID = identity.currentUserID
         do {
             events = try await repository.events(in: scope)
             lastLoadedAt = now()
+            failedAttempt = nil
             loadedVersion = version
+            loadedUserID = userID
             loadFailed = false
             logger.info(.events, "Loaded \(events.count) events for scope \(scope)")
         } catch {
@@ -110,9 +137,10 @@ final class EventListViewModel {
                 logger.debug(.events, "Loading events cancelled for scope \(scope)")
                 return
             }
+            failedAttempt = FailedAttempt(at: now(), version: version, userID: userID)
             loadFailed = true
             logger.error(.events, "Loading events failed for scope \(scope): \(error)")
-            errorCenter.report(AppError.eventsUnavailable)
+            errorCenter.report(error)
         }
     }
 
@@ -127,6 +155,7 @@ final class EventListViewModel {
         }
         changes.recordChange()
         loadedVersion = changes.version
+        logger.debug(.cache, "Event \(event.id) replaced in scope \(scope); sibling lists invalidated")
     }
 
     /// Location is optional context: failures leave `userLocation` nil and the UI simply omits distances.
@@ -144,8 +173,21 @@ final class EventListViewModel {
         await loadUserLocation()
     }
 
-    private var isStale: Bool {
-        guard let lastLoadedAt, loadedVersion == changes.version else { return true }
-        return now().timeIntervalSince(lastLoadedAt) >= AppConfig.Events.listStaleAfter
+    /// True from a failed load until `AppConfig.Events.retryAfterFailure` has passed, unless a change made elsewhere
+    /// or a change of caller since then means the answer is different anyway.
+    private var isWaitingToRetry: Bool {
+        guard loadFailed, let failedAttempt else { return false }
+        guard failedAttempt.version == changes.version, failedAttempt.userID == identity.currentUserID else { return false }
+        return now().timeIntervalSince(failedAttempt.at) < AppConfig.Events.retryAfterFailure
+    }
+
+    /// Why the content must be reloaded, or `nil` while it can be reused.
+    private var stalenessReason: String? {
+        guard let lastLoadedAt else { return loadFailed ? "retry after failure" : "never loaded" }
+        if loadedVersion != changes.version { return "changed elsewhere" }
+        if loadedUserID != identity.currentUserID { return "caller changed" }
+        if loadFailed { return "retry after failure" }
+        if now().timeIntervalSince(lastLoadedAt) >= AppConfig.Events.listStaleAfter { return "older than TTL" }
+        return nil
     }
 }

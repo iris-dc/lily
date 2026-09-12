@@ -62,13 +62,7 @@ final class LilySmokeTests: XCTestCase {
 
     @MainActor
     func testMockAppleSignInFromSheetLandsInApp() {
-        let signIn = app.buttons["Sign in"]
-        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
-        signIn.tap()
-
-        let apple = app.buttons["Continue with Apple"]
-        XCTAssertTrue(apple.waitForExistence(timeout: 5))
-        apple.tap()
+        tapSignInWithApple()
 
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
     }
@@ -78,13 +72,7 @@ final class LilySmokeTests: XCTestCase {
         app.terminate()
         app.launchArguments.append("-mock-auth-fail")
         app.launch()
-        let signIn = app.buttons["Sign in"]
-        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
-        signIn.tap()
-
-        let apple = app.buttons["Continue with Apple"]
-        XCTAssertTrue(apple.waitForExistence(timeout: 5))
-        apple.tap()
+        let apple = tapSignInWithApple()
 
         // The popup combines its children into one element, so match on the label.
         let popup = app.descendants(matching: .any)
@@ -99,16 +87,48 @@ final class LilySmokeTests: XCTestCase {
     func testSignInFromProfileDismissesTheSheet() {
         relaunchAsGuest()
         app.tabBars.buttons["Profile"].tap()
-        let signIn = app.buttons["Sign in"]
-        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
-        signIn.tap()
-
-        let apple = app.buttons["Continue with Apple"]
-        XCTAssertTrue(apple.waitForExistence(timeout: 5))
-        apple.tap()
+        let apple = tapSignInWithApple()
 
         XCTAssertTrue(apple.waitForNonExistence(timeout: 10), "the sheet must close once the guest is signed in")
         XCTAssertTrue(app.staticTexts["Apple Tester"].waitForExistence(timeout: 5))
+    }
+
+    /// The mock's "Doubles, all levels" starts at 1 of 4 and unjoined; a join must show on the detail at once and
+    /// in My Events on the way there, without a manual refresh. Leaving it from My Events must turn the control back
+    /// into Join and drop the game from that list on the way back, again without a reload. Nothing scrolls here on
+    /// purpose: a scrolled list minimises the tab bar, and a minimised tab bar swallows tab taps.
+    @MainActor
+    func testJoiningFromTheDetailShowsInMyEvents() {
+        tapSignInWithApple()
+        let title = "Doubles, all levels"
+        let card = app.staticTexts[title]
+        XCTAssertTrue(card.waitForExistence(timeout: 10))
+        card.tap()
+
+        let join = app.buttons["Join"]
+        XCTAssertTrue(join.waitForExistence(timeout: 5))
+        join.tap()
+
+        XCTAssertTrue(app.buttons["Leave"].waitForExistence(timeout: 5), "a join must turn the control into Leave")
+        XCTAssertTrue(app.staticTexts["2 of 4 joined"].exists, "the capacity must show the server's count")
+
+        app.navigationBars.buttons.firstMatch.tap()
+        app.tabBars.buttons["My Events"].tap()
+        XCTAssertTrue(app.navigationBars["My Events"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "the joined game must be listed under My Events")
+
+        app.staticTexts[title].tap()
+        let leave = app.buttons["Leave"]
+        XCTAssertTrue(leave.waitForExistence(timeout: 5))
+        leave.tap()
+
+        XCTAssertTrue(join.waitForExistence(timeout: 5), "a leave must turn the control back into Join")
+        XCTAssertTrue(app.staticTexts["1 of 4 joined"].exists, "the capacity must show the server's count")
+
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["My Events"].waitForExistence(timeout: 5))
+        // The list animates the removal, so give it room.
+        XCTAssertTrue(app.staticTexts[title].waitForNonExistence(timeout: 10), "a left game must drop out of My Events")
     }
 
     @MainActor
@@ -145,6 +165,21 @@ final class LilySmokeTests: XCTestCase {
         app.launchArguments.append("-start-as-guest")
         app.launch()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
+    }
+
+    /// Opens the sign-in sheet from whatever screen shows "Sign in" and picks the mock Apple provider. Returns the
+    /// provider button, so callers can watch the sheet close or stay.
+    @MainActor
+    @discardableResult
+    private func tapSignInWithApple() -> XCUIElement {
+        let signIn = app.buttons["Sign in"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
+        signIn.tap()
+
+        let apple = app.buttons["Continue with Apple"]
+        XCTAssertTrue(apple.waitForExistence(timeout: 5))
+        apple.tap()
+        return apple
     }
 
     @MainActor

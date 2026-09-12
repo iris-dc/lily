@@ -7,6 +7,7 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case authCancelled
     case authFailed(provider: AuthProvider.Kind)
     case invalidCredentials
+    /// Reserved for the Cognito token-refresh path; nothing raises it yet.
     case sessionExpired
     case network
     case eventsUnavailable
@@ -15,6 +16,9 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case alreadyJoined
     case notAParticipant
     case hostCannotLeave
+    case tryAgain
+    /// A join or leave failed for a reason without copy of its own (a 500, an unreadable body).
+    case participationFailed
     case unknown
 
     /// Normalises any thrown error into an `AppError`.

@@ -6,22 +6,11 @@ import Testing
 /// distance criterion waits for the user's position.
 @MainActor
 struct EventListFilteringTests {
-    private func makeViewModel(_ repository: FakeEventRepository) -> (EventListViewModel, ErrorCenter) {
-        let center = ErrorCenter(logger: SpyLogger())
-        let viewModel = EventListViewModel(scope: .upcoming,
-                                           repository: repository,
-                                           locationService: MockLocationService(coordinate: nil),
-                                           changes: EventChangeTracker(),
-                                           errorCenter: center,
-                                           logger: SpyLogger())
-        return (viewModel, center)
-    }
-
     @Test func visibleEventsFollowTheFilterWhileEventsStayComplete() async {
         let repository = FakeEventRepository()
         let events = MockEventFixtures.make(now: .now, count: 4)
         repository.result = .success(events)
-        let (viewModel, _) = makeViewModel(repository)
+        let viewModel = makeEventListViewModel(repository: repository)
         await viewModel.load()
 
         viewModel.toggleType(.football)
@@ -37,7 +26,7 @@ struct EventListFilteringTests {
         let repository = FakeEventRepository()
         let events = MockEventFixtures.make(now: .now, count: 8).filter { [.padel, .football, .climbing].contains($0.type) }
         repository.result = .success(events.reversed())
-        let (viewModel, _) = makeViewModel(repository)
+        let viewModel = makeEventListViewModel(repository: repository)
         await viewModel.load()
 
         #expect(viewModel.availableTypes == [.football, .padel, .climbing])
@@ -46,7 +35,7 @@ struct EventListFilteringTests {
     @Test func everythingFilteredOutOnlyWhenEventsExistButNoneMatch() async {
         let repository = FakeEventRepository()
         repository.result = .success(MockEventFixtures.make(now: .now, count: 1))
-        let (viewModel, _) = makeViewModel(repository)
+        let viewModel = makeEventListViewModel(repository: repository)
         #expect(!viewModel.isEverythingFilteredOut)
 
         await viewModel.load()
@@ -61,7 +50,7 @@ struct EventListFilteringTests {
     @Test func filterSurvivesAReload() async {
         let repository = FakeEventRepository()
         repository.result = .success(MockEventFixtures.make(now: .now, count: 3))
-        let (viewModel, _) = makeViewModel(repository)
+        let viewModel = makeEventListViewModel(repository: repository)
         await viewModel.load()
         viewModel.toggleType(.basketball)
 
@@ -74,7 +63,7 @@ struct EventListFilteringTests {
         let repository = FakeEventRepository()
         let all = MockEventFixtures.make(now: .now, count: 8)
         repository.result = .success(all.filter { [.football, .basketball].contains($0.type) })
-        let (viewModel, _) = makeViewModel(repository)
+        let viewModel = makeEventListViewModel(repository: repository)
         await viewModel.load()
         viewModel.toggleType(.basketball)
 
@@ -90,13 +79,8 @@ struct EventListFilteringTests {
     @Test func distanceCriterionUsesTheUserPositionOnceKnown() async {
         let repository = FakeEventRepository()
         repository.result = .success(MockEventFixtures.make(now: .now, count: 8))
-        let center = ErrorCenter(logger: SpyLogger())
-        let viewModel = EventListViewModel(scope: .upcoming,
-                                           repository: repository,
-                                           locationService: MockLocationService(coordinate: AppConfig.Location.mockCenter),
-                                           changes: EventChangeTracker(),
-                                           errorCenter: center,
-                                           logger: SpyLogger())
+        let viewModel = makeEventListViewModel(repository: repository,
+                                               locationService: MockLocationService(coordinate: AppConfig.Location.mockCenter))
         await viewModel.load()
         viewModel.updateFilter { $0.maxDistanceMeters = 2_500 }
         #expect(viewModel.visibleEvents.count == 8, "no position yet, so distance is not judged")
@@ -114,13 +98,10 @@ struct EventListFilteringTests {
         repository.result = .success(MockEventFixtures.make(now: .now, count: 3))
         let far = Coordinate(latitude: AppConfig.Location.mockCenter.latitude + 0.5,
                              longitude: AppConfig.Location.mockCenter.longitude)
-        let viewModel = EventListViewModel(scope: .joined,
-                                           repository: repository,
-                                           locationService: MockLocationService(coordinate: far),
-                                           changes: EventChangeTracker(),
-                                           errorCenter: ErrorCenter(logger: SpyLogger()),
-                                           logger: SpyLogger(),
-                                           initialFilter: .everything)
+        let viewModel = makeEventListViewModel(scope: .joined,
+                                               repository: repository,
+                                               locationService: MockLocationService(coordinate: far),
+                                               initialFilter: .everything)
         await viewModel.load()
         await viewModel.loadUserLocation()
         #expect(viewModel.visibleEvents.count == 3)
@@ -132,12 +113,7 @@ struct EventListFilteringTests {
         repository.result = .success(MockEventFixtures.make(now: .now, count: 3))
         let far = Coordinate(latitude: AppConfig.Location.mockCenter.latitude + 0.5,
                              longitude: AppConfig.Location.mockCenter.longitude)
-        let viewModel = EventListViewModel(scope: .upcoming,
-                                           repository: repository,
-                                           locationService: MockLocationService(coordinate: far),
-                                           changes: EventChangeTracker(),
-                                           errorCenter: ErrorCenter(logger: SpyLogger()),
-                                           logger: SpyLogger())
+        let viewModel = makeEventListViewModel(repository: repository, locationService: MockLocationService(coordinate: far))
         await viewModel.load()
         await viewModel.loadUserLocation()
         #expect(viewModel.isEverythingFilteredOut)

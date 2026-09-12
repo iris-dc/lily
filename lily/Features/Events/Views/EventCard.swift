@@ -24,7 +24,7 @@ struct EventCard: View {
                     HStack(spacing: DesignTokens.Spacing.sm) {
                         Label(event.locationName, systemImage: DesignTokens.Symbols.location)
                         if let distance {
-                            Text("·")
+                            Text(AppBranding.Events.separatorGlyph)
                             Label(distance, systemImage: DesignTokens.Symbols.distance)
                         }
                     }

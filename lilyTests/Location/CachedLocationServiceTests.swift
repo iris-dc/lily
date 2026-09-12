@@ -87,12 +87,4 @@ struct CachedLocationServiceTests {
         #expect(await second.value == berlin)
         #expect(upstream.callCount == 1)
     }
-
-    /// Yields to the main actor until `condition` holds, bounded so a regression fails instead of hanging.
-    private func settle(until condition: () -> Bool) async {
-        for _ in 0..<1_000 where !condition() {
-            await Task.yield()
-        }
-        #expect(condition())
-    }
 }

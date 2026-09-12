@@ -6,14 +6,24 @@ struct ErrorMessageMapperTests {
     private static let allErrors: [AppError] = [
         .authCancelled, .authFailed(provider: .apple), .invalidCredentials,
         .sessionExpired, .network, .eventsUnavailable, .eventNotFound, .eventFull,
-        .alreadyJoined, .notAParticipant, .hostCannotLeave, .unknown,
+        .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain, .participationFailed, .unknown,
     ]
 
+    /// The event branch of the mapper ends in a generic default, so a case missing from it would read
+    /// "Something went wrong" and still pass a non-empty check; only `.unknown` may carry that copy.
     @Test(arguments: allErrors)
     func everyErrorHasCopy(error: AppError) {
         let message = ErrorMessageMapper.message(for: error)
         #expect(!message.title.isEmpty)
         #expect(!message.body.isEmpty)
+        #expect(error == .unknown || message != ErrorMessageMapper.message(for: .unknown),
+                "\(error) fell through to the generic copy")
+    }
+
+    /// Pinned so a change to the refusal copy is a deliberate diff, not a side effect of editing the mapper.
+    @Test func participationRefusalsHaveTheirOwnTitles() {
+        #expect(ErrorMessageMapper.message(for: .tryAgain).title == "Please try again")
+        #expect(ErrorMessageMapper.message(for: .participationFailed).title == "Couldn't update your spot")
     }
 
     @Test func providerFailureNamesProvider() {

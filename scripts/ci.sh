@@ -37,6 +37,7 @@ mkdir -p "$RESULTS_DIR"
 
 run_xcodebuild() {
   local label="$1"; shift
+  local action="$1"
   local log="$RESULTS_DIR/${label}.log"
   rm -rf "$RESULTS_DIR/${label}.xcresult"
   echo "==> ${label}"
@@ -50,6 +51,20 @@ run_xcodebuild() {
     echo "==> ${label} FAILED (exit ${status}); last lines:" >&2
     tail -n 40 "$log" >&2
     exit "$status"
+  fi
+  case "$action" in
+    test|test-without-building) require_executed_tests "$label" "$log" ;;
+  esac
+}
+
+# xcodebuild exits 0 and prints a passing suite when -only-testing matches nothing (a renamed target or test bundle),
+# so a green test stage must also show a test that ran: XCTest prints "Test Case '...' passed" and "Executed N tests",
+# Swift Testing prints "Test case '...' passed" and no Executed summary.
+require_executed_tests() {
+  local label="$1" log="$2"
+  if ! grep -qE "Test [Cc]ase '.*' passed|Executed [1-9][0-9]* tests?" "$log"; then
+    echo "==> ${label}: no tests were executed" >&2
+    exit 1
   fi
 }
 

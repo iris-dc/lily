@@ -90,9 +90,10 @@ final class SessionController {
         isSigningOut = true
         defer { isSigningOut = false }
         profileSync?.cancel()
+        let userID = state.user?.id
         sessionStore.clear()
         state = .signedOut
-        logger.info(.auth, "Signed out")
+        logger.info(.auth, userID.map { "Signed out user \($0)" } ?? "Signed out")
         do {
             try await authService.signOut()
         } catch {
@@ -114,7 +115,7 @@ final class SessionController {
         logger.info(.auth, "Sign-in started via \(provider.kind.rawValue)")
         do {
             let session = try await authService.signIn(with: provider)
-            logger.info(.auth, "Sign-in succeeded via \(provider.kind.rawValue)")
+            logger.info(.auth, "Sign-in succeeded via \(provider.kind.rawValue) for user \(session.user.id)")
             state = .signedIn(session.user)
             syncProfile(for: session.user)
             return true
@@ -130,7 +131,8 @@ final class SessionController {
     }
 
     /// The backend copies the host's name onto events, so it must know it before the user hosts one. Fire and forget:
-    /// the user did sign in, so a failure here is logged and never shown.
+    /// the user did sign in, so a failure here is logged and never shown. A sign-out cancels it on purpose, which
+    /// is not a failure and stays at debug.
     private func syncProfile(for user: AuthUser) {
         profileSync?.cancel()
         profileSync = Task { [profileRepository, logger] in
@@ -138,7 +140,11 @@ final class SessionController {
                 try await profileRepository.syncDisplayName(user.displayName)
                 logger.info(.auth, "Profile synced for user \(user.id)")
             } catch {
-                logger.warning(.auth, "Profile sync failed for user \(user.id): \(error)")
+                if AppError.isCancellation(error) {
+                    logger.debug(.auth, "Profile sync cancelled for user \(user.id)")
+                } else {
+                    logger.warning(.auth, "Profile sync failed for user \(user.id): \(error)")
+                }
             }
         }
     }

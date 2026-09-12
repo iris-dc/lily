@@ -17,12 +17,17 @@ final class LandingViewModel {
         self.logger = logger
     }
 
-    /// Preview is decorative: on failure the landing still works, so nothing is shown to the user.
+    /// Preview is decorative: on failure the landing still works, so nothing is shown to the user. Leaving the
+    /// landing mid-load cancels the request, which is not a failure and stays at debug.
     func loadPreview() async {
         do {
             let events = try await repository.events(in: .upcoming)
             previewEvents = Array(events.prefix(AppConfig.Events.landingPreviewCount))
         } catch {
+            guard !AppError.isCancellation(error) else {
+                logger.debug(.events, "Landing preview load cancelled")
+                return
+            }
             logger.warning(.events, "Landing preview unavailable: \(error)")
         }
     }

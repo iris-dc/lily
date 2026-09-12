@@ -4,13 +4,19 @@ import Testing
 
 @MainActor
 struct RemoteEventRepositoryTests {
-    private static let codeCases: [(code: String, expected: AppError)] = [
+    /// `nonisolated`: `@Test(arguments:)` reads it off the main actor.
+    nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
         ("EVENT_FULL", .eventFull),
         ("ALREADY_JOINED", .alreadyJoined),
         ("NOT_A_PARTICIPANT", .notAParticipant),
         ("HOST_CANNOT_LEAVE", .hostCannotLeave),
+        ("TRY_AGAIN", .tryAgain),
         ("EVENT_NOT_FOUND", .eventNotFound),
-        ("VALIDATION_FAILED", .eventsUnavailable),
+        ("VALIDATION_FAILED", .participationFailed),
+    ]
+    /// Failures without a backend code of their own; what they become depends on what was being asked.
+    private static let otherFailures: [APIError] = [
+        .http(status: 500, body: nil), .http(status: 401, body: nil), .decodingFailed, .notHTTPResponse,
     ]
 
     private let client = FakeAPIClient()
@@ -33,6 +39,18 @@ struct RemoteEventRepositoryTests {
         #expect(client.requests.map(\.queryItems) == expectedQueries)
     }
 
+    @Test func eventGetsTheEventResource() async throws {
+        client.responses = [event]
+
+        let fetched = try await repository.event(id: "evt_01J")
+
+        #expect(fetched == event)
+        let request = try #require(client.requests.first)
+        #expect(request.method == .get)
+        #expect(request.path == "/api/events/evt_01J")
+        #expect(request.queryItems.isEmpty && request.body == nil)
+    }
+
     @Test func joinPostsAndLeaveDeletesTheParticipantsResource() async throws {
         client.responses = [event, event]
 
@@ -53,10 +71,20 @@ struct RemoteEventRepositoryTests {
         await #expect(throws: expected) { try await repository.join(eventId: "evt_01J") }
     }
 
-    @Test func otherHTTPFailuresBecomeEventsUnavailable() async {
-        for error in [APIError.http(status: 500, body: nil), .http(status: 401, body: nil), .decodingFailed, .notHTTPResponse] {
+    @Test func otherFailuresOnReadsBecomeEventsUnavailable() async {
+        for error in Self.otherFailures {
             client.error = error
             await #expect(throws: AppError.eventsUnavailable) { try await repository.events(in: .upcoming) }
+            await #expect(throws: AppError.eventsUnavailable) { try await repository.event(id: "evt_01J") }
+        }
+    }
+
+    /// A join that fails for no named reason is about the spot, not the list, and must not say "Events unavailable".
+    @Test func otherFailuresOnJoinAndLeaveBecomeParticipationFailed() async {
+        for error in Self.otherFailures {
+            client.error = error
+            await #expect(throws: AppError.participationFailed) { try await repository.join(eventId: "evt_01J") }
+            await #expect(throws: AppError.participationFailed) { try await repository.leave(eventId: "evt_01J") }
         }
     }
 
@@ -91,9 +119,18 @@ struct RemoteProfileRepositoryTests {
         #expect(request.body as? ProfileUpdateRequest == ProfileUpdateRequest(displayName: "Apple Tester"))
     }
 
-    @Test func failuresPropagate() async {
-        client.error = APIError.http(status: 400, body: APIErrorBody(code: "VALIDATION_FAILED", message: "empty"))
+    /// The caller logs what it catches, so it must be a clean `AppError`, never an `APIError` carrying the backend's
+    /// message body; cancellation passes through for the caller's `isCancellation` check.
+    @Test func failuresBecomeAppErrors() async {
+        let repository = RemoteProfileRepository(client: client)
 
-        await #expect(throws: APIError.self) { try await RemoteProfileRepository(client: client).syncDisplayName("") }
+        client.error = APIError.http(status: 400, body: APIErrorBody(code: "VALIDATION_FAILED", message: "empty"))
+        await #expect(throws: AppError.unknown) { try await repository.syncDisplayName("") }
+
+        client.error = URLError(.notConnectedToInternet)
+        await #expect(throws: AppError.network) { try await repository.syncDisplayName("Apple Tester") }
+
+        client.error = URLError(.cancelled)
+        await #expect(throws: URLError(.cancelled)) { try await repository.syncDisplayName("Apple Tester") }
     }
 }

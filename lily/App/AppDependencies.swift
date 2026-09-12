@@ -39,7 +39,9 @@ final class AppDependencies {
     }
 
     /// Production wiring. Swap `MockAuthService` for `CognitoAuthService` once Amplify is configured.
-    static func makeDefault(arguments: [String] = CommandLine.arguments,
+    /// Launch arguments are read in debug builds only (`AppConfig.LaunchArguments.isHonored`); a release build
+    /// ignores them, so nobody can start it as a guest or on mock data from the outside.
+    static func makeDefault(arguments: [String] = AppConfig.LaunchArguments.isHonored ? CommandLine.arguments : [],
                             defaults: UserDefaults = .standard) -> AppDependencies {
         let logger = OSLogLogger()
         let store = makeSessionStore(arguments: arguments, defaults: defaults, logger: logger)
@@ -73,6 +75,7 @@ final class AppDependencies {
     func makeEventListViewModel(scope: EventScope) -> EventListViewModel {
         EventListViewModel(scope: scope,
                            repository: eventRepository,
+                           identity: identity,
                            locationService: locationService,
                            changes: eventChanges,
                            errorCenter: errorCenter,

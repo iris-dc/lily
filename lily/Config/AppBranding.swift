@@ -46,14 +46,21 @@ nonisolated enum AppBranding {
         /// `Price.text`; cards and the detail screen check
         /// `isFree` first and never render it.
         static let free = "Free"
-        /// Joins the parts of a one-line caption ("in 3 hours · 4 spots left · €5").
-        static let captionSeparator = " · "
+        /// The dot between caption parts. `EventCard` draws it as its own view; `captionSeparator` pads it for
+        /// `joined(separator:)` ("in 3 hours · 4 spots left · €5").
+        static let separatorGlyph = "·"
+        static let captionSeparator = " \(separatorGlyph) "
         static let perPersonFormat = "%@ per person"
         static let levelFormat = "%@ level"
         static let lookingForTitle = "Looking for"
 
         static let loadFailedTitle = "Couldn't load events"
         static let loadFailedMessage = "Pull down to try again."
+
+        /// Segmented toolbar picker on Explore; the label is what VoiceOver reads for the control.
+        static let presentationPicker = "View"
+        static let listPresentation = "List"
+        static let mapPresentation = "Map"
 
         static func spotsLeft(_ count: Int) -> String {
             String(format: count == 1 ? oneSpotLeftFormat : spotsLeftFormat, count)

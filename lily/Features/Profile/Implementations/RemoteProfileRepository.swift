@@ -9,6 +9,6 @@ final class RemoteProfileRepository: ProfileRepository {
 
     func syncDisplayName(_ name: String) async throws {
         let request = APIRequest<Profile>.put(AppConfig.API.Paths.profile, body: ProfileUpdateRequest(displayName: name))
-        _ = try await client.send(request)
+        _ = try await client.send(request, failingWith: .unknown)
     }
 }

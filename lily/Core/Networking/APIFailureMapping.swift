@@ -7,6 +7,8 @@ nonisolated enum BackendErrorCode: String, Sendable {
     case alreadyJoined = "ALREADY_JOINED"
     case notAParticipant = "NOT_A_PARTICIPANT"
     case hostCannotLeave = "HOST_CANNOT_LEAVE"
+    /// A join or leave lost a race with another player or was throttled; repeating it is safe.
+    case tryAgain = "TRY_AGAIN"
 
     var appError: AppError {
         switch self {
@@ -15,6 +17,7 @@ nonisolated enum BackendErrorCode: String, Sendable {
         case .alreadyJoined: .alreadyJoined
         case .notAParticipant: .notAParticipant
         case .hostCannotLeave: .hostCannotLeave
+        case .tryAgain: .tryAgain
         }
     }
 }

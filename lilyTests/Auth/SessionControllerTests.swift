@@ -72,7 +72,7 @@ struct SessionControllerTests {
         #expect(harness.controller.state == .signedIn(TestFixtures.user))
         #expect(harness.controller.authenticatingProvider == nil)
         #expect(harness.auth.signInProviders == [.apple])
-        #expect(harness.logger.messages(in: .auth).contains { $0.contains("succeeded") })
+        #expect(harness.logger.messages(in: .auth).contains { $0.contains("succeeded") && $0.contains(TestFixtures.user.id) })
     }
 
     @Test func signInFailureReportsProviderSpecificError() async {
@@ -138,6 +138,16 @@ struct SessionControllerTests {
         #expect(harness.auth.signOutCount == 1)
     }
 
+    /// Correlating one user's session needs the id on the way out as well as on the way in.
+    @Test func signOutNamesTheUserItEnded() async {
+        let harness = SessionHarness()
+        await harness.controller.signIn(with: .apple)
+
+        await harness.controller.signOut()
+
+        #expect(harness.logger.messages(in: .auth).contains { $0.contains("Signed out") && $0.contains(TestFixtures.user.id) })
+    }
+
     @Test func signInSyncsTheDisplayNameOnce() async {
         let harness = SessionHarness()
 
@@ -181,14 +191,18 @@ struct SessionControllerTests {
         #expect(harness.logger.messages(in: .auth).contains { $0.contains("Profile sync failed") })
     }
 
+    /// Sign-out ends the sync on purpose, so its end is a debug line, never the warning a real failure gets.
     @Test func signOutCancelsAPendingProfileSync() async {
         let harness = SessionHarness()
         harness.profile.delay = .seconds(5)
 
         await harness.controller.signIn(with: .apple)
         await harness.controller.signOut()
+        await harness.controller.profileSync?.value
 
         #expect(harness.controller.profileSync?.isCancelled == true)
+        #expect(harness.logger.messages(in: .auth, at: .debug).contains { $0.contains("Profile sync cancelled") })
+        #expect(!harness.logger.messages(in: .auth, at: .warning).contains { $0.contains("Profile sync failed") })
     }
 }
 

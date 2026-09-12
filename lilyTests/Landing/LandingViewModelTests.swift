@@ -30,7 +30,23 @@ struct LandingViewModelTests {
 
         #expect(viewModel.previewEvents.isEmpty)
         #expect(harness.errorCenter.current == nil)
-        #expect(harness.logger.messages(in: .events).contains { $0.contains("preview") })
+        #expect(harness.logger.messages(in: .events, at: .warning).contains { $0.contains("preview") })
+    }
+
+    /// Entering the app before the preview arrived cancels its load: the normal flow, never a warning.
+    @Test func cancelledPreviewLoadIsADebugLine() async {
+        for cancellation: any Error in [URLError(.cancelled), CancellationError()] {
+            let harness = SessionHarness()
+            let repository = FakeEventRepository()
+            repository.thrownError = cancellation
+            let viewModel = makeViewModel(repository, harness: harness)
+
+            await viewModel.loadPreview()
+
+            #expect(viewModel.previewEvents.isEmpty)
+            #expect(harness.logger.messages(in: .events, at: .warning).isEmpty)
+            #expect(harness.logger.messages(in: .events, at: .debug).contains { $0.contains("cancelled") })
+        }
     }
 
     @Test func enterAppUsesGuestMode() {
