@@ -33,6 +33,9 @@ nonisolated enum AppConfig {
         static let marketCurrencyCode = "EUR"
         /// A tab that reappears reuses events loaded more recently than this; pull-to-refresh always reloads.
         static let listStaleAfter: TimeInterval = 60
+        /// A failed load is not retried by a reappearing tab before this has passed, so switching tabs while the
+        /// backend is down neither hammers it nor repeats the popup; pull-to-refresh is not held back.
+        static let retryAfterFailure: TimeInterval = 10
     }
 
     enum Location {
@@ -58,6 +61,10 @@ nonisolated enum AppConfig {
         /// (ATS exempts unqualified host names, so plain HTTP needs no Info.plist exception).
         static let baseURL = URL(string: "http://localhost:8080")!
         static let requestTimeout: TimeInterval = 15
+        /// Pause before the one automatic repeat of a join or leave the backend answered with `TRY_AGAIN` (the
+        /// write lost a race with another player or was throttled by DynamoDB; the same request very likely
+        /// succeeds on the next attempt).
+        static let tryAgainDelay: Duration = .milliseconds(400)
         /// Debug builds identify the signed-in user to the local backend with `Headers.localUserID` (it runs without
         /// Cognito). Release builds never send it; they will carry a Cognito token instead.
         #if DEBUG
@@ -77,8 +84,12 @@ nonisolated enum AppConfig {
             static let events = "/api/events"
             static let profile = "/api/profile"
 
+            static func event(id: String) -> String {
+                "\(events)/\(id)"
+            }
+
             static func participants(eventId: String) -> String {
-                "\(events)/\(eventId)/participants"
+                "\(event(id: eventId))/participants"
             }
         }
 
@@ -87,8 +98,14 @@ nonisolated enum AppConfig {
         }
     }
 
-    /// Process arguments recognised at launch (used by UI tests).
+    /// Process arguments recognised at launch (used by UI tests). Debug builds only: `AppDependencies` reads them
+    /// when `isHonored` is true, so a release build cannot be started as a guest or on mock data from the outside.
     enum LaunchArguments {
+        #if DEBUG
+        static let isHonored = true
+        #else
+        static let isHonored = false
+        #endif
         /// Clears any stored session so the app starts on the welcome screen.
         static let resetSession = "-reset-session"
         /// Uses the mock location service so UI tests never hit the system permission prompt.

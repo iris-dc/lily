@@ -1,5 +1,6 @@
 import Foundation
 import Synchronization
+import Testing
 @testable import lily
 
 /// Records log lines so tests can assert on key events.
@@ -17,8 +18,9 @@ final class SpyLogger: Logging {
         entries.append(Entry(level: level, category: category, message: message))
     }
 
-    func messages(in category: LogCategory) -> [String] {
-        entries.filter { $0.category == category }.map(\.message)
+    /// Messages of one category, optionally narrowed to one level.
+    func messages(in category: LogCategory, at level: LogLevel? = nil) -> [String] {
+        entries.filter { $0.category == category && (level == nil || $0.level == level) }.map(\.message)
     }
 }
 
@@ -76,8 +78,12 @@ final class FakeEventRepository: EventRepository {
     var holdsRequests = false
     /// Thrown by `join` and `leave` when set; otherwise they answer with the event from `result`, adjusted.
     var participationError: (any Error)?
+    /// Thrown by the next `join` or `leave` only, ahead of `participationError`: for answers that change between
+    /// attempts (a `TRY_AGAIN`, then success).
+    var nextParticipationError: (any Error)?
     private var pending: [CheckedContinuation<Void, Never>] = []
     private(set) var requestedScopes: [EventScope] = []
+    private(set) var fetchedEventIDs: [String] = []
     private(set) var joinedEventIDs: [String] = []
     private(set) var leftEventIDs: [String] = []
 
@@ -86,6 +92,14 @@ final class FakeEventRepository: EventRepository {
         await holdIfRequested()
         if let thrownError { throw thrownError }
         return try result.get()
+    }
+
+    /// Answers from `result` like `events(in:)`, so a test sets the "server state" once for both.
+    func event(id: String) async throws -> SportEvent {
+        fetchedEventIDs.append(id)
+        await holdIfRequested()
+        if let thrownError { throw thrownError }
+        return try stored(id)
     }
 
     func join(eventId: String) async throws -> SportEvent {
@@ -113,9 +127,18 @@ final class FakeEventRepository: EventRepository {
 
     private func participationResult(for eventId: String, delta: Int, isJoined: Bool) async throws -> SportEvent {
         await holdIfRequested()
+        if let error = nextParticipationError {
+            nextParticipationError = nil
+            throw error
+        }
         if let participationError { throw participationError }
-        guard let event = try result.get().first(where: { $0.id == eventId }) else { throw AppError.eventNotFound }
+        let event = try stored(eventId)
         return event.updatingParticipation(count: event.participantCount + delta, isJoined: isJoined)
+    }
+
+    private func stored(_ eventId: String) throws -> SportEvent {
+        guard let event = try result.get().first(where: { $0.id == eventId }) else { throw AppError.eventNotFound }
+        return event
     }
 }
 
@@ -142,12 +165,6 @@ final class FakeIdentityProvider: IdentityProvider {
     }
 }
 
-enum TestFixtures {
-    static let user = AuthUser(id: "u-1", displayName: "Test Person", email: "test@example.com")
-    static let session = AuthSession(user: user, issuedAt: Date(timeIntervalSince1970: 1_700_000_000))
-    static let credentials = EmailCredentials(email: "jane.doe@example.com", password: "correct-horse")
-}
-
 /// Builds a controller with fakes wired in; returns the collaborators for assertions.
 @MainActor
 struct SessionHarness {
@@ -166,6 +183,44 @@ struct SessionHarness {
                                        errorCenter: errorCenter,
                                        logger: logger)
     }
+}
+
+/// Builds a list view model over fakes. Every collaborator not given is created here, in the body: a main-actor
+/// default argument would be evaluated off the actor.
+@MainActor
+func makeEventListViewModel(scope: EventScope = .upcoming,
+                            repository: FakeEventRepository,
+                            identity: FakeIdentityProvider? = nil,
+                            locationService: (any LocationService)? = nil,
+                            changes: EventChangeTracker? = nil,
+                            errorCenter: ErrorCenter? = nil,
+                            logger: SpyLogger? = nil,
+                            now: @escaping () -> Date = { .now },
+                            initialFilter: EventFilter = EventFilter()) -> EventListViewModel {
+    EventListViewModel(scope: scope,
+                       repository: repository,
+                       identity: identity ?? FakeIdentityProvider(),
+                       locationService: locationService ?? MockLocationService(),
+                       changes: changes ?? EventChangeTracker(),
+                       errorCenter: errorCenter ?? ErrorCenter(logger: SpyLogger()),
+                       logger: logger ?? SpyLogger(),
+                       now: now,
+                       initialFilter: initialFilter)
+}
+
+/// Upper bound on the yields `settle(until:)` spends before it gives up and fails.
+private let settleYieldLimit = 1_000
+
+/// Yields to the main actor until `condition` holds, so a held request is observably in flight (or observably
+/// dropped) before the test goes on. Bounded, so a regression fails at the call site instead of hanging.
+@MainActor
+func settle(until condition: () -> Bool, sourceLocation: SourceLocation = #_sourceLocation) async {
+    var yields = 0
+    while !condition() && yields < settleYieldLimit {
+        await Task.yield()
+        yields += 1
+    }
+    #expect(condition(), "condition still false after \(settleYieldLimit) yields", sourceLocation: sourceLocation)
 }
 
 /// Scripted location updates: yields the given fixes, then stays open (like CoreLocation) until cancelled,
@@ -222,36 +277,5 @@ final class ManualClock {
 
     func advance(by duration: Duration) {
         now = now.advanced(by: duration)
-    }
-}
-
-extension SportEvent {
-    /// A minimal event at the demo centre; every optional detail absent unless given, so tests state only what they test.
-    static func fixture(capacity: Int = 4,
-                        participants: Int = 1,
-                        type: EventType = .tennis,
-                        startsAt: Date = .now,
-                        hostUserId: String? = nil,
-                        isJoined: Bool? = nil,
-                        description: String? = nil,
-                        lookingFor: String? = nil,
-                        skillLevel: SkillLevel? = nil,
-                        price: Price? = nil) -> SportEvent {
-        SportEvent(
-            id: "e",
-            title: "t",
-            type: type,
-            startsAt: startsAt,
-            location: EventLocation(name: "l", coordinate: AppConfig.Location.mockCenter),
-            capacity: capacity,
-            participantCount: participants,
-            hostName: "h",
-            hostUserId: hostUserId,
-            isJoined: isJoined,
-            description: description,
-            lookingFor: lookingFor,
-            skillLevel: skillLevel,
-            price: price
-        )
     }
 }

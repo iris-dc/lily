@@ -127,8 +127,8 @@ nonisolated enum DesignTokens {
     }
 
     enum Typography {
-        static let wordmarkSize: CGFloat = 28
-        static let wordmarkTracking: CGFloat = -1.2
+        /// Tracking per point of font size for the wordmark; tuned as -1.2 at the 28pt design reference.
+        static let wordmarkTrackingPerPoint: CGFloat = -1.2 / 28
         static let headlineSize: CGFloat = 44
         static let headlineTracking: CGFloat = -1.8
         static let headlineLineSpacing: CGFloat = -4

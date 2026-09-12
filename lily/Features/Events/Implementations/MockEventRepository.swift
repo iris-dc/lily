@@ -17,11 +17,16 @@ final class MockEventRepository: EventRepository {
     }
 
     func events(in scope: EventScope) async throws -> [SportEvent] {
-        logger.debug(.cache, "Mock events served for scope \(scope)")
+        logger.debug(.events, "Mock events served for scope \(scope)")
         switch scope {
         case .upcoming: return events
         case .joined: return events.filter(\.participates)
         }
+    }
+
+    func event(id: String) async throws -> SportEvent {
+        logger.debug(.events, "Mock event \(id) served")
+        return try find(id)
     }
 
     func join(eventId: String) async throws -> SportEvent {

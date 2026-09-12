@@ -19,7 +19,8 @@ nonisolated enum ErrorMessageMapper {
             ErrorMessage(title: "Session expired", body: "Please sign in again to continue.")
         case .network:
             ErrorMessage(title: "You're offline", body: "Check your connection and try again.")
-        case .eventsUnavailable, .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave:
+        case .eventsUnavailable, .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave,
+             .tryAgain, .participationFailed:
             eventMessage(for: error)
         case .unknown:
             unknownMessage
@@ -44,6 +45,10 @@ nonisolated enum ErrorMessageMapper {
             ErrorMessage(title: "Not in this game", body: "You're not on the list for this game, so there is nothing to leave.")
         case .hostCannotLeave:
             ErrorMessage(title: "You're the host", body: "Hosts can't leave their own game.")
+        case .tryAgain:
+            ErrorMessage(title: "Please try again", body: "Someone changed this game at the same moment. Give it another tap.")
+        case .participationFailed:
+            ErrorMessage(title: "Couldn't update your spot", body: "Please try again in a moment.")
         default:
             unknownMessage
         }

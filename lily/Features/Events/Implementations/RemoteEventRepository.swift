@@ -13,12 +13,16 @@ final class RemoteEventRepository: EventRepository {
         return try await client.send(.get(AppConfig.API.Paths.events, query: query), failingWith: .eventsUnavailable)
     }
 
+    func event(id: String) async throws -> SportEvent {
+        try await client.send(.get(AppConfig.API.Paths.event(id: id)), failingWith: .eventsUnavailable)
+    }
+
     func join(eventId: String) async throws -> SportEvent {
-        try await client.send(.post(AppConfig.API.Paths.participants(eventId: eventId)), failingWith: .eventsUnavailable)
+        try await client.send(.post(AppConfig.API.Paths.participants(eventId: eventId)), failingWith: .participationFailed)
     }
 
     func leave(eventId: String) async throws -> SportEvent {
-        try await client.send(.delete(AppConfig.API.Paths.participants(eventId: eventId)), failingWith: .eventsUnavailable)
+        try await client.send(.delete(AppConfig.API.Paths.participants(eventId: eventId)), failingWith: .participationFailed)
     }
 }
 

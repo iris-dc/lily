@@ -27,7 +27,7 @@ final class MockAuthService: AuthService {
 
     func signIn(with provider: AuthProvider) async throws -> AuthSession {
         try await simulateNetwork()
-        let session = AuthSession(user: MockUsers.user(for: provider), issuedAt: .now)
+        let session = AuthSession(user: MockUsers.user(for: provider))
         store.save(.signedIn(session))
         return session
     }

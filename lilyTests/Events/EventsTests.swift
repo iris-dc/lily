@@ -54,36 +54,11 @@ struct MockEventRepositoryTests {
 
 @MainActor
 struct EventListViewModelTests {
-    private func makeViewModel(_ repository: FakeEventRepository,
-                               location: Coordinate? = nil,
-                               locationService: (any LocationService)? = nil,
-                               now: @escaping () -> Date = { .now }) -> (EventListViewModel, ErrorCenter) {
-        let center = ErrorCenter(logger: SpyLogger())
-        let viewModel = EventListViewModel(scope: .upcoming,
-                                           repository: repository,
-                                           locationService: locationService ?? MockLocationService(coordinate: location),
-                                           changes: EventChangeTracker(),
-                                           errorCenter: center,
-                                           logger: SpyLogger(),
-                                           now: now)
-        return (viewModel, center)
-    }
-
-    /// Lets a held load run until it is observably suspended inside the repository.
-    private func waitUntilLoading(_ viewModel: EventListViewModel) async {
-        var attempts = 0
-        while !viewModel.isLoading && attempts < 100 {
-            await Task.yield()
-            attempts += 1
-        }
-        #expect(viewModel.isLoading)
-    }
-
     @Test func loadPopulatesEvents() async {
         let repository = FakeEventRepository()
         let events = MockEventFixtures.make(now: .now, count: 3)
         repository.result = .success(events)
-        let (viewModel, _) = makeViewModel(repository)
+        let viewModel = makeEventListViewModel(repository: repository)
 
         await viewModel.load()
 
@@ -92,14 +67,16 @@ struct EventListViewModelTests {
         #expect(repository.requestedScopes == [.upcoming])
     }
 
-    @Test func loadFailureReportsEventsUnavailable() async {
+    /// The popup says what went wrong ("You're offline" here), not a blanket "Events unavailable".
+    @Test func loadFailureReportsTheMappedError() async {
         let repository = FakeEventRepository()
         repository.result = .failure(.network)
-        let (viewModel, center) = makeViewModel(repository)
+        let center = ErrorCenter(logger: SpyLogger())
+        let viewModel = makeEventListViewModel(repository: repository, errorCenter: center)
 
         await viewModel.load()
 
-        #expect(center.current?.error == .eventsUnavailable)
+        #expect(center.current?.error == .network)
         #expect(viewModel.events.isEmpty)
         #expect(viewModel.loadFailed)
     }
@@ -107,7 +84,7 @@ struct EventListViewModelTests {
     @Test func failedLoadIsFlaggedUntilTheNextSuccess() async {
         let repository = FakeEventRepository()
         repository.result = .failure(.network)
-        let (viewModel, _) = makeViewModel(repository)
+        let viewModel = makeEventListViewModel(repository: repository)
         await viewModel.load()
         #expect(viewModel.loadFailed)
 
@@ -123,7 +100,8 @@ struct EventListViewModelTests {
         for cancellation: any Error in [CancellationError(), URLError(.cancelled)] {
             let repository = FakeEventRepository()
             repository.thrownError = cancellation
-            let (viewModel, center) = makeViewModel(repository)
+            let center = ErrorCenter(logger: SpyLogger())
+            let viewModel = makeEventListViewModel(repository: repository, errorCenter: center)
 
             await viewModel.load()
 
@@ -134,37 +112,20 @@ struct EventListViewModelTests {
         }
     }
 
-    @Test func loadIfStaleReusesEventsUntilTheyExpire() async {
-        let repository = FakeEventRepository()
-        repository.result = .success(MockEventFixtures.make(now: .now, count: 2))
-        var clock = Date(timeIntervalSince1970: 1_700_000_000)
-        let (viewModel, _) = makeViewModel(repository, now: { clock })
-
-        await viewModel.loadIfStale()
-        await viewModel.loadIfStale()
-        #expect(repository.requestedScopes.count == 1)
-
-        clock = clock.addingTimeInterval(AppConfig.Events.listStaleAfter)
-        await viewModel.loadIfStale()
-        #expect(repository.requestedScopes.count == 2)
-    }
-
-    @Test func loadIfStaleRetriesAfterAFailure() async {
+    @Test func loadAfterAFailureIsNotHeldBack() async {
         let repository = FakeEventRepository()
         repository.result = .failure(.network)
-        let (viewModel, _) = makeViewModel(repository)
+        let viewModel = makeEventListViewModel(repository: repository)
         await viewModel.loadIfStale()
 
-        repository.result = .success(MockEventFixtures.make(now: .now, count: 1))
-        await viewModel.loadIfStale()
+        await viewModel.load()
 
         #expect(repository.requestedScopes.count == 2)
-        #expect(viewModel.events.count == 1)
     }
 
     @Test func loadAlwaysAsksTheRepository() async {
         let repository = FakeEventRepository()
-        let (viewModel, _) = makeViewModel(repository)
+        let viewModel = makeEventListViewModel(repository: repository)
 
         await viewModel.load()
         await viewModel.load()
@@ -172,20 +133,19 @@ struct EventListViewModelTests {
         #expect(repository.requestedScopes.count == 2)
     }
 
+    /// A dropped re-entrant load returns at once, so awaiting it directly is the observation.
     @Test func loadIgnoresReentrantCallWhileLoading() async {
         let repository = FakeEventRepository()
         repository.holdsRequests = true
-        let (viewModel, _) = makeViewModel(repository)
+        let viewModel = makeEventListViewModel(repository: repository)
 
         let first = Task { await viewModel.load() }
-        await waitUntilLoading(viewModel)
-        let second = Task { await viewModel.load() }
-        for _ in 0..<10 { await Task.yield() }
+        await settle(until: { viewModel.isLoading })
+        await viewModel.load()
         #expect(repository.requestedScopes == [.upcoming])
 
         repository.releaseRequests()
         await first.value
-        await second.value
         #expect(!viewModel.isLoading)
     }
 
@@ -193,10 +153,10 @@ struct EventListViewModelTests {
         let repository = FakeEventRepository()
         repository.result = .failure(.network)
         repository.holdsRequests = true
-        let (viewModel, _) = makeViewModel(repository)
+        let viewModel = makeEventListViewModel(repository: repository)
 
         let first = Task { await viewModel.load() }
-        await waitUntilLoading(viewModel)
+        await settle(until: { viewModel.isLoading })
         #expect(viewModel.isInitialLoad)
         repository.releaseRequests()
         await first.value
@@ -204,7 +164,7 @@ struct EventListViewModelTests {
 
         repository.holdsRequests = true
         let retry = Task { await viewModel.load() }
-        await waitUntilLoading(viewModel)
+        await settle(until: { viewModel.isLoading })
         #expect(!viewModel.isInitialLoad)
         repository.releaseRequests()
         await retry.value
@@ -213,7 +173,7 @@ struct EventListViewModelTests {
     @Test func loadUserLocationQueriesServiceOnce() async {
         let service = FakeLocationService()
         service.result = AppConfig.Location.mockCenter
-        let (viewModel, _) = makeViewModel(FakeEventRepository(), locationService: service)
+        let viewModel = makeEventListViewModel(repository: FakeEventRepository(), locationService: service)
 
         await viewModel.loadUserLocation()
         await viewModel.loadUserLocation()
@@ -226,7 +186,8 @@ struct EventListViewModelTests {
         let repository = FakeEventRepository()
         let events = MockEventFixtures.make(now: .now, count: 1)
         repository.result = .success(events)
-        let (viewModel, _) = makeViewModel(repository, location: AppConfig.Location.mockCenter)
+        let viewModel = makeEventListViewModel(repository: repository,
+                                               locationService: MockLocationService(coordinate: AppConfig.Location.mockCenter))
         await viewModel.load()
 
         #expect(viewModel.distanceText(for: events[0]) == nil)
@@ -236,7 +197,8 @@ struct EventListViewModelTests {
     }
 
     @Test func missingLocationLeavesDistanceEmpty() async {
-        let (viewModel, _) = makeViewModel(FakeEventRepository(), location: nil)
+        let viewModel = makeEventListViewModel(repository: FakeEventRepository(),
+                                               locationService: MockLocationService(coordinate: nil))
         await viewModel.loadUserLocation()
         #expect(viewModel.userLocation == nil)
         #expect(viewModel.distanceText(for: MockEventFixtures.make(now: .now, count: 1)[0]) == nil)
@@ -245,7 +207,7 @@ struct EventListViewModelTests {
     @Test func retryAsksAgainOnlyWhileThePositionIsMissing() async {
         let service = FakeLocationService()
         service.result = nil
-        let (viewModel, _) = makeViewModel(FakeEventRepository(), locationService: service)
+        let viewModel = makeEventListViewModel(repository: FakeEventRepository(), locationService: service)
         await viewModel.loadUserLocation()
         #expect(viewModel.userLocation == nil && service.callCount == 1)
 

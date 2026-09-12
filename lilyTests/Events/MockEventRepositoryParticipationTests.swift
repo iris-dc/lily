@@ -20,6 +20,7 @@ struct MockEventRepositoryParticipationTests {
         let joined = try await repository.join(eventId: open.id)
         #expect(joined.participates)
         #expect(joined.participantCount == open.participantCount + 1)
+        #expect(try await repository.event(id: open.id) == joined)
         #expect(try await repository.events(in: .joined).contains(joined))
         #expect(try await repository.events(in: .upcoming).contains(joined))
 
@@ -47,5 +48,12 @@ struct MockEventRepositoryParticipationTests {
         await #expect(throws: AppError.notAParticipant) { try await repository.leave(eventId: open.id) }
         await #expect(throws: AppError.eventNotFound) { try await repository.join(eventId: "missing") }
         await #expect(throws: AppError.eventNotFound) { try await repository.leave(eventId: "missing") }
+        await #expect(throws: AppError.eventNotFound) { try await repository.event(id: "missing") }
+    }
+
+    @Test func eventByIdReturnsTheStoredEvent() async throws {
+        let first = try #require(try await repository.events(in: .upcoming).first)
+
+        #expect(try await repository.event(id: first.id) == first)
     }
 }

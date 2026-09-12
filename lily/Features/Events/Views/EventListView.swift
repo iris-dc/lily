@@ -57,14 +57,14 @@ struct EventListView: View {
     }
 
     private var presentationPicker: some View {
-        Picker("View", selection: $presentation) {
+        Picker(AppBranding.Events.presentationPicker, selection: $presentation) {
             ForEach(EventsPresentation.allCases, id: \.self) { option in
                 Label(option.title, systemImage: option.symbolName).tag(option)
             }
         }
         .pickerStyle(.segmented)
         .fixedSize()
-        .accessibilityIdentifier("events-presentation")
+        .accessibilityIdentifier(AccessibilityIdentifiers.eventsPresentation)
     }
 
     @ViewBuilder
@@ -127,8 +127,8 @@ nonisolated enum EventsPresentation: CaseIterable, Hashable, Sendable {
 
     var title: String {
         switch self {
-        case .list: "List"
-        case .map: "Map"
+        case .list: AppBranding.Events.listPresentation
+        case .map: AppBranding.Events.mapPresentation
         }
     }
 

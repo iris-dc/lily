@@ -4,7 +4,7 @@ import SwiftUI
 enum LilyTheme {
     enum Fonts {
         /// SF Pro Display with tight tracking everywhere: the wordmark, the landing headline and screen titles.
-        static func wordmark(size: CGFloat = DesignTokens.Typography.wordmarkSize) -> Font {
+        static func wordmark(size: CGFloat) -> Font {
             .system(size: size, weight: .semibold)
         }
         static var headline: Font { .system(size: DesignTokens.Typography.headlineSize, weight: .bold) }

@@ -38,7 +38,7 @@ struct EventsMapView: View {
         .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
         .mapControls { MapUserLocationButton() }
         .ignoresSafeArea(edges: .bottom)
-        .accessibilityIdentifier("events-map")
+        .accessibilityIdentifier(AccessibilityIdentifiers.eventsMap)
     }
 
     @ViewBuilder
@@ -51,7 +51,7 @@ struct EventsMapView: View {
             .buttonStyle(.plain)
             .padding(DesignTokens.Spacing.lg)
             .transition(.move(edge: .bottom).combined(with: .opacity))
-            .accessibilityIdentifier("map-selected-card")
+            .accessibilityIdentifier(AccessibilityIdentifiers.mapSelectedCard)
         }
     }
 }

@@ -52,14 +52,14 @@ struct EventFilterPanel: View {
             ChoiceChip(title: Copy.anyType, isSelected: viewModel.filter.types.isEmpty) {
                 viewModel.updateFilter { $0.types = [] }
             }
-            .accessibilityIdentifier("filter-type-any")
+            .accessibilityIdentifier(AccessibilityIdentifiers.filterTypeAny)
             ForEach(viewModel.availableTypes, id: \.self) { type in
                 ChoiceChip(title: type.displayName,
                            systemImage: type.symbolName,
                            isSelected: viewModel.filter.includes(type)) {
                     viewModel.toggleType(type)
                 }
-                .accessibilityIdentifier("filter-type-\(type.rawValue)")
+                .accessibilityIdentifier(AccessibilityIdentifiers.filterType(type))
             }
         }
     }
@@ -89,7 +89,7 @@ struct EventFilterPanel: View {
             ChoiceChip(title: Copy.freeOnly, isSelected: viewModel.filter.maxPrice == 0) {
                 viewModel.updateFilter { $0.maxPrice = $0.maxPrice == 0 ? nil : 0 }
             }
-            .accessibilityIdentifier("filter-free-only")
+            .accessibilityIdentifier(AccessibilityIdentifiers.filterFreeOnly)
             Spacer()
             priceField
         }
@@ -104,7 +104,7 @@ struct EventFilterPanel: View {
                 .multilineTextAlignment(.trailing)
                 .focused($isPriceFocused)
                 .frame(width: DesignTokens.Layout.filterPriceFieldWidth)
-                .accessibilityIdentifier("filter-max-price")
+                .accessibilityIdentifier(AccessibilityIdentifiers.filterMaxPrice)
                 .accessibilityLabel(Copy.maxPrice)
             Text(Price.symbol(for: AppConfig.Events.marketCurrencyCode))
                 .foregroundStyle(.secondary)
