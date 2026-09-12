@@ -15,6 +15,18 @@ nonisolated enum AccessibilityIdentifiers {
     static let eventsMap = "events-map"
     /// Preview card shown above the map for the selected pin.
     static let mapSelectedCard = "map-selected-card"
+    /// The floating "+" on Explore that opens the create sheet (or the sign-in sheet for a guest).
+    static let eventsCreate = "events-create"
+    /// Fields and actions of the create sheet.
+    static let createTitle = "create-title"
+    static let createLocationName = "create-location-name"
+    static let createPickOnMap = "create-pick-on-map"
+    static let createMap = "create-map"
+    static let createMapDone = "create-map-done"
+    static let createCapacity = "create-capacity"
+    static let createPrice = "create-price"
+    static let createSubmit = "create-submit"
+    static let createCancel = "create-cancel"
 
     /// One chip per event type in the filter panel, e.g. `filter-type-football`.
     static func filterType(_ type: EventType) -> String {

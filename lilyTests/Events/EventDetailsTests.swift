@@ -47,6 +47,18 @@ struct EventDetailsTests {
         #expect(Price.symbol(for: "USD", locale: us) == "$")
     }
 
+    /// Typed amounts (the filter's cap, a new game's price) are read in the user's locale; empty, unreadable or
+    /// negative text is no amount at all.
+    @Test func typedAmountsAreParsedInTheLocale() {
+        #expect(Price.parseAmount("6.5", locale: us) == Decimal(string: "6.5"))
+        #expect(Price.parseAmount("6,5", locale: germany) == Decimal(string: "6.5"))
+        #expect(Price.parseAmount("6", locale: germany) == 6)
+        #expect(Price.parseAmount("0", locale: us) == 0)
+        for text in ["", "abc", "-3"] {
+            #expect(Price.parseAmount(text, locale: us) == nil, "\(text)")
+        }
+    }
+
     @Test func levelCopyNamesTheLevel() {
         #expect(AppBranding.Events.level(SkillLevel.intermediate.displayName) == "Intermediate level")
         #expect(AppBranding.Events.perPerson("€5") == "€5 per person")

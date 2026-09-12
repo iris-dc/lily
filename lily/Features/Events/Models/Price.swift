@@ -26,6 +26,16 @@ nonisolated struct Price: Hashable, Codable, Sendable {
         return formatter.currencySymbol ?? currencyCode
     }
 
+    /// How an amount is shown in and read from an input field (the price cap, the price of a new game): the user's
+    /// locale, at most two decimals.
+    static let inputFormat = Decimal.FormatStyle.number.precision(.fractionLength(0...2))
+
+    /// Reads typed text as an amount, locale-aware ("6,5" and "6.5"); empty, unreadable or negative text is no amount.
+    static func parseAmount(_ text: String, locale: Locale = .current) -> Decimal? {
+        guard let amount = try? inputFormat.locale(locale).parseStrategy.parse(text), amount >= 0 else { return nil }
+        return amount
+    }
+
     private var isWholeAmount: Bool {
         var value = amount
         var whole = Decimal()

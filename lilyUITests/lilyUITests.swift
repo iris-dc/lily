@@ -157,7 +157,63 @@ final class LilySmokeTests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["Pickup at the Cage"].firstMatch.waitForExistence(timeout: 10))
     }
 
+    /// Creating needs an account: a guest's "+" opens the sign-in sheet, not the form.
+    @MainActor
+    func testGuestPlusOpensSignIn() {
+        relaunchAsGuest()
+
+        tapCreateButton()
+
+        XCTAssertTrue(app.buttons["Continue with Apple"].waitForExistence(timeout: 5), "a guest must be asked to sign in first")
+        XCTAssertFalse(app.navigationBars["New game"].exists, "the form must not open for a guest")
+    }
+
+    /// The mock location fills the spot, so title and place are all the form still needs. The new game must show
+    /// under My Events without a manual refresh, and its detail must know the caller hosts it. Nothing scrolls before
+    /// the tab tap: a scrolled list minimises the tab bar, and a minimised tab bar swallows tab taps.
+    @MainActor
+    func testCreatingAGameShowsItInMyEvents() {
+        tapSignInWithApple()
+        tapCreateButton()
+        XCTAssertTrue(app.navigationBars["New game"].waitForExistence(timeout: 5))
+
+        let title = "Thursday five-a-side"
+        enter(title, into: app.textFields["create-title"])
+        enter("Test Park", into: app.textFields["create-location-name"])
+
+        let submit = app.buttons["create-submit"]
+        XCTAssertTrue(submit.waitForExistence(timeout: 5))
+        XCTAssertTrue(submit.isEnabled, "title, place and the mock position complete the draft")
+        submit.tap()
+        XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+
+        app.tabBars.buttons["My Events"].tap()
+        XCTAssertTrue(app.navigationBars["My Events"].waitForExistence(timeout: 5))
+        let card = app.staticTexts[title]
+        if !card.waitForExistence(timeout: 10) { app.swipeUp() }
+        XCTAssertTrue(card.waitForExistence(timeout: 5), "the hosted game must be listed under My Events")
+
+        card.tap()
+        XCTAssertTrue(app.staticTexts["You host this game"].waitForExistence(timeout: 5), "the host must see the hosting notice")
+    }
+
     // MARK: - Helpers
+
+    /// Taps the floating "+" on Explore (AccessibilityIdentifiers.eventsCreate); waits out the sign-in transition too.
+    @MainActor
+    private func tapCreateButton() {
+        let create = app.buttons["events-create"]
+        XCTAssertTrue(create.waitForExistence(timeout: 10))
+        create.tap()
+    }
+
+    /// Focuses a text field and types into it.
+    @MainActor
+    private func enter(_ text: String, into field: XCUIElement) {
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "missing text field")
+        field.tap()
+        field.typeText(text)
+    }
 
     @MainActor
     private func relaunchAsGuest() {

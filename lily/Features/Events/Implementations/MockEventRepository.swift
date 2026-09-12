@@ -7,12 +7,18 @@ final class MockEventRepository: EventRepository {
     private static let joinedStride = 4
 
     private var events: [SportEvent]
+    /// Who creates events; the backend takes the host from the token, the mock from here.
+    private let identity: any IdentityProvider
     private let logger: any Logging
 
-    init(now: Date = .now, count: Int = AppConfig.Events.mockFeedSize, logger: any Logging) {
+    init(now: Date = .now,
+         count: Int = AppConfig.Events.mockFeedSize,
+         identity: any IdentityProvider,
+         logger: any Logging) {
         self.events = MockEventFixtures.make(now: now, count: count).enumerated().map { index, event in
             event.updatingParticipation(count: event.participantCount, isJoined: index.isMultiple(of: Self.joinedStride))
         }
+        self.identity = identity
         self.logger = logger
     }
 
@@ -40,6 +46,21 @@ final class MockEventRepository: EventRepository {
         let event = try find(eventId)
         guard event.participates else { throw AppError.notAParticipant }
         return store(event.updatingParticipation(count: event.participantCount - 1, isJoined: false))
+    }
+
+    /// Like the backend: the draft's client id is the event id, so a repeated create answers the same event.
+    func create(_ draft: EventDraft) async throws -> SportEvent {
+        if let existing = events.first(where: { $0.id == draft.clientId }) {
+            logger.info(.events, "Mock create replayed for event \(existing.id)")
+            return existing
+        }
+        guard let coordinate = draft.coordinate else { throw AppError.eventCreationFailed }
+        let event = draft.makeEvent(hostUserId: identity.currentUserID,
+                                    hostName: AppBranding.Events.Create.mockHostName,
+                                    coordinate: coordinate)
+        events.append(event)
+        logger.info(.events, "Mock event \(event.id) created (\(event.capacity) spots)")
+        return event
     }
 
     private func find(_ eventId: String) throws -> SportEvent {

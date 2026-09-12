@@ -19,6 +19,8 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case tryAgain
     /// A join or leave failed for a reason without copy of its own (a 500, an unreadable body).
     case participationFailed
+    /// Creating an event failed for a reason without copy of its own (a 500, a validation the form did not catch).
+    case eventCreationFailed
     case unknown
 
     /// Normalises any thrown error into an `AppError`.

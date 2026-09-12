@@ -57,6 +57,80 @@ nonisolated enum AppBranding {
         static let loadFailedTitle = "Couldn't load events"
         static let loadFailedMessage = "Pull down to try again."
 
+        /// The create sheet, opened from the floating "+" on Explore.
+        enum Create {
+            /// VoiceOver label of the floating "+".
+            static let button = "Create a game"
+            static let title = "New game"
+            static let submit = "Create game"
+            static let cancel = "Cancel"
+            static let gameSection = "Game"
+            static let titleField = "Title"
+            static let titlePlaceholder = "Sunset 5-a-side"
+            static let eventType = "Event type"
+            static let startsAt = "When"
+            static let whereSection = "Where"
+            static let locationNamePlaceholder = "Place name"
+            static let pickOnMap = "Set the spot on the map"
+            /// Value of the map row while the draft has no coordinate yet.
+            static let spotNotSet = "Not set"
+            /// Value of the map row once a spot is set: `%f` latitude, `%f` longitude, four decimals (about 10 m).
+            static let coordinateFormat = "%.4f, %.4f"
+            static let mapTitle = "Where is it?"
+            static let mapHint = "Move the map until the pin sits on the spot."
+            static let mapDone = "Done"
+            static let playersSection = "Players"
+            /// Stepper label: `%ld` is the capacity, the host included.
+            static let capacityFormat = "%ld players"
+            static let detailsSection = "Details (optional)"
+            static let descriptionPlaceholder = "What to expect"
+            static let lookingForPlaceholder = "Who are you looking for?"
+            static let level = "Level"
+            static let anyLevel = "Any level"
+            static let price = "Price per person"
+            static let pricePlaceholder = "Free"
+            /// The mock repository has no profile to read the host's name from; the backend stamps the real one.
+            static let mockHostName = "You"
+            /// Guests are shown the sign-in sheet instead; the sheet's own title and subtitle already explain why.
+            /// One line per `EventDraft.Issue`, shown under the field it concerns.
+            static let issueTitleMissing = "Give the game a title"
+            static let issueTitleTooLong = "Keep the title under %ld characters"
+            static let issueStartsAtTooSoon = "Pick a start at least %ld minutes from now"
+            static let issueLocationNameMissing = "Name the place"
+            static let issueLocationNameTooLong = "Keep the place name under %ld characters"
+            static let issueCoordinateMissing = "Set the spot on the map"
+            static let issueCapacityOutOfRange = "Between %ld and %ld players"
+            static let issueDescriptionTooLong = "Keep the description under %ld characters"
+            static let issueLookingForTooLong = "Keep it under %ld characters"
+            static let issuePriceOutOfRange = "Enter a price with at most two decimals"
+
+            static func capacity(_ count: Int) -> String {
+                String(format: capacityFormat, count)
+            }
+
+            static func coordinateText(_ coordinate: Coordinate) -> String {
+                String(format: coordinateFormat, coordinate.latitude, coordinate.longitude)
+            }
+
+            /// The line under a field for one issue, naming the limit from `AppConfig.Events.Creation` where there is one.
+            static func message(for issue: EventDraft.Issue) -> String {
+                let limits = AppConfig.Events.Creation.self
+                return switch issue {
+                case .titleMissing: issueTitleMissing
+                case .titleTooLong: String(format: issueTitleTooLong, limits.titleMaxLength)
+                case .startsAtTooSoon: String(format: issueStartsAtTooSoon, limits.minimumLeadTimeMinutes)
+                case .locationNameMissing: issueLocationNameMissing
+                case .locationNameTooLong: String(format: issueLocationNameTooLong, limits.locationNameMaxLength)
+                case .coordinateMissing: issueCoordinateMissing
+                case .capacityOutOfRange:
+                    String(format: issueCapacityOutOfRange, limits.capacityRange.lowerBound, limits.capacityRange.upperBound)
+                case .descriptionTooLong: String(format: issueDescriptionTooLong, limits.descriptionMaxLength)
+                case .lookingForTooLong: String(format: issueLookingForTooLong, limits.lookingForMaxLength)
+                case .priceOutOfRange: issuePriceOutOfRange
+                }
+            }
+        }
+
         /// Segmented toolbar picker on Explore; the label is what VoiceOver reads for the control.
         static let presentationPicker = "View"
         static let listPresentation = "List"

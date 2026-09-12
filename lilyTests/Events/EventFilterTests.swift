@@ -160,16 +160,3 @@ struct DateWindowTests {
         #expect(!window.contains(lastStart.addingTimeInterval(86_400)))
     }
 }
-
-@MainActor
-struct FilterPriceInputTests {
-    @Test func parsesLocaleDecimalsAndRejectsNonsense() {
-        #expect(EventFilterPanel.price(from: "") == nil)
-        #expect(EventFilterPanel.price(from: "abc") == nil)
-        #expect(EventFilterPanel.price(from: "-3") == nil)
-        #expect(EventFilterPanel.price(from: "0") == 0)
-        #expect(EventFilterPanel.price(from: "6") == 6)
-        let separator = Locale.current.decimalSeparator ?? "."
-        #expect(EventFilterPanel.price(from: "6\(separator)5") == Decimal(string: "6.5"))
-    }
-}

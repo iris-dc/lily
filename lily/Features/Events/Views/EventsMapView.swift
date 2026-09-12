@@ -4,6 +4,8 @@ import SwiftUI
 /// Map of the loaded events with the user's position. Selecting a pin shows a card that opens the detail.
 struct EventsMapView: View {
     let viewModel: EventListViewModel
+    /// Extra room under the selected card, for a screen that floats a button over the map's bottom corner.
+    var bottomInset: CGFloat = 0
     @State private var position: MapCameraPosition = .automatic
     @State private var selectedEventID: SportEvent.ID?
 
@@ -50,6 +52,7 @@ struct EventsMapView: View {
             }
             .buttonStyle(.plain)
             .padding(DesignTokens.Spacing.lg)
+            .padding(.bottom, bottomInset)
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .accessibilityIdentifier(AccessibilityIdentifiers.mapSelectedCard)
         }

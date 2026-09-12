@@ -6,7 +6,8 @@ struct ErrorMessageMapperTests {
     private static let allErrors: [AppError] = [
         .authCancelled, .authFailed(provider: .apple), .invalidCredentials,
         .sessionExpired, .network, .eventsUnavailable, .eventNotFound, .eventFull,
-        .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain, .participationFailed, .unknown,
+        .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain, .participationFailed, .eventCreationFailed,
+        .unknown,
     ]
 
     /// The event branch of the mapper ends in a generic default, so a case missing from it would read
@@ -24,6 +25,11 @@ struct ErrorMessageMapperTests {
     @Test func participationRefusalsHaveTheirOwnTitles() {
         #expect(ErrorMessageMapper.message(for: .tryAgain).title == "Please try again")
         #expect(ErrorMessageMapper.message(for: .participationFailed).title == "Couldn't update your spot")
+    }
+
+    /// A create that fails for no named reason must not read like a join that failed.
+    @Test func creationFailureHasItsOwnTitle() {
+        #expect(ErrorMessageMapper.message(for: .eventCreationFailed).title == "Couldn't create your game")
     }
 
     @Test func providerFailureNamesProvider() {
