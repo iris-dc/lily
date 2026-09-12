@@ -158,6 +158,23 @@ final class EventListViewModel {
         logger.debug(.cache, "Event \(event.id) replaced in scope \(scope); sibling lists invalidated")
     }
 
+    /// Takes an event just created from this screen, placed where a reload would put it (by start time), so it shows
+    /// without a round trip. A joined-only list takes it only when the caller participates (the host always does).
+    /// Recorded like `replace`, so every other list reloads on its next appearance; repeated for the same id, it is a no-op.
+    func add(_ event: SportEvent) {
+        guard !events.contains(where: { $0.id == event.id }) else {
+            logger.debug(.cache, "Event \(event.id) already in scope \(scope); add ignored")
+            return
+        }
+        if scope != .joined || event.participates {
+            let index = events.firstIndex { $0.startsAt > event.startsAt } ?? events.endIndex
+            events.insert(event, at: index)
+        }
+        changes.recordChange()
+        loadedVersion = changes.version
+        logger.debug(.cache, "Event \(event.id) added to scope \(scope); sibling lists invalidated")
+    }
+
     /// Location is optional context: failures leave `userLocation` nil and the UI simply omits distances.
     func loadUserLocation() async {
         guard userLocation == nil else { return }

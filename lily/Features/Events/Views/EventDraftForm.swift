@@ -1,0 +1,157 @@
+import SwiftUI
+
+/// Every field of a new game, grouped the way a host thinks: the game, where, how many, and optional details. Under
+/// each group the first thing still wrong with it, so a disabled Create button is never a mystery.
+struct EventDraftForm: View {
+    @Bindable var viewModel: CreateEventViewModel
+    /// The price field edits text and parses on every change (like the filter's cap), so Create never races a pending
+    /// commit of the decimal pad, which has no return key.
+    @State private var priceText = ""
+    @FocusState private var focusedField: Field?
+
+    private enum Field { case title, locationName }
+
+    private typealias Copy = AppBranding.Events.Create
+
+    var body: some View {
+        Form {
+            gameSection
+            whereSection
+            playersSection
+            detailsSection
+        }
+        .scrollContentBackground(.hidden)
+        .tint(Color.lilyAccent)
+    }
+
+    private var gameSection: some View {
+        Section {
+            TextField(Copy.titleField, text: $viewModel.draft.title, prompt: Text(Copy.titlePlaceholder))
+                .textInputAutocapitalization(.sentences)
+                .focused($focusedField, equals: .title)
+                .submitLabel(.next)
+                .onSubmit { focusedField = .locationName }
+                .accessibilityIdentifier(AccessibilityIdentifiers.createTitle)
+            typeChips
+            DatePicker(Copy.startsAt, selection: $viewModel.draft.startsAt, in: viewModel.earliestStart...)
+        } header: {
+            Text(Copy.gameSection)
+        } footer: {
+            issueText(viewModel.issue(for: .titleMissing, .titleTooLong, .startsAtTooSoon))
+        }
+    }
+
+    /// Single choice in the filter panel's chip look; one type is always selected.
+    private var typeChips: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            Text(Copy.eventType)
+                .font(LilyTheme.Fonts.caption)
+                .foregroundStyle(.secondary)
+            FlowLayout(spacing: DesignTokens.Spacing.md, rowSpacing: 0) {
+                ForEach(EventType.allCases, id: \.self) { type in
+                    ChoiceChip(title: type.displayName,
+                               systemImage: type.symbolName,
+                               isSelected: viewModel.draft.type == type) {
+                        viewModel.draft.type = type
+                    }
+                }
+            }
+        }
+    }
+
+    private var whereSection: some View {
+        Section {
+            TextField(Copy.locationNamePlaceholder, text: $viewModel.draft.locationName)
+                .textInputAutocapitalization(.words)
+                .focused($focusedField, equals: .locationName)
+                .submitLabel(.done)
+                .accessibilityIdentifier(AccessibilityIdentifiers.createLocationName)
+            NavigationLink {
+                LocationPickerView(coordinate: $viewModel.draft.coordinate)
+            } label: {
+                LabeledContent(Copy.pickOnMap) {
+                    Text(viewModel.draft.coordinate.map(Copy.coordinateText) ?? Copy.spotNotSet)
+                }
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.createPickOnMap)
+        } header: {
+            Text(Copy.whereSection)
+        } footer: {
+            issueText(viewModel.issue(for: .locationNameMissing, .locationNameTooLong, .coordinateMissing))
+        }
+    }
+
+    private var playersSection: some View {
+        Section {
+            Stepper(value: $viewModel.draft.capacity, in: AppConfig.Events.Creation.capacityRange) {
+                Text(Copy.capacity(viewModel.draft.capacity))
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.createCapacity)
+        } header: {
+            Text(Copy.playersSection)
+        } footer: {
+            issueText(viewModel.issue(for: .capacityOutOfRange))
+        }
+    }
+
+    private var detailsSection: some View {
+        Section {
+            TextField(Copy.descriptionPlaceholder, text: $viewModel.draft.description, axis: .vertical)
+                .textInputAutocapitalization(.sentences)
+                .lineLimit(DesignTokens.Layout.multilineFieldLines)
+            TextField(Copy.lookingForPlaceholder, text: $viewModel.draft.lookingFor)
+                .textInputAutocapitalization(.sentences)
+            levelPicker
+            priceRow
+        } header: {
+            Text(Copy.detailsSection)
+        } footer: {
+            issueText(viewModel.issue(for: .descriptionTooLong, .lookingForTooLong, .priceOutOfRange))
+        }
+    }
+
+    private var levelPicker: some View {
+        Picker(Copy.level, selection: $viewModel.draft.skillLevel) {
+            Text(Copy.anyLevel).tag(SkillLevel?.none)
+            ForEach(SkillLevel.allCases, id: \.self) { level in
+                Text(level.displayName).tag(SkillLevel?.some(level))
+            }
+        }
+    }
+
+    /// Empty or zero means free. The text is the source while typing; the draft is parsed from it on every change.
+    private var priceRow: some View {
+        HStack(spacing: DesignTokens.Spacing.xs) {
+            Text(Copy.price)
+            Spacer()
+            TextField(Copy.pricePlaceholder, text: $priceText)
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .frame(width: DesignTokens.Layout.filterPriceFieldWidth)
+                .accessibilityIdentifier(AccessibilityIdentifiers.createPrice)
+                .accessibilityLabel(Copy.price)
+            Text(Price.symbol(for: AppConfig.Events.marketCurrencyCode))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+        }
+        .onChange(of: priceText) {
+            viewModel.draft.price = Price.parseAmount(priceText)
+        }
+    }
+
+    @ViewBuilder
+    private func issueText(_ issue: EventDraft.Issue?) -> some View {
+        if let issue {
+            Text(Copy.message(for: issue))
+        }
+    }
+}
+
+#Preview {
+    let dependencies = AppDependencies.makeMock()
+    NavigationStack {
+        ContentScreen {
+            EventDraftForm(viewModel: dependencies.makeCreateEventViewModel { _ in })
+        }
+    }
+}

@@ -117,21 +117,13 @@ struct EventFilterPanel: View {
         .contentShape(.capsule)
         .onTapGesture { isPriceFocused = true }
         .onChange(of: priceText) {
-            viewModel.updateFilter { $0.maxPrice = Self.price(from: priceText) }
+            viewModel.updateFilter { $0.maxPrice = Price.parseAmount(priceText) }
         }
         .onChange(of: viewModel.filter.maxPrice, initial: true) {
-            if Self.price(from: priceText) != viewModel.filter.maxPrice {
-                priceText = viewModel.filter.maxPrice.map { $0.formatted(Self.priceFormat) } ?? ""
+            if Price.parseAmount(priceText) != viewModel.filter.maxPrice {
+                priceText = viewModel.filter.maxPrice.map { $0.formatted(Price.inputFormat) } ?? ""
             }
         }
-    }
-
-    private static let priceFormat = Decimal.FormatStyle.number.precision(.fractionLength(0...2))
-
-    /// Locale-aware ("6,5" and "6.5"); empty, unreadable or negative text means no cap.
-    static func price(from text: String) -> Decimal? {
-        guard let amount = try? priceFormat.parseStrategy.parse(text), amount >= 0 else { return nil }
-        return amount
     }
 
     /// A menu picker shows only its selection, so the title sits on the left like the price row's.

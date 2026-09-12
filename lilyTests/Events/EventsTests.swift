@@ -5,12 +5,12 @@ import Testing
 @MainActor
 struct MockEventRepositoryTests {
     @Test func upcomingReturnsRequestedCount() async throws {
-        let repository = MockEventRepository(now: .now, count: 5, logger: SpyLogger())
+        let repository = MockEventRepository(now: .now, count: 5, identity: FakeIdentityProvider(), logger: SpyLogger())
         #expect(try await repository.events(in: .upcoming).count == 5)
     }
 
     @Test func joinedIsNonEmptyStrictSubsetOfUpcoming() async throws {
-        let repository = MockEventRepository(now: .now, count: 8, logger: SpyLogger())
+        let repository = MockEventRepository(now: .now, count: 8, identity: FakeIdentityProvider(), logger: SpyLogger())
         let upcoming = try await repository.events(in: .upcoming)
         let joined = try await repository.events(in: .joined)
         #expect(!joined.isEmpty)

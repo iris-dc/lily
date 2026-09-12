@@ -64,6 +64,56 @@ struct RemoteEventRepositoryTests {
         #expect(client.requests.allSatisfy { $0.body == nil && $0.queryItems.isEmpty })
     }
 
+    @Test func createPostsThePayloadToEvents() async throws {
+        let draft = EventDraft.fixture()
+        client.responses = [event]
+
+        let created = try await repository.create(draft)
+
+        #expect(created == event)
+        let request = try #require(client.requests.first)
+        #expect(request.method == .post)
+        #expect(request.path == "/api/events")
+        #expect(request.queryItems.isEmpty)
+        let payload = try #require(request.body as? CreateEventPayload)
+        #expect(payload == CreateEventPayload(draft: draft))
+        let encoded = try APIJSONCoding.makeEncoder().encode(payload)
+        let json = try #require(try JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        #expect(json["clientEventId"] as? String == draft.clientId)
+        #expect(TestFixtures.isBackendEventId(draft.clientId))
+        #expect(!json.keys.contains("description") && !json.keys.contains("price"))
+    }
+
+    /// Validated before the request is built: a draft without a spot never reaches the backend.
+    @Test func createWithoutACoordinateFailsBeforeAnyRequest() async {
+        await #expect(throws: AppError.eventCreationFailed) { try await repository.create(.fixture(coordinate: nil)) }
+        #expect(client.requests.isEmpty)
+    }
+
+    /// The form validates against the backend's limits, so `VALIDATION_FAILED` has no copy of its own on a create;
+    /// like `EVENT_ID_TAKEN` (another user's id) and a 500 it becomes the generic creation failure.
+    @Test func createFailuresWithoutCopyBecomeEventCreationFailed() async {
+        let coded = ["VALIDATION_FAILED", "EVENT_ID_TAKEN"].map {
+            APIError.http(status: 400, body: APIErrorBody(code: $0, message: "m"))
+        }
+        for error in coded + Self.otherFailures {
+            client.error = error
+            await #expect(throws: AppError.eventCreationFailed) { try await repository.create(.fixture()) }
+        }
+    }
+
+    /// A create that lost a race keeps its own copy: repeating it with the same client id is safe.
+    @Test func createTryAgainAndTransportFailuresKeepTheirOwnErrors() async {
+        client.error = APIError.http(status: 409, body: APIErrorBody(code: "TRY_AGAIN", message: "m"))
+        await #expect(throws: AppError.tryAgain) { try await repository.create(.fixture()) }
+
+        client.error = URLError(.notConnectedToInternet)
+        await #expect(throws: AppError.network) { try await repository.create(.fixture()) }
+
+        client.error = URLError(.cancelled)
+        await #expect(throws: URLError(.cancelled)) { try await repository.create(.fixture()) }
+    }
+
     @Test(arguments: codeCases)
     func backendCodesMapToAppErrors(code: String, expected: AppError) async {
         client.error = APIError.http(status: 409, body: APIErrorBody(code: code, message: "m"))

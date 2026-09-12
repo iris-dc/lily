@@ -24,6 +24,11 @@ final class RemoteEventRepository: EventRepository {
     func leave(eventId: String) async throws -> SportEvent {
         try await client.send(.delete(AppConfig.API.Paths.participants(eventId: eventId)), failingWith: .participationFailed)
     }
+
+    func create(_ draft: EventDraft) async throws -> SportEvent {
+        guard let payload = CreateEventPayload(draft: draft) else { throw AppError.eventCreationFailed }
+        return try await client.send(.post(AppConfig.API.Paths.events, body: payload), failingWith: .eventCreationFailed)
+    }
 }
 
 private extension EventScope {

@@ -55,6 +55,13 @@ nonisolated enum DesignTokens {
         /// Growth of a map pin when selected.
         static let mapPinSelectedScale: CGFloat = 1.15
         static let mapSelectedCardWidth: CGFloat = 340
+        /// Room the floating create button takes at the bottom-trailing corner (its glass circle plus its margin),
+        /// so the map's selected card is lifted above it instead of sliding under it.
+        static let floatingButtonFootprint: CGFloat = 80
+        /// Crosshair pin drawn over the centre of the location picker's map.
+        static let locationPickerPinSize: CGFloat = 44
+        /// How far a growing text field (the create form's description) stretches before it scrolls inside.
+        static let multilineFieldLines = 1...5
     }
 
     enum Opacity {
@@ -154,6 +161,9 @@ nonisolated enum DesignTokens {
         static let explore = "sparkles"
         static let myEvents = "calendar"
         static let addEvent = "calendar.badge.plus"
+        /// The floating create button on Explore.
+        static let create = "plus"
+        static let pickedLocation = "mappin"
         static let profile = "person.crop.circle"
     }
 }

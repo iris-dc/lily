@@ -20,9 +20,11 @@ struct ChoiceChip: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
+    /// The style is explicit because a `Form` row restyles labels for its icon column, which squeezed chip titles to
+    /// nothing and wrapped them one character per line.
     @ViewBuilder private var label: some View {
         if let systemImage {
-            Label(title, systemImage: systemImage)
+            Label(title, systemImage: systemImage).labelStyle(.titleAndIcon)
         } else {
             Text(title)
         }

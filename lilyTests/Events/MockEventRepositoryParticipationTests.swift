@@ -5,7 +5,10 @@ import Testing
 /// The mock joins and leaves in memory so previews, UI tests and `-mock-events` behave like the backend.
 @MainActor
 struct MockEventRepositoryParticipationTests {
-    private let repository = MockEventRepository(now: .now, count: AppConfig.Events.mockFeedSize, logger: SpyLogger())
+    private let repository = MockEventRepository(now: .now,
+                                                 count: AppConfig.Events.mockFeedSize,
+                                                 identity: FakeIdentityProvider(),
+                                                 logger: SpyLogger())
 
     @Test func joinedEventsAlwaysHaveAParticipant() async throws {
         let joined = try await repository.events(in: .joined)

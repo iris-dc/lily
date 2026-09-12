@@ -77,6 +77,13 @@ run_lint() {
   swiftlint --strict --quiet --reporter emoji
 }
 
+# The UI tests type into text fields, which needs the simulator's software keyboard; with "Connect Hardware Keyboard"
+# on (Xcode's default on a developer Mac) typeText finds no keyboard and the create-flow test fails. This is a
+# preference of Simulator.app on the host, idempotent, and never touches CoreSimulatorService.
+use_software_keyboard() {
+  defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+}
+
 case "$STAGE" in
   lint)
     run_lint
@@ -88,12 +95,14 @@ case "$STAGE" in
     run_xcodebuild unit-tests test -only-testing:"$UNIT_TARGET" -resultBundlePath "$RESULTS_DIR/unit-tests.xcresult"
     ;;
   ui)
+    use_software_keyboard
     run_xcodebuild ui-tests test -only-testing:"$UI_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/ui-tests.xcresult"
     ;;
   all)
     run_lint
     run_xcodebuild build build-for-testing
     run_xcodebuild unit-tests test-without-building -only-testing:"$UNIT_TARGET" -resultBundlePath "$RESULTS_DIR/unit-tests.xcresult"
+    use_software_keyboard
     run_xcodebuild ui-tests test-without-building -only-testing:"$UI_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/ui-tests.xcresult"
     ;;
   *)

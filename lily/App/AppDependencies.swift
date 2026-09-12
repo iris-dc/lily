@@ -61,10 +61,12 @@ final class AppDependencies {
         let logger = OSLogLogger()
         let defaults = UserDefaults(suiteName: AppConfig.Storage.previewSuitePrefix + UUID().uuidString) ?? .standard
         let store = UserDefaultsSessionStore(defaults: defaults, logger: logger)
-        let repositories = Repositories.mock(logger: logger)
+        let identity = SessionIdentityProvider()
+        let repositories = Repositories.mock(identity: identity, logger: logger)
         return AppDependencies(logger: logger,
                                sessionStore: store,
                                authService: MockAuthService(behavior: authBehavior, delay: .zero, store: store),
+                               identity: identity,
                                eventRepository: repositories.events,
                                profileRepository: repositories.profile,
                                locationService: MockLocationService())
@@ -91,6 +93,16 @@ final class AppDependencies {
                              errorCenter: errorCenter,
                              logger: logger,
                              onChange: onChange)
+    }
+
+    /// `onCreated` receives the event as the backend stored it; the list behind the sheet adds it in place.
+    func makeCreateEventViewModel(onCreated: @escaping @MainActor (SportEvent) -> Void) -> CreateEventViewModel {
+        CreateEventViewModel(repository: eventRepository,
+                             identity: identity,
+                             locationService: locationService,
+                             errorCenter: errorCenter,
+                             logger: logger,
+                             onCreated: onCreated)
     }
 
     /// Applies the session launch arguments (`-reset-session`, `-start-as-guest`) to the persisted choice.
@@ -130,7 +142,7 @@ final class AppDependencies {
             return .remote(identity: identity, logger: logger)
         }
         logger.info(.events, "Launch argument requested mock events")
-        return .mock(logger: logger)
+        return .mock(identity: identity, logger: logger)
     }
 }
 
@@ -144,7 +156,8 @@ private struct Repositories {
         return Repositories(events: RemoteEventRepository(client: client), profile: RemoteProfileRepository(client: client))
     }
 
-    static func mock(logger: any Logging) -> Repositories {
-        Repositories(events: MockEventRepository(logger: logger), profile: MockProfileRepository(logger: logger))
+    static func mock(identity: any IdentityProvider, logger: any Logging) -> Repositories {
+        Repositories(events: MockEventRepository(identity: identity, logger: logger),
+                     profile: MockProfileRepository(logger: logger))
     }
 }

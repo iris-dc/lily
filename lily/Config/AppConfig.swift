@@ -36,6 +36,25 @@ nonisolated enum AppConfig {
         /// A failed load is not retried by a reappearing tab before this has passed, so switching tabs while the
         /// backend is down neither hammers it nor repeats the popup; pull-to-refresh is not held back.
         static let retryAfterFailure: TimeInterval = 10
+
+        /// Limits of the create form, the backend's `CreateEventRequest` constraints mirrored so a draft that passes
+        /// here never earns a 400. Text lengths are UTF-16 units, as Java's `String.length()` counts them.
+        enum Creation {
+            static let titleMaxLength = 80
+            static let locationNameMaxLength = 120
+            static let descriptionMaxLength = 1000
+            static let lookingForMaxLength = 300
+            static let capacityRange = 2...200
+            static let defaultCapacity = 10
+            /// A game must start at least this far in the future; the minutes are what the form's hint names.
+            static let minimumLeadTimeMinutes = 15
+            static let minimumLeadTime: TimeInterval = TimeInterval(minimumLeadTimeMinutes) * 60
+            /// A new draft proposes a start this far ahead, rounded up to the hour.
+            static let defaultStartOffset: TimeInterval = 24 * 60 * 60
+            /// The backend accepts at most seven integer digits and two decimals for a price.
+            static let priceLimitExclusive: Decimal = 10_000_000
+            static let priceMinorUnitsPerUnit: Decimal = 100
+        }
     }
 
     enum Location {
@@ -43,6 +62,8 @@ nonisolated enum AppConfig {
         static let mockCenter = Coordinate(latitude: 52.5200, longitude: 13.4050)
         /// Radius (in degrees) within which fixture events are scattered.
         static let fixtureSpreadDegrees = 0.03
+        /// Side of the area the location picker shows when it opens, in metres: a neighbourhood, so one drag lands the pin.
+        static let pickerRegionMeters: Double = 1_500
         /// Waiting longer than this for a GPS fix falls back to a map centred on the events.
         static let fixTimeout: Duration = .seconds(8)
         /// A fix is reused for this long, so screens re-appearing and sibling tabs share one CoreLocation stream.

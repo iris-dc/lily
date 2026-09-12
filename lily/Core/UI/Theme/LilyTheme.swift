@@ -11,6 +11,8 @@ enum LilyTheme {
         static var screenTitle: Font { .system(.largeTitle, weight: .bold) }
         static var cardTitle: Font { .system(.title3, design: .default, weight: .semibold) }
         static var button: Font { .system(.body, design: .default, weight: .semibold) }
+        /// The glyph of the floating create button: heavier and larger than button text so it reads from across the screen.
+        static var floatingAction: Font { .system(.title2, design: .default, weight: .bold) }
         static var caption: Font { .system(.footnote, design: .default, weight: .medium) }
     }
 

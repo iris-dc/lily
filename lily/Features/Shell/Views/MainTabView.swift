@@ -13,6 +13,7 @@ struct MainTabView: View {
                                                message: AppBranding.exploreEmptyMessage),
                     showsMap: true,
                     filterable: true,
+                    creatable: true,
                     scope: .upcoming,
                     dependencies: dependencies
                 )
