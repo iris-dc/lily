@@ -145,8 +145,7 @@ final class AppDependencies {
         return .mock(identity: identity, logger: logger)
     }
 
-    /// The `-api-base-url` value when it parses as a URL with a scheme and a host (a Laurel on the same Wi-Fi as a
-    /// physical iPhone, typically); otherwise `AppConfig.API.baseURL` for the build configuration.
+    /// The `-api-base-url` value when it is a URL with a scheme and a host, otherwise `AppConfig.API.baseURL`.
     static func apiBaseURL(from arguments: [String], logger: any Logging) -> URL {
         let flag = AppConfig.LaunchArguments.apiBaseURL
         guard let value = AppConfig.LaunchArguments.value(following: flag, in: arguments) else {
