@@ -1,7 +1,6 @@
 import Testing
 @testable import lily
 
-/// `AppConfig.LaunchArguments.value(following:in:)` is the one reader of valued launch arguments.
 struct LaunchArgumentsTests {
     private let flag = AppConfig.LaunchArguments.apiBaseURL
     private let url = "http://mac.local:8080"
