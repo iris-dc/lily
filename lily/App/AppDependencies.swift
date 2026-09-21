@@ -139,10 +139,25 @@ final class AppDependencies {
                                          identity: any IdentityProvider,
                                          logger: any Logging) -> Repositories {
         guard arguments.contains(AppConfig.LaunchArguments.mockEvents) else {
-            return .remote(identity: identity, logger: logger)
+            return .remote(baseURL: apiBaseURL(from: arguments, logger: logger), identity: identity, logger: logger)
         }
         logger.info(.events, "Launch argument requested mock events")
         return .mock(identity: identity, logger: logger)
+    }
+
+    /// The `-api-base-url` value when it parses as a URL with a scheme and a host (a Laurel on the same Wi-Fi as a
+    /// physical iPhone, typically); otherwise `AppConfig.API.baseURL` for the build configuration.
+    static func apiBaseURL(from arguments: [String], logger: any Logging) -> URL {
+        let flag = AppConfig.LaunchArguments.apiBaseURL
+        guard let value = AppConfig.LaunchArguments.value(following: flag, in: arguments) else {
+            return AppConfig.API.baseURL
+        }
+        guard let url = URL(string: value), url.scheme != nil, url.host() != nil else {
+            logger.warning(.network, "Ignoring \(flag): not a URL with a scheme and a host: \(value)")
+            return AppConfig.API.baseURL
+        }
+        logger.info(.network, "API base URL overridden: \(url.absoluteString)")
+        return url
     }
 }
 
@@ -151,8 +166,8 @@ private struct Repositories {
     let events: any EventRepository
     let profile: any ProfileRepository
 
-    static func remote(identity: any IdentityProvider, logger: any Logging) -> Repositories {
-        let client = URLSessionAPIClient(identity: identity, logger: logger)
+    static func remote(baseURL: URL, identity: any IdentityProvider, logger: any Logging) -> Repositories {
+        let client = URLSessionAPIClient(baseURL: baseURL, identity: identity, logger: logger)
         return Repositories(events: RemoteEventRepository(client: client), profile: RemoteProfileRepository(client: client))
     }
 

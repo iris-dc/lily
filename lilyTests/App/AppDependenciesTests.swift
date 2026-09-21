@@ -63,6 +63,35 @@ struct AppDependenciesTests {
         #expect(remote.profileRepository is RemoteProfileRepository)
     }
 
+    @Test func apiBaseURLLaunchArgumentOverridesTheDefault() {
+        let logger = SpyLogger()
+        let arguments = [AppConfig.LaunchArguments.apiBaseURL, "http://mac.local:8080", AppConfig.LaunchArguments.mockLocation]
+
+        let url = AppDependencies.apiBaseURL(from: arguments, logger: logger)
+
+        #expect(url == URL(string: "http://mac.local:8080"))
+        #expect(logger.messages(in: .network, at: .info) == ["API base URL overridden: http://mac.local:8080"])
+    }
+
+    @Test func apiBaseURLLaunchArgumentWithoutSchemeOrHostIsIgnoredWithAWarning() {
+        let logger = SpyLogger()
+
+        let url = AppDependencies.apiBaseURL(from: [AppConfig.LaunchArguments.apiBaseURL, "mac.local:8080"], logger: logger)
+
+        #expect(url == AppConfig.API.baseURL)
+        #expect(logger.messages(in: .network, at: .warning).count == 1)
+        #expect(logger.messages(in: .network, at: .info).isEmpty)
+    }
+
+    @Test func apiBaseURLIsTheConfiguredOneWithoutTheArgument() {
+        let logger = SpyLogger()
+
+        let url = AppDependencies.apiBaseURL(from: [AppConfig.LaunchArguments.mockLocation], logger: logger)
+
+        #expect(url == AppConfig.API.baseURL)
+        #expect(logger.entries.isEmpty)
+    }
+
     @Test func makeMockNeverTouchesTheNetwork() {
         let mock = AppDependencies.makeMock()
         #expect(mock.eventRepository is MockEventRepository)

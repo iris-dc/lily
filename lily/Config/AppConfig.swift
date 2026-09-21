@@ -78,9 +78,19 @@ nonisolated enum AppConfig {
 
     /// The Laurel backend. Paths are relative to `baseURL`; the request shapes are documented in the README.
     enum API {
-        /// Local Laurel instance. The simulator shares the host's loopback, so `localhost` reaches it directly
+        /// Local Laurel instance. The simulator shares the Mac's loopback, so `localhost` reaches it directly
         /// (ATS exempts unqualified host names, so plain HTTP needs no Info.plist exception).
-        static let baseURL = URL(string: "http://localhost:8080")!
+        static let localBaseURL = URL(string: "http://localhost:8080")!
+        /// Laurel on AWS, owned by the `iris-dc/rose` CDK repository. Release builds use it; until the app sends
+        /// Cognito tokens it answers 401 for everything but `/actuator/health`.
+        static let productionBaseURL = URL(string: "https://api.iskra.red")!
+        /// Debug builds talk to the local instance (`LaunchArguments.apiBaseURL` can point them elsewhere),
+        /// release builds to production.
+        #if DEBUG
+        static let baseURL = localBaseURL
+        #else
+        static let baseURL = productionBaseURL
+        #endif
         static let requestTimeout: TimeInterval = 15
         /// Pause before the one automatic repeat of a join or leave the backend answered with `TRY_AGAIN` (the
         /// write lost a race with another player or was throttled by DynamoDB; the same request very likely
@@ -137,6 +147,20 @@ nonisolated enum AppConfig {
         static let mockAuthFail = "-mock-auth-fail"
         /// Serves the fixture events and accepts profile updates in memory, so UI tests and demos need no backend.
         static let mockEvents = "-mock-events"
+        /// Takes a value, the next argument: points a debug build, typically on a physical iPhone, at a Laurel on
+        /// the same Wi-Fi, e.g. `-api-base-url http://<mac-name>.local:8080`.
+        static let apiBaseURL = "-api-base-url"
+        /// Every launch argument starts with this, so an argument that does is a flag, never a value.
+        static let flagPrefix = "-"
+
+        /// The argument after `flag`, or `nil` when the flag is missing, is the last argument or is followed by
+        /// another flag. The one place that knows how valued arguments are read.
+        static func value(following flag: String, in arguments: [String]) -> String? {
+            guard let index = arguments.firstIndex(of: flag) else { return nil }
+            let next = arguments.index(after: index)
+            guard next < arguments.endIndex, !arguments[next].hasPrefix(flagPrefix) else { return nil }
+            return arguments[next]
+        }
     }
 
     enum Logging {

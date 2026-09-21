@@ -20,3 +20,7 @@ amplify_outputs.json
 
 # Claude Code local settings and agent worktrees
 .claude/
+
+# IDE metadata
+.idea/
+*.iml
