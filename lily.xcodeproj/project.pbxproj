@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AC0DE0010000000000000004 /* Amplify in Frameworks */ = {isa = PBXBuildFile; productRef = AC0DE0010000000000000002 /* Amplify */; };
+		AC0DE0010000000000000005 /* AWSCognitoAuthPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = AC0DE0010000000000000003 /* AWSCognitoAuthPlugin */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		7F082139303F451B006328AB /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +57,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AC0DE0010000000000000004 /* Amplify in Frameworks */,
+				AC0DE0010000000000000005 /* AWSCognitoAuthPlugin in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +119,8 @@
 			);
 			name = lily;
 			packageProductDependencies = (
+				AC0DE0010000000000000002 /* Amplify */,
+				AC0DE0010000000000000003 /* AWSCognitoAuthPlugin */,
 			);
 			productName = lily;
 			productReference = 7F08212B303F4518006328AB /* lily.app */;
@@ -195,6 +204,9 @@
 			);
 			mainGroup = 7F082122303F4518006328AB;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AC0DE0010000000000000001 /* XCRemoteSwiftPackageReference "amplify-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7F08212C303F4518006328AB /* Products */;
 			projectDirPath = "";
@@ -575,6 +587,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AC0DE0010000000000000001 /* XCRemoteSwiftPackageReference "amplify-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/aws-amplify/amplify-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.61.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AC0DE0010000000000000002 /* Amplify */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AC0DE0010000000000000001 /* XCRemoteSwiftPackageReference "amplify-swift" */;
+			productName = Amplify;
+		};
+		AC0DE0010000000000000003 /* AWSCognitoAuthPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AC0DE0010000000000000001 /* XCRemoteSwiftPackageReference "amplify-swift" */;
+			productName = AWSCognitoAuthPlugin;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7F082123303F4518006328AB /* Project object */;
 }

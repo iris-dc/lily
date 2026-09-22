@@ -4,7 +4,8 @@ import Testing
 
 struct ErrorMessageMapperTests {
     private static let allErrors: [AppError] = [
-        .authCancelled, .authFailed(provider: .apple), .invalidCredentials,
+        .authCancelled, .authFailed(provider: .apple), .providerUnavailable(provider: .apple), .invalidCredentials,
+        .emailTaken, .emailNotConfirmed, .invalidConfirmationCode, .tooManyAttempts,
         .sessionExpired, .network, .eventsUnavailable, .eventNotFound, .eventFull,
         .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain, .participationFailed, .eventCreationFailed,
         .unknown,
@@ -34,6 +35,21 @@ struct ErrorMessageMapperTests {
 
     @Test func providerFailureNamesProvider() {
         #expect(ErrorMessageMapper.message(for: .authFailed(provider: .google)).body.contains("Google"))
+    }
+
+    /// Pinned: the sheet keeps Apple and Google visible, so the copy must promise rather than apologise.
+    @Test func unavailableProviderIsComingSoonAndPointsToEmail() {
+        let message = ErrorMessageMapper.message(for: .providerUnavailable(provider: .google))
+        #expect(message.title == "Coming soon")
+        #expect(message.body == "Sign in with Google isn't available yet. Use your email for now.")
+    }
+
+    @Test func confirmationErrorsHaveTheirOwnTitles() {
+        #expect(ErrorMessageMapper.message(for: .emailTaken).title == "Email already in use")
+        #expect(ErrorMessageMapper.message(for: .emailNotConfirmed).title == "Confirm your email")
+        #expect(ErrorMessageMapper.message(for: .invalidConfirmationCode).title == "That code didn't match")
+        #expect(ErrorMessageMapper.message(for: .tooManyAttempts).title == "Too many attempts")
+        #expect(ErrorMessageMapper.message(for: .sessionExpired).title == "Session expired")
     }
 
     @Test func wrappingNormalisesForeignErrors() {

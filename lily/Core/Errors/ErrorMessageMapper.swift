@@ -9,14 +9,9 @@ nonisolated struct ErrorMessage: Equatable, Sendable {
 nonisolated enum ErrorMessageMapper {
     static func message(for error: AppError) -> ErrorMessage {
         switch error {
-        case .authCancelled:
-            ErrorMessage(title: "Sign-in cancelled", body: "No worries. You can try again whenever you like.")
-        case .authFailed(let provider):
-            ErrorMessage(title: "Couldn't sign in", body: "\(provider.displayName) sign-in didn't go through. Please try again.")
-        case .invalidCredentials:
-            ErrorMessage(title: "Check your details", body: "The email or password doesn't look right.")
-        case .sessionExpired:
-            ErrorMessage(title: "Session expired", body: "Please sign in again to continue.")
+        case .authCancelled, .authFailed, .providerUnavailable, .invalidCredentials, .emailTaken, .emailNotConfirmed,
+             .invalidConfirmationCode, .tooManyAttempts, .sessionExpired:
+            authMessage(for: error)
         case .network:
             ErrorMessage(title: "You're offline", body: "Check your connection and try again.")
         case .eventsUnavailable, .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave,
@@ -29,6 +24,33 @@ nonisolated enum ErrorMessageMapper {
 
     private static let unknownMessage = ErrorMessage(title: "Something went wrong",
                                                      body: "An unexpected error occurred. Please try again.")
+
+    /// Copy for signing in, signing up and the session; `message(for:)` routes exactly those cases here.
+    private static func authMessage(for error: AppError) -> ErrorMessage {
+        switch error {
+        case .authCancelled:
+            ErrorMessage(title: "Sign-in cancelled", body: "No worries. You can try again whenever you like.")
+        case .authFailed(let provider):
+            ErrorMessage(title: "Couldn't sign in", body: "\(provider.displayName) sign-in didn't go through. Please try again.")
+        case .providerUnavailable(let provider):
+            ErrorMessage(title: "Coming soon",
+                         body: "Sign in with \(provider.displayName) isn't available yet. Use your email for now.")
+        case .invalidCredentials:
+            ErrorMessage(title: "Check your details", body: "The email or password doesn't look right.")
+        case .emailTaken:
+            ErrorMessage(title: "Email already in use", body: "There's already an account with this email. Sign in instead.")
+        case .emailNotConfirmed:
+            ErrorMessage(title: "Confirm your email", body: "Enter the code we sent you to finish setting up your account.")
+        case .invalidConfirmationCode:
+            ErrorMessage(title: "That code didn't match", body: "Check the code in your email, or ask for a new one.")
+        case .tooManyAttempts:
+            ErrorMessage(title: "Too many attempts", body: "Please wait a moment before trying again.")
+        case .sessionExpired:
+            ErrorMessage(title: "Session expired", body: "Please sign in again to continue.")
+        default:
+            unknownMessage
+        }
+    }
 
     /// Copy for browsing, joining and leaving events; `message(for:)` routes exactly those cases here.
     private static func eventMessage(for error: AppError) -> ErrorMessage {

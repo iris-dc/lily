@@ -6,8 +6,15 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     /// task cancellation is handled quietly in `SessionController` and never reaches the popup.
     case authCancelled
     case authFailed(provider: AuthProvider.Kind)
+    /// Apple and Google stay on the sheet but have no identity provider in the pool yet.
+    case providerUnavailable(provider: AuthProvider.Kind)
     case invalidCredentials
-    /// Reserved for the Cognito token-refresh path; nothing raises it yet.
+    case emailTaken
+    /// The account exists but the emailed code was never entered; the form offers the code step, no popup.
+    case emailNotConfirmed
+    case invalidConfirmationCode
+    case tooManyAttempts
+    /// The backend rejected the token (401), or Amplify could not refresh it.
     case sessionExpired
     case network
     case eventsUnavailable

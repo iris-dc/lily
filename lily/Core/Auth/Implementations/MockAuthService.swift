@@ -1,9 +1,11 @@
 import CryptoKit
 import Foundation
 
-nonisolated enum MockAuthBehavior: Sendable {
+nonisolated enum MockAuthBehavior: Equatable, Sendable {
     case succeed
     case fail(AppError)
+    /// Sign-up answers `.confirmationRequired` and only this code confirms, like a pool that emails a code.
+    case requireConfirmation(code: String)
 }
 
 /// Stand-in for Cognito. Simulates latency and persists a fake session the way Amplify keeps tokens.
@@ -32,11 +34,24 @@ final class MockAuthService: AuthService {
         return session
     }
 
-    func signUp(email: String, password: String) async throws {
+    func signUp(email: String, password: String) async throws -> SignUpOutcome {
         try await simulateNetwork()
         guard CredentialsValidator.isValidEmail(email), CredentialsValidator.isValidPassword(password) else {
             throw AppError.invalidCredentials
         }
+        if case .requireConfirmation = behavior { return .confirmationRequired }
+        return .signedUp
+    }
+
+    func confirmSignUp(email: String, code: String) async throws {
+        try await simulateNetwork()
+        if case .requireConfirmation(let expected) = behavior, code != expected {
+            throw AppError.invalidConfirmationCode
+        }
+    }
+
+    func resendConfirmationCode(email: String) async throws {
+        try await simulateNetwork()
     }
 
     func signOut() async throws {
@@ -60,7 +75,7 @@ nonisolated enum MockUsers {
             AuthUser(id: "mock-google", displayName: "Google Tester", email: "google@example.com")
         case .email(let credentials):
             AuthUser(id: "mock-email-\(opaqueID(for: credentials.email))",
-                     displayName: displayName(fromEmail: credentials.email),
+                     displayName: AuthUser.displayName(fromEmail: credentials.email),
                      email: credentials.email)
         }
     }
@@ -69,12 +84,5 @@ nonisolated enum MockUsers {
     private static func opaqueID(for email: String) -> String {
         let digest = SHA256.hash(data: Data(email.lowercased().utf8))
         return digest.prefix(AppConfig.Auth.mockUserIDDigestBytes).map { String(format: "%02x", $0) }.joined()
-    }
-
-    private static func displayName(fromEmail email: String) -> String {
-        let local = email.split(separator: "@").first.map(String.init) ?? email
-        return local.split(whereSeparator: { $0 == "." || $0 == "_" })
-            .map { $0.prefix(1).uppercased() + $0.dropFirst() }
-            .joined(separator: " ")
     }
 }

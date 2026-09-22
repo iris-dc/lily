@@ -16,7 +16,7 @@ struct RemoteEventRepositoryTests {
     ]
     /// Failures without a backend code of their own; what they become depends on what was being asked.
     private static let otherFailures: [APIError] = [
-        .http(status: 500, body: nil), .http(status: 401, body: nil), .decodingFailed, .notHTTPResponse,
+        .http(status: 500, body: nil), .http(status: 403, body: nil), .decodingFailed, .notHTTPResponse,
     ]
 
     private let client = FakeAPIClient()
@@ -136,6 +136,15 @@ struct RemoteEventRepositoryTests {
             await #expect(throws: AppError.participationFailed) { try await repository.join(eventId: "evt_01J") }
             await #expect(throws: AppError.participationFailed) { try await repository.leave(eventId: "evt_01J") }
         }
+    }
+
+    /// A 401 is about the token, not about what was asked, so it keeps its own copy on reads, writes and creates alike.
+    @Test func unauthorizedBecomesSessionExpiredWhateverWasAsked() async {
+        client.error = APIError.http(status: 401, body: nil)
+
+        await #expect(throws: AppError.sessionExpired) { try await repository.events(in: .joined) }
+        await #expect(throws: AppError.sessionExpired) { try await repository.join(eventId: "evt_01J") }
+        await #expect(throws: AppError.sessionExpired) { try await repository.create(.fixture()) }
     }
 
     @Test func transportFailuresBecomeNetwork() async {

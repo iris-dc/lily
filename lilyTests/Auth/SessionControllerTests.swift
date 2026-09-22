@@ -98,9 +98,9 @@ struct SessionControllerTests {
     @Test func signUpSuccessSignsInWithSameCredentials() async {
         let harness = SessionHarness()
 
-        let success = await harness.controller.signUp(email: "a@b.co", password: "long-enough")
+        let result = await harness.controller.signUp(email: "a@b.co", password: "long-enough")
 
-        #expect(success)
+        #expect(result == .signedIn)
         #expect(harness.auth.signInProviders == [.email(EmailCredentials(email: "a@b.co", password: "long-enough"))])
         #expect(harness.controller.state == .signedIn(TestFixtures.user))
     }
@@ -109,9 +109,9 @@ struct SessionControllerTests {
         let harness = SessionHarness()
         harness.auth.signUpError = .invalidCredentials
 
-        let success = await harness.controller.signUp(email: "a@b.co", password: "long-enough")
+        let result = await harness.controller.signUp(email: "a@b.co", password: "long-enough")
 
-        #expect(!success)
+        #expect(result == .failed)
         #expect(harness.auth.signInProviders.isEmpty)
         #expect(harness.controller.authenticatingProvider == nil)
         #expect(harness.errorCenter.current?.error == .invalidCredentials)
@@ -249,7 +249,7 @@ struct SessionControllerWithMockAuthTests {
         let signedUp = await harness.controller.signUp(email: credentials.email, password: credentials.password)
         let appleSucceeded = await apple.value
 
-        #expect(signedUp)
+        #expect(signedUp == .signedIn)
         #expect(!appleSucceeded)
         #expect(harness.controller.authenticatingProvider == nil)
         #expect(harness.controller.state.user == MockUsers.user(for: .email(credentials)))
@@ -277,11 +277,13 @@ struct SessionControllerWithMockAuthTests {
         let credentials = TestFixtures.credentials
 
         await harness.controller.signUp(email: credentials.email, password: credentials.password)
+        await harness.controller.resendConfirmationCode(email: credentials.email)
+        await harness.controller.confirmSignUp(email: credentials.email, code: "123456", password: credentials.password)
         await harness.controller.restore()
         await harness.controller.signOut()
 
         let lines = harness.logger.entries.map(\.message)
-        #expect(lines.count >= 4)
+        #expect(lines.count >= 6)
         for line in lines {
             #expect(!line.localizedCaseInsensitiveContains(credentials.email), "leaked email in: \(line)")
             #expect(!line.contains(credentials.password), "leaked password in: \(line)")

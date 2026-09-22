@@ -55,6 +55,37 @@ struct MockAuthServiceTests {
         }
     }
 
+    @Test func signUpSucceedsOutrightByDefault() async throws {
+        let (service, _) = makeService()
+        #expect(try await service.signUp(email: "a@b.co", password: "long-enough") == .signedUp)
+    }
+
+    @Test func requireConfirmationBehaviorAcceptsOnlyItsCode() async throws {
+        let (service, store) = makeService(.requireConfirmation(code: "424242"))
+
+        #expect(try await service.signUp(email: "a@b.co", password: "long-enough") == .confirmationRequired)
+        await #expect(throws: AppError.invalidConfirmationCode) {
+            try await service.confirmSignUp(email: "a@b.co", code: "123456")
+        }
+        try await service.confirmSignUp(email: "a@b.co", code: "424242")
+        try await service.resendConfirmationCode(email: "a@b.co")
+        #expect(store.stored == nil, "confirming is not signing in")
+    }
+
+    @Test func requireConfirmationBehaviorStillSignsProvidersIn() async throws {
+        let (service, store) = makeService(.requireConfirmation(code: "424242"))
+
+        let session = try await service.signIn(with: .apple)
+
+        #expect(store.stored == .signedIn(session))
+    }
+
+    @Test func failureBehaviorFailsConfirmationToo() async {
+        let (service, _) = makeService(.fail(.network))
+        await #expect(throws: AppError.network) { try await service.confirmSignUp(email: "a@b.co", code: "123456") }
+        await #expect(throws: AppError.network) { try await service.resendConfirmationCode(email: "a@b.co") }
+    }
+
     @Test func signOutClearsStore() async throws {
         let (service, store) = makeService()
         store.stored = .signedIn(TestFixtures.session)
