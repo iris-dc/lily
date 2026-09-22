@@ -1,17 +1,8 @@
 import XCTest
 
-/// End-to-end smoke tests against the real app in the simulator.
-final class LilySmokeTests: XCTestCase {
-    private let app = XCUIApplication()
-
-    override func setUpWithError() throws {
-        continueAfterFailure = false
-        // Mirrors AppConfig.LaunchArguments (UI tests cannot import the app module). `-mock-events` keeps these
-        // runs independent of a running backend.
-        app.launchArguments = ["-reset-session", "-mock-location", "-mock-events"]
-        app.launch()
-    }
-
+/// End-to-end smoke tests against the real app in the simulator: landing, Explore, map, filters, joining, creating.
+/// Sign-in flows are in `LilySignInTests`; both share `LilyUITestCase`.
+final class LilySmokeTests: LilyUITestCase {
     @MainActor
     func testLandingExplainsProductAndOffersEntry() {
         XCTAssertTrue(app.staticTexts["Play tonight."].waitForExistence(timeout: 5))
@@ -58,39 +49,6 @@ final class LilySmokeTests: XCTestCase {
             "the selected-event card must not run under the tab bar"
         )
         attachScreenshot(named: "map-selected-card")
-    }
-
-    @MainActor
-    func testMockAppleSignInFromSheetLandsInApp() {
-        tapSignInWithApple()
-
-        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
-    }
-
-    @MainActor
-    func testSignInFailureShowsThePopupAboveTheSheet() {
-        app.terminate()
-        app.launchArguments.append("-mock-auth-fail")
-        app.launch()
-        let apple = tapSignInWithApple()
-
-        // The popup combines its children into one element, so match on the label.
-        let popup = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "label CONTAINS %@", "You're offline")).firstMatch
-        XCTAssertTrue(popup.waitForExistence(timeout: 10), "a failed sign-in must show the shared error popup")
-        waitUntilHittableAndStill(popup)
-        XCTAssertTrue(popup.isHittable, "the popup must sit above the sheet, not behind it")
-        XCTAssertTrue(apple.exists, "the sheet stays open after a failed sign-in")
-    }
-
-    @MainActor
-    func testSignInFromProfileDismissesTheSheet() {
-        relaunchAsGuest()
-        app.tabBars.buttons["Profile"].tap()
-        let apple = tapSignInWithApple()
-
-        XCTAssertTrue(apple.waitForNonExistence(timeout: 10), "the sheet must close once the guest is signed in")
-        XCTAssertTrue(app.staticTexts["Apple Tester"].waitForExistence(timeout: 5))
     }
 
     /// The mock's "Doubles, all levels" starts at 1 of 4 and unjoined; a join must show on the detail at once and
@@ -195,74 +153,5 @@ final class LilySmokeTests: XCTestCase {
 
         card.tap()
         XCTAssertTrue(app.staticTexts["You host this game"].waitForExistence(timeout: 5), "the host must see the hosting notice")
-    }
-
-    // MARK: - Helpers
-
-    /// Taps the floating "+" on Explore (AccessibilityIdentifiers.eventsCreate); waits out the sign-in transition too.
-    @MainActor
-    private func tapCreateButton() {
-        let create = app.buttons["events-create"]
-        XCTAssertTrue(create.waitForExistence(timeout: 10))
-        create.tap()
-    }
-
-    /// Focuses a text field and types into it.
-    @MainActor
-    private func enter(_ text: String, into field: XCUIElement) {
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "missing text field")
-        field.tap()
-        field.typeText(text)
-    }
-
-    @MainActor
-    private func relaunchAsGuest() {
-        app.terminate()
-        app.launchArguments.append("-start-as-guest")
-        app.launch()
-        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
-    }
-
-    /// Opens the sign-in sheet from whatever screen shows "Sign in" and picks the mock Apple provider. Returns the
-    /// provider button, so callers can watch the sheet close or stay.
-    @MainActor
-    @discardableResult
-    private func tapSignInWithApple() -> XCUIElement {
-        let signIn = app.buttons["Sign in"]
-        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
-        signIn.tap()
-
-        let apple = app.buttons["Continue with Apple"]
-        XCTAssertTrue(apple.waitForExistence(timeout: 5))
-        apple.tap()
-        return apple
-    }
-
-    @MainActor
-    private func showMap() {
-        // Segments expose their SF Symbol name as identifier (DesignTokens.Symbols.map).
-        app.segmentedControls["events-presentation"].buttons["map"].tap()
-        XCTAssertTrue(app.maps.firstMatch.waitForExistence(timeout: 10))
-    }
-
-    /// The map camera animates to frame every pin; tapping before it settles hits a stale frame.
-    @MainActor
-    private func waitUntilHittableAndStill(_ element: XCUIElement, timeout: TimeInterval = 10) {
-        var previous = element.frame
-        for _ in 0..<Int(timeout * 4) {
-            usleep(250_000)
-            let current = element.frame
-            if current == previous && element.isHittable { return }
-            previous = current
-        }
-        XCTFail("element never settled into a hittable position")
-    }
-
-    @MainActor
-    private func attachScreenshot(named name: String) {
-        let screenshot = XCTAttachment(screenshot: app.screenshot())
-        screenshot.name = name
-        screenshot.lifetime = .keepAlways
-        add(screenshot)
     }
 }

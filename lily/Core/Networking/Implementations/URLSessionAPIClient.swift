@@ -1,23 +1,27 @@
 import Foundation
 
-/// `APIClient` over `URLSession`. Knows the base URL, the JSON conventions and the local identity header, nothing else.
+/// `APIClient` over `URLSession`. Knows the base URL, the JSON conventions and the two identity headers, nothing else.
 final class URLSessionAPIClient: APIClient {
     private let session: URLSession
     private let baseURL: URL
     private let identity: any IdentityProvider
+    private let tokenProvider: (any AuthTokenProvider)?
     private let sendsLocalUserHeader: Bool
     private let logger: any Logging
     private let decoder = APIJSONCoding.makeDecoder()
     private let encoder = APIJSONCoding.makeEncoder()
 
+    /// `tokenProvider` is `nil` when auth is mocked: no token exists, and none is sent.
     init(session: URLSession = URLSessionAPIClient.makeSession(),
          baseURL: URL = AppConfig.API.baseURL,
          identity: any IdentityProvider,
+         tokenProvider: (any AuthTokenProvider)? = nil,
          sendsLocalUserHeader: Bool = AppConfig.API.sendsLocalUserHeader,
          logger: any Logging) {
         self.session = session
         self.baseURL = baseURL
         self.identity = identity
+        self.tokenProvider = tokenProvider
         self.sendsLocalUserHeader = sendsLocalUserHeader
         self.logger = logger
     }
@@ -32,7 +36,7 @@ final class URLSessionAPIClient: APIClient {
     func send<Response: Decodable>(_ request: APIRequest<Response>) async throws -> Response {
         let endpoint = "\(request.method.rawValue) \(request.path)"
         logger.debug(.network, "Sending \(endpoint)")
-        let (data, response) = try await perform(makeURLRequest(request), endpoint: endpoint)
+        let (data, response) = try await perform(try await makeURLRequest(request), endpoint: endpoint)
         guard let http = response as? HTTPURLResponse else {
             logger.error(.network, "\(endpoint) returned a non-HTTP response")
             throw APIError.notHTTPResponse
@@ -43,7 +47,8 @@ final class URLSessionAPIClient: APIClient {
         return try decode(Response.self, from: data, endpoint: endpoint)
     }
 
-    private func makeURLRequest<Response>(_ request: APIRequest<Response>) throws -> URLRequest {
+    /// The token is read per request and never logged.
+    private func makeURLRequest<Response>(_ request: APIRequest<Response>) async throws -> URLRequest {
         var url = baseURL.appending(path: request.path)
         if !request.queryItems.isEmpty {
             url.append(queryItems: request.queryItems)
@@ -57,6 +62,10 @@ final class URLSessionAPIClient: APIClient {
         }
         if sendsLocalUserHeader, let userID = identity.currentUserID {
             urlRequest.setValue(userID, forHTTPHeaderField: AppConfig.API.Headers.localUserID)
+        }
+        if let token = await tokenProvider?.accessToken() {
+            let headers = AppConfig.API.Headers.self
+            urlRequest.setValue(headers.bearerPrefix + token, forHTTPHeaderField: headers.authorization)
         }
         return urlRequest
     }

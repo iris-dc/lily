@@ -193,6 +193,18 @@ nonisolated enum AppBranding {
         String(format: passwordHintFormat, minimumLength)
     }
 
+    /// Confirmation step of the email form, after a sign-up (or a sign-in refused as unconfirmed). `%@` is the email.
+    static let confirmEmailTitle = "Check your email"
+    static let confirmEmailSubtitleFormat = "We sent a code to %@"
+    static let confirmationCodePlaceholder = "Confirmation code"
+    static let confirmAction = "Confirm"
+    static let resendCodeAction = "Resend code"
+    static let backToSignInAction = "Back to sign in"
+
+    static func confirmEmailSubtitle(email: String) -> String {
+        String(format: confirmEmailSubtitleFormat, email)
+    }
+
     /// Tab titles double as navigation titles.
     static let exploreTitle = "Explore"
     static let myEventsTitle = "My Events"

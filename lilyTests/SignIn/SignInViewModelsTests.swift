@@ -16,6 +16,102 @@ struct EmailSignInViewModelTests {
         #expect(EmailAuthMode.signIn.title == AppBranding.signInSheetTitle)
         #expect(EmailAuthMode.signIn.submitLabel == AppBranding.signInAction)
         #expect(EmailAuthMode.signUp.toggleLabel == "\(AppBranding.signInPrompt) \(AppBranding.signInAction)")
+        #expect(EmailAuthMode.confirm.title == AppBranding.confirmEmailTitle)
+        #expect(EmailAuthMode.confirm.submitLabel == AppBranding.confirmAction)
+        #expect(EmailAuthMode.confirm.toggleLabel == AppBranding.backToSignInAction)
+        #expect(EmailAuthMode.confirm.toggled == .signIn)
+    }
+
+    @Test func confirmStepNamesTheEmailInTheSubtitle() {
+        let harness = SessionHarness()
+        let viewModel = makeViewModel(harness)
+        #expect(viewModel.subtitle == AppBranding.emailSignInSubtitle)
+
+        viewModel.mode = .confirm
+        #expect(viewModel.subtitle == "We sent a code to \(credentials.email)")
+    }
+
+    @Test func confirmStepSubmitsOnlyACompleteNumericCode() {
+        let harness = SessionHarness()
+        let viewModel = makeViewModel(harness)
+        viewModel.mode = .confirm
+
+        #expect(!viewModel.canSubmit)
+        viewModel.code = "12345"
+        #expect(!viewModel.canSubmit)
+        viewModel.code = "12345a"
+        #expect(!viewModel.canSubmit)
+        viewModel.code = "123456"
+        #expect(viewModel.canSubmit)
+    }
+
+    @Test func signUpNeedingConfirmationSwitchesToTheConfirmStep() async {
+        let harness = SessionHarness()
+        harness.auth.signUpOutcome = .confirmationRequired
+        let viewModel = makeViewModel(harness)
+        viewModel.toggleMode()
+
+        viewModel.submit()
+        await viewModel.submitTask?.value
+
+        #expect(viewModel.mode == .confirm)
+        #expect(harness.controller.state == .loading)
+        #expect(harness.errorCenter.current == nil)
+    }
+
+    @Test func signInRefusedAsUnconfirmedSwitchesToTheConfirmStep() async {
+        let harness = SessionHarness()
+        harness.auth.signInResult = .failure(.emailNotConfirmed)
+        let viewModel = makeViewModel(harness)
+
+        viewModel.submit()
+        await viewModel.submitTask?.value
+
+        #expect(viewModel.mode == .confirm)
+        #expect(harness.errorCenter.current == nil)
+    }
+
+    @Test func confirmSubmitsTheCodeAndSignsInWithTheKeptPassword() async {
+        let harness = SessionHarness()
+        let viewModel = makeViewModel(harness)
+        viewModel.mode = .confirm
+        viewModel.code = "123456"
+
+        viewModel.submit()
+        await viewModel.submitTask?.value
+
+        #expect(harness.auth.confirmations == [FakeAuthService.ConfirmationRequest(email: credentials.email, code: "123456")])
+        #expect(harness.auth.signInProviders == [.email(credentials)])
+        #expect(harness.controller.state == .signedIn(TestFixtures.user))
+        #expect(!viewModel.isSubmitting)
+    }
+
+    @Test func resendCodeAsksForANewOneOnlyOnTheConfirmStep() async {
+        let harness = SessionHarness()
+        let viewModel = makeViewModel(harness)
+
+        viewModel.resendCode()
+        #expect(viewModel.submitTask == nil)
+
+        viewModel.mode = .confirm
+        viewModel.resendCode()
+        #expect(viewModel.isResending)
+        await viewModel.submitTask?.value
+
+        #expect(harness.auth.resendEmails == [credentials.email])
+        #expect(!viewModel.isResending)
+    }
+
+    @Test func backToSignInDropsTheCode() {
+        let harness = SessionHarness()
+        let viewModel = makeViewModel(harness)
+        viewModel.mode = .confirm
+        viewModel.code = "123456"
+
+        viewModel.toggleMode()
+
+        #expect(viewModel.mode == .signIn)
+        #expect(viewModel.code.isEmpty)
     }
 
     @Test func cannotSubmitUntilCredentialsAreValid() {

@@ -47,6 +47,45 @@ struct AppDependenciesTests {
         #expect(failing.sessionController.state.user == nil)
     }
 
+    /// Nothing here touches Amplify: the client configures it on its first call, and none is made.
+    @Test func defaultAuthIsCognitoAndFeedsTheTokenProvider() {
+        let dependencies = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
+
+        #expect(dependencies.authService is CognitoAuthService)
+        #expect(dependencies.tokenProvider is CognitoAuthService)
+    }
+
+    @Test func mockAuthLaunchArgumentSelectsTheMockWithoutATokenProvider() {
+        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockAuth], defaults: makeDefaults())
+
+        #expect(dependencies.authService is MockAuthService)
+        #expect(dependencies.tokenProvider == nil)
+    }
+
+    @Test func mockAuthConfirmLaunchArgumentAsksForTheMockCode() async {
+        let arguments = [AppConfig.LaunchArguments.resetSession, AppConfig.LaunchArguments.mockAuth,
+                         AppConfig.LaunchArguments.mockAuthConfirm, AppConfig.LaunchArguments.mockEvents]
+        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeDefaults())
+        let controller = dependencies.sessionController
+
+        #expect(await controller.signUp(email: "a@b.co", password: "long-enough") == .confirmationRequired)
+        #expect(await controller.confirmSignUp(email: "a@b.co", code: "000000", password: "long-enough") == false)
+        #expect(dependencies.errorCenter.current?.error == .invalidConfirmationCode)
+        let code = AppConfig.Auth.mockConfirmationCode
+        #expect(await controller.confirmSignUp(email: "a@b.co", code: code, password: "long-enough"))
+        #expect(controller.state.user != nil)
+    }
+
+    /// Fail beats confirm beats plain, so a test can add a flag to the default `-mock-auth` launch.
+    @Test func mockAuthBehaviorFollowsTheLaunchArguments() {
+        let flags = AppConfig.LaunchArguments.self
+        #expect(AppDependencies.mockAuthBehavior(from: [flags.mockEvents]) == nil)
+        #expect(AppDependencies.mockAuthBehavior(from: [flags.mockAuth]) == .succeed)
+        #expect(AppDependencies.mockAuthBehavior(from: [flags.mockAuth, flags.mockAuthConfirm])
+                == .requireConfirmation(code: AppConfig.Auth.mockConfirmationCode))
+        #expect(AppDependencies.mockAuthBehavior(from: [flags.mockAuthConfirm, flags.mockAuthFail]) == .fail(.network))
+    }
+
     @Test func mockLocationLaunchArgumentSelectsMockService() {
         let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockLocation], defaults: makeDefaults())
         #expect(mocked.locationService is MockLocationService)
@@ -101,6 +140,7 @@ struct AppDependenciesTests {
     /// The API client and the event screens ask `identity`; it must follow the session without extra wiring.
     @Test func identityFollowsTheSession() async {
         let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
+                                                                   AppConfig.LaunchArguments.mockAuth,
                                                                    AppConfig.LaunchArguments.mockEvents],
                                                        defaults: makeDefaults())
         #expect(dependencies.identity.currentUserID == nil)

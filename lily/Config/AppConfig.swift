@@ -8,6 +8,18 @@ nonisolated enum AppConfig {
         static let minimumPasswordLength = 8
         /// How many bytes of the email digest form a mock user id (kept short for readable logs).
         static let mockUserIDDigestBytes = 8
+        /// The code the mock accepts under `-mock-auth-confirm`; the UI tests type it.
+        static let mockConfirmationCode = "123456"
+    }
+
+    /// The `lily-users` pool and its `lily-ios` client, as rose's `RoseAuthStack` outputs them. Amplify is configured
+    /// from these constants in code (`AmplifyConfigurationBuilder`), so no generated JSON file has to ship in the bundle.
+    enum Cognito {
+        static let region = "eu-central-1"
+        static let userPoolId = "eu-central-1_JmfE31ODT"
+        static let appClientId = "54dul3essertek166u2st78s4a"
+        /// Length of the verification code Cognito emails after sign-up.
+        static let confirmationCodeLength = 6
     }
 
     enum Storage {
@@ -99,8 +111,13 @@ nonisolated enum AppConfig {
         static let sendsLocalUserHeader = false
         #endif
 
+        /// A rejected or missing token; the backend sends no body with it, so the status alone must be recognised.
+        static let unauthorizedStatus = 401
+
         enum Headers {
             static let localUserID = "X-Local-User-Id"
+            static let authorization = "Authorization"
+            static let bearerPrefix = "Bearer "
             static let accept = "Accept"
             static let contentType = "Content-Type"
             static let json = "application/json"
@@ -138,7 +155,12 @@ nonisolated enum AppConfig {
         static let mockLocation = "-mock-location"
         /// Starts inside the app as a guest (after any reset), so UI tests and screenshots skip the landing.
         static let startAsGuest = "-start-as-guest"
-        /// Makes every mock auth call fail with a network error, so UI tests can check the error popup.
+        /// Swaps Cognito for the mock auth service, so UI tests and demos sign in without a pool or a network.
+        static let mockAuth = "-mock-auth"
+        /// The mock, with sign-up asking for the confirmation code `Auth.mockConfirmationCode`, so the confirm step can be
+        /// walked without an email.
+        static let mockAuthConfirm = "-mock-auth-confirm"
+        /// The mock, with every auth call failing with a network error, so UI tests can check the error popup.
         static let mockAuthFail = "-mock-auth-fail"
         /// Serves the fixture events and accepts profile updates in memory, so UI tests and demos need no backend.
         static let mockEvents = "-mock-events"

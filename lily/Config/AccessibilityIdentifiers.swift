@@ -27,6 +27,14 @@ nonisolated enum AccessibilityIdentifiers {
     static let createPrice = "create-price"
     static let createSubmit = "create-submit"
     static let createCancel = "create-cancel"
+    /// Fields and actions of the email form in the sign-in sheet. The toggle switches sign in / sign up and, on the
+    /// confirmation step, reads "Back to sign in".
+    static let authEmail = "auth-email"
+    static let authPassword = "auth-password"
+    static let authConfirmationCode = "auth-confirmation-code"
+    static let authSubmit = "auth-submit"
+    static let authModeToggle = "auth-mode-toggle"
+    static let authResendCode = "auth-resend-code"
 
     /// One chip per event type in the filter panel, e.g. `filter-type-football`.
     static func filterType(_ type: EventType) -> String {

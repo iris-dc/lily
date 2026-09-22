@@ -6,6 +6,8 @@ final class AppDependencies {
     let errorCenter: ErrorCenter
     let sessionStore: any SessionStore
     let authService: any AuthService
+    /// Source of the Bearer token the API client sends; `nil` while auth is mocked.
+    let tokenProvider: (any AuthTokenProvider)?
     let sessionController: SessionController
     /// The user the API client and the event screens act for; answers from `sessionController`.
     let identity: any IdentityProvider
@@ -17,6 +19,7 @@ final class AppDependencies {
     init(logger: any Logging,
          sessionStore: any SessionStore,
          authService: any AuthService,
+         tokenProvider: (any AuthTokenProvider)? = nil,
          identity: SessionIdentityProvider = SessionIdentityProvider(),
          eventRepository: any EventRepository,
          profileRepository: any ProfileRepository,
@@ -25,6 +28,7 @@ final class AppDependencies {
         self.errorCenter = ErrorCenter(logger: logger)
         self.sessionStore = sessionStore
         self.authService = authService
+        self.tokenProvider = tokenProvider
         self.identity = identity
         self.eventRepository = eventRepository
         self.profileRepository = profileRepository
@@ -38,18 +42,23 @@ final class AppDependencies {
         identity.session = sessionController
     }
 
-    /// Production wiring. Swap `MockAuthService` for `CognitoAuthService` once Amplify is configured.
-    /// Launch arguments are read in debug builds only (`AppConfig.LaunchArguments.isHonored`); a release build
-    /// ignores them, so nobody can start it as a guest or on mock data from the outside.
+    /// Production wiring: Cognito through Amplify, whose access token the API client sends, unless a launch argument
+    /// asks for the mock. Launch arguments are read in debug builds only (`AppConfig.LaunchArguments.isHonored`); a
+    /// release build ignores them, so nobody can start it as a guest or on mock data from the outside.
     static func makeDefault(arguments: [String] = AppConfig.LaunchArguments.isHonored ? CommandLine.arguments : [],
                             defaults: UserDefaults = .standard) -> AppDependencies {
         let logger = OSLogLogger()
         let store = makeSessionStore(arguments: arguments, defaults: defaults, logger: logger)
         let identity = SessionIdentityProvider()
-        let repositories = makeRepositories(arguments: arguments, identity: identity, logger: logger)
+        let auth = makeAuthService(arguments: arguments, store: store, logger: logger)
+        let repositories = makeRepositories(arguments: arguments,
+                                            identity: identity,
+                                            tokenProvider: auth.tokenProvider,
+                                            logger: logger)
         return AppDependencies(logger: logger,
                                sessionStore: store,
-                               authService: makeAuthService(arguments: arguments, store: store, logger: logger),
+                               authService: auth.service,
+                               tokenProvider: auth.tokenProvider,
                                identity: identity,
                                eventRepository: repositories.events,
                                profileRepository: repositories.profile,
@@ -121,12 +130,25 @@ final class AppDependencies {
         return store
     }
 
-    private static func makeAuthService(arguments: [String], store: any SessionStore, logger: any Logging) -> MockAuthService {
-        guard arguments.contains(AppConfig.LaunchArguments.mockAuthFail) else {
-            return MockAuthService(behavior: .succeed, store: store)
+    /// The Cognito service doubles as the token provider; the mock has no token to offer.
+    private static func makeAuthService(arguments: [String], store: any SessionStore, logger: any Logging) -> Auth {
+        if let behavior = mockAuthBehavior(from: arguments) {
+            logger.info(.auth, "Launch argument requested mock auth: \(behavior)")
+            return Auth(service: MockAuthService(behavior: behavior, store: store), tokenProvider: nil)
         }
-        logger.info(.auth, "Launch argument requested failing mock auth")
-        return MockAuthService(behavior: .fail(.network), store: store)
+        let cognito = CognitoAuthService(client: AmplifyCognitoClient(logger: logger), store: store, logger: logger)
+        return Auth(service: cognito, tokenProvider: cognito)
+    }
+
+    /// The mock behaviour a launch asks for, `nil` for the real pool. `-mock-auth-fail` and `-mock-auth-confirm` imply
+    /// the mock, so the UI tests can add one of them to a launch that already carries `-mock-auth`.
+    static func mockAuthBehavior(from arguments: [String]) -> MockAuthBehavior? {
+        let flags = AppConfig.LaunchArguments.self
+        if arguments.contains(flags.mockAuthFail) { return .fail(.network) }
+        if arguments.contains(flags.mockAuthConfirm) {
+            return .requireConfirmation(code: AppConfig.Auth.mockConfirmationCode)
+        }
+        return arguments.contains(flags.mockAuth) ? .succeed : nil
     }
 
     private static func makeLocationService(arguments: [String], logger: any Logging) -> any LocationService {
@@ -137,9 +159,13 @@ final class AppDependencies {
 
     private static func makeRepositories(arguments: [String],
                                          identity: any IdentityProvider,
+                                         tokenProvider: (any AuthTokenProvider)?,
                                          logger: any Logging) -> Repositories {
         guard arguments.contains(AppConfig.LaunchArguments.mockEvents) else {
-            return .remote(baseURL: apiBaseURL(from: arguments, logger: logger), identity: identity, logger: logger)
+            return .remote(baseURL: apiBaseURL(from: arguments, logger: logger),
+                           identity: identity,
+                           tokenProvider: tokenProvider,
+                           logger: logger)
         }
         logger.info(.events, "Launch argument requested mock events")
         return .mock(identity: identity, logger: logger)
@@ -160,13 +186,22 @@ final class AppDependencies {
     }
 }
 
+/// Who signs the user in, and who hands the API client the token to send: Cognito for both, or the mock and nobody.
+private struct Auth {
+    let service: any AuthService
+    let tokenProvider: (any AuthTokenProvider)?
+}
+
 /// The data layer comes as a pair: both repositories talk to the same backend, or both stay in memory.
 private struct Repositories {
     let events: any EventRepository
     let profile: any ProfileRepository
 
-    static func remote(baseURL: URL, identity: any IdentityProvider, logger: any Logging) -> Repositories {
-        let client = URLSessionAPIClient(baseURL: baseURL, identity: identity, logger: logger)
+    static func remote(baseURL: URL,
+                       identity: any IdentityProvider,
+                       tokenProvider: (any AuthTokenProvider)?,
+                       logger: any Logging) -> Repositories {
+        let client = URLSessionAPIClient(baseURL: baseURL, identity: identity, tokenProvider: tokenProvider, logger: logger)
         return Repositories(events: RemoteEventRepository(client: client), profile: RemoteProfileRepository(client: client))
     }
 

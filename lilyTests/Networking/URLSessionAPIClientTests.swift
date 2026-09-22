@@ -9,10 +9,12 @@ struct URLSessionAPIClientTests {
 
     private func makeClient(_ backend: StubBackend,
                             identity: FakeIdentityProvider? = nil,
+                            tokenProvider: FakeAuthTokenProvider? = nil,
                             sendsLocalUserHeader: Bool = true) -> URLSessionAPIClient {
         URLSessionAPIClient(session: backend.makeSession(),
                             baseURL: backend.baseURL,
                             identity: identity ?? FakeIdentityProvider(),
+                            tokenProvider: tokenProvider,
                             sendsLocalUserHeader: sendsLocalUserHeader,
                             logger: logger)
     }
@@ -105,6 +107,43 @@ struct URLSessionAPIClientTests {
             #expect(request.value(forHTTPHeaderField: Self.localUserHeader) == testCase.header,
                     "configured: \(testCase.configured), user: \(testCase.userID ?? "none")")
         }
+    }
+
+    @Test func bearerTokenIsSentWhenTheProviderHasOne() async throws {
+        let backend = StubBackend(json: ContractSamples.profile())
+        let tokens = FakeAuthTokenProvider(token: "eyJ.access")
+
+        _ = try await makeClient(backend, tokenProvider: tokens).send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
+
+        let request = try #require(backend.requests.first)
+        #expect(request.value(forHTTPHeaderField: AppConfig.API.Headers.authorization) == "Bearer eyJ.access")
+        #expect(tokens.requestCount == 1)
+        #expect(!logger.entries.contains { $0.message.contains("eyJ.access") }, "the token must never be logged")
+    }
+
+    @Test func noAuthorizationHeaderWithoutAToken() async throws {
+        for tokens in [nil, FakeAuthTokenProvider(token: nil)] {
+            let backend = StubBackend(json: ContractSamples.profile())
+
+            _ = try await makeClient(backend, tokenProvider: tokens).send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
+
+            let request = try #require(backend.requests.first)
+            #expect(request.value(forHTTPHeaderField: AppConfig.API.Headers.authorization) == nil)
+        }
+    }
+
+    /// The token is asked for on every request, so one refreshed by Amplify or dropped by a sign-out is picked up.
+    @Test func tokenIsReadPerRequest() async throws {
+        let backend = StubBackend(json: ContractSamples.profile())
+        let tokens = FakeAuthTokenProvider(token: "first")
+        let client = makeClient(backend, tokenProvider: tokens)
+
+        _ = try await client.send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
+        tokens.token = nil
+        _ = try await client.send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
+
+        let sent = backend.requests.map { $0.value(forHTTPHeaderField: AppConfig.API.Headers.authorization) }
+        #expect(sent == ["Bearer first", nil])
     }
 
     @Test func identityIsReadPerRequest() async throws {

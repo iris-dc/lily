@@ -42,8 +42,9 @@ run_xcodebuild() {
   rm -rf "$RESULTS_DIR/${label}.xcresult"
   echo "==> ${label}"
   set +e
+  # Amplify pulls in smithy-swift, whose build plug-in xcodebuild refuses to validate without an interactive approval.
   xcodebuild "$@" -scheme "$SCHEME" -destination "$DESTINATION" -derivedDataPath "$DERIVED_DATA" \
-    CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$log" \
+    -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$log" \
     | { grep -E "error:|/lily/.*: warning:|Test Suite .* (passed|failed)|Test Case .* (passed|failed)|Executed|Test case .* (passed|failed)|\*\* .* (SUCCEEDED|FAILED) \*\*" || true; }
   local status=${PIPESTATUS[0]}
   set -e

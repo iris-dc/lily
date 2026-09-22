@@ -37,13 +37,23 @@ final class InMemorySessionStore: SessionStore {
 final class FakeAuthService: AuthService {
     var restoreResult: Result<AuthSession?, AppError> = .success(nil)
     var signInResult: Result<AuthSession, AppError> = .success(TestFixtures.session)
+    var signUpOutcome: SignUpOutcome = .signedUp
     var signUpError: AppError?
+    var confirmError: AppError?
+    var resendError: AppError?
     var signOutError: AppError?
     /// Simulated latency before sign-in and sign-up answer; a suspension point, so cancellation can be observed.
     var delay: Duration = .zero
     private(set) var signInProviders: [AuthProvider] = []
     private(set) var signUpRequests: [EmailCredentials] = []
+    private(set) var confirmations: [ConfirmationRequest] = []
+    private(set) var resendEmails: [String] = []
     private(set) var signOutCount = 0
+
+    struct ConfirmationRequest: Equatable {
+        let email: String
+        let code: String
+    }
 
     func restoreSession() async throws -> AuthSession? { try restoreResult.get() }
 
@@ -53,10 +63,23 @@ final class FakeAuthService: AuthService {
         return try signInResult.get()
     }
 
-    func signUp(email: String, password: String) async throws {
+    func signUp(email: String, password: String) async throws -> SignUpOutcome {
         signUpRequests.append(EmailCredentials(email: email, password: password))
         try await simulateLatency()
         if let signUpError { throw signUpError }
+        return signUpOutcome
+    }
+
+    func confirmSignUp(email: String, code: String) async throws {
+        confirmations.append(ConfirmationRequest(email: email, code: code))
+        try await simulateLatency()
+        if let confirmError { throw confirmError }
+    }
+
+    func resendConfirmationCode(email: String) async throws {
+        resendEmails.append(email)
+        try await simulateLatency()
+        if let resendError { throw resendError }
     }
 
     private func simulateLatency() async throws {

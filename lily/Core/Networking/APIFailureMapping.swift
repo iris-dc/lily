@@ -23,11 +23,12 @@ nonisolated enum BackendErrorCode: String, Sendable {
 }
 
 extension APIError {
-    /// A known backend code becomes its own case; every other API failure becomes `fallback`.
+    /// A 401 means the token was rejected, whatever was asked; a known backend code becomes its own case; every other
+    /// API failure becomes `fallback`.
     func appError(fallback: AppError) -> AppError {
-        guard case .http(_, let body) = self, let body, let code = BackendErrorCode(rawValue: body.code) else {
-            return fallback
-        }
+        guard case .http(let status, let body) = self else { return fallback }
+        if status == AppConfig.API.unauthorizedStatus { return .sessionExpired }
+        guard let body, let code = BackendErrorCode(rawValue: body.code) else { return fallback }
         return code.appError
     }
 }
