@@ -19,7 +19,7 @@ nonisolated struct CoreLocationUpdateSource: LocationUpdateSource {
     }
 }
 
-private extension LocationFix {
+nonisolated private extension LocationFix {
     init(_ update: CLLocationUpdate) {
         self.init(coordinate: update.location.map { Coordinate($0.coordinate) },
                   isDenied: update.authorizationDenied || update.authorizationDeniedGlobally || update.authorizationRestricted)
