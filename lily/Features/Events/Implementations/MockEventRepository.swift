@@ -22,7 +22,8 @@ final class MockEventRepository: EventRepository {
         self.logger = logger
     }
 
-    func events(in scope: EventScope) async throws -> [SportEvent] {
+    /// The position is ignored: the fixtures keep their start order.
+    func events(in scope: EventScope, near position: Coordinate?) async throws -> [SportEvent] {
         logger.debug(.events, "Mock events served for scope \(scope)")
         switch scope {
         case .upcoming: return events

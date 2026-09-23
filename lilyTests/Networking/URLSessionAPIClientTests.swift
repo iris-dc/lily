@@ -47,6 +47,26 @@ struct URLSessionAPIClientTests {
         #expect(body == #"{"displayName":"Apple Tester"}"#)
     }
 
+    @Test func postsTheInteractionBatchAndDecodesTheReceipt() async throws {
+        let backend = StubBackend(status: 202, json: #"{"accepted":1}"#)
+        let interaction = Interaction.presentationChanged(.map, at: Date(timeIntervalSince1970: 1_800_000_000))
+        let request = APIRequest<InteractionReceipt>.post(AppConfig.API.Paths.interactions,
+                                                          body: InteractionBatch(interactions: [interaction]))
+
+        let receipt = try await makeClient(backend).send(request)
+
+        #expect(receipt == InteractionReceipt(accepted: 1))
+        let sent = try #require(backend.requests.first)
+        #expect(sent.httpMethod == "POST")
+        #expect(sent.url?.path() == "/api/interactions")
+        let data = try #require(sent.httpBody)
+        let body = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let first = try #require((body["interactions"] as? [[String: Any]])?.first)
+        let expected: [String: String] = ["kind": "presentation_changed", "occurredAt": "2027-01-15T08:00:00Z",
+                                          "presentation": "map"]
+        #expect(first as NSDictionary == expected as NSDictionary)
+    }
+
     @Test func errorBodyBecomesAnAPIErrorAndIsLogged() async {
         let backend = StubBackend(status: 409, json: #"{"code":"EVENT_FULL","message":"No spots left"}"#)
         let path = AppConfig.API.Paths.participants(eventId: "evt_01J")

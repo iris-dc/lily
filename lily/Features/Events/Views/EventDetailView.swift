@@ -29,6 +29,7 @@ struct EventDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .task { viewModel.recordViewed() }
     }
 
     /// Time, place, price and level, then how full it is. Price only when the game costs something, level only when set.

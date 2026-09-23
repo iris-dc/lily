@@ -7,7 +7,7 @@ final class FakeEventRepository: EventRepository {
     var result: Result<[SportEvent], AppError> = .success([])
     /// Thrown instead of `result` when set, for errors that are not `AppError` (such as `CancellationError`).
     var thrownError: (any Error)?
-    /// While true, `events(in:)` records the scope and then suspends until `releaseRequests()`.
+    /// While true, `events(in:near:)` records the call and then suspends until `releaseRequests()`.
     var holdsRequests = false
     /// Thrown by `join` and `leave` when set; otherwise they answer with the event from `result`, adjusted.
     var participationError: (any Error)?
@@ -19,19 +19,22 @@ final class FakeEventRepository: EventRepository {
     var hostUserID = "host"
     private var pending: [CheckedContinuation<Void, Never>] = []
     private(set) var requestedScopes: [EventScope] = []
+    /// The position each `events(in:near:)` carried, `nil` included, in call order.
+    private(set) var requestedPositions: [Coordinate?] = []
     private(set) var fetchedEventIDs: [String] = []
     private(set) var joinedEventIDs: [String] = []
     private(set) var leftEventIDs: [String] = []
     private(set) var createdDrafts: [EventDraft] = []
 
-    func events(in scope: EventScope) async throws -> [SportEvent] {
+    func events(in scope: EventScope, near position: Coordinate?) async throws -> [SportEvent] {
         requestedScopes.append(scope)
+        requestedPositions.append(position)
         await holdIfRequested()
         if let thrownError { throw thrownError }
         return try result.get()
     }
 
-    /// Answers from `result` like `events(in:)`, so a test sets the "server state" once for both.
+    /// Answers from `result` like `events(in:near:)`, so a test sets the "server state" once for both.
     func event(id: String) async throws -> SportEvent {
         fetchedEventIDs.append(id)
         await holdIfRequested()

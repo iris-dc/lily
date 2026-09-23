@@ -102,6 +102,16 @@ struct AppDependenciesTests {
         #expect(remote.profileRepository is RemoteProfileRepository)
     }
 
+    /// A mock run (UI tests, previews, `-mock-events`) must never post a statistic; the default wiring posts to the
+    /// same backend the repositories use.
+    @Test func mockEventsSelectTheNoOpRecorderAndTheDefaultTheRemoteOne() {
+        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeDefaults())
+        #expect(mocked.interactionRecorder is NoOpInteractionRecorder)
+        #expect(AppDependencies.makeMock().interactionRecorder is NoOpInteractionRecorder)
+        let remote = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
+        #expect(remote.interactionRecorder is RemoteInteractionRecorder)
+    }
+
     @Test func apiBaseURLLaunchArgumentOverridesTheDefault() {
         let logger = SpyLogger()
         let arguments = [AppConfig.LaunchArguments.apiBaseURL, "http://mac.local:8080", AppConfig.LaunchArguments.mockLocation]

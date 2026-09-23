@@ -108,6 +108,52 @@ struct EventListFilteringTests {
         #expect(!viewModel.isEverythingFilteredOut)
     }
 
+    /// One panel session is one `filter_applied`, and only when it changed something; undoing a change inside the
+    /// session leaves nothing to report.
+    @Test func closingThePanelRecordsTheFilterOnlyWhenItChanged() {
+        let recorder = SpyInteractionRecorder()
+        let viewModel = makeEventListViewModel(repository: FakeEventRepository(), recorder: recorder)
+
+        viewModel.filterPanelOpened()
+        viewModel.filterPanelClosed()
+        #expect(recorder.interactions.isEmpty)
+
+        viewModel.filterPanelOpened()
+        viewModel.toggleType(.padel)
+        viewModel.updateFilter { $0.maxPrice = 10 }
+        viewModel.filterPanelClosed()
+        #expect(recorder.kinds == [.filterApplied])
+        #expect(recorder.interactions.first?.filter == FilterSummary(viewModel.filter))
+        #expect(recorder.interactions.first?.filter?.types == ["padel"])
+        #expect(recorder.interactions.first?.filter?.hasMaxPrice == true)
+
+        viewModel.filterPanelOpened()
+        viewModel.toggleType(.padel)
+        viewModel.toggleType(.padel)
+        viewModel.filterPanelClosed()
+        #expect(recorder.interactions.count == 1)
+    }
+
+    /// The empty state's "Show all events" is a filter the user applied without the panel.
+    @Test func showEverythingRecordsTheFilterItApplies() {
+        let recorder = SpyInteractionRecorder()
+        let viewModel = makeEventListViewModel(repository: FakeEventRepository(), recorder: recorder)
+
+        viewModel.showEverything()
+
+        #expect(recorder.interactions.map(\.filter) == [FilterSummary(.everything)])
+    }
+
+    @Test func switchingThePresentationIsRecorded() {
+        let recorder = SpyInteractionRecorder()
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let viewModel = makeEventListViewModel(repository: FakeEventRepository(), recorder: recorder, now: { now })
+
+        viewModel.presentationChanged(to: .map)
+
+        #expect(recorder.interactions == [.presentationChanged(.map, at: now)])
+    }
+
     @Test func showEverythingIsTheWayOutWhenTheDefaultsHideEveryGame() async {
         let repository = FakeEventRepository()
         repository.result = .success(MockEventFixtures.make(now: .now, count: 3))

@@ -21,7 +21,7 @@ final class LandingViewModel {
     /// landing mid-load cancels the request, which is not a failure and stays at debug.
     func loadPreview() async {
         do {
-            let events = try await repository.events(in: .upcoming)
+            let events = try await repository.events(in: .upcoming, near: nil)
             previewEvents = Array(events.prefix(AppConfig.Events.landingPreviewCount))
         } catch {
             guard !AppError.isCancellation(error) else {

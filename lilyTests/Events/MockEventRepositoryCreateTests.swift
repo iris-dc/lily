@@ -28,8 +28,8 @@ struct MockEventRepositoryCreateTests {
     @Test func aCreatedGameIsListedUnderBothScopes() async throws {
         let created = try await repository.create(.fixture())
 
-        #expect(try await repository.events(in: .upcoming).contains(created))
-        #expect(try await repository.events(in: .joined).contains(created))
+        #expect(try await repository.events(in: .upcoming, near: nil).contains(created))
+        #expect(try await repository.events(in: .joined, near: nil).contains(created))
         #expect(try await repository.event(id: created.id) == created)
     }
 
@@ -41,7 +41,7 @@ struct MockEventRepositoryCreateTests {
         let second = try await repository.create(draft)
 
         #expect(second == first)
-        let ids = try await repository.events(in: .upcoming).map(\.id)
+        let ids = try await repository.events(in: .upcoming, near: nil).map(\.id)
         #expect(ids.contains(draft.clientId))
         #expect(Set(ids).count == ids.count)
         #expect(try await repository.event(id: draft.clientId).participantCount == 1)

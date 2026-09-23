@@ -15,4 +15,11 @@ nonisolated struct Coordinate: Codable, Hashable, Sendable {
         let a = sin(dLat / 2) * sin(dLat / 2) + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
         return 2 * Self.earthRadiusMeters * asin(min(1, sqrt(a)))
     }
+
+    /// Both components rounded to `decimals` places, halves away from zero, as the backend rounds them.
+    func rounded(toDecimals decimals: Int) -> Coordinate {
+        let factor = pow(10.0, Double(decimals))
+        return Coordinate(latitude: (latitude * factor).rounded() / factor,
+                          longitude: (longitude * factor).rounded() / factor)
+    }
 }

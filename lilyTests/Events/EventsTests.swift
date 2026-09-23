@@ -6,13 +6,13 @@ import Testing
 struct MockEventRepositoryTests {
     @Test func upcomingReturnsRequestedCount() async throws {
         let repository = MockEventRepository(now: .now, count: 5, identity: FakeIdentityProvider(), logger: SpyLogger())
-        #expect(try await repository.events(in: .upcoming).count == 5)
+        #expect(try await repository.events(in: .upcoming, near: nil).count == 5)
     }
 
     @Test func joinedIsNonEmptyStrictSubsetOfUpcoming() async throws {
         let repository = MockEventRepository(now: .now, count: 8, identity: FakeIdentityProvider(), logger: SpyLogger())
-        let upcoming = try await repository.events(in: .upcoming)
-        let joined = try await repository.events(in: .joined)
+        let upcoming = try await repository.events(in: .upcoming, near: nil)
+        let joined = try await repository.events(in: .joined, near: nil)
         #expect(!joined.isEmpty)
         #expect(joined.count < upcoming.count)
         #expect(joined.allSatisfy(upcoming.contains))

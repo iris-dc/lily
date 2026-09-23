@@ -28,18 +28,21 @@ struct EventListAddTests {
         first.startsAt.addingTimeInterval(second.startsAt.timeIntervalSince(first.startsAt) / 2)
     }
 
-    @Test func addInsertsTheEventInStartOrder() async {
+    /// Explore is in the backend's relevance order for the caller, so there is no slot to compute on device, and the
+    /// caller's own new game belongs on top.
+    @Test func addPutsTheCreatedEventFirstOnExplore() async {
         let viewModel = makeEventListViewModel(repository: makeRepository())
         await viewModel.load()
-        let created = makeCreated(startsAt: midway(loaded[0], loaded[1]))
+        let created = makeCreated(startsAt: loaded[2].startsAt.addingTimeInterval(Self.secondsPerHour))
 
         viewModel.add(created)
 
-        #expect(viewModel.events == [loaded[0], created, loaded[1], loaded[2]])
+        #expect(viewModel.events == [created] + loaded)
     }
 
-    @Test func addPlacesTheEarliestFirstAndTheLatestLast() async {
-        let viewModel = makeEventListViewModel(repository: makeRepository())
+    /// My Events stays chronological, so a created game lands where a reload would put it.
+    @Test func joinedListPlacesTheEarliestFirstAndTheLatestLast() async {
+        let viewModel = makeEventListViewModel(scope: .joined, repository: makeRepository())
         await viewModel.load()
         let earliest = makeCreated(id: "earliest", startsAt: loaded[0].startsAt.addingTimeInterval(-Self.secondsPerHour))
         let latest = makeCreated(id: "latest", startsAt: loaded[2].startsAt.addingTimeInterval(Self.secondsPerHour))
