@@ -13,6 +13,8 @@ final class AppDependencies {
     let identity: any IdentityProvider
     let eventRepository: any EventRepository
     let profileRepository: any ProfileRepository
+    /// Where the event screens report their taps; the root view flushes it when the app goes to the background.
+    let interactionRecorder: any InteractionRecorder
     let locationService: any LocationService
     let eventChanges = EventChangeTracker()
 
@@ -23,6 +25,7 @@ final class AppDependencies {
          identity: SessionIdentityProvider = SessionIdentityProvider(),
          eventRepository: any EventRepository,
          profileRepository: any ProfileRepository,
+         interactionRecorder: any InteractionRecorder,
          locationService: any LocationService) {
         self.logger = logger
         self.errorCenter = ErrorCenter(logger: logger)
@@ -32,6 +35,7 @@ final class AppDependencies {
         self.identity = identity
         self.eventRepository = eventRepository
         self.profileRepository = profileRepository
+        self.interactionRecorder = interactionRecorder
         self.locationService = locationService
         self.sessionController = SessionController(authService: authService,
                                                    sessionStore: sessionStore,
@@ -62,6 +66,7 @@ final class AppDependencies {
                                identity: identity,
                                eventRepository: repositories.events,
                                profileRepository: repositories.profile,
+                               interactionRecorder: repositories.interactions,
                                locationService: makeLocationService(arguments: arguments, logger: logger))
     }
 
@@ -78,6 +83,7 @@ final class AppDependencies {
                                identity: identity,
                                eventRepository: repositories.events,
                                profileRepository: repositories.profile,
+                               interactionRecorder: repositories.interactions,
                                locationService: MockLocationService())
     }
 
@@ -90,6 +96,7 @@ final class AppDependencies {
                            locationService: locationService,
                            changes: eventChanges,
                            errorCenter: errorCenter,
+                           recorder: interactionRecorder,
                            logger: logger,
                            initialFilter: scope == .upcoming ? EventFilter() : .everything)
     }
@@ -100,6 +107,7 @@ final class AppDependencies {
                              repository: eventRepository,
                              identity: identity,
                              errorCenter: errorCenter,
+                             recorder: interactionRecorder,
                              logger: logger,
                              onChange: onChange)
     }
@@ -192,21 +200,26 @@ private struct Auth {
     let tokenProvider: (any AuthTokenProvider)?
 }
 
-/// The data layer comes as a pair: both repositories talk to the same backend, or both stay in memory.
+/// The data layer comes as a set: everything talks to the same backend, or everything stays in memory, so a mock run
+/// (previews, UI tests, `-mock-events`) never posts a statistic either.
 private struct Repositories {
     let events: any EventRepository
     let profile: any ProfileRepository
+    let interactions: any InteractionRecorder
 
     static func remote(baseURL: URL,
                        identity: any IdentityProvider,
                        tokenProvider: (any AuthTokenProvider)?,
                        logger: any Logging) -> Repositories {
         let client = URLSessionAPIClient(baseURL: baseURL, identity: identity, tokenProvider: tokenProvider, logger: logger)
-        return Repositories(events: RemoteEventRepository(client: client), profile: RemoteProfileRepository(client: client))
+        return Repositories(events: RemoteEventRepository(client: client),
+                            profile: RemoteProfileRepository(client: client),
+                            interactions: RemoteInteractionRecorder(client: client, identity: identity, logger: logger))
     }
 
     static func mock(identity: any IdentityProvider, logger: any Logging) -> Repositories {
         Repositories(events: MockEventRepository(identity: identity, logger: logger),
-                     profile: MockProfileRepository(logger: logger))
+                     profile: MockProfileRepository(logger: logger),
+                     interactions: NoOpInteractionRecorder())
     }
 }

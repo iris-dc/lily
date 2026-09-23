@@ -20,6 +20,15 @@ struct CoordinateTests {
         let b = Coordinate(latitude: 1, longitude: 1)
         #expect(abs(a.distance(to: b) - b.distance(to: a)) < 0.001)
     }
+
+    /// The backend rounds the same way (HALF_UP, away from zero), so both sides agree on the coarse position.
+    @Test func roundingKeepsTheGivenDecimalsWithHalvesAwayFromZero() {
+        #expect(Coordinate(latitude: 52.5449, longitude: -0.1251).rounded(toDecimals: 2)
+                == Coordinate(latitude: 52.54, longitude: -0.13))
+        #expect(Coordinate(latitude: 0.125, longitude: -0.125).rounded(toDecimals: 2)
+                == Coordinate(latitude: 0.13, longitude: -0.13))
+        #expect(Coordinate(latitude: 52.5, longitude: 13.4).rounded(toDecimals: 2) == Coordinate(latitude: 52.5, longitude: 13.4))
+    }
 }
 
 @MainActor

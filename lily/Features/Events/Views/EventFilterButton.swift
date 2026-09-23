@@ -21,6 +21,14 @@ struct EventFilterButton: View {
             EventFilterPanel(viewModel: viewModel) { isPresented = false }
                 .presentationCompactAdaptation(.popover)
         }
+        // One panel session is one interaction, whether it ends with Done or a tap outside.
+        .onChange(of: isPresented) {
+            if isPresented {
+                viewModel.filterPanelOpened()
+            } else {
+                viewModel.filterPanelClosed()
+            }
+        }
     }
 
     private var iconName: String {

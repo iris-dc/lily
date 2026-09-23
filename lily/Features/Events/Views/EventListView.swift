@@ -56,6 +56,7 @@ struct EventListView: View {
         }
         .task { await viewModel.loadIfStale() }
         .task { await viewModel.loadUserLocation() }
+        .onChange(of: presentation) { viewModel.presentationChanged(to: presentation) }
         // Coming back to the foreground is the one moment location permission may have changed (Settings), so a
         // missing position is asked for again; a known one is kept. Foregrounding is rare, so this is cheap.
         .onChange(of: scenePhase) {
@@ -159,24 +160,5 @@ struct EventListView: View {
     private func refreshableScroll(@ViewBuilder _ content: () -> some View) -> some View {
         ScrollView { content() }
             .refreshable { await viewModel.load() }
-    }
-}
-
-/// List or map, as chosen in the toolbar.
-nonisolated enum EventsPresentation: CaseIterable, Hashable, Sendable {
-    case list, map
-
-    var title: String {
-        switch self {
-        case .list: AppBranding.Events.listPresentation
-        case .map: AppBranding.Events.mapPresentation
-        }
-    }
-
-    var symbolName: String {
-        switch self {
-        case .list: DesignTokens.Symbols.list
-        case .map: DesignTokens.Symbols.map
-        }
     }
 }

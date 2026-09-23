@@ -8,8 +8,11 @@ final class RemoteEventRepository: EventRepository {
         self.client = client
     }
 
-    func events(in scope: EventScope) async throws -> [SportEvent] {
-        let query = [URLQueryItem(name: AppConfig.API.Query.scope, value: scope.queryValue)]
+    func events(in scope: EventScope, near position: Coordinate?) async throws -> [SportEvent] {
+        var query = [URLQueryItem(name: AppConfig.API.Query.scope, value: scope.queryValue)]
+        if scope == .upcoming, let position {
+            query += position.queryItems
+        }
         return try await client.send(.get(AppConfig.API.Paths.events, query: query), failingWith: .eventsUnavailable)
     }
 
@@ -38,5 +41,17 @@ private extension EventScope {
         case .upcoming: "upcoming"
         case .joined: "joined"
         }
+    }
+}
+
+private extension Coordinate {
+    /// `lat` and `lon` at `AppConfig.Events.positionPrecision`, rounded first and then printed with exactly that many
+    /// decimals and a `.` whatever the locale: `"\(double)"` could print `52.540000000000006` or an exponent.
+    var queryItems: [URLQueryItem] {
+        let decimals = AppConfig.Events.positionPrecision
+        let coarse = rounded(toDecimals: decimals)
+        let format = "%.\(decimals)f"
+        return [URLQueryItem(name: AppConfig.API.Query.latitude, value: String(format: format, coarse.latitude)),
+                URLQueryItem(name: AppConfig.API.Query.longitude, value: String(format: format, coarse.longitude))]
     }
 }

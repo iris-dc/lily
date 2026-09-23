@@ -48,6 +48,9 @@ nonisolated enum AppConfig {
         /// A failed load is not retried by a reappearing tab before this has passed, so switching tabs while the
         /// backend is down neither hammers it nor repeats the popup; pull-to-refresh is not held back.
         static let retryAfterFailure: TimeInterval = 10
+        /// Decimals of the position sent with the upcoming list (about 1 km): enough to order by distance, too coarse to
+        /// place the user. The backend rounds to the same precision.
+        static let positionPrecision = 2
 
         /// Limits of the create form, the backend's `CreateEventRequest` constraints mirrored so a draft that passes
         /// here never earns a 400. Text lengths are UTF-16 units, as Java's `String.length()` counts them.
@@ -126,6 +129,7 @@ nonisolated enum AppConfig {
         enum Paths {
             static let events = "/api/events"
             static let profile = "/api/profile"
+            static let interactions = "/api/interactions"
 
             static func event(id: String) -> String {
                 "\(events)/\(id)"
@@ -138,7 +142,19 @@ nonisolated enum AppConfig {
 
         enum Query {
             static let scope = "scope"
+            static let latitude = "lat"
+            static let longitude = "lon"
         }
+    }
+
+    /// Usage statistics a signed-in user's taps produce (`POST /api/interactions`); guests send nothing.
+    enum Statistics {
+        /// Buffered interactions are sent as soon as this many have gathered.
+        static let batchSize = 10
+        /// A smaller batch is sent this long after its first interaction.
+        static let flushDelay: Duration = .seconds(30)
+        /// Beyond this the oldest buffered interaction is dropped: a backend that stays down must not grow memory.
+        static let maxBuffered = 100
     }
 
     /// Process arguments recognised at launch (used by UI tests). Debug builds only: `AppDependencies` reads them

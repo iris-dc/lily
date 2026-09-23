@@ -27,8 +27,8 @@ struct RemoteEventRepositoryTests {
     @Test func scopesBecomeTheScopeQueryParameter() async throws {
         client.responses = [[SportEvent](), [SportEvent]()]
 
-        _ = try await repository.events(in: .upcoming)
-        _ = try await repository.events(in: .joined)
+        _ = try await repository.events(in: .upcoming, near: nil)
+        _ = try await repository.events(in: .joined, near: nil)
 
         #expect(client.requests.map(\.method) == [.get, .get])
         #expect(client.requests.map(\.path) == ["/api/events", "/api/events"])
@@ -37,6 +37,35 @@ struct RemoteEventRepositoryTests {
             [URLQueryItem(name: "scope", value: "joined")],
         ]
         #expect(client.requests.map(\.queryItems) == expectedQueries)
+    }
+
+    /// Pins the wire rule: two decimals (about a kilometre), halves away from zero, fixed width, a `.` whatever the locale.
+    @Test func upcomingWithAPositionSendsRoundedLatAndLon() async throws {
+        client.responses = [[SportEvent]()]
+
+        _ = try await repository.events(in: .upcoming, near: Coordinate(latitude: 52.5449, longitude: -0.125))
+
+        let request = try #require(client.requests.first)
+        #expect(request.queryItems == [URLQueryItem(name: "scope", value: "upcoming"),
+                                       URLQueryItem(name: "lat", value: "52.54"),
+                                       URLQueryItem(name: "lon", value: "-0.13")])
+    }
+
+    @Test func aWholeDegreeKeepsItsDecimals() async throws {
+        client.responses = [[SportEvent]()]
+
+        _ = try await repository.events(in: .upcoming, near: Coordinate(latitude: 52, longitude: 13.4))
+
+        #expect(client.requests.first?.queryItems.dropFirst().map(\.value) == ["52.00", "13.40"])
+    }
+
+    /// My Events is the caller's own games; their position has no business in that request.
+    @Test func joinedNeverSendsAPosition() async throws {
+        client.responses = [[SportEvent]()]
+
+        _ = try await repository.events(in: .joined, near: AppConfig.Location.mockCenter)
+
+        #expect(client.requests.first?.queryItems == [URLQueryItem(name: "scope", value: "joined")])
     }
 
     @Test func eventGetsTheEventResource() async throws {
@@ -124,7 +153,7 @@ struct RemoteEventRepositoryTests {
     @Test func otherFailuresOnReadsBecomeEventsUnavailable() async {
         for error in Self.otherFailures {
             client.error = error
-            await #expect(throws: AppError.eventsUnavailable) { try await repository.events(in: .upcoming) }
+            await #expect(throws: AppError.eventsUnavailable) { try await repository.events(in: .upcoming, near: nil) }
             await #expect(throws: AppError.eventsUnavailable) { try await repository.event(id: "evt_01J") }
         }
     }
@@ -142,7 +171,7 @@ struct RemoteEventRepositoryTests {
     @Test func unauthorizedBecomesSessionExpiredWhateverWasAsked() async {
         client.error = APIError.http(status: 401, body: nil)
 
-        await #expect(throws: AppError.sessionExpired) { try await repository.events(in: .joined) }
+        await #expect(throws: AppError.sessionExpired) { try await repository.events(in: .joined, near: nil) }
         await #expect(throws: AppError.sessionExpired) { try await repository.join(eventId: "evt_01J") }
         await #expect(throws: AppError.sessionExpired) { try await repository.create(.fixture()) }
     }
@@ -150,13 +179,13 @@ struct RemoteEventRepositoryTests {
     @Test func transportFailuresBecomeNetwork() async {
         client.error = URLError(.notConnectedToInternet)
 
-        await #expect(throws: AppError.network) { try await repository.events(in: .upcoming) }
+        await #expect(throws: AppError.network) { try await repository.events(in: .upcoming, near: nil) }
     }
 
     /// The list view model keeps quiet on cancellation, so the repository must not turn it into a failure.
     @Test func cancellationPassesThroughUntouched() async {
         client.error = URLError(.cancelled)
-        await #expect(throws: URLError(.cancelled)) { try await repository.events(in: .upcoming) }
+        await #expect(throws: URLError(.cancelled)) { try await repository.events(in: .upcoming, near: nil) }
 
         client.error = CancellationError()
         await #expect(throws: CancellationError.self) { try await repository.leave(eventId: "evt_01J") }

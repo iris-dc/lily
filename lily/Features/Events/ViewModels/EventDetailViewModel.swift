@@ -10,28 +10,42 @@ final class EventDetailViewModel {
     private let repository: any EventRepository
     private let identity: any IdentityProvider
     private let errorCenter: ErrorCenter
+    private let recorder: any InteractionRecorder
     private let logger: any Logging
     private let tryAgainDelay: Duration
+    private let now: () -> Date
     private let onChange: @MainActor (SportEvent) -> Void
+    private var hasRecordedView = false
 
     init(event: SportEvent,
          repository: any EventRepository,
          identity: any IdentityProvider,
          errorCenter: ErrorCenter,
+         recorder: any InteractionRecorder,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
+         now: @escaping () -> Date = { .now },
          onChange: @escaping @MainActor (SportEvent) -> Void) {
         self.event = event
         self.repository = repository
         self.identity = identity
         self.errorCenter = errorCenter
+        self.recorder = recorder
         self.logger = logger
         self.tryAgainDelay = tryAgainDelay
+        self.now = now
         self.onChange = onChange
     }
 
     var participation: Participation {
         Participation(event: event, userID: identity.currentUserID)
+    }
+
+    /// One view per screen instance, however often the view's task restarts (a sheet over it comes and goes).
+    func recordViewed() {
+        guard !hasRecordedView else { return }
+        hasRecordedView = true
+        recorder.record(.viewed(event, at: now()))
     }
 
     func join() async {

@@ -18,6 +18,7 @@ struct EventDetailViewModelTests {
     @MainActor private final class Harness {
         let repository = FakeEventRepository()
         let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
+        let recorder = SpyInteractionRecorder()
         let logger = SpyLogger()
         let errorCenter: ErrorCenter
         let viewModel: EventDetailViewModel
@@ -32,11 +33,15 @@ struct EventDetailViewModelTests {
                                              repository: repository,
                                              identity: identity,
                                              errorCenter: errorCenter,
+                                             recorder: recorder,
                                              logger: logger,
                                              tryAgainDelay: .zero,
+                                             now: { EventDetailViewModelTests.now },
                                              onChange: replacedEvents.record)
         }
     }
+
+    nonisolated private static let now = Date(timeIntervalSince1970: 1_800_000_000)
 
     /// Refusals that mean the event moved on under the caller: expected product states, logged as warnings.
     /// `nonisolated`: `@Test(arguments:)` reads it off the main actor.
@@ -77,6 +82,16 @@ struct EventDetailViewModelTests {
 
         harness.identity.currentUserID = "host"
         #expect(harness.viewModel.participation == .hosting)
+    }
+
+    /// The view's task restarts when a sheet over it comes and goes; the screen is still one view.
+    @Test func recordViewedReportsTheEventOncePerInstance() {
+        let harness = Harness(event: Self.makeEvent(capacity: 4, participants: 1))
+
+        harness.viewModel.recordViewed()
+        harness.viewModel.recordViewed()
+
+        #expect(harness.recorder.interactions == [.viewed(harness.viewModel.event, at: Self.now)])
     }
 
     @Test func joinReplacesTheEventAndTellsTheList() async {
