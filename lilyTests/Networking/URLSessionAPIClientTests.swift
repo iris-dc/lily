@@ -6,6 +6,7 @@ import Testing
 struct URLSessionAPIClientTests {
     private let logger = SpyLogger()
     private static let localUserHeader = AppConfig.API.Headers.localUserID
+    private static let appVersion = AppVersion(marketing: "1.0", build: "42")
 
     private func makeClient(_ backend: StubBackend,
                             identity: FakeIdentityProvider? = nil,
@@ -16,6 +17,7 @@ struct URLSessionAPIClientTests {
                             identity: identity ?? FakeIdentityProvider(),
                             tokenProvider: tokenProvider,
                             sendsLocalUserHeader: sendsLocalUserHeader,
+                            appVersion: Self.appVersion,
                             logger: logger)
     }
 
@@ -101,6 +103,19 @@ struct URLSessionAPIClientTests {
             try await makeClient(backend).send(APIRequest<[SportEvent]>.get(AppConfig.API.Paths.events))
         }
         #expect(logger.messages(in: .network).contains { $0.contains("GET /api/events") && $0.contains("failed") })
+    }
+
+    /// Reads and writes alike, guest or signed in: the backend can tell every request's app version apart.
+    @Test func appVersionHeaderIsSentOnEveryRequest() async throws {
+        let backend = StubBackend(json: ContractSamples.profile())
+        let client = makeClient(backend, tokenProvider: FakeAuthTokenProvider(token: nil))
+
+        _ = try await client.send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
+        _ = try await client.send(APIRequest<Profile>.put(AppConfig.API.Paths.profile,
+                                                          body: ProfileUpdateRequest(displayName: "Apple Tester")))
+
+        let sent = backend.requests.map { $0.value(forHTTPHeaderField: AppConfig.API.Headers.appVersion) }
+        #expect(sent == ["1.0 (42)", "1.0 (42)"])
     }
 
     private struct HeaderCase {

@@ -59,11 +59,12 @@ run_xcodebuild() {
 }
 
 # xcodebuild exits 0 and prints a passing suite when -only-testing matches nothing (a renamed target or test bundle),
-# so a green test stage must also show a test that ran: XCTest prints "Test Case '...' passed" and "Executed N tests",
-# Swift Testing prints "Test case '...' passed" and no Executed summary.
+# so a green test stage must also show a test that ran: XCTest prints "Test Case '...' passed" and "Executed N tests";
+# Swift Testing prints "Test case '...' passed" per clone when parallel testing is on and, without clones,
+# "Test run with N tests in M suites passed" at the end.
 require_executed_tests() {
   local label="$1" log="$2"
-  if ! grep -qE "Test [Cc]ase '.*' passed|Executed [1-9][0-9]* tests?" "$log"; then
+  if ! grep -qE "Test [Cc]ase '.*' passed|Executed [1-9][0-9]* tests?|Test run with [1-9][0-9]* tests? in .* passed" "$log"; then
     echo "==> ${label}: no tests were executed" >&2
     exit 1
   fi
@@ -93,7 +94,7 @@ case "$STAGE" in
     run_xcodebuild build build
     ;;
   unit)
-    run_xcodebuild unit-tests test -only-testing:"$UNIT_TARGET" -resultBundlePath "$RESULTS_DIR/unit-tests.xcresult"
+    run_xcodebuild unit-tests test -only-testing:"$UNIT_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/unit-tests.xcresult"
     ;;
   ui)
     use_software_keyboard
@@ -102,7 +103,7 @@ case "$STAGE" in
   all)
     run_lint
     run_xcodebuild build build-for-testing
-    run_xcodebuild unit-tests test-without-building -only-testing:"$UNIT_TARGET" -resultBundlePath "$RESULTS_DIR/unit-tests.xcresult"
+    run_xcodebuild unit-tests test-without-building -only-testing:"$UNIT_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/unit-tests.xcresult"
     use_software_keyboard
     run_xcodebuild ui-tests test-without-building -only-testing:"$UI_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/ui-tests.xcresult"
     ;;

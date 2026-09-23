@@ -11,6 +11,7 @@ struct RemoteEventRepositoryTests {
         ("NOT_A_PARTICIPANT", .notAParticipant),
         ("HOST_CANNOT_LEAVE", .hostCannotLeave),
         ("TRY_AGAIN", .tryAgain),
+        ("RATE_LIMITED", .rateLimited),
         ("EVENT_NOT_FOUND", .eventNotFound),
         ("VALIDATION_FAILED", .participationFailed),
     ]
@@ -174,6 +175,15 @@ struct RemoteEventRepositoryTests {
         await #expect(throws: AppError.sessionExpired) { try await repository.events(in: .joined, near: nil) }
         await #expect(throws: AppError.sessionExpired) { try await repository.join(eventId: "evt_01J") }
         await #expect(throws: AppError.sessionExpired) { try await repository.create(.fixture()) }
+    }
+
+    /// A 429 is about the caller's pace, not about what was asked; the body may be missing, so the status decides.
+    @Test func rateLimitedStatusBecomesRateLimitedWhateverWasAsked() async {
+        client.error = APIError.http(status: 429, body: nil)
+
+        await #expect(throws: AppError.rateLimited) { try await repository.events(in: .upcoming, near: nil) }
+        await #expect(throws: AppError.rateLimited) { try await repository.join(eventId: "evt_01J") }
+        await #expect(throws: AppError.rateLimited) { try await repository.create(.fixture()) }
     }
 
     @Test func transportFailuresBecomeNetwork() async {

@@ -6,7 +6,7 @@ struct ErrorMessageMapperTests {
     private static let allErrors: [AppError] = [
         .authCancelled, .authFailed(provider: .apple), .providerUnavailable(provider: .apple), .invalidCredentials,
         .emailTaken, .emailNotConfirmed, .invalidConfirmationCode, .tooManyAttempts,
-        .sessionExpired, .network, .eventsUnavailable, .eventNotFound, .eventFull,
+        .sessionExpired, .rateLimited, .network, .eventsUnavailable, .eventNotFound, .eventFull,
         .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain, .participationFailed, .eventCreationFailed,
         .unknown,
     ]
@@ -31,6 +31,11 @@ struct ErrorMessageMapperTests {
     /// A create that fails for no named reason must not read like a join that failed.
     @Test func creationFailureHasItsOwnTitle() {
         #expect(ErrorMessageMapper.message(for: .eventCreationFailed).title == "Couldn't create your game")
+    }
+
+    /// Being throttled is not being offline; the copy asks for a pause, not for a connection check.
+    @Test func rateLimitedHasItsOwnTitle() {
+        #expect(ErrorMessageMapper.message(for: .rateLimited).title == "Slow down a moment")
     }
 
     @Test func providerFailureNamesProvider() {

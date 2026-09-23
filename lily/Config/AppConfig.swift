@@ -116,9 +116,13 @@ nonisolated enum AppConfig {
 
         /// A rejected or missing token; the backend sends no body with it, so the status alone must be recognised.
         static let unauthorizedStatus = 401
+        /// The backend's rate limit; recognised by status too, in case the `{code, message}` body is missing.
+        static let rateLimitedStatus = 429
 
         enum Headers {
             static let localUserID = "X-Local-User-Id"
+            /// `<CFBundleShortVersionString> (<CFBundleVersion>)`, e.g. `1.0 (42)`, on every request (`AppVersion`).
+            static let appVersion = "X-App-Version"
             static let authorization = "Authorization"
             static let bearerPrefix = "Bearer "
             static let accept = "Accept"
@@ -196,5 +200,12 @@ nonisolated enum AppConfig {
 
     enum Logging {
         static let subsystem = Bundle.main.bundleIdentifier ?? "iris.lily"
+    }
+
+    enum Version {
+        static let marketingKey = "CFBundleShortVersionString"
+        static let buildKey = "CFBundleVersion"
+        /// Stands in for a component the bundle does not carry (a test bundle without a host).
+        static let unknownComponent = "0"
     }
 }
