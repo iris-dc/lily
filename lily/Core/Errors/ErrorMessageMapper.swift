@@ -14,6 +14,8 @@ nonisolated enum ErrorMessageMapper {
             authMessage(for: error)
         case .network:
             ErrorMessage(title: "You're offline", body: "Check your connection and try again.")
+        case .rateLimited:
+            ErrorMessage(title: "Slow down a moment", body: "Too many requests. Try again in a few seconds.")
         case .eventsUnavailable, .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave,
              .tryAgain, .participationFailed, .eventCreationFailed:
             eventMessage(for: error)

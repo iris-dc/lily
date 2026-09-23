@@ -1,12 +1,14 @@
 import Foundation
 
-/// `APIClient` over `URLSession`. Knows the base URL, the JSON conventions and the two identity headers, nothing else.
+/// `APIClient` over `URLSession`. Knows the base URL, the JSON conventions, the two identity headers and the app
+/// version header, nothing else.
 final class URLSessionAPIClient: APIClient {
     private let session: URLSession
     private let baseURL: URL
     private let identity: any IdentityProvider
     private let tokenProvider: (any AuthTokenProvider)?
     private let sendsLocalUserHeader: Bool
+    private let appVersion: String
     private let logger: any Logging
     private let decoder = APIJSONCoding.makeDecoder()
     private let encoder = APIJSONCoding.makeEncoder()
@@ -17,12 +19,14 @@ final class URLSessionAPIClient: APIClient {
          identity: any IdentityProvider,
          tokenProvider: (any AuthTokenProvider)? = nil,
          sendsLocalUserHeader: Bool = AppConfig.API.sendsLocalUserHeader,
+         appVersion: AppVersion = .current(),
          logger: any Logging) {
         self.session = session
         self.baseURL = baseURL
         self.identity = identity
         self.tokenProvider = tokenProvider
         self.sendsLocalUserHeader = sendsLocalUserHeader
+        self.appVersion = appVersion.headerValue
         self.logger = logger
     }
 
@@ -56,6 +60,7 @@ final class URLSessionAPIClient: APIClient {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = request.method.rawValue
         urlRequest.setValue(AppConfig.API.Headers.json, forHTTPHeaderField: AppConfig.API.Headers.accept)
+        urlRequest.setValue(appVersion, forHTTPHeaderField: AppConfig.API.Headers.appVersion)
         if let body = request.body {
             urlRequest.httpBody = try encoder.encode(body)
             urlRequest.setValue(AppConfig.API.Headers.json, forHTTPHeaderField: AppConfig.API.Headers.contentType)

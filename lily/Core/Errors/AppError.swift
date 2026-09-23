@@ -16,6 +16,8 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case tooManyAttempts
     /// The backend rejected the token (401), or Amplify could not refresh it.
     case sessionExpired
+    /// The backend throttled the caller (429 `RATE_LIMITED`); the request is fine to repeat after a short pause.
+    case rateLimited
     case network
     case eventsUnavailable
     case eventNotFound
