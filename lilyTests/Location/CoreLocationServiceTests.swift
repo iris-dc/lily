@@ -7,7 +7,8 @@ struct CoreLocationServiceTests {
     private let logger = SpyLogger()
     private let berlin = AppConfig.Location.mockCenter
 
-    private func makeService(_ source: FakeLocationUpdateSource, timeout: Duration = .seconds(5)) -> CoreLocationService {
+    // Generous default: a loaded CI runner once took longer than 5 s to schedule the stream, and the timeout won.
+    private func makeService(_ source: FakeLocationUpdateSource, timeout: Duration = .seconds(120)) -> CoreLocationService {
         CoreLocationService(logger: logger, timeout: timeout, source: source)
     }
 
