@@ -174,6 +174,17 @@ struct CognitoAuthServiceTests {
         #expect(await harness.service.accessToken() == nil)
     }
 
+    /// The realtime reconnect asks the pool for a new token; the answer, or its absence, is the client's.
+    @Test func freshAccessTokenForcesARefreshAndNeverThrows() async {
+        let harness = Harness()
+        #expect(await harness.service.freshAccessToken() == "fresh-access-token")
+        #expect(harness.client.freshTokenRequestCount == 1)
+
+        harness.client.freshTokenResult = .failure(.network)
+        #expect(await harness.service.freshAccessToken() == nil)
+        #expect(harness.logger.messages(in: .auth, at: .warning).contains { $0.contains("No fresh access token") })
+    }
+
     /// A token failure is the backend's to judge (401 -> session expired), so the request still goes out, and a log
     /// line remembers why it went without one.
     @Test func accessTokenFailureIsNilAndLoggedNeverThrown() async {

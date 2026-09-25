@@ -75,6 +75,40 @@ struct InteractionTests {
         #expect(EventsPresentation.list.wireValue == "list")
     }
 
+    @Test func groupKindsUseTheBackendsSnakeCaseNames() {
+        #expect(InteractionKind.groupViewed.rawValue == "group_viewed")
+        #expect(InteractionKind.groupSearchPerformed.rawValue == "group_search_performed")
+        #expect(InteractionKind.chatOpened.rawValue == "chat_opened")
+        #expect(InteractionKind.inviteShared.rawValue == "invite_shared")
+    }
+
+    @Test func groupViewedCarriesTheIdAndVisibilityAndNothingElse() throws {
+        let group = SportGroup.fixture(id: "grp_01", name: "Secret Club", visibility: .private, role: .owner)
+
+        let encoded = try json(Interaction.groupViewed(group, at: Self.date))
+
+        let expected: [String: String] = ["kind": "group_viewed", "occurredAt": Self.dateText,
+                                          "groupId": "grp_01", "groupVisibility": "private"]
+        #expect(encoded as NSDictionary == expected as NSDictionary)
+    }
+
+    @Test func groupSearchCarriesTheFlagAndTheCountNeverTheText() throws {
+        let encoded = try json(Interaction.groupSearchPerformed(hasQuery: true, resultCount: 3, at: Self.date))
+
+        #expect(Set(encoded.keys) == ["kind", "occurredAt", "hasQuery", "resultCount"])
+        #expect(encoded["hasQuery"] as? Bool == true)
+        #expect(encoded["resultCount"] as? Int == 3)
+    }
+
+    @Test func inviteSharedAndChatOpenedCarryTheGroupIdOnly() throws {
+        for interaction in [Interaction.inviteShared(groupID: "grp_01", at: Self.date),
+                            .chatOpened(groupID: "grp_01", at: Self.date)] {
+            let encoded = try json(interaction)
+            #expect(Set(encoded.keys) == ["kind", "occurredAt", "groupId"])
+            #expect(encoded["groupId"] as? String == "grp_01")
+        }
+    }
+
     @Test func theBatchWrapsInteractionsAndTheReceiptDecodes() throws {
         let batch = try json(InteractionBatch(interactions: [.presentationChanged(.list, at: Self.date)]))
         #expect(Set(batch.keys) == ["interactions"])

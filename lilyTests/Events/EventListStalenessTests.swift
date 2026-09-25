@@ -41,7 +41,7 @@ struct EventListStalenessTests {
     @Test func aChangeElsewhereEndsTheRetryCooldownEarly() async {
         let repository = FakeEventRepository()
         repository.result = .failure(.network)
-        let changes = EventChangeTracker()
+        let changes = ChangeTracker()
         let clock = Date(timeIntervalSince1970: 1_700_000_000)
         let viewModel = makeEventListViewModel(repository: repository, changes: changes, now: { clock })
         await viewModel.loadIfStale()

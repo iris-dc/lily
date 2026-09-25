@@ -17,6 +17,7 @@ enum TestFixtures {
 extension SportEvent {
     /// A minimal event at the demo centre; every optional detail absent unless given, so tests state only what they test.
     static func fixture(id: String = "e",
+                        title: String = "t",
                         capacity: Int = 4,
                         participants: Int = 1,
                         startsAt: Date = .now,
@@ -28,7 +29,7 @@ extension SportEvent {
                         price: Price? = nil) -> SportEvent {
         SportEvent(
             id: id,
-            title: "t",
+            title: title,
             type: .tennis,
             startsAt: startsAt,
             location: EventLocation(name: "l", coordinate: AppConfig.Location.mockCenter),

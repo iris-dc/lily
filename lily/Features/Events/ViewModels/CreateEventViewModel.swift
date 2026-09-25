@@ -9,11 +9,17 @@ final class CreateEventViewModel {
     private(set) var isSubmitting = false
     /// Set once the backend answered; the sheet dismisses when it appears.
     private(set) var createdEvent: SportEvent?
+    /// The groups the caller may host a game in, read from the store on `prepare()`; the form's picker offers them.
+    private(set) var eligibleGroups: [EventGroupRef] = []
+    /// Set when the sheet opened from a group's Events segment: the draft is stamped with it and the form shows it
+    /// read-only instead of the picker.
+    let lockedGroup: EventGroupRef?
 
     private let repository: any EventRepository
     /// Who is creating; a game found on the backend after a failed create counts as ours only when this user hosts it.
     private let identity: any IdentityProvider
     private let locationService: any LocationService
+    private let groups: MyGroupsStore
     private let errorCenter: ErrorCenter
     private let logger: any Logging
     private let now: () -> Date
@@ -22,18 +28,23 @@ final class CreateEventViewModel {
     init(repository: any EventRepository,
          identity: any IdentityProvider,
          locationService: any LocationService,
+         groups: MyGroupsStore,
          errorCenter: ErrorCenter,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
+         lockedGroup: EventGroupRef? = nil,
          onCreated: @escaping @MainActor (SportEvent) -> Void) {
         self.repository = repository
         self.identity = identity
         self.locationService = locationService
+        self.groups = groups
         self.errorCenter = errorCenter
         self.logger = logger
         self.now = now
+        self.lockedGroup = lockedGroup
         self.onCreated = onCreated
         self.draft = EventDraft(startsAt: Self.defaultStart(now: now()))
+        self.draft.group = lockedGroup
     }
 
     /// Everything still wrong with the draft, in field order.
@@ -44,15 +55,20 @@ final class CreateEventViewModel {
     /// The earliest start the date picker offers.
     var earliestStart: Date { EventDraft.earliestStart(now: now()) }
 
+    /// The form shows a Group row when there is a choice to make, or a preset to show; never for a user without groups.
+    var showsGroupRow: Bool { lockedGroup != nil || !eligibleGroups.isEmpty }
+
     /// The first of `candidates` the draft has, for the hint under the field they concern.
     func issue(for candidates: EventDraft.Issue...) -> EventDraft.Issue? {
         let present = issues
         return candidates.first { present.contains($0) }
     }
 
-    /// Proposes the user's position as the spot, so a game "here" needs no map step. A spot already set (the sheet
-    /// re-appeared, or the map was quicker) is kept.
+    /// Reads the groups the caller may host in (no request: the store is loaded on sign-in) and proposes the user's
+    /// position as the spot, so a game "here" needs no map step. A spot already set (the sheet re-appeared, or the
+    /// map was quicker) is kept.
     func prepare() async {
+        eligibleGroups = groups.eligibleForEvents.map(\.ref)
         guard draft.coordinate == nil else { return }
         let position = await locationService.currentLocation()
         if draft.coordinate == nil { draft.coordinate = position }
@@ -71,7 +87,7 @@ final class CreateEventViewModel {
         do {
             let event = try await repository.create(draft)
             accept(event)
-            logger.info(.events, "Event created \(event.id) (\(event.capacity) spots)")
+            logger.info(.events, "Event created \(event.id) (\(event.capacity) spots)\(Self.groupSuffix(for: event))")
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logger.error(.events, "Create failed: \(error)")
@@ -100,6 +116,11 @@ final class CreateEventViewModel {
         }
         guard let hostUserId = stored.hostUserId, hostUserId == identity.currentUserID else { return nil }
         return stored
+    }
+
+    /// The group id for the log line; ids only, never the name.
+    private static func groupSuffix(for event: SportEvent) -> String {
+        event.group.map { " in group \($0.id)" } ?? ""
     }
 
     /// `AppConfig.Events.Creation.defaultStartOffset` ahead, rounded up to the next full hour: a round time to edit from.

@@ -22,24 +22,45 @@ final class SpyInteractionRecorder: InteractionRecorder {
 /// A cancelled sleeper is released too and throws, like `Task.sleep`.
 @MainActor
 final class HeldSleep {
+    private struct Sleeper {
+        let id: UUID
+        let duration: Duration
+        let continuation: CheckedContinuation<Void, Never>
+    }
+
     private(set) var requested: [Duration] = []
-    private var waiting: [CheckedContinuation<Void, Never>] = []
+    private var waiting: [Sleeper] = []
+
+    /// The durations still being slept on.
+    var held: [Duration] { waiting.map(\.duration) }
 
     func sleep(for duration: Duration) async throws {
         requested.append(duration)
         try Task.checkCancellation()
+        let id = UUID()
         await withTaskCancellationHandler {
-            await withCheckedContinuation { waiting.append($0) }
+            await withCheckedContinuation { waiting.append(Sleeper(id: id, duration: duration, continuation: $0)) }
         } onCancel: {
-            Task { @MainActor in self.release() }
+            Task { @MainActor in self.release(id: id) }
         }
         try Task.checkCancellation()
     }
 
     /// Lets every held sleep finish.
     func release() {
-        let sleepers = waiting
-        waiting.removeAll()
-        sleepers.forEach { $0.resume() }
+        release { _ in true }
+    }
+
+    /// Lets the held sleeps matching `predicate` finish; the others keep waiting.
+    func release(where predicate: (Duration) -> Bool) {
+        let released = waiting.filter { predicate($0.duration) }
+        waiting.removeAll { predicate($0.duration) }
+        released.forEach { $0.continuation.resume() }
+    }
+
+    /// A cancelled sleeper wakes alone; every other held sleep keeps waiting.
+    private func release(id: UUID) {
+        guard let index = waiting.firstIndex(where: { $0.id == id }) else { return }
+        waiting.remove(at: index).continuation.resume()
     }
 }

@@ -10,6 +10,8 @@ nonisolated enum AppConfig {
         static let mockUserIDDigestBytes = 8
         /// The code the mock accepts under `-mock-auth-confirm`; the UI tests type it.
         static let mockConfirmationCode = "123456"
+        /// Domain of the mock users' email addresses.
+        static let mockEmailDomain = "example.com"
     }
 
     /// The `lily-users` pool and its `lily-ios` client, as rose's `RoseAuthStack` outputs them. Amplify is configured

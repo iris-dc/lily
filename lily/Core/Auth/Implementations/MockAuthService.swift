@@ -13,13 +13,17 @@ final class MockAuthService: AuthService {
     private let behavior: MockAuthBehavior
     private let delay: Duration
     private let store: any SessionStore
+    /// `-mock-user-id`: every sign-in yields this user, so two simulators can act as two people.
+    private let userIDOverride: String?
 
     init(behavior: MockAuthBehavior = .succeed,
          delay: Duration = AppConfig.Auth.mockSignInDelay,
-         store: any SessionStore) {
+         store: any SessionStore,
+         userIDOverride: String? = nil) {
         self.behavior = behavior
         self.delay = delay
         self.store = store
+        self.userIDOverride = userIDOverride
     }
 
     func restoreSession() async throws -> AuthSession? {
@@ -29,7 +33,7 @@ final class MockAuthService: AuthService {
 
     func signIn(with provider: AuthProvider) async throws -> AuthSession {
         try await simulateNetwork()
-        let session = AuthSession(user: MockUsers.user(for: provider))
+        let session = AuthSession(user: userIDOverride.map(MockUsers.user(withID:)) ?? MockUsers.user(for: provider))
         store.save(.signedIn(session))
         return session
     }
@@ -70,14 +74,24 @@ nonisolated enum MockUsers {
     static func user(for provider: AuthProvider) -> AuthUser {
         switch provider {
         case .apple:
-            AuthUser(id: "mock-apple", displayName: "Apple Tester", email: "apple@example.com")
+            AuthUser(id: "mock-apple", displayName: "Apple Tester", email: email(for: "apple"))
         case .google:
-            AuthUser(id: "mock-google", displayName: "Google Tester", email: "google@example.com")
+            AuthUser(id: "mock-google", displayName: "Google Tester", email: email(for: "google"))
         case .email(let credentials):
             AuthUser(id: "mock-email-\(opaqueID(for: credentials.email))",
                      displayName: AuthUser.displayName(fromEmail: credentials.email),
                      email: credentials.email)
         }
+    }
+
+    /// The user a chosen id stands for: the id as the mailbox, the display name derived from it like an email sign-in's.
+    static func user(withID id: String) -> AuthUser {
+        let email = email(for: id)
+        return AuthUser(id: id, displayName: AuthUser.displayName(fromEmail: email), email: email)
+    }
+
+    private static func email(for localPart: String) -> String {
+        "\(localPart)@\(AppConfig.Auth.mockEmailDomain)"
     }
 
     /// User ids end up in log lines, so they must never embed the email itself.

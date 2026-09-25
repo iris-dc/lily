@@ -1,13 +1,20 @@
 import SwiftUI
 
-/// Compact one-row summary of an event, used in the landing deck and as the map's selected-pin card.
+/// Compact one-row summary of an event, used in the landing deck and as the map's selected-pin card. At accessibility
+/// type sizes the row becomes a column, so the title and caption get the full width instead of one truncated line.
 struct EventPreviewCard: View {
     let event: SportEvent
     /// Optional trailing detail such as distance.
     var detail: String?
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    private var isRow: Bool { !typeSize.isAccessibilitySize }
 
     var body: some View {
-        HStack(spacing: DesignTokens.Spacing.md) {
+        let layout = isRow
+            ? AnyLayout(HStackLayout(spacing: DesignTokens.Spacing.md))
+            : AnyLayout(VStackLayout(alignment: .leading, spacing: DesignTokens.Spacing.sm))
+        layout {
             Image(systemName: event.type.symbolName)
                 .font(.title3.weight(.medium))
                 .foregroundStyle(Color.lilySecondary)
@@ -16,13 +23,24 @@ struct EventPreviewCard: View {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                 Text(event.title)
                     .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
+                    .lineLimit(isRow ? 1 : DesignTokens.Layout.accessibilityPreviewLines)
                 Text(caption)
                     .font(LilyTheme.Fonts.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(isRow ? 1 : DesignTokens.Layout.accessibilityPreviewLines)
+                // The group gets a line of its own: in the caption it would truncate the spots, in the trailing
+                // slot it squeezed the title on the landing deck.
+                if let group = event.group {
+                    Label(group.name, systemImage: DesignTokens.Symbols.groups)
+                        .font(LilyTheme.Fonts.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(isRow ? 1 : DesignTokens.Layout.accessibilityPreviewLines)
+                        .truncationMode(.tail)
+                }
             }
-            Spacer(minLength: 0)
+            if isRow {
+                Spacer(minLength: 0)
+            }
             if let detail {
                 Text(detail)
                     .font(LilyTheme.Fonts.caption)

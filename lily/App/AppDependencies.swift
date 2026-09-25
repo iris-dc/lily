@@ -16,7 +16,9 @@ final class AppDependencies {
     /// Where the event screens report their taps; the root view flushes it when the app goes to the background.
     let interactionRecorder: any InteractionRecorder
     let locationService: any LocationService
-    let eventChanges = EventChangeTracker()
+    let eventChanges = ChangeTracker()
+    /// Groups, chat and moderation collaborators; see `AppDependencies+Groups.swift`.
+    let groups: GroupDependencies
 
     init(logger: any Logging,
          sessionStore: any SessionStore,
@@ -26,7 +28,9 @@ final class AppDependencies {
          eventRepository: any EventRepository,
          profileRepository: any ProfileRepository,
          interactionRecorder: any InteractionRecorder,
-         locationService: any LocationService) {
+         locationService: any LocationService,
+         groupRepositories: GroupRepositories,
+         deepLinks: DeepLinkCenter? = nil) {
         self.logger = logger
         self.errorCenter = ErrorCenter(logger: logger)
         self.sessionStore = sessionStore
@@ -37,6 +41,12 @@ final class AppDependencies {
         self.profileRepository = profileRepository
         self.interactionRecorder = interactionRecorder
         self.locationService = locationService
+        self.groups = GroupDependencies(repositories: groupRepositories,
+                                        identity: identity,
+                                        tokenProvider: tokenProvider,
+                                        errorCenter: errorCenter,
+                                        logger: logger,
+                                        deepLinks: deepLinks ?? DeepLinkCenter(logger: logger))
         self.sessionController = SessionController(authService: authService,
                                                    sessionStore: sessionStore,
                                                    profileRepository: profileRepository,
@@ -44,6 +54,7 @@ final class AppDependencies {
                                                    logger: logger)
         // The repositories were built around `identity` before the controller existed; close the loop.
         identity.session = sessionController
+        groups.sessionObservers.forEach(sessionController.addObserver)
     }
 
     /// Production wiring: Cognito through Amplify, whose access token the API client sends, unless a launch argument
@@ -67,7 +78,9 @@ final class AppDependencies {
                                eventRepository: repositories.events,
                                profileRepository: repositories.profile,
                                interactionRecorder: repositories.interactions,
-                               locationService: makeLocationService(arguments: arguments, logger: logger))
+                               locationService: makeLocationService(arguments: arguments, logger: logger),
+                               groupRepositories: repositories.groups,
+                               deepLinks: DeepLinkCenter(arguments: arguments, logger: logger))
     }
 
     /// Isolated in-memory wiring for previews and tests.
@@ -84,7 +97,8 @@ final class AppDependencies {
                                eventRepository: repositories.events,
                                profileRepository: repositories.profile,
                                interactionRecorder: repositories.interactions,
-                               locationService: MockLocationService())
+                               locationService: MockLocationService(),
+                               groupRepositories: repositories.groups)
     }
 
     /// Explore starts from the default filter (10 km around the user); a list without a filter button, such as
@@ -112,13 +126,17 @@ final class AppDependencies {
                              onChange: onChange)
     }
 
-    /// `onCreated` receives the event as the backend stored it; the list behind the sheet adds it in place.
-    func makeCreateEventViewModel(onCreated: @escaping @MainActor (SportEvent) -> Void) -> CreateEventViewModel {
+    /// `onCreated` receives the event as the backend stored it; the list behind the sheet adds it in place. A sheet
+    /// opened from a group's Events segment passes the group as `lockedGroup`, so the game is hosted there.
+    func makeCreateEventViewModel(onCreated: @escaping @MainActor (SportEvent) -> Void,
+                                  lockedGroup: EventGroupRef? = nil) -> CreateEventViewModel {
         CreateEventViewModel(repository: eventRepository,
                              identity: identity,
                              locationService: locationService,
+                             groups: myGroups,
                              errorCenter: errorCenter,
                              logger: logger,
+                             lockedGroup: lockedGroup,
                              onCreated: onCreated)
     }
 
@@ -138,11 +156,15 @@ final class AppDependencies {
         return store
     }
 
-    /// The Cognito service doubles as the token provider; the mock has no token to offer.
+    /// The Cognito service doubles as the token provider; the mock has no token to offer. `-mock-user-id` is read
+    /// only with the mock: a Cognito user is whoever the pool says.
     private static func makeAuthService(arguments: [String], store: any SessionStore, logger: any Logging) -> Auth {
         if let behavior = mockAuthBehavior(from: arguments) {
             logger.info(.auth, "Launch argument requested mock auth: \(behavior)")
-            return Auth(service: MockAuthService(behavior: behavior, store: store), tokenProvider: nil)
+            let userID = AppConfig.LaunchArguments.value(following: AppConfig.LaunchArguments.mockUserID, in: arguments)
+            if let userID { logger.info(.auth, "Launch argument set the mock user id to \(userID)") }
+            let mock = MockAuthService(behavior: behavior, store: store, userIDOverride: userID)
+            return Auth(service: mock, tokenProvider: nil)
         }
         let cognito = CognitoAuthService(client: AmplifyCognitoClient(logger: logger), store: store, logger: logger)
         return Auth(service: cognito, tokenProvider: cognito)
@@ -171,25 +193,33 @@ final class AppDependencies {
                                          logger: any Logging) -> Repositories {
         guard arguments.contains(AppConfig.LaunchArguments.mockEvents) else {
             return .remote(baseURL: apiBaseURL(from: arguments, logger: logger),
+                           realtimeEndpoint: realtimeEndpoint(from: arguments, logger: logger),
                            identity: identity,
                            tokenProvider: tokenProvider,
                            logger: logger)
         }
         logger.info(.events, "Launch argument requested mock events")
-        return .mock(identity: identity, logger: logger)
+        let autoReplies = arguments.contains(AppConfig.LaunchArguments.mockChatReplies)
+        if autoReplies { logger.info(.chat, "Launch argument requested mock chat replies") }
+        return .mock(identity: identity, logger: logger, autoReplies: autoReplies)
     }
 
     /// The `-api-base-url` value when it is a URL with a scheme and a host, otherwise `AppConfig.API.baseURL`.
     static func apiBaseURL(from arguments: [String], logger: any Logging) -> URL {
-        let flag = AppConfig.LaunchArguments.apiBaseURL
-        guard let value = AppConfig.LaunchArguments.value(following: flag, in: arguments) else {
-            return AppConfig.API.baseURL
-        }
-        guard let url = URL(string: value), url.scheme != nil, url.host() != nil else {
-            logger.warning(.network, "Ignoring \(flag): not a URL with a scheme and a host: \(value)")
+        guard let url = url(following: AppConfig.LaunchArguments.apiBaseURL, in: arguments, logger: logger) else {
             return AppConfig.API.baseURL
         }
         logger.info(.network, "API base URL overridden: \(url.absoluteString)")
+        return url
+    }
+
+    /// A value flag's URL when it parses with a scheme and a host; a malformed value is ignored with a warning.
+    static func url(following flag: String, in arguments: [String], logger: any Logging) -> URL? {
+        guard let value = AppConfig.LaunchArguments.value(following: flag, in: arguments) else { return nil }
+        guard let url = URL(string: value), url.scheme != nil, url.host() != nil else {
+            logger.warning(.network, "Ignoring \(flag): not a URL with a scheme and a host")
+            return nil
+        }
         return url
     }
 }
@@ -206,20 +236,24 @@ private struct Repositories {
     let events: any EventRepository
     let profile: any ProfileRepository
     let interactions: any InteractionRecorder
+    let groups: GroupRepositories
 
     static func remote(baseURL: URL,
+                       realtimeEndpoint: URL?,
                        identity: any IdentityProvider,
                        tokenProvider: (any AuthTokenProvider)?,
                        logger: any Logging) -> Repositories {
         let client = URLSessionAPIClient(baseURL: baseURL, identity: identity, tokenProvider: tokenProvider, logger: logger)
         return Repositories(events: RemoteEventRepository(client: client),
                             profile: RemoteProfileRepository(client: client),
-                            interactions: RemoteInteractionRecorder(client: client, identity: identity, logger: logger))
+                            interactions: RemoteInteractionRecorder(client: client, identity: identity, logger: logger),
+                            groups: .remote(client: client, realtimeEndpoint: realtimeEndpoint, identity: identity))
     }
 
-    static func mock(identity: any IdentityProvider, logger: any Logging) -> Repositories {
+    static func mock(identity: any IdentityProvider, logger: any Logging, autoReplies: Bool = false) -> Repositories {
         Repositories(events: MockEventRepository(identity: identity, logger: logger),
                      profile: MockProfileRepository(logger: logger),
-                     interactions: NoOpInteractionRecorder())
+                     interactions: NoOpInteractionRecorder(),
+                     groups: .mock(identity: identity, logger: logger, autoReplies: autoReplies))
     }
 }

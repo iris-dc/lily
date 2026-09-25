@@ -73,6 +73,19 @@ struct MockEventRepositoryCreateTests {
         #expect(created.description == nil && created.lookingFor == nil && created.skillLevel == nil)
     }
 
+    /// A game hosted in a group keeps its badge, and the group's scope lists it.
+    @Test func createCarriesTheGroupIntoItsScope() async throws {
+        var draft = EventDraft.fixture()
+        let kickers = try #require(MockGroupFixtures.ref(for: MockGroupFixtures.kickersID))
+        draft.group = kickers
+
+        let created = try await repository.create(draft)
+
+        #expect(created.group == kickers)
+        #expect(try await repository.events(in: .group(id: kickers.id), near: nil).contains(created))
+        #expect(try await repository.events(in: .group(id: MockGroupFixtures.padelID), near: nil).contains(created) == false)
+    }
+
     @Test func createWithoutACoordinateIsRefused() async {
         await #expect(throws: AppError.eventCreationFailed) { try await repository.create(.fixture(coordinate: nil)) }
     }

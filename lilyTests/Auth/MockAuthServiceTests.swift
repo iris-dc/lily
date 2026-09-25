@@ -104,6 +104,11 @@ struct MockUsersTests {
         #expect(!user.id.localizedCaseInsensitiveContains("jane"))
     }
 
+    @Test func aChosenIDNamesTheUserAfterItsMailbox() {
+        let user = MockUsers.user(withID: "jane.doe")
+        #expect(user == AuthUser(id: "jane.doe", displayName: "Jane Doe", email: "jane.doe@example.com"))
+    }
+
     @Test func emailUserIDIsStableAndCaseInsensitive() {
         let lower = MockUsers.user(for: .email(EmailCredentials(email: "a@b.co", password: "p")))
         let upper = MockUsers.user(for: .email(EmailCredentials(email: "A@B.CO", password: "q")))

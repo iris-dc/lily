@@ -6,8 +6,12 @@ struct ErrorMessageMapperTests {
     private static let allErrors: [AppError] = [
         .authCancelled, .authFailed(provider: .apple), .providerUnavailable(provider: .apple), .invalidCredentials,
         .emailTaken, .emailNotConfirmed, .invalidConfirmationCode, .tooManyAttempts,
-        .sessionExpired, .rateLimited, .network, .eventsUnavailable, .eventNotFound, .eventFull,
+        .sessionExpired, .rateLimited(retryAfter: nil), .network, .eventsUnavailable, .eventNotFound, .eventFull,
         .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain, .participationFailed, .eventCreationFailed,
+        .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned, .ownerCannotLeave,
+        .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed, .contentRejected,
+        .inviteInvalid, .inviteExpired, .inviteLimitReached, .chatUnavailable, .messageSendFailed, .messageNotFound,
+        .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired,
         .unknown,
     ]
 
@@ -33,9 +37,33 @@ struct ErrorMessageMapperTests {
         #expect(ErrorMessageMapper.message(for: .eventCreationFailed).title == "Couldn't create your game")
     }
 
-    /// Being throttled is not being offline; the copy asks for a pause, not for a connection check.
+    /// Being throttled is not being offline; the copy asks for a pause, not for a connection check, whatever the wait.
     @Test func rateLimitedHasItsOwnTitle() {
-        #expect(ErrorMessageMapper.message(for: .rateLimited).title == "Slow down a moment")
+        #expect(ErrorMessageMapper.message(for: .rateLimited(retryAfter: 3)).title == "Slow down a moment")
+        let timed = ErrorMessageMapper.message(for: .rateLimited(retryAfter: 3))
+        #expect(timed == ErrorMessageMapper.message(for: .rateLimited(retryAfter: nil)))
+    }
+
+    /// The `Retry-After` seconds ride along from the API error; a 429 without them still maps.
+    @Test func rateLimitedCarriesRetryAfterThroughTheMapping() {
+        let throttled = APIErrorBody(code: "RATE_LIMITED", message: "m")
+        let timed = APIError.http(status: 429, body: throttled, retryAfter: 3)
+        #expect(timed.appError(fallback: .unknown) == .rateLimited(retryAfter: 3))
+        #expect(APIError.http(status: 429, body: nil).appError(fallback: .unknown) == .rateLimited(retryAfter: nil))
+        #expect(BackendErrorCode.rateLimited.appError == .rateLimited(retryAfter: nil))
+    }
+
+    /// Pinned like the event copy: a group refusal must not read like an event one, and the limits come from config.
+    @Test func groupChatAndModerationErrorsHaveTheirOwnTitles() {
+        #expect(ErrorMessageMapper.message(for: .groupsUnavailable).title == "Groups unavailable")
+        #expect(ErrorMessageMapper.message(for: .groupFull).title == "Group is full")
+        #expect(ErrorMessageMapper.message(for: .ownerCannotLeave).title == "You own this group")
+        #expect(ErrorMessageMapper.message(for: .groupCreationFailed).title == "Couldn't create your group")
+        #expect(ErrorMessageMapper.message(for: .inviteExpired).title == "Invite expired")
+        #expect(ErrorMessageMapper.message(for: .messageSendFailed).title == "Not sent")
+        #expect(ErrorMessageMapper.message(for: .termsRequired).title == "Please accept the updated terms")
+        #expect(ErrorMessageMapper.message(for: .membershipLimitReached).body.contains("\(AppConfig.Groups.maxMemberships)"))
+        #expect(ErrorMessageMapper.message(for: .accountSuspended).body.contains(AppConfig.Moderation.supportEmail))
     }
 
     @Test func providerFailureNamesProvider() {
@@ -113,5 +141,30 @@ struct ErrorCenterTests {
 
         center.endPresenting(sheet)
         #expect(center.isTopPresenter(root))
+    }
+}
+
+/// Every code the backend can answer with has a case with copy of its own; the fallback is the caller's, never `.unknown`.
+struct BackendErrorCodeTests {
+    @Test(arguments: BackendErrorCode.allCases)
+    func everyCodeMapsToACaseWithCopy(code: BackendErrorCode) {
+        #expect(code.appError != .unknown, "\(code.rawValue) fell through")
+    }
+
+    @Test func groupCodesMapToTheirCases() {
+        let expected: [String: AppError] = [
+            "CONTENT_REJECTED": .contentRejected, "FORBIDDEN": .insufficientRole, "NOT_A_MEMBER": .notAMember,
+            "BANNED": .bannedFromGroup, "ACCOUNT_SUSPENDED": .accountSuspended, "TERMS_REQUIRED": .termsRequired,
+            "GROUP_NOT_FOUND": .groupNotFound, "MESSAGE_NOT_FOUND": .messageNotFound, "INVITE_INVALID": .inviteInvalid,
+            "REPORT_NOT_FOUND": .reportFailed, "USER_NOT_FOUND": .userNotFound, "GROUP_ID_TAKEN": .groupCreationFailed,
+            "GROUP_ID_REUSED": .groupCreationFailed, "GROUP_FULL": .groupFull, "OWNER_CANNOT_LEAVE": .ownerCannotLeave,
+            "MEMBER_BANNED": .memberBanned, "MEMBERSHIP_LIMIT": .membershipLimitReached, "INVITE_LIMIT": .inviteLimitReached,
+            "INVITE_EXPIRED": .inviteExpired, "BLOCK_LIMIT": .blockLimitReached,
+        ]
+        for (raw, error) in expected {
+            #expect(BackendErrorCode(rawValue: raw)?.appError == error, "\(raw)")
+        }
+        #expect(APIError.http(status: 403, body: APIErrorBody(code: "TERMS_REQUIRED", message: "m")).appError(fallback: .unknown)
+                == .termsRequired)
     }
 }

@@ -21,9 +21,19 @@ final class AmplifyCognitoClient: CognitoClient {
 
     /// Amplify refreshes the tokens itself when they are due; a signed-out session yields no token rather than an error.
     func accessToken() async throws -> String? {
+        try await accessToken(options: nil)
+    }
+
+    /// `forceRefresh` makes Amplify go to the pool even for a token that is still valid, which the realtime reconnect
+    /// before expiry needs: without it the same token would come back and the connection would be renewed for nothing.
+    func freshAccessToken() async throws -> String? {
+        try await accessToken(options: AuthFetchSessionRequest.Options(forceRefresh: true))
+    }
+
+    private func accessToken(options: AuthFetchSessionRequest.Options?) async throws -> String? {
         try await ready()
         return try await mapped {
-            let session = try await Amplify.Auth.fetchAuthSession()
+            let session = try await Amplify.Auth.fetchAuthSession(options: options)
             guard session.isSignedIn, let tokens = session as? AuthCognitoTokensProvider else { return nil }
             return try tokens.getCognitoTokens().get().accessToken
         }

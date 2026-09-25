@@ -24,7 +24,8 @@ nonisolated struct APIRequest<Response: Decodable>: Sendable {
         APIRequest(method: .post, path: path, body: body)
     }
 
-    static func put(_ path: String, body: any Encodable & Sendable) -> APIRequest {
+    /// A `PUT` without a body is a toggle whose state is the path (`PUT /api/blocks/{userId}`).
+    static func put(_ path: String, body: (any Encodable & Sendable)? = nil) -> APIRequest {
         APIRequest(method: .put, path: path, body: body)
     }
 

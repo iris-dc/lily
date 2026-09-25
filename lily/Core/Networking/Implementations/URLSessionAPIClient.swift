@@ -46,7 +46,7 @@ final class URLSessionAPIClient: APIClient {
             throw APIError.notHTTPResponse
         }
         guard (200..<300).contains(http.statusCode) else {
-            throw failure(status: http.statusCode, data: data, endpoint: endpoint)
+            throw failure(http, data: data, endpoint: endpoint)
         }
         return try decode(Response.self, from: data, endpoint: endpoint)
     }
@@ -89,12 +89,14 @@ final class URLSessionAPIClient: APIClient {
         }
     }
 
-    /// Reads the backend's `{code, message}` when there is one; the log carries the code, never the body itself.
-    private func failure(status: Int, data: Data, endpoint: String) -> APIError {
+    /// Reads the backend's `{code, message}` when there is one, and `Retry-After` in seconds (the only form the
+    /// backend sends; a date is ignored); the log carries the code, never the body itself.
+    private func failure(_ response: HTTPURLResponse, data: Data, endpoint: String) -> APIError {
         let body = try? decoder.decode(APIErrorBody.self, from: data)
         let code = body.map { " (\($0.code))" } ?? ""
-        logger.error(.network, "\(endpoint) failed with status \(status)\(code)")
-        return .http(status: status, body: body)
+        logger.error(.network, "\(endpoint) failed with status \(response.statusCode)\(code)")
+        let retryAfter = response.value(forHTTPHeaderField: AppConfig.API.Headers.retryAfter).flatMap(TimeInterval.init)
+        return .http(status: response.statusCode, body: body, retryAfter: retryAfter)
     }
 
     private func decode<Response: Decodable>(_ type: Response.Type, from data: Data, endpoint: String) throws -> Response {

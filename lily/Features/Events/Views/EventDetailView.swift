@@ -16,6 +16,9 @@ struct EventDetailView: View {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     EventTypeChip(type: event.type)
                     ScreenTitle(text: event.title, subtitle: AppBranding.hostedByTitle(for: event.hostName))
+                    if let group = event.group {
+                        groupLine(group)
+                    }
                     if let description = event.description {
                         Text(description).font(.body)
                     }
@@ -48,6 +51,29 @@ struct EventDetailView: View {
             }
             .labelStyle(.iconColumn)
         }
+    }
+
+    /// "Hosted in <group>": a link to the group when it is public and live, its name alone otherwise; a private
+    /// group's game says so, since the link is withheld on purpose.
+    private func groupLine(_ group: EventGroupRef) -> some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+            if group.isLinkable {
+                NavigationLink(value: group) {
+                    Label(AppBranding.Groups.hostedIn(groupName: group.name), systemImage: DesignTokens.Symbols.groups)
+                        .foregroundStyle(Color.lilyAccent)
+                }
+                .buttonStyle(.plain)
+            } else {
+                Label(AppBranding.Groups.hostedIn(groupName: group.name), systemImage: DesignTokens.Symbols.groups)
+                    .foregroundStyle(.secondary)
+            }
+            if group.visibility == .private {
+                Text(AppBranding.Groups.membersOnly)
+                    .font(LilyTheme.Fonts.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .font(.subheadline)
     }
 
     private func lookingForCard(_ text: String) -> some View {

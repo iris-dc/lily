@@ -34,6 +34,9 @@ struct EventDraftForm: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.createTitle)
             typeChips
             DatePicker(Copy.startsAt, selection: $viewModel.draft.startsAt, in: viewModel.earliestStart...)
+            if viewModel.showsGroupRow {
+                groupRow
+            }
         } header: {
             Text(Copy.gameSection)
         } footer: {
@@ -47,15 +50,26 @@ struct EventDraftForm: View {
             Text(Copy.eventType)
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
-            FlowLayout(spacing: DesignTokens.Spacing.md, rowSpacing: 0) {
-                ForEach(EventType.allCases, id: \.self) { type in
-                    ChoiceChip(title: type.displayName,
-                               systemImage: type.symbolName,
-                               isSelected: viewModel.draft.type == type) {
-                        viewModel.draft.type = type
-                    }
+            EventTypeChips(isSelected: { $0 == viewModel.draft.type }, onSelect: { type in
+                if let type { viewModel.draft.type = type }
+            })
+        }
+    }
+
+    /// Which group hosts the game: a menu over the groups the host may create in, or the preset group read-only when
+    /// the sheet opened from that group.
+    @ViewBuilder private var groupRow: some View {
+        if let locked = viewModel.lockedGroup {
+            LabeledContent(Copy.group, value: locked.name)
+                .accessibilityIdentifier(AccessibilityIdentifiers.createGroup)
+        } else {
+            Picker(Copy.group, selection: $viewModel.draft.group) {
+                Text(Copy.noGroup).tag(EventGroupRef?.none)
+                ForEach(viewModel.eligibleGroups) { group in
+                    Text(group.name).tag(EventGroupRef?.some(group))
                 }
             }
+            .accessibilityIdentifier(AccessibilityIdentifiers.createGroup)
         }
     }
 

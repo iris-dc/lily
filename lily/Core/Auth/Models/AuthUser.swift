@@ -5,10 +5,7 @@ nonisolated struct AuthUser: Codable, Hashable, Identifiable, Sendable {
     let displayName: String
     let email: String?
 
-    var initials: String {
-        let parts = displayName.split(separator: " ").prefix(2)
-        return parts.compactMap { $0.first.map(String.init) }.joined().uppercased()
-    }
+    var initials: String { displayName.initials }
 
     /// "jane.doe@example.com" becomes "Jane Doe": the pool stores no name, so the local part is the best first guess.
     static func displayName(fromEmail email: String) -> String {

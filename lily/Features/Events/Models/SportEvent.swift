@@ -26,6 +26,8 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     let skillLevel: SkillLevel?
     /// `nil` means free.
     let price: Price?
+    /// The group the game is hosted in, as the backend stamps it; `nil` for an ungrouped game.
+    let group: EventGroupRef?
 
     init(id: String,
          title: String,
@@ -40,7 +42,8 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
          description: String? = nil,
          lookingFor: String? = nil,
          skillLevel: SkillLevel? = nil,
-         price: Price? = nil) {
+         price: Price? = nil,
+         group: EventGroupRef? = nil) {
         self.id = id
         self.title = title
         self.type = type
@@ -55,6 +58,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
         self.lookingFor = lookingFor
         self.skillLevel = skillLevel
         self.price = price
+        self.group = group
     }
 
     var locationName: String { location.name }
@@ -93,7 +97,8 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
                    description: description,
                    lookingFor: lookingFor,
                    skillLevel: skillLevel,
-                   price: price)
+                   price: price,
+                   group: group)
     }
 }
 
@@ -114,4 +119,6 @@ extension SportEvent {
 nonisolated enum EventScope: Hashable, Sendable {
     case upcoming
     case joined
+    /// The upcoming games of one group, in start order; what its Events segment shows.
+    case group(id: String)
 }

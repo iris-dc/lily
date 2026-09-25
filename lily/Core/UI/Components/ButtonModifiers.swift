@@ -22,10 +22,16 @@ extension View {
     /// The floating action look (the "+" on Explore): a prominent glass circle in the accent colour. The circle takes its
     /// diameter from the extra-large control size, never from a frame on the label, like every other button.
     func lilyFloatingActionButton() -> some View {
+        lilyIconButton(controlSize: .extraLarge)
+    }
+
+    /// A glyph in a prominent glass circle (Send in the chat composer). At `.large` the circle stands as tall as a
+    /// `lilyField()`, so the two read as one row.
+    func lilyIconButton(controlSize: ControlSize = .large) -> some View {
         buttonStyle(.glassProminent)
             .tint(Color.lilyAccent)
             .buttonBorderShape(.circle)
-            .controlSize(.extraLarge)
+            .controlSize(controlSize)
     }
 }
 

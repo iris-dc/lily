@@ -11,7 +11,7 @@ struct RemoteEventRepositoryTests {
         ("NOT_A_PARTICIPANT", .notAParticipant),
         ("HOST_CANNOT_LEAVE", .hostCannotLeave),
         ("TRY_AGAIN", .tryAgain),
-        ("RATE_LIMITED", .rateLimited),
+        ("RATE_LIMITED", .rateLimited(retryAfter: nil)),
         ("EVENT_NOT_FOUND", .eventNotFound),
         ("VALIDATION_FAILED", .participationFailed),
     ]
@@ -67,6 +67,18 @@ struct RemoteEventRepositoryTests {
         _ = try await repository.events(in: .joined, near: AppConfig.Location.mockCenter)
 
         #expect(client.requests.first?.queryItems == [URLQueryItem(name: "scope", value: "joined")])
+    }
+
+    /// A group's games are a resource of their own, in the backend's start order: no scope, no position.
+    @Test func groupScopeGetsTheGroupsEventsResourceWithoutAQuery() async throws {
+        client.responses = [[SportEvent]()]
+
+        _ = try await repository.events(in: .group(id: "7b1c2d3e"), near: AppConfig.Location.mockCenter)
+
+        let request = try #require(client.requests.first)
+        #expect(request.method == .get)
+        #expect(request.path == "/api/groups/7b1c2d3e/events")
+        #expect(request.queryItems.isEmpty)
     }
 
     @Test func eventGetsTheEventResource() async throws {
@@ -181,9 +193,9 @@ struct RemoteEventRepositoryTests {
     @Test func rateLimitedStatusBecomesRateLimitedWhateverWasAsked() async {
         client.error = APIError.http(status: 429, body: nil)
 
-        await #expect(throws: AppError.rateLimited) { try await repository.events(in: .upcoming, near: nil) }
-        await #expect(throws: AppError.rateLimited) { try await repository.join(eventId: "evt_01J") }
-        await #expect(throws: AppError.rateLimited) { try await repository.create(.fixture()) }
+        await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.events(in: .upcoming, near: nil) }
+        await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.join(eventId: "evt_01J") }
+        await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.create(.fixture()) }
     }
 
     @Test func transportFailuresBecomeNetwork() async {
