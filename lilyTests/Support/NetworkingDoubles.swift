@@ -38,10 +38,12 @@ final class StubURLProtocol: URLProtocol {
     struct Response: Sendable {
         let status: Int
         let body: Data
+        let headers: [String: String]
 
-        init(status: Int, json: String = "") {
+        init(status: Int, json: String = "", headers: [String: String] = [:]) {
             self.status = status
             self.body = Data(json.utf8)
+            self.headers = headers
         }
     }
 
@@ -63,7 +65,7 @@ final class StubURLProtocol: URLProtocol {
         }
         switch handler(request) {
         case .success(let response):
-            let http = HTTPURLResponse(url: url, statusCode: response.status, httpVersion: nil, headerFields: nil)!
+            let http = HTTPURLResponse(url: url, statusCode: response.status, httpVersion: nil, headerFields: response.headers)!
             client?.urlProtocol(self, didReceive: http, cacheStoragePolicy: .notAllowed)
             client?.urlProtocol(self, didLoad: response.body)
             client?.urlProtocolDidFinishLoading(self)
@@ -93,9 +95,9 @@ final class StubBackend: Sendable {
         }
     }
 
-    /// Answers every request with the same status and body.
-    convenience init(status: Int = 200, json: String = "") {
-        self.init { _ in .success(StubURLProtocol.Response(status: status, json: json)) }
+    /// Answers every request with the same status, body and headers.
+    convenience init(status: Int = 200, json: String = "", headers: [String: String] = [:]) {
+        self.init { _ in .success(StubURLProtocol.Response(status: status, json: json, headers: headers)) }
     }
 
     func makeSession() -> URLSession {

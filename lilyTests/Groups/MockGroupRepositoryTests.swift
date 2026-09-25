@@ -1,0 +1,149 @@
+import Foundation
+import Testing
+@testable import lily
+
+/// The mock's behaviour the UI tests and previews lean on: the fixtures of plan 8.5 and the backend's refusals.
+@MainActor
+struct MockGroupRepositoryTests {
+    private let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
+    private let logger = SpyLogger()
+
+    private func makeRepository() -> MockGroupRepository {
+        MockGroupRepository(identity: identity, logger: logger)
+    }
+
+    @Test func mineHoldsTheThreeJoinedGroupsMostRecentlyActiveFirst() async throws {
+        let mine = try await makeRepository().groups(in: .mine, cursor: nil)
+
+        #expect(mine.items.map(\.name) == ["Kreuzberg Kickers", "Tempelhof Runners", "Sunday Padel Crew"])
+        #expect(mine.items.map(\.role) == [.member, .admin, .owner])
+        #expect(mine.items[0].hasUnread && !mine.items[1].hasUnread)
+        #expect(mine.nextCursor == nil)
+    }
+
+    @Test func discoverListsPublicGroupsNewestFirstAndSearchesByPrefix() async throws {
+        let repository = makeRepository()
+
+        let all = try await repository.groups(in: .discover(query: nil, type: nil), cursor: nil).items
+        #expect(all.map(\.name) == ["Spree Volley", "Tempelhof Runners", "Kreuzberg Kickers", "Berlin Basketball"])
+        #expect(all.count == AppConfig.Groups.mockGroupCount - 2, "the two private groups never appear")
+
+        let searched = try await repository.groups(in: .discover(query: "ber", type: nil), cursor: nil).items
+        #expect(searched.map(\.name) == ["Berlin Basketball"])
+
+        let typed = try await repository.groups(in: .discover(query: nil, type: .football), cursor: nil).items
+        #expect(typed.map(\.name) == ["Kreuzberg Kickers"])
+    }
+
+    /// A private group is not there for an outsider, on reads and writes alike.
+    @Test func privateGroupsAnswerNotFoundToOutsiders() async throws {
+        let repository = makeRepository()
+
+        await #expect(throws: AppError.groupNotFound) { try await repository.group(id: MockGroupFixtures.climbingID) }
+        await #expect(throws: AppError.groupNotFound) { try await repository.join(id: MockGroupFixtures.climbingID) }
+        #expect(try await repository.group(id: MockGroupFixtures.padelID).role == .owner, "the owner reads their private group")
+    }
+
+    @Test func joinAddsTheCallerOnceAndRefusesAFullGroup() async throws {
+        let repository = makeRepository()
+
+        let joined = try await repository.join(id: MockGroupFixtures.basketballID)
+        #expect(joined.role == .member && joined.memberCount == 59)
+        #expect(try await repository.join(id: MockGroupFixtures.basketballID).memberCount == 59, "a replay changes nothing")
+        #expect(try await repository.groups(in: .mine, cursor: nil).items.count == 4)
+        #expect(logger.messages(in: .groups, at: .info).contains("Joined group \(MockGroupFixtures.basketballID) (public)"))
+
+        await #expect(throws: AppError.groupFull) { try await repository.join(id: MockGroupFixtures.volleyID) }
+    }
+
+    @Test func leaveRefusesTheOwnerAndBumpsTheEpochForEveryoneElse() async throws {
+        let repository = makeRepository()
+
+        let left = try await repository.leave(id: MockGroupFixtures.kickersID)
+        #expect(!left.isMember && left.memberCount == 33 && left.channelEpoch == 2)
+        await #expect(throws: AppError.notAMember) { try await repository.leave(id: MockGroupFixtures.kickersID) }
+        await #expect(throws: AppError.ownerCannotLeave) { try await repository.leave(id: MockGroupFixtures.padelID) }
+    }
+
+    @Test func createReplaysTheSameIdAndTheOwnerCanEditAndDelete() async throws {
+        let repository = makeRepository()
+        let draft = GroupDraft.fixture()
+
+        let created = try await repository.create(draft)
+        #expect(created.id == draft.clientId && created.role == .owner && created.memberCount == 1)
+        #expect(try await repository.create(draft) == created)
+        #expect(logger.messages(in: .groups, at: .info).contains("Group created \(draft.clientId) (public)"))
+
+        var edited = draft
+        edited.name = "Renamed"
+        #expect(try await repository.update(id: created.id, edited).name == "Renamed")
+        #expect(try await repository.delete(id: created.id).isDeleted)
+        await #expect(throws: AppError.groupNotFound) { try await repository.group(id: created.id) }
+    }
+
+    @Test func rolesGateEditingAndDeleting() async {
+        let repository = makeRepository()
+
+        await #expect(throws: AppError.insufficientRole) {
+            try await repository.update(id: MockGroupFixtures.kickersID, .fixture())
+        }
+        await #expect(throws: AppError.insufficientRole) { try await repository.delete(id: MockGroupFixtures.runnersID) }
+        await #expect(throws: AppError.insufficientRole) { try await repository.bans(id: MockGroupFixtures.kickersID) }
+    }
+
+    /// The roster: owner first, then admins, then by join time, with the caller's own row in their role.
+    @Test func membersListTheRosterWithTheCaller() async throws {
+        let repository = makeRepository()
+
+        let kickers = try await repository.members(id: MockGroupFixtures.kickersID)
+        #expect(kickers.map(\.role) == [.owner, .admin, .member, .member, .member])
+        #expect(kickers.last?.userId == TestFixtures.user.id && kickers.last?.displayName == "You")
+
+        let padel = try await repository.members(id: MockGroupFixtures.padelID)
+        #expect(padel.first?.userId == TestFixtures.user.id && padel.first?.role == .owner)
+        #expect(!padel.contains { $0.role == .banned })
+        #expect(try await repository.bans(id: MockGroupFixtures.padelID).map(\.displayName) == ["Priya"])
+
+        await #expect(throws: AppError.groupNotFound) { try await repository.members(id: MockGroupFixtures.climbingID) }
+    }
+
+    /// What a mock event hosted in one of these groups carries as its badge.
+    @Test func refNamesTheGroupAndIsNilForAnUnknownId() throws {
+        let kickers = try #require(MockGroupFixtures.ref(for: MockGroupFixtures.kickersID))
+        let padel = try #require(MockGroupFixtures.ref(for: MockGroupFixtures.padelID))
+
+        let expected = EventGroupRef(id: MockGroupFixtures.kickersID,
+                                     name: "Kreuzberg Kickers",
+                                     visibility: .public,
+                                     isDeleted: false)
+        #expect(kickers == expected)
+        #expect(padel.visibility == .private && !padel.isLinkable)
+        #expect(MockGroupFixtures.make(now: .now).map(\.ref).contains(kickers))
+        #expect(MockGroupFixtures.ref(for: "nowhere") == nil)
+    }
+
+    @Test func adminsRemoveAndBanMembersOwnersPromote() async throws {
+        let repository = makeRepository()
+        let sam = MockGroupFixtures.memberID(for: "Sam")
+        let aiko = MockGroupFixtures.memberID(for: "Aiko")
+        let tom = MockGroupFixtures.memberID(for: "Tom")
+
+        let afterRemoval = try await repository.remove(id: MockGroupFixtures.runnersID, userID: sam)
+        #expect(afterRemoval.memberCount == 11 && afterRemoval.channelEpoch == 2 && afterRemoval.role == .admin)
+        await #expect(throws: AppError.insufficientRole) {
+            try await repository.remove(id: MockGroupFixtures.runnersID, userID: aiko)
+        }
+
+        let noor = MockGroupFixtures.memberID(for: "Noor")
+        let banned = try await repository.setRole(id: MockGroupFixtures.runnersID, userID: noor, .banned)
+        #expect(banned.role == .banned)
+        #expect(try await repository.bans(id: MockGroupFixtures.runnersID).map(\.userId) == [banned.userId])
+        try await repository.unban(id: MockGroupFixtures.runnersID, userID: banned.userId)
+        #expect(try await repository.bans(id: MockGroupFixtures.runnersID).isEmpty)
+
+        await #expect(throws: AppError.insufficientRole) {
+            try await repository.setRole(id: MockGroupFixtures.runnersID, userID: aiko, .admin)
+        }
+        #expect(try await repository.setRole(id: MockGroupFixtures.padelID, userID: tom, .member).role == .member)
+    }
+}

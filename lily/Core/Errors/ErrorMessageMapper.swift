@@ -19,13 +19,22 @@ nonisolated enum ErrorMessageMapper {
         case .eventsUnavailable, .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave,
              .tryAgain, .participationFailed, .eventCreationFailed:
             eventMessage(for: error)
+        case .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned,
+             .ownerCannotLeave, .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed,
+             .contentRejected, .inviteInvalid, .inviteExpired, .inviteLimitReached:
+            groupMessage(for: error)
+        case .chatUnavailable, .messageSendFailed, .messageNotFound:
+            chatMessage(for: error)
+        case .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired:
+            moderationMessage(for: error)
         case .unknown:
             unknownMessage
         }
     }
 
-    private static let unknownMessage = ErrorMessage(title: "Something went wrong",
-                                                     body: "An unexpected error occurred. Please try again.")
+    /// The fallback of every domain branch, so a case missing from one reads generic instead of crashing.
+    static let unknownMessage = ErrorMessage(title: "Something went wrong",
+                                             body: "An unexpected error occurred. Please try again.")
 
     /// Copy for signing in, signing up and the session; `message(for:)` routes exactly those cases here.
     private static func authMessage(for error: AppError) -> ErrorMessage {

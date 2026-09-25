@@ -21,6 +21,9 @@ nonisolated struct EventDraft: Equatable, Sendable {
     var skillLevel: SkillLevel?
     /// Per person; `nil` or zero means free.
     var price: Decimal?
+    /// The group to host the game in; `nil` for a game of its own. The ref, not a bare id, so the stored event can
+    /// show its badge without a second lookup.
+    var group: EventGroupRef?
 
     init(startsAt: Date, clientId: String = UUID().uuidString.lowercased()) {
         self.clientId = clientId
@@ -58,14 +61,14 @@ nonisolated struct EventDraft: Equatable, Sendable {
         var issues: [Issue] = []
         let limits = AppConfig.Events.Creation.self
         if trimmedTitle.isEmpty { issues.append(.titleMissing) }
-        if Self.wireLength(trimmedTitle) > limits.titleMaxLength { issues.append(.titleTooLong) }
+        if trimmedTitle.wireLength > limits.titleMaxLength { issues.append(.titleTooLong) }
         if startsAt < Self.earliestStart(now: now) { issues.append(.startsAtTooSoon) }
         if trimmedLocationName.isEmpty { issues.append(.locationNameMissing) }
-        if Self.wireLength(trimmedLocationName) > limits.locationNameMaxLength { issues.append(.locationNameTooLong) }
+        if trimmedLocationName.wireLength > limits.locationNameMaxLength { issues.append(.locationNameTooLong) }
         if coordinate == nil { issues.append(.coordinateMissing) }
         if !limits.capacityRange.contains(capacity) { issues.append(.capacityOutOfRange) }
-        if Self.wireLength(trimmedDescription) > limits.descriptionMaxLength { issues.append(.descriptionTooLong) }
-        if Self.wireLength(trimmedLookingFor) > limits.lookingForMaxLength { issues.append(.lookingForTooLong) }
+        if trimmedDescription.wireLength > limits.descriptionMaxLength { issues.append(.descriptionTooLong) }
+        if trimmedLookingFor.wireLength > limits.lookingForMaxLength { issues.append(.lookingForTooLong) }
         if let price, !Self.isAcceptable(price: price) { issues.append(.priceOutOfRange) }
         return issues
     }
@@ -96,13 +99,8 @@ nonisolated struct EventDraft: Equatable, Sendable {
                    description: trimmedDescription,
                    lookingFor: trimmedLookingFor,
                    skillLevel: skillLevel,
-                   price: price())
-    }
-
-    /// Length as the backend measures it: Java's `String.length()`, and so Bean Validation's `@Size`, count UTF-16
-    /// units, so an emoji counts two here as it does there and a draft that passes is never refused for its length.
-    private static func wireLength(_ text: String?) -> Int {
-        text?.utf16.count ?? 0
+                   price: price(),
+                   group: group)
     }
 
     /// Non-negative, below the backend's integer-digit limit and at most two decimals.

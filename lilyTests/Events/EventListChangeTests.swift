@@ -47,7 +47,7 @@ struct EventListChangeTests {
 
     /// The list that applied the change is current; every other list must reload on its next appearance.
     @Test func aChangeMadeElsewhereMakesTheOtherListStale() async {
-        let changes = EventChangeTracker()
+        let changes = ChangeTracker()
         let exploreRepository = makeRepository()
         let mineRepository = makeRepository()
         let explore = makeEventListViewModel(scope: .upcoming, repository: exploreRepository, changes: changes)
@@ -66,7 +66,7 @@ struct EventListChangeTests {
 
     /// A change that lands while a load is in flight may be missing from its answer, so that load is not current.
     @Test func changeDuringALoadLeavesTheListStale() async {
-        let changes = EventChangeTracker()
+        let changes = ChangeTracker()
         let repository = makeRepository()
         let viewModel = makeEventListViewModel(repository: repository, changes: changes)
         repository.holdsRequests = true

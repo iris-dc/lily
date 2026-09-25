@@ -32,6 +32,23 @@ struct MockEventRepositoryTests {
         #expect(events.map(\.startsAt) == events.map(\.startsAt).sorted())
     }
 
+    /// Two fixtures are hosted in groups (one public, one private), so the badge and "Hosted in" have data; the group
+    /// scope lists exactly the games of that group.
+    @Test func twoFixturesCarryGroupRefsAndTheGroupScopeFiltersByThem() async throws {
+        let repository = MockEventRepository(now: .now,
+                                             count: AppConfig.Events.mockFeedSize,
+                                             identity: FakeIdentityProvider(),
+                                             logger: SpyLogger())
+        let all = try await repository.events(in: .upcoming, near: nil)
+
+        let grouped = all.filter { $0.group != nil }
+        #expect(grouped.map(\.group?.id) == [MockGroupFixtures.kickersID, MockGroupFixtures.padelID])
+        #expect(grouped.map(\.group?.visibility) == [.public, .private])
+        #expect(grouped.allSatisfy { $0.group?.isDeleted == false })
+        #expect(try await repository.events(in: .group(id: MockGroupFixtures.kickersID), near: nil) == [grouped[0]])
+        #expect(try await repository.events(in: .group(id: "nowhere"), near: nil).isEmpty)
+    }
+
     /// The map UI test taps a pin by its title, and templates repeat once the feed outgrows them.
     @Test func feedSizedFixturesHaveUniqueTitles() {
         let titles = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize).map(\.title)

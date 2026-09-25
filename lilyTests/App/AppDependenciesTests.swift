@@ -47,6 +47,94 @@ struct AppDependenciesTests {
         #expect(failing.sessionController.state.user == nil)
     }
 
+    /// The shell binds to one navigation object and the events code to one tracker; a second instance would split them.
+    @Test func groupCollaboratorsAreSharedInstances() {
+        let dependencies = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
+
+        #expect(dependencies.navigation === dependencies.groups.navigation)
+        #expect(dependencies.groupChanges === dependencies.groups.groupChanges)
+        #expect(dependencies.groupChanges !== dependencies.eventChanges)
+        #expect(dependencies.myGroups === dependencies.groups.myGroups)
+        #expect(dependencies.me === dependencies.groups.me)
+    }
+
+    /// The factories wire the mocks together: the mock code previews the private climbing group for a guest.
+    @Test func theMockInviteCodePreviewsClimbingBuddiesThroughTheFactories() async {
+        let dependencies = AppDependencies.makeMock()
+        let viewModel = dependencies.makeJoinWithCodeViewModel { _ in }
+
+        viewModel.input = AppConfig.Groups.mockInviteCode
+        await viewModel.proceed()
+
+        #expect(viewModel.preview?.groupName == "Climbing Buddies")
+        #expect(viewModel.preview?.needsSignIn == true)
+    }
+
+    /// Everything talks to the same backend, or everything stays in memory: a mock run never reaches Laurel for groups.
+    @Test func mockEventsSelectTheMockGroupRepositoriesAndTheDefaultTheRemoteOnes() {
+        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeDefaults())
+        #expect(mocked.groupRepository is MockGroupRepository)
+        #expect(mocked.inviteRepository is MockInviteRepository)
+        #expect(mocked.meRepository is MockMeRepository)
+        #expect(mocked.moderationRepository is MockModerationRepository)
+        let remote = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
+        #expect(remote.groupRepository is RemoteGroupRepository)
+        #expect(remote.inviteRepository is RemoteInviteRepository)
+        #expect(remote.meRepository is RemoteMeRepository)
+        #expect(remote.moderationRepository is RemoteModerationRepository)
+        #expect(AppDependencies.makeMock().groupRepository is MockGroupRepository)
+    }
+
+    /// The stores hold a user's data for the app's lifetime, so a sign-out must reach them.
+    @Test func groupStoresClearOnSignOut() async {
+        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
+                                                                   AppConfig.LaunchArguments.mockAuth,
+                                                                   AppConfig.LaunchArguments.mockEvents],
+                                                       defaults: makeDefaults())
+        await dependencies.sessionController.signIn(with: .apple)
+        await dependencies.myGroups.reload()
+        await dependencies.me.loadIfNeeded()
+        #expect(dependencies.myGroups.groups.count == 3 && dependencies.me.isOperator)
+
+        await dependencies.sessionController.signOut()
+
+        #expect(dependencies.myGroups.groups.isEmpty && dependencies.me.account == nil)
+    }
+
+    /// Two simulators can act as two people: the flag replaces the id of every mock sign-in and names the user after it.
+    @Test func mockUserIDLaunchArgumentOverridesEveryMockSignIn() async {
+        let arguments = [AppConfig.LaunchArguments.resetSession, AppConfig.LaunchArguments.mockAuth,
+                         AppConfig.LaunchArguments.mockEvents, AppConfig.LaunchArguments.mockUserID, "jane.doe"]
+        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeDefaults())
+
+        await dependencies.sessionController.signIn(with: .apple)
+        let expected = AuthUser(id: "jane.doe", displayName: "Jane Doe", email: "jane.doe@example.com")
+        #expect(dependencies.sessionController.state.user == expected)
+        await dependencies.sessionController.signOut()
+
+        _ = await dependencies.sessionController.signIn(withEmail: TestFixtures.credentials)
+        #expect(dependencies.identity.currentUserID == "jane.doe")
+    }
+
+    /// Without the flag the defaults stay, as `LilySignInTests` asserts on "Apple Tester".
+    @Test func mockSignInsKeepTheirDefaultUsersWithoutTheFlag() async {
+        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
+                                                                   AppConfig.LaunchArguments.mockAuth,
+                                                                   AppConfig.LaunchArguments.mockEvents],
+                                                       defaults: makeDefaults())
+        await dependencies.sessionController.signIn(with: .apple)
+        #expect(dependencies.sessionController.state.user == MockUsers.user(for: .apple))
+    }
+
+    @Test func openInviteLaunchArgumentSeedsTheSharedDeepLinkCenter() {
+        let arguments = [AppConfig.LaunchArguments.openInvite, AppConfig.Groups.mockInviteCode]
+        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeDefaults())
+
+        #expect(dependencies.deepLinks === dependencies.groups.deepLinks)
+        #expect(dependencies.deepLinks.pendingInvite?.value == AppConfig.Groups.mockInviteCode)
+        #expect(AppDependencies.makeDefault(arguments: [], defaults: makeDefaults()).deepLinks.pendingInvite == nil)
+    }
+
     /// Nothing here touches Amplify: the client configures it on its first call, and none is made.
     @Test func defaultAuthIsCognitoAndFeedsTheTokenProvider() {
         let dependencies = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
@@ -162,10 +250,12 @@ struct AppDependenciesTests {
         #expect(dependencies.identity.currentUserID == nil)
     }
 
-    /// My Events has no filter button, so it must never hide a game; Explore starts from the default filter.
-    @Test func myEventsStartsFromEverythingAndExploreFromTheDefaults() {
+    /// Lists without a filter button (My Events, a group's games) must never hide a game, however far away; Explore
+    /// starts from the default filter.
+    @Test func myEventsAndGroupListsStartFromEverythingAndExploreFromTheDefaults() {
         let dependencies = AppDependencies.makeMock()
         #expect(dependencies.makeEventListViewModel(scope: .joined).filter == .everything)
+        #expect(dependencies.makeEventListViewModel(scope: .group(id: MockGroupFixtures.kickersID)).filter == .everything)
         #expect(dependencies.makeEventListViewModel(scope: .upcoming).filter == EventFilter())
     }
 }

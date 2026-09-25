@@ -40,6 +40,8 @@ protocol CognitoClient {
     func isSignedIn() async throws -> Bool
     /// The current access token, refreshed if needed; `nil` when nobody is signed in.
     func accessToken() async throws -> String?
+    /// An access token refreshed at the pool now, whatever the current one's expiry; `nil` when nobody is signed in.
+    func freshAccessToken() async throws -> String?
     func currentUser() async throws -> CognitoUser
     /// The signed-in user's verified email attribute, when the pool has one.
     func fetchEmail() async throws -> String?

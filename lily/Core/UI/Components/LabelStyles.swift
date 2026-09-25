@@ -18,3 +18,19 @@ struct IconColumnLabelStyle: LabelStyle {
 extension LabelStyle where Self == IconColumnLabelStyle {
     static var iconColumn: IconColumnLabelStyle { IconColumnLabelStyle() }
 }
+
+/// Title first, glyph after it: a group's name followed by its lock or globe.
+struct TitleThenIconLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.xs) {
+            configuration.title
+            configuration.icon
+                .font(LilyTheme.Fonts.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+extension LabelStyle where Self == TitleThenIconLabelStyle {
+    static var titleThenIcon: TitleThenIconLabelStyle { TitleThenIconLabelStyle() }
+}

@@ -48,20 +48,18 @@ struct EventFilterPanel: View {
 
     /// Multi-select; "Any type" is on while nothing is chosen.
     private var typeChips: some View {
-        FlowLayout(spacing: DesignTokens.Spacing.md, rowSpacing: 0) {
-            ChoiceChip(title: Copy.anyType, isSelected: viewModel.filter.types.isEmpty) {
-                viewModel.updateFilter { $0.types = [] }
-            }
-            .accessibilityIdentifier(AccessibilityIdentifiers.filterTypeAny)
-            ForEach(viewModel.availableTypes, id: \.self) { type in
-                ChoiceChip(title: type.displayName,
-                           systemImage: type.symbolName,
-                           isSelected: viewModel.filter.includes(type)) {
-                    viewModel.toggleType(type)
-                }
-                .accessibilityIdentifier(AccessibilityIdentifiers.filterType(type))
-            }
-        }
+        EventTypeChips(anyTitle: Copy.anyType,
+                       anyIdentifier: AccessibilityIdentifiers.filterTypeAny,
+                       types: viewModel.availableTypes,
+                       isSelected: { type in type.map(viewModel.filter.includes) ?? viewModel.filter.types.isEmpty },
+                       onSelect: { type in
+                           if let type {
+                               viewModel.toggleType(type)
+                           } else {
+                               viewModel.updateFilter { $0.types = [] }
+                           }
+                       },
+                       identifier: AccessibilityIdentifiers.filterType)
     }
 
     /// Distance from the user's position. Without a position the criterion cannot be judged, so the choice is replaced

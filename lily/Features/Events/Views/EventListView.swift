@@ -43,6 +43,8 @@ struct EventListView: View {
                 // A join or leave on the detail comes back through `replace`, so this list is right on return.
                 EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event, onChange: viewModel.replace))
             }
+            // An event's "Hosted in" link pushes its group here, so every stack knows the group screens.
+            .groupDestinations(dependencies: dependencies)
             .toolbar {
                 if filterable {
                     ToolbarItem(placement: .topBarTrailing) { EventFilterButton(viewModel: viewModel) }
@@ -128,17 +130,9 @@ struct EventListView: View {
     }
 
     private var eventList: some View {
-        LazyVStack(spacing: DesignTokens.Spacing.md) {
-            ForEach(viewModel.visibleEvents) { event in
-                NavigationLink(value: event) {
-                    EventCard(event: event, distance: viewModel.distanceText(for: event))
-                }
-                    .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, DesignTokens.Layout.screenMargin)
-        // With the create button floating over the corner, the last card scrolls clear of it.
-        .padding(.bottom, creatable ? DesignTokens.Layout.floatingButtonFootprint : DesignTokens.Spacing.xxl)
+        EventCardList(events: viewModel.visibleEvents, distance: viewModel.distanceText)
+            // With the create button floating over the corner, the last card scrolls clear of it.
+            .padding(.bottom, creatable ? DesignTokens.Layout.floatingButtonFootprint : DesignTokens.Spacing.xxl)
     }
 
     /// The defaults alone (10 km) can hide every event while nothing is "active", so the way out widens to everything.

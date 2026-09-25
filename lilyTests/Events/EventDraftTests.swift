@@ -122,6 +122,19 @@ struct EventDraftTests {
         #expect(Participation(event: event, userID: "u-1") == .hosting)
         #expect(event.description == "Two halves" && event.lookingFor == nil && event.skillLevel == .advanced)
         #expect(event.price == draft.price())
+        #expect(event.group == nil)
+    }
+
+    /// The group is the ref, not a bare id, so the stored event shows its badge without a lookup.
+    @Test func makeEventCarriesTheDraftsGroup() {
+        var draft = Self.makeValidDraft()
+        let kickers = EventGroupRef(id: "kickers", name: "Kreuzberg Kickers", visibility: .public, isDeleted: false)
+        draft.group = kickers
+
+        let event = draft.makeEvent(hostUserId: "u-1", hostName: "Jo", coordinate: AppConfig.Location.mockCenter)
+
+        #expect(event.group == kickers)
+        #expect(issues(of: draft).isEmpty, "the group is never a validation matter on the device")
     }
 
     @Test func aCompleteDraftIsValid() {

@@ -6,6 +6,7 @@ import Foundation
 final class FakeCognitoClient: CognitoClient {
     var signedIn = false
     var tokenResult: Result<String?, CognitoClientError> = .success("access-token")
+    var freshTokenResult: Result<String?, CognitoClientError> = .success("fresh-access-token")
     var user = CognitoUser(sub: "sub-1", username: "5c4d-uuid")
     var emailResult: Result<String?, CognitoClientError> = .success(TestFixtures.credentials.email)
     var signInResult: Result<CognitoSignInStep, CognitoClientError> = .success(.done)
@@ -18,10 +19,16 @@ final class FakeCognitoClient: CognitoClient {
     private(set) var confirmations: [FakeAuthService.ConfirmationRequest] = []
     private(set) var resendEmails: [String] = []
     private(set) var signOutCount = 0
+    private(set) var freshTokenRequestCount = 0
 
     func isSignedIn() async throws -> Bool { signedIn }
 
     func accessToken() async throws -> String? { try tokenResult.get() }
+
+    func freshAccessToken() async throws -> String? {
+        freshTokenRequestCount += 1
+        return try freshTokenResult.get()
+    }
 
     func currentUser() async throws -> CognitoUser { user }
 
@@ -56,11 +63,14 @@ final class FakeCognitoClient: CognitoClient {
     }
 }
 
-/// Answers a fixed token, or none, so the API client's header can be checked.
+/// Answers a fixed token, or none, so the API client's header can be checked. Fresh tokens come from a script, one
+/// per request, and fall back to `token` once the script is used up, so a reconnect can be handed a chosen `exp`.
 @MainActor
 final class FakeAuthTokenProvider: AuthTokenProvider {
     var token: String?
+    var freshTokens: [String?] = []
     private(set) var requestCount = 0
+    private(set) var freshRequestCount = 0
 
     init(token: String? = nil) {
         self.token = token
@@ -69,5 +79,38 @@ final class FakeAuthTokenProvider: AuthTokenProvider {
     func accessToken() async -> String? {
         requestCount += 1
         return token
+    }
+
+    func freshAccessToken() async -> String? {
+        freshRequestCount += 1
+        guard !freshTokens.isEmpty else { return token }
+        return freshTokens.removeFirst()
+    }
+}
+
+/// Unsigned JWTs with a chosen expiry, for everything that reads `exp` off a token.
+enum JWTFixtures {
+    static func token(expiringAt date: Date, subject: String = TestFixtures.user.id) -> String {
+        let payload = #"{"sub":"\#(subject)","exp":\#(Int(date.timeIntervalSince1970))}"#
+        return "\(base64url(#"{"alg":"none"}"#)).\(base64url(payload)).signature"
+    }
+
+    private static func base64url(_ text: String) -> String {
+        Data(text.utf8).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+}
+
+/// Counts `sessionDidEnd()` calls; `onSessionEnd` lets a test look at the controller at that moment.
+@MainActor
+final class SpySessionObserver: SessionObserver {
+    private(set) var endCount = 0
+    var onSessionEnd: () -> Void = {}
+
+    func sessionDidEnd() {
+        endCount += 1
+        onSessionEnd()
     }
 }

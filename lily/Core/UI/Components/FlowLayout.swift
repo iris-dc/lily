@@ -17,7 +17,7 @@ struct FlowLayout: Layout {
         for row in arrange(subviews, in: bounds.width) {
             var x = bounds.minX
             for index in row.indices {
-                let size = subviews[index].sizeThatFits(.unspecified)
+                let size = size(of: subviews[index], fitting: bounds.width)
                 subviews[index].place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
                 x += size.width + spacing
             }
@@ -34,7 +34,7 @@ struct FlowLayout: Layout {
     private func arrange(_ subviews: Subviews, in width: CGFloat) -> [Row] {
         var rows: [Row] = [Row()]
         for (index, subview) in subviews.enumerated() {
-            let size = subview.sizeThatFits(.unspecified)
+            let size = size(of: subview, fitting: width)
             let needed = rows[rows.count - 1].width + (rows[rows.count - 1].indices.isEmpty ? 0 : spacing) + size.width
             if needed > width, !rows[rows.count - 1].indices.isEmpty {
                 rows.append(Row())
@@ -46,5 +46,13 @@ struct FlowLayout: Layout {
             rows[rows.count - 1] = row
         }
         return rows
+    }
+
+    /// A subview's ideal size, unless that is wider than a line: then the line's width is proposed instead, so a long
+    /// label truncates within the line rather than running past it.
+    private func size(of subview: LayoutSubview, fitting width: CGFloat) -> CGSize {
+        let ideal = subview.sizeThatFits(.unspecified)
+        guard width.isFinite, ideal.width > width else { return ideal }
+        return subview.sizeThatFits(ProposedViewSize(width: width, height: nil))
     }
 }

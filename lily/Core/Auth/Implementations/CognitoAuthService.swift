@@ -61,10 +61,18 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
 
     /// Never throws: a request without a token is answered 401 by the backend, which is the one place that decides.
     func accessToken() async -> String? {
+        await token("access token") { try await client.accessToken() }
+    }
+
+    func freshAccessToken() async -> String? {
+        await token("fresh access token") { try await client.freshAccessToken() }
+    }
+
+    private func token(_ kind: String, _ fetch: () async throws -> String?) async -> String? {
         do {
-            return try await client.accessToken()
+            return try await fetch()
         } catch {
-            logger.warning(.auth, "No access token: \(error)")
+            logger.warning(.auth, "No \(kind): \(error)")
             return nil
         }
     }

@@ -124,6 +124,22 @@ struct SportEventCodingTests {
         #expect(event.price == nil)
     }
 
+    /// A grouped game carries its group as the backend stamps it; an ungrouped one has none, and a join keeps it.
+    @Test func groupDecodesFromTheGroupKeyAndSurvivesAJoin() throws {
+        let grouped = try decoder.decode(SportEvent.self, from: Data(ContractSamples.groupedEvent.utf8))
+        let ungrouped = try decoder.decode(SportEvent.self, from: Data(ContractSamples.event.utf8))
+
+        let group = try #require(grouped.group)
+        let expected = EventGroupRef(id: "7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d",
+                                     name: "Kreuzberg Kickers",
+                                     visibility: .public,
+                                     isDeleted: false)
+        #expect(group == expected)
+        #expect(group.isLinkable)
+        #expect(ungrouped.group == nil)
+        #expect(grouped.updatingParticipation(count: 7, isJoined: true).group == group)
+    }
+
     /// The wire keys are the property names; `type` in particular must not drift back to "sport".
     @Test func wireKeysMatchTheContract() throws {
         let event = MockEventFixtures.make(now: .now, count: 1)[0]

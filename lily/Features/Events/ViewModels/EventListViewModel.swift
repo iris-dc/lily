@@ -9,8 +9,6 @@ final class EventListViewModel {
     /// Narrows `events` to `visibleEvents` on device; the map and the list read the same slice.
     private(set) var filter: EventFilter
     private(set) var isLoading = false
-    /// True from a failed load until the next successful one, so the screen can say so instead of "nothing yet".
-    private(set) var loadFailed = false
     private(set) var userLocation: Coordinate?
     /// The filter as it was when the panel opened, `nil` while it is closed. Written by the filter extension.
     @ObservationIgnored var filterWhenPanelOpened: EventFilter?
@@ -24,23 +22,11 @@ final class EventListViewModel {
     private let repository: any EventRepository
     private let identity: any IdentityProvider
     private let locationService: any LocationService
-    private let changes: EventChangeTracker
+    private let changes: ChangeTracker
     private let errorCenter: ErrorCenter
-    private var lastLoadedAt: Date?
-    /// The load that failed last: when, and what it asked for. Cleared by a success. Not retried before
-    /// `AppConfig.Events.retryAfterFailure` unless something that changes the answer happened since.
-    private var failedAttempt: FailedAttempt?
-
-    private struct FailedAttempt {
-        let at: Date
-        let version: Int
-        let userID: String?
-    }
-    /// `changes.version` the current content reflects; a different value means another screen changed an event.
-    private var loadedVersion: Int?
-    /// Who the current content was loaded for. `isJoined` is the server's answer for that caller, so a sign-in or
-    /// sign-out makes the content stale even though nothing else changed.
-    private var loadedUserID: String?
+    /// TTL, the change counter and caller the content reflects, and the cooldown after a failed load.
+    private var freshness = ContentFreshness(staleAfter: AppConfig.Events.listStaleAfter,
+                                             retryAfterFailure: AppConfig.Events.retryAfterFailure)
     /// Whether the current content was asked for with the user's position, which lets the backend order it by distance.
     private var loadedWithPosition = false
 
@@ -48,7 +34,7 @@ final class EventListViewModel {
          repository: any EventRepository,
          identity: any IdentityProvider,
          locationService: any LocationService,
-         changes: EventChangeTracker,
+         changes: ChangeTracker,
          errorCenter: ErrorCenter,
          recorder: any InteractionRecorder,
          logger: any Logging,
@@ -67,7 +53,10 @@ final class EventListViewModel {
     }
 
     /// The very first load, before any result exists. Later loads keep the current content (and its refresh spinner) on screen.
-    var isInitialLoad: Bool { isLoading && lastLoadedAt == nil && !loadFailed }
+    var isInitialLoad: Bool { isLoading && !freshness.hasLoaded && !loadFailed }
+
+    /// True from a failed load until the next successful one, so the screen can say so instead of "nothing yet".
+    var loadFailed: Bool { freshness.loadFailed }
 
     /// Distance is judged from the user's position; while that is unknown the distance criterion is skipped.
     var visibleEvents: [SportEvent] { events.filter { filter.matches($0, from: userLocation) } }
@@ -122,14 +111,15 @@ final class EventListViewModel {
             events[index] = event
         }
         changes.recordChange()
-        loadedVersion = changes.version
+        freshness.acknowledge(version: changes.version)
         logger.debug(.cache, "Event \(event.id) replaced in scope \(scope); sibling lists invalidated")
     }
 
     /// Takes an event just created from this screen so it shows without a round trip: first on Explore, whose order
     /// is the backend's relevance for the caller and where their own new game belongs on top; by start time on a
     /// joined-only list, which stays chronological and takes it only when the caller participates (the host always
-    /// does). Recorded like `replace`, so every other list reloads on its next appearance; repeated for one id, a no-op.
+    /// does), and on a group's list, which takes only that group's games. Recorded like `replace`, so every other
+    /// list reloads on its next appearance; repeated for one id, a no-op.
     func add(_ event: SportEvent) {
         guard !events.contains(where: { $0.id == event.id }) else {
             logger.debug(.cache, "Event \(event.id) already in scope \(scope); add ignored")
@@ -139,13 +129,19 @@ final class EventListViewModel {
         case .upcoming:
             events.insert(event, at: 0)
         case .joined where event.participates:
-            events.insert(event, at: events.firstIndex { $0.startsAt > event.startsAt } ?? events.endIndex)
-        case .joined:
+            insertByStart(event)
+        case .group(let id) where event.group?.id == id:
+            insertByStart(event)
+        case .joined, .group:
             break
         }
         changes.recordChange()
-        loadedVersion = changes.version
+        freshness.acknowledge(version: changes.version)
         logger.debug(.cache, "Event \(event.id) added to scope \(scope); sibling lists invalidated")
+    }
+
+    private func insertByStart(_ event: SportEvent) {
+        events.insert(event, at: events.firstIndex { $0.startsAt > event.startsAt } ?? events.endIndex)
     }
 
     /// Location is optional context: failures leave `userLocation` nil and the UI simply omits distances. A position
@@ -175,12 +171,8 @@ final class EventListViewModel {
         let userID = identity.currentUserID
         do {
             events = try await repository.events(in: scope, near: position)
-            lastLoadedAt = now()
-            failedAttempt = nil
-            loadedVersion = version
-            loadedUserID = userID
+            freshness.recordSuccess(at: now(), version: version, userID: userID)
             loadedWithPosition = position != nil
-            loadFailed = false
             logger.info(.events, "Loaded \(events.count) events for scope \(scope); with position: \(position != nil)")
             return true
         } catch {
@@ -188,8 +180,7 @@ final class EventListViewModel {
                 logger.debug(.events, "Loading events cancelled for scope \(scope)")
                 return false
             }
-            failedAttempt = FailedAttempt(at: now(), version: version, userID: userID)
-            loadFailed = true
+            freshness.recordFailure(at: now(), version: version, userID: userID)
             logger.error(.events, "Loading events failed for scope \(scope): \(error)")
             errorCenter.report(error)
             return false
@@ -201,25 +192,17 @@ final class EventListViewModel {
 
     /// Content loaded without a position while one is known now: the backend can order it better.
     private var positionBecameKnown: Bool {
-        lastLoadedAt != nil && !loadedWithPosition && requestPosition != nil
+        freshness.hasLoaded && !loadedWithPosition && requestPosition != nil
     }
 
-    /// True from a failed load until `AppConfig.Events.retryAfterFailure` has passed, unless a change made elsewhere
-    /// or a change of caller since then means the answer is different anyway.
     private var isWaitingToRetry: Bool {
-        guard loadFailed, let failedAttempt else { return false }
-        guard failedAttempt.version == changes.version, failedAttempt.userID == identity.currentUserID else { return false }
-        return now().timeIntervalSince(failedAttempt.at) < AppConfig.Events.retryAfterFailure
+        freshness.isWaitingToRetry(now: now(), version: changes.version, userID: identity.currentUserID)
     }
 
-    /// Why the content must be reloaded, or `nil` while it can be reused.
+    /// Why the content must be reloaded, or `nil` while it can be reused: the shared rules first, then the one
+    /// reason only Explore has, a position that arrived after a load without one.
     private var stalenessReason: String? {
-        guard let lastLoadedAt else { return loadFailed ? "retry after failure" : "never loaded" }
-        if loadedVersion != changes.version { return "changed elsewhere" }
-        if loadedUserID != identity.currentUserID { return "caller changed" }
-        if positionBecameKnown { return "position became known" }
-        if loadFailed { return "retry after failure" }
-        if now().timeIntervalSince(lastLoadedAt) >= AppConfig.Events.listStaleAfter { return "older than TTL" }
-        return nil
+        freshness.stalenessReason(now: now(), version: changes.version, userID: identity.currentUserID)
+            ?? (positionBecameKnown ? "position became known" : nil)
     }
 }

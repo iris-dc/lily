@@ -18,6 +18,8 @@ nonisolated struct CreateEventPayload: Encodable, Equatable, Sendable {
     let lookingFor: String?
     let skillLevel: SkillLevel?
     let price: Price?
+    /// Omitted for a game of its own; the backend checks the caller may create games in the group.
+    let groupId: String?
 
     /// `nil` when the draft has no coordinate yet; callers validate the draft first.
     init?(draft: EventDraft, currencyCode: String = AppConfig.Events.marketCurrencyCode) {
@@ -32,5 +34,6 @@ nonisolated struct CreateEventPayload: Encodable, Equatable, Sendable {
         lookingFor = draft.trimmedLookingFor
         skillLevel = draft.skillLevel
         price = draft.price(currencyCode: currencyCode)
+        groupId = draft.group?.id
     }
 }

@@ -8,7 +8,8 @@ nonisolated struct APIErrorBody: Decodable, Equatable, Sendable {
 
 /// Failures of a backend call other than transport ones, which stay `URLError`.
 nonisolated enum APIError: Error, Equatable, Sendable {
-    case http(status: Int, body: APIErrorBody?)
+    /// `retryAfter` is the `Retry-After` header in seconds, when the response carried one (a 429 does).
+    case http(status: Int, body: APIErrorBody?, retryAfter: TimeInterval? = nil)
     case notHTTPResponse
     case decodingFailed
 }

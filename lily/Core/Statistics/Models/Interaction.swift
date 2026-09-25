@@ -5,10 +5,14 @@ nonisolated enum InteractionKind: String, Codable, Sendable {
     case eventViewed = "event_viewed"
     case filterApplied = "filter_applied"
     case presentationChanged = "presentation_changed"
+    case groupViewed = "group_viewed"
+    case groupSearchPerformed = "group_search_performed"
+    case chatOpened = "chat_opened"
+    case inviteShared = "invite_shared"
 }
 
 /// One reported interaction. By construction it carries ids, types and flags only: never a coordinate, an amount, a date
-/// range or free text, so nothing here can place or quote the user.
+/// range, a query, an invite code or free text, so nothing here can place or quote the user.
 nonisolated struct Interaction: Encodable, Equatable, Sendable {
     let kind: InteractionKind
     let occurredAt: Date
@@ -17,6 +21,10 @@ nonisolated struct Interaction: Encodable, Equatable, Sendable {
     var hostUserId: String?
     var filter: FilterSummary?
     var presentation: String?
+    var groupId: String?
+    var groupVisibility: GroupVisibility?
+    var hasQuery: Bool?
+    var resultCount: Int?
 
     static func viewed(_ event: SportEvent, at date: Date) -> Interaction {
         Interaction(kind: .eventViewed,
@@ -32,5 +40,22 @@ nonisolated struct Interaction: Encodable, Equatable, Sendable {
 
     static func presentationChanged(_ presentation: EventsPresentation, at date: Date) -> Interaction {
         Interaction(kind: .presentationChanged, occurredAt: date, presentation: presentation.wireValue)
+    }
+
+    static func groupViewed(_ group: SportGroup, at date: Date) -> Interaction {
+        Interaction(kind: .groupViewed, occurredAt: date, groupId: group.id, groupVisibility: group.visibility)
+    }
+
+    /// Whether a name was typed and how many groups came back; never the name.
+    static func groupSearchPerformed(hasQuery: Bool, resultCount: Int, at date: Date) -> Interaction {
+        Interaction(kind: .groupSearchPerformed, occurredAt: date, hasQuery: hasQuery, resultCount: resultCount)
+    }
+
+    static func chatOpened(groupID: String, at date: Date) -> Interaction {
+        Interaction(kind: .chatOpened, occurredAt: date, groupId: groupID)
+    }
+
+    static func inviteShared(groupID: String, at date: Date) -> Interaction {
+        Interaction(kind: .inviteShared, occurredAt: date, groupId: groupID)
     }
 }

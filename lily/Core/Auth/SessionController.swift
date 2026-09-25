@@ -10,6 +10,8 @@ final class SessionController {
     /// Display-name sync started by the last sign-in. Sign-in never waits for it; sign-out cancels it.
     private(set) var profileSync: Task<Void, Never>?
     private var isSigningOut = false
+    /// Held weakly: an observer lives as long as its owner, never because it registered here.
+    private var observers: [WeakSessionObserver] = []
 
     private let authService: any AuthService
     private let sessionStore: any SessionStore
@@ -110,6 +112,11 @@ final class SessionController {
         state = .guest
     }
 
+    /// Registers per-user state to be cleared when the session ends. `Core/Auth` never has to know what it is.
+    func addObserver(_ observer: any SessionObserver) {
+        observers.append(WeakSessionObserver(observer))
+    }
+
     /// Clears the local session before the remote call, so a late duplicate cannot undo a choice made meanwhile.
     func signOut() async {
         guard !isSigningOut else {
@@ -123,11 +130,18 @@ final class SessionController {
         sessionStore.clear()
         state = .signedOut
         logger.info(.auth, userID.map { "Signed out user \($0)" } ?? "Signed out")
+        notifySessionEnded()
         do {
             try await authService.signOut()
         } catch {
             logger.warning(.auth, "Remote sign-out failed, local session already cleared: \(error)")
         }
+    }
+
+    /// Observers whose owner is gone are dropped on the way, so the list never grows past the live ones.
+    private func notifySessionEnded() {
+        observers.removeAll { $0.observer == nil }
+        observers.forEach { $0.observer?.sessionDidEnd() }
     }
 
     /// Runs `attempt` holding the single in-flight authentication slot; `.failed` without a popup when another holds it.
@@ -192,5 +206,13 @@ final class SessionController {
                 }
             }
         }
+    }
+}
+
+private struct WeakSessionObserver {
+    weak var observer: (any SessionObserver)?
+
+    init(_ observer: any SessionObserver) {
+        self.observer = observer
     }
 }

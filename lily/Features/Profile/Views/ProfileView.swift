@@ -28,10 +28,7 @@ struct ProfileView: View {
 
     private func signedIn(_ user: AuthUser) -> some View {
         VStack(spacing: DesignTokens.Spacing.lg) {
-            Text(user.initials)
-                .font(.title.weight(.bold))
-                .frame(width: DesignTokens.Layout.avatarSize, height: DesignTokens.Layout.avatarSize)
-                .glassEffect(.regular.tint(Color.lilyAccent.opacity(DesignTokens.Opacity.glassTint)), in: .circle)
+            AvatarCircle(initials: user.initials)
             VStack(spacing: DesignTokens.Spacing.xs) {
                 Text(user.displayName).font(LilyTheme.Fonts.cardTitle)
                 if let email = user.email {

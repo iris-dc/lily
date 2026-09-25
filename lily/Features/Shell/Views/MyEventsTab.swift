@@ -8,7 +8,7 @@ struct MyEventsTab: View {
     var body: some View {
         switch MyEventsContent(for: dependencies.sessionController.state) {
         case .signInPrompt:
-            GuestMyEventsView(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
+            GuestMyEventsView(dependencies: dependencies)
         case .joinedEvents:
             EventListView(
                 title: AppBranding.myEventsTitle,
@@ -24,8 +24,7 @@ struct MyEventsTab: View {
 
 /// Empty state with a sign-in button; the sheet is presented from here so the tab keeps its own navigation bar.
 private struct GuestMyEventsView: View {
-    let session: SessionController
-    let errorCenter: ErrorCenter
+    let dependencies: AppDependencies
     @State private var isSignInPresented = false
 
     var body: some View {
@@ -39,9 +38,10 @@ private struct GuestMyEventsView: View {
                 }
             }
             .navigationTitle(AppBranding.myEventsTitle)
+            .groupDestinations(dependencies: dependencies)
         }
         .sheet(isPresented: $isSignInPresented) {
-            SignInSheet(session: session, errorCenter: errorCenter)
+            SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
         }
     }
 }

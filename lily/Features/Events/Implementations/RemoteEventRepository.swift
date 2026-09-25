@@ -9,11 +9,7 @@ final class RemoteEventRepository: EventRepository {
     }
 
     func events(in scope: EventScope, near position: Coordinate?) async throws -> [SportEvent] {
-        var query = [URLQueryItem(name: AppConfig.API.Query.scope, value: scope.queryValue)]
-        if scope == .upcoming, let position {
-            query += position.queryItems
-        }
-        return try await client.send(.get(AppConfig.API.Paths.events, query: query), failingWith: .eventsUnavailable)
+        try await client.send(Self.listRequest(for: scope, near: position), failingWith: .eventsUnavailable)
     }
 
     func event(id: String) async throws -> SportEvent {
@@ -34,13 +30,22 @@ final class RemoteEventRepository: EventRepository {
     }
 }
 
-private extension EventScope {
-    /// Value of the `scope` query parameter.
-    var queryValue: String {
-        switch self {
-        case .upcoming: "upcoming"
-        case .joined: "joined"
+private extension RemoteEventRepository {
+    /// A group's games have a resource of their own; the other scopes are a query on `/api/events`, with the position
+    /// only on Explore, which the backend orders by relevance for the caller.
+    static func listRequest(for scope: EventScope, near position: Coordinate?) -> APIRequest<[SportEvent]> {
+        switch scope {
+        case .group(let id):
+            .get(AppConfig.API.Paths.groupEvents(id: id))
+        case .upcoming:
+            .get(AppConfig.API.Paths.events, query: [scopeItem("upcoming")] + (position?.queryItems ?? []))
+        case .joined:
+            .get(AppConfig.API.Paths.events, query: [scopeItem("joined")])
         }
+    }
+
+    private static func scopeItem(_ value: String) -> URLQueryItem {
+        URLQueryItem(name: AppConfig.API.Query.scope, value: value)
     }
 }
 

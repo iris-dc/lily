@@ -15,9 +15,39 @@ class LilyUITestCase: XCTestCase {
     /// Relaunches with one more argument, for a launch that needs another mock behaviour.
     @MainActor
     func relaunch(appending argument: String) {
+        relaunch(appendingArguments: [argument])
+    }
+
+    /// Relaunches with more arguments, for a flag that takes a value (`-open-invite <code>`).
+    @MainActor
+    func relaunch(appendingArguments arguments: [String]) {
         app.terminate()
-        app.launchArguments.append(argument)
+        app.launchArguments += arguments
         app.launch()
+    }
+
+    /// Opens the Groups tab and waits for its root.
+    @MainActor
+    func openGroupsTab() {
+        let tab = app.tabBars.buttons["Groups"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 10))
+        tab.tap()
+        XCTAssertTrue(app.navigationBars["Groups"].waitForExistence(timeout: 5))
+    }
+
+    /// The first element whose label contains `text`; for texts that a control folds into its own label.
+
+    func labelled(_ text: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+    }
+
+    /// Swipes up until `element` exists and is hittable, for content further down a list; fails after `maxSwipes`.
+
+    func scrollUntilHittable(_ element: XCUIElement, maxSwipes: Int = 8) {
+        for _ in 0..<maxSwipes where !(element.exists && element.isHittable) {
+            app.swipeUp()
+        }
+        XCTAssertTrue(element.exists && element.isHittable, "element never scrolled into a hittable position")
     }
 
     @MainActor

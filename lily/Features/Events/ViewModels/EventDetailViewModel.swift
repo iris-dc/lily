@@ -67,7 +67,7 @@ final class EventDetailViewModel {
         isBusy = true
         defer { isBusy = false }
         do {
-            let updated = try await attemptTwiceOnLostRace(action, change)
+            let updated = try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: { logRetry(action) }, change)
             apply(updated)
             logSuccess(action, updated)
         } catch {
@@ -80,6 +80,10 @@ final class EventDetailViewModel {
             }
             errorCenter.report(error)
         }
+    }
+
+    private func logRetry(_ action: String) {
+        logger.info(.events, "\(action) lost a race for event \(event.id); retrying once")
     }
 
     private func logSuccess(_ action: String, _ updated: SportEvent) {
@@ -100,18 +104,6 @@ final class EventDetailViewModel {
             logger.warning(.events, message)
         } else {
             logger.error(.events, message)
-        }
-    }
-
-    /// `TRY_AGAIN` means the request lost a race that is safe to rerun, so one repeat after a short pause spares
-    /// the user a second tap. A second `TRY_AGAIN` is treated like any other conflict.
-    private func attemptTwiceOnLostRace(_ action: String, _ change: () async throws -> SportEvent) async throws -> SportEvent {
-        do {
-            return try await change()
-        } catch AppError.tryAgain {
-            logger.info(.events, "\(action) lost a race for event \(event.id); retrying once")
-            try await Task.sleep(for: tryAgainDelay)
-            return try await change()
         }
     }
 

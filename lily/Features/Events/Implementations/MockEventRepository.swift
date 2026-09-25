@@ -28,6 +28,7 @@ final class MockEventRepository: EventRepository {
         switch scope {
         case .upcoming: return events
         case .joined: return events.filter(\.participates)
+        case .group(let id): return events.filter { $0.group?.id == id }
         }
     }
 
@@ -93,6 +94,8 @@ nonisolated enum MockEventFixtures {
         var lookingFor: String?
         var skillLevel: SkillLevel?
         var priceAmount: Decimal?
+        /// The group the game is hosted in; two fixtures carry one so the badge and "Hosted in" have data.
+        var group: EventGroupRef?
     }
 
     private static let templates: [Template] = [
@@ -107,7 +110,8 @@ nonisolated enum MockEventFixtures {
             description: "Friendly 5-a-side on the small pitch by the river. Teams are split on the spot; two 25-minute halves.",
             lookingFor: "Two more players, ideally one who likes to keep goal.",
             skillLevel: .intermediate,
-            priceAmount: 5
+            priceAmount: 5,
+            group: MockGroupFixtures.ref(for: MockGroupFixtures.kickersID)
         ),
         Template(
             title: "Pickup at the Cage",
@@ -140,7 +144,8 @@ nonisolated enum MockEventFixtures {
             host: "Tom",
             offset: (1.0, -0.2),
             description: "Court booked from six. Rackets available to borrow.",
-            priceAmount: 7.5
+            priceAmount: 7.5,
+            group: MockGroupFixtures.ref(for: MockGroupFixtures.padelID)
         ),
         Template(
             title: "Easy 8k loop",
@@ -218,7 +223,8 @@ nonisolated enum MockEventFixtures {
                 description: template.description,
                 lookingFor: template.lookingFor,
                 skillLevel: template.skillLevel,
-                price: template.priceAmount.map { Price(amount: $0, currencyCode: AppConfig.Events.marketCurrencyCode) }
+                price: template.priceAmount.map { Price(amount: $0, currencyCode: AppConfig.Events.marketCurrencyCode) },
+                group: template.group
             )
         }
     }

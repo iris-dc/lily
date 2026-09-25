@@ -16,8 +16,9 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case tooManyAttempts
     /// The backend rejected the token (401), or Amplify could not refresh it.
     case sessionExpired
-    /// The backend throttled the caller (429 `RATE_LIMITED`); the request is fine to repeat after a short pause.
-    case rateLimited
+    /// The backend throttled the caller (429 `RATE_LIMITED`); the request is fine to repeat after `retryAfter`
+    /// seconds, when the `Retry-After` header named them.
+    case rateLimited(retryAfter: TimeInterval?)
     case network
     case eventsUnavailable
     case eventNotFound
@@ -30,6 +31,39 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case participationFailed
     /// Creating an event failed for a reason without copy of its own (a 500, a validation the form did not catch).
     case eventCreationFailed
+    case groupsUnavailable
+    /// Also what a private group answers to anyone who is not a member, on reads and writes alike.
+    case groupNotFound
+    case groupFull
+    case notAMember
+    /// The caller was banned from the group; disclosed only by a join attempt.
+    case bannedFromGroup
+    /// The target of a removal is a banned marker; the bans route is the way to unban.
+    case memberBanned
+    case ownerCannotLeave
+    /// The backend refused an action the caller's role does not allow (`FORBIDDEN`).
+    case insufficientRole
+    case membershipLimitReached
+    /// Creating a group failed for a reason without copy of its own, including an id another user owns.
+    case groupCreationFailed
+    /// A group write (join, leave, update, role change, invite) failed for a reason without copy of its own.
+    case groupActionFailed
+    /// A name, description or message tripped the word filter or the link policy.
+    case contentRejected
+    /// Unknown, revoked, exhausted or pointing at a deleted group; only expiry has its own case.
+    case inviteInvalid
+    case inviteExpired
+    case inviteLimitReached
+    case chatUnavailable
+    case messageSendFailed
+    case messageNotFound
+    case reportFailed
+    case blockLimitReached
+    case userNotFound
+    /// The caller's account was suspended by an operator.
+    case accountSuspended
+    /// A write needs the current terms of use accepted first.
+    case termsRequired
     case unknown
 
     /// Normalises any thrown error into an `AppError`.

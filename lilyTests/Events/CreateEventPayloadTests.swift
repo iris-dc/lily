@@ -6,7 +6,8 @@ import Testing
 struct CreateEventPayloadTests {
     private static let now = Date(timeIntervalSince1970: 1_800_000_000)
     private static let requiredKeys: Set<String> = ["clientEventId", "title", "type", "startsAt", "location", "capacity"]
-    private static let optionalKeys: Set<String> = ["description", "lookingFor", "skillLevel", "price"]
+    private static let optionalKeys: Set<String> = ["description", "lookingFor", "skillLevel", "price", "groupId"]
+    private static let kickers = EventGroupRef(id: "7b1c2d3e", name: "Kreuzberg Kickers", visibility: .public, isDeleted: false)
 
     /// A draft with every optional detail filled in.
     private static func makeFullDraft() -> EventDraft {
@@ -17,6 +18,7 @@ struct CreateEventPayloadTests {
         draft.lookingFor = "One more"
         draft.skillLevel = .intermediate
         draft.price = Decimal(string: "7.5")
+        draft.group = kickers
         return draft
     }
 
@@ -41,6 +43,7 @@ struct CreateEventPayloadTests {
         #expect(json["description"] as? String == "Bring both colours")
         #expect(json["lookingFor"] as? String == "One more")
         #expect(json["skillLevel"] as? String == "intermediate")
+        #expect(json["groupId"] as? String == "7b1c2d3e", "the id alone; the backend stamps name and visibility")
     }
 
     @Test func locationAndPriceAreNestedObjects() throws {
@@ -69,6 +72,14 @@ struct CreateEventPayloadTests {
         #expect(Set(json.keys) == Self.requiredKeys)
         #expect(payload.description == nil && payload.lookingFor == nil)
         #expect(payload.skillLevel == nil && payload.price == nil)
+    }
+
+    /// A game of its own sends no `groupId` at all: the backend reads absent as ungrouped, `null` as a validation failure.
+    @Test func aGameOfItsOwnSendsNoGroupId() throws {
+        let payload = try #require(CreateEventPayload(draft: .fixture(now: Self.now)))
+
+        #expect(payload.groupId == nil)
+        #expect(try encode(payload)["groupId"] == nil)
     }
 
     /// A missing price is free; a zero would be a paid game costing nothing.

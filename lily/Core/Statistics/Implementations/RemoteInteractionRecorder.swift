@@ -4,8 +4,6 @@ import Foundation
 /// Guests are never recorded. Every entry remembers who it was recorded for, so a sign-out between recording and
 /// sending drops it instead of charging it to the next user.
 final class RemoteInteractionRecorder: InteractionRecorder {
-    typealias Sleep = @Sendable (Duration) async throws -> Void
-
     private struct Entry {
         let userID: String
         let interaction: Interaction
@@ -27,7 +25,7 @@ final class RemoteInteractionRecorder: InteractionRecorder {
          batchSize: Int = AppConfig.Statistics.batchSize,
          flushDelay: Duration = AppConfig.Statistics.flushDelay,
          maxBuffered: Int = AppConfig.Statistics.maxBuffered,
-         sleep: @escaping Sleep = { try await Task.sleep(for: $0) }) {
+         sleep: @escaping Sleep = systemSleep) {
         self.client = client
         self.identity = identity
         self.logger = logger

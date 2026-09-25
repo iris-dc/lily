@@ -80,6 +80,22 @@ struct URLSessionAPIClientTests {
         #expect(!logger.entries.contains { $0.message.contains("No spots left") }, "the body itself must not be logged")
     }
 
+    /// The backend's 429 names how long to wait; the header travels with the error so the composer can honour it.
+    @Test func retryAfterHeaderTravelsWithTheError() async {
+        let body = #"{"code":"RATE_LIMITED","message":"Slow down"}"#
+        let backend = StubBackend(status: 429, json: body, headers: [AppConfig.API.Headers.retryAfter: "7"])
+
+        let expected = APIError.http(status: 429, body: APIErrorBody(code: "RATE_LIMITED", message: "Slow down"), retryAfter: 7)
+        await #expect(throws: expected) {
+            try await makeClient(backend).send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
+        }
+
+        let dated = StubBackend(status: 429, headers: [AppConfig.API.Headers.retryAfter: "Wed, 21 Oct 2026 07:28:00 GMT"])
+        await #expect(throws: APIError.http(status: 429, body: nil, retryAfter: nil)) {
+            try await makeClient(dated).send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
+        }
+    }
+
     @Test func emptyErrorBodyKeepsTheStatus() async {
         let backend = StubBackend(status: 401)
 
