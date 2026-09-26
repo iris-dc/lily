@@ -12,6 +12,7 @@ struct RecordedRequest {
 }
 
 /// Scripted `APIClient`: records every request and answers from a queue of responses, or throws `error`.
+/// A cancelled task gets `CancellationError` before anything is recorded, as it would from `URLSession`.
 @MainActor
 final class FakeAPIClient: APIClient {
     /// Dequeued one per `send`; each must have the request's `Response` type.
@@ -20,6 +21,7 @@ final class FakeAPIClient: APIClient {
     private(set) var requests: [RecordedRequest] = []
 
     func send<Response: Decodable>(_ request: APIRequest<Response>) async throws -> Response {
+        try Task.checkCancellation()
         requests.append(RecordedRequest(method: request.method,
                                         path: request.path,
                                         queryItems: request.queryItems,

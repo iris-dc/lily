@@ -81,11 +81,13 @@ final class RemoteInteractionRecorder: InteractionRecorder {
         logger.debug(.statistics, "Buffer full; dropped the oldest \(excess)")
     }
 
-    /// One timer at a time; a flush before it fires cancels it. `weak self`: the task must not keep a recorder alive
-    /// for the length of the delay once its owner has let go of it.
+    /// One timer at a time; a flush before it fires cancels it, and the timer lets go of its slot before it flushes.
+    /// `weak self`: the task must not keep a recorder alive for the length of the delay once its owner has let go of it.
     private func armTimer() {
         timer = Task { [weak self, sleep, flushDelay] in
             guard (try? await sleep(flushDelay)) != nil, let self else { return }
+            // flush() cancels `timer`, which would be this task and the request in it.
+            timer = nil
             await flush()
         }
     }
