@@ -107,6 +107,22 @@ struct MockGroupRepositoryTests {
         await #expect(throws: AppError.groupNotFound) { try await repository.members(id: MockGroupFixtures.climbingID) }
     }
 
+    /// The marker is monotonic like the backend's, and Mine reflects it: a room read here is read on the next load.
+    @Test func markReadMovesTheMarkerForwardOnlyAndClearsTheUnreadFlag() async throws {
+        let repository = makeRepository()
+        let kickers = MockGroupFixtures.kickersID
+        let newest = MockChatFixtures.newestMessageID(for: kickers)
+        let older = MockChatFixtures.lastReadMessageID(for: kickers)
+
+        #expect(try repository.markRead(id: kickers, messageID: newest) == newest)
+        #expect(try await repository.group(id: kickers).hasUnread == false)
+        #expect(try await repository.groups(in: .mine, cursor: nil).items.allSatisfy { !$0.hasUnread })
+
+        #expect(try repository.markRead(id: kickers, messageID: older) == newest)
+        #expect(try await repository.group(id: kickers).membership?.lastReadMessageId == newest)
+        #expect(throws: AppError.notAMember) { try repository.markRead(id: MockGroupFixtures.basketballID, messageID: newest) }
+    }
+
     /// What a mock event hosted in one of these groups carries as its badge.
     @Test func refNamesTheGroupAndIsNilForAnUnknownId() throws {
         let kickers = try #require(MockGroupFixtures.ref(for: MockGroupFixtures.kickersID))

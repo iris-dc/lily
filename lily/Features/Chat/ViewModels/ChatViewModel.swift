@@ -3,15 +3,16 @@ import Observation
 
 /// One open chat room. The room's messages live in the shared `ChatHistoryCache` (the realtime controller writes
 /// there too, so this screen never holds a stale copy); this owns what is local to the screen: the draft, the unsent
-/// messages, the roster for live names, the read marker and the live subscription (`ChatViewModel+Live.swift`).
+/// messages, the roster for live names, the read marker, the history paging (`ChatViewModel+History.swift`) and the
+/// live subscription (`ChatViewModel+Live.swift`).
 @Observable
 final class ChatViewModel {
     var group: SportGroup
     var draft = MessageDraft()
     var pending: [PendingMessage] = []
     private(set) var members: [GroupMember] = []
-    private(set) var isLoadingHistory = false
-    private(set) var isLoadingOlder = false
+    var isLoadingHistory = false
+    var isLoadingOlder = false
     /// Set after a 429: the composer stays closed until then.
     var cooldownUntil: Date?
     /// The caller is out of the group or the group is gone; the screen should leave.
@@ -38,11 +39,13 @@ final class ChatViewModel {
     let catchUp: ChatCatchUp
     let unread: UnreadCenter
     let identity: any IdentityProvider
-    let errorCenter: ErrorCenter
+    /// Failures reach the popup through it, and a `TERMS_REQUIRED` raises the terms sheet as on the groups screens.
+    let reporter: GroupErrorReporter
     let recorder: any InteractionRecorder
     let logger: any Logging
     let now: () -> Date
     let sleep: Sleep
+    let tryAgainDelay: Duration
 
     init(group: SportGroup,
          repository: any ChatRepository,
@@ -55,11 +58,12 @@ final class ChatViewModel {
          catchUp: ChatCatchUp,
          unread: UnreadCenter,
          identity: any IdentityProvider,
-         errorCenter: ErrorCenter,
+         reporter: GroupErrorReporter,
          recorder: any InteractionRecorder,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
-         sleep: @escaping Sleep = systemSleep) {
+         sleep: @escaping Sleep = systemSleep,
+         tryAgainDelay: Duration = AppConfig.API.tryAgainDelay) {
         self.group = group
         self.subscribedEpoch = group.channelEpoch
         self.repository = repository
@@ -72,14 +76,15 @@ final class ChatViewModel {
         self.catchUp = catchUp
         self.unread = unread
         self.identity = identity
-        self.errorCenter = errorCenter
+        self.reporter = reporter
         self.recorder = recorder
         self.logger = logger
         self.now = now
         self.sleep = sleep
+        self.tryAgainDelay = tryAgainDelay
     }
 
-    /// The room as the cache holds it; an empty stub until the first page arrived.
+    /// The room as the cache holds it, for reading; an empty stub while none is cached. Writes go through `mutateRoom`.
     var room: ChatRoomState {
         cache.room(for: group.id) ?? ChatRoomState(groupID: group.id, channelEpoch: group.channelEpoch)
     }
@@ -110,7 +115,7 @@ final class ChatViewModel {
         // The screen may have gone (and `cancel()` run) while the page was loading; a live task now would outlive it.
         guard !Task.isCancelled else { return }
         startLive()
-        unread.markRead(groupID: group.id)
+        unread.markRead(groupID: group.id, upTo: room.displayMaxID)
         await flushReadMarker()
         await loadMembers()
     }
@@ -128,23 +133,10 @@ final class ChatViewModel {
         await flushReadMarker()
     }
 
-    func loadOlder() async {
-        guard hasOlder, !isLoadingOlder, let oldest = room.oldestID else { return }
-        isLoadingOlder = true
-        defer { isLoadingOlder = false }
-        do {
-            let page = try await repository.older(groupID: group.id, before: oldest)
-            mutateRoom { $0.applyOlder(page) }
-            await adoptEpoch(page.channelEpoch)
-        } catch {
-            report(error, during: "Loading older messages")
-        }
-    }
-
     /// The caller has seen everything on screen: the dot goes at once, the backend hears at most once per
     /// `AppConfig.Chat.readMarkFlushInterval` while the room is open, and on leaving or backgrounding.
     func noteRead() {
-        unread.markRead(groupID: group.id)
+        unread.markRead(groupID: group.id, upTo: room.displayMaxID)
         guard readMarkerTask == nil, room.displayMaxID != lastFlushedReadID else { return }
         let elapsed = lastFlushAt.map { now().timeIntervalSince($0) } ?? .infinity
         let wait = max(AppConfig.Chat.readMarkFlushInterval - elapsed, 0)
@@ -175,27 +167,13 @@ final class ChatViewModel {
         }
     }
 
-    /// Any group-scoped answer or event carrying a newer epoch: resubscribe there, then catch up what the gap hid.
-    func adoptEpoch(_ epoch: Int) async {
-        guard epoch > subscribedEpoch else { return }
-        logger.info(.chat, "Epoch changed for group \(group.id): \(subscribedEpoch) -> \(epoch)")
-        subscribedEpoch = epoch
-        mutateRoom { $0.noteEpoch(epoch) }
-        let subscription = RoomSubscription(groupID: group.id, epoch: epoch)
-        if liveTask != nil { realtime.setOpenRoom(subscription) }
-        await realtime.ensureSubscribed(subscription)
-        do {
-            try await catchUp.catchUp(groupID: group.id)
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            logger.warning(.chat, "Catch-up after an epoch change failed for group \(group.id): \(error)")
-        }
-    }
-
-    func mutateRoom(_ change: (inout ChatRoomState) -> Void) {
-        var room = self.room
-        change(&room)
-        cache.store(room, for: group.id)
+    /// Changes the room as the cache holds it and answers the result, or `nil` when the room is not cached: it was
+    /// dropped while a request was in flight (the caller lost the group, or signed out), and a late answer must not
+    /// bring it back. `loadNewest` caches the stub a room starts from, so nothing here ever needs to create one.
+    @discardableResult
+    func mutateRoom(_ change: (inout ChatRoomState) -> Void) -> ChatRoomState? {
+        cache.update(groupID: group.id, change)
+        return cache.room(for: group.id)
     }
 
     /// Cancellation stays quiet; a room the caller lost access to is dropped; everything else reaches the popup.
@@ -206,22 +184,7 @@ final class ChatViewModel {
             cache.drop(groupID: group.id, reason: "\(appError)")
             isGone = true
         }
-        errorCenter.report(error)
-    }
-
-    private func loadHistory() async {
-        isLoadingHistory = true
-        defer { isLoadingHistory = false }
-        do {
-            if room.hasHistory {
-                try await catchUp.catchUp(groupID: group.id)
-            } else {
-                _ = try await catchUp.loadNewest(groupID: group.id, epoch: group.channelEpoch)
-            }
-            await adoptEpoch(room.channelEpoch)
-        } catch {
-            report(error, during: "Loading messages")
-        }
+        reporter.report(error)
     }
 
     private func loadMembers() async {

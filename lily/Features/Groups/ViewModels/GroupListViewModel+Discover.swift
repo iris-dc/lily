@@ -7,10 +7,11 @@ extension GroupListViewModel {
 
     var canLoadMore: Bool { nextCursor != nil && !isLoadingMore && !isLoadingDiscover }
 
-    /// The name prefix sent to the backend: trimmed, capped at what it accepts, `nil` when nothing was typed.
+    /// The name prefix sent to the backend: trimmed, capped at what it accepts (counted in UTF-16 units, as Laurel
+    /// does), `nil` when nothing was typed.
     var effectiveQuery: String? {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : String(trimmed.prefix(AppConfig.Groups.queryMaxLength))
+        return trimmed.isEmpty ? nil : trimmed.prefix(wireLength: AppConfig.Groups.queryMaxLength)
     }
 
     /// Replaces the pages with the first one for the current query and type. A newer search started meanwhile wins:

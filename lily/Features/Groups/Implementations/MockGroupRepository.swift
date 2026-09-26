@@ -133,6 +133,20 @@ final class MockGroupRepository: GroupRepository {
         rosters[id]?.removeAll { $0.userId == userID && $0.role == .banned }
     }
 
+    /// The caller's read marker, monotonic like the backend's, and the membership's `hasUnread` recomputed from it,
+    /// so a Mine reload shows a room read here as read. Answers where the marker stands.
+    func markRead(id: String, messageID: String) throws -> String {
+        let group = try readable(id)
+        guard let membership = group.membership else { throw AppError.notAMember }
+        let marker = max(membership.lastReadMessageId ?? "", messageID)
+        let read = GroupMembership(role: membership.role,
+                                   joinedAt: membership.joinedAt,
+                                   lastReadMessageId: marker,
+                                   hasUnread: (group.lastMessageId ?? "") > marker)
+        store(group.updatingMembership(read, memberCount: group.memberCount))
+        return marker
+    }
+
     private func admit(_ group: SportGroup, via: String) throws -> SportGroup {
         if group.isMember { return group }
         guard !group.isFull else { throw AppError.groupFull }

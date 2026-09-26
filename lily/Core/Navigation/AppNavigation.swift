@@ -3,9 +3,10 @@ import SwiftUI
 
 /// The shell's navigation state: the selected tab and the Groups stack's path. Anything presented over the shell (an
 /// invite preview, the tab badge) selects a tab and pushes through it, so the tab bar and the Groups root are the
-/// only views that bind to it.
+/// only views that bind to it. Reset on sign-out like every per-user state, or the next user would land on the
+/// previous one's pushed screens.
 @Observable
-final class AppNavigation {
+final class AppNavigation: SessionObserver {
     var selectedTab: AppTab = .explore
     var groupsPath = NavigationPath()
 
@@ -30,5 +31,10 @@ final class AppNavigation {
 
     func popGroupsToRoot() {
         groupsPath = NavigationPath()
+    }
+
+    func sessionDidEnd() {
+        selectedTab = .explore
+        popGroupsToRoot()
     }
 }

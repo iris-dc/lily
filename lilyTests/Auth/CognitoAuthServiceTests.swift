@@ -79,6 +79,32 @@ struct CognitoAuthServiceTests {
         #expect(session.user == AuthUser(id: "sub-2", displayName: "Pat Lee", email: nil))
     }
 
+    /// The pool accepted the sign-in, so a failure to read the user afterwards signs the pool out again: the app must
+    /// never sit as a guest over a pool session, and the next launch must not sign in a user the app never reported.
+    @Test func aFailedUserLoadAfterSignInSignsThePoolOutAgain() async {
+        let harness = Harness()
+        harness.client.emailResult = .failure(.network)
+
+        await #expect(throws: AppError.network) { try await harness.service.signIn(with: .email(credentials)) }
+
+        #expect(harness.client.signOutCount == 1)
+        #expect(!harness.client.signedIn)
+        #expect(harness.store.stored == nil)
+        #expect(harness.logger.messages(in: .auth, at: .warning).contains { $0.contains("signing out") })
+        #expect(!harness.logger.entries.contains { $0.message.contains(credentials.email) }, "no email in the log")
+    }
+
+    @Test func aFailedUserLoadOnRestoreSignsThePoolOutAgain() async {
+        let harness = Harness()
+        harness.client.signedIn = true
+        harness.client.emailResult = .failure(.network)
+
+        await #expect(throws: AppError.network) { try await harness.service.restoreSession() }
+
+        #expect(harness.client.signOutCount == 1)
+        #expect(harness.store.stored == nil)
+    }
+
     @Test func unconfirmedSignInAsksForConfirmation() async {
         let harness = Harness()
         harness.client.signInResult = .success(.confirmationRequired)

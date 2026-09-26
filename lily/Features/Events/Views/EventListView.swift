@@ -59,10 +59,10 @@ struct EventListView: View {
         .task { await viewModel.loadIfStale() }
         .task { await viewModel.loadUserLocation() }
         .onChange(of: presentation) { viewModel.presentationChanged(to: presentation) }
-        // Coming back to the foreground is the one moment location permission may have changed (Settings), so a
-        // missing position is asked for again; a known one is kept. Foregrounding is rare, so this is cheap.
+        // Coming back to the foreground is the one moment location permission may have changed (Settings), and the
+        // user may have moved meanwhile, so the position is asked for again; the cache answers within its TTL.
         .onChange(of: scenePhase) {
-            if scenePhase == .active { Task { await viewModel.retryUserLocationIfMissing() } }
+            if scenePhase == .active { Task { await viewModel.refreshUserLocation() } }
         }
         .sheet(isPresented: $isCreatePresented) {
             // The created event lands in this list at once; sibling lists learn of it through `add`.

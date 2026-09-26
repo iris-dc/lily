@@ -25,10 +25,10 @@ struct AppRootView: View {
         // Going to the background is the last moment a small batch is sure to be sent.
         .onChange(of: scenePhase) {
             if scenePhase == .background { Task { await dependencies.interactionRecorder.flush() } }
-            Task { await syncAccountAndRealtime() }
         }
-        .onChange(of: session.state.user) { Task { await syncAccountAndRealtime() } }
+        .task(id: SyncKey(phase: scenePhase, userID: session.state.user?.id)) { await syncAccountAndRealtime() }
         .onChange(of: dependencies.myGroups.groups) { dependencies.myGroupsDidChange() }
+        .onChange(of: dependencies.myGroups.loadVersion) { dependencies.myGroupsDidLoad() }
         .onOpenURL { deepLinks.handle($0) }
         .onChange(of: deepLinks.pendingInvite, initial: true) { enterAppForPendingInvite() }
         .onChange(of: session.state) { enterAppForPendingInvite() }
@@ -52,14 +52,24 @@ struct AppRootView: View {
         }
     }
 
+    /// What one run of the sync is for; a new key cancels the run still going for the old one.
+    private struct SyncKey: Hashable {
+        let phase: ScenePhase
+        let userID: String?
+    }
+
     /// The signed-in user's account, the realtime connection and their groups, in that order: the account names the
     /// realtime endpoint, and a connection that opens reloads Mine itself (the resume protocol), so the store's own
     /// load afterwards is usually a no-op. The connection closes in the background; a guest has none of this and the
-    /// stores clear themselves.
+    /// stores clear themselves. A run stops at the first await after its key changed, so the phase it read is never
+    /// applied over a newer one.
     private func syncAccountAndRealtime() async {
         let active = scenePhase != .background
+        let user = session.state.user
         if active { await dependencies.me.loadIfNeeded() }
-        await dependencies.realtime.setDesired(active: active, user: session.state.user)
+        guard !Task.isCancelled else { return }
+        await dependencies.realtime.setDesired(active: active, user: user)
+        guard !Task.isCancelled else { return }
         if active { await dependencies.myGroups.loadIfStale() }
     }
 }

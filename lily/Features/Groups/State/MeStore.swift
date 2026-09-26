@@ -10,6 +10,7 @@ final class MeStore: SessionObserver {
     /// Set when a write answered `TERMS_REQUIRED` (a race, or a version bump since the load); cleared by acceptance.
     private(set) var termsOutdated = false
     private var loadedUserID: String?
+    private let load = SingleFlight()
 
     private let repository: any MeRepository
     private let identity: any IdentityProvider
@@ -27,6 +28,7 @@ final class MeStore: SessionObserver {
     var needsTerms: Bool { termsOutdated || account.map { !$0.termsAccepted } ?? false }
     var isOperator: Bool { account?.isOperator ?? false }
     var realtimeEndpoint: URL? { account?.realtimeEndpoint }
+    var isLoading: Bool { load.isRunning }
 
     /// Loads for the signed-in user unless already loaded for them; a guest has nothing to load and is cleared.
     func loadIfNeeded() async {
@@ -38,16 +40,29 @@ final class MeStore: SessionObserver {
         await reload()
     }
 
+    /// A call made while one is in flight joins it; an answer that arrives after the caller signed out or changed is
+    /// dropped.
     func reload() async {
         guard let userID = identity.currentUserID else {
             clear()
             return
         }
+        await load.run { [self] in await performLoad(for: userID) }
+    }
+
+    private func performLoad(for userID: String) async {
         do {
-            account = try await repository.me()
+            let loaded = try await repository.me()
+            guard identity.isStillCaller(userID, orDrop: "Account answer", logger: logger) else { return }
+            account = loaded
             loadedUserID = userID
-            logger.info(.groups, "Account loaded; terms accepted: \(account?.termsAccepted ?? false)")
+            logger.info(.groups, "Account loaded; terms accepted: \(loaded.termsAccepted)")
         } catch {
+            guard !AppError.isCancellation(error) else {
+                logger.debug(.groups, "Loading the account cancelled")
+                return
+            }
+            guard identity.isStillCaller(userID, orDrop: "Account answer", logger: logger) else { return }
             logger.warning(.groups, "Loading the account failed: \(error)")
         }
     }

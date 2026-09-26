@@ -26,7 +26,8 @@ final class RealtimeSessionController: SessionObserver {
     /// The newest epoch learned for a group from any source; an epoch only ever grows.
     var knownEpochs: [String: Int] = [:]
     var connectionGeneration = 0
-    var connectionTask: Task<Void, Never>?
+    /// The connect in flight; it answers whether a `close()` superseded it while a connection was still wanted.
+    var connectionTask: Task<Bool, Never>?
     var renewalTask: Task<Void, Never>?
     var reconnectTask: Task<Void, Never>?
     var subscriptions: [RealtimeChannel: Task<Void, Never>] = [:]
@@ -100,16 +101,22 @@ final class RealtimeSessionController: SessionObserver {
         }
     }
 
-    /// `.background`: the connection is closed; nothing is delivered to a suspended app anyway.
+    /// `.background`: the connection is closed; nothing is delivered to a suspended app anyway. The close is its own
+    /// task, so the shell's sync being cancelled by the next phase change cannot leave the transport half-closed.
     func suspend() async {
         isActive = false
-        await close(reason: "background")
+        await Task { await close(reason: "background") }.value
     }
 
-    /// `.active`, and whenever the connection is re-established: connect, subscribe, then recover over REST.
+    /// `.active`, and whenever the connection is re-established: connect, subscribe, then recover over REST. When no
+    /// connection comes up (no endpoint, no token, the open failed), the open room alone is caught up over REST on a
+    /// return from the background, so it still shows what arrived while the app was away. An `.active` <-> `.inactive`
+    /// flip re-runs this without a suspend and fetches nothing, because nothing was missed.
     func resume() async {
+        let wasSuspended = !isActive
         isActive = true
         await connect(fresh: false)
+        if wasSuspended { await catchUpOpenRoomWithoutConnection() }
     }
 
     /// Takes the room set from Mine; called after every change of the store.

@@ -54,8 +54,16 @@ struct RemoteChatRepositoryTests {
         let marker = try ContractSamples.decode(ReadMarker.self, from: ContractSamples.readMarker)
 
         #expect(page.items.map(\.kind) == [.text, .eventCreated] && page.hasMore && page.channelEpoch == 3)
+        #expect(page.nextBefore == "01J8ZK7Q9X2M4N6P8R0T2V4W6Y" && page.nextAfter == nil)
         #expect(sent.message.id == "01J8ZK7Q9X2M4N6P8R0T2V4W6Y" && sent.channelEpoch == 3)
         #expect(marker.lastReadMessageId == "01J8ZK7Q9X2M4N6P8R0T2V4W6Y" && marker.channelEpoch == 3)
+    }
+
+    /// A backend that names no continuation cursors still decodes; paging then falls back to the ids held.
+    @Test func aPageWithoutCursorsDecodes() throws {
+        let page = try ContractSamples.decode(MessagePage.self, from: ContractSamples.messagePageWithoutCursors)
+
+        #expect(page.nextBefore == nil && page.nextAfter == nil && page.hasMore && page.items.count == 1)
     }
 
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [

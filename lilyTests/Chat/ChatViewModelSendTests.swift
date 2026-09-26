@@ -87,6 +87,40 @@ struct ChatViewModelSendTests {
         #expect(viewModel.pending.isEmpty && viewModel.room.messages.count == 2)
     }
 
+    /// The sender's own overlapping writes race on the backend; one repeat with the same client id settles it.
+    @Test func aLostRaceIsRepeatedOnceWithTheSameClientId() async {
+        let (harness, viewModel) = await makeOpenChat()
+        harness.chat.sendErrors = [AppError.tryAgain]
+
+        await viewModel.send()
+
+        let clientIDs = harness.chat.sentDrafts.map(\.clientMessageID)
+        #expect(clientIDs.count == 2 && Set(clientIDs).count == 1, "one repeat, the same client id")
+        #expect(viewModel.pending.isEmpty && viewModel.room.messages.count == 2 && harness.errorCenter.current == nil)
+        #expect(harness.logger.messages(in: .chat, at: .info).contains("Send lost a race in group g; retrying once"))
+    }
+
+    @Test func aSecondLostRaceFailsLikeAnyRefusal() async {
+        let (harness, viewModel) = await makeOpenChat()
+        harness.chat.sendErrors = [AppError.tryAgain, AppError.tryAgain]
+
+        await viewModel.send()
+
+        #expect(harness.chat.sentDrafts.count == 2 && viewModel.pending.map(\.hasFailed) == [true])
+        #expect(harness.errorCenter.current?.error == .tryAgain)
+    }
+
+    /// A send refused for outdated terms shows the popup and raises the terms sheet, as on the groups screens.
+    @Test func aTermsRequiredOnSendRaisesTheTermsSheet() async {
+        let (harness, viewModel) = await makeOpenChat()
+        harness.chat.sendErrors = [AppError.termsRequired]
+
+        await viewModel.send()
+
+        #expect(viewModel.pending.map(\.hasFailed) == [true])
+        #expect(harness.errorCenter.current?.error == .termsRequired && harness.termsRequiredCount == 1)
+    }
+
     @Test func discardDropsAFailedBubble() async {
         let (harness, viewModel) = await makeOpenChat()
         harness.chat.sendErrors = [AppError.contentRejected]

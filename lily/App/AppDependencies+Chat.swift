@@ -15,10 +15,14 @@ extension AppDependencies {
         return url
     }
 
-    /// Mine changed (a load, a join, a leave): the unread set and the room subscriptions follow it.
+    /// Mine changed (a load, a join, a leave): the room subscriptions follow it.
     func myGroupsDidChange() {
-        unreadCenter.apply(groups: myGroups.groups)
         realtime.syncRooms()
+    }
+
+    /// Mine was loaded: the unread set merges the snapshot. A local change never drives it (see `MyGroupsStore.loadVersion`).
+    func myGroupsDidLoad() {
+        unreadCenter.apply(groups: myGroups.groups)
     }
 
     func makeChatViewModel(for group: SportGroup) -> ChatViewModel {
@@ -33,7 +37,7 @@ extension AppDependencies {
                       catchUp: groups.catchUp,
                       unread: unreadCenter,
                       identity: identity,
-                      errorCenter: errorCenter,
+                      reporter: groups.errorReporter,
                       recorder: interactionRecorder,
                       logger: logger)
     }

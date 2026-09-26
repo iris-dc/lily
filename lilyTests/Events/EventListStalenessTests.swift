@@ -121,6 +121,66 @@ struct EventListStalenessTests {
         #expect(!viewModel.isLoading)
     }
 
+    /// Explore was loaded for where the user was; after a day elsewhere the backend's order, the distances and the
+    /// radius are for the old place, so the content is stale for the new position and reloads once.
+    @Test func exploreReloadsOnceWhenTheUserMoved() async {
+        let repository = FakeEventRepository()
+        let service = FakeLocationService()
+        service.result = AppConfig.Location.mockCenter
+        let logger = SpyLogger()
+        let viewModel = makeEventListViewModel(repository: repository, locationService: service, logger: logger)
+        await viewModel.loadUserLocation()
+        await viewModel.loadIfStale()
+        #expect(repository.requestedPositions == [AppConfig.Location.mockCenter])
+
+        service.result = TestFixtures.elsewhere
+        await viewModel.refreshUserLocation()
+        #expect(repository.requestedPositions == [AppConfig.Location.mockCenter, TestFixtures.elsewhere])
+        #expect(logger.messages(in: .cache).contains { $0.contains("position changed") })
+
+        await viewModel.loadIfStale()
+        #expect(repository.requestedScopes.count == 2)
+    }
+
+    /// Positions are compared as the backend receives them (`positionPrecision`, about a kilometre), so GPS drift
+    /// between two fixes never reloads.
+    @Test func aMoveWithinTheRoundingIsNotAMove() async {
+        let repository = FakeEventRepository()
+        let service = FakeLocationService()
+        service.result = AppConfig.Location.mockCenter
+        let viewModel = makeEventListViewModel(repository: repository, locationService: service)
+        await viewModel.loadUserLocation()
+        await viewModel.loadIfStale()
+
+        service.result = Coordinate(latitude: AppConfig.Location.mockCenter.latitude + 0.001,
+                                    longitude: AppConfig.Location.mockCenter.longitude)
+        await viewModel.refreshUserLocation()
+        await viewModel.loadIfStale()
+
+        #expect(repository.requestedPositions == [AppConfig.Location.mockCenter])
+    }
+
+    /// The user moved while the request was out, so that answer is for the old place: asked again at once.
+    @Test func aMoveMidLoadEarnsOneReload() async {
+        let repository = FakeEventRepository()
+        let service = FakeLocationService()
+        service.result = AppConfig.Location.mockCenter
+        let viewModel = makeEventListViewModel(repository: repository, locationService: service)
+        await viewModel.loadUserLocation()
+        repository.holdsRequests = true
+
+        let load = Task { await viewModel.loadIfStale() }
+        await settle(until: { viewModel.isLoading })
+        service.result = TestFixtures.elsewhere
+        await viewModel.loadUserLocation()
+        #expect(repository.requestedScopes.count == 1, "nothing extra while the request is out")
+        repository.releaseRequests()
+        await load.value
+
+        #expect(repository.requestedPositions == [AppConfig.Location.mockCenter, TestFixtures.elsewhere])
+        #expect(!viewModel.isLoading)
+    }
+
     /// My Events is the caller's own games in start order; a position changes nothing there.
     @Test func joinedNeverReloadsForAPosition() async {
         let repository = FakeEventRepository()

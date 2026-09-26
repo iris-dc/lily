@@ -9,7 +9,10 @@ import Observation
 final class MyGroupsStore: SessionObserver {
     /// Most recently active first, as the backend orders Mine.
     private(set) var groups: [SportGroup] = []
-    private(set) var isLoading = false
+    private let load = SingleFlight()
+    /// Counts the loads that answered. The unread set follows this, not `groups`: a local `add` or `replace` carries
+    /// membership flags read before the rooms were, and would bring a read room's dot back.
+    private(set) var loadVersion = 0
     private var freshness = ContentFreshness(staleAfter: AppConfig.Groups.listStaleAfter,
                                              retryAfterFailure: AppConfig.Groups.retryAfterFailure)
 
@@ -36,6 +39,7 @@ final class MyGroupsStore: SessionObserver {
 
     /// True from a failed load until the next successful one.
     var loadFailed: Bool { freshness.loadFailed }
+    var isLoading: Bool { load.isRunning }
 
     /// The groups the caller may create a game in, for the create form's picker.
     var eligibleForEvents: [SportGroup] {
@@ -65,18 +69,23 @@ final class MyGroupsStore: SessionObserver {
         await reload()
     }
 
-    /// Always asks the backend (pull-to-refresh, the resume protocol). A call made while one is in flight is dropped.
+    /// Always asks the backend (pull-to-refresh, the resume protocol). A call made while one is in flight joins it; an
+    /// answer that arrives after the caller signed out or changed is dropped.
     func reload() async {
         guard let userID = identity.currentUserID else {
             clear()
             return
         }
-        guard !isLoading else { return }
-        isLoading = true
-        defer { isLoading = false }
+        await load.run { [self] in await performLoad(for: userID) }
+    }
+
+    private func performLoad(for userID: String) async {
         let version = changes.version
         do {
-            groups = try await repository.groups(in: .mine, cursor: nil).items
+            let loaded = try await repository.groups(in: .mine, cursor: nil).items
+            guard identity.isStillCaller(userID, orDrop: "Groups answer", logger: logger) else { return }
+            groups = loaded
+            loadVersion += 1
             freshness.recordSuccess(at: now(), version: version, userID: userID)
             logger.info(.groups, "Loaded \(groups.count) groups")
         } catch {
@@ -84,6 +93,7 @@ final class MyGroupsStore: SessionObserver {
                 logger.debug(.groups, "Loading groups cancelled")
                 return
             }
+            guard identity.isStillCaller(userID, orDrop: "Groups answer", logger: logger) else { return }
             freshness.recordFailure(at: now(), version: version, userID: userID)
             logger.error(.groups, "Loading groups failed: \(error)")
             errorCenter.report(error)

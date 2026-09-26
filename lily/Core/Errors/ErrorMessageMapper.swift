@@ -21,7 +21,7 @@ nonisolated enum ErrorMessageMapper {
             eventMessage(for: error)
         case .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned,
              .ownerCannotLeave, .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed,
-             .contentRejected, .inviteInvalid, .inviteExpired, .inviteLimitReached:
+             .contentRejected, .inviteInvalid, .inviteExpired, .inviteUnavailable, .inviteLimitReached:
             groupMessage(for: error)
         case .chatUnavailable, .messageSendFailed, .messageNotFound:
             chatMessage(for: error)
@@ -79,7 +79,7 @@ nonisolated enum ErrorMessageMapper {
         case .hostCannotLeave:
             ErrorMessage(title: "You're the host", body: "Hosts can't leave their own game.")
         case .tryAgain:
-            ErrorMessage(title: "Please try again", body: "Someone changed this game at the same moment. Give it another tap.")
+            ErrorMessage(title: "Please try again", body: "Someone made a change at the same moment. Give it another tap.")
         case .participationFailed:
             ErrorMessage(title: "Couldn't update your spot", body: "Please try again in a moment.")
         case .eventCreationFailed:

@@ -51,7 +51,7 @@ final class URLSessionAPIClient: APIClient {
         return try decode(Response.self, from: data, endpoint: endpoint)
     }
 
-    /// The token is read per request and never logged.
+    /// The token is read per request, only while the app's session has a user, and never logged.
     private func makeURLRequest<Response>(_ request: APIRequest<Response>) async throws -> URLRequest {
         var url = baseURL.appending(path: request.path)
         if !request.queryItems.isEmpty {
@@ -68,7 +68,9 @@ final class URLSessionAPIClient: APIClient {
         if sendsLocalUserHeader, let userID = identity.currentUserID {
             urlRequest.setValue(userID, forHTTPHeaderField: AppConfig.API.Headers.localUserID)
         }
-        if let token = await tokenProvider?.accessToken() {
+        // Gated on the app's session, not on Amplify's keychain: a token left behind by a rolled-back sign-in must not
+        // personalise what the app shows as a guest.
+        if identity.currentUserID != nil, let token = await tokenProvider?.accessToken() {
             let headers = AppConfig.API.Headers.self
             urlRequest.setValue(headers.bearerPrefix + token, forHTTPHeaderField: headers.authorization)
         }

@@ -50,9 +50,11 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case groupActionFailed
     /// A name, description or message tripped the word filter or the link policy.
     case contentRejected
-    /// Unknown, revoked, exhausted or pointing at a deleted group; only expiry has its own case.
+    /// Unknown, revoked, exhausted or pointing at a deleted group (`INVITE_INVALID`): a verdict on the code.
     case inviteInvalid
     case inviteExpired
+    /// The preview failed for a reason without a code of its own (a 500, an unreadable body); the code may be fine.
+    case inviteUnavailable
     case inviteLimitReached
     case chatUnavailable
     case messageSendFailed

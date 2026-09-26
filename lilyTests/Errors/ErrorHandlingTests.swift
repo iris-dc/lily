@@ -10,7 +10,8 @@ struct ErrorMessageMapperTests {
         .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain, .participationFailed, .eventCreationFailed,
         .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned, .ownerCannotLeave,
         .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed, .contentRejected,
-        .inviteInvalid, .inviteExpired, .inviteLimitReached, .chatUnavailable, .messageSendFailed, .messageNotFound,
+        .inviteInvalid, .inviteExpired, .inviteUnavailable, .inviteLimitReached, .chatUnavailable, .messageSendFailed,
+        .messageNotFound,
         .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired,
         .unknown,
     ]
@@ -30,6 +31,19 @@ struct ErrorMessageMapperTests {
     @Test func participationRefusalsHaveTheirOwnTitles() {
         #expect(ErrorMessageMapper.message(for: .tryAgain).title == "Please try again")
         #expect(ErrorMessageMapper.message(for: .participationFailed).title == "Couldn't update your spot")
+    }
+
+    /// `TRY_AGAIN` answers group writes, invites and chat sends as well as joins, so the copy names no game.
+    @Test func tryAgainNamesNoDomain() {
+        let body = ErrorMessageMapper.message(for: .tryAgain).body
+        #expect(body == "Someone made a change at the same moment. Give it another tap.")
+    }
+
+    /// A preview the backend could not answer must not read like a refused code: the code may well be fine.
+    @Test func anUnansweredInvitePreviewHasItsOwnCopy() {
+        let message = ErrorMessageMapper.message(for: .inviteUnavailable)
+        #expect(message.title == "Couldn't check this invite")
+        #expect(message.body == "Give it another try in a moment.")
     }
 
     /// A create that fails for no named reason must not read like a join that failed.

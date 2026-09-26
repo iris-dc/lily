@@ -50,6 +50,81 @@ struct RealtimeSessionControllerTests {
         #expect(harness.transport.connectCount == 2 && harness.groups.requestedScopes.count == 2)
     }
 
+    /// The shell's sync is cancelled when the scene phase changes again mid-disconnect; the socket must still close.
+    @Test func aCancelledSuspendStillClosesTheConnection() async {
+        let harness = RealtimeHarness()
+        await harness.connect()
+        harness.transport.holdsDisconnects = true
+
+        let suspend = Task { await harness.controller.suspend() }
+        await settle(until: { harness.transport.isDisconnecting })
+        suspend.cancel()
+        harness.transport.releaseDisconnects()
+        await suspend.value
+
+        #expect(harness.transport.disconnectCount == 1 && harness.controller.state == .disconnected)
+    }
+
+    /// A suspend while the first connect still waits for its token: that connect opens nothing and leaves the state
+    /// disconnected, so the resume that follows finds a clean slate.
+    @Test func aSuspendDuringTheTokenFetchLeavesTheNextResumeFree() async {
+        let tokens = FakeAuthTokenProvider(token: "eyJ.token")
+        tokens.holdsRequests = true
+        let harness = RealtimeHarness(tokens: tokens)
+        let first = Task { await harness.connect() }
+        await settle(until: { tokens.isHolding })
+
+        await harness.controller.suspend()
+        tokens.releaseRequests()
+        await first.value
+        #expect(harness.controller.state == .disconnected && harness.transport.connectCount == 0)
+
+        await harness.controller.resume()
+        #expect(harness.controller.state == .connected && harness.transport.connectCount == 1)
+        #expect(harness.transport.subscribedChannels == [userChannel])
+    }
+
+    /// The resume arrives while the connect that the suspend ended is still waiting for its token: it waits that one
+    /// out and a connect follows, since the superseded one opens nothing.
+    @Test func aResumeWaitingOnASupersededConnectStillConnects() async {
+        let tokens = FakeAuthTokenProvider(token: "eyJ.token")
+        tokens.holdsRequests = true
+        let harness = RealtimeHarness(tokens: tokens)
+        let first = Task { await harness.connect() }
+        await settle(until: { tokens.isHolding })
+        await harness.controller.suspend()
+
+        let second = Task { await harness.controller.resume() }
+        await harness.yield()
+        #expect(tokens.requestCount == 1, "the resume waits for the connect in flight")
+        tokens.releaseRequests()
+        await first.value
+        await second.value
+
+        #expect(harness.controller.state == .connected && harness.transport.connectCount == 1)
+        #expect(harness.transport.disconnectCount == 0, "the superseded connect opened nothing")
+        #expect(harness.groups.requestedScopes == [.mine])
+    }
+
+    /// Two resumes at once (the shell's sync re-running while its first run still connects) share one connect.
+    @Test func twoConcurrentResumesOpenOneConnection() async {
+        let harness = RealtimeHarness()
+        await harness.controller.setDesired(active: false, user: user)
+        harness.endpoint.holdsRequests = true
+
+        let first = Task { await harness.controller.resume() }
+        let second = Task { await harness.controller.resume() }
+        await settle(until: { harness.endpoint.isHolding })
+        await harness.yield()
+        #expect(harness.endpoint.requestCount == 1, "the second resume waits for the first connect")
+        harness.endpoint.releaseRequests()
+        await first.value
+        await second.value
+
+        #expect(harness.transport.connectCount == 1 && harness.controller.state == .connected)
+        #expect(harness.groups.requestedScopes == [.mine])
+    }
+
     @Test func expBoundRenewalReconnectsWithAForceRefreshedToken() async throws {
         let tokens = FakeAuthTokenProvider(token: JWTFixtures.token(expiringAt: Date(timeIntervalSince1970: 1_800_003_600)))
         tokens.freshTokens = [JWTFixtures.token(expiringAt: Date(timeIntervalSince1970: 1_800_010_800))]
@@ -83,6 +158,9 @@ struct RealtimeSessionControllerTests {
         #expect(harness.sleep.held.map(\.seconds) == [backoff])
         #expect(harness.chatLogs(.warning).contains { $0.contains("expires no later than the last one") })
 
+        // Wait for the connect to finish its resume protocol, so the renewal below is exercised against a settled
+        // connection rather than superseding one mid-flight.
+        await settle(until: { harness.controller.connectionTask == nil })
         harness.sleep.release()
         await settle(until: { harness.transport.connectCount == 3 && harness.sleep.held.count == 1 })
         #expect(harness.sleep.held.map(\.seconds) == [10_800 - 3300 - AppConfig.Realtime.reconnectBeforeExpiry])

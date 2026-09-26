@@ -163,8 +163,9 @@ struct URLSessionAPIClientTests {
     @Test func bearerTokenIsSentWhenTheProviderHasOne() async throws {
         let backend = StubBackend(json: ContractSamples.profile())
         let tokens = FakeAuthTokenProvider(token: "eyJ.access")
+        let client = makeClient(backend, identity: FakeIdentityProvider(currentUserID: "u-1"), tokenProvider: tokens)
 
-        _ = try await makeClient(backend, tokenProvider: tokens).send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
+        _ = try await client.send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
 
         let request = try #require(backend.requests.first)
         #expect(request.value(forHTTPHeaderField: AppConfig.API.Headers.authorization) == "Bearer eyJ.access")
@@ -175,19 +176,34 @@ struct URLSessionAPIClientTests {
     @Test func noAuthorizationHeaderWithoutAToken() async throws {
         for tokens in [nil, FakeAuthTokenProvider(token: nil)] {
             let backend = StubBackend(json: ContractSamples.profile())
+            let client = makeClient(backend, identity: FakeIdentityProvider(currentUserID: "u-1"), tokenProvider: tokens)
 
-            _ = try await makeClient(backend, tokenProvider: tokens).send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
+            _ = try await client.send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
 
             let request = try #require(backend.requests.first)
             #expect(request.value(forHTTPHeaderField: AppConfig.API.Headers.authorization) == nil)
         }
     }
 
+    /// The Bearer follows the app's session, not Amplify's keychain: a token left behind by a rolled-back sign-in must
+    /// not personalise what the app shows as a guest, so the provider is not even asked while there is no user.
+    @Test func noAuthorizationHeaderWhileTheAppHasNoUser() async throws {
+        let backend = StubBackend(json: ContractSamples.profile())
+        let tokens = FakeAuthTokenProvider(token: "eyJ.access")
+        let client = makeClient(backend, identity: FakeIdentityProvider(currentUserID: nil), tokenProvider: tokens)
+
+        _ = try await client.send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
+
+        let request = try #require(backend.requests.first)
+        #expect(request.value(forHTTPHeaderField: AppConfig.API.Headers.authorization) == nil)
+        #expect(tokens.requestCount == 0)
+    }
+
     /// The token is asked for on every request, so one refreshed by Amplify or dropped by a sign-out is picked up.
     @Test func tokenIsReadPerRequest() async throws {
         let backend = StubBackend(json: ContractSamples.profile())
         let tokens = FakeAuthTokenProvider(token: "first")
-        let client = makeClient(backend, tokenProvider: tokens)
+        let client = makeClient(backend, identity: FakeIdentityProvider(currentUserID: "u-1"), tokenProvider: tokens)
 
         _ = try await client.send(APIRequest<Profile>.get(AppConfig.API.Paths.profile))
         tokens.token = nil

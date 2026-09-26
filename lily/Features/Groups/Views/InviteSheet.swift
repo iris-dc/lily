@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Invite people to a group: choose how long the invite lasts and how many may use it, then share the link or copy
-/// the code. An invite is created for the options shown; changing them makes a new one.
+/// the code. An invite is created for the options shown; changing them revokes it and makes a new one, and closing
+/// the sheet revokes an invite that was neither shared nor copied.
 struct InviteSheet: View {
     @State private var viewModel: InviteViewModel
     private let errorCenter: ErrorCenter
@@ -43,6 +44,8 @@ struct InviteSheet: View {
         .presentationDragIndicator(.visible)
         .errorPopup(errorCenter)
         .task(id: viewModel.options) { await viewModel.create() }
+        // Done and a swipe down both end here; the revocation outlives the view, so it is not a `.task`.
+        .onDisappear { viewModel.close() }
     }
 
     /// One row of chips for one option; a single choice, like the draft's type.

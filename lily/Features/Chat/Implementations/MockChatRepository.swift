@@ -5,7 +5,6 @@ import Foundation
 /// rows and a fixture member who answers after `mockAutoReplyDelay`.
 final class MockChatRepository: ChatRepository {
     private var rooms: [String: [ChatMessage]] = [:]
-    private var readMarkers: [String: String] = [:]
     private var replyIndex = 0
     private var sequence = 0
     private let groups: MockGroupRepository
@@ -89,13 +88,11 @@ final class MockChatRepository: ChatRepository {
         return deleted
     }
 
+    /// The marker lives on the group mock's membership, so Mine reflects it on the next load.
     func markRead(groupID: String, messageID: String) async throws -> ReadMarker {
         let (group, _) = try await room(groupID)
-        let key = "\(identity.currentUserID ?? "")/\(groupID)"
-        if messageID > (readMarkers[key] ?? "") {
-            readMarkers[key] = messageID
-        }
-        return ReadMarker(lastReadMessageId: readMarkers[key], channelEpoch: group.channelEpoch)
+        let marker = try groups.markRead(id: groupID, messageID: messageID)
+        return ReadMarker(lastReadMessageId: marker, channelEpoch: group.channelEpoch)
     }
 
     /// The group as the caller may see it, and its rows, built on first access for the caller of that moment. Under

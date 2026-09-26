@@ -160,6 +160,11 @@ func makeEventListViewModel(scope: EventScope = .upcoming,
                        initialFilter: initialFilter)
 }
 
+/// A `UserDefaults` suite of its own, so tests that build the composition root never share a stored session.
+func makeTestDefaults() -> UserDefaults {
+    UserDefaults(suiteName: "lily.tests.\(UUID().uuidString)")!
+}
+
 /// Upper bound on the yields `settle(until:)` spends before it gives up and fails.
 private let settleYieldLimit = 1_000
 
@@ -203,22 +208,21 @@ final class FakeLocationUpdateSource: LocationUpdateSource, Sendable {
 final class FakeLocationService: LocationService {
     var result: Coordinate?
     /// While true, `currentLocation()` suspends until `release()`.
-    var holdsRequests = false
+    var holdsRequests: Bool {
+        get { hold.isEnabled }
+        set { hold.isEnabled = newValue }
+    }
+    private let hold = RequestHold()
     private(set) var callCount = 0
-    private var held: [CheckedContinuation<Void, Never>] = []
 
     func currentLocation() async -> Coordinate? {
         callCount += 1
-        if holdsRequests {
-            await withCheckedContinuation { held.append($0) }
-        }
+        await hold.wait()
         return result
     }
 
     func release() {
-        let waiting = held
-        held.removeAll()
-        waiting.forEach { $0.resume() }
+        hold.release()
     }
 }
 

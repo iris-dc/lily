@@ -77,14 +77,22 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
         }
     }
 
+    /// Amplify has a session when this runs. When the user cannot be read, that session is signed out again before the
+    /// error goes up, so the pool and the app never disagree about who is signed in.
     private func loadAndCacheSession() async throws -> AuthSession {
-        let user = try await mapped { try await client.currentUser() }
-        let email = try await mapped { try await client.fetchEmail() }
-        let session = AuthSession(user: AuthUser(id: user.sub,
-                                                 displayName: AuthUser.displayName(fromEmail: email ?? user.username),
-                                                 email: email))
-        store.save(.signedIn(session))
-        return session
+        do {
+            let user = try await mapped { try await client.currentUser() }
+            let email = try await mapped { try await client.fetchEmail() }
+            let session = AuthSession(user: AuthUser(id: user.sub,
+                                                     displayName: AuthUser.displayName(fromEmail: email ?? user.username),
+                                                     email: email))
+            store.save(.signedIn(session))
+            return session
+        } catch {
+            logger.warning(.auth, "Could not load the signed-in user, signing out of the pool again: \(error)")
+            try? await client.signOut()
+            throw error
+        }
     }
 
     private func mapped<Value>(_ operation: () async throws -> Value) async throws -> Value {

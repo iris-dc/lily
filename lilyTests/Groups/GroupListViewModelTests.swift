@@ -107,6 +107,8 @@ struct GroupListViewModelTests {
         #expect(viewModel.isDiscoverEmpty)
     }
 
+    /// The cap counts UTF-16 units like Laurel's `@Size`: letters up to the limit plus an emoji would be one character
+    /// over on the wire and earn a 400 on every keystroke, so the emoji is dropped.
     @Test func theQueryIsTrimmedCappedAndAbsentWhenBlank() {
         let viewModel = makeViewModel(scope: .discover)
         #expect(viewModel.effectiveQuery == nil)
@@ -115,7 +117,12 @@ struct GroupListViewModelTests {
         #expect(viewModel.effectiveQuery == nil)
 
         viewModel.query = " " + String(repeating: "k", count: AppConfig.Groups.queryMaxLength + 5) + " "
-        #expect(viewModel.effectiveQuery?.count == AppConfig.Groups.queryMaxLength)
+        #expect(viewModel.effectiveQuery?.wireLength == AppConfig.Groups.queryMaxLength)
+
+        let letters = String(repeating: "k", count: AppConfig.Groups.queryMaxLength - 1)
+        viewModel.query = letters + "😀"
+        #expect(viewModel.effectiveQuery == letters)
+        #expect(viewModel.effectiveQuery.wireLength <= AppConfig.Groups.queryMaxLength)
         viewModel.cancel()
     }
 

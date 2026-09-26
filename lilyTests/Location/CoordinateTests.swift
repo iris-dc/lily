@@ -29,6 +29,13 @@ struct CoordinateTests {
                 == Coordinate(latitude: 0.13, longitude: -0.13))
         #expect(Coordinate(latitude: 52.5, longitude: 13.4).rounded(toDecimals: 2) == Coordinate(latitude: 52.5, longitude: 13.4))
     }
+
+    /// What Explore sends and what its staleness check compares must be one rounding.
+    @Test func coarseRoundsToThePositionPrecision() {
+        let point = Coordinate(latitude: 52.5449, longitude: 13.4051)
+        #expect(point.coarse == point.rounded(toDecimals: AppConfig.Events.positionPrecision))
+        #expect(point.coarse != point)
+    }
 }
 
 @MainActor

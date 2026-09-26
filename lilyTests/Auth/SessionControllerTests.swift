@@ -206,16 +206,22 @@ struct SessionControllerTests {
     }
 }
 
-/// Runs the controller against the real mock auth service to cover behaviour the scripted fake cannot.
+/// Runs the controller against the real mock auth service to cover behaviour the scripted fake cannot. The mock's
+/// pauses are held, so which call wins is decided by the test, not by a clock; the time limit turns a pause nobody
+/// releases (a guard that stopped rejecting the second call) into a failure instead of a hang.
 @MainActor
+@Suite(.timeLimit(.minutes(1)))
 struct SessionControllerWithMockAuthTests {
     @MainActor private struct Harness {
         let store = InMemorySessionStore()
         let logger = SpyLogger()
+        let sleep = HeldSleep()
         let controller: SessionController
 
-        init(delay: Duration) {
-            controller = SessionController(authService: MockAuthService(delay: delay, store: store),
+        init(delay: Duration = AppConfig.Auth.mockSignInDelay) {
+            controller = SessionController(authService: MockAuthService(delay: delay,
+                                                                        store: store,
+                                                                        sleep: { [sleep] in try await sleep.sleep(for: $0) }),
                                            sessionStore: store,
                                            profileRepository: MockProfileRepository(logger: logger),
                                            errorCenter: ErrorCenter(logger: logger),
@@ -223,31 +229,34 @@ struct SessionControllerWithMockAuthTests {
         }
     }
 
-    /// Long enough that a second call started right after the first is still overlapping it.
-    private let networkDelay: Duration = .milliseconds(200)
-
     @Test func onlyOneSignInRunsAtATime() async {
-        let harness = Harness(delay: networkDelay)
+        let harness = Harness()
 
-        async let apple = harness.controller.signIn(with: .apple)
-        async let google = harness.controller.signIn(with: .google)
-        let (appleSucceeded, googleSucceeded) = await (apple, google)
+        let apple = Task { await harness.controller.signIn(with: .apple) }
+        await settle(until: { harness.sleep.held.count == 1 })
+        let googleSucceeded = await harness.controller.signIn(with: .google)
+        harness.sleep.release()
+        let appleSucceeded = await apple.value
 
-        #expect(appleSucceeded != googleSucceeded)
+        #expect(appleSucceeded && !googleSucceeded)
         #expect(harness.controller.authenticatingProvider == nil)
-        #expect(harness.controller.state.user != nil)
+        #expect(harness.controller.state.user == MockUsers.user(for: .apple))
         #expect(harness.logger.messages(in: .auth).contains { $0.contains("Ignored authentication") })
     }
 
     /// A provider tap landing during the sign-up network call must be rejected, not swallow the sign-up.
     @Test func signUpHoldsTheAuthenticationSlotForItsWholeDuration() async {
-        let harness = Harness(delay: networkDelay)
+        let harness = Harness()
         let credentials = TestFixtures.credentials
 
-        // `signUp` runs first and claims the slot before its first suspension; the task then lands mid-flight.
-        let apple = Task { await harness.controller.signIn(with: .apple) }
-        let signedUp = await harness.controller.signUp(email: credentials.email, password: credentials.password)
-        let appleSucceeded = await apple.value
+        let signUp = Task { await harness.controller.signUp(email: credentials.email, password: credentials.password) }
+        await settle(until: { harness.sleep.held.count == 1 })
+        let appleSucceeded = await harness.controller.signIn(with: .apple)
+        harness.sleep.release()
+        // The sign-up is followed by a sign-in with the same credentials, the mock's second pause.
+        await settle(until: { harness.sleep.held.count == 1 })
+        harness.sleep.release()
+        let signedUp = await signUp.value
 
         #expect(signedUp == .signedIn)
         #expect(!appleSucceeded)
@@ -257,19 +266,18 @@ struct SessionControllerWithMockAuthTests {
 
     /// A duplicate sign-out that finishes late must not wipe a guest choice made after the first one returned.
     @Test func lateDuplicateSignOutCannotUndoGuestChoiceMadeMeanwhile() async {
-        let harness = Harness(delay: networkDelay)
+        let harness = Harness()
 
         let first = Task { await harness.controller.signOut() }
-        let second = Task {
-            try? await Task.sleep(for: networkDelay / 2)
-            await harness.controller.signOut()
-        }
+        await settle(until: { harness.sleep.held.count == 1 })
+        await harness.controller.signOut()
+        harness.sleep.release()
         await first.value
         harness.controller.continueAsGuest()
-        await second.value
 
         #expect(harness.controller.state == .guest)
         #expect(harness.store.stored == .guest)
+        #expect(harness.sleep.requested.count == 1, "the duplicate never reached the auth service")
     }
 
     @Test func logLinesNeverContainCredentials() async {
