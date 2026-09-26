@@ -4,7 +4,7 @@ import SwiftUI
 /// with code" in the toolbar and a floating "+" that creates a group (or signs a guest in first).
 struct GroupsRootView: View {
     private let dependencies: AppDependencies
-    @State private var scope: GroupListScope = .mine
+    @State private var scope: GroupListScope
     @State private var mine: GroupListViewModel
     @State private var discover: GroupListViewModel
     @State private var presentedSheet: RootSheet?
@@ -17,6 +17,7 @@ struct GroupsRootView: View {
 
     init(dependencies: AppDependencies) {
         self.dependencies = dependencies
+        _scope = State(initialValue: GroupsContent(for: dependencies.sessionController.state).initialScope)
         _mine = State(initialValue: dependencies.makeGroupListViewModel(scope: .mine))
         _discover = State(initialValue: dependencies.makeGroupListViewModel(scope: .discover))
     }

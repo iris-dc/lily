@@ -33,6 +33,8 @@ nonisolated extension AccessibilityIdentifiers {
     /// Continue in the code sheet; `inviteRedeem` is the join button of the preview that follows.
     static let inviteContinue = "invite-continue"
     static let inviteRedeem = "invite-redeem"
+    /// The inline reason when the backend refused the code (invalid or expired).
+    static let inviteRefusal = "invite-refusal"
     static let inviteShare = "invite-share"
     static let inviteCopy = "invite-copy"
     /// Report sheet and terms sheet.

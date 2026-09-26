@@ -25,6 +25,10 @@ final class LilyGroupsTests: LilyUITestCase {
         relaunchAsGuest()
         openGroupsTab()
 
+        let scope = app.segmentedControls["groups-scope"]
+        XCTAssertTrue(scope.buttons["Discover"].waitForExistence(timeout: 5))
+        XCTAssertTrue(scope.buttons["Discover"].isSelected, "a guest lands on Discover")
+        scope.buttons["Mine"].tap()
         XCTAssertTrue(app.staticTexts["You're browsing as a guest"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Sign in"].exists)
         XCTAssertFalse(app.buttons[kickersRow].exists)

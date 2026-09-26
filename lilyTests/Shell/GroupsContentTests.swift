@@ -12,4 +12,10 @@ struct GroupsContentTests {
     @Test func signedInUsersSeeTheirGroups() {
         #expect(GroupsContent(for: .signedIn(TestFixtures.user)) == .myGroups)
     }
+
+    /// A guest lands on Discover, where there is something to see; a user lands on their own groups.
+    @Test func guestsStartOnDiscoverAndUsersOnMine() {
+        #expect(GroupsContent.signInPrompt.initialScope == .discover)
+        #expect(GroupsContent.myGroups.initialScope == .mine)
+    }
 }
