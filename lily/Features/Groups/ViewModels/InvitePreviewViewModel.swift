@@ -9,8 +9,10 @@ final class InvitePreviewViewModel {
     let code: InviteCode
     private(set) var preview: InvitePreview?
     private(set) var isLoading = false
-    /// The preview could not be fetched; the popup said why.
+    /// The preview could not be fetched; a transient failure is reported through the popup and can be retried.
     private(set) var loadFailed = false
+    /// The backend refused the code for good (invalid or expired); shown in place of the preview, never as a popup.
+    private(set) var refusal: AppError?
     private(set) var isJoining = false
     private(set) var joinedGroup: SportGroup?
 
@@ -54,9 +56,13 @@ final class InvitePreviewViewModel {
 
     var canJoin: Bool { preview != nil && !isJoining && joinedGroup == nil }
 
+    /// Only a transient failure is worth another request; a refused code stays refused.
+    var canRetry: Bool { loadFailed && refusal == nil }
+
     func load() async {
         isLoading = true
         loadFailed = false
+        refusal = nil
         defer { isLoading = false }
         do {
             preview = try await invites.preview(code: code)
@@ -65,7 +71,11 @@ final class InvitePreviewViewModel {
             guard !AppError.isCancellation(error) else { return }
             logger.warning(.groups, "Invite preview failed: \(error)")
             loadFailed = true
-            reporter.report(error)
+            if let appError = error as? AppError, Self.isRefusal(appError) {
+                refusal = appError
+            } else {
+                reporter.report(error)
+            }
         }
     }
 
@@ -113,6 +123,10 @@ final class InvitePreviewViewModel {
             }
             return nil
         }
+    }
+
+    private static func isRefusal(_ error: AppError) -> Bool {
+        error == .inviteInvalid || error == .inviteExpired
     }
 
     private func logRetry() {

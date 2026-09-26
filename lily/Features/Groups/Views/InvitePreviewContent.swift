@@ -15,8 +15,13 @@ struct InvitePreviewContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-            ScreenTitle(text: Copy.previewTitle)
-            if let preview = viewModel.preview {
+            ScreenTitle(text: viewModel.refusal == nil ? Copy.previewTitle : Copy.unavailableTitle)
+            if let refusal = viewModel.refusal {
+                Text(ErrorMessageMapper.message(for: refusal).body)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.inviteRefusal)
+            } else if let preview = viewModel.preview {
                 card(preview)
                 if preview.isMember {
                     Text(Copy.alreadyMember)
@@ -24,7 +29,7 @@ struct InvitePreviewContent: View {
                         .foregroundStyle(.secondary)
                 }
                 joinButton
-            } else if viewModel.loadFailed {
+            } else if viewModel.canRetry {
                 Button(AppBranding.Groups.tryAgain) { Task { await viewModel.load() } }
                     .lilyGlassButton()
             } else {

@@ -9,4 +9,9 @@ nonisolated enum GroupsContent: Equatable, Sendable {
     init(for state: SessionState) {
         self = state.user == nil ? .signInPrompt : .myGroups
     }
+
+    /// Where the tab opens: a guest has nothing under Mine, so Discover comes first for them.
+    var initialScope: GroupListScope {
+        self == .signInPrompt ? .discover : .mine
+    }
 }

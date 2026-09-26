@@ -41,14 +41,26 @@ struct InvitePreviewViewModelTests {
         #expect(!harness.logs().joined().contains("KRZB"))
     }
 
-    @Test func aFailedPreviewIsReported() async throws {
-        harness.invites.previewResult = .failure(.inviteExpired)
+    @Test func aTransientFailureIsReportedAndCanBeRetried() async throws {
+        harness.invites.previewResult = .failure(.network)
         let viewModel = try makeViewModel()
 
         await viewModel.load()
 
-        #expect(viewModel.loadFailed && !viewModel.canJoin)
-        #expect(harness.presentedError == .inviteExpired)
+        #expect(viewModel.loadFailed && viewModel.canRetry && !viewModel.canJoin && viewModel.refusal == nil)
+        #expect(harness.presentedError == .network)
+    }
+
+    /// An invalid or expired code is answered in the sheet itself; a popup on top would say the same thing twice.
+    @Test(arguments: [AppError.inviteInvalid, .inviteExpired])
+    func aRefusedCodeIsShownInlineWithoutAPopup(error: AppError) async throws {
+        harness.invites.previewResult = .failure(error)
+        let viewModel = try makeViewModel()
+
+        await viewModel.load()
+
+        #expect(viewModel.refusal == error && viewModel.loadFailed && !viewModel.canRetry && !viewModel.canJoin)
+        #expect(harness.presentedError == nil)
     }
 
     @Test func guestsMustSignInBeforeJoining() async throws {

@@ -145,6 +145,7 @@ nonisolated extension AppBranding {
             static let back = "Back"
             static let done = "Done"
             static let previewTitle = "You're invited"
+            static let unavailableTitle = "This invite can't be used"
             static let alreadyMember = "You're already in this group"
             static let expiresAtFormat = "Expires %@"
             static let shareTextFormat = "Join %@ on lily"
