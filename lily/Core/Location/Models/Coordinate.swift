@@ -22,4 +22,8 @@ nonisolated struct Coordinate: Codable, Hashable, Sendable {
         return Coordinate(latitude: (latitude * factor).rounded() / factor,
                           longitude: (longitude * factor).rounded() / factor)
     }
+
+    /// The position as the backend receives it (`AppConfig.Events.positionPrecision`, about a kilometre): what Explore
+    /// sends with a request and what its staleness check compares, so the two can never drift apart.
+    var coarse: Coordinate { rounded(toDecimals: AppConfig.Events.positionPrecision) }
 }

@@ -62,7 +62,7 @@ struct GroupDependencies {
     let unreadCenter: UnreadCenter
     let catchUp: ChatCatchUp
     let realtime: RealtimeSessionController
-    /// Every groups screen reports failures through it: the popup, plus `MeStore.noteTermsRequired()` on `TERMS_REQUIRED`.
+    /// Every groups and chat screen reports failures through it: the popup, plus `MeStore.noteTermsRequired()` on `TERMS_REQUIRED`.
     let errorReporter: GroupErrorReporter
     let pasteboard: any Pasteboard
     /// Invite links (and `-open-invite`) wait here until the root view can present the preview.
@@ -115,7 +115,7 @@ struct GroupDependencies {
     }
 
     /// Everything here that holds state for the signed-in user; `SessionController` tells them when the session ends.
-    var sessionObservers: [any SessionObserver] { [myGroups, me, chatHistory, unreadCenter, realtime] }
+    var sessionObservers: [any SessionObserver] { [myGroups, me, chatHistory, unreadCenter, realtime, navigation] }
 }
 
 extension AppDependencies {

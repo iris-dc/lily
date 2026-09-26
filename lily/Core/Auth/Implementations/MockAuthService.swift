@@ -15,15 +15,18 @@ final class MockAuthService: AuthService {
     private let store: any SessionStore
     /// `-mock-user-id`: every sign-in yields this user, so two simulators can act as two people.
     private let userIDOverride: String?
+    private let sleep: Sleep
 
     init(behavior: MockAuthBehavior = .succeed,
          delay: Duration = AppConfig.Auth.mockSignInDelay,
          store: any SessionStore,
-         userIDOverride: String? = nil) {
+         userIDOverride: String? = nil,
+         sleep: @escaping Sleep = systemSleep) {
         self.behavior = behavior
         self.delay = delay
         self.store = store
         self.userIDOverride = userIDOverride
+        self.sleep = sleep
     }
 
     func restoreSession() async throws -> AuthSession? {
@@ -64,7 +67,7 @@ final class MockAuthService: AuthService {
     }
 
     private func simulateNetwork() async throws {
-        if delay > .zero { try await Task.sleep(for: delay) }
+        if delay > .zero { try await sleep(delay) }
         if case .fail(let error) = behavior { throw error }
     }
 }

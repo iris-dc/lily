@@ -102,15 +102,19 @@ struct MyGroupsStoreTests {
         #expect(repository.requestedScopes.count == 1)
     }
 
+    /// The second call runs as a task: it joins the first and answers with it, so awaiting it inline would wait for
+    /// the release that comes after.
     @Test func concurrentReloadsCollapseIntoOne() async {
         repository.holdsRequests = true
         let store = makeStore()
 
         let first = Task { await store.reload() }
         await settle(until: { store.isLoading })
-        await store.reload()
+        let second = Task { await store.reload() }
+        await Task.yield()
         repository.releaseRequests()
         await first.value
+        await second.value
 
         #expect(repository.requestedScopes.count == 1 && !store.isLoading)
     }

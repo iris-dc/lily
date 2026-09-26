@@ -124,19 +124,51 @@ struct ChatViewModelTests {
         #expect(harness.controller.subscribedRooms["g"] == 2 && viewModel.subscribedEpoch == 2)
     }
 
+    /// The page answers whether it brought new rows: a same-day prepend keeps the day chip as the first row, so the
+    /// transcript cannot tell from the rows alone.
     @Test func loadOlderPrependsAPageWithoutMovingTheWatermark() async {
         let (harness, viewModel) = await makeHarness()
         var room = ChatRoomState(groupID: "g", channelEpoch: 1)
         room.applyNewest(.fixture([second], hasMore: true))
         harness.cache.store(room, for: "g")
         harness.chat.olderPages = [.fixture([first])]
+        let firstRow = viewModel.rows.first?.id
 
-        await viewModel.loadOlder()
+        let loaded = await viewModel.loadOlder()
 
+        #expect(loaded && viewModel.rows.first?.id == firstRow, "same day: the first row is still the day chip")
         #expect(harness.chat.olderRequests.map(\.before) == ["m2"])
         #expect(viewModel.room.messages.map(\.id) == ["m1", "m2"] && !viewModel.hasOlder && viewModel.room.restWatermark == "m2")
-        await viewModel.loadOlder()
+        #expect(await !viewModel.loadOlder())
         #expect(harness.chat.olderRequests.count == 1, "nothing older to ask for")
+    }
+
+    @Test func anOlderPageThatBringsNothingNewSaysSo() async {
+        let (harness, viewModel) = await makeHarness()
+        var room = ChatRoomState(groupID: "g", channelEpoch: 1)
+        room.applyNewest(.fixture([second], hasMore: true))
+        harness.cache.store(room, for: "g")
+        harness.chat.olderPages = [.fixture([second], hasMore: true)]
+
+        #expect(await !viewModel.loadOlder(), "every row of the page was already held")
+
+        harness.chat.pageError = AppError.chatUnavailable
+        #expect(await !viewModel.loadOlder())
+        #expect(harness.errorCenter.current?.error == .chatUnavailable)
+    }
+
+    /// The backend's cursor may point past hidden messages; when the page named one, that is what the app asks with.
+    @Test func loadOlderAsksBeforeTheCursorThePageNamed() async {
+        let (harness, viewModel) = await makeHarness()
+        var room = ChatRoomState(groupID: "g", channelEpoch: 1)
+        room.applyNewest(.fixture([second], hasMore: true, nextBefore: "c-1"))
+        harness.cache.store(room, for: "g")
+        harness.chat.olderPages = [.fixture([first], hasMore: true)]
+
+        await viewModel.loadOlder()
+        await viewModel.loadOlder()
+
+        #expect(harness.chat.olderRequests.map(\.before) == ["c-1", "m1"], "then before the oldest id, the page named none")
     }
 
     @Test func losingAccessDropsTheRoom() async {
@@ -157,5 +189,16 @@ struct ChatViewModelTests {
         #expect(harness.chat.deletedMessageIDs == ["m1"])
         #expect(viewModel.room.messages.map(\.isDeleted) == [true, false])
         #expect(harness.logger.messages(in: .chat, at: .info).contains("Message m1 deleted in group g"))
+    }
+
+    /// The backend gates deletes behind the current terms like every other write: the terms sheet must follow the popup.
+    @Test func aTermsRequiredOnDeleteRaisesTheTermsSheet() async {
+        let (harness, viewModel) = await makeHarness(cached: [first])
+        harness.chat.deleteError = AppError.termsRequired
+
+        await viewModel.delete(first)
+
+        #expect(harness.errorCenter.current?.error == .termsRequired && harness.termsRequiredCount == 1)
+        #expect(viewModel.room.messages.map(\.isDeleted) == [false])
     }
 }

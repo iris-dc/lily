@@ -75,11 +75,8 @@ struct ChatTranscript: View {
     }
 
     private func loadOlder() async {
-        let oldest = viewModel.rows.first?.id
-        await viewModel.loadOlder()
-        if viewModel.rows.first?.id == oldest {
-            policy.didNotLoadOlder()
-        }
+        let loaded = await viewModel.loadOlder()
+        if !loaded { policy.didNotLoadOlder() }
     }
 
     nonisolated private static func snapshot(_ geometry: ScrollGeometry) -> TranscriptScrollPolicy.Snapshot {

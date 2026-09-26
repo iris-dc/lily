@@ -6,6 +6,8 @@ enum TestFixtures {
     static let user = AuthUser(id: "u-1", displayName: "Test Person", email: "test@example.com")
     static let session = AuthSession(user: user)
     static let credentials = EmailCredentials(email: "jane.doe@example.com", password: "correct-horse")
+    /// Munich: far enough from `AppConfig.Location.mockCenter` that a move there rounds differently at any precision.
+    static let elsewhere = Coordinate(latitude: 48.1374, longitude: 11.5755)
     /// Laurel's `CreateEventRequest.UUID_PATTERN`, copied so the contract tests prove a `clientEventId` it accepts.
     static let backendEventIdPattern = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 

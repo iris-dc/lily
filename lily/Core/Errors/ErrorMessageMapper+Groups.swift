@@ -74,6 +74,8 @@ nonisolated extension ErrorMessageMapper {
             ErrorMessage(title: "Invite not valid", body: "This invite is unknown, was revoked or has been used up.")
         case .inviteExpired:
             ErrorMessage(title: "Invite expired", body: "Ask for a new invite link.")
+        case .inviteUnavailable:
+            ErrorMessage(title: "Couldn't check this invite", body: "Give it another try in a moment.")
         case .inviteLimitReached:
             ErrorMessage(title: "Too many invites", body: "Revoke an existing invite before creating another.")
         default:

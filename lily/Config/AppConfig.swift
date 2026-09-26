@@ -104,9 +104,9 @@ nonisolated enum AppConfig {
         static let baseURL = productionBaseURL
         #endif
         static let requestTimeout: TimeInterval = 15
-        /// Pause before the one automatic repeat of a join or leave the backend answered with `TRY_AGAIN` (the
-        /// write lost a race with another player or was throttled by DynamoDB; the same request very likely
-        /// succeeds on the next attempt).
+        /// Pause before the one automatic repeat of a write the backend answered with `TRY_AGAIN` (a join, a leave,
+        /// a group change, an invite or a chat send lost a race with another caller or was throttled by DynamoDB;
+        /// the same request very likely succeeds on the next attempt).
         static let tryAgainDelay: Duration = .milliseconds(400)
         /// Debug builds identify the signed-in user to the local backend with `Headers.localUserID` (it runs without
         /// Cognito). Release builds never send it; they will carry a Cognito token instead.

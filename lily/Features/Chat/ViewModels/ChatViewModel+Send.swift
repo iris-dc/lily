@@ -1,7 +1,8 @@
 import Foundation
 
 /// Sending, retrying and deleting. A send shows its bubble at once and keeps its client id through every retry, so the
-/// backend replays instead of duplicating; an answer that never came is settled by a catch-up before Retry is offered.
+/// backend replays instead of duplicating; a `TRY_AGAIN` (the sender's own overlapping writes racing on the backend)
+/// is repeated once by itself, and an answer that never came is settled by a catch-up before Retry is offered.
 extension ChatViewModel {
     func send() async {
         guard canSend else { return }
@@ -33,7 +34,9 @@ extension ChatViewModel {
 
     private func perform(_ draft: MessageDraft) async {
         do {
-            let sent = try await repository.send(groupID: group.id, draft)
+            let sent = try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: logRetry) {
+                try await repository.send(groupID: group.id, draft)
+            }
             settle(draft.clientMessageID, with: sent.message)
             logger.info(.chat, "Message sent \(sent.message.id) in group \(group.id)")
             noteRead()
@@ -76,6 +79,10 @@ extension ChatViewModel {
         guard room.contains(clientMessageID: clientMessageID) else { return false }
         pending.removeAll { $0.clientMessageID == clientMessageID }
         return true
+    }
+
+    private func logRetry() {
+        logger.info(.chat, "Send lost a race in group \(group.id); retrying once")
     }
 
     private func markFailed(_ clientMessageID: String) {

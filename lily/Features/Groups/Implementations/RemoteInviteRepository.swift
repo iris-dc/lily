@@ -25,9 +25,10 @@ final class RemoteInviteRepository: InviteRepository {
         return try await client.send(.delete(path), failingWith: .groupActionFailed)
     }
 
+    /// Only `INVITE_INVALID` and `INVITE_EXPIRED` judge the code; anything unnamed is a failed check, worth a retry.
     func preview(code: InviteCode) async throws -> InvitePreview {
         let request = APIRequest<InvitePreview>.post(AppConfig.API.Paths.invitePreview, body: InviteCodePayload(code))
-        return try await client.send(request, failingWith: .inviteInvalid)
+        return try await client.send(request, failingWith: .inviteUnavailable)
     }
 
     func redeem(code: InviteCode) async throws -> SportGroup {

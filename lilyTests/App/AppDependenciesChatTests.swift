@@ -2,22 +2,20 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The chat and realtime wiring per launch argument; the main suite is at its type-body limit.
+/// The chat and realtime wiring per launch argument; the main suite is at its type-body limit. The mock echo runs on
+/// the real clock, so the end-to-end case waits for it on a probe; the time limit keeps a lost echo from hanging.
 @MainActor
+@Suite(.timeLimit(.minutes(1)))
 struct AppDependenciesChatTests {
-    private func makeDefaults() -> UserDefaults {
-        UserDefaults(suiteName: "lily.tests.dependencies.chat.\(UUID().uuidString)")!
-    }
-
     @Test func mockEventsSelectTheInMemoryChatAndBusAndTheDefaultTheRemoteOnes() async {
-        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeDefaults())
+        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeTestDefaults())
         #expect(mocked.chatRepository is MockChatRepository)
         #expect((mocked.chatRepository as? MockChatRepository)?.autoReplies == false)
         #expect(mocked.realtime.transport is MockRealtimeTransport)
         #expect(mocked.realtime.endpointProvider is FixedRealtimeEndpointProvider)
         #expect(await mocked.realtime.endpointProvider.endpoint() == AppConfig.Realtime.mockEndpoint)
 
-        let remote = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
+        let remote = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
         #expect(remote.chatRepository is RemoteChatRepository)
         #expect(remote.realtime.transport is NoRealtimeTransport)
         #expect(remote.realtime.endpointProvider is RemoteRealtimeEndpointProvider)
@@ -26,7 +24,7 @@ struct AppDependenciesChatTests {
 
     @Test func realtimeEndpointLaunchArgumentOverridesDiscovery() async {
         let arguments = [AppConfig.LaunchArguments.realtimeEndpoint, "https://abc.appsync-realtime-api.eu-central-1.amazonaws.com/event"]
-        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeDefaults())
+        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeTestDefaults())
 
         #expect(await dependencies.realtime.endpointProvider.endpoint() == URL(string: arguments[1]))
 
@@ -38,7 +36,7 @@ struct AppDependenciesChatTests {
 
     @Test func mockChatRepliesLaunchArgumentTurnsOnTheAutoReply() {
         let arguments = [AppConfig.LaunchArguments.mockEvents, AppConfig.LaunchArguments.mockChatReplies]
-        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeDefaults())
+        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeTestDefaults())
         #expect((dependencies.chatRepository as? MockChatRepository)?.autoReplies == true)
     }
 
@@ -55,11 +53,11 @@ struct AppDependenciesChatTests {
         let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
                                                                    AppConfig.LaunchArguments.mockAuth,
                                                                    AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeDefaults())
+                                                       defaults: makeTestDefaults())
         await dependencies.sessionController.signIn(with: .apple)
         await dependencies.realtime.setDesired(active: true, user: dependencies.sessionController.state.user)
         dependencies.chatHistory.store(ChatRoomState(groupID: "g", channelEpoch: 1), for: "g")
-        dependencies.unreadCenter.markUnread(groupID: "g")
+        dependencies.unreadCenter.markUnread(groupID: "g", messageID: "m1")
         #expect(dependencies.realtime.state == .connected)
 
         await dependencies.sessionController.signOut()
@@ -69,14 +67,16 @@ struct AppDependenciesChatTests {
         #expect(dependencies.realtime.subscribedRooms.isEmpty)
     }
 
-    /// The mock run end to end: Mine feeds the rooms and the unread set, a chat opens on fixtures, a send echoes back.
+    /// The mock run end to end: Mine feeds the rooms and the unread set, a chat opens on fixtures and reads its room
+    /// for good (the next Mine load shows it read), a send echoes back.
     @Test func theMockChatWorksThroughTheFactories() async throws {
         let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
                                                                    AppConfig.LaunchArguments.mockAuth,
                                                                    AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeDefaults())
+                                                       defaults: makeTestDefaults())
         await dependencies.sessionController.signIn(with: .apple)
         await dependencies.realtime.setDesired(active: true, user: dependencies.sessionController.state.user)
+        dependencies.myGroupsDidLoad()
         dependencies.myGroupsDidChange()
         #expect(dependencies.unreadCenter.unreadGroupIDs == [MockGroupFixtures.kickersID])
         #expect(dependencies.realtime.subscribedRooms.count == 3)
@@ -86,10 +86,20 @@ struct AppDependenciesChatTests {
         await viewModel.appear()
         #expect(viewModel.rows.count > AppConfig.Chat.mockMessagesPerRoom && dependencies.unreadCenter.unreadGroupIDs.isEmpty)
 
+        await dependencies.myGroups.reload()
+        dependencies.myGroupsDidLoad()
+        #expect(dependencies.unreadCenter.unreadGroupIDs.isEmpty, "a load after reading the room brings no dot back")
+        #expect(dependencies.myGroups.groups.first { $0.id == MockGroupFixtures.kickersID }?.hasUnread == false)
+
+        // The controller applies an envelope to the room cache before it hands it to its consumers, so once the probe
+        // has the echo, the cache has already seen it.
+        let echoes = dependencies.realtime.envelopes(for: kickers.id)
+        let echo = Task { await echoes.first { _ in true } }
         viewModel.draft.text = "hello"
         await viewModel.send()
         #expect(viewModel.pending.isEmpty && viewModel.room.messages.last?.text == "hello")
-        try await Task.sleep(for: AppConfig.Chat.mockEchoDelay * 2)
+        let sent = try #require(viewModel.room.messages.last)
+        #expect(await echo.value == .message(sent), "the send echoes back over the mock bus")
         #expect(viewModel.room.messages.filter { $0.text == "hello" }.count == 1, "the echo is deduplicated")
         await viewModel.cancel()
     }

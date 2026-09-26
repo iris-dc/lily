@@ -7,8 +7,11 @@ final class FakeEventRepository: EventRepository {
     var result: Result<[SportEvent], AppError> = .success([])
     /// Thrown instead of `result` when set, for errors that are not `AppError` (such as `CancellationError`).
     var thrownError: (any Error)?
-    /// While true, `events(in:near:)` records the call and then suspends until `releaseRequests()`.
-    var holdsRequests = false
+    /// While true, every request records its call and then suspends until `releaseRequests()`.
+    var holdsRequests: Bool {
+        get { hold.isEnabled }
+        set { hold.isEnabled = newValue }
+    }
     /// Thrown by `join` and `leave` when set; otherwise they answer with the event from `result`, adjusted.
     var participationError: (any Error)?
     /// Thrown by the next `join` or `leave` only, ahead of `participationError`: for answers that change between
@@ -17,7 +20,7 @@ final class FakeEventRepository: EventRepository {
     /// Thrown by `create` when set; otherwise the draft becomes an event hosted by `hostUserID`, joined, 1 of N.
     var createError: (any Error)?
     var hostUserID = "host"
-    private var pending: [CheckedContinuation<Void, Never>] = []
+    private let hold = RequestHold()
     private(set) var requestedScopes: [EventScope] = []
     /// The position each `events(in:near:)` carried, `nil` included, in call order.
     private(set) var requestedPositions: [Coordinate?] = []
@@ -29,7 +32,7 @@ final class FakeEventRepository: EventRepository {
     func events(in scope: EventScope, near position: Coordinate?) async throws -> [SportEvent] {
         requestedScopes.append(scope)
         requestedPositions.append(position)
-        await holdIfRequested()
+        await hold.wait()
         if let thrownError { throw thrownError }
         return try result.get()
     }
@@ -37,7 +40,7 @@ final class FakeEventRepository: EventRepository {
     /// Answers from `result` like `events(in:near:)`, so a test sets the "server state" once for both.
     func event(id: String) async throws -> SportEvent {
         fetchedEventIDs.append(id)
-        await holdIfRequested()
+        await hold.wait()
         if let thrownError { throw thrownError }
         return try stored(id)
     }
@@ -54,7 +57,7 @@ final class FakeEventRepository: EventRepository {
 
     func create(_ draft: EventDraft) async throws -> SportEvent {
         createdDrafts.append(draft)
-        await holdIfRequested()
+        await hold.wait()
         if let createError { throw createError }
         return draft.makeEvent(hostUserId: hostUserID,
                                hostName: TestFixtures.user.displayName,
@@ -63,19 +66,11 @@ final class FakeEventRepository: EventRepository {
 
     /// Lets every held request through and stops holding new ones.
     func releaseRequests() {
-        holdsRequests = false
-        pending.forEach { $0.resume() }
-        pending.removeAll()
-    }
-
-    private func holdIfRequested() async {
-        if holdsRequests {
-            await withCheckedContinuation { pending.append($0) }
-        }
+        hold.release()
     }
 
     private func participationResult(for eventId: String, delta: Int, isJoined: Bool) async throws -> SportEvent {
-        await holdIfRequested()
+        await hold.wait()
         if let error = nextParticipationError {
             nextParticipationError = nil
             throw error

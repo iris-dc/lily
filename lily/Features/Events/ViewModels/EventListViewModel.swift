@@ -27,8 +27,10 @@ final class EventListViewModel {
     /// TTL, the change counter and caller the content reflects, and the cooldown after a failed load.
     private var freshness = ContentFreshness(staleAfter: AppConfig.Events.listStaleAfter,
                                              retryAfterFailure: AppConfig.Events.retryAfterFailure)
-    /// Whether the current content was asked for with the user's position, which lets the backend order it by distance.
-    private var loadedWithPosition = false
+    /// The position the current content was asked for, as `Coordinate.coarse` (the rounding the backend, which orders
+    /// by distance, receives); `nil` after a load without one. Explore content for another position than the user's
+    /// now is stale.
+    private var loadedPosition: Coordinate?
 
     init(scope: EventScope,
          repository: any EventRepository,
@@ -68,8 +70,9 @@ final class EventListViewModel {
     }
 
     /// Loads once per `AppConfig.Events.listStaleAfter`, or sooner when another screen changed an event meanwhile,
-    /// the caller changed (sign-in or sign-out; `isJoined` is per caller) or the position became known after an
-    /// Explore load without one (the backend orders by distance), so a tab that reappears reuses what it already has.
+    /// the caller changed (sign-in or sign-out; `isJoined` is per caller) or the position is not the one the Explore
+    /// content was loaded for (it became known after a load without one, or the user moved; the backend orders by
+    /// distance), so a tab that reappears reuses what it already has.
     /// A failed load is retried only after `AppConfig.Events.retryAfterFailure`, so switching tabs while the backend
     /// is down does not hammer it, unless an event changed elsewhere or the caller changed meanwhile, which proves
     /// the backend is up and the answer different; `load()` (pull-to-refresh) never waits.
@@ -87,16 +90,15 @@ final class EventListViewModel {
     }
 
     /// Always asks the repository (pull-to-refresh). A call made while one is in flight is dropped. Explore sends the
-    /// user's position when known; one that arrived while the request was out earns one reload right away, so the
-    /// backend's relevance order replaces the plain time order without waiting for the next appearance.
+    /// user's position when known; one that arrived or moved while the request was out earns one reload right away, so
+    /// the backend's order for where the user is replaces the answer without waiting for the next appearance.
     func load() async {
         guard !isLoading else { return }
         isLoading = true
-        let position = requestPosition
-        let succeeded = await performLoad(near: position)
+        let succeeded = await performLoad(near: requestPosition)
         isLoading = false
-        if succeeded, position == nil, positionBecameKnown {
-            logger.debug(.cache, "Events for scope \(scope): position became known while loading; reloading")
+        if succeeded, let reason = positionReason {
+            logger.debug(.cache, "Events for scope \(scope): \(reason) while loading; reloading")
             await load()
         }
     }
@@ -144,22 +146,29 @@ final class EventListViewModel {
         events.insert(event, at: events.firstIndex { $0.startsAt > event.startsAt } ?? events.endIndex)
     }
 
-    /// Location is optional context: failures leave `userLocation` nil and the UI simply omits distances. A position
-    /// that arrives after an Explore load without one makes that content stale (see `loadIfStale`); a load in flight
-    /// notices the position itself when it finishes.
+    /// Asks for the position on every appearance: the cache in front of CoreLocation answers within its TTL, so a tab
+    /// that reappears within minutes costs nothing and one that reappears later follows the user. Location is optional
+    /// context: without a fix the UI simply omits distances, and a miss after a fix keeps the last known position rather
+    /// than blanking them. Explore content loaded for another position (or none) is stale then (see `loadIfStale`); a
+    /// load in flight notices the position itself when it finishes.
     func loadUserLocation() async {
-        guard userLocation == nil else { return }
-        userLocation = await locationService.currentLocation()
-        logger.info(.location, userLocation == nil ? "No user location" : "User location available")
-        if positionBecameKnown, !isLoading {
+        let before = userLocation
+        if let fix = await locationService.currentLocation() {
+            userLocation = fix
+        }
+        if userLocation != before {
+            logger.info(.location, before == nil ? "User location available" : "User location changed")
+        } else {
+            logger.debug(.location, userLocation == nil ? "No user location" : "User location unchanged")
+        }
+        if positionReason != nil, !isLoading {
             await loadIfStale()
         }
     }
 
-    /// For moments when permission may have changed (the app came back to the foreground): a remembered "no fix"
-    /// is dropped first, so the retry really asks CoreLocation instead of hitting the cache.
-    func retryUserLocationIfMissing() async {
-        guard userLocation == nil else { return }
+    /// For the return to the foreground, the one moment permission may have changed (Settings): a remembered "no fix"
+    /// is dropped first, so the request really asks CoreLocation instead of hitting the cache.
+    func refreshUserLocation() async {
         locationService.forgetMissingFix()
         await loadUserLocation()
     }
@@ -172,7 +181,7 @@ final class EventListViewModel {
         do {
             events = try await repository.events(in: scope, near: position)
             freshness.recordSuccess(at: now(), version: version, userID: userID)
-            loadedWithPosition = position != nil
+            loadedPosition = position?.coarse
             logger.info(.events, "Loaded \(events.count) events for scope \(scope); with position: \(position != nil)")
             return true
         } catch {
@@ -190,19 +199,21 @@ final class EventListViewModel {
     /// Only Explore is ordered by distance; My Events is the caller's own games, in start order.
     private var requestPosition: Coordinate? { scope == .upcoming ? userLocation : nil }
 
-    /// Content loaded without a position while one is known now: the backend can order it better.
-    private var positionBecameKnown: Bool {
-        freshness.hasLoaded && !loadedWithPosition && requestPosition != nil
+    /// Why the user's position makes the content stale, or `nil`: it was loaded without one that is known now, or for
+    /// another one than the user's now, so the backend can order it better.
+    private var positionReason: String? {
+        guard freshness.hasLoaded, let position = requestPosition?.coarse else { return nil }
+        guard let loadedPosition else { return "position became known" }
+        return loadedPosition == position ? nil : "position changed"
     }
 
     private var isWaitingToRetry: Bool {
         freshness.isWaitingToRetry(now: now(), version: changes.version, userID: identity.currentUserID)
     }
 
-    /// Why the content must be reloaded, or `nil` while it can be reused: the shared rules first, then the one
-    /// reason only Explore has, a position that arrived after a load without one.
+    /// Why the content must be reloaded, or `nil` while it can be reused: the shared rules first, then the reasons
+    /// only Explore has, a position that became known or changed since the load.
     private var stalenessReason: String? {
-        freshness.stalenessReason(now: now(), version: changes.version, userID: identity.currentUserID)
-            ?? (positionBecameKnown ? "position became known" : nil)
+        freshness.stalenessReason(now: now(), version: changes.version, userID: identity.currentUserID) ?? positionReason
     }
 }

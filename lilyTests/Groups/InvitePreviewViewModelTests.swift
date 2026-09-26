@@ -41,14 +41,17 @@ struct InvitePreviewViewModelTests {
         #expect(!harness.logs().joined().contains("KRZB"))
     }
 
-    @Test func aTransientFailureIsReportedAndCanBeRetried() async throws {
-        harness.invites.previewResult = .failure(.network)
+    /// Offline, or a preview the backend could not answer (`.inviteUnavailable`, the remote fallback for a 500 or an
+    /// unreadable body): no verdict on the code, so the popup shows and Try again stays.
+    @Test(arguments: [AppError.network, .inviteUnavailable])
+    func aTransientFailureIsReportedAndCanBeRetried(error: AppError) async throws {
+        harness.invites.previewResult = .failure(error)
         let viewModel = try makeViewModel()
 
         await viewModel.load()
 
         #expect(viewModel.loadFailed && viewModel.canRetry && !viewModel.canJoin && viewModel.refusal == nil)
-        #expect(harness.presentedError == .network)
+        #expect(harness.presentedError == error)
     }
 
     /// An invalid or expired code is answered in the sheet itself; a popup on top would say the same thing twice.

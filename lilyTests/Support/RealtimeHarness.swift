@@ -26,16 +26,23 @@ final class RealtimeHarness {
     let recorder = SpyInteractionRecorder()
     let unread = UnreadCenter()
     let errorCenter: ErrorCenter
+    let reporter: GroupErrorReporter
     let store: MyGroupsStore
     let cache: InMemoryChatHistoryCache
     let catchUp: ChatCatchUp
     let controller: RealtimeSessionController
     /// What the controller's jitter draws; a test replaces `pick` to steer it.
     let jitter = JitterSource()
+    private let termsRequests = CallCounter()
+
+    /// How often the reporter asked for the terms sheet.
+    var termsRequiredCount: Int { termsRequests.count }
 
     init(tokens: FakeAuthTokenProvider? = nil) {
         self.tokens = tokens
         errorCenter = ErrorCenter(logger: logger)
+        let termsRequests = self.termsRequests
+        reporter = GroupErrorReporter(errorCenter: errorCenter) { termsRequests.increment() }
         store = MyGroupsStore(repository: groups, identity: identity, changes: changes, errorCenter: errorCenter, logger: logger)
         cache = InMemoryChatHistoryCache(logger: logger)
         catchUp = ChatCatchUp(repository: chat, cache: cache, logger: logger)
@@ -80,11 +87,12 @@ final class RealtimeHarness {
                       catchUp: catchUp,
                       unread: unread,
                       identity: identity,
-                      errorCenter: errorCenter,
+                      reporter: reporter,
                       recorder: recorder,
                       logger: logger,
                       now: { [clock] in clock.now },
-                      sleep: { [sleep] in try await sleep.sleep(for: $0) })
+                      sleep: { [sleep] in try await sleep.sleep(for: $0) },
+                      tryAgainDelay: .zero)
     }
 
     /// Gives fire-and-forget work every chance to run, so "nothing more happened" can be asserted.

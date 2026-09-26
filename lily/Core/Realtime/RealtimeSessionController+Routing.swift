@@ -138,7 +138,7 @@ extension RealtimeSessionController {
         cache.update(groupID: groupID) { $0.insert(message) }
         guard openRoom?.groupID != groupID else { return }
         cache.compact(groupID: groupID)
-        if !message.isSent(by: identity.currentUserID) { unread.markUnread(groupID: groupID) }
+        if !message.isSent(by: identity.currentUserID) { unread.markUnread(groupID: groupID, messageID: message.id) }
     }
 
     /// `users/<sub>`: the caller's own membership moved; Mine is stale, and a membership that ended takes the room with it.

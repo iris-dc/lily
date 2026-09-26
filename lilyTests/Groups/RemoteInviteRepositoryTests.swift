@@ -71,10 +71,11 @@ struct RemoteInviteRepositoryTests {
         await #expect(throws: AppError.bannedFromGroup) { try await repository.redeem(code: code) }
     }
 
-    /// An unnamed preview failure reads as an invalid invite; an unnamed redeem or create as a failed group action.
+    /// An unnamed preview failure is a failed check, not a verdict on the code (only `INVITE_INVALID` is); an unnamed
+    /// redeem or create is a failed group action.
     @Test func unnamedFailuresFallBackPerRoute() async {
         client.error = APIError.http(status: 500, body: nil)
-        await #expect(throws: AppError.inviteInvalid) { try await repository.preview(code: code) }
+        await #expect(throws: AppError.inviteUnavailable) { try await repository.preview(code: code) }
         await #expect(throws: AppError.groupActionFailed) { try await repository.redeem(code: code) }
         await #expect(throws: AppError.groupActionFailed) { try await repository.create(groupID: "g1", options: InviteOptions()) }
         await #expect(throws: AppError.groupActionFailed) { try await repository.revoke(groupID: "g1", inviteID: "i") }

@@ -62,6 +62,25 @@ struct RealtimeSessionControllerRoutingTests {
         #expect(harness.logger.messages(in: .cache).contains("Catch-up skipped for group b (nothing new)"))
     }
 
+    /// A catch-up page answering a newer epoch than the room subscribed at means a `member_left` was missed while
+    /// offline: the room resubscribes at that epoch and is caught up once more, whatever its watermark says, because
+    /// the resubscribe reopened the gap the page had just closed.
+    @Test func resumeAdoptsTheEpochAPageRevealsAndCatchesUpThatRoomAgain() async {
+        let harness = RealtimeHarness()
+        harness.cache.store(.fixture(groupID: "g1", messages: [.fixture(id: "m1", groupID: "g1")]), for: "g1")
+        harness.groups.result = .success([.fixture(id: "g1", lastMessageId: "m5", role: .member)])
+        harness.chat.epoch = 2
+        harness.chat.newerPages = [.fixture([.fixture(id: "m5", groupID: "g1")], epoch: 2)]
+
+        await harness.connect()
+
+        #expect(harness.controller.subscribedRooms["g1"] == 2)
+        #expect(harness.chatLogs(.info).contains("Epoch changed for group g1: 1 -> 2"))
+        #expect(harness.chat.newerRequests.map(\.after) == ["m1", "m5"], "the second pass starts where the first left off")
+        await harness.yield()
+        #expect(Set(harness.transport.subscribedChannels) == [userChannel, .room(groupID: "g1", epoch: 2)])
+    }
+
     @Test func aMemberLeftIsTrustedAndResubscribedWithJitter() async {
         let harness = RealtimeHarness()
         harness.groups.result = .success([.fixture(id: "g1", role: .member)])
@@ -156,7 +175,7 @@ struct RealtimeSessionControllerRoutingTests {
         let harness = RealtimeHarness()
         harness.groups.result = .success([.fixture(id: "g1", role: .member)])
         harness.cache.store(.fixture(groupID: "g1"), for: "g1")
-        harness.unread.markUnread(groupID: "g1")
+        harness.unread.markUnread(groupID: "g1", messageID: "m0")
         await harness.connect()
         let version = harness.changes.version
         let stream = harness.controller.envelopes(for: "g1")

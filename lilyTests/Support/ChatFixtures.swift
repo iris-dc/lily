@@ -27,8 +27,12 @@ extension ChatMessage {
 }
 
 extension MessagePage {
-    static func fixture(_ messages: [ChatMessage], hasMore: Bool = false, epoch: Int = 1) -> MessagePage {
-        MessagePage(items: messages, hasMore: hasMore, channelEpoch: epoch)
+    static func fixture(_ messages: [ChatMessage],
+                        hasMore: Bool = false,
+                        epoch: Int = 1,
+                        nextBefore: String? = nil,
+                        nextAfter: String? = nil) -> MessagePage {
+        MessagePage(items: messages, hasMore: hasMore, channelEpoch: epoch, nextBefore: nextBefore, nextAfter: nextAfter)
     }
 }
 
@@ -56,7 +60,12 @@ extension ContractSamples {
     {"id":"01J8ZK7Q9X2M4N6P8R0T2V4W70","groupId":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","senderUserId":"seed-jonas",\
     "senderName":"Jonas","kind":"text","sentAt":"2026-09-24T18:06:00Z","isDeleted":true}
     """
-    static let messagePage = #"{"items":[\#(message),\#(systemMessage)],"hasMore":true,"channelEpoch":3}"#
+    static let messagePage = """
+    {"items":[\(message),\(systemMessage)],"hasMore":true,"channelEpoch":3,"nextBefore":"01J8ZK7Q9X2M4N6P8R0T2V4W6Y",\
+    "nextAfter":null}
+    """
+    /// A page from a backend that does not name continuation cursors yet.
+    static let messagePageWithoutCursors = #"{"items":[\#(message)],"hasMore":true,"channelEpoch":3}"#
     static let sentMessage = #"{"message":\#(message),"channelEpoch":3}"#
     static let readMarker = #"{"lastReadMessageId":"01J8ZK7Q9X2M4N6P8R0T2V4W6Y","channelEpoch":3}"#
     static let messageEnvelope = #"{"type":"message","message":\#(message)}"#

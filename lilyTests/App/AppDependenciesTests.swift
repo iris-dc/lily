@@ -4,13 +4,8 @@ import Testing
 
 @MainActor
 struct AppDependenciesTests {
-    /// Each test gets its own suite so parallel tests never share state.
-    private func makeDefaults() -> UserDefaults {
-        UserDefaults(suiteName: "lily.tests.dependencies.\(UUID().uuidString)")!
-    }
-
     @Test func resetSessionLaunchArgumentClearsStoredSession() {
-        let defaults = makeDefaults()
+        let defaults = makeTestDefaults()
         let store = UserDefaultsSessionStore(defaults: defaults, logger: SpyLogger())
         store.save(.guest)
 
@@ -20,7 +15,7 @@ struct AppDependenciesTests {
     }
 
     @Test func defaultLaunchKeepsStoredSession() {
-        let defaults = makeDefaults()
+        let defaults = makeTestDefaults()
         let store = UserDefaultsSessionStore(defaults: defaults, logger: SpyLogger())
         store.save(.guest)
 
@@ -30,7 +25,7 @@ struct AppDependenciesTests {
     }
 
     @Test func startAsGuestLaunchArgumentStoresGuestChoice() {
-        let defaults = makeDefaults()
+        let defaults = makeTestDefaults()
         _ = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
                                                     AppConfig.LaunchArguments.startAsGuest],
                                         defaults: defaults)
@@ -40,7 +35,7 @@ struct AppDependenciesTests {
     @Test func mockAuthFailLaunchArgumentMakesSignInFailWithAPopup() async {
         let failing = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
                                                               AppConfig.LaunchArguments.mockAuthFail],
-                                                  defaults: makeDefaults())
+                                                  defaults: makeTestDefaults())
         let signedIn = await failing.sessionController.signIn(with: .apple)
         #expect(!signedIn)
         #expect(failing.errorCenter.current != nil)
@@ -49,7 +44,7 @@ struct AppDependenciesTests {
 
     /// The shell binds to one navigation object and the events code to one tracker; a second instance would split them.
     @Test func groupCollaboratorsAreSharedInstances() {
-        let dependencies = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
+        let dependencies = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
 
         #expect(dependencies.navigation === dependencies.groups.navigation)
         #expect(dependencies.groupChanges === dependencies.groups.groupChanges)
@@ -72,12 +67,12 @@ struct AppDependenciesTests {
 
     /// Everything talks to the same backend, or everything stays in memory: a mock run never reaches Laurel for groups.
     @Test func mockEventsSelectTheMockGroupRepositoriesAndTheDefaultTheRemoteOnes() {
-        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeDefaults())
+        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeTestDefaults())
         #expect(mocked.groupRepository is MockGroupRepository)
         #expect(mocked.inviteRepository is MockInviteRepository)
         #expect(mocked.meRepository is MockMeRepository)
         #expect(mocked.moderationRepository is MockModerationRepository)
-        let remote = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
+        let remote = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
         #expect(remote.groupRepository is RemoteGroupRepository)
         #expect(remote.inviteRepository is RemoteInviteRepository)
         #expect(remote.meRepository is RemoteMeRepository)
@@ -90,7 +85,7 @@ struct AppDependenciesTests {
         let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
                                                                    AppConfig.LaunchArguments.mockAuth,
                                                                    AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeDefaults())
+                                                       defaults: makeTestDefaults())
         await dependencies.sessionController.signIn(with: .apple)
         await dependencies.myGroups.reload()
         await dependencies.me.loadIfNeeded()
@@ -105,7 +100,7 @@ struct AppDependenciesTests {
     @Test func mockUserIDLaunchArgumentOverridesEveryMockSignIn() async {
         let arguments = [AppConfig.LaunchArguments.resetSession, AppConfig.LaunchArguments.mockAuth,
                          AppConfig.LaunchArguments.mockEvents, AppConfig.LaunchArguments.mockUserID, "jane.doe"]
-        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeDefaults())
+        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeTestDefaults())
 
         await dependencies.sessionController.signIn(with: .apple)
         let expected = AuthUser(id: "jane.doe", displayName: "Jane Doe", email: "jane.doe@example.com")
@@ -121,30 +116,31 @@ struct AppDependenciesTests {
         let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
                                                                    AppConfig.LaunchArguments.mockAuth,
                                                                    AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeDefaults())
+                                                       defaults: makeTestDefaults())
         await dependencies.sessionController.signIn(with: .apple)
         #expect(dependencies.sessionController.state.user == MockUsers.user(for: .apple))
     }
 
     @Test func openInviteLaunchArgumentSeedsTheSharedDeepLinkCenter() {
         let arguments = [AppConfig.LaunchArguments.openInvite, AppConfig.Groups.mockInviteCode]
-        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeDefaults())
+        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeTestDefaults())
 
         #expect(dependencies.deepLinks === dependencies.groups.deepLinks)
         #expect(dependencies.deepLinks.pendingInvite?.value == AppConfig.Groups.mockInviteCode)
-        #expect(AppDependencies.makeDefault(arguments: [], defaults: makeDefaults()).deepLinks.pendingInvite == nil)
+        #expect(AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults()).deepLinks.pendingInvite == nil)
     }
 
     /// Nothing here touches Amplify: the client configures it on its first call, and none is made.
     @Test func defaultAuthIsCognitoAndFeedsTheTokenProvider() {
-        let dependencies = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
+        let dependencies = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
 
         #expect(dependencies.authService is CognitoAuthService)
         #expect(dependencies.tokenProvider is CognitoAuthService)
     }
 
     @Test func mockAuthLaunchArgumentSelectsTheMockWithoutATokenProvider() {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockAuth], defaults: makeDefaults())
+        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockAuth],
+                                                       defaults: makeTestDefaults())
 
         #expect(dependencies.authService is MockAuthService)
         #expect(dependencies.tokenProvider == nil)
@@ -153,7 +149,7 @@ struct AppDependenciesTests {
     @Test func mockAuthConfirmLaunchArgumentAsksForTheMockCode() async {
         let arguments = [AppConfig.LaunchArguments.resetSession, AppConfig.LaunchArguments.mockAuth,
                          AppConfig.LaunchArguments.mockAuthConfirm, AppConfig.LaunchArguments.mockEvents]
-        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeDefaults())
+        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeTestDefaults())
         let controller = dependencies.sessionController
 
         #expect(await controller.signUp(email: "a@b.co", password: "long-enough") == .confirmationRequired)
@@ -175,17 +171,18 @@ struct AppDependenciesTests {
     }
 
     @Test func mockLocationLaunchArgumentSelectsMockService() {
-        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockLocation], defaults: makeDefaults())
+        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockLocation],
+                                                 defaults: makeTestDefaults())
         #expect(mocked.locationService is MockLocationService)
-        let real = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
+        let real = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
         #expect((real.locationService as? CachedLocationService)?.upstream is CoreLocationService)
     }
 
     @Test func mockEventsLaunchArgumentSelectsInMemoryRepositories() {
-        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeDefaults())
+        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeTestDefaults())
         #expect(mocked.eventRepository is MockEventRepository)
         #expect(mocked.profileRepository is MockProfileRepository)
-        let remote = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
+        let remote = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
         #expect(remote.eventRepository is RemoteEventRepository)
         #expect(remote.profileRepository is RemoteProfileRepository)
     }
@@ -193,10 +190,10 @@ struct AppDependenciesTests {
     /// A mock run (UI tests, previews, `-mock-events`) must never post a statistic; the default wiring posts to the
     /// same backend the repositories use.
     @Test func mockEventsSelectTheNoOpRecorderAndTheDefaultTheRemoteOne() {
-        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeDefaults())
+        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeTestDefaults())
         #expect(mocked.interactionRecorder is NoOpInteractionRecorder)
         #expect(AppDependencies.makeMock().interactionRecorder is NoOpInteractionRecorder)
-        let remote = AppDependencies.makeDefault(arguments: [], defaults: makeDefaults())
+        let remote = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
         #expect(remote.interactionRecorder is RemoteInteractionRecorder)
     }
 
@@ -240,7 +237,7 @@ struct AppDependenciesTests {
         let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
                                                                    AppConfig.LaunchArguments.mockAuth,
                                                                    AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeDefaults())
+                                                       defaults: makeTestDefaults())
         #expect(dependencies.identity.currentUserID == nil)
 
         await dependencies.sessionController.signIn(with: .apple)

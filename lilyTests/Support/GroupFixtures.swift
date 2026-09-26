@@ -17,6 +17,7 @@ extension SportGroup {
                         createdAt: Date = Date(timeIntervalSince1970: 1_700_000_000),
                         deletedAt: Date? = nil,
                         role: MemberRole? = nil,
+                        lastReadMessageId: String? = nil,
                         hasUnread: Bool = false) -> SportGroup {
         SportGroup(id: id,
                    name: name,
@@ -32,7 +33,9 @@ extension SportGroup {
                    lastMessageAt: lastMessageAt,
                    createdAt: createdAt,
                    deletedAt: deletedAt,
-                   membership: role.map { GroupMembership(role: $0, joinedAt: createdAt, hasUnread: hasUnread) })
+                   membership: role.map {
+                       GroupMembership(role: $0, joinedAt: createdAt, lastReadMessageId: lastReadMessageId, hasUnread: hasUnread)
+                   })
     }
 }
 

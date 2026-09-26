@@ -6,8 +6,9 @@ import Testing
 struct UnreadCenterTests {
     private let center = UnreadCenter()
 
-    @Test func theMineLoadReplacesTheSet() {
-        center.markUnread(groupID: "stale")
+    /// Without local knowledge the snapshot rules: its flags are taken, and a group not in it is not the caller's.
+    @Test func theMineLoadSetsTheFlagsOfGroupsNothingIsKnownAbout() {
+        center.markUnread(groupID: "stale", messageID: "m1")
 
         center.apply(groups: [.fixture(id: "a", role: .member, hasUnread: true), .fixture(id: "b", role: .member)])
 
@@ -15,10 +16,38 @@ struct UnreadCenterTests {
         #expect(center.hasUnread(groupID: "a") && !center.hasUnread(groupID: "stale"))
     }
 
+    /// The snapshot was read before the room was: a room read here up to its newest message stays read, one with a
+    /// message newer than what was read here lights up.
+    @Test func theMineLoadCannotBringBackARoomReadHere() {
+        center.markUnread(groupID: "a", messageID: "m5")
+        center.markRead(groupID: "a", upTo: "m5")
+        center.markRead(groupID: "b", upTo: "m5")
+
+        center.apply(groups: [.fixture(id: "a", lastMessageId: "m5", role: .member, hasUnread: true),
+                              .fixture(id: "b", lastMessageId: "m6", role: .member, hasUnread: true)])
+
+        #expect(center.unreadGroupIDs == ["b"])
+    }
+
+    /// A live message the snapshot predates keeps its dot; one the snapshot's read marker already covers was read
+    /// elsewhere and loses it.
+    @Test func theMineLoadKeepsALiveMarkNewerThanItsReadMarker() {
+        center.markUnread(groupID: "a", messageID: "m7")
+        center.markUnread(groupID: "b", messageID: "m7")
+
+        center.apply(groups: [.fixture(id: "a", lastMessageId: "m6", role: .member, lastReadMessageId: "m6"),
+                              .fixture(id: "b", lastMessageId: "m7", role: .member, lastReadMessageId: "m7")])
+        #expect(center.unreadGroupIDs == ["a"])
+
+        center.apply(groups: [.fixture(id: "a", lastMessageId: "m7", role: .member, lastReadMessageId: "m7"),
+                              .fixture(id: "b", lastMessageId: "m7", role: .member, lastReadMessageId: "m7")])
+        #expect(center.unreadGroupIDs.isEmpty, "the dropped live mark does not return")
+    }
+
     @Test func liveMarksAndReadsMoveTheDot() {
-        center.markUnread(groupID: "a")
-        center.markUnread(groupID: "a")
-        center.markUnread(groupID: "b")
+        center.markUnread(groupID: "a", messageID: "m1")
+        center.markUnread(groupID: "a", messageID: "m2")
+        center.markUnread(groupID: "b", messageID: "m1")
         #expect(center.count == 2)
 
         center.markRead(groupID: "a")
@@ -26,9 +55,13 @@ struct UnreadCenterTests {
     }
 
     @Test func signOutClearsEverything() {
-        center.markUnread(groupID: "a")
+        center.markUnread(groupID: "a", messageID: "m9")
+        center.markRead(groupID: "b", upTo: "m9")
         center.sessionDidEnd()
         #expect(center.unreadGroupIDs.isEmpty)
+
+        center.apply(groups: [.fixture(id: "b", lastMessageId: "m1", role: .member, hasUnread: true)])
+        #expect(center.unreadGroupIDs == ["b"], "the next user's snapshot is not judged against the last one's reads")
     }
 }
 

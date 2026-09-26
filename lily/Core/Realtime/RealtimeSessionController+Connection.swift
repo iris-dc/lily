@@ -2,38 +2,49 @@ import Foundation
 
 /// Opening, renewing, backing off and closing the connection, and the resume protocol that follows every open.
 extension RealtimeSessionController {
-    /// One connect at a time: a second caller waits for the one in flight instead of opening a second socket.
+    /// One connect at a time: a caller finding one in flight waits for it and then makes its own attempt (a no-op
+    /// once connected), because the one it waited for may have been closed from under it. An attempt that a `close()`
+    /// superseded while the app still wants a connection is followed by another, in a task of its own, since the
+    /// superseded task is cancelled.
     func connect(fresh: Bool) async {
-        if let connectionTask {
-            await connectionTask.value
-            return
+        var wantsAnotherAttempt = true
+        while wantsAnotherAttempt {
+            while let inFlight = connectionTask {
+                _ = await inFlight.value
+                if connectionTask == inFlight { connectionTask = nil }
+            }
+            let task = Task { await connectIfWanted(fresh: fresh) }
+            connectionTask = task
+            wantsAnotherAttempt = await task.value
+            if connectionTask == task { connectionTask = nil }
         }
-        let task = Task { await connectIfWanted(fresh: fresh) }
-        connectionTask = task
-        await task.value
-        if connectionTask == task { connectionTask = nil }
     }
 
     /// Connects when the app is active, a user is signed in and an endpoint is known; otherwise records why not.
-    private func connectIfWanted(fresh: Bool) async {
-        guard isActive, let user, state != .connected, state != .connecting else { return }
+    /// Answers whether a `close()` superseded the attempt while a connection is still wanted.
+    private func connectIfWanted(fresh: Bool) async -> Bool {
+        guard isActive, let user, state != .connected, state != .connecting else { return false }
         connectionGeneration += 1
         let generation = connectionGeneration
         guard let endpoint = await endpointProvider.endpoint() else {
             state = .unavailable
             logger.info(.chat, "Realtime disabled; catch-up only")
-            return
+            return false
         }
         let token = await token(fresh: fresh)
+        guard !isSuperseded(generation) else { return wantsConnection }
         if tokenProvider != nil, token == nil {
             logger.warning(.chat, "No access token for the realtime connection; staying disconnected")
-            return
+            return false
         }
         state = .connecting
-        guard await open(endpoint) else { return }
-        guard generation == connectionGeneration, isActive else {
-            await transport.disconnect()
-            return
+        guard await open(endpoint, generation: generation) else { return false }
+        guard !isSuperseded(generation), isActive else {
+            // The socket opened for a connection that close() ended meanwhile; nobody else knows it exists, and this
+            // task is the cancelled one, so the disconnect runs in its own.
+            await Task { await transport.disconnect() }.value
+            state = .disconnected
+            return wantsConnection
         }
         state = .connected
         logger.info(.chat, "Chat connection opened")
@@ -41,10 +52,21 @@ extension RealtimeSessionController {
         subscribe(to: .user(sub: user.id))
         reconcileSubscriptions()
         await runResumeProtocol()
+        return false
+    }
+
+    /// `close()` cancels the connect in flight and moves the generation; either mark means the attempt is for a
+    /// connection that no longer exists.
+    private func isSuperseded(_ generation: Int) -> Bool {
+        generation != connectionGeneration || Task.isCancelled
+    }
+
+    private var wantsConnection: Bool {
+        isActive && user != nil
     }
 
     /// The transport's answer, sorted into what it means for the connection.
-    private func open(_ endpoint: URL) async -> Bool {
+    private func open(_ endpoint: URL, generation: Int) async -> Bool {
         do {
             try await transport.connect(endpoint: endpoint)
             return true
@@ -56,6 +78,11 @@ extension RealtimeSessionController {
             logger.info(.chat, "Realtime disabled; catch-up only")
         } catch {
             state = .disconnected
+            // The close() that superseded this attempt has its own follow-up; a timer here would double it.
+            guard !isSuperseded(generation) else {
+                logger.debug(.chat, "Chat connection attempt superseded (\(error))")
+                return false
+            }
             logger.warning(.chat, "Chat connection failed: \(error)")
             scheduleReconnect(reason: "connect failed")
         }
@@ -112,9 +139,11 @@ extension RealtimeSessionController {
         await connect(fresh: true)
     }
 
-    /// Ends every subscription and the connection; the desire to be connected is untouched.
+    /// Ends every subscription and the connection, and the connect in flight if there is one; the desire to be
+    /// connected is untouched.
     func close(reason: String) async {
         connectionGeneration += 1
+        connectionTask?.cancel()
         renewalTask?.cancel()
         renewalTask = nil
         reconnectTask?.cancel()
@@ -141,10 +170,19 @@ extension RealtimeSessionController {
         let limit = AppConfig.Chat.maxConcurrentCatchUps
         await catchUp.catchUpMovedRooms(store.groups, openRoomID: openRoomID, maxConcurrent: limit)
         let moved = adoptCachedEpochs()
-        // Resubscribing at an epoch a page revealed reopens the gap the catch-up just closed, for those rooms only.
+        // Resubscribing at an epoch a page revealed reopens the gap the catch-up just closed, for those rooms only;
+        // their watermarks say nothing new, so this pass names them outright.
         guard !moved.isEmpty else { return }
-        let movedGroups = store.groups.filter { moved.contains($0.id) }
-        await catchUp.catchUpMovedRooms(movedGroups, openRoomID: openRoomID, maxConcurrent: limit)
+        await catchUp.catchUpRooms(moved.sorted(), maxConcurrent: limit)
+    }
+
+    /// The resume protocol did not run because there is no connection to run it after: the open chat's room still
+    /// catches up, quietly, and the epoch its page answered is remembered for the next connect.
+    func catchUpOpenRoomWithoutConnection() async {
+        guard state != .connected, let openRoom else { return }
+        logger.info(.chat, "No connection; catching up the open room \(openRoom.groupID) over REST")
+        await catchUp.catchUpRooms([openRoom.groupID], maxConcurrent: 1)
+        if let epoch = cache.room(for: openRoom.groupID)?.channelEpoch { noteEpoch(epoch, for: openRoom.groupID) }
     }
 
     /// A page that came back with a newer epoch than the one subscribed means a `member_left` was missed; answers the
