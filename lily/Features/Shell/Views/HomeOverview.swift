@@ -41,11 +41,10 @@ struct HomeOverview: View {
         .padding(.bottom, DesignTokens.Spacing.xxl)
     }
 
+    /// A row opens the group's detail, the place to manage a membership; its chat lives on the Chats tab.
     @ViewBuilder private var groupsContent: some View {
         if hasGroups {
-            GroupRowList(groups: groups.groups, unread: dependencies.unreadCenter) {
-                dependencies.navigation.open(chat: $0)
-            }
+            GroupRowList(groups: groups.groups) { dependencies.navigation.open(group: $0) }
         } else if groups.isInitialLoad {
             loading
         } else {

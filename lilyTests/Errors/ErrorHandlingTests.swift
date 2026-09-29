@@ -10,8 +10,8 @@ struct ErrorMessageMapperTests {
         .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain, .participationFailed, .eventCreationFailed,
         .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned, .ownerCannotLeave,
         .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed, .contentRejected,
-        .inviteInvalid, .inviteExpired, .inviteUnavailable, .inviteLimitReached, .chatUnavailable, .messageSendFailed,
-        .messageNotFound,
+        .inviteExpired, .inviteUnavailable, .inboxUnavailable, .inviteActionFailed, .inviteNotPending, .alreadyMember,
+        .cannotInvite, .chatUnavailable, .messageSendFailed, .messageNotFound,
         .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired,
         .unknown,
     ]
@@ -39,11 +39,15 @@ struct ErrorMessageMapperTests {
         #expect(body == "Someone made a change at the same moment. Give it another tap.")
     }
 
-    /// A preview the backend could not answer must not read like a refused code: the code may well be fine.
-    @Test func anUnansweredInvitePreviewHasItsOwnCopy() {
-        let message = ErrorMessageMapper.message(for: .inviteUnavailable)
-        #expect(message.title == "Couldn't check this invite")
-        #expect(message.body == "Give it another try in a moment.")
+    /// Pinned: an invite that could not be sent, an inbox that could not load and an answer that failed each say so,
+    /// and a verdict on the invite reads as one, not as a failure to retry.
+    @Test func inviteAndInboxFailuresHaveTheirOwnTitles() {
+        #expect(ErrorMessageMapper.message(for: .inviteUnavailable).title == "Couldn't send the invite")
+        #expect(ErrorMessageMapper.message(for: .inboxUnavailable).title == "Couldn't load your notifications")
+        #expect(ErrorMessageMapper.message(for: .inviteActionFailed).title == "Couldn't answer the invite")
+        #expect(ErrorMessageMapper.message(for: .inviteNotPending).title == "This invite was already answered")
+        #expect(ErrorMessageMapper.message(for: .alreadyMember).title == "They're already in this group")
+        #expect(ErrorMessageMapper.message(for: .cannotInvite).title == "This person can't be invited")
     }
 
     /// A create that fails for no named reason must not read like a join that failed.
@@ -169,11 +173,13 @@ struct BackendErrorCodeTests {
         let expected: [String: AppError] = [
             "CONTENT_REJECTED": .contentRejected, "FORBIDDEN": .insufficientRole, "NOT_A_MEMBER": .notAMember,
             "BANNED": .bannedFromGroup, "ACCOUNT_SUSPENDED": .accountSuspended, "TERMS_REQUIRED": .termsRequired,
-            "GROUP_NOT_FOUND": .groupNotFound, "MESSAGE_NOT_FOUND": .messageNotFound, "INVITE_INVALID": .inviteInvalid,
+            "GROUP_NOT_FOUND": .groupNotFound, "MESSAGE_NOT_FOUND": .messageNotFound,
             "REPORT_NOT_FOUND": .reportFailed, "USER_NOT_FOUND": .userNotFound, "GROUP_ID_TAKEN": .groupCreationFailed,
             "GROUP_ID_REUSED": .groupCreationFailed, "GROUP_FULL": .groupFull, "OWNER_CANNOT_LEAVE": .ownerCannotLeave,
-            "MEMBER_BANNED": .memberBanned, "MEMBERSHIP_LIMIT": .membershipLimitReached, "INVITE_LIMIT": .inviteLimitReached,
-            "INVITE_EXPIRED": .inviteExpired, "BLOCK_LIMIT": .blockLimitReached,
+            "MEMBER_BANNED": .memberBanned, "MEMBERSHIP_LIMIT": .membershipLimitReached,
+            "INVITE_EXPIRED": .inviteExpired, "INVITE_NOT_PENDING": .inviteNotPending,
+            "INBOX_ITEM_NOT_FOUND": .inviteNotPending, "ALREADY_MEMBER": .alreadyMember, "CANNOT_INVITE": .cannotInvite,
+            "BLOCK_LIMIT": .blockLimitReached,
         ]
         for (raw, error) in expected {
             #expect(BackendErrorCode(rawValue: raw)?.appError == error, "\(raw)")

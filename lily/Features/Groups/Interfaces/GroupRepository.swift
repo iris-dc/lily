@@ -14,7 +14,7 @@ protocol GroupRepository {
     func update(id: String, _ draft: GroupDraft) async throws -> SportGroup
     /// Soft delete; the answer carries `deletedAt`. Owners and operators only.
     func delete(id: String) async throws -> SportGroup
-    /// Public groups only; a private one needs an invite (`InviteRepository.redeem`).
+    /// Public groups only; a private one is entered by accepting an invite from the inbox (`InboxRepository.accept`).
     func join(id: String) async throws -> SportGroup
     func leave(id: String) async throws -> SportGroup
     func remove(id: String, userID: String) async throws -> SportGroup

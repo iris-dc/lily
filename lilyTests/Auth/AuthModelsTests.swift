@@ -16,13 +16,6 @@ struct AuthUserTests {
 }
 
 struct SessionStateTests {
-    @Test func onlyGuestAndSignedInAreInsideApp() {
-        #expect(!SessionState.loading.isInsideApp)
-        #expect(!SessionState.signedOut.isInsideApp)
-        #expect(SessionState.guest.isInsideApp)
-        #expect(SessionState.signedIn(TestFixtures.user).isInsideApp)
-    }
-
     @Test func userIsOnlyExposedWhenSignedIn() {
         #expect(SessionState.signedIn(TestFixtures.user).user == TestFixtures.user)
         #expect(SessionState.guest.user == nil)

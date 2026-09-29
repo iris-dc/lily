@@ -79,7 +79,6 @@ struct InteractionTests {
         #expect(InteractionKind.groupViewed.rawValue == "group_viewed")
         #expect(InteractionKind.groupSearchPerformed.rawValue == "group_search_performed")
         #expect(InteractionKind.chatOpened.rawValue == "chat_opened")
-        #expect(InteractionKind.inviteShared.rawValue == "invite_shared")
     }
 
     @Test func groupViewedCarriesTheIdAndVisibilityAndNothingElse() throws {
@@ -100,13 +99,10 @@ struct InteractionTests {
         #expect(encoded["resultCount"] as? Int == 3)
     }
 
-    @Test func inviteSharedAndChatOpenedCarryTheGroupIdOnly() throws {
-        for interaction in [Interaction.inviteShared(groupID: "grp_01", at: Self.date),
-                            .chatOpened(groupID: "grp_01", at: Self.date)] {
-            let encoded = try json(interaction)
-            #expect(Set(encoded.keys) == ["kind", "occurredAt", "groupId"])
-            #expect(encoded["groupId"] as? String == "grp_01")
-        }
+    @Test func chatOpenedCarriesTheGroupIdOnly() throws {
+        let encoded = try json(Interaction.chatOpened(groupID: "grp_01", at: Self.date))
+        #expect(Set(encoded.keys) == ["kind", "occurredAt", "groupId"])
+        #expect(encoded["groupId"] as? String == "grp_01")
     }
 
     @Test func theBatchWrapsInteractionsAndTheReceiptDecodes() throws {

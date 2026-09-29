@@ -74,7 +74,8 @@ struct GroupDetailView: View {
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
             case .invite:
-                InviteSheet(viewModel: dependencies.makeInviteViewModel(for: group), errorCenter: dependencies.errorCenter)
+                InvitePeopleSheet(viewModel: dependencies.makeInvitePeopleViewModel(for: group),
+                                  errorCenter: dependencies.errorCenter)
             case .edit:
                 EditGroupSheet(viewModel: dependencies.makeEditGroupViewModel(for: group, onChange: viewModel.accept),
                                errorCenter: dependencies.errorCenter)

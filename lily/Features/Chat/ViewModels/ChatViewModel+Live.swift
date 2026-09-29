@@ -39,7 +39,7 @@ extension ChatViewModel {
             await adoptEpoch(updated.channelEpoch)
         case .groupDeleted:
             isGone = true
-        case .messageDeleted, .membershipChanged, .unknown:
+        case .messageDeleted, .membershipChanged, .inboxItem, .unknown:
             break
         }
     }

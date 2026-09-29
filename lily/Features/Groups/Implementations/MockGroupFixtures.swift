@@ -1,7 +1,7 @@
 import Foundation
 
 /// The six groups of a mock run: three the caller is in (as member, admin and owner), one to join, one that is full,
-/// and one private group reachable only through `AppConfig.Groups.mockInviteCode`.
+/// and one private group reachable only through the mock inbox's invite (`MockInboxFixtures`).
 nonisolated enum MockGroupFixtures {
     static let kickersID = "mock-group-kickers"
     static let runnersID = "mock-group-runners"

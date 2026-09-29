@@ -4,81 +4,87 @@ import Testing
 
 @MainActor
 struct RemoteInviteRepositoryTests {
+    /// `nonisolated`: `@Test(arguments:)` reads it off the main actor.
+    nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
+        ("NOT_A_MEMBER", .notAMember), ("FORBIDDEN", .insufficientRole), ("GROUP_NOT_FOUND", .groupNotFound),
+        ("USER_NOT_FOUND", .userNotFound), ("ALREADY_MEMBER", .alreadyMember), ("CANNOT_INVITE", .cannotInvite),
+        ("TERMS_REQUIRED", .termsRequired), ("RATE_LIMITED", .rateLimited(retryAfter: nil)), ("TRY_AGAIN", .tryAgain),
+        ("VALIDATION_FAILED", .inviteUnavailable),
+    ]
+    private static let otherFailures: [APIError] = [
+        .http(status: 500, body: nil), .http(status: 403, body: nil), .decodingFailed, .notHTTPResponse,
+    ]
+
     private let client = FakeAPIClient()
-    private let invite = Invite.fixture()
-    private let code = InviteCode(AppConfig.Groups.mockInviteCode)!
+    private let candidate = InviteCandidate.fixture()
 
     private var repository: RemoteInviteRepository { RemoteInviteRepository(client: client) }
 
-    @Test func createPostsTheOptionsToTheGroupsInvites() async throws {
-        client.responses = [invite]
-        let options = InviteOptions(maxUses: 10, expiresInDays: 30)
+    @Test func candidatesGetTheInviteesAndUnwrapTheItems() async throws {
+        client.responses = [Page(items: [candidate])]
 
-        #expect(try await repository.create(groupID: "g1", options: options) == invite)
+        #expect(try await repository.candidates(groupID: "g1") == [candidate])
+        let request = try #require(client.requests.first)
+        #expect(request.method == .get && request.path == "/api/groups/g1/invitees")
+        #expect(request.body == nil && request.queryItems.isEmpty)
+    }
+
+    @Test func invitePostsTheUserIdToTheGroupsInvites() async throws {
+        let sent = SentInvite.fixture(groupID: "g1")
+        client.responses = [sent]
+
+        #expect(try await repository.invite(groupID: "g1", userID: "u-2") == sent)
         let request = try #require(client.requests.first)
         #expect(request.method == .post && request.path == "/api/groups/g1/invites")
-        #expect(request.body as? InviteOptions == options)
+        #expect(request.body as? SendInvitePayload == SendInvitePayload(userId: "u-2"))
     }
 
-    @Test func theDefaultOptionsAreUnlimitedForTheDefaultDays() throws {
-        let options = InviteOptions()
-        #expect(options.maxUses == 0 && options.expiresInDays == AppConfig.Groups.inviteDefaultDays)
-        let data = try APIJSONCoding.makeEncoder().encode(options)
-        let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Int])
-        #expect(json == ["maxUses": 0, "expiresInDays": AppConfig.Groups.inviteDefaultDays])
+    @Test func theContractShapesDecode() throws {
+        let page = try ContractSamples.decode(Page<InviteCandidate>.self, from: ContractSamples.inviteCandidates)
+        #expect(page.items.map(\.displayName) == ["Marta", "Noor"] && page.nextCursor == nil)
+        let marta = InviteCandidate(userId: "seed-marta", displayName: "Marta", via: .group, viaName: "Kreuzberg Kickers")
+        #expect(page.items[0] == marta)
+        #expect(page.items[1].via == .event && page.items[1].viaName == "Sunset 5-a-side" && page.items[1].isInvited)
+
+        let sent = try ContractSamples.decode(SentInvite.self, from: ContractSamples.sentInvite)
+        #expect(sent.id == "01J9B4X6KQ2M8N0P3R5T7V9W1Y" && sent.groupId == "7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d")
+        #expect(sent.inviteeUserId == "seed-marta" && sent.inviteeName == "Marta" && sent.status == .pending)
+        #expect(sent.createdAt == APIJSONCoding.parseInstant("2026-09-29T10:00:00Z"))
+        #expect(sent.expiresAt == APIJSONCoding.parseInstant("2026-10-06T10:00:00Z"))
     }
 
-    @Test func listUnwrapsTheItemsAndRevokeDeletesByHandle() async throws {
-        client.responses = [Page(items: [invite]), invite.revoked(at: .now)]
-
-        #expect(try await repository.list(groupID: "g1") == [invite])
-        #expect(try await repository.revoke(groupID: "g1", inviteID: invite.inviteId).isRevoked)
-
-        #expect(client.requests.map(\.method) == [.get, .delete])
-        #expect(client.requests.map(\.path) == ["/api/groups/g1/invites", "/api/groups/g1/invites/\(invite.inviteId)"])
+    @Test func thePayloadEncodesTheUserIdAlone() throws {
+        let data = try APIJSONCoding.makeEncoder().encode(SendInvitePayload(userId: "u-2"))
+        #expect(String(bytes: data, encoding: .utf8) == #"{"userId":"u-2"}"#)
     }
 
-    /// The code is a capability: it travels in the body, and the path the client logs never contains it.
-    @Test func previewAndRedeemPostTheCodeInTheBodyNeverInThePath() async throws {
-        let preview = try ContractSamples.decode(InvitePreview.self, from: ContractSamples.invitePreview)
-        let group = SportGroup.fixture()
-        client.responses = [preview, group]
+    @Test(arguments: codeCases)
+    func backendCodesMapToAppErrors(code: String, expected: AppError) async {
+        client.error = APIError.http(status: 409, body: APIErrorBody(code: code, message: "m"))
 
-        #expect(try await repository.preview(code: code) == preview)
-        #expect(try await repository.redeem(code: code) == group)
+        await #expect(throws: expected) { try await repository.candidates(groupID: "g1") }
+        await #expect(throws: expected) { try await repository.invite(groupID: "g1", userID: "u-2") }
+    }
 
-        #expect(client.requests.map(\.method) == [.post, .post])
-        #expect(client.requests.map(\.path) == ["/api/invites/preview", "/api/invites/redeem"])
-        for request in client.requests {
-            #expect(!request.path.contains(code.value) && request.queryItems.isEmpty)
-            #expect(request.body as? InviteCodePayload == InviteCodePayload(code))
+    @Test func otherFailuresBecomeInviteUnavailable() async {
+        for error in Self.otherFailures {
+            client.error = error
+            await #expect(throws: AppError.inviteUnavailable) { try await repository.candidates(groupID: "g1") }
+            await #expect(throws: AppError.inviteUnavailable) { try await repository.invite(groupID: "g1", userID: "u-2") }
         }
     }
 
-    @Test func inviteCodesMapToTheirOwnErrors() async {
-        client.error = APIError.http(status: 404, body: APIErrorBody(code: "INVITE_INVALID", message: "m"))
-        await #expect(throws: AppError.inviteInvalid) { try await repository.redeem(code: code) }
+    @Test func statusOnlyFailuresAndTransportKeepTheSharedMapping() async {
+        client.error = APIError.http(status: 401, body: nil)
+        await #expect(throws: AppError.sessionExpired) { try await repository.candidates(groupID: "g1") }
 
-        client.error = APIError.http(status: 409, body: APIErrorBody(code: "INVITE_EXPIRED", message: "m"))
-        await #expect(throws: AppError.inviteExpired) { try await repository.preview(code: code) }
+        client.error = APIError.http(status: 429, body: nil)
+        await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.invite(groupID: "g1", userID: "u-2") }
 
-        client.error = APIError.http(status: 409, body: APIErrorBody(code: "INVITE_LIMIT", message: "m"))
-        await #expect(throws: AppError.inviteLimitReached) {
-            try await repository.create(groupID: "g1", options: InviteOptions())
-        }
+        client.error = URLError(.notConnectedToInternet)
+        await #expect(throws: AppError.network) { try await repository.invite(groupID: "g1", userID: "u-2") }
 
-        client.error = APIError.http(status: 403, body: APIErrorBody(code: "BANNED", message: "m"))
-        await #expect(throws: AppError.bannedFromGroup) { try await repository.redeem(code: code) }
-    }
-
-    /// An unnamed preview failure is a failed check, not a verdict on the code (only `INVITE_INVALID` is); an unnamed
-    /// redeem or create is a failed group action.
-    @Test func unnamedFailuresFallBackPerRoute() async {
-        client.error = APIError.http(status: 500, body: nil)
-        await #expect(throws: AppError.inviteUnavailable) { try await repository.preview(code: code) }
-        await #expect(throws: AppError.groupActionFailed) { try await repository.redeem(code: code) }
-        await #expect(throws: AppError.groupActionFailed) { try await repository.create(groupID: "g1", options: InviteOptions()) }
-        await #expect(throws: AppError.groupActionFailed) { try await repository.revoke(groupID: "g1", inviteID: "i") }
-        await #expect(throws: AppError.groupsUnavailable) { try await repository.list(groupID: "g1") }
+        client.error = URLError(.cancelled)
+        await #expect(throws: URLError(.cancelled)) { try await repository.candidates(groupID: "g1") }
     }
 }

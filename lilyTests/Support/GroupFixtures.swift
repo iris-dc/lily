@@ -57,18 +57,31 @@ extension GroupMember {
     }
 }
 
-extension Invite {
-    static func fixture(inviteId: String = "01J8INVITE00000000000000A", code: String? = "KRZB7K3MQX9P") -> Invite {
-        Invite(inviteId: inviteId,
-               code: code,
-               url: code.map { AppConfig.Groups.inviteLinkBaseURL.appending(path: $0) },
-               groupId: "g",
-               createdBy: TestFixtures.user.id,
-               createdAt: Date(timeIntervalSince1970: 1_700_000_000),
-               expiresAt: Date(timeIntervalSince1970: 1_700_604_800),
-               maxUses: 0,
-               uses: 0,
-               revokedAt: nil)
+extension InviteCandidate {
+    /// Someone the caller shares Kreuzberg Kickers with, not yet invited.
+    static func fixture(userId: String = "u-2",
+                        displayName: String = "Marta",
+                        via: InviteCandidateSource = .group,
+                        viaName: String = "Kreuzberg Kickers",
+                        isInvited: Bool = false) -> InviteCandidate {
+        InviteCandidate(userId: userId, displayName: displayName, via: via, viaName: viaName, isInvited: isInvited)
+    }
+}
+
+extension SentInvite {
+    /// A pending invite as the backend answers a send, a week before it expires.
+    static func fixture(id: String = "01J9INVITE0000000000000001",
+                        groupID: String = "g",
+                        inviteeUserId: String = "u-2",
+                        inviteeName: String = "Marta",
+                        createdAt: Date = Date(timeIntervalSince1970: 1_800_000_000)) -> SentInvite {
+        SentInvite(id: id,
+                   groupId: groupID,
+                   inviteeUserId: inviteeUserId,
+                   inviteeName: inviteeName,
+                   status: .pending,
+                   createdAt: createdAt,
+                   expiresAt: createdAt.addingTimeInterval(7 * 86_400))
     }
 }
 
@@ -81,7 +94,7 @@ extension Account {
     }
 }
 
-/// The groups, invites, moderation and account JSON exactly as the contract shows it.
+/// The groups, moderation and account JSON exactly as the contract shows it.
 extension ContractSamples {
     /// The contract event with the group the backend stamps on a game hosted in a public group.
     static let groupedEvent = """
@@ -106,14 +119,15 @@ extension ContractSamples {
     static let lastGroupPage = #"{"items":[\#(minimalGroup)],"nextCursor":null}"#
     static let member = #"{"userId":"seed-marta","displayName":"Marta","role":"owner","joinedAt":"2026-06-01T10:00:00Z"}"#
     static let memberList = #"{"items":[\#(member)]}"#
-    static let invite = """
-    {"inviteId":"01J8ZK7Q9X2M4N6P8R0T2V4W6Z","code":"KRZB7K3MQX9P","url":"https://api.iskra.red/invite/KRZB7K3MQX9P",\
-    "groupId":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","createdBy":"u-1","createdAt":"2026-09-24T18:00:00Z",\
-    "expiresAt":"2026-10-01T18:00:00Z","maxUses":10,"uses":2}
+    /// `GET /api/groups/{id}/invitees`: sorted by name, one candidate per shared group or game, `isInvited` per person.
+    static let inviteCandidates = """
+    {"items":[{"userId":"seed-marta","displayName":"Marta","via":"group","viaName":"Kreuzberg Kickers","isInvited":false},\
+    {"userId":"seed-noor","displayName":"Noor","via":"event","viaName":"Sunset 5-a-side","isInvited":true}]}
     """
-    static let invitePreview = """
-    {"group":{"id":"g3","name":"Climbing Buddies","description":"Bouldering after work","visibility":"private",\
-    "type":"climbing","memberCount":9},"expiresAt":"2026-10-01T18:00:00Z","isMember":false}
+    /// `201` of `POST /api/groups/{id}/invites`; the id is the invitee's inbox item id.
+    static let sentInvite = """
+    {"id":"01J9B4X6KQ2M8N0P3R5T7V9W1Y","groupId":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","inviteeUserId":"seed-marta",\
+    "inviteeName":"Marta","status":"pending","createdAt":"2026-09-29T10:00:00Z","expiresAt":"2026-10-06T10:00:00Z"}
     """
     static let me = """
     {"userId":"u-1","isOperator":true,"termsVersion":2,"acceptedTermsVersion":1,\
@@ -130,19 +144,5 @@ extension ContractSamples {
 
     static func decode<T: Decodable>(_ type: T.Type, from json: String) throws -> T {
         try APIJSONCoding.makeDecoder().decode(type, from: Data(json.utf8))
-    }
-}
-
-extension InvitePreview {
-    /// The preview of an invite into a private climbing group, as the mock and the contract sample show it.
-    static func fixture(groupID: String = "g3", isMember: Bool = false) -> InvitePreview {
-        InvitePreview(group: GroupSummary(id: groupID,
-                                          name: "Climbing Buddies",
-                                          description: "Bouldering after work",
-                                          visibility: .private,
-                                          type: .climbing,
-                                          memberCount: 9),
-                      expiresAt: Date(timeIntervalSince1970: 1_700_604_800),
-                      isMember: isMember)
     }
 }

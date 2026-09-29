@@ -139,59 +139,51 @@ final class FakeGroupRepository: GroupRepository {
     }
 }
 
+/// Scriptable `InviteRepository`: candidates answer from `candidatesResult`, invites from `inviteResult` or, without
+/// one, an invite built from the request; every call is recorded. `holdsRequests` parks every request until released.
 @MainActor
 final class FakeInviteRepository: InviteRepository {
-    var createResult: Result<Invite, AppError> = .success(.fixture())
-    var listResult: Result<[Invite], AppError> = .success([])
-    var previewResult: Result<InvitePreview, AppError> = .failure(.inviteInvalid)
-    var redeemResult: Result<SportGroup, AppError> = .failure(.inviteInvalid)
-    /// Thrown by the next redeems, one each, before `redeemResult` answers.
-    var transientRedeemErrors: [AppError] = []
-    /// Thrown by every revoke when set.
-    var revokeError: AppError?
-    /// While true, `create` records the call and then suspends until `releaseRequests()`.
+    struct SentInviteRequest: Equatable {
+        let groupID: String
+        let userID: String
+    }
+
+    var candidatesResult: Result<[InviteCandidate], AppError> = .success([])
+    /// Answered instead of an invite built from the request when set.
+    var inviteResult: Result<SentInvite, AppError>?
+    /// Thrown by the next invites, one each, before `inviteResult` is consulted: a `.tryAgain` that a repeat gets past.
+    var transientInviteErrors: [AppError] = []
     var holdsRequests: Bool {
         get { hold.isEnabled }
         set { hold.isEnabled = newValue }
     }
     private let hold = RequestHold()
-    private(set) var createdOptions: [(groupID: String, options: InviteOptions)] = []
-    private(set) var listedGroupIDs: [String] = []
-    private(set) var revocations: [(groupID: String, inviteID: String)] = []
-    private(set) var previewedCodes: [InviteCode] = []
-    private(set) var redeemedCodes: [InviteCode] = []
+    private(set) var candidateRequests: [String] = []
+    private(set) var sentInvites: [SentInviteRequest] = []
 
-    func create(groupID: String, options: InviteOptions) async throws -> Invite {
-        createdOptions.append((groupID, options))
-        await hold.wait()
-        return try createResult.get()
+    func candidates(groupID: String) async throws -> [InviteCandidate] {
+        candidateRequests.append(groupID)
+        try await holdIfRequested()
+        return try candidatesResult.get()
     }
 
-    func list(groupID: String) async throws -> [Invite] {
-        listedGroupIDs.append(groupID)
-        return try listResult.get()
+    func invite(groupID: String, userID: String) async throws -> SentInvite {
+        sentInvites.append(SentInviteRequest(groupID: groupID, userID: userID))
+        try await holdIfRequested()
+        if !transientInviteErrors.isEmpty { throw transientInviteErrors.removeFirst() }
+        if let inviteResult { return try inviteResult.get() }
+        return .fixture(groupID: groupID, inviteeUserId: userID)
     }
 
-    func revoke(groupID: String, inviteID: String) async throws -> Invite {
-        revocations.append((groupID, inviteID))
-        if let revokeError { throw revokeError }
-        return try createResult.get().revoked(at: .now)
-    }
-
-    /// Lets every held create through and stops holding new ones.
+    /// Lets every held request through and stops holding new ones.
     func releaseRequests() {
         hold.release()
     }
 
-    func preview(code: InviteCode) async throws -> InvitePreview {
-        previewedCodes.append(code)
-        return try previewResult.get()
-    }
-
-    func redeem(code: InviteCode) async throws -> SportGroup {
-        redeemedCodes.append(code)
-        if !transientRedeemErrors.isEmpty { throw transientRedeemErrors.removeFirst() }
-        return try redeemResult.get()
+    /// A caller cancelled while held learns of it once the hold lifts, as a URLSession task does.
+    private func holdIfRequested() async throws {
+        await hold.wait()
+        try Task.checkCancellation()
     }
 }
 

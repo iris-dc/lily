@@ -1,7 +1,7 @@
 import Foundation
 
 nonisolated extension AppBranding {
-    /// Copy of the groups screens, the group detail, the create sheet and the invite sheets.
+    /// Copy of the groups screens, the group detail, the create sheet and the invite sheet.
     enum Groups {
         static let title = "Groups"
         static let discover = "Discover"
@@ -10,19 +10,15 @@ nonisolated extension AppBranding {
         static let publicVisibility = "Public"
         static let privateVisibility = "Private"
         static let publicFooter = "Anyone can find and join"
-        static let privateFooter = "Only people with an invite can join"
+        static let privateFooter = "Only people who are invited can join"
         static let oneMemberFormat = "%ld member"
         static let membersFormat = "%ld members"
-        /// What the Home tab's badge means to assistive technology (the badge itself is not exposed).
-        static let oneUnreadRoom = "1 unread room"
-        static let unreadRoomsFormat = "%ld unread rooms"
         static let openChat = "Open chat"
         static let invite = "Invite"
         static let createGame = "Create game"
         static let joinGroup = "Join group"
         static let groupFull = "Group is full"
         static let inviteOnly = "Invite only"
-        static let joinWithCode = "Join with code"
         static let joinConfirmationFormat = "Join %@?"
         static let unavailable = "This group is no longer available"
         static let discoverEmptyTitle = "Nothing found"
@@ -65,10 +61,6 @@ nonisolated extension AppBranding {
 
         static func members(_ count: Int) -> String {
             String(format: count == 1 ? oneMemberFormat : membersFormat, count)
-        }
-
-        static func unreadRooms(_ count: Int) -> String {
-            count == 1 ? oneUnreadRoom : String(format: unreadRoomsFormat, count)
         }
 
         static func joinConfirmation(groupName: String) -> String {
@@ -122,49 +114,29 @@ nonisolated extension AppBranding {
             }
         }
 
+        /// The sheet that invites people the caller shares a group or a game with; the invitee answers from their inbox.
         enum Invite {
             static let title = "Invite people"
-            static let expiry = "Expires"
-            static let expiryDaysFormat = "%ld days"
-            static let expiryOneDay = "1 day"
-            static let uses = "Can be used by"
-            static let unlimitedUses = "Anyone with the link"
-            static let oneUse = "One person"
-            static let limitedUsesFormat = "Up to %ld"
-            static let share = "Share link"
-            static let copyCode = "Copy code"
-            static let codeCopied = "Code copied"
-            static let revoke = "Revoke"
-            static let codeField = "Invite code"
-            static let codePlaceholder = "KRZB-7K3M-QX9P"
-            static let codePrompt = "Enter the code from your invite."
-            static let redeem = "Continue"
-            static let back = "Back"
             static let done = "Done"
-            static let previewTitle = "You're invited"
-            static let unavailableTitle = "This invite can't be used"
-            static let alreadyMember = "You're already in this group"
-            static let expiresAtFormat = "Expires %@"
-            static let shareTextFormat = "Join %@ on iskra"
+            static let searchPrompt = "Search people"
+            /// The row's button before and after the invite went out.
+            static let send = "Invite"
+            static let sent = "Invited"
+            /// `%@` the shared group's name / the shared game's title.
+            static let viaGroupFormat = "In %@"
+            static let viaEventFormat = "Played %@"
+            static let emptyTitle = "Nobody to invite yet"
+            static let emptyMessage = "People you share a group or a game with show up here."
+            static let noMatchesTitle = "Nobody found"
+            static let noMatchesMessage = "Try another name."
+            static let loadFailedTitle = "Couldn't load people"
 
-            static func shareText(groupName: String) -> String {
-                String(format: shareTextFormat, groupName)
+            static func viaGroup(_ name: String) -> String {
+                String(format: viaGroupFormat, name)
             }
 
-            static func expiryLabel(days: Int) -> String {
-                days == 1 ? expiryOneDay : String(format: expiryDaysFormat, days)
-            }
-
-            static func expiresAt(_ dateText: String) -> String {
-                String(format: expiresAtFormat, dateText)
-            }
-
-            static func usesLabel(_ uses: Int) -> String {
-                switch uses {
-                case 0: unlimitedUses
-                case 1: oneUse
-                default: String(format: limitedUsesFormat, uses)
-                }
+            static func viaEvent(_ title: String) -> String {
+                String(format: viaEventFormat, title)
             }
         }
     }

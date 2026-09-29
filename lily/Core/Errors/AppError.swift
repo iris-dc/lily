@@ -50,12 +50,20 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case groupActionFailed
     /// A name, description or message tripped the word filter or the link policy.
     case contentRejected
-    /// Unknown, revoked, exhausted or pointing at a deleted group (`INVITE_INVALID`): a verdict on the code.
-    case inviteInvalid
+    /// The invite's seven days are over (`INVITE_EXPIRED`); a verdict on the invite, never retried.
     case inviteExpired
-    /// The preview failed for a reason without a code of its own (a 500, an unreadable body); the code may be fine.
+    /// Sending an invite failed for a reason without a code of its own (a 500, an unreadable body).
     case inviteUnavailable
-    case inviteLimitReached
+    /// The inbox page or the read marker failed for a reason without a code of its own.
+    case inboxUnavailable
+    /// Accepting or declining failed for a reason without a code of its own; repeating the tap is safe.
+    case inviteActionFailed
+    /// The invite was answered already, or the item is gone (`INVITE_NOT_PENDING`, `INBOX_ITEM_NOT_FOUND`).
+    case inviteNotPending
+    /// The person invited is in the group already (`ALREADY_MEMBER`).
+    case alreadyMember
+    /// The person invited is banned from the group (`CANNOT_INVITE`).
+    case cannotInvite
     case chatUnavailable
     case messageSendFailed
     case messageNotFound

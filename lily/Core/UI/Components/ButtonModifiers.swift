@@ -10,13 +10,16 @@ extension View {
             .lilyButtonMetrics(sizing: sizing, controlSize: controlSize)
     }
 
-    /// Secondary action look: plain glass capsule at the native large size. `.glass` colours its label (text, symbols
-    /// and spinner) from the tint: the accent by default, or `labelColor` where the label should read as ink.
+    /// Secondary action look: plain glass capsule at the native large size, or at `controlSize` where a capsule sits
+    /// inside a row or a card (`.regular` beside a 40pt avatar). `.glass` colours its label (text, symbols and
+    /// spinner) from the tint: the accent by default, or `labelColor` where the label should read as ink.
     /// (`tint(nil)` would not restore the accent; it leaves the label in the primary colour.)
-    func lilyGlassButton(sizing: ButtonSizing = .flexible, labelColor: Color? = nil) -> some View {
+    func lilyGlassButton(sizing: ButtonSizing = .flexible,
+                         controlSize: ControlSize? = .large,
+                         labelColor: Color? = nil) -> some View {
         buttonStyle(.glass)
             .tint(labelColor ?? .accentColor)
-            .lilyButtonMetrics(sizing: sizing, controlSize: .large)
+            .lilyButtonMetrics(sizing: sizing, controlSize: controlSize)
     }
 
     /// The floating action look (the "+" on Explore): a prominent glass circle in the accent colour. The circle takes its

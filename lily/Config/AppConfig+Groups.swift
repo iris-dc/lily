@@ -1,7 +1,7 @@
 import Foundation
 
 nonisolated extension AppConfig {
-    /// Groups: limits mirrored from the backend's request constraints, list behaviour and the invite code format.
+    /// Groups: limits mirrored from the backend's request constraints and list behaviour.
     enum Groups {
         static let nameLength = 3...60
         static let descriptionMaxLength = 500
@@ -13,29 +13,12 @@ nonisolated extension AppConfig {
         /// A reappearing Mine list reuses groups loaded more recently than this; pull-to-refresh always reloads.
         static let listStaleAfter: TimeInterval = 60
         static let retryAfterFailure: TimeInterval = 10
-        /// Invite codes: Crockford base32 (no `I`, `L`, `O`, `U`), shown in groups of four.
-        static let inviteCodeLength = 12
-        static let inviteCodeAlphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-        static let inviteCodePattern = "^[0-9A-HJKMNP-TV-Z]{12}$"
-        static let inviteCodeGroupSize = 4
-        static let inviteExpiryChoicesDays = [1, 7, 30]
-        static let inviteDefaultDays = 7
-        /// `0` is unlimited.
-        static let inviteUseChoices = [0, 1, 10]
-        /// The pre-selected use limit; 0 is unlimited.
-        static let inviteDefaultUses = 0
-        /// The code the mock invite repository accepts; canonical, so it round-trips through normalisation unchanged.
-        static let mockInviteCode = "KRZB7K3MQX9P"
         static let mockGroupCount = 6
-        /// Where the backend's invite links point (`<base>/<code>`); the mock builds its links from it.
-        static let inviteLinkBaseURL = AppConfig.API.productionBaseURL.appending(path: "invite")
     }
 }
 
 nonisolated extension AppConfig.API.Paths {
     static let groups = "/api/groups"
-    static let invitePreview = "/api/invites/preview"
-    static let inviteRedeem = "/api/invites/redeem"
 
     static func group(id: String) -> String {
         "\(groups)/\(id)"
@@ -57,12 +40,14 @@ nonisolated extension AppConfig.API.Paths {
         "\(groupBans(id: id))/\(userID)"
     }
 
+    /// `POST` sends a direct invite into the group; the invitee answers it from their inbox.
     static func groupInvites(id: String) -> String {
         "\(group(id: id))/invites"
     }
 
-    static func groupInvite(id: String, inviteID: String) -> String {
-        "\(groupInvites(id: id))/\(inviteID)"
+    /// `GET` lists the people the caller may invite into the group.
+    static func groupInvitees(id: String) -> String {
+        "\(group(id: id))/invitees"
     }
 
     static func groupEvents(id: String) -> String {
@@ -78,8 +63,6 @@ nonisolated extension AppConfig.API.Query {
 }
 
 nonisolated extension AppConfig.LaunchArguments {
-    /// Takes the next argument as the invite code to preview at launch, as a universal link would.
-    static let openInvite = "-open-invite"
     /// Takes the next argument as the user id of every mock sign-in, so two simulators can act as two users.
     static let mockUserID = "-mock-user-id"
 }

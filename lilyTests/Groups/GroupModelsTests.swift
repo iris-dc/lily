@@ -51,25 +51,6 @@ struct GroupModelsTests {
         #expect(roster.items == [marta])
     }
 
-    @Test func inviteDecodesWithTheCodeAndWithoutIt() throws {
-        let invite = try ContractSamples.decode(Invite.self, from: ContractSamples.invite)
-        #expect(invite.id == "01J8ZK7Q9X2M4N6P8R0T2V4W6Z" && invite.code == "KRZB7K3MQX9P")
-        #expect(invite.url == URL(string: "https://api.iskra.red/invite/KRZB7K3MQX9P"))
-        #expect(invite.maxUses == 10 && invite.uses == 2 && !invite.isUnlimited && !invite.isRevoked)
-        #expect(invite.formattedCode == "KRZB-7K3M-QX9P")
-
-        let withoutCode = try ContractSamples.decode(Invite.self, from: ContractSamples.invite
-            .replacingOccurrences(of: #""code":"KRZB7K3MQX9P","url":"https://api.iskra.red/invite/KRZB7K3MQX9P","#, with: ""))
-        #expect(withoutCode.code == nil && withoutCode.url == nil && withoutCode.formattedCode == nil)
-        #expect(withoutCode.revoked(at: .now).isRevoked)
-    }
-
-    @Test func invitePreviewDecodesTheGroupSummary() throws {
-        let preview = try ContractSamples.decode(InvitePreview.self, from: ContractSamples.invitePreview)
-        #expect(preview.group.name == "Climbing Buddies" && preview.group.visibility == .private)
-        #expect(preview.group.type == .climbing && preview.group.memberCount == 9 && !preview.isMember)
-    }
-
     @Test func accountDecodesAndJudgesTheTerms() throws {
         let owing = try ContractSamples.decode(Account.self, from: ContractSamples.me)
         #expect(owing.isOperator && owing.termsVersion == 2 && owing.acceptedTermsVersion == 1 && !owing.termsAccepted)

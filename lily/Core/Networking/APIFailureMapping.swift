@@ -19,7 +19,6 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case termsRequired = "TERMS_REQUIRED"
     case groupNotFound = "GROUP_NOT_FOUND"
     case messageNotFound = "MESSAGE_NOT_FOUND"
-    case inviteInvalid = "INVITE_INVALID"
     case reportNotFound = "REPORT_NOT_FOUND"
     case userNotFound = "USER_NOT_FOUND"
     /// Another user owns the client id; like `GROUP_ID_REUSED` it becomes the generic creation failure, and the
@@ -30,13 +29,17 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case ownerCannotLeave = "OWNER_CANNOT_LEAVE"
     case memberBanned = "MEMBER_BANNED"
     case membershipLimit = "MEMBERSHIP_LIMIT"
-    case inviteLimit = "INVITE_LIMIT"
     case inviteExpired = "INVITE_EXPIRED"
+    /// Answered already, or the inbox item is unknown or not an invite; either way there is nothing left to answer.
+    case inviteNotPending = "INVITE_NOT_PENDING"
+    case inboxItemNotFound = "INBOX_ITEM_NOT_FOUND"
+    case alreadyMember = "ALREADY_MEMBER"
+    case cannotInvite = "CANNOT_INVITE"
     case blockLimit = "BLOCK_LIMIT"
 
     /// Every code maps to a case with copy; the domains are split so no switch grows past the complexity limit.
     var appError: AppError {
-        eventError ?? groupError ?? moderationError ?? .unknown
+        eventError ?? groupError ?? inviteError ?? moderationError ?? .unknown
     }
 
     private var eventError: AppError? {
@@ -67,12 +70,19 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         }
     }
 
+    private var inviteError: AppError? {
+        switch self {
+        case .inviteExpired: .inviteExpired
+        case .inviteNotPending, .inboxItemNotFound: .inviteNotPending
+        case .alreadyMember: .alreadyMember
+        case .cannotInvite: .cannotInvite
+        default: nil
+        }
+    }
+
     private var moderationError: AppError? {
         switch self {
         case .contentRejected: .contentRejected
-        case .inviteInvalid: .inviteInvalid
-        case .inviteExpired: .inviteExpired
-        case .inviteLimit: .inviteLimitReached
         case .messageNotFound: .messageNotFound
         case .reportNotFound: .reportFailed
         case .userNotFound: .userNotFound

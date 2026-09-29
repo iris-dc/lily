@@ -2,8 +2,7 @@ import Foundation
 
 /// Identifiers of the Groups, chat and moderation screens; mirrored by hand in `lilyUITests` like the rest.
 nonisolated extension AccessibilityIdentifiers {
-    /// Home's "Join with code" button; the Discover screen's type dropdown; the Explore carousel and its "See all".
-    static let groupsJoinCode = "groups-join-code"
+    /// The Discover screen's type dropdown; the Explore carousel and its "See all".
     static let groupsTypeFilter = "groups-type-filter"
     static let groupCarousel = "group-carousel"
     static let groupsSeeAll = "groups-see-all"
@@ -28,15 +27,6 @@ nonisolated extension AccessibilityIdentifiers {
     static let createGroupSubmit = "create-group-submit"
     static let createGroupCancel = "create-group-cancel"
     static let createGroup = "create-group"
-    /// Invite sheets: the code field and redeem button, sharing and copying a code.
-    static let inviteCodeField = "invite-code-field"
-    /// Continue in the code sheet; `inviteRedeem` is the join button of the preview that follows.
-    static let inviteContinue = "invite-continue"
-    static let inviteRedeem = "invite-redeem"
-    /// The inline reason when the backend refused the code (invalid or expired).
-    static let inviteRefusal = "invite-refusal"
-    static let inviteShare = "invite-share"
-    static let inviteCopy = "invite-copy"
     /// Report sheet and terms sheet.
     static let reportReason = "report-reason"
     static let reportSubmit = "report-submit"
@@ -57,5 +47,16 @@ nonisolated extension AccessibilityIdentifiers {
 
     static func memberRow(_ userID: String) -> String {
         "member-row-\(userID)"
+    }
+
+    /// The invite-people sheet: its search field, a candidate's row and the row's Invite button.
+    static let inviteSearch = "invite-search"
+
+    static func inviteCandidate(_ userID: String) -> String {
+        "invite-candidate-\(userID)"
+    }
+
+    static func inviteSend(_ userID: String) -> String {
+        "invite-send-\(userID)"
     }
 }

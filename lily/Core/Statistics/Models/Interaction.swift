@@ -8,11 +8,10 @@ nonisolated enum InteractionKind: String, Codable, Sendable {
     case groupViewed = "group_viewed"
     case groupSearchPerformed = "group_search_performed"
     case chatOpened = "chat_opened"
-    case inviteShared = "invite_shared"
 }
 
 /// One reported interaction. By construction it carries ids, types and flags only: never a coordinate, an amount, a date
-/// range, a query, an invite code or free text, so nothing here can place or quote the user.
+/// range, a query or free text, so nothing here can place or quote the user.
 nonisolated struct Interaction: Encodable, Equatable, Sendable {
     let kind: InteractionKind
     let occurredAt: Date
@@ -53,9 +52,5 @@ nonisolated struct Interaction: Encodable, Equatable, Sendable {
 
     static func chatOpened(groupID: String, at date: Date) -> Interaction {
         Interaction(kind: .chatOpened, occurredAt: date, groupId: groupID)
-    }
-
-    static func inviteShared(groupID: String, at date: Date) -> Interaction {
-        Interaction(kind: .inviteShared, occurredAt: date, groupId: groupID)
     }
 }

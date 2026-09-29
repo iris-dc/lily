@@ -5,6 +5,7 @@ import Foundation
 struct GroupRepositories {
     let groups: any GroupRepository
     let invites: any InviteRepository
+    let inbox: any InboxRepository
     let me: any MeRepository
     let moderation: any ModerationRepository
     let chat: any ChatRepository
@@ -16,6 +17,7 @@ struct GroupRepositories {
     static func remote(client: any APIClient, realtimeEndpoint: URL?, identity: any IdentityProvider) -> GroupRepositories {
         GroupRepositories(groups: RemoteGroupRepository(client: client, identity: identity),
                           invites: RemoteInviteRepository(client: client),
+                          inbox: RemoteInboxRepository(client: client),
                           me: RemoteMeRepository(client: client),
                           moderation: RemoteModerationRepository(client: client),
                           chat: RemoteChatRepository(client: client),
@@ -25,13 +27,14 @@ struct GroupRepositories {
                           })
     }
 
-    /// The invite mock admits into the group mock's groups and the chat mock reads them, so the three share one
-    /// instance; the chat mock echoes over the one in-memory bus the controller subscribes to.
+    /// The invite mock reads the group mock's rosters, the inbox mock admits into its groups and the chat mock reads
+    /// them, so the four share one instance; the chat mock echoes over the one in-memory bus the controller subscribes to.
     static func mock(identity: any IdentityProvider, logger: any Logging, autoReplies: Bool) -> GroupRepositories {
         let groups = MockGroupRepository(identity: identity, logger: logger)
         let transport = MockRealtimeTransport(logger: logger)
         return GroupRepositories(groups: groups,
                                  invites: MockInviteRepository(groups: groups, identity: identity, logger: logger),
+                                 inbox: MockInboxRepository(groups: groups, identity: identity, logger: logger),
                                  me: MockMeRepository(identity: identity, logger: logger),
                                  moderation: MockModerationRepository(logger: logger),
                                  chat: MockChatRepository(groups: groups,
@@ -46,17 +49,20 @@ struct GroupRepositories {
     }
 }
 
-/// The collaborators of groups, chat and moderation, held as one value so `AppDependencies` gains a single stored
-/// property however many the feature needs.
+/// The collaborators of groups, chat, the inbox and moderation, held as one value so `AppDependencies` gains a single
+/// stored property however many the feature needs.
 struct GroupDependencies {
     let groupRepository: any GroupRepository
     let inviteRepository: any InviteRepository
+    let inboxRepository: any InboxRepository
     let meRepository: any MeRepository
     let moderationRepository: any ModerationRepository
     let chatRepository: any ChatRepository
     /// The one source of the caller's groups for every screen and store that needs them.
     let myGroups: MyGroupsStore
     let me: MeStore
+    /// The caller's invites and game reminders; the Chats row, the tab badge and the inbox screen read it.
+    let inbox: InboxStore
     /// The rooms held in memory; the open chat and the realtime controller share it.
     let chatHistory: InMemoryChatHistoryCache
     let unreadCenter: UnreadCenter
@@ -65,8 +71,6 @@ struct GroupDependencies {
     /// Every groups and chat screen reports failures through it: the popup, plus `MeStore.noteTermsRequired()` on `TERMS_REQUIRED`.
     let errorReporter: GroupErrorReporter
     let pasteboard: any Pasteboard
-    /// Invite links (and `-open-invite`) wait here until the root view can present the preview.
-    let deepLinks: DeepLinkCenter
     let navigation = AppNavigation()
     /// Counts group changes made anywhere, as `AppDependencies.eventChanges` does for events.
     let groupChanges = ChangeTracker()
@@ -76,10 +80,10 @@ struct GroupDependencies {
          tokenProvider: (any AuthTokenProvider)?,
          errorCenter: ErrorCenter,
          logger: any Logging,
-         deepLinks: DeepLinkCenter,
          pasteboard: any Pasteboard = SystemPasteboard()) {
         groupRepository = repositories.groups
         inviteRepository = repositories.invites
+        inboxRepository = repositories.inbox
         meRepository = repositories.me
         moderationRepository = repositories.moderation
         chatRepository = repositories.chat
@@ -91,6 +95,8 @@ struct GroupDependencies {
         self.myGroups = myGroups
         let me = MeStore(repository: repositories.me, identity: identity, errorCenter: errorCenter, logger: logger)
         self.me = me
+        let inbox = InboxStore(repository: repositories.inbox, identity: identity, errorCenter: errorCenter, logger: logger)
+        self.inbox = inbox
         errorReporter = GroupErrorReporter(errorCenter: errorCenter) { me.noteTermsRequired() }
         let chatHistory = InMemoryChatHistoryCache(logger: logger)
         self.chatHistory = chatHistory
@@ -106,16 +112,16 @@ struct GroupDependencies {
                                              cache: chatHistory,
                                              catchUp: catchUp,
                                              unread: unreadCenter,
+                                             inbox: inbox,
                                              groupChanges: groupChanges,
                                              groupRepository: repositories.groups,
                                              errorCenter: errorCenter,
                                              logger: logger)
         self.pasteboard = pasteboard
-        self.deepLinks = deepLinks
     }
 
     /// Everything here that holds state for the signed-in user; `SessionController` tells them when the session ends.
-    var sessionObservers: [any SessionObserver] { [myGroups, me, chatHistory, unreadCenter, realtime, navigation] }
+    var sessionObservers: [any SessionObserver] { [myGroups, me, inbox, chatHistory, unreadCenter, realtime, navigation] }
 }
 
 extension AppDependencies {
@@ -126,7 +132,6 @@ extension AppDependencies {
     var myGroups: MyGroupsStore { groups.myGroups }
     var me: MeStore { groups.me }
     var navigation: AppNavigation { groups.navigation }
-    var deepLinks: DeepLinkCenter { groups.deepLinks }
     var groupChanges: ChangeTracker { groups.groupChanges }
 
     func makeGroupListViewModel(scope: GroupListScope) -> GroupListViewModel {
@@ -186,29 +191,8 @@ extension AppDependencies {
                          onChange: onChange)
     }
 
-    func makeInviteViewModel(for group: SportGroup) -> InviteViewModel {
-        InviteViewModel(group: group,
-                        repository: inviteRepository,
-                        reporter: groups.errorReporter,
-                        recorder: interactionRecorder,
-                        pasteboard: groups.pasteboard,
-                        logger: logger)
-    }
-
-    func makeJoinWithCodeViewModel(onJoined: @escaping @MainActor (SportGroup) -> Void) -> JoinWithCodeViewModel {
-        JoinWithCodeViewModel { [self] code in makeInvitePreviewViewModel(code: code, onJoined: onJoined) }
-    }
-
-    func makeInvitePreviewViewModel(code: InviteCode,
-                                    onJoined: @escaping @MainActor (SportGroup) -> Void) -> InvitePreviewViewModel {
-        InvitePreviewViewModel(code: code,
-                               invites: inviteRepository,
-                               groups: groupRepository,
-                               identity: identity,
-                               store: myGroups,
-                               navigation: navigation,
-                               reporter: groups.errorReporter,
-                               logger: logger,
-                               onJoined: onJoined)
+    /// The invite-people sheet of a group's detail.
+    func makeInvitePeopleViewModel(for group: SportGroup) -> InvitePeopleViewModel {
+        InvitePeopleViewModel(group: group, repository: inviteRepository, reporter: groups.errorReporter, logger: logger)
     }
 }

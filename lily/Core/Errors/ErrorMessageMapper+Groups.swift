@@ -61,7 +61,7 @@ nonisolated extension ErrorMessageMapper {
         }
     }
 
-    /// Creating, editing and inviting; split from `groupMessage` to keep each switch under the complexity limit.
+    /// Creating and editing; split from `groupMessage` to keep each switch under the complexity limit.
     private static func groupWriteMessage(for error: AppError) -> ErrorMessage {
         switch error {
         case .groupCreationFailed:
@@ -70,14 +70,28 @@ nonisolated extension ErrorMessageMapper {
             ErrorMessage(title: "Couldn't update the group", body: "Please try again in a moment.")
         case .contentRejected:
             ErrorMessage(title: "Please rephrase", body: "That text contains words or links we don't allow.")
-        case .inviteInvalid:
-            ErrorMessage(title: "Invite not valid", body: "This invite is unknown, was revoked or has been used up.")
+        default:
+            inviteMessage(for: error)
+        }
+    }
+
+    /// Invites, sent from a group and answered from the inbox.
+    private static func inviteMessage(for error: AppError) -> ErrorMessage {
+        switch error {
         case .inviteExpired:
-            ErrorMessage(title: "Invite expired", body: "Ask for a new invite link.")
+            ErrorMessage(title: "Invite expired", body: "Ask to be invited again.")
         case .inviteUnavailable:
-            ErrorMessage(title: "Couldn't check this invite", body: "Give it another try in a moment.")
-        case .inviteLimitReached:
-            ErrorMessage(title: "Too many invites", body: "Revoke an existing invite before creating another.")
+            ErrorMessage(title: "Couldn't send the invite", body: "Please try again in a moment.")
+        case .inboxUnavailable:
+            ErrorMessage(title: "Couldn't load your notifications", body: "Pull down to try again in a moment.")
+        case .inviteActionFailed:
+            ErrorMessage(title: "Couldn't answer the invite", body: "Please try again in a moment.")
+        case .inviteNotPending:
+            ErrorMessage(title: "This invite was already answered", body: "There is nothing left to do here.")
+        case .alreadyMember:
+            ErrorMessage(title: "They're already in this group", body: "No invite needed.")
+        case .cannotInvite:
+            ErrorMessage(title: "This person can't be invited", body: "They were banned from this group.")
         default:
             unknownMessage
         }

@@ -10,28 +10,15 @@ struct GroupRow: View {
     var now: Date = .now
 
     var body: some View {
-        HStack(spacing: DesignTokens.Spacing.md) {
+        ConversationRow(caption: caption, hasUnread: hasUnread) {
             AvatarCircle(initials: group.name.initials,
                          size: DesignTokens.Layout.avatarMedium,
                          tint: .lilySecondary,
                          tintOpacity: DesignTokens.Opacity.secondaryGlassTint)
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-                Label(group.name, systemImage: group.visibility.symbolName)
-                    .labelStyle(.titleThenIcon)
-                    .font(.body.weight(.semibold))
-                    .lineLimit(1)
-                Text(caption)
-                    .font(LilyTheme.Fonts.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            Spacer(minLength: DesignTokens.Spacing.sm)
-            if hasUnread {
-                UnreadDot()
-            }
+        } title: {
+            Label(group.name, systemImage: group.visibility.symbolName)
+                .labelStyle(.titleThenIcon)
         }
-        .padding(.vertical, DesignTokens.Spacing.md)
-        .contentShape(.rect)
     }
 
     private var caption: String {

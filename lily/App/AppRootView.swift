@@ -1,13 +1,12 @@
 import SwiftUI
 
-/// Switches between launch, welcome and the main shell based on session state. Also the one place an invite link
-/// surfaces: the preview is a sheet over the root, so it draws above every tab.
+/// Switches between launch, welcome and the main shell based on session state, and runs the per-user sync (account,
+/// realtime connection, groups, inbox) whenever the scene phase or the user changes.
 struct AppRootView: View {
     let dependencies: AppDependencies
     @Environment(\.scenePhase) private var scenePhase
 
     private var session: SessionController { dependencies.sessionController }
-    private var deepLinks: DeepLinkCenter { dependencies.deepLinks }
 
     var body: some View {
         Group {
@@ -32,13 +31,6 @@ struct AppRootView: View {
         .task(id: SyncKey(phase: scenePhase, userID: session.state.user?.id)) { await syncAccountAndRealtime() }
         .onChange(of: dependencies.myGroups.groups) { dependencies.myGroupsDidChange() }
         .onChange(of: dependencies.myGroups.loadVersion) { dependencies.myGroupsDidLoad() }
-        .onOpenURL { deepLinks.handle($0) }
-        .onChange(of: deepLinks.pendingInvite, initial: true) { enterAppForPendingInvite() }
-        .onChange(of: session.state) { enterAppForPendingInvite() }
-        .sheet(item: presentedInvite) { code in
-            InvitePreviewSheet(viewModel: dependencies.makeInvitePreviewViewModel(code: code) { _ in },
-                               dependencies: dependencies)
-        }
         .errorPopup(dependencies.errorCenter)
     }
 
@@ -55,30 +47,17 @@ struct AppRootView: View {
         case launch, landing, shell
     }
 
-    /// The invite waits while the session is still being restored; the sheet shows once the shell is up.
-    private var presentedInvite: Binding<InviteCode?> {
-        Binding(get: { session.state.isInsideApp ? deepLinks.pendingInvite : nil },
-                set: { deepLinks.pendingInvite = $0 })
-    }
-
-    /// An invite opened from the landing enters the app as a guest first, so the preview appears over the app.
-    private func enterAppForPendingInvite() {
-        if deepLinks.pendingInvite != nil, session.state == .signedOut {
-            session.continueAsGuest()
-        }
-    }
-
     /// What one run of the sync is for; a new key cancels the run still going for the old one.
     private struct SyncKey: Hashable {
         let phase: ScenePhase
         let userID: String?
     }
 
-    /// The signed-in user's account, the realtime connection and their groups, in that order: the account names the
-    /// realtime endpoint, and a connection that opens reloads Mine itself (the resume protocol), so the store's own
-    /// load afterwards is usually a no-op. The connection closes in the background; a guest has none of this and the
-    /// stores clear themselves. A run stops at the first await after its key changed, so the phase it read is never
-    /// applied over a newer one.
+    /// The signed-in user's account, the realtime connection, their groups and their inbox, in that order: the account
+    /// names the realtime endpoint, and a connection that opens reloads Mine itself (the resume protocol), so the
+    /// store's own load afterwards is usually a no-op. The connection closes in the background; a guest has none of
+    /// this and the stores clear themselves. A run stops at the first await after its key changed, so the phase it
+    /// read is never applied over a newer one.
     private func syncAccountAndRealtime() async {
         let active = scenePhase != .background
         let user = session.state.user
@@ -87,6 +66,8 @@ struct AppRootView: View {
         await dependencies.realtime.setDesired(active: active, user: user)
         guard !Task.isCancelled else { return }
         if active { await dependencies.myGroups.loadIfStale() }
+        guard !Task.isCancelled else { return }
+        if active { await dependencies.inbox.loadIfStale() }
     }
 }
 

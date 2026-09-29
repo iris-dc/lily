@@ -20,7 +20,7 @@ final class CallCounter {
     }
 }
 
-/// What a view model handed on through `onChange`, `onCreated` or `onJoined`.
+/// What a view model handed on through `onChange` or `onCreated`.
 @MainActor
 final class GroupSink {
     private(set) var groups: [SportGroup] = []
@@ -30,12 +30,15 @@ final class GroupSink {
     }
 }
 
-/// The collaborators every groups view model shares, over fakes: one identity, one store, one reporter whose terms
-/// requests are counted. Collaborators are created in the body: a main-actor default argument would run off the actor.
+/// The collaborators every groups and inbox view model shares, over fakes: one identity, one store, one inbox, one
+/// reporter whose terms requests are counted. Collaborators are created in the body: a main-actor default argument
+/// would run off the actor.
 @MainActor
 final class GroupHarness {
     let repository = FakeGroupRepository()
     let invites = FakeInviteRepository()
+    let inboxRepository = FakeInboxRepository()
+    let events = FakeEventRepository()
     let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
     let changes = ChangeTracker()
     let logger = SpyLogger()
@@ -45,6 +48,7 @@ final class GroupHarness {
     let sink = GroupSink()
     let errorCenter: ErrorCenter
     let store: MyGroupsStore
+    let inbox: InboxStore
     let reporter: GroupErrorReporter
     private let termsRequests = CallCounter()
 
@@ -59,11 +63,31 @@ final class GroupHarness {
                               changes: changes,
                               errorCenter: errorCenter,
                               logger: logger)
+        inbox = InboxStore(repository: inboxRepository, identity: identity, errorCenter: errorCenter, logger: logger)
         let termsRequests = self.termsRequests
         reporter = GroupErrorReporter(errorCenter: errorCenter) { termsRequests.increment() }
     }
 
     func logs(_ level: LogLevel? = nil) -> [String] {
         logger.messages(in: .groups, at: level)
+    }
+
+    func inboxLogs(_ level: LogLevel? = nil) -> [String] {
+        logger.messages(in: .inbox, at: level)
+    }
+
+    func makeInboxViewModel() -> InboxViewModel {
+        InboxViewModel(store: inbox,
+                       repository: inboxRepository,
+                       events: events,
+                       myGroups: store,
+                       navigation: navigation,
+                       reporter: reporter,
+                       logger: logger,
+                       tryAgainDelay: .zero)
+    }
+
+    func makeInvitePeopleViewModel(for group: SportGroup) -> InvitePeopleViewModel {
+        InvitePeopleViewModel(group: group, repository: invites, reporter: reporter, logger: logger, tryAgainDelay: .zero)
     }
 }

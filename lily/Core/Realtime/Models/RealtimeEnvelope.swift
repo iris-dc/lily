@@ -1,7 +1,8 @@
 import Foundation
 
 /// One event off a channel, decoded from its `type`. Unknown types decode as `.unknown` so a newer backend never
-/// breaks the stream; a message carries the full `Message` so no round trip follows a delivery.
+/// breaks the stream; a message carries the full `Message` and an inbox event the full `InboxItem`, so no round trip
+/// follows a delivery.
 nonisolated enum RealtimeEnvelope: Hashable, Sendable, Decodable {
     case message(ChatMessage)
     case messageDeleted(groupID: String, id: String)
@@ -10,6 +11,8 @@ nonisolated enum RealtimeEnvelope: Hashable, Sendable, Decodable {
     case groupUpdated(SportGroup)
     case groupDeleted(groupID: String)
     case membershipChanged(MembershipChange)
+    /// On `users/<sub>`: an invite for the caller, or a reminder for one of their games.
+    case inboxItem(InboxItem)
     case unknown(type: String)
 
     enum Kind: String, Sendable {
@@ -20,10 +23,11 @@ nonisolated enum RealtimeEnvelope: Hashable, Sendable, Decodable {
         case groupUpdated = "group_updated"
         case groupDeleted = "group_deleted"
         case membershipChanged = "membership_changed"
+        case inboxItem = "inbox_item"
     }
 
     private enum CodingKeys: String, CodingKey {
-        case type, message, groupId, messageId, member, memberCount, channelEpoch, userId, group
+        case type, message, groupId, messageId, member, memberCount, channelEpoch, userId, group, item
     }
 
     init(from decoder: any Decoder) throws {
@@ -51,12 +55,14 @@ nonisolated enum RealtimeEnvelope: Hashable, Sendable, Decodable {
             self = .groupDeleted(groupID: try container.decode(String.self, forKey: .groupId))
         case .membershipChanged:
             self = .membershipChanged(try MembershipChange(from: decoder))
+        case .inboxItem:
+            self = .inboxItem(try container.decode(InboxItem.self, forKey: .item))
         case .none:
             self = .unknown(type: type)
         }
     }
 
-    /// The group the event is about; `nil` for an unknown type.
+    /// The group the event is about; `nil` for an inbox event (the caller's own channel) and for an unknown type.
     var groupID: String? {
         switch self {
         case .message(let message): message.groupId
@@ -65,7 +71,7 @@ nonisolated enum RealtimeEnvelope: Hashable, Sendable, Decodable {
             groupID
         case .groupUpdated(let group): group.id
         case .membershipChanged(let change): change.groupId
-        case .unknown: nil
+        case .inboxItem, .unknown: nil
         }
     }
 
@@ -75,7 +81,7 @@ nonisolated enum RealtimeEnvelope: Hashable, Sendable, Decodable {
         case .memberJoined(_, _, _, let epoch), .memberLeft(_, _, let epoch, _): epoch
         case .groupUpdated(let group): group.channelEpoch
         case .membershipChanged(let change): change.channelEpoch
-        case .message, .messageDeleted, .groupDeleted, .unknown: nil
+        case .message, .messageDeleted, .groupDeleted, .inboxItem, .unknown: nil
         }
     }
 }

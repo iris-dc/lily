@@ -7,7 +7,7 @@ nonisolated enum GroupAccess: Equatable, Sendable {
     /// Guests see the group; joining needs an account.
     case guest
     case canJoin
-    /// A private group the caller is not in; reached only through an invite preview.
+    /// A private group the caller is not in; entered only by accepting an invite from the inbox.
     case inviteOnly
     case member(MemberRole)
     /// No seats left and the caller is not in.

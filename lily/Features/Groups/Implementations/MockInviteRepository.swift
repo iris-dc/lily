@@ -1,92 +1,115 @@
 import Foundation
 
-/// Invites without a backend: the one fixed code opens Climbing Buddies, and codes created here work until revoked.
+/// Direct invites without a backend: the candidates are the people on the rosters of the caller's other mock groups
+/// and the hosts of the mock games, minus the target group's own roster, sifted the way the backend does. Sent
+/// invites are remembered per group for the run, so `isInvited` follows and a repeat answers the same invite. Nothing
+/// lands in an inbox: the mock user's inbox is the only one there is.
 final class MockInviteRepository: InviteRepository {
-    private var invites: [Invite] = []
+    /// Sent invites by group id, then invitee id.
+    private var sent: [String: [String: SentInvite]] = [:]
+    private var sentCount = 0
     private let groups: MockGroupRepository
     private let identity: any IdentityProvider
     private let logger: any Logging
     private let now: () -> Date
+    private static let idPrefix = "01J8MOCKIV"
+    private static let idDigits = 16
 
-    init(groups: MockGroupRepository, identity: any IdentityProvider, logger: any Logging, now: @escaping () -> Date = { .now }) {
+    init(groups: MockGroupRepository,
+         identity: any IdentityProvider,
+         logger: any Logging,
+         now: @escaping () -> Date = { .now }) {
         self.groups = groups
         self.identity = identity
         self.logger = logger
         self.now = now
     }
 
-    func create(groupID: String, options: InviteOptions) async throws -> Invite {
-        let group = try await groups.group(id: groupID)
-        guard GroupAccess(group: group, userID: identity.currentUserID).canInvite(in: group) else {
-            throw AppError.insufficientRole
+    func candidates(groupID: String) async throws -> [InviteCandidate] {
+        try await requireInviteRights(in: groupID)
+        var seen = Set(groups.roster(of: groupID).map(\.userId))
+        if let callerID = identity.currentUserID { seen.insert(callerID) }
+        var candidates = try await groupCandidates(for: groupID, seen: &seen)
+        candidates += eventCandidates(for: groupID, seen: &seen)
+        logger.debug(.groups, "Mock invite candidates served for group \(groupID) (\(candidates.count))")
+        return candidates.sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+    }
+
+    /// The backend's refusals in its order: the group and the caller's rights, the target's row in the group, then
+    /// whether the target exists at all; a pending invite is replayed.
+    func invite(groupID: String, userID: String) async throws -> SentInvite {
+        try await requireInviteRights(in: groupID)
+        guard userID != identity.currentUserID else { throw AppError.alreadyMember }
+        if let row = groups.roster(of: groupID).first(where: { $0.userId == userID }) {
+            throw row.role == .banned ? AppError.cannotInvite : AppError.alreadyMember
         }
-        let code = Self.randomCode()
-        let created = now()
-        let invite = Invite(inviteId: UUID().uuidString.lowercased(),
-                            code: code,
-                            url: AppConfig.Groups.inviteLinkBaseURL.appending(path: code),
-                            groupId: groupID,
-                            createdBy: identity.currentUserID ?? "",
-                            createdAt: created,
-                            expiresAt: created.addingTimeInterval(TimeInterval(options.expiresInDays) * Self.secondsPerDay),
-                            maxUses: options.maxUses,
-                            uses: 0,
-                            revokedAt: nil)
-        invites.append(invite)
-        logger.info(.groups, "Invite \(invite.inviteId) created for group \(groupID)")
+        guard let candidate = try await candidates(groupID: groupID).first(where: { $0.userId == userID }) else {
+            throw AppError.userNotFound
+        }
+        if let existing = sent[groupID]?[userID] {
+            logger.info(.groups, "Mock invite \(existing.id) replayed for \(userID) in group \(groupID)")
+            return existing
+        }
+        let invite = makeInvite(groupID: groupID, candidate: candidate)
+        sent[groupID, default: [:]][userID] = invite
+        logger.info(.groups, "Mock invite \(invite.id) into group \(groupID) sent to \(userID)")
         return invite
     }
 
-    func list(groupID: String) async throws -> [Invite] {
-        invites.filter { $0.groupId == groupID && !$0.isRevoked }
-    }
-
-    func revoke(groupID: String, inviteID: String) async throws -> Invite {
-        guard let index = invites.firstIndex(where: { $0.groupId == groupID && $0.inviteId == inviteID }) else {
-            throw AppError.inviteInvalid
+    /// Every live member of the caller's other groups, each with the first group they share.
+    private func groupCandidates(for groupID: String, seen: inout Set<String>) async throws -> [InviteCandidate] {
+        var candidates: [InviteCandidate] = []
+        for group in try await groups.groups(in: .mine, cursor: nil).items where group.id != groupID {
+            for member in groups.roster(of: group.id) where member.role != .banned && !seen.contains(member.userId) {
+                seen.insert(member.userId)
+                candidates.append(InviteCandidate(userId: member.userId,
+                                                  displayName: member.displayName,
+                                                  via: .group,
+                                                  viaName: group.name,
+                                                  isInvited: isInvited(member.userId, in: groupID)))
+            }
         }
-        if !invites[index].isRevoked {
-            invites[index] = invites[index].revoked(at: now())
+        return candidates
+    }
+
+    /// The hosts of the mock games, under the ids the rosters use for the same names, so one person is one candidate.
+    private func eventCandidates(for groupID: String, seen: inout Set<String>) -> [InviteCandidate] {
+        var candidates: [InviteCandidate] = []
+        for event in MockEventFixtures.make(now: now(), count: AppConfig.Events.mockFeedSize) {
+            let hostID = MockGroupFixtures.memberID(for: event.hostName)
+            guard !seen.contains(hostID) else { continue }
+            seen.insert(hostID)
+            candidates.append(InviteCandidate(userId: hostID,
+                                              displayName: event.hostName,
+                                              via: .event,
+                                              viaName: event.title,
+                                              isInvited: isInvited(hostID, in: groupID)))
         }
-        return invites[index]
+        return candidates
     }
 
-    func preview(code: InviteCode) async throws -> InvitePreview {
-        let (groupID, expiresAt) = try target(of: code)
-        let group = try groups.peek(id: groupID)
-        return InvitePreview(group: InvitePreview.GroupSummary(id: group.id,
-                                                               name: group.name,
-                                                               description: group.description,
-                                                               visibility: group.visibility,
-                                                               type: group.type,
-                                                               memberCount: group.memberCount),
-                             expiresAt: expiresAt,
-                             isMember: identity.currentUserID != nil && group.isMember)
+    private func isInvited(_ userID: String, in groupID: String) -> Bool {
+        sent[groupID]?[userID] != nil
     }
 
-    func redeem(code: InviteCode) async throws -> SportGroup {
-        let (groupID, _) = try target(of: code)
-        let group = try groups.admit(id: groupID)
-        logger.info(.groups, "Invite redeemed for group \(groupID)")
-        return group
+    private func makeInvite(groupID: String, candidate: InviteCandidate) -> SentInvite {
+        sentCount += 1
+        let created = now()
+        return SentInvite(id: Self.idPrefix + String(format: "%0\(Self.idDigits)d", sentCount),
+                          groupId: groupID,
+                          inviteeUserId: candidate.userId,
+                          inviteeName: candidate.displayName,
+                          status: .pending,
+                          createdAt: created,
+                          expiresAt: created.addingTimeInterval(AppConfig.Inbox.mockInviteExpiry))
     }
 
-    /// The group behind a code and when the code expires; the fixed mock code never does.
-    private func target(of code: InviteCode) throws -> (groupID: String, expiresAt: Date) {
-        if code.value == AppConfig.Groups.mockInviteCode {
-            return (MockGroupFixtures.climbingID, now().addingTimeInterval(Self.mockCodeLifetime))
-        }
-        guard let invite = invites.first(where: { $0.code == code.value }), !invite.isRevoked else {
-            throw AppError.inviteInvalid
-        }
-        guard invite.expiresAt > now() else { throw AppError.inviteExpired }
-        return (invite.groupId, invite.expiresAt)
-    }
-
-    private static let secondsPerDay = 86_400.0
-    private static let mockCodeLifetime = TimeInterval(AppConfig.Groups.inviteDefaultDays) * secondsPerDay
-
-    private static func randomCode() -> String {
-        String((0..<AppConfig.Groups.inviteCodeLength).compactMap { _ in AppConfig.Groups.inviteCodeAlphabet.randomElement() })
+    /// Like the backend: a signed-in member with invite rights, in a group they can see.
+    private func requireInviteRights(in groupID: String) async throws {
+        guard identity.currentUserID != nil else { throw AppError.sessionExpired }
+        let group = try await groups.group(id: groupID)
+        let access = GroupAccess(group: group, userID: identity.currentUserID)
+        guard access.canChat else { throw AppError.notAMember }
+        guard access.canInvite(in: group) else { throw AppError.insufficientRole }
     }
 }

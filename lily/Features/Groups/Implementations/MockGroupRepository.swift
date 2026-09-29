@@ -69,13 +69,7 @@ final class MockGroupRepository: GroupRepository {
         return try admit(group, via: "public")
     }
 
-    /// A group whatever its visibility, for the invite preview, which may show a private group to an outsider.
-    func peek(id: String) throws -> SportGroup {
-        guard let group = find(id) else { throw AppError.inviteInvalid }
-        return group
-    }
-
-    /// The way in for an invite: private groups too.
+    /// The way in for an accepted invite (`MockInboxRepository`): private groups too.
     func admit(id: String) throws -> SportGroup {
         guard let group = find(id) else { throw AppError.groupNotFound }
         return try admit(group, via: "invite")
@@ -163,6 +157,11 @@ final class MockGroupRepository: GroupRepository {
 
     private func find(_ id: String) -> SportGroup? {
         groups.first { $0.id == id && !$0.isDeleted }
+    }
+
+    /// The other members of a group with its banned rows, live: the invite mock sifts them the way the backend does.
+    func roster(of groupID: String) -> [GroupMember] {
+        others(in: groupID)
     }
 
     private func others(in groupID: String) -> [GroupMember] {

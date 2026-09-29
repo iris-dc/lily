@@ -1,15 +1,11 @@
 import Foundation
 
-/// Invites boundary. The code is a capability: `preview` and `redeem` send it in the request body, never in a path.
+/// Direct invites into a group, sent by a member with invite rights to someone they share a group or a game with. The
+/// invitee answers from their inbox (`InboxRepository`). Failures arrive as `AppError`, ready for the popup.
 protocol InviteRepository {
-    /// Admins, or members when the group allows it. The answer carries the code and the link to share.
-    func create(groupID: String, options: InviteOptions) async throws -> Invite
-    /// Admins only: the active invites, codes included.
-    func list(groupID: String) async throws -> [Invite]
-    /// By the invite's public handle; admins of the group or the invite's creator. Twice answers the same invite.
-    func revoke(groupID: String, inviteID: String) async throws -> Invite
-    /// Anonymous: what the invite leads to, before joining.
-    func preview(code: InviteCode) async throws -> InvitePreview
-    /// Joins the group behind the code; an existing member is welcomed with the same group.
-    func redeem(code: InviteCode) async throws -> SportGroup
+    /// The people the caller may invite into the group, sorted by name; members and banned users of the group are
+    /// never among them, and `isInvited` marks those with a pending invite already.
+    func candidates(groupID: String) async throws -> [InviteCandidate]
+    /// Sends the invite; a repeat for someone with a pending invite answers that invite instead of a second one.
+    func invite(groupID: String, userID: String) async throws -> SentInvite
 }

@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// The caller's groups as conversation rows with dividers, each opening what the container decides (the chat, or the
-/// group while chat is off). Knows nothing about scrolling, so Home embeds it under its section title.
+/// The caller's groups as conversation rows with dividers, each opening what the container decides (the chat on the
+/// Chats tab, the group's detail on Home). Rows carry the unread dot only where they open the room, so `unread` is
+/// passed there alone. Knows nothing about scrolling, so a screen embeds it under its own header.
 struct GroupRowList: View {
     let groups: [SportGroup]
-    let unread: UnreadCenter
+    var unread: UnreadCenter?
     let onOpen: (SportGroup) -> Void
 
     var body: some View {
@@ -13,11 +14,11 @@ struct GroupRowList: View {
                 Button {
                     onOpen(group)
                 } label: {
-                    GroupRow(group: group, hasUnread: unread.hasUnread(groupID: group.id))
+                    GroupRow(group: group, hasUnread: unread?.hasUnread(groupID: group.id) ?? false)
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier(AccessibilityIdentifiers.groupRow(group.id))
-                Divider().padding(.leading, DesignTokens.Layout.avatarMedium + DesignTokens.Spacing.md)
+                AvatarRowDivider()
             }
         }
         .padding(.horizontal, DesignTokens.Layout.screenMargin)

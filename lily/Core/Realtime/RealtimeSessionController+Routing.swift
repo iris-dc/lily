@@ -123,9 +123,10 @@ extension RealtimeSessionController {
             adoptEpoch(envelope.channelEpoch, for: groupID, from: subscribedEpoch)
         case .memberJoined:
             adoptEpoch(envelope.channelEpoch, for: groupID, from: subscribedEpoch)
-        case .membershipChanged:
+        case .membershipChanged, .inboxItem:
+            // Both belong to the user channel; on a room they say nothing about the room.
             let channel = RealtimeChannel.room(groupID: groupID, epoch: subscribedEpoch)
-            logger.debug(.chat, "Ignored a membership change on \(channel.path)")
+            logger.debug(.chat, "Ignored a user-channel event on \(channel.path)")
         case .unknown(let type):
             let channel = RealtimeChannel.room(groupID: groupID, epoch: subscribedEpoch)
             logger.debug(.chat, "Ignored a \(type) event on \(channel.path)")
@@ -141,9 +142,20 @@ extension RealtimeSessionController {
         if !message.isSent(by: identity.currentUserID) { unread.markUnread(groupID: groupID, messageID: message.id) }
     }
 
-    /// `users/<sub>`: the caller's own membership moved; Mine is stale, and a membership that ended takes the room with it.
+    /// `users/<sub>`: the caller's own membership moved (Mine is stale, and a membership that ended takes the room
+    /// with it), or an invite or reminder arrived for their inbox.
     private func applyUserEvent(_ envelope: RealtimeEnvelope) {
-        guard case .membershipChanged(let change) = envelope else { return }
+        switch envelope {
+        case .membershipChanged(let change):
+            applyMembershipChange(change)
+        case .inboxItem(let item):
+            inbox.apply(item)
+        default:
+            return
+        }
+    }
+
+    private func applyMembershipChange(_ change: MembershipChange) {
         if change.endsMembership {
             removeGroupLocally(change.groupId, reason: "membership \(change.change.rawValue)")
         } else {

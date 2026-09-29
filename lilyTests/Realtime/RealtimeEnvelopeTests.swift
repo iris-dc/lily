@@ -45,6 +45,16 @@ struct RealtimeEnvelopeTests {
         #expect(change.groupId == "g1" && change.change == .roleChanged && change.role == .admin && changed.channelEpoch == 4)
     }
 
+    /// An inbox event carries the whole item, so no round trip follows; it names no room and no epoch.
+    @Test func inboxItemsArriveWholeOnTheUserChannel() throws {
+        let envelope = try ContractSamples.decode(RealtimeEnvelope.self, from: ContractSamples.inboxItemEnvelope)
+
+        guard case .inboxItem(let item) = envelope else { Issue.record("expected .inboxItem"); return }
+        #expect(item.id == ContractSamples.inboxInviteID && item.kind == .groupInvite)
+        #expect(item.invite?.groupName == "Sunday Padel Crew" && item.invite?.status == .pending)
+        #expect(envelope.groupID == nil && envelope.channelEpoch == nil)
+    }
+
     /// A newer backend may publish types this build does not know; the stream must survive them.
     @Test func unknownTypesAreTolerated() throws {
         let envelope = try ContractSamples.decode(RealtimeEnvelope.self, from: ContractSamples.unknownEnvelope)

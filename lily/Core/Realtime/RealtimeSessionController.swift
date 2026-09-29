@@ -46,6 +46,8 @@ final class RealtimeSessionController: SessionObserver {
     let cache: any ChatHistoryCache
     let catchUp: ChatCatchUp
     let unread: UnreadCenter
+    /// Where an `inbox_item` off the user channel lands.
+    let inbox: InboxStore
     let groupChanges: ChangeTracker
     let groupRepository: any GroupRepository
     let errorCenter: ErrorCenter
@@ -63,6 +65,7 @@ final class RealtimeSessionController: SessionObserver {
          cache: any ChatHistoryCache,
          catchUp: ChatCatchUp,
          unread: UnreadCenter,
+         inbox: InboxStore,
          groupChanges: ChangeTracker,
          groupRepository: any GroupRepository,
          errorCenter: ErrorCenter,
@@ -78,6 +81,7 @@ final class RealtimeSessionController: SessionObserver {
         self.cache = cache
         self.catchUp = catchUp
         self.unread = unread
+        self.inbox = inbox
         self.groupChanges = groupChanges
         self.groupRepository = groupRepository
         self.errorCenter = errorCenter

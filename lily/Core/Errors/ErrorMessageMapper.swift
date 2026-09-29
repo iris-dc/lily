@@ -21,7 +21,8 @@ nonisolated enum ErrorMessageMapper {
             eventMessage(for: error)
         case .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned,
              .ownerCannotLeave, .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed,
-             .contentRejected, .inviteInvalid, .inviteExpired, .inviteUnavailable, .inviteLimitReached:
+             .contentRejected, .inviteExpired, .inviteUnavailable, .inboxUnavailable, .inviteActionFailed,
+             .inviteNotPending, .alreadyMember, .cannotInvite:
             groupMessage(for: error)
         case .chatUnavailable, .messageSendFailed, .messageNotFound:
             chatMessage(for: error)

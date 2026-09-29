@@ -10,11 +10,4 @@ nonisolated enum SessionState: Hashable, Sendable {
         if case .signedIn(let user) = self { return user }
         return nil
     }
-
-    var isInsideApp: Bool {
-        switch self {
-        case .guest, .signedIn: true
-        case .loading, .signedOut: false
-        }
-    }
 }

@@ -6,8 +6,10 @@ nonisolated extension DesignTokens.Symbols {
     static let privateGroup = "lock"
     static let chat = "bubble.left.and.bubble.right"
     static let send = "paperplane.fill"
-    static let invite = "link"
-    static let enterCode = "keyboard"
+    /// Inviting a person directly (no links or codes).
+    static let invite = "person.badge.plus"
+    /// The invite sheet's name search.
+    static let search = "magnifyingglass"
     static let report = "flag"
     static let block = "hand.raised"
     static let admin = "star.fill"

@@ -1,13 +1,11 @@
 import XCTest
 
-/// Home and the groups on Explore against the mock repositories: your groups on Home, the carousel and Discover on
-/// Explore, joining, creating, invite codes, and games hosted in a group. Identifiers mirror
+/// Home, the groups on Explore and the rooms on Chats against the mock repositories: your groups on Home, the carousel
+/// and Discover on Explore, joining, creating, games hosted in a group, and the chat. Identifiers mirror
 /// `AccessibilityIdentifiers(+Groups)`; the mock ids mirror `MockGroupFixtures`.
 final class LilyGroupsTests: LilyUITestCase {
     let kickersRow = "group-row-mock-group-kickers"
     let basketballRow = "group-row-mock-group-basketball"
-    /// `AppConfig.Groups.mockInviteCode`: previews and admits into Climbing Buddies.
-    let mockInviteCode = "KRZB7K3MQX9P"
 
     @MainActor
     func testHomeListsMockGroupsAndGames() {
@@ -86,45 +84,6 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(labelled(name).waitForExistence(timeout: 10), "the new group must be listed on Home")
     }
 
-    @MainActor
-    func testJoinWithMockInviteCodeOpensClimbingBuddies() {
-        tapSignInWithApple()
-        openHomeTab()
-        let joinWithCode = app.buttons["groups-join-code"]
-        XCTAssertTrue(joinWithCode.waitForExistence(timeout: 10))
-        joinWithCode.tap()
-
-        enter(mockInviteCode, into: app.textFields["invite-code-field"])
-        let proceed = app.buttons["invite-continue"]
-        XCTAssertTrue(proceed.isEnabled, "a complete code enables Continue")
-        proceed.tap()
-
-        let redeem = app.buttons["invite-redeem"]
-        XCTAssertTrue(redeem.waitForExistence(timeout: 10))
-        XCTAssertTrue(labelled("Climbing Buddies").exists, "the preview names the group")
-        redeem.tap()
-        let chat = app.navigationBars["Climbing Buddies"]
-        XCTAssertTrue(chat.waitForExistence(timeout: 10), "redeeming must open the group's chat")
-    }
-
-    /// The launch argument stands in for a tapped invite link: the preview opens over the app, a guest signs in on
-    /// Join, and the join continues into the chat.
-    @MainActor
-    func testOpenInviteArgumentShowsPreview() {
-        relaunch(appendingArguments: ["-start-as-guest", "-open-invite", mockInviteCode])
-
-        XCTAssertTrue(app.staticTexts["You're invited"].waitForExistence(timeout: 10))
-        XCTAssertTrue(labelled("Climbing Buddies").exists)
-        let redeem = app.buttons["invite-redeem"]
-        XCTAssertTrue(redeem.waitForExistence(timeout: 5))
-        redeem.tap()
-
-        let apple = app.buttons["Continue with Apple"]
-        XCTAssertTrue(apple.waitForExistence(timeout: 5), "a guest must sign in before joining")
-        apple.tap()
-        XCTAssertTrue(app.navigationBars["Climbing Buddies"].waitForExistence(timeout: 15), "the join continues into the chat")
-    }
-
     /// A game created from a group's detail lands in its Events segment and, being a public group's game, in the
     /// Explore list behind it with the group's badge on its card, without a manual refresh.
     @MainActor
@@ -168,16 +127,43 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(text(of: picker).contains("No group"), "nothing is preselected from Explore: \(text(of: picker))")
     }
 
+    /// Inviting starts on the group's detail, reached from Home: the sheet lists the people the caller shares a group
+    /// or a game with, the search narrows them by name, and a sent invite turns its button into "Invited".
+    @MainActor
+    func testInvitingAPersonFromTheGroupMarksThemInvited() {
+        tapSignInWithApple()
+        openHomeTab()
+        let padel = app.buttons["group-row-mock-group-padel"]
+        XCTAssertTrue(padel.waitForExistence(timeout: 10))
+        padel.tap()
+        let invite = app.buttons["group-invite"]
+        XCTAssertTrue(invite.waitForExistence(timeout: 5), "the owner may invite")
+        invite.tap()
+        XCTAssertTrue(app.navigationBars["Invite people"].waitForExistence(timeout: 5))
+
+        let send = app.buttons["invite-send-mock-user-marta"]
+        XCTAssertTrue(send.waitForExistence(timeout: 10), "Marta, from Kreuzberg Kickers, is a candidate")
+        XCTAssertTrue(labelled("In Kreuzberg Kickers").exists)
+        enter("Mar", into: app.textFields["invite-search"])
+        XCTAssertTrue(app.buttons["invite-send-mock-user-aiko"].waitForNonExistence(timeout: 5), "the search narrows the list")
+        send.tap()
+
+        let sent = app.buttons.matching(identifier: "invite-send-mock-user-marta")
+            .matching(NSPredicate(format: "label == %@", "Invited")).firstMatch
+        XCTAssertTrue(sent.waitForExistence(timeout: 10), "a sent invite reads Invited")
+        XCTAssertFalse(sent.isEnabled)
+    }
+
     /// A message typed into the composer shows as the caller's bubble; the text is asserted because the bubble's
     /// identifier is the client id chosen for that send.
     @MainActor
     func testOpenChatSendShowsOwnBubble() {
         tapSignInWithApple()
-        openHomeTab()
+        openChatsTab()
         let kickers = app.buttons[kickersRow]
         XCTAssertTrue(kickers.waitForExistence(timeout: 10))
         kickers.tap()
-        XCTAssertTrue(app.navigationBars["Kreuzberg Kickers"].waitForExistence(timeout: 10), "a Home row opens the chat")
+        XCTAssertTrue(app.navigationBars["Kreuzberg Kickers"].waitForExistence(timeout: 10), "a Chats row opens the room")
         XCTAssertTrue(app.staticTexts["Anyone up for a game this week?"].waitForExistence(timeout: 10),
                       "the fixture history shows")
 
@@ -193,13 +179,13 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertEqual(composer.value as? String, "Message", "the composer is empty again")
     }
 
-    /// Kreuzberg Kickers has unread messages in the fixtures: its Home row carries the dot until the room has been
+    /// Kreuzberg Kickers has unread messages in the fixtures: its Chats row carries the dot until the room has been
     /// opened. The tab badge that goes with it is not exposed to XCUITest by the iOS 26 tab bar (no value, no child),
     /// so it is checked by screenshot instead.
     @MainActor
     func testUnreadRoomShowsDotUntilOpened() {
         tapSignInWithApple()
-        openHomeTab()
+        openChatsTab()
         let kickers = app.buttons[kickersRow]
         XCTAssertTrue(kickers.waitForExistence(timeout: 10))
         let dot = kickers.descendants(matching: .any)["Unread messages"]
@@ -208,7 +194,7 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Kreuzberg Kickers"].waitForExistence(timeout: 10))
 
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 5))
         XCTAssertTrue(kickers.waitForExistence(timeout: 5))
         XCTAssertFalse(dot.exists, "reading the room clears the dot")
     }

@@ -53,28 +53,14 @@ struct AppDependenciesTests {
         #expect(dependencies.me === dependencies.groups.me)
     }
 
-    /// The factories wire the mocks together: the mock code previews the private climbing group for a guest.
-    @Test func theMockInviteCodePreviewsClimbingBuddiesThroughTheFactories() async {
-        let dependencies = AppDependencies.makeMock()
-        let viewModel = dependencies.makeJoinWithCodeViewModel { _ in }
-
-        viewModel.input = AppConfig.Groups.mockInviteCode
-        await viewModel.proceed()
-
-        #expect(viewModel.preview?.groupName == "Climbing Buddies")
-        #expect(viewModel.preview?.needsSignIn == true)
-    }
-
     /// Everything talks to the same backend, or everything stays in memory: a mock run never reaches Laurel for groups.
     @Test func mockEventsSelectTheMockGroupRepositoriesAndTheDefaultTheRemoteOnes() {
         let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeTestDefaults())
         #expect(mocked.groupRepository is MockGroupRepository)
-        #expect(mocked.inviteRepository is MockInviteRepository)
         #expect(mocked.meRepository is MockMeRepository)
         #expect(mocked.moderationRepository is MockModerationRepository)
         let remote = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
         #expect(remote.groupRepository is RemoteGroupRepository)
-        #expect(remote.inviteRepository is RemoteInviteRepository)
         #expect(remote.meRepository is RemoteMeRepository)
         #expect(remote.moderationRepository is RemoteModerationRepository)
         #expect(AppDependencies.makeMock().groupRepository is MockGroupRepository)
@@ -119,15 +105,6 @@ struct AppDependenciesTests {
                                                        defaults: makeTestDefaults())
         await dependencies.sessionController.signIn(with: .apple)
         #expect(dependencies.sessionController.state.user == MockUsers.user(for: .apple))
-    }
-
-    @Test func openInviteLaunchArgumentSeedsTheSharedDeepLinkCenter() {
-        let arguments = [AppConfig.LaunchArguments.openInvite, AppConfig.Groups.mockInviteCode]
-        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeTestDefaults())
-
-        #expect(dependencies.deepLinks === dependencies.groups.deepLinks)
-        #expect(dependencies.deepLinks.pendingInvite?.value == AppConfig.Groups.mockInviteCode)
-        #expect(AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults()).deepLinks.pendingInvite == nil)
     }
 
     /// Nothing here touches Amplify: the client configures it on its first call, and none is made.

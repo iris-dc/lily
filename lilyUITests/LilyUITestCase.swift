@@ -18,7 +18,7 @@ class LilyUITestCase: XCTestCase {
         relaunch(appendingArguments: [argument])
     }
 
-    /// Relaunches with more arguments, for a flag that takes a value (`-open-invite <code>`).
+    /// Relaunches with more arguments, for a flag that takes a value (`-mock-user-id <sub>`).
     @MainActor
     func relaunch(appendingArguments arguments: [String]) {
         app.terminate()
@@ -29,10 +29,22 @@ class LilyUITestCase: XCTestCase {
     /// Opens the Home tab and waits for its root.
     @MainActor
     func openHomeTab() {
-        let tab = app.tabBars.buttons["Home"]
+        openTab(titled: "Home")
+    }
+
+    /// Opens the Chats tab (the inbox row and the caller's rooms) and waits for its root.
+    @MainActor
+    func openChatsTab() {
+        openTab(titled: "Chats")
+    }
+
+    /// Tab titles double as the roots' navigation titles, so one name finds both.
+    @MainActor
+    private func openTab(titled title: String) {
+        let tab = app.tabBars.buttons[title]
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
         tab.tap()
-        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5))
     }
 
     /// The first element whose label contains `text`; for texts that a control folds into its own label.

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The Home tab. Its root is the one `NavigationStack` bound to `AppNavigation.homePath`, so a push made from elsewhere
-/// in the app (an invite, a group's "Open chat") lands here.
+/// The Home tab. Its root is the one `NavigationStack` bound to `AppNavigation.homePath`, so a group opened from
+/// elsewhere in the app (a founded group, a Home row) lands here.
 struct HomeTab: View {
     let dependencies: AppDependencies
 

@@ -45,7 +45,8 @@ struct ChatTranscript: View {
             MessageBubble(row: messageRow)
                 .contextMenu { MessageContextMenu(message: messageRow.message, viewModel: viewModel) }
         case .system(let message):
-            SystemMessageRow(message: message, viewModel: viewModel) { dependencies.navigation.openInHome($0) }
+            // Every chat is on the Chats stack, which owns that stack's one `SportEvent` destination.
+            SystemMessageRow(message: message, viewModel: viewModel) { dependencies.navigation.openInChat($0) }
         case .pending(let pending):
             PendingMessageBubble(message: pending, viewModel: viewModel)
         }

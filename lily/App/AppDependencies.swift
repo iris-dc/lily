@@ -17,7 +17,7 @@ final class AppDependencies {
     let interactionRecorder: any InteractionRecorder
     let locationService: any LocationService
     let eventChanges = ChangeTracker()
-    /// Groups, chat and moderation collaborators; see `AppDependencies+Groups.swift`.
+    /// Groups, chat, inbox and moderation collaborators; see `AppDependencies+Groups.swift`.
     let groups: GroupDependencies
 
     init(logger: any Logging,
@@ -29,8 +29,7 @@ final class AppDependencies {
          profileRepository: any ProfileRepository,
          interactionRecorder: any InteractionRecorder,
          locationService: any LocationService,
-         groupRepositories: GroupRepositories,
-         deepLinks: DeepLinkCenter? = nil) {
+         groupRepositories: GroupRepositories) {
         self.logger = logger
         self.errorCenter = ErrorCenter(logger: logger)
         self.sessionStore = sessionStore
@@ -45,8 +44,7 @@ final class AppDependencies {
                                         identity: identity,
                                         tokenProvider: tokenProvider,
                                         errorCenter: errorCenter,
-                                        logger: logger,
-                                        deepLinks: deepLinks ?? DeepLinkCenter(logger: logger))
+                                        logger: logger)
         self.sessionController = SessionController(authService: authService,
                                                    sessionStore: sessionStore,
                                                    profileRepository: profileRepository,
@@ -79,8 +77,7 @@ final class AppDependencies {
                                profileRepository: repositories.profile,
                                interactionRecorder: repositories.interactions,
                                locationService: makeLocationService(arguments: arguments, logger: logger),
-                               groupRepositories: repositories.groups,
-                               deepLinks: DeepLinkCenter(arguments: arguments, logger: logger))
+                               groupRepositories: repositories.groups)
     }
 
     /// Isolated in-memory wiring for previews and tests.

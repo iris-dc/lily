@@ -15,6 +15,7 @@ final class RealtimeHarness {
     let tokens: FakeAuthTokenProvider?
     let chat = FakeChatRepository()
     let groups = FakeGroupRepository()
+    let inboxRepository = FakeInboxRepository()
     let events = FakeEventRepository()
     let eventChanges = ChangeTracker()
     let pasteboard = SpyPasteboard()
@@ -28,6 +29,7 @@ final class RealtimeHarness {
     let errorCenter: ErrorCenter
     let reporter: GroupErrorReporter
     let store: MyGroupsStore
+    let inbox: InboxStore
     let cache: InMemoryChatHistoryCache
     let catchUp: ChatCatchUp
     let controller: RealtimeSessionController
@@ -44,6 +46,7 @@ final class RealtimeHarness {
         let termsRequests = self.termsRequests
         reporter = GroupErrorReporter(errorCenter: errorCenter) { termsRequests.increment() }
         store = MyGroupsStore(repository: groups, identity: identity, changes: changes, errorCenter: errorCenter, logger: logger)
+        inbox = InboxStore(repository: inboxRepository, identity: identity, errorCenter: errorCenter, logger: logger)
         cache = InMemoryChatHistoryCache(logger: logger)
         catchUp = ChatCatchUp(repository: chat, cache: cache, logger: logger)
         let sleep = self.sleep
@@ -57,6 +60,7 @@ final class RealtimeHarness {
                                                cache: cache,
                                                catchUp: catchUp,
                                                unread: unread,
+                                               inbox: inbox,
                                                groupChanges: changes,
                                                groupRepository: groups,
                                                errorCenter: errorCenter,
