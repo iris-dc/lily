@@ -2,11 +2,11 @@ import Foundation
 
 /// Identifiers of the Groups, chat and moderation screens; mirrored by hand in `lilyUITests` like the rest.
 nonisolated extension AccessibilityIdentifiers {
-    /// Groups root: the Mine | Discover picker, the Discover search field, the floating "+" and the toolbar code button.
-    static let groupsScope = "groups-scope"
-    static let groupsCreate = "groups-create"
+    /// Home's "Join with code" button; the Discover screen's type dropdown; the Explore carousel and its "See all".
     static let groupsJoinCode = "groups-join-code"
     static let groupsTypeFilter = "groups-type-filter"
+    static let groupCarousel = "group-carousel"
+    static let groupsSeeAll = "groups-see-all"
     /// Group detail actions, its Events | Members picker and the toolbar menu.
     static let groupJoin = "group-join"
     static let groupOpenChat = "group-open-chat"

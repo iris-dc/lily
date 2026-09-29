@@ -40,7 +40,7 @@ struct EventListAddTests {
         #expect(viewModel.events == [created] + loaded)
     }
 
-    /// My Events stays chronological, so a created game lands where a reload would put it.
+    /// Home stays chronological, so a created game lands where a reload would put it.
     @Test func joinedListPlacesTheEarliestFirstAndTheLatestLast() async {
         let viewModel = makeEventListViewModel(scope: .joined, repository: makeRepository())
         await viewModel.load()
@@ -53,7 +53,7 @@ struct EventListAddTests {
         #expect(viewModel.events.map(\.id) == ["earliest"] + loaded.map(\.id) + ["latest"])
     }
 
-    /// The host is always in, so My Events takes a game created from Explore.
+    /// The host is always in, so Home takes a game created from Explore.
     @Test func joinedListTakesAGameTheUserIsIn() async {
         let viewModel = makeEventListViewModel(scope: .joined, repository: makeRepository())
         await viewModel.load()

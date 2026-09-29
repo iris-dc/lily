@@ -148,7 +148,8 @@ struct ChatCatchUpTests {
 
         await catchUp.catchUpRooms(["g1", "g2"], maxConcurrent: 2)
 
-        #expect(repository.newerRequests.map { "\($0.groupID)/\($0.after)" } == ["g1/m9", "g2/m9"])
+        // Two rooms run concurrently, so the requests may land in either order.
+        #expect(repository.newerRequests.map { "\($0.groupID)/\($0.after)" }.sorted() == ["g1/m9", "g2/m9"])
     }
 
     @Test func theOpenRoomIsAlwaysCaughtUpAndFailuresStayWarnings() async {

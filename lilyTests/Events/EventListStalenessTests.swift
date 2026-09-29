@@ -181,7 +181,7 @@ struct EventListStalenessTests {
         #expect(!viewModel.isLoading)
     }
 
-    /// My Events is the caller's own games in start order; a position changes nothing there.
+    /// Home is the caller's own games in start order; a position changes nothing there.
     @Test func joinedNeverReloadsForAPosition() async {
         let repository = FakeEventRepository()
         let service = FakeLocationService()

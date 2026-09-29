@@ -60,7 +60,7 @@ struct RemoteEventRepositoryTests {
         #expect(client.requests.first?.queryItems.dropFirst().map(\.value) == ["52.00", "13.40"])
     }
 
-    /// My Events is the caller's own games; their position has no business in that request.
+    /// Home is the caller's own games; their position has no business in that request.
     @Test func joinedNeverSendsAPosition() async throws {
         client.responses = [[SportEvent]()]
 

@@ -92,7 +92,7 @@ struct EventListFilteringTests {
         })
     }
 
-    /// My Events has no filter button, so it must start from `.everything` and never hide a joined game far away.
+    /// Home has no filter button, so it must start from `.everything` and never hide a joined game far away.
     @Test func aListStartedFromEverythingShowsFarAwayGames() async {
         let repository = FakeEventRepository()
         repository.result = .success(MockEventFixtures.make(now: .now, count: 3))

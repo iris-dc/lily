@@ -12,7 +12,7 @@ struct SystemMessageRow: View {
                 if let event = await viewModel.eventToOpen(for: message) { onOpen(event) }
             }
         } label: {
-            Label(viewModel.systemText(for: message), systemImage: DesignTokens.Symbols.myEvents)
+            Label(viewModel.systemText(for: message), systemImage: DesignTokens.Symbols.game)
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

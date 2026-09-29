@@ -15,7 +15,7 @@ nonisolated enum AccessibilityIdentifiers {
     static let eventsMap = "events-map"
     /// Preview card shown above the map for the selected pin.
     static let mapSelectedCard = "map-selected-card"
-    /// The floating "+" on Explore that opens the create sheet (or the sign-in sheet for a guest).
+    /// The floating "+" on Explore: a menu with New game and New group (either shows the sign-in sheet to a guest).
     static let eventsCreate = "events-create"
     /// Fields and actions of the create sheet.
     static let createTitle = "create-title"

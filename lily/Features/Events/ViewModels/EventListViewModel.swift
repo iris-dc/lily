@@ -70,7 +70,7 @@ final class EventListViewModel {
     }
 
     /// Loads once per `AppConfig.Events.listStaleAfter`, or sooner when another screen changed an event meanwhile,
-    /// the caller changed (sign-in or sign-out; `isJoined` is per caller) or the position is not the one the Explore
+    /// the caller changed (sign-in or sign-out; `isJoined` is per caller) or the position is not the one Explore
     /// content was loaded for (it became known after a load without one, or the user moved; the backend orders by
     /// distance), so a tab that reappears reuses what it already has.
     /// A failed load is retried only after `AppConfig.Events.retryAfterFailure`, so switching tabs while the backend
@@ -105,7 +105,7 @@ final class EventListViewModel {
 
     /// Takes the event the detail screen just changed. Applied in place, so the list is right on the way back without
     /// a round trip; a joined-only list drops an event the user has left. The change is recorded so every other list
-    /// (My Events after a join on Explore) reloads on its next appearance; this one already shows it and does not.
+    /// (Home after a join on Explore) reloads on its next appearance; this one already shows it and does not.
     func replace(_ event: SportEvent) {
         if scope == .joined && !event.participates {
             events.removeAll { $0.id == event.id }
@@ -196,7 +196,7 @@ final class EventListViewModel {
         }
     }
 
-    /// Only Explore is ordered by distance; My Events is the caller's own games, in start order.
+    /// Only Explore is ordered by distance; Home is the caller's own games, in start order.
     private var requestPosition: Coordinate? { scope == .upcoming ? userLocation : nil }
 
     /// Why the user's position makes the content stale, or `nil`: it was loaded without one that is known now, or for

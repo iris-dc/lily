@@ -1,13 +1,24 @@
 import MapKit
 import SwiftUI
 
-/// Map of the loaded events with the user's position. Selecting a pin shows a card that opens the detail.
+/// Map of the loaded events around the user's position. It opens on the user at the filter's radius whatever the pins
+/// show, so an empty search still shows where the user is. Selecting a pin shows a card that opens the detail.
 struct EventsMapView: View {
     let viewModel: EventListViewModel
     /// Extra room under the selected card, for a screen that floats a button over the map's bottom corner.
-    var bottomInset: CGFloat = 0
-    @State private var position: MapCameraPosition = .automatic
+    let bottomInset: CGFloat
+    @State private var position: MapCameraPosition
+    /// Set once the camera has been put on the user, at init or when the position arrived, so later drift never moves it.
+    @State private var hasCenteredOnUser: Bool
     @State private var selectedEventID: SportEvent.ID?
+
+    init(viewModel: EventListViewModel, bottomInset: CGFloat = 0) {
+        self.viewModel = viewModel
+        self.bottomInset = bottomInset
+        let userRegion = Self.userRegion(for: viewModel)
+        _position = State(initialValue: userRegion.map { .region($0) } ?? .userLocation(fallback: .automatic))
+        _hasCenteredOnUser = State(initialValue: userRegion != nil)
+    }
 
     private var selectedEvent: SportEvent? {
         viewModel.visibleEvents.first { $0.id == selectedEventID }
@@ -25,6 +36,18 @@ struct EventsMapView: View {
         .onChange(of: viewModel.filter) {
             if selectedEvent == nil { selectedEventID = nil }
         }
+        // A position that arrives after the map opened moves the camera to the user once, unless they already panned.
+        .onChange(of: viewModel.userLocation) {
+            guard !hasCenteredOnUser, !position.positionedByUser, let region = Self.userRegion(for: viewModel) else { return }
+            position = .region(region)
+            hasCenteredOnUser = true
+        }
+    }
+
+    /// On the user at the filter's radius; `nil` while the app has no position, when the map's own fix or its content
+    /// frames the start.
+    private static func userRegion(for viewModel: EventListViewModel) -> MKCoordinateRegion? {
+        MapFraming.initialRegion(userLocation: viewModel.userLocation, radiusMeters: viewModel.filter.maxDistanceMeters)
     }
 
     private var map: some View {

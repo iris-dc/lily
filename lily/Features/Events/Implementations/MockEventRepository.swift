@@ -2,7 +2,7 @@ import Foundation
 
 /// Fixture events with in-memory joins, for previews, UI tests and `-mock-events` runs without a backend.
 final class MockEventRepository: EventRepository {
-    /// Every n-th fixture starts out joined so the My Events tab has content. Four leaves the full padel game
+    /// Every n-th fixture starts out joined so the Home tab has content. Four leaves the full padel game
     /// unjoined, so the disabled "Event is full" state is visible somewhere in the mock feed.
     private static let joinedStride = 4
 

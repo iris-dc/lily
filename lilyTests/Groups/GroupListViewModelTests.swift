@@ -208,18 +208,6 @@ struct GroupListViewModelTests {
         #expect(!viewModel.isLoading)
     }
 
-    @Test func replaceUpdatesADiscoveredGroupInPlace() async {
-        harness.repository.result = .success([.fixture(id: "a"), .fixture(id: "b")])
-        let viewModel = makeViewModel(scope: .discover)
-        await viewModel.search()
-
-        viewModel.replace(.fixture(id: "b", memberCount: 9, role: .member))
-        viewModel.replace(.fixture(id: "unknown"))
-
-        #expect(viewModel.groups.map(\.id) == ["a", "b"])
-        #expect(viewModel.groups[1].memberCount == 9 && viewModel.groups[1].isMember)
-    }
-
     @Test func cancelStopsAPendingSearch() async {
         let viewModel = makeViewModel(scope: .discover)
         viewModel.query = "x"

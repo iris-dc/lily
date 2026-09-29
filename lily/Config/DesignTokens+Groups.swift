@@ -30,6 +30,10 @@ nonisolated extension DesignTokens.Layout {
     static let bubbleMaxWidthFraction: CGFloat = 0.78
     static let unreadDotSize: CGFloat = 8
     static let groupBadgeMaxWidth: CGFloat = 140
+    /// A tile in the Explore groups carousel, and how many rows of them scroll together.
+    static let groupTileWidth: CGFloat = 250
+    static let groupTileHeight: CGFloat = 64
+    static let groupCarouselRows = 2
     /// Lines the preview card gives its title and caption once the row has become a column at accessibility sizes.
     static let accessibilityPreviewLines = 2
     /// Description lines on a Discover card.

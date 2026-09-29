@@ -5,7 +5,7 @@ nonisolated extension AppConfig {
     /// release by the milestone that finishes the feature.
     enum FeatureFlags {
         #if DEBUG
-        /// The Groups tab and group-hosted events.
+        /// Groups (on Home and Explore) and group-hosted events.
         static let groups = true
         /// Chat rows and screens. With `groups` on and `chat` off, a group row opens the group instead of its chat.
         static let chat = true

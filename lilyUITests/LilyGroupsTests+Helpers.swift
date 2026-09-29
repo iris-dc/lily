@@ -2,21 +2,20 @@ import XCTest
 
 /// Helpers of `LilyGroupsTests`, in their own file so the test class stays under the type-body limit.
 extension LilyGroupsTests {
+    /// Pushes Discover from the carousel's "See all" on Explore; the carousel shows once Discover has answered.
     @MainActor
     func showDiscover() {
-        let discover = app.segmentedControls["groups-scope"].buttons["Discover"]
-        XCTAssertTrue(discover.waitForExistence(timeout: 5))
-        discover.tap()
+        let seeAll = app.buttons["groups-see-all"]
+        XCTAssertTrue(seeAll.waitForExistence(timeout: 10))
+        seeAll.tap()
+        XCTAssertTrue(app.navigationBars["Discover groups"].waitForExistence(timeout: 5))
     }
 
-    /// Discover lists Kreuzberg Kickers (public, the caller is a member) whatever Mine shows, so it is the way in.
+    /// Kreuzberg Kickers (public, the caller is a member) is the first tile of the carousel on Explore.
     @MainActor
     func openKickersDetail() {
-        openGroupsTab()
-        showDiscover()
         let kickers = app.buttons[kickersRow]
         XCTAssertTrue(kickers.waitForExistence(timeout: 10))
-        scrollUntilHittable(kickers)
         kickers.tap()
         XCTAssertTrue(app.buttons["group-create-event"].waitForExistence(timeout: 5), "a member may create games here")
     }

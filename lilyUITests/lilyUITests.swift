@@ -52,11 +52,11 @@ final class LilySmokeTests: LilyUITestCase {
     }
 
     /// The mock's "Doubles, all levels" starts at 1 of 4 and unjoined; a join must show on the detail at once and
-    /// in My Events on the way there, without a manual refresh. Leaving it from My Events must turn the control back
+    /// in Home on the way there, without a manual refresh. Leaving it from Home must turn the control back
     /// into Join and drop the game from that list on the way back, again without a reload. Nothing scrolls here on
     /// purpose: a scrolled list minimises the tab bar, and a minimised tab bar swallows tab taps.
     @MainActor
-    func testJoiningFromTheDetailShowsInMyEvents() {
+    func testJoiningFromTheDetailShowsOnHome() {
         tapSignInWithApple()
         let title = "Doubles, all levels"
         let card = app.staticTexts[title]
@@ -71,9 +71,9 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["2 of 4 joined"].exists, "the capacity must show the server's count")
 
         app.navigationBars.buttons.firstMatch.tap()
-        app.tabBars.buttons["My Events"].tap()
-        XCTAssertTrue(app.navigationBars["My Events"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "the joined game must be listed under My Events")
+        app.tabBars.buttons["Home"].tap()
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "the joined game must be listed under Home")
 
         app.staticTexts[title].tap()
         let leave = app.buttons["Leave"]
@@ -84,9 +84,28 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["1 of 4 joined"].exists, "the capacity must show the server's count")
 
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.navigationBars["My Events"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
         // The list animates the removal, so give it room.
-        XCTAssertTrue(app.staticTexts[title].waitForNonExistence(timeout: 10), "a left game must drop out of My Events")
+        XCTAssertTrue(app.staticTexts[title].waitForNonExistence(timeout: 10), "a left game must drop out of Home")
+    }
+
+    /// The one tennis game in the fixtures costs money, so tennis plus "Free only" matches nothing: the map must stay
+    /// on screen (on the user's position) instead of giving way to the "Nothing matches" state the list shows.
+    @MainActor
+    func testMapStaysWhenTheFilterHidesEveryGame() {
+        relaunchAsGuest()
+        showMap()
+
+        app.buttons["events-filter"].tap()
+        let tennis = app.buttons["filter-type-tennis"]
+        XCTAssertTrue(tennis.waitForExistence(timeout: 5), "the filter panel should drop down")
+        tennis.tap()
+        app.buttons["filter-free-only"].tap()
+        app.buttons["Done"].tap()
+
+        XCTAssertTrue(app.maps.firstMatch.waitForExistence(timeout: 5), "the map stays whatever the criteria match")
+        XCTAssertTrue(app.descendants(matching: .any)["Doubles, all levels"].firstMatch.waitForNonExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["Nothing matches"].exists, "the list's empty state must not replace the map")
     }
 
     @MainActor
@@ -126,11 +145,21 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertFalse(app.navigationBars["New game"].exists, "the form must not open for a guest")
     }
 
+    @MainActor
+    func testGuestPlusGroupItemOpensSignIn() {
+        relaunchAsGuest()
+
+        tapCreateMenuItem("New group")
+
+        XCTAssertTrue(app.buttons["Continue with Apple"].waitForExistence(timeout: 5), "a guest must be asked to sign in first")
+        XCTAssertFalse(app.navigationBars["New group"].exists, "the form must not open for a guest")
+    }
+
     /// The mock location fills the spot, so title and place are all the form still needs. The new game must show
-    /// under My Events without a manual refresh, and its detail must know the caller hosts it. Nothing scrolls before
+    /// under Home without a manual refresh, and its detail must know the caller hosts it. Nothing scrolls before
     /// the tab tap: a scrolled list minimises the tab bar, and a minimised tab bar swallows tab taps.
     @MainActor
-    func testCreatingAGameShowsItInMyEvents() {
+    func testCreatingAGameShowsItOnHome() {
         tapSignInWithApple()
         tapCreateButton()
         XCTAssertTrue(app.navigationBars["New game"].waitForExistence(timeout: 5))
@@ -145,11 +174,11 @@ final class LilySmokeTests: LilyUITestCase {
         submit.tap()
         XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
 
-        app.tabBars.buttons["My Events"].tap()
-        XCTAssertTrue(app.navigationBars["My Events"].waitForExistence(timeout: 5))
+        app.tabBars.buttons["Home"].tap()
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
         let card = app.staticTexts[title]
         if !card.waitForExistence(timeout: 10) { app.swipeUp() }
-        XCTAssertTrue(card.waitForExistence(timeout: 5), "the hosted game must be listed under My Events")
+        XCTAssertTrue(card.waitForExistence(timeout: 5), "the hosted game must be listed under Home")
 
         card.tap()
         XCTAssertTrue(app.staticTexts["You host this game"].waitForExistence(timeout: 5), "the host must see the hosting notice")

@@ -87,7 +87,7 @@ struct InvitePreviewViewModelTests {
 
         #expect(viewModel.joinedGroup?.id == "g3" && !viewModel.canJoin)
         #expect(harness.store.groups.map(\.id) == ["g3"])
-        #expect(harness.navigation.selectedTab == .groups && harness.navigation.groupsPath.count == 1)
+        #expect(harness.navigation.selectedTab == .home && harness.navigation.homePath.count == 1)
         #expect(harness.changed.map(\.id) == ["g3"])
         #expect(harness.invites.redeemedCodes.map(\.value) == [AppConfig.Groups.mockInviteCode])
         #expect(harness.logs(.info).contains("Invite redeemed for group g3"))

@@ -40,7 +40,12 @@ struct EventDraftForm: View {
         } header: {
             Text(Copy.gameSection)
         } footer: {
-            issueText(viewModel.issue(for: .titleMissing, .titleTooLong, .startsAtTooSoon))
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                issueText(viewModel.issue(for: .titleMissing, .titleTooLong, .startsAtTooSoon))
+                if viewModel.explainsNoEligibleGroups {
+                    Text(Copy.noEligibleGroups)
+                }
+            }
         }
     }
 
@@ -56,11 +61,14 @@ struct EventDraftForm: View {
         }
     }
 
-    /// Which group hosts the game: a menu over the groups the host may create in, or the preset group read-only when
-    /// the sheet opened from that group.
+    /// Which group hosts the game: a menu over the groups the host may create in, the preset group read-only when
+    /// the sheet opened from that group, or "No group" read-only when none of the caller's groups lets them host.
     @ViewBuilder private var groupRow: some View {
         if let locked = viewModel.lockedGroup {
             LabeledContent(Copy.group, value: locked.name)
+                .accessibilityIdentifier(AccessibilityIdentifiers.createGroup)
+        } else if viewModel.explainsNoEligibleGroups {
+            LabeledContent(Copy.group, value: Copy.noGroup)
                 .accessibilityIdentifier(AccessibilityIdentifiers.createGroup)
         } else {
             Picker(Copy.group, selection: $viewModel.draft.group) {

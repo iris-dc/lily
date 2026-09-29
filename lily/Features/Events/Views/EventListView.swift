@@ -1,34 +1,50 @@
 import SwiftUI
 
-/// One screen for Explore and My Events: a list, optionally switchable to a map, narrowable through a filter panel
-/// dropped down from the toolbar, and optionally with a floating button that creates a game.
-struct EventListView: View {
+/// The Explore screen: a list, switchable to a map, narrowable through a filter panel dropped down from the toolbar,
+/// with a floating button that creates a game and a header (the groups carousel) above the list.
+struct EventListView<Header: View>: View {
     let title: String
     let emptyState: EmptyStateView
+    /// Heading over the cards, for a screen whose header (the groups carousel) would otherwise make them read as its.
+    let listTitle: String?
     let showsMap: Bool
     let filterable: Bool
-    /// Floats the create button over the content. A signed-in user gets the create sheet, a guest the sign-in sheet.
+    /// Floats the "+" menu over the content. A signed-in user gets the game or group form, a guest the sign-in sheet.
     let creatable: Bool
     private let dependencies: AppDependencies
+    private let header: () -> Header
+    /// Pull-to-refresh reloads the header's content too (the carousel), before the events.
+    private let refreshHeader: () async -> Void
     @State private var presentation: EventsPresentation = .list
     @State private var viewModel: EventListViewModel
-    @State private var isCreatePresented = false
-    @State private var isSignInPresented = false
+    @State private var presentedSheet: ExploreSheet?
+
+    private enum ExploreSheet: String, Identifiable {
+        case createGame, createGroup, signIn
+
+        var id: String { rawValue }
+    }
     @Environment(\.scenePhase) private var scenePhase
 
     init(title: String,
          emptyState: EmptyStateView,
+         listTitle: String? = nil,
          showsMap: Bool = false,
          filterable: Bool = false,
          creatable: Bool = false,
          scope: EventScope,
-         dependencies: AppDependencies) {
+         dependencies: AppDependencies,
+         refreshHeader: @escaping () async -> Void = {},
+         @ViewBuilder header: @escaping () -> Header) {
         self.title = title
         self.emptyState = emptyState
+        self.listTitle = listTitle
         self.showsMap = showsMap
         self.filterable = filterable
         self.creatable = creatable
         self.dependencies = dependencies
+        self.header = header
+        self.refreshHeader = refreshHeader
         _viewModel = State(initialValue: dependencies.makeEventListViewModel(scope: scope))
     }
 
@@ -43,7 +59,7 @@ struct EventListView: View {
                 // A join or leave on the detail comes back through `replace`, so this list is right on return.
                 EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event, onChange: viewModel.replace))
             }
-            // An event's "Hosted in" link pushes its group here, so every stack knows the group screens.
+            // An event's "Hosted in" link and the carousel push groups here, so every stack knows the group screens.
             .groupDestinations(dependencies: dependencies)
             .toolbar {
                 if filterable {
@@ -56,7 +72,9 @@ struct EventListView: View {
                 }
             }
         }
-        .task { await viewModel.loadIfStale() }
+        // Re-runs when a game changes anywhere (a create from a group's detail pushed on this stack), so the list behind
+        // the detail is right on return, not only on the next appearance.
+        .task(id: dependencies.eventChanges.version) { await viewModel.loadIfStale() }
         .task { await viewModel.loadUserLocation() }
         .onChange(of: presentation) { viewModel.presentationChanged(to: presentation) }
         // Coming back to the foreground is the one moment location permission may have changed (Settings), and the
@@ -64,13 +82,20 @@ struct EventListView: View {
         .onChange(of: scenePhase) {
             if scenePhase == .active { Task { await viewModel.refreshUserLocation() } }
         }
-        .sheet(isPresented: $isCreatePresented) {
-            // The created event lands in this list at once; sibling lists learn of it through `add`.
-            CreateEventSheet(viewModel: dependencies.makeCreateEventViewModel(onCreated: viewModel.add),
-                             errorCenter: dependencies.errorCenter)
-        }
-        .sheet(isPresented: $isSignInPresented) {
-            SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .createGame:
+                // The created event lands in this list at once; sibling lists learn of it through `add`.
+                CreateEventSheet(viewModel: dependencies.makeCreateEventViewModel(onCreated: viewModel.add),
+                                 errorCenter: dependencies.errorCenter)
+            case .createGroup:
+                // The founder lands in the new group (on Home, where groups live); the carousel and Home learn of it
+                // through `groupChanges` and the store.
+                CreateGroupSheet(viewModel: dependencies.makeCreateGroupViewModel { dependencies.navigation.open(group: $0) },
+                                 errorCenter: dependencies.errorCenter)
+            case .signIn:
+                SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
+            }
         }
     }
 
@@ -80,7 +105,7 @@ struct EventListView: View {
         if creatable {
             ZStack(alignment: .bottomTrailing) {
                 content
-                CreateEventButton(action: presentCreate)
+                CreateMenuButton(onCreateGame: { presentForUser(.createGame) }, onCreateGroup: { presentForUser(.createGroup) })
                     .padding(DesignTokens.Spacing.lg)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -89,13 +114,13 @@ struct EventListView: View {
         }
     }
 
-    /// Only a signed-in user can host; a guest is offered sign-in, and comes back to the button afterwards.
-    private func presentCreate() {
+    /// Only a signed-in user can host or found; a guest is offered sign-in, and comes back to the menu afterwards.
+    private func presentForUser(_ sheet: ExploreSheet) {
         if dependencies.sessionController.state.user != nil {
-            isCreatePresented = true
+            presentedSheet = sheet
         } else {
-            dependencies.logger.info(.auth, "Guest asked to create a game; showing sign-in")
-            isSignInPresented = true
+            dependencies.logger.info(.auth, "Guest asked to create from Explore; showing sign-in")
+            presentedSheet = .signIn
         }
     }
 
@@ -110,29 +135,32 @@ struct EventListView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.eventsPresentation)
     }
 
+    /// In map mode the map is the screen whatever the list would say: the user's surroundings, with the pins that
+    /// match. The list's states sit under the header.
     @ViewBuilder
     private var content: some View {
-        if viewModel.isInitialLoad {
-            ProgressView()
-        } else if viewModel.events.isEmpty {
-            // Scrollable so the "pull to refresh" the error copy promises is possible from here.
-            refreshableScroll {
-                (viewModel.loadFailed ? loadFailedState : emptyState)
-                    .containerRelativeFrame(.vertical)
-            }
-        } else if viewModel.isEverythingFilteredOut {
-            refreshableScroll { filteredOutState.containerRelativeFrame(.vertical) }
-        } else if presentation == .map {
+        if showsMap, presentation == .map {
             EventsMapView(viewModel: viewModel, bottomInset: creatable ? DesignTokens.Layout.floatingButtonFootprint : 0)
+        } else if viewModel.isInitialLoad {
+            refreshableScroll { stateSlot { ProgressView() } }
+        } else if viewModel.events.isEmpty {
+            refreshableScroll { stateSlot { viewModel.loadFailed ? loadFailedState : emptyState } }
+        } else if viewModel.isEverythingFilteredOut {
+            refreshableScroll { stateSlot { filteredOutState } }
         } else {
             refreshableScroll { eventList }
         }
     }
 
     private var eventList: some View {
-        EventCardList(events: viewModel.visibleEvents, distance: viewModel.distanceText)
-            // With the create button floating over the corner, the last card scrolls clear of it.
-            .padding(.bottom, creatable ? DesignTokens.Layout.floatingButtonFootprint : DesignTokens.Spacing.xxl)
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+            if let listTitle {
+                SectionTitle(text: listTitle)
+            }
+            EventCardList(events: viewModel.visibleEvents, distance: viewModel.distanceText)
+        }
+        // With the create button floating over the corner, the last card scrolls clear of it.
+        .padding(.bottom, creatable ? DesignTokens.Layout.floatingButtonFootprint : DesignTokens.Spacing.xxl)
     }
 
     /// The defaults alone (10 km) can hide every event while nothing is "active", so the way out widens to everything.
@@ -150,9 +178,24 @@ struct EventListView: View {
                        message: AppBranding.Events.loadFailedMessage)
     }
 
-    /// The one place that declares the pull-to-refresh gesture and what it reloads.
-    private func refreshableScroll(@ViewBuilder _ content: () -> some View) -> some View {
-        ScrollView { content() }
-            .refreshable { await viewModel.load() }
+    /// A spinner or an empty state centred in most of the screen, so it reads as the screen's state while the
+    /// header above stays in view (a full-height frame would push it below the fold).
+    private func stateSlot(@ViewBuilder _ state: () -> some View) -> some View {
+        state()
+            .frame(maxWidth: .infinity)
+            .containerRelativeFrame(.vertical) { length, _ in length * DesignTokens.Layout.stateSlotHeightFraction }
+    }
+
+    /// The header above whatever the list shows; pull-to-refresh reloads both.
+    private func refreshableScroll(@ViewBuilder _ content: @escaping () -> some View) -> some View {
+        RefreshableScroll {
+            await refreshHeader()
+            await viewModel.load()
+        } content: {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
+                header()
+                content()
+            }
+        }
     }
 }

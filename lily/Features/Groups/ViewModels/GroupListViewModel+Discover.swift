@@ -29,11 +29,12 @@ extension GroupListViewModel {
             nextCursor = page.nextCursor
             hasSearched = true
             searchedUserID = identity.currentUserID
+            searchedChangesVersion = store.changesVersion
             recordSearch(resultCount: page.items.count)
         } catch {
             guard !AppError.isCancellation(error), generation == searchGeneration else { return }
             logger.error(.groups, "Discover failed: \(error)")
-            errorCenter.report(error)
+            if reportsSearchFailures { errorCenter.report(error) }
         }
     }
 

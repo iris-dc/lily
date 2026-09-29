@@ -2,7 +2,7 @@ import Foundation
 
 /// Everything that identifies the product to the user. Change here, and every screen follows.
 nonisolated enum AppBranding {
-    static let name = "lily"
+    static let name = "iskra"
 
     /// Copy shared by every event surface, so a preview card and a capacity bar can never disagree.
     enum Events {
@@ -55,12 +55,14 @@ nonisolated enum AppBranding {
         static let lookingForTitle = "Looking for"
 
         static let loadFailedTitle = "Couldn't load events"
+        /// Heading over the Explore cards while the groups carousel sits above them.
+        static let gamesSection = "Games"
         static let loadFailedMessage = "Pull down to try again."
 
-        /// The create sheet, opened from the floating "+" on Explore.
+        /// The create sheet, opened from the floating "+" on Explore; `title` doubles as the "+" menu's game item.
         enum Create {
-            /// VoiceOver label of the floating "+".
-            static let button = "Create a game"
+            /// VoiceOver label of the floating "+", a menu with a game and a group.
+            static let menu = "Create"
             static let title = "New game"
             static let submit = "Create game"
             static let cancel = "Cancel"
@@ -206,14 +208,27 @@ nonisolated enum AppBranding {
     }
 
     /// Tab titles double as navigation titles.
+    static let homeTitle = "Home"
     static let exploreTitle = "Explore"
-    static let myEventsTitle = "My Events"
     static let profileTitle = "Profile"
 
     static let exploreEmptyTitle = "Nothing yet"
     static let exploreEmptyMessage = "New games show up here as people create them."
-    static let myEventsEmptyTitle = "No events yet"
-    static let myEventsEmptyMessage = "Games you join or host will appear here."
+
+    /// The Home tab: the caller's groups and games, and the states around them.
+    enum Home {
+        static let groupsSection = "Your groups"
+        static let gamesSection = "Your games"
+        static let noGroups = "No groups yet. Find one on Explore, or create your own."
+        static let noGames = "Games you join or host will appear here."
+        static let emptyTitle = "Nothing here yet"
+        static let emptyMessage = "Games you join or host and groups you belong to appear here."
+        static let exploreAction = "Explore"
+        static let loadFailedTitle = "Couldn't load your groups and games"
+        static let guestMessage = "Sign in to see your groups and the games you join or host."
+        static let groupsLoadFailed = "Couldn't load your groups. Pull down to try again."
+        static let gamesLoadFailed = "Couldn't load your games. Pull down to try again."
+    }
 
     /// Event detail. `%@` in `hostedByFormat` is the host's display name.
     static let joinAction = "Join"

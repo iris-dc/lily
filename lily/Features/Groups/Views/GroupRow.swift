@@ -35,10 +35,8 @@ struct GroupRow: View {
     }
 
     private var caption: String {
-        var parts = [AppBranding.Groups.members(group.memberCount)]
-        if let type = group.type { parts.append(type.displayName) }
-        if Calendar.current.isDate(group.lastActivityAt, inSameDayAs: now) { parts.append(AppBranding.Groups.activeTodayCaption) }
-        return AppBranding.Groups.caption(parts)
+        let isActiveToday = Calendar.current.isDate(group.lastActivityAt, inSameDayAs: now)
+        return group.caption(suffix: isActiveToday ? AppBranding.Groups.activeTodayCaption : nil)
     }
 }
 

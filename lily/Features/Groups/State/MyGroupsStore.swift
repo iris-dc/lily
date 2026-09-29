@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// The caller's groups (Mine), kept for the app's lifetime because more than the Groups tab needs them: the create
+/// The caller's groups (Mine), kept for the app's lifetime because more than one screen needs them: the create
 /// form's group picker, the invite flow and, later, the room subscriptions and the tab badge. A tab-local view model
 /// would exist only once the user visited the tab. Follows the events lists' staleness rules through
 /// `ContentFreshness`, so a tab that reappears reuses what it already has.
@@ -19,6 +19,8 @@ final class MyGroupsStore: SessionObserver {
     private let repository: any GroupRepository
     private let identity: any IdentityProvider
     private let changes: ChangeTracker
+    /// The group-changes version as of now, for screens that decide staleness against it (Discover behind the carousel).
+    var changesVersion: Int { changes.version }
     private let errorCenter: ErrorCenter
     private let logger: any Logging
     private let now: () -> Date

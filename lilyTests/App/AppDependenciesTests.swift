@@ -247,7 +247,7 @@ struct AppDependenciesTests {
         #expect(dependencies.identity.currentUserID == nil)
     }
 
-    /// Lists without a filter button (My Events, a group's games) must never hide a game, however far away; Explore
+    /// Lists without a filter button (Home, a group's games) must never hide a game, however far away; Explore
     /// starts from the default filter.
     @Test func myEventsAndGroupListsStartFromEverythingAndExploreFromTheDefaults() {
         let dependencies = AppDependencies.makeMock()

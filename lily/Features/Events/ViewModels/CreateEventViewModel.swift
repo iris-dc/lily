@@ -11,6 +11,8 @@ final class CreateEventViewModel {
     private(set) var createdEvent: SportEvent?
     /// The groups the caller may host a game in, read from the store on `prepare()`; the form's picker offers them.
     private(set) var eligibleGroups: [EventGroupRef] = []
+    /// Whether the caller belongs to any group at all; with groups but none eligible, the row explains why.
+    private(set) var belongsToGroups = false
     /// Set when the sheet opened from a group's Events segment: the draft is stamped with it and the form shows it
     /// read-only instead of the picker.
     let lockedGroup: EventGroupRef?
@@ -55,8 +57,11 @@ final class CreateEventViewModel {
     /// The earliest start the date picker offers.
     var earliestStart: Date { EventDraft.earliestStart(now: now()) }
 
-    /// The form shows a Group row when there is a choice to make, or a preset to show; never for a user without groups.
-    var showsGroupRow: Bool { lockedGroup != nil || !eligibleGroups.isEmpty }
+    /// The row shows for a preset group and for anyone in a group, so a member who may not host still sees why.
+    var showsGroupRow: Bool { lockedGroup != nil || belongsToGroups }
+
+    /// The caller is in groups, but none lets them host: the row is read-only and the footer says so.
+    var explainsNoEligibleGroups: Bool { lockedGroup == nil && belongsToGroups && eligibleGroups.isEmpty }
 
     /// The first of `candidates` the draft has, for the hint under the field they concern.
     func issue(for candidates: EventDraft.Issue...) -> EventDraft.Issue? {
@@ -69,6 +74,7 @@ final class CreateEventViewModel {
     /// map was quicker) is kept.
     func prepare() async {
         eligibleGroups = groups.eligibleForEvents.map(\.ref)
+        belongsToGroups = !groups.groups.isEmpty
         guard draft.coordinate == nil else { return }
         let position = await locationService.currentLocation()
         if draft.coordinate == nil { draft.coordinate = position }

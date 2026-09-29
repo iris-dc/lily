@@ -26,13 +26,13 @@ class LilyUITestCase: XCTestCase {
         app.launch()
     }
 
-    /// Opens the Groups tab and waits for its root.
+    /// Opens the Home tab and waits for its root.
     @MainActor
-    func openGroupsTab() {
-        let tab = app.tabBars.buttons["Groups"]
+    func openHomeTab() {
+        let tab = app.tabBars.buttons["Home"]
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
         tab.tap()
-        XCTAssertTrue(app.navigationBars["Groups"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
     }
 
     /// The first element whose label contains `text`; for texts that a control folds into its own label.
@@ -56,12 +56,21 @@ class LilyUITestCase: XCTestCase {
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
     }
 
-    /// Taps the floating "+" on Explore (AccessibilityIdentifiers.eventsCreate); waits out the sign-in transition too.
+    /// Opens the floating "+" menu on Explore (AccessibilityIdentifiers.eventsCreate) and picks "New game".
     @MainActor
     func tapCreateButton() {
+        tapCreateMenuItem("New game")
+    }
+
+    /// Opens the floating "+" menu on Explore and picks one of its items by title ("New game", "New group").
+    @MainActor
+    func tapCreateMenuItem(_ title: String) {
         let create = app.buttons["events-create"]
         XCTAssertTrue(create.waitForExistence(timeout: 10))
         create.tap()
+        let item = app.buttons[title]
+        XCTAssertTrue(item.waitForExistence(timeout: 5), "the create menu must offer \(title)")
+        item.tap()
     }
 
     /// Focuses a text field and types into it.

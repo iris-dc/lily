@@ -20,6 +20,20 @@ struct CreateEventGroupTests {
         #expect(harness.viewModel.lockedGroup == nil)
         #expect(harness.viewModel.eligibleGroups.isEmpty)
         #expect(!harness.viewModel.showsGroupRow)
+        #expect(!harness.viewModel.explainsNoEligibleGroups)
+    }
+
+    /// In groups, but none lets a member host: the row stays, read-only, and the footer explains rather than the
+    /// choice vanishing without a word.
+    @Test func aMemberWhoMayNotHostAnywhereSeesTheRowWithTheReason() async {
+        let harness = CreateEventHarness()
+        await harness.loadGroups([runners])
+
+        await harness.viewModel.prepare()
+
+        #expect(harness.viewModel.eligibleGroups.isEmpty)
+        #expect(harness.viewModel.showsGroupRow)
+        #expect(harness.viewModel.explainsNoEligibleGroups)
     }
 
     /// The picker offers the groups the caller may host in, read from the store without a request of its own.
@@ -32,6 +46,7 @@ struct CreateEventGroupTests {
 
         #expect(harness.viewModel.eligibleGroups == [kickers.ref, padel.ref])
         #expect(harness.viewModel.showsGroupRow)
+        #expect(!harness.viewModel.explainsNoEligibleGroups)
         #expect(harness.viewModel.draft.group == nil, "the choice is the host's; nothing is preselected")
         #expect(harness.groupRepository.requestedScopes.count == requestsBefore)
     }
@@ -42,6 +57,17 @@ struct CreateEventGroupTests {
         #expect(harness.viewModel.lockedGroup == kickers.ref)
         #expect(harness.viewModel.draft.group == kickers.ref)
         #expect(harness.viewModel.showsGroupRow, "the row shows the preset even before any group is loaded")
+    }
+
+    /// The preset is the group's own choice, so the footer never argues with it, whatever the caller's other groups allow.
+    @Test func aLockedGroupNeverExplainsMissingChoices() async {
+        let harness = CreateEventHarness(lockedGroup: kickers.ref)
+        await harness.loadGroups([runners])
+
+        await harness.viewModel.prepare()
+
+        #expect(harness.viewModel.showsGroupRow)
+        #expect(!harness.viewModel.explainsNoEligibleGroups)
     }
 
     @Test func theCreatedGameCarriesTheGroupAndTheLogNamesItsId() async throws {

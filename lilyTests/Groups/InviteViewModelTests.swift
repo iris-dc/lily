@@ -25,7 +25,7 @@ struct InviteViewModelTests {
         #expect(viewModel.expiresInDays == AppConfig.Groups.inviteDefaultDays && viewModel.maxUses == 0)
         #expect(viewModel.options == InviteOptions())
         #expect(!viewModel.canShare && viewModel.shareURL == nil && viewModel.formattedCode == nil)
-        #expect(viewModel.shareText == "Join Kreuzberg Kickers on lily")
+        #expect(viewModel.shareText == "Join Kreuzberg Kickers on iskra")
     }
 
     @Test func createSendsTheOptionsAndOffersTheLinkAndCode() async {

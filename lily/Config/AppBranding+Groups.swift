@@ -1,18 +1,19 @@
 import Foundation
 
 nonisolated extension AppBranding {
-    /// Copy of the Groups tab, the group detail, the create sheet and the invite sheets.
+    /// Copy of the groups screens, the group detail, the create sheet and the invite sheets.
     enum Groups {
         static let title = "Groups"
-        static let mine = "Mine"
         static let discover = "Discover"
+        static let discoverTitle = "Discover groups"
+        static let seeAll = "See all"
         static let publicVisibility = "Public"
         static let privateVisibility = "Private"
         static let publicFooter = "Anyone can find and join"
         static let privateFooter = "Only people with an invite can join"
         static let oneMemberFormat = "%ld member"
         static let membersFormat = "%ld members"
-        /// What the Groups tab's badge means to assistive technology (the badge itself is not exposed).
+        /// What the Home tab's badge means to assistive technology (the badge itself is not exposed).
         static let oneUnreadRoom = "1 unread room"
         static let unreadRoomsFormat = "%ld unread rooms"
         static let openChat = "Open chat"
@@ -24,8 +25,6 @@ nonisolated extension AppBranding {
         static let joinWithCode = "Join with code"
         static let joinConfirmationFormat = "Join %@?"
         static let unavailable = "This group is no longer available"
-        static let emptyTitle = "No groups yet"
-        static let emptyMessage = "Create one or discover public groups"
         static let discoverEmptyTitle = "Nothing found"
         static let discoverEmptyMessage = "Try another name or event type."
         static let eventsEmptyTitle = "No games yet"
@@ -40,7 +39,6 @@ nonisolated extension AppBranding {
         static let membersOnly = "Members only"
         static let ownedByFormat = "Run by %@"
         static let unread = "Unread messages"
-        static let guestMineMessage = "Sign in to see your groups and chat with them."
         static let eventsEmptyMessage = "Games created in this group show up here."
         static let unavailableMessage = "It may have been deleted, or it is private."
         static let loadFailedTitle = "Couldn't load group"
@@ -91,8 +89,7 @@ nonisolated extension AppBranding {
         }
 
         enum Create {
-            /// VoiceOver label of the floating "+".
-            static let button = "Create a group"
+            /// The create sheet's title; the "+" menu on Explore names its group item after it.
             static let title = "New group"
             static let editTitle = "Edit group"
             static let submit = "Create group"
@@ -148,7 +145,7 @@ nonisolated extension AppBranding {
             static let unavailableTitle = "This invite can't be used"
             static let alreadyMember = "You're already in this group"
             static let expiresAtFormat = "Expires %@"
-            static let shareTextFormat = "Join %@ on lily"
+            static let shareTextFormat = "Join %@ on iskra"
 
             static func shareText(groupName: String) -> String {
                 String(format: shareTextFormat, groupName)
@@ -177,4 +174,6 @@ nonisolated extension AppBranding.Events.Create {
     /// The Group row of the event form: the picker's label, and its choice for a game of the host's own.
     static let group = "Group"
     static let noGroup = "No group"
+    /// Footer under a read-only "No group" row: the caller is in groups, but none lets them host.
+    static let noEligibleGroups = "Your groups let only their admins host games."
 }

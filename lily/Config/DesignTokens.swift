@@ -55,6 +55,12 @@ nonisolated enum DesignTokens {
         /// Growth of a map pin when selected.
         static let mapPinSelectedScale: CGFloat = 1.15
         static let mapSelectedCardWidth: CGFloat = 340
+        /// The map opens this much wider than the filter's diameter, so a pin at the radius sits inside the edge and
+        /// clear of the floating controls.
+        static let mapRegionPadding: Double = 1.3
+        /// Share of the screen a spinner or empty state takes under a header, so it reads as the screen's state while the
+        /// header stays in view.
+        static let stateSlotHeightFraction: CGFloat = 0.75
         /// Room the floating create button takes at the bottom-trailing corner (its glass circle plus its margin),
         /// so the map's selected card is lifted above it instead of sliding under it.
         static let floatingButtonFootprint: CGFloat = 80
@@ -85,7 +91,8 @@ nonisolated enum DesignTokens {
         static let frameInterval: TimeInterval = 1.0 / 30
         /// Bicubic color smoothing: the glows melt into the dark like a blurred light, no visible cell edges.
         static let smoothsColors = true
-        /// The whole background fades in from nothing when a screen appears, so the glow arrives rather than pops.
+        /// The background fades in from nothing once per launch (`AuroraReveal`), so the glow arrives rather than pops;
+        /// every screen after that continues the same fade.
         static let revealDuration: TimeInterval = 3.5
         /// Drift periods in seconds. Pairwise incommensurate, so the combined motion never visibly repeats.
         static let driftPeriods: [TimeInterval] = [19, 23, 29, 37]
@@ -158,8 +165,10 @@ nonisolated enum DesignTokens {
         static let dismiss = "xmark"
         static let apple = "apple.logo"
         static let email = "envelope.fill"
+        static let home = "house"
         static let explore = "sparkles"
-        static let myEvents = "calendar"
+        /// A game, on system rows in a chat.
+        static let game = "calendar"
         static let addEvent = "calendar.badge.plus"
         /// The floating create button on Explore.
         static let create = "plus"

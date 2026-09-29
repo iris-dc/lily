@@ -20,8 +20,11 @@ struct AppRootView: View {
                 MainTabView(dependencies: dependencies)
             }
         }
-        .animation(.smooth(duration: DesignTokens.Duration.slow), value: session.state.isInsideApp)
-        .task { await session.restore() }
+        .animation(.smooth(duration: DesignTokens.Duration.slow), value: rootScreen)
+        .task {
+            await session.restore()
+            dependencies.navigation.selectedTab = AppNavigation.startTab(for: session.state)
+        }
         // Going to the background is the last moment a small batch is sure to be sent.
         .onChange(of: scenePhase) {
             if scenePhase == .background { Task { await dependencies.interactionRecorder.flush() } }
@@ -37,6 +40,19 @@ struct AppRootView: View {
                                dependencies: dependencies)
         }
         .errorPopup(dependencies.errorCenter)
+    }
+
+    /// Which root is on screen; a change crossfades, so launch -> landing is as soft as landing -> shell.
+    private var rootScreen: RootScreen {
+        switch session.state {
+        case .loading: .launch
+        case .signedOut: .landing
+        case .guest, .signedIn: .shell
+        }
+    }
+
+    private enum RootScreen {
+        case launch, landing, shell
     }
 
     /// The invite waits while the session is still being restored; the sheet shows once the shell is up.

@@ -4,31 +4,31 @@ import Testing
 
 @MainActor
 struct AppNavigationTests {
-    @Test func startsOnExploreWithAnEmptyGroupsStack() {
+    @Test func startsOnExploreWithAnEmptyHomeStack() {
         let navigation = AppNavigation()
         #expect(navigation.selectedTab == .explore)
-        #expect(navigation.groupsPath.isEmpty)
+        #expect(navigation.homePath.isEmpty)
     }
 
-    /// A push from a root sheet or the badge must show the Groups tab too, or the pushed screen stays out of sight.
-    @Test func openingInGroupsSelectsTheTabAndPushes() {
+    /// A push from a root sheet or a group detail must show the Home tab too, or the pushed screen stays out of sight.
+    @Test func openingInHomeSelectsTheTabAndPushes() {
         let navigation = AppNavigation()
 
-        navigation.openInGroups("destination")
+        navigation.openInHome("destination")
 
-        #expect(navigation.selectedTab == .groups)
-        #expect(navigation.groupsPath.count == 1)
+        #expect(navigation.selectedTab == .home)
+        #expect(navigation.homePath.count == 1)
     }
 
-    @Test func poppingToRootEmptiesTheGroupsStack() {
+    @Test func poppingToRootEmptiesTheHomeStack() {
         let navigation = AppNavigation()
-        navigation.openInGroups("one")
-        navigation.openInGroups("two")
+        navigation.openInHome("one")
+        navigation.openInHome("two")
 
-        navigation.popGroupsToRoot()
+        navigation.popHomeToRoot()
 
-        #expect(navigation.groupsPath.isEmpty)
-        #expect(navigation.selectedTab == .groups)
+        #expect(navigation.homePath.isEmpty)
+        #expect(navigation.selectedTab == .home)
     }
 
     @Test func openingAGroupOrItsChatSelectsTheTabAndPushesOne() {
@@ -37,23 +37,31 @@ struct AppNavigationTests {
         navigation.open(group: .fixture(id: "a"))
         navigation.open(chat: .fixture(id: "b"))
 
-        #expect(navigation.selectedTab == .groups)
-        #expect(navigation.groupsPath.count == 2)
+        #expect(navigation.selectedTab == .home)
+        #expect(navigation.homePath.count == 2)
     }
 
     @Test func tabsAreInBarOrder() {
-        #expect(AppTab.allCases == [.explore, .myEvents, .groups, .profile])
+        #expect(AppTab.allCases == [.home, .explore, .profile])
+    }
+
+    /// A restored user lands on their groups and games; a guest (or nobody yet) on the games the landing promised.
+    @Test func aLaunchStartsSignedInUsersOnHomeAndEveryoneElseOnExplore() {
+        #expect(AppNavigation.startTab(for: .signedIn(TestFixtures.user)) == .home)
+        #expect(AppNavigation.startTab(for: .guest) == .explore)
+        #expect(AppNavigation.startTab(for: .signedOut) == .explore)
+        #expect(AppNavigation.startTab(for: .loading) == .explore)
     }
 
     /// The pushed screens were the previous user's; the next one starts where a guest does.
-    @Test func signOutResetsTheTabAndTheGroupsStack() {
+    @Test func signOutResetsTheTabAndTheHomeStack() {
         let navigation = AppNavigation()
         navigation.open(chat: .fixture(id: "a"))
 
         navigation.sessionDidEnd()
 
         #expect(navigation.selectedTab == .explore)
-        #expect(navigation.groupsPath.isEmpty)
+        #expect(navigation.homePath.isEmpty)
     }
 
     /// Through the composition root: a sign-out must reach the navigation like every other per-user state.
@@ -64,10 +72,10 @@ struct AppNavigationTests {
                                                        defaults: makeTestDefaults())
         await dependencies.sessionController.signIn(with: .apple)
         dependencies.navigation.open(chat: .fixture(id: MockGroupFixtures.kickersID))
-        #expect(dependencies.navigation.selectedTab == .groups && dependencies.navigation.groupsPath.count == 1)
+        #expect(dependencies.navigation.selectedTab == .home && dependencies.navigation.homePath.count == 1)
 
         await dependencies.sessionController.signOut()
 
-        #expect(dependencies.navigation.selectedTab == .explore && dependencies.navigation.groupsPath.isEmpty)
+        #expect(dependencies.navigation.selectedTab == .explore && dependencies.navigation.homePath.isEmpty)
     }
 }

@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// The groups list behind the Mine | Discover picker. Mine is a projection over `MyGroupsStore`, which owns the
+/// The groups lists: Mine (Home's rows) is a projection over `MyGroupsStore`, which owns the
 /// caller's groups for the app's lifetime; Discover pages through the public groups on its own (see the `+Discover`
 /// file) and works for guests too.
 @Observable
@@ -27,6 +27,11 @@ final class GroupListViewModel {
     @ObservationIgnored var searchTask: Task<Void, Never>?
     /// Who the Discover pages were fetched for; "Joined" on a card is the server's answer for that caller.
     @ObservationIgnored var searchedUserID: String?
+    /// The group-changes version the Discover pages were fetched at; a join, leave or create anywhere moves it.
+    @ObservationIgnored var searchedChangesVersion: Int?
+    /// Off for the carousel on Explore: the events list there reports its own failure, and a second popup would only
+    /// repeat it.
+    var reportsSearchFailures = true
 
     let store: MyGroupsStore
     let repository: any GroupRepository
@@ -87,13 +92,17 @@ final class GroupListViewModel {
         }
     }
 
-    /// Mine follows the store's staleness rules; Discover loads once per caller and then only on a new search or a
-    /// refresh.
+    /// Mine follows the store's staleness rules; Discover loads once per caller, again after a group changed anywhere
+    /// ("Joined" and member counts are the server's answer), and otherwise only on a new search or a refresh.
     func loadIfStale() async {
         switch scope {
         case .mine: await store.loadIfStale()
-        case .discover: if !hasSearched || searchedUserID != identity.currentUserID { await search() }
+        case .discover: if isDiscoverStale { await search() }
         }
+    }
+
+    private var isDiscoverStale: Bool {
+        !hasSearched || searchedUserID != identity.currentUserID || searchedChangesVersion != store.changesVersion
     }
 
     /// Pull-to-refresh: always asks the backend.
@@ -102,13 +111,6 @@ final class GroupListViewModel {
         case .mine: await store.reload()
         case .discover: await search()
         }
-    }
-
-    /// A group as the detail screen just changed it (a join from Discover shows "Joined" on the way back). Mine is
-    /// updated by the detail through the store.
-    func replace(_ group: SportGroup) {
-        guard let index = discovered.firstIndex(where: { $0.id == group.id }) else { return }
-        discovered[index] = group
     }
 
     /// Cancels a pending or running search; the view calls it when the screen goes away.
