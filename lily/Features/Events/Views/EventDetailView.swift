@@ -1,12 +1,15 @@
 import SwiftUI
 
 /// Event detail with the join/leave control and, for signed-in callers, who is in. The view model decides what the
-/// control is and whose profiles may open; this only draws it.
+/// control is, whose profiles may open and whether the caller may edit; this only draws it and hosts the edit sheet.
 struct EventDetailView: View {
     @State private var viewModel: EventDetailViewModel
+    @State private var isEditing = false
+    private let dependencies: AppDependencies
 
-    init(viewModel: EventDetailViewModel) {
+    init(viewModel: EventDetailViewModel, dependencies: AppDependencies) {
         _viewModel = State(initialValue: viewModel)
+        self.dependencies = dependencies
     }
 
     private var event: SportEvent { viewModel.event }
@@ -36,10 +39,26 @@ struct EventDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if viewModel.canEdit {
+                ToolbarItem(placement: .topBarTrailing) { editButton }
+            }
+        }
         .task {
             viewModel.recordViewed()
             await viewModel.loadParticipants()
         }
+        .sheet(isPresented: $isEditing) {
+            // The saved event comes back through `accept`, so this screen and the list behind it change at once.
+            EditEventSheet(viewModel: dependencies.makeEditEventViewModel(for: event, onChange: viewModel.accept),
+                           errorCenter: dependencies.errorCenter)
+        }
+    }
+
+    /// A plain toolbar button, like the sheets' Cancel: `.borderless` collapses to an icon-sized circle in an iOS 26 bar.
+    private var editButton: some View {
+        Button(AppBranding.Events.Edit.action) { isEditing = true }
+            .accessibilityIdentifier(AccessibilityIdentifiers.eventEdit)
     }
 
     /// The title with "Hosted by <name>" under it, a link to the host's profile when the caller may open it.
@@ -175,6 +194,7 @@ struct EventDetailView: View {
     let dependencies = AppDependencies.makeMock()
     NavigationStack {
         EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: MockEventFixtures.make(now: .now, count: 1)[0],
-                                                                         onChange: { _ in }))
+                                                                         onChange: { _ in }),
+                        dependencies: dependencies)
     }
 }

@@ -90,6 +90,15 @@ final class MockEventRepository: EventRepository {
         return event
     }
 
+    /// Like the backend: the host alone, and never fewer spots than people already in.
+    func update(id: String, _ draft: EventDraft) async throws -> SportEvent {
+        let event = try find(id)
+        guard event.isHosted(by: identity.currentUserID) else { throw AppError.notHost }
+        guard draft.capacity >= event.participantCount else { throw AppError.capacityTooLow }
+        logger.info(.events, "Mock event \(event.id) updated (\(draft.capacity) spots)")
+        return store(event.updating(with: draft))
+    }
+
     private func find(_ eventId: String) throws -> SportEvent {
         guard let event = events.first(where: { $0.id == eventId }) else { throw AppError.eventNotFound }
         return event

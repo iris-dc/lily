@@ -27,6 +27,8 @@ nonisolated enum AccessibilityIdentifiers {
     static let createPrice = "create-price"
     static let createSubmit = "create-submit"
     static let createCancel = "create-cancel"
+    /// The Edit button in the event detail's toolbar, shown to the host; the sheet reuses the create identifiers.
+    static let eventEdit = "event-edit"
     /// Fields and actions of the email form in the sign-in sheet. The toggle switches sign in / sign up and, on the
     /// confirmation step, reads "Back to sign in".
     static let authEmail = "auth-email"

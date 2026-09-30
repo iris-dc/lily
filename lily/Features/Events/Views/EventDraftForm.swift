@@ -1,17 +1,22 @@
 import SwiftUI
 
-/// Every field of a new game, grouped the way a host thinks: the game, where, how many, and optional details. Under
-/// each group the first thing still wrong with it, so a disabled Create button is never a mystery.
-struct EventDraftForm: View {
-    @Bindable var viewModel: CreateEventViewModel
+/// Every field of a game, new or the host's own, grouped the way a host thinks: the game, where, how many, and optional
+/// details. Under each group the first thing still wrong with it, so a disabled Create or Save button is never a mystery.
+struct EventDraftForm<Model: EventDraftEditing>: View {
+    @Bindable var viewModel: Model
     /// The price field edits text and parses on every change (like the filter's cap), so Create never races a pending
-    /// commit of the decimal pad, which has no return key.
-    @State private var priceText = ""
+    /// commit of the decimal pad, which has no return key. Seeded from the draft, so an edit shows the game's price.
+    @State private var priceText: String
     @FocusState private var focusedField: Field?
 
     private enum Field { case title, locationName }
 
     private typealias Copy = AppBranding.Events.Create
+
+    init(viewModel: Model) {
+        self.viewModel = viewModel
+        _priceText = State(initialValue: viewModel.draft.price.map { $0.formatted(Price.inputFormat) } ?? "")
+    }
 
     var body: some View {
         Form {
@@ -105,14 +110,14 @@ struct EventDraftForm: View {
 
     private var playersSection: some View {
         Section {
-            Stepper(value: $viewModel.draft.capacity, in: AppConfig.Events.Creation.capacityRange) {
+            Stepper(value: $viewModel.draft.capacity, in: viewModel.capacityRange) {
                 Text(Copy.capacity(viewModel.draft.capacity))
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.createCapacity)
         } header: {
             Text(Copy.playersSection)
         } footer: {
-            issueText(viewModel.issue(for: .capacityOutOfRange))
+            issueText(viewModel.issue(for: .capacityOutOfRange, .capacityBelowParticipants))
         }
     }
 

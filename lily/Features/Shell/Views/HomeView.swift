@@ -43,7 +43,8 @@ struct HomeView: View {
         .groupDestinations(dependencies: dependencies)
         // The only `SportEvent` destination on this stack (the cards here and a group detail's Events segment push them).
         .navigationDestination(for: SportEvent.self) { event in
-            EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event, onChange: events.replace))
+            EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event, onChange: events.replace),
+                            dependencies: dependencies)
         }
         .task(id: loadKey) { await loadIfStale() }
     }

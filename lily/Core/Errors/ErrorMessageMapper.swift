@@ -17,7 +17,7 @@ nonisolated enum ErrorMessageMapper {
         case .rateLimited:
             ErrorMessage(title: "Slow down a moment", body: "Too many requests. Try again in a few seconds.")
         case .eventsUnavailable, .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave,
-             .tryAgain, .participationFailed, .eventCreationFailed:
+             .tryAgain, .participationFailed, .eventCreationFailed, .notHost, .capacityTooLow, .eventUpdateFailed:
             eventMessage(for: error)
         case .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned,
              .ownerCannotLeave, .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed,
@@ -66,7 +66,8 @@ nonisolated enum ErrorMessageMapper {
         }
     }
 
-    /// Copy for browsing, joining and leaving events; `message(for:)` routes exactly those cases here.
+    /// Copy for browsing, joining and leaving events; `message(for:)` routes exactly those cases here, and what a host
+    /// does to their own game falls through to `hostMessage(for:)`.
     private static func eventMessage(for error: AppError) -> ErrorMessage {
         switch error {
         case .eventsUnavailable:
@@ -85,10 +86,8 @@ nonisolated enum ErrorMessageMapper {
             ErrorMessage(title: "Please try again", body: "Someone made a change at the same moment. Give it another tap.")
         case .participationFailed:
             ErrorMessage(title: "Couldn't update your spot", body: "Please try again in a moment.")
-        case .eventCreationFailed:
-            ErrorMessage(title: "Couldn't create your game", body: "Check the details and try again in a moment.")
         default:
-            unknownMessage
+            hostMessage(for: error)
         }
     }
 }

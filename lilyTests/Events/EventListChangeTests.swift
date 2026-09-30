@@ -36,6 +36,33 @@ struct EventListChangeTests {
         #expect(viewModel.events == [events[1], events[2]])
     }
 
+    /// Home and a group's Events are in start order; a host who moves their game must not leave the card where it was.
+    @Test func replaceMovesAGameWhoseStartChangedOnAListInStartOrder() async {
+        let viewModel = makeEventListViewModel(scope: .joined, repository: makeRepository())
+        await viewModel.load()
+        let hosted = events[0].updatingParticipation(count: events[0].participantCount, isJoined: true)
+        var draft = EventDraft(editing: hosted)
+        draft.startsAt = events[2].startsAt.addingTimeInterval(3600)
+        let moved = hosted.updating(with: draft)
+
+        viewModel.replace(moved)
+
+        #expect(viewModel.events == [events[1], events[2], moved])
+    }
+
+    /// Explore is in the backend's relevance order, which a start change does not disturb.
+    @Test func replaceKeepsThePlaceOnExploreWhateverTheStart() async {
+        let viewModel = makeEventListViewModel(repository: makeRepository())
+        await viewModel.load()
+        var draft = EventDraft(editing: events[0])
+        draft.startsAt = events[2].startsAt.addingTimeInterval(3600)
+        let moved = events[0].updating(with: draft)
+
+        viewModel.replace(moved)
+
+        #expect(viewModel.events == [moved, events[1], events[2]])
+    }
+
     @Test func replaceOfAnUnknownEventChangesNothing() async {
         let viewModel = makeEventListViewModel(repository: makeRepository())
         await viewModel.load()

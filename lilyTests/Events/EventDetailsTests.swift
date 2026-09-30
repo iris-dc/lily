@@ -59,6 +59,18 @@ struct EventDetailsTests {
         }
     }
 
+    /// The edit form seeds its price field with `inputFormat` and parses what it holds with `parseAmount`, so the
+    /// two must agree in every locale, grouping separators included, or opening a game would change its price.
+    @Test func aFormattedAmountReadsBackUnchanged() {
+        let amounts = ["7.5", "12", "0.99", "1234.5", "9999999.99"].map { Decimal(string: $0)! }
+        for locale in [us, germany] {
+            for amount in amounts {
+                let text = amount.formatted(Price.inputFormat.locale(locale))
+                #expect(Price.parseAmount(text, locale: locale) == amount, "\(text) in \(locale.identifier)")
+            }
+        }
+    }
+
     @Test func levelCopyNamesTheLevel() {
         #expect(AppBranding.Events.level(SkillLevel.intermediate.displayName) == "Intermediate level")
         #expect(AppBranding.Events.perPerson("€5") == "€5 per person")

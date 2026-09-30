@@ -14,4 +14,6 @@ protocol EventRepository {
     /// Creates the event for the caller, who hosts it and is its first participant; answers the event as stored.
     /// Repeating a create with the same `EventDraft.clientId` answers the same event instead of a second one.
     func create(_ draft: EventDraft) async throws -> SportEvent
+    /// Replaces every editable field of the caller's own event with the draft; the answer is the event as stored.
+    func update(id: String, _ draft: EventDraft) async throws -> SportEvent
 }

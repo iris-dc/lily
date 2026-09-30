@@ -57,7 +57,8 @@ struct EventListView<Header: View>: View {
             .navigationBarTitleDisplayMode(presentation == .map ? .inline : .large)
             .navigationDestination(for: SportEvent.self) { event in
                 // A join or leave on the detail comes back through `replace`, so this list is right on return.
-                EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event, onChange: viewModel.replace))
+                EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event, onChange: viewModel.replace),
+                                dependencies: dependencies)
             }
             // An event's "Hosted in" link and the carousel push groups here, so every stack knows the group screens.
             .groupDestinations(dependencies: dependencies)

@@ -102,6 +102,7 @@ nonisolated enum AppBranding {
             static let issueLocationNameTooLong = "Keep the place name under %ld characters"
             static let issueCoordinateMissing = "Set the spot on the map"
             static let issueCapacityOutOfRange = "Between %ld and %ld players"
+            static let issueCapacityBelowParticipants = "Keep at least as many spots as players who joined"
             static let issueDescriptionTooLong = "Keep the description under %ld characters"
             static let issueLookingForTooLong = "Keep it under %ld characters"
             static let issuePriceOutOfRange = "Enter a price with at most two decimals"
@@ -116,19 +117,34 @@ nonisolated enum AppBranding {
 
             /// The line under a field for one issue, naming the limit from `AppConfig.Events.Creation` where there is one.
             static func message(for issue: EventDraft.Issue) -> String {
+                textMessage(for: issue) ?? valueMessage(for: issue)
+            }
+
+            /// The text fields: missing or over their length.
+            private static func textMessage(for issue: EventDraft.Issue) -> String? {
                 let limits = AppConfig.Events.Creation.self
                 return switch issue {
                 case .titleMissing: issueTitleMissing
                 case .titleTooLong: String(format: issueTitleTooLong, limits.titleMaxLength)
-                case .startsAtTooSoon: String(format: issueStartsAtTooSoon, limits.minimumLeadTimeMinutes)
                 case .locationNameMissing: issueLocationNameMissing
                 case .locationNameTooLong: String(format: issueLocationNameTooLong, limits.locationNameMaxLength)
+                case .descriptionTooLong: String(format: issueDescriptionTooLong, limits.descriptionMaxLength)
+                case .lookingForTooLong: String(format: issueLookingForTooLong, limits.lookingForMaxLength)
+                default: nil
+                }
+            }
+
+            /// When, where on the map, how many and how much.
+            private static func valueMessage(for issue: EventDraft.Issue) -> String {
+                let limits = AppConfig.Events.Creation.self
+                return switch issue {
+                case .startsAtTooSoon: String(format: issueStartsAtTooSoon, limits.minimumLeadTimeMinutes)
                 case .coordinateMissing: issueCoordinateMissing
                 case .capacityOutOfRange:
                     String(format: issueCapacityOutOfRange, limits.capacityRange.lowerBound, limits.capacityRange.upperBound)
-                case .descriptionTooLong: String(format: issueDescriptionTooLong, limits.descriptionMaxLength)
-                case .lookingForTooLong: String(format: issueLookingForTooLong, limits.lookingForMaxLength)
+                case .capacityBelowParticipants: issueCapacityBelowParticipants
                 case .priceOutOfRange: issuePriceOutOfRange
+                default: ""
                 }
             }
         }

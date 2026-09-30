@@ -44,6 +44,9 @@ final class EventDetailViewModel {
         Participation(event: event, userID: identity.currentUserID)
     }
 
+    /// The host, and nobody else, may change the game; the detail shows Edit for them.
+    var canEdit: Bool { participation == .hosting }
+
     /// Names are members-level information, like a roster: shown to signed-in callers only.
     var showsParticipants: Bool { identity.currentUserID != nil }
 
@@ -152,6 +155,11 @@ final class EventDetailViewModel {
         logger.info(.events, "Refreshed event \(event.id) after \(appError): \(fresh.participantCount)/\(fresh.capacity)")
         await loadParticipants()
         return fresh
+    }
+
+    /// Takes the event as the edit sheet saved it, so the detail and the list behind it show the change at once.
+    func accept(_ updated: SportEvent) {
+        apply(updated)
     }
 
     private func apply(_ updated: SportEvent) {

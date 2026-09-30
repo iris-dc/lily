@@ -123,6 +123,17 @@ final class AppDependencies {
                              onChange: onChange)
     }
 
+    /// `onChange` receives the event as the backend stored it after the host's edit; the detail behind the sheet takes
+    /// it through `EventDetailViewModel.accept`.
+    func makeEditEventViewModel(for event: SportEvent,
+                                onChange: @escaping @MainActor (SportEvent) -> Void) -> EditEventViewModel {
+        EditEventViewModel(event: event,
+                           repository: eventRepository,
+                           errorCenter: errorCenter,
+                           logger: logger,
+                           onChange: onChange)
+    }
+
     /// `onCreated` receives the event as the backend stored it; the list behind the sheet adds it in place. A sheet
     /// opened from a group's Events segment passes the group as `lockedGroup`, so the game is hosted there.
     func makeCreateEventViewModel(onCreated: @escaping @MainActor (SportEvent) -> Void,

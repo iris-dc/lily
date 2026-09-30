@@ -7,6 +7,10 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case alreadyJoined = "ALREADY_JOINED"
     case notAParticipant = "NOT_A_PARTICIPANT"
     case hostCannotLeave = "HOST_CANNOT_LEAVE"
+    /// An edit by anyone but the host.
+    case notHost = "NOT_HOST"
+    /// An edit asking for fewer spots than people already in.
+    case capacityTooLow = "CAPACITY_TOO_LOW"
     /// A write lost a race with another player or was throttled; repeating it is safe.
     case tryAgain = "TRY_AGAIN"
     /// The caller sent too many requests; the backend answers 429 with it and a `Retry-After` header.
@@ -51,6 +55,8 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .alreadyJoined: .alreadyJoined
         case .notAParticipant: .notAParticipant
         case .hostCannotLeave: .hostCannotLeave
+        case .notHost: .notHost
+        case .capacityTooLow: .capacityTooLow
         case .tryAgain: .tryAgain
         case .rateLimited: .rateLimited(retryAfter: nil)
         default: nil

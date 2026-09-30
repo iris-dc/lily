@@ -43,7 +43,7 @@ struct ChatsView: View {
         .navigationDestination(for: SportEvent.self) { event in
             EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event) { _ in
                 dependencies.eventChanges.recordChange()
-            })
+            }, dependencies: dependencies)
         }
         .task(id: loadKey) { await loadIfStale() }
     }

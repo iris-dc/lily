@@ -31,6 +31,12 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case participationFailed
     /// Creating an event failed for a reason without copy of its own (a 500, a validation the form did not catch).
     case eventCreationFailed
+    /// The backend refused an edit by someone other than the host (`NOT_HOST`).
+    case notHost
+    /// An edit asked for fewer spots than people already in the game (`CAPACITY_TOO_LOW`).
+    case capacityTooLow
+    /// Editing an event failed for a reason without copy of its own (a 500, a validation the form did not catch).
+    case eventUpdateFailed
     case groupsUnavailable
     /// Also what a private group answers to anyone who is not a member, on reads and writes alike.
     case groupNotFound

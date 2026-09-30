@@ -10,6 +10,8 @@ struct RemoteEventRepositoryTests {
         ("ALREADY_JOINED", .alreadyJoined),
         ("NOT_A_PARTICIPANT", .notAParticipant),
         ("HOST_CANNOT_LEAVE", .hostCannotLeave),
+        ("NOT_HOST", .notHost),
+        ("CAPACITY_TOO_LOW", .capacityTooLow),
         ("TRY_AGAIN", .tryAgain),
         ("RATE_LIMITED", .rateLimited(retryAfter: nil)),
         ("EVENT_NOT_FOUND", .eventNotFound),
@@ -139,6 +141,36 @@ struct RemoteEventRepositoryTests {
         #expect(json["clientEventId"] as? String == draft.clientId)
         #expect(TestFixtures.isBackendEventId(draft.clientId))
         #expect(!json.keys.contains("description") && !json.keys.contains("price"))
+    }
+
+    @Test func updatePutsThePayloadToTheEvent() async throws {
+        let draft = EventDraft(editing: event)
+        client.responses = [event]
+
+        let updated = try await repository.update(id: event.id, draft)
+
+        #expect(updated == event)
+        let request = try #require(client.requests.first)
+        #expect(request.method == .put)
+        #expect(request.path == "/api/events/\(event.id)")
+        #expect(request.queryItems.isEmpty)
+        let payload = try #require(request.body as? UpdateEventPayload)
+        #expect(payload == UpdateEventPayload(draft: draft))
+    }
+
+    /// The form validates against the backend's limits and the host check is the backend's own code, so anything
+    /// without copy on an update (a 500, an unreadable body) becomes the generic update failure.
+    @Test func updateFailuresWithoutCopyBecomeEventUpdateFailed() async {
+        let coded = APIError.http(status: 400, body: APIErrorBody(code: "VALIDATION_FAILED", message: "m"))
+        for error in [coded] + Self.otherFailures {
+            client.error = error
+            await #expect(throws: AppError.eventUpdateFailed) {
+                try await repository.update(id: event.id, EventDraft(editing: event))
+            }
+        }
+        client.error = APIError.http(status: 403, body: APIErrorBody(code: "NOT_HOST", message: "m"))
+        await #expect(throws: AppError.notHost) { try await repository.update(id: event.id, EventDraft(editing: event)) }
+        await #expect(throws: AppError.eventUpdateFailed) { try await repository.update(id: event.id, .fixture(coordinate: nil)) }
     }
 
     /// Validated before the request is built: a draft without a spot never reaches the backend.

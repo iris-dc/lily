@@ -19,6 +19,10 @@ final class FakeEventRepository: EventRepository {
     var nextParticipationError: (any Error)?
     /// Thrown by `create` when set; otherwise the draft becomes an event hosted by `hostUserID`, joined, 1 of N.
     var createError: (any Error)?
+    /// Thrown by `update` when set; otherwise the stored event takes the draft's fields.
+    var updateError: (any Error)?
+    /// Thrown by the next `update` only, ahead of `updateError`: a `TRY_AGAIN` that a repeat gets past.
+    var nextUpdateError: (any Error)?
     var hostUserID = "host"
     /// Answered by `participants(eventId:)`.
     var participantsResult: Result<[EventParticipant], AppError> = .success([])
@@ -31,6 +35,7 @@ final class FakeEventRepository: EventRepository {
     private(set) var joinedEventIDs: [String] = []
     private(set) var leftEventIDs: [String] = []
     private(set) var createdDrafts: [EventDraft] = []
+    private(set) var updatedDrafts: [(id: String, draft: EventDraft)] = []
 
     func events(in scope: EventScope, near position: Coordinate?) async throws -> [SportEvent] {
         requestedScopes.append(scope)
@@ -71,6 +76,17 @@ final class FakeEventRepository: EventRepository {
         return draft.makeEvent(hostUserId: hostUserID,
                                hostName: TestFixtures.user.displayName,
                                coordinate: draft.coordinate ?? AppConfig.Location.mockCenter)
+    }
+
+    func update(id: String, _ draft: EventDraft) async throws -> SportEvent {
+        updatedDrafts.append((id, draft))
+        await hold.wait()
+        if let error = nextUpdateError {
+            nextUpdateError = nil
+            throw error
+        }
+        if let updateError { throw updateError }
+        return try stored(id).updating(with: draft)
     }
 
     /// Lets every held request through and stops holding new ones.

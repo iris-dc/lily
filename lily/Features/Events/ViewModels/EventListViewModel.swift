@@ -104,13 +104,19 @@ final class EventListViewModel {
     }
 
     /// Takes the event the detail screen just changed. Applied in place, so the list is right on the way back without
-    /// a round trip; a joined-only list drops an event the user has left. The change is recorded so every other list
-    /// (Home after a join on Explore) reloads on its next appearance; this one already shows it and does not.
+    /// a round trip; a joined-only list drops an event the user has left, and a list in start order (Home, a group's
+    /// Events) moves a game whose start the host changed. The change is recorded so every other list (Home after a join
+    /// on Explore) reloads on its next appearance; this one already shows it and does not.
     func replace(_ event: SportEvent) {
-        if scope == .joined && !event.participates {
-            events.removeAll { $0.id == event.id }
-        } else if let index = events.firstIndex(where: { $0.id == event.id }) {
-            events[index] = event
+        if let index = events.firstIndex(where: { $0.id == event.id }) {
+            if scope == .joined && !event.participates {
+                events.remove(at: index)
+            } else if scope == .upcoming {
+                events[index] = event
+            } else {
+                events.remove(at: index)
+                insertByStart(event)
+            }
         }
         changes.recordChange()
         freshness.acknowledge(version: changes.version)

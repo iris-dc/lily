@@ -35,6 +35,11 @@ final class RemoteEventRepository: EventRepository {
         guard let payload = CreateEventPayload(draft: draft) else { throw AppError.eventCreationFailed }
         return try await client.send(.post(AppConfig.API.Paths.events, body: payload), failingWith: .eventCreationFailed)
     }
+
+    func update(id: String, _ draft: EventDraft) async throws -> SportEvent {
+        guard let payload = UpdateEventPayload(draft: draft) else { throw AppError.eventUpdateFailed }
+        return try await client.send(.put(AppConfig.API.Paths.event(id: id), body: payload), failingWith: .eventUpdateFailed)
+    }
 }
 
 private extension RemoteEventRepository {

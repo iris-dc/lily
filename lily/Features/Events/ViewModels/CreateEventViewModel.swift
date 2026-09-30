@@ -54,20 +54,18 @@ final class CreateEventViewModel {
 
     var canSubmit: Bool { !isSubmitting && issues.isEmpty }
 
+    var isDone: Bool { createdEvent != nil }
+
     /// The earliest start the date picker offers.
     var earliestStart: Date { EventDraft.earliestStart(now: now()) }
+
+    var capacityRange: ClosedRange<Int> { EventDraft.Rules.creation.capacityRange }
 
     /// The row shows for a preset group and for anyone in a group, so a member who may not host still sees why.
     var showsGroupRow: Bool { lockedGroup != nil || belongsToGroups }
 
     /// The caller is in groups, but none lets them host: the row is read-only and the footer says so.
     var explainsNoEligibleGroups: Bool { lockedGroup == nil && belongsToGroups && eligibleGroups.isEmpty }
-
-    /// The first of `candidates` the draft has, for the hint under the field they concern.
-    func issue(for candidates: EventDraft.Issue...) -> EventDraft.Issue? {
-        let present = issues
-        return candidates.first { present.contains($0) }
-    }
 
     /// Reads the groups the caller may host in (no request: the store is loaded on sign-in) and proposes the user's
     /// position as the spot, so a game "here" needs no map step. A spot already set (the sheet re-appeared, or the

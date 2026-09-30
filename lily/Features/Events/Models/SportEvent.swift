@@ -82,6 +82,27 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
         origin.map { Measurement(value: location.coordinate.distance(to: $0), unit: .meters) }
     }
 
+    /// The event after the host's edit: what the draft says, over who is in, who hosts and where it is hosted, which
+    /// an edit never changes. What the mock repository and the test fake answer for an update.
+    func updating(with draft: EventDraft) -> SportEvent {
+        SportEvent(id: id,
+                   title: draft.trimmedTitle,
+                   type: draft.type,
+                   startsAt: draft.startsAt,
+                   location: EventLocation(name: draft.trimmedLocationName,
+                                           coordinate: draft.coordinate ?? location.coordinate),
+                   capacity: draft.capacity,
+                   participantCount: participantCount,
+                   hostName: hostName,
+                   hostUserId: hostUserId,
+                   isJoined: isJoined,
+                   description: draft.trimmedDescription,
+                   lookingFor: draft.trimmedLookingFor,
+                   skillLevel: draft.skillLevel,
+                   price: draft.price(),
+                   group: group)
+    }
+
     /// The same event after a join or leave; everything but the participation is kept.
     func updatingParticipation(count: Int, isJoined: Bool) -> SportEvent {
         SportEvent(id: id,

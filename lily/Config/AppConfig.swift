@@ -72,6 +72,12 @@ nonisolated enum AppConfig {
             static let priceLimitExclusive: Decimal = 10_000_000
             static let priceMinorUnitsPerUnit: Decimal = 100
         }
+
+        /// What an edit is held to beyond `Creation`'s limits: the backend requires only the future, and a host fixing
+        /// the place of a game that starts in ten minutes must not be told to move the start as well.
+        enum Editing {
+            static let minimumLeadTime: TimeInterval = 0
+        }
     }
 
     enum Location {

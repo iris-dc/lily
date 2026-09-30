@@ -8,6 +8,7 @@ struct ErrorMessageMapperTests {
         .emailTaken, .emailNotConfirmed, .invalidConfirmationCode, .tooManyAttempts,
         .sessionExpired, .rateLimited(retryAfter: nil), .network, .eventsUnavailable, .eventNotFound, .eventFull,
         .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain, .participationFailed, .eventCreationFailed,
+        .notHost, .capacityTooLow, .eventUpdateFailed,
         .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned, .ownerCannotLeave,
         .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed, .contentRejected,
         .inviteExpired, .inviteUnavailable, .inboxUnavailable, .inviteActionFailed, .inviteNotPending, .alreadyMember,
@@ -49,6 +50,13 @@ struct ErrorMessageMapperTests {
         #expect(ErrorMessageMapper.message(for: .inviteNotPending).title == "This invite was already answered")
         #expect(ErrorMessageMapper.message(for: .alreadyMember).title == "They're already in this group")
         #expect(ErrorMessageMapper.message(for: .cannotInvite).title == "This person can't be invited")
+    }
+
+    /// An edit's refusals and failures read as the host's, not like a join that failed.
+    @Test func hostFailuresHaveTheirOwnTitles() {
+        #expect(ErrorMessageMapper.message(for: .eventUpdateFailed).title == "Couldn't save your changes")
+        #expect(ErrorMessageMapper.message(for: .notHost).title == "Not your game")
+        #expect(ErrorMessageMapper.message(for: .capacityTooLow).title == "Too few spots")
     }
 
     /// A create that fails for no named reason must not read like a join that failed.
