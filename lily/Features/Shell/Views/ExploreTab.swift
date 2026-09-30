@@ -33,7 +33,7 @@ struct ExploreTab: View {
                       emptyState: EmptyStateView(symbolName: DesignTokens.Symbols.explore,
                                                  title: AppBranding.exploreEmptyTitle,
                                                  message: AppBranding.exploreEmptyMessage),
-                      listTitle: showsGroups ? AppBranding.Events.gamesSection : nil,
+                      listTitle: showsGroups ? AppBranding.Events.eventsSection : nil,
                       showsMap: true,
                       filterable: true,
                       creatable: true,

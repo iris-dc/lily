@@ -56,7 +56,7 @@ nonisolated enum AppBranding {
 
         static let loadFailedTitle = "Couldn't load events"
         /// Heading over the Explore cards while the groups carousel sits above them.
-        static let gamesSection = "Games"
+        static let eventsSection = "Events"
         static let loadFailedMessage = "Pull down to try again."
 
         /// The create sheet, opened from the floating "+" on Explore; `title` doubles as the "+" menu's game item.
