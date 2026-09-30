@@ -37,6 +37,31 @@ final class MockEventRepository: EventRepository {
         return try find(id)
     }
 
+    /// The host (the fixture's name, or the caller for a game created here), then `participantCount - 1` deterministic
+    /// roster names, then the caller as "You" when they joined; ids resolve against the group mock's rosters.
+    func participants(eventId: String) async throws -> [EventParticipant] {
+        let event = try find(eventId)
+        let hostID = event.hostUserId ?? MockGroupFixtures.memberID(for: event.hostName)
+        let hostJoinedAt = event.startsAt.addingTimeInterval(-MockEventFixtures.hostJoinLead)
+        let host = EventParticipant(userId: hostID, displayName: event.hostName, joinedAt: hostJoinedAt, isHost: true)
+        let caller = identity.currentUserID.flatMap { $0 == hostID || !event.participates ? nil : $0 }
+        let othersCount = max(event.participantCount - 1 - (caller == nil ? 0 : 1), 0)
+        let others = MockEventFixtures.participantNames(for: event, count: othersCount).enumerated().map { index, name in
+            EventParticipant(userId: MockGroupFixtures.memberID(for: name),
+                             displayName: name,
+                             joinedAt: hostJoinedAt.addingTimeInterval(Double(index + 1) * MockEventFixtures.joinSpacing),
+                             isHost: false)
+        }
+        let you = caller.map {
+            [EventParticipant(userId: $0,
+                              displayName: AppBranding.Events.Create.mockHostName,
+                              joinedAt: hostJoinedAt.addingTimeInterval(Double(others.count + 1) * MockEventFixtures.joinSpacing),
+                              isHost: false)]
+        }
+        logger.debug(.events, "Mock participants served for event \(eventId)")
+        return [host] + others + (you ?? [])
+    }
+
     func join(eventId: String) async throws -> SportEvent {
         let event = try find(eventId)
         guard !event.participates else { throw AppError.alreadyJoined }

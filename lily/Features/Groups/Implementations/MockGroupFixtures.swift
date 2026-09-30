@@ -1,7 +1,8 @@
 import Foundation
 
 /// The six groups of a mock run: three the caller is in (as member, admin and owner), one to join, one that is full,
-/// and one private group reachable only through the mock inbox's invite (`MockInboxFixtures`).
+/// and one private group reachable only through the mock inbox's invite (`MockInboxFixtures`); plus one direct
+/// conversation, with Marta, unread, so the Chats tab shows a person row from the start.
 nonisolated enum MockGroupFixtures {
     static let kickersID = "mock-group-kickers"
     static let runnersID = "mock-group-runners"
@@ -9,6 +10,9 @@ nonisolated enum MockGroupFixtures {
     static let basketballID = "mock-group-basketball"
     static let volleyID = "mock-group-volley"
     static let climbingID = "mock-group-climbing"
+    /// The other side of the fixture conversation; `startDirect(with:)` for her answers the fixture instead of a new room.
+    static let conversationCounterpart = Counterpart(userId: memberID(for: "Marta"), displayName: "Marta")
+    static let martaConversationID = directConversationID(for: conversationCounterpart.userId)
 
     private struct Template {
         let id: String
@@ -108,36 +112,87 @@ nonisolated enum MockGroupFixtures {
 
     private static let secondsPerHour = 3600.0
     private static let secondsPerDay = 86_400.0
+    /// Marta wrote first, two weeks ago.
+    private static let conversationAgeDays = 14.0
 
     static func make(now: Date) -> [SportGroup] {
-        templates.map { template in
-            let joinedAt = now.addingTimeInterval(-template.createdDaysAgo * secondsPerDay / 2)
-            return SportGroup(
-                id: template.id,
-                name: template.name,
-                description: template.description,
-                visibility: template.visibility,
-                type: template.type,
-                ownerName: template.ownerName,
-                memberCount: template.memberCount,
-                maxMembers: template.maxMembers,
-                lastMessageId: template.lastMessageHoursAgo.map { _ in MockChatFixtures.newestMessageID(for: template.id) },
-                lastMessageAt: template.lastMessageHoursAgo.map { now.addingTimeInterval(-$0 * secondsPerHour) },
-                createdAt: now.addingTimeInterval(-template.createdDaysAgo * secondsPerDay),
-                membership: template.role.map {
-                    GroupMembership(role: $0,
-                                    joinedAt: joinedAt,
-                                    lastReadMessageId: template.hasUnread
-                                        ? MockChatFixtures.lastReadMessageID(for: template.id)
-                                        : MockChatFixtures.newestMessageID(for: template.id),
-                                    hasUnread: template.hasUnread)
-                }
-            )
-        }
+        templates.map { makeGroup($0, now: now) } + [martaConversation(now: now)]
     }
 
-    /// The other members of a group (never the caller), oldest first; banned rows included.
+    private static func makeGroup(_ template: Template, now: Date) -> SportGroup {
+        let joinedAt = now.addingTimeInterval(-template.createdDaysAgo * secondsPerDay / 2)
+        return SportGroup(
+            id: template.id,
+            name: template.name,
+            description: template.description,
+            visibility: template.visibility,
+            type: template.type,
+            ownerName: template.ownerName,
+            memberCount: template.memberCount,
+            maxMembers: template.maxMembers,
+            lastMessageId: template.lastMessageHoursAgo.map { _ in MockChatFixtures.newestMessageID(for: template.id) },
+            lastMessageAt: template.lastMessageHoursAgo.map { now.addingTimeInterval(-$0 * secondsPerHour) },
+            createdAt: now.addingTimeInterval(-template.createdDaysAgo * secondsPerDay),
+            membership: template.role.map {
+                GroupMembership(role: $0,
+                                joinedAt: joinedAt,
+                                lastReadMessageId: template.hasUnread
+                                    ? MockChatFixtures.lastReadMessageID(for: template.id)
+                                    : MockChatFixtures.newestMessageID(for: template.id),
+                                hasUnread: template.hasUnread)
+            }
+        )
+    }
+
+    /// The fixture conversation: Marta started it two weeks ago, and her last line (`MockChatFixtures`) is unread.
+    private static func martaConversation(now: Date) -> SportGroup {
+        let started = now.addingTimeInterval(-conversationAgeDays * secondsPerDay)
+        let membership = GroupMembership(role: .member,
+                                         joinedAt: started,
+                                         lastReadMessageId: MockChatFixtures.lastReadMessageID(for: martaConversationID),
+                                         hasUnread: true)
+        return conversation(with: conversationCounterpart,
+                            startedBy: conversationCounterpart.displayName,
+                            at: started,
+                            membership: membership,
+                            lastMessageId: MockChatFixtures.newestMessageID(for: martaConversationID),
+                            lastMessageAt: now.addingTimeInterval(-MockChatFixtures.conversationLastMessageAge))
+    }
+
+    /// A direct conversation as the backend shapes one: under `directConversationID(for:)`, named after the other
+    /// person, private, two of two, no powers, `member` on the caller's side; `ownerName` is whoever started it. The
+    /// fixture with Marta and the ones `MockGroupRepository.startDirect(with:name:)` creates both come from here.
+    static func conversation(with counterpart: Counterpart,
+                             startedBy ownerName: String,
+                             at createdAt: Date,
+                             membership: GroupMembership,
+                             lastMessageId: String? = nil,
+                             lastMessageAt: Date? = nil) -> SportGroup {
+        SportGroup(id: directConversationID(for: counterpart.userId),
+                   name: counterpart.displayName,
+                   visibility: .private,
+                   ownerName: ownerName,
+                   memberCount: 2,
+                   maxMembers: 2,
+                   membersCanCreateEvents: false,
+                   membersCanInvite: false,
+                   lastMessageId: lastMessageId,
+                   lastMessageAt: lastMessageAt,
+                   createdAt: createdAt,
+                   membership: membership,
+                   kind: .direct,
+                   counterpart: counterpart)
+    }
+
+    /// The other members of a group (never the caller), oldest first; banned rows included. A conversation's roster is
+    /// the other person.
     static func roster(for groupID: String, now: Date) -> [GroupMember] {
+        if groupID == martaConversationID {
+            return [GroupMember(userId: conversationCounterpart.userId,
+                                displayName: conversationCounterpart.displayName,
+                                role: .member,
+                                joinedAt: now.addingTimeInterval(-conversationAgeDays * secondsPerDay))]
+        }
         guard let template = templates.first(where: { $0.id == groupID }) else { return [] }
         let createdAt = now.addingTimeInterval(-template.createdDaysAgo * secondsPerDay)
         return template.roster.enumerated().map { index, entry in
@@ -150,6 +205,12 @@ nonisolated enum MockGroupFixtures {
 
     static func memberID(for name: String) -> String {
         "mock-user-\(name.lowercased())"
+    }
+
+    /// The direct conversation with a person is a private two-member group of kind `direct` under this id, so the
+    /// fixture conversation and the ones `MockGroupRepository.startDirect(with:name:)` creates agree.
+    static func directConversationID(for userID: String) -> String {
+        "mock-dm-" + userID
     }
 
     /// The badge a mock event hosted in one of these groups carries; `nil` for an unknown id.

@@ -13,6 +13,7 @@ struct ErrorMessageMapperTests {
         .inviteExpired, .inviteUnavailable, .inboxUnavailable, .inviteActionFailed, .inviteNotPending, .alreadyMember,
         .cannotInvite, .chatUnavailable, .messageSendFailed, .messageNotFound,
         .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired,
+        .profileUnavailable, .conversationFailed, .conversationLimit,
         .unknown,
     ]
 
@@ -82,6 +83,15 @@ struct ErrorMessageMapperTests {
         #expect(ErrorMessageMapper.message(for: .termsRequired).title == "Please accept the updated terms")
         #expect(ErrorMessageMapper.message(for: .membershipLimitReached).body.contains("\(AppConfig.Groups.maxMemberships)"))
         #expect(ErrorMessageMapper.message(for: .accountSuspended).body.contains(AppConfig.Moderation.supportEmail))
+    }
+
+    /// Pinned like the rest: a profile that would not load and a conversation that would not start each say so, and the
+    /// conversation cap names the number from config.
+    @Test func peopleErrorsHaveTheirOwnTitles() {
+        #expect(ErrorMessageMapper.message(for: .profileUnavailable).title == "Couldn't load this profile")
+        #expect(ErrorMessageMapper.message(for: .conversationFailed).title == "Couldn't start the conversation")
+        #expect(ErrorMessageMapper.message(for: .conversationLimit).title == "You have too many conversations")
+        #expect(ErrorMessageMapper.message(for: .conversationLimit).body.contains("\(AppConfig.People.maxConversations)"))
     }
 
     @Test func providerFailureNamesProvider() {
@@ -179,7 +189,7 @@ struct BackendErrorCodeTests {
             "MEMBER_BANNED": .memberBanned, "MEMBERSHIP_LIMIT": .membershipLimitReached,
             "INVITE_EXPIRED": .inviteExpired, "INVITE_NOT_PENDING": .inviteNotPending,
             "INBOX_ITEM_NOT_FOUND": .inviteNotPending, "ALREADY_MEMBER": .alreadyMember, "CANNOT_INVITE": .cannotInvite,
-            "BLOCK_LIMIT": .blockLimitReached,
+            "BLOCK_LIMIT": .blockLimitReached, "CONVERSATION_LIMIT": .conversationLimit,
         ]
         for (raw, error) in expected {
             #expect(BackendErrorCode(rawValue: raw)?.appError == error, "\(raw)")

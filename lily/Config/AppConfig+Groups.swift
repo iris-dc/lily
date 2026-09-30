@@ -13,6 +13,7 @@ nonisolated extension AppConfig {
         /// A reappearing Mine list reuses groups loaded more recently than this; pull-to-refresh always reloads.
         static let listStaleAfter: TimeInterval = 60
         static let retryAfterFailure: TimeInterval = 10
+        /// The fixture communities; the fixtures add one direct conversation (with Marta) on top.
         static let mockGroupCount = 6
     }
 }

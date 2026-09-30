@@ -166,13 +166,13 @@ nonisolated enum DesignTokens {
         static let apple = "apple.logo"
         static let email = "envelope.fill"
         static let home = "house"
-        static let explore = "sparkles"
+        static let explore = "binoculars"
         /// A game, on system rows in a chat.
         static let game = "calendar"
         static let addEvent = "calendar.badge.plus"
         /// The floating create button on Explore.
         static let create = "plus"
         static let pickedLocation = "mappin"
-        static let profile = "person.crop.circle"
+        static let profile = "person"
     }
 }

@@ -1,10 +1,12 @@
 import SwiftUI
 
 /// One member's message as a bubble: the caller's in the accent, trailing; everyone else's on the surface colour,
-/// leading, with the sender's avatar and current name on the first bubble of a run and the time under the last.
-/// Plain fills, never glass: a chat scrolls dozens of these at once.
+/// leading, with the sender's avatar and current name on the first bubble of a run (both open `profile`, the sender's,
+/// as the view model frames it for this room) and the time under the last. Plain fills, never glass: a chat scrolls
+/// dozens of these at once.
 struct MessageBubble: View {
     let row: MessageRow
+    let profile: UserProfileDestination
 
     var body: some View {
         HStack(alignment: .top, spacing: DesignTokens.Spacing.sm) {
@@ -21,23 +23,36 @@ struct MessageBubble: View {
 
     private var side: Alignment { row.isOwn ? .trailing : .leading }
 
-    /// Only the first bubble of a run shows the avatar; the rest keep its column so the run lines up.
+    /// Only the first bubble of a run shows the avatar; the rest keep its column so the run lines up. The name link
+    /// speaks for both, so the avatar's stays out of the accessibility tree.
     @ViewBuilder private var avatarColumn: some View {
         if row.isFirstInRun {
-            AvatarCircle(initials: row.senderName.initials,
-                         size: DesignTokens.Layout.avatarSmall,
-                         tint: .lilySecondary,
-                         tintOpacity: DesignTokens.Opacity.secondaryGlassTint)
+            profileLink {
+                AvatarCircle(initials: row.senderName.initials,
+                             size: DesignTokens.Layout.avatarSmall,
+                             tint: .lilySecondary,
+                             tintOpacity: DesignTokens.Opacity.secondaryGlassTint)
+            }
+            .accessibilityHidden(true)
         } else {
             Color.clear.frame(width: DesignTokens.Layout.avatarSmall, height: 0)
         }
     }
 
     private var senderName: some View {
-        Text(row.senderName)
-            .font(LilyTheme.Fonts.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
+        profileLink {
+            Text(row.senderName)
+                .font(LilyTheme.Fonts.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+    }
+
+    private func profileLink(@ViewBuilder _ label: () -> some View) -> some View {
+        NavigationLink(value: profile) {
+            label()
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder private var bubble: some View {
@@ -149,18 +164,19 @@ private extension View {
     let deleted = ChatMessage(id: "3", groupId: "g", senderUserId: "u-2", senderName: "Marta", sentAt: now, isDeleted: true)
     ContentScreen {
         VStack(spacing: DesignTokens.Spacing.xs) {
-            MessageBubble(row: row(other, isOwn: false, isFirstInRun: true, isLastInRun: false))
-            MessageBubble(row: row(deleted, isOwn: false, isFirstInRun: false, isLastInRun: true))
-            MessageBubble(row: row(own, isOwn: true, isFirstInRun: true, isLastInRun: true))
+            bubble(other, isOwn: false, isFirstInRun: true, isLastInRun: false)
+            bubble(deleted, isOwn: false, isFirstInRun: false, isLastInRun: true)
+            bubble(own, isOwn: true, isFirstInRun: true, isLastInRun: true)
         }
         .padding()
     }
 }
 
-private func row(_ message: ChatMessage, isOwn: Bool, isFirstInRun: Bool, isLastInRun: Bool) -> MessageRow {
-    MessageRow(message: message,
-               isOwn: isOwn,
-               senderName: message.senderName,
-               isFirstInRun: isFirstInRun,
-               isLastInRun: isLastInRun)
+private func bubble(_ message: ChatMessage, isOwn: Bool, isFirstInRun: Bool, isLastInRun: Bool) -> MessageBubble {
+    MessageBubble(row: MessageRow(message: message,
+                                  isOwn: isOwn,
+                                  senderName: message.senderName,
+                                  isFirstInRun: isFirstInRun,
+                                  isLastInRun: isLastInRun),
+                  profile: UserProfileDestination(userId: message.senderUserId, displayName: message.senderName))
 }

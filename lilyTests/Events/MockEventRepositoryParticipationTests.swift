@@ -54,6 +54,52 @@ struct MockEventRepositoryParticipationTests {
         await #expect(throws: AppError.eventNotFound) { try await repository.event(id: "missing") }
     }
 
+    /// The host leads, the others are roster names (so their profiles resolve), the caller closes the list as "You" when
+    /// they joined, and the rows count what the event counts.
+    @Test func participantsListTheHostFirstAndTheCallerAsYouWhenJoined() async throws {
+        let signedIn = MockEventRepository(now: .now,
+                                           count: AppConfig.Events.mockFeedSize,
+                                           identity: FakeIdentityProvider(currentUserID: TestFixtures.user.id),
+                                           logger: SpyLogger())
+        let events = try await signedIn.events(in: .upcoming, near: nil)
+        let joined = try #require(events.first { $0.participates })
+        let open = try #require(events.first { !$0.participates && $0.participantCount > 1 })
+
+        let joinedRows = try await signedIn.participants(eventId: joined.id)
+        #expect(joinedRows.count == joined.participantCount)
+        #expect(joinedRows.first == EventParticipant(userId: MockGroupFixtures.memberID(for: joined.hostName),
+                                                     displayName: joined.hostName,
+                                                     joinedAt: joinedRows[0].joinedAt,
+                                                     isHost: true))
+        #expect(joinedRows.last?.userId == TestFixtures.user.id && joinedRows.last?.displayName == "You")
+        #expect(joinedRows.dropFirst().allSatisfy { !$0.isHost })
+        #expect(joinedRows.dropFirst().dropLast().allSatisfy { MockEventFixtures.participantNames.contains($0.displayName) })
+        #expect(Set(joinedRows.map(\.userId)).count == joinedRows.count, "nobody is listed twice")
+
+        let openRows = try await signedIn.participants(eventId: open.id)
+        #expect(openRows.count == open.participantCount && openRows.first?.isHost == true)
+        #expect(!openRows.contains { $0.userId == TestFixtures.user.id })
+        #expect(try await signedIn.participants(eventId: open.id) == openRows, "the same list on every call")
+        await #expect(throws: AppError.eventNotFound) { try await signedIn.participants(eventId: "missing") }
+    }
+
+    /// A game the caller created is theirs: one "You" row, the host's, never a second one.
+    @Test func aCreatedGameListsTheCallerAsItsHostOnce() async throws {
+        let signedIn = MockEventRepository(now: .now,
+                                           count: 1,
+                                           identity: FakeIdentityProvider(currentUserID: TestFixtures.user.id),
+                                           logger: SpyLogger())
+        let created = try await signedIn.create(.fixture())
+
+        let rows = try await signedIn.participants(eventId: created.id)
+
+        let expected = EventParticipant(userId: TestFixtures.user.id,
+                                        displayName: "You",
+                                        joinedAt: rows[0].joinedAt,
+                                        isHost: true)
+        #expect(rows == [expected])
+    }
+
     @Test func eventByIdReturnsTheStoredEvent() async throws {
         let first = try #require(try await repository.events(in: .upcoming, near: nil).first)
 

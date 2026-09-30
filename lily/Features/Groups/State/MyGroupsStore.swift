@@ -1,9 +1,9 @@
 import Foundation
 import Observation
 
-/// The caller's groups (Mine), kept for the app's lifetime because more than one screen needs them: the create
-/// form's group picker, the invite flow and, later, the room subscriptions and the tab badge. A tab-local view model
-/// would exist only once the user visited the tab. Follows the events lists' staleness rules through
+/// The caller's groups (Mine, direct conversations included), kept for the app's lifetime because more than one screen
+/// needs them: the create form's group picker, the invite flow, the room subscriptions and the tab badge. A tab-local
+/// view model would exist only once the user visited the tab. Follows the events lists' staleness rules through
 /// `ContentFreshness`, so a tab that reappears reuses what it already has.
 @Observable
 final class MyGroupsStore: SessionObserver {
@@ -43,10 +43,16 @@ final class MyGroupsStore: SessionObserver {
     var loadFailed: Bool { freshness.loadFailed }
     var isLoading: Bool { load.isRunning }
 
+    /// Mine without the direct conversations: what "your groups" means on Home, in the event form and anywhere else a
+    /// group is a community. `groups` (everything) feeds the Chats tab, the unread set and the room subscriptions.
+    var communities: [SportGroup] {
+        groups.filter { !$0.isDirect }
+    }
+
     /// The groups the caller may create a game in, for the create form's picker.
     var eligibleForEvents: [SportGroup] {
         let userID = identity.currentUserID
-        return groups.filter { GroupAccess(group: $0, userID: userID).canCreateEvents(in: $0) }
+        return communities.filter { GroupAccess(group: $0, userID: userID).canCreateEvents(in: $0) }
     }
 
     /// Loads once per `AppConfig.Groups.listStaleAfter`, or sooner when a group changed elsewhere or the caller

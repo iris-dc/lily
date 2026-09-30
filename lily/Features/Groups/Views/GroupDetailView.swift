@@ -1,13 +1,14 @@
 import SwiftUI
 
-/// A group: header, the actions the caller has, and the Events | Members segments (Members for members only). The view
-/// model decides what the caller may do; this draws it and hosts the sheets and confirmations.
+/// A group: header, the actions the caller has, and the Events | Members segments (Members for members, and for every
+/// signed-in caller of a public group). The view model decides what the caller may do; this draws it and hosts the
+/// sheets and confirmations. Never shown for a direct conversation: `GroupDestinations` shows the person instead.
 struct GroupDetailView: View {
     @State private var viewModel: GroupDetailViewModel
     @State private var section: GroupDetailSection = .events
     /// The group's upcoming games; a game created from here lands in it through `add`.
     @State private var events: EventListViewModel
-    /// Built for members and rebuilt when the caller's role changes, since the roster and its menus follow the role.
+    /// Built for whoever may see the roster and rebuilt when the caller's role changes, since its menus follow the role.
     @State private var members: MembersViewModel?
     @State private var presentedSheet: DetailSheet?
     @State private var confirmation: Confirmation?
@@ -47,7 +48,7 @@ struct GroupDetailView: View {
                                    onInvite: { presentedSheet = .invite },
                                    onCreateEvent: { presentedSheet = .createEvent },
                                    onSignIn: { presentedSheet = .signIn })
-                    if viewModel.access.canSeeMembers {
+                    if viewModel.access.canSeeMembers(in: group) {
                         sectionPicker
                     }
                     segment
@@ -100,7 +101,7 @@ struct GroupDetailView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.groupSection)
     }
 
-    /// Events for everyone who can see the group; the roster only for members, whatever the picker says.
+    /// Events for everyone who can see the group; the roster only for those allowed it, whatever the picker says.
     @ViewBuilder private var segment: some View {
         if section == .members, let members {
             MembersList(viewModel: members)
@@ -143,7 +144,7 @@ struct GroupDetailView: View {
     }
 
     private func rebuildMembers() {
-        members = viewModel.access.canSeeMembers
+        members = viewModel.access.canSeeMembers(in: group)
             ? dependencies.makeMembersViewModel(for: group, onChange: viewModel.accept)
             : nil
     }

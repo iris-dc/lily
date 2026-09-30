@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// The Chats root: the inbox pinned first, then the caller's rooms most recently active first, each opening its chat
-/// on this stack. A guest is asked to sign in instead, and nothing is requested for them; the loads run again for
-/// whoever signs in from here. Pull-to-refresh reloads the rooms and the inbox.
+/// The Chats root: the inbox pinned first, then the caller's rooms (group rooms and direct conversations together,
+/// most recently active first), each opening its chat on this stack. A guest is asked to sign in instead, and nothing
+/// is requested for them; the loads run again for whoever signs in from here. Pull-to-refresh reloads the rooms and
+/// the inbox.
 struct ChatsView: View {
     let dependencies: AppDependencies
 

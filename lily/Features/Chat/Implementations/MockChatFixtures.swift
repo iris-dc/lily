@@ -1,8 +1,9 @@
 import Foundation
 
 /// The rows of a mock room: `AppConfig.Chat.mockMessagesPerRoom` text messages from three fixture members and the
-/// caller, plus one system row about a game created in the group. Ids sort like ULIDs and are shared with the group
-/// fixtures, so a group's `lastMessageId` and the caller's read marker name real rows.
+/// caller, plus one system row about a game created in the group; the conversation with Marta has a few lines of its
+/// own. Ids sort like ULIDs and are shared with the group fixtures, so a group's `lastMessageId` and the caller's read
+/// marker name real rows.
 nonisolated enum MockChatFixtures {
     static let senders = ["Marta", "Jonas", "Ayşe"]
     /// What Marta answers under `-mock-chat-replies`, in turn.
@@ -26,6 +27,20 @@ nonisolated enum MockChatFixtures {
         "Famous last words.",
         "Ha. See you Thursday.",
     ]
+    /// The direct conversation with Marta: her lines and the caller's in turn, no system row, the last three hers and
+    /// unread, so the room reads as a chat between two people the moment it is opened.
+    private static let conversationLines: [(fromCounterpart: Bool, text: String)] = [
+        (true, "Hey! Are you coming on Sunday?"),
+        (false, "Planning to. What time do you start?"),
+        (false, "And is it the usual pitch?"),
+        (true, "Ten, same pitch as always."),
+        (true, "Bring a ball if you have one, ours went flat."),
+        (true, "See you there!"),
+    ]
+    /// How long before the launch Marta's last line was written; the group fixture's `lastMessageAt` says the same.
+    static let conversationLastMessageAge: TimeInterval = 2 * 3600
+    /// Two minutes apart, within `AppConfig.Chat.groupingWindow`, so one person's consecutive lines draw as one run.
+    private static let secondsBetweenConversationLines = 120.0
     /// The system row sits after this many text messages.
     private static let systemRowAfter = 5
     /// The game each fixture room announces; a room without one has no system row.
@@ -57,6 +72,9 @@ nonisolated enum MockChatFixtures {
     /// The room as it stands when first opened; the caller wrote every fourth message. `count` deepens a room past
     /// its fixture size (a demo of paging and scrolling); the system row keeps its place.
     static func messages(groupID: String, callerID: String, callerName: String, now: Date, count: Int? = nil) -> [ChatMessage] {
+        if groupID == MockGroupFixtures.martaConversationID {
+            return conversationMessages(callerID: callerID, callerName: callerName, now: now)
+        }
         let count = count ?? rowCount(for: groupID)
         let start = now.addingTimeInterval(-Double(count) * secondsBetweenMessages)
         var rows: [ChatMessage] = []
@@ -88,8 +106,27 @@ nonisolated enum MockChatFixtures {
         return rows
     }
 
+    /// The conversation's lines, ending `conversationLastMessageAge` before the launch; the caller's carry client ids
+    /// like every message the caller sent.
+    private static func conversationMessages(callerID: String, callerName: String, now: Date) -> [ChatMessage] {
+        let groupID = MockGroupFixtures.martaConversationID
+        let counterpart = MockGroupFixtures.conversationCounterpart
+        let end = now.addingTimeInterval(-conversationLastMessageAge)
+        let start = end.addingTimeInterval(-Double(conversationLines.count - 1) * secondsBetweenConversationLines)
+        return conversationLines.enumerated().map { index, line in
+            ChatMessage(id: messageID(groupID: groupID, index: index),
+                        groupId: groupID,
+                        senderUserId: line.fromCounterpart ? counterpart.userId : callerID,
+                        senderName: line.fromCounterpart ? counterpart.displayName : callerName,
+                        text: line.text,
+                        clientMessageId: line.fromCounterpart ? nil : "mock-client-\(index)",
+                        sentAt: start.addingTimeInterval(Double(index) * secondsBetweenConversationLines))
+        }
+    }
+
     private static func rowCount(for groupID: String) -> Int {
-        AppConfig.Chat.mockMessagesPerRoom + (createdEvents[groupID] == nil ? 0 : 1)
+        if groupID == MockGroupFixtures.martaConversationID { return conversationLines.count }
+        return AppConfig.Chat.mockMessagesPerRoom + (createdEvents[groupID] == nil ? 0 : 1)
     }
 
     private static func groupCode(_ groupID: String) -> String {

@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// The group destinations every `NavigationStack` root registers, so a "Hosted in" link works from Explore as well as
-/// from Home: a group, a group reached from its chat, a group reference that still has to be fetched, a chat, and the
-/// Discover screen.
+/// from Home: a group, a group reached from its chat, a group reference that still has to be fetched, a chat, the
+/// Discover screen and a person's profile. A direct conversation pushed as a group shows the other person's profile:
+/// it has no detail of its own.
 private struct GroupDestinations: ViewModifier {
     let dependencies: AppDependencies
 
@@ -19,13 +20,20 @@ private struct GroupDestinations: ViewModifier {
             .navigationDestination(for: DiscoverGroupsDestination.self) { _ in
                 DiscoverGroupsView(dependencies: dependencies)
             }
+            .navigationDestination(for: UserProfileDestination.self) { destination in
+                UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: destination))
+            }
     }
 
-    private func detail(for group: SportGroup, context: GroupDetailContext) -> some View {
-        // Home shows the caller's groups from the store and Discover searches again after a change, so nothing
-        // listens here.
-        GroupDetailView(viewModel: dependencies.makeGroupDetailViewModel(for: group, context: context) { _ in },
-                        dependencies: dependencies)
+    @ViewBuilder private func detail(for group: SportGroup, context: GroupDetailContext) -> some View {
+        if let counterpart = group.counterpart {
+            UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: counterpart.profile()))
+        } else {
+            // Home shows the caller's groups from the store and Discover searches again after a change, so nothing
+            // listens here.
+            GroupDetailView(viewModel: dependencies.makeGroupDetailViewModel(for: group, context: context) { _ in },
+                            dependencies: dependencies)
+        }
     }
 }
 

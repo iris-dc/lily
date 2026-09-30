@@ -75,7 +75,7 @@ struct AppDependenciesTests {
         await dependencies.sessionController.signIn(with: .apple)
         await dependencies.myGroups.reload()
         await dependencies.me.loadIfNeeded()
-        #expect(dependencies.myGroups.groups.count == 3 && dependencies.me.isOperator)
+        #expect(dependencies.myGroups.groups.count == 4 && dependencies.me.isOperator)
 
         await dependencies.sessionController.signOut()
 

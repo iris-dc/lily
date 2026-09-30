@@ -16,7 +16,10 @@ struct MembersViewModelTests {
     }
 
     private func makeViewModel(role: MemberRole?) -> MembersViewModel {
-        let group = SportGroup.fixture(id: "g", memberCount: 3, role: role)
+        makeViewModel(group: SportGroup.fixture(id: "g", memberCount: 3, role: role))
+    }
+
+    private func makeViewModel(group: SportGroup) -> MembersViewModel {
         harness.repository.result = .success([group])
         return MembersViewModel(group: group,
                                 repository: harness.repository,
@@ -25,6 +28,18 @@ struct MembersViewModelTests {
                                 logger: harness.logger,
                                 tryAgainDelay: .zero,
                                 onChange: harness.sink.record)
+    }
+
+    /// The two people of a conversation see each other on its roster and can do nothing to one another there.
+    @Test func aConversationsRosterOffersNoActions() async {
+        let other = admin.withRole(.member)
+        harness.repository.members = [owner.withRole(.member), other]
+        let viewModel = makeViewModel(group: .conversationFixture())
+
+        await viewModel.load()
+
+        #expect(viewModel.members.count == 2 && !viewModel.showsBans && viewModel.bans.isEmpty)
+        #expect(viewModel.actions(for: other).isEmpty)
     }
 
     @Test func ownersLoadTheRosterAndTheBans() async {
@@ -46,8 +61,26 @@ struct MembersViewModelTests {
         #expect(viewModel.bans.isEmpty && !viewModel.showsBans)
     }
 
-    @Test func nonMembersLoadNothing() async {
+    /// The fixture group is public: an outsider reads its roster, with no actions on any row and no banned list.
+    @Test func outsidersReadAPublicRosterWithoutActions() async {
         let viewModel = makeViewModel(role: nil)
+
+        await viewModel.load()
+
+        #expect(viewModel.members.count == 3 && viewModel.bans.isEmpty && !viewModel.showsBans)
+        #expect(viewModel.members.allSatisfy { viewModel.actions(for: $0).isEmpty })
+    }
+
+    @Test func outsidersOfAPrivateGroupLoadNothing() async {
+        let group = SportGroup.fixture(id: "g", visibility: .private, memberCount: 3)
+        harness.repository.result = .success([group])
+        let viewModel = MembersViewModel(group: group,
+                                         repository: harness.repository,
+                                         identity: harness.identity,
+                                         reporter: harness.reporter,
+                                         logger: harness.logger,
+                                         tryAgainDelay: .zero,
+                                         onChange: harness.sink.record)
 
         await viewModel.load()
 

@@ -106,6 +106,21 @@ struct RemoteEventRepositoryTests {
         #expect(client.requests.allSatisfy { $0.body == nil && $0.queryItems.isEmpty })
     }
 
+    /// The list comes as `{items}` without a cursor; the contract sample is the backend's, host first.
+    @Test func participantsGetTheParticipantsResourceAndUnwrapTheItems() async throws {
+        let page = try ContractSamples.decode(Page<EventParticipant>.self, from: ContractSamples.eventParticipants)
+        client.responses = [page]
+
+        let participants = try await repository.participants(eventId: "evt_01J")
+
+        #expect(participants.map(\.displayName) == ["Marta", "Apple Tester"])
+        #expect(participants.map(\.isHost) == [true, false])
+        #expect(participants.first?.userId == "seed-marta" && participants.first?.id == "seed-marta")
+        let request = try #require(client.requests.first)
+        #expect(request.method == .get && request.path == "/api/events/evt_01J/participants")
+        #expect(request.queryItems.isEmpty && request.body == nil)
+    }
+
     @Test func createPostsThePayloadToEvents() async throws {
         let draft = EventDraft.fixture()
         client.responses = [event]
@@ -168,6 +183,7 @@ struct RemoteEventRepositoryTests {
             client.error = error
             await #expect(throws: AppError.eventsUnavailable) { try await repository.events(in: .upcoming, near: nil) }
             await #expect(throws: AppError.eventsUnavailable) { try await repository.event(id: "evt_01J") }
+            await #expect(throws: AppError.eventsUnavailable) { try await repository.participants(eventId: "evt_01J") }
         }
     }
 

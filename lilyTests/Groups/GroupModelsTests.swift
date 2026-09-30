@@ -18,6 +18,7 @@ struct GroupModelsTests {
         let membership = try #require(group.membership)
         #expect(membership.role == .admin && membership.hasUnread && membership.lastReadMessageId == "01J8ZK7Q9X2M4N6P8R0T2V4W6X")
         #expect(group.role == .admin && group.isMember && group.hasUnread)
+        #expect(group.kind == .group && group.counterpart == nil && !group.isDirect)
     }
 
     /// Optionals the backend leaves out decode as absent; a full private group reads as full and as no membership.
@@ -28,6 +29,25 @@ struct GroupModelsTests {
         #expect(group.membership == nil && !group.isMember && group.role == nil && !group.hasUnread)
         #expect(group.isFull && !group.isPublic)
         #expect(group.lastActivityAt == group.createdAt, "a silent group counts from its creation")
+        #expect(group.kind == .group && group.counterpart == nil, "a payload without kind is a community")
+    }
+
+    /// A direct conversation is a `Group` with `kind` and the other person; both survive a round trip and every copy.
+    @Test func aConversationDecodesItsKindAndCounterpartAndRoundTrips() throws {
+        let conversation = try ContractSamples.decode(SportGroup.self, from: ContractSamples.conversation)
+        #expect(conversation.kind == .direct && conversation.isDirect && conversation.name == "Marta")
+        #expect(conversation.counterpart == Counterpart(userId: "seed-marta", displayName: "Marta"))
+        #expect(conversation.counterpart?.profile() == UserProfileDestination(userId: "seed-marta", displayName: "Marta"))
+        #expect(conversation.counterpart?.profile(context: .fromChat).context == .fromChat)
+        #expect(conversation.updatingMembership(nil, memberCount: 2).isDirect)
+        #expect(conversation.keepingMembership(of: conversation).counterpart == conversation.counterpart)
+
+        let encoder = APIJSONCoding.makeEncoder()
+        let json = try #require(String(bytes: try encoder.encode(conversation), encoding: .utf8))
+        #expect(json.contains(#""kind":"direct""#) && json.contains(#""counterpart":{"#))
+        #expect(try ContractSamples.decode(SportGroup.self, from: json) == conversation)
+        let community = try #require(String(bytes: try encoder.encode(SportGroup.fixture()), encoding: .utf8))
+        #expect(community.contains(#""kind":"group""#) && !community.contains("counterpart"), "no counterpart on a community")
     }
 
     /// A banned marker must never read as a membership, whatever the backend sends.

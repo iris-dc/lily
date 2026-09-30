@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Event detail with the join/leave control. The view model decides what the control is; this only draws it.
+/// Event detail with the join/leave control and, for signed-in callers, who is in. The view model decides what the
+/// control is and whose profiles may open; this only draws it.
 struct EventDetailView: View {
     @State private var viewModel: EventDetailViewModel
 
@@ -15,7 +16,7 @@ struct EventDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     EventTypeChip(type: event.type)
-                    ScreenTitle(text: event.title, subtitle: AppBranding.hostedByTitle(for: event.hostName))
+                    titleBlock
                     if let group = event.group {
                         groupLine(group)
                     }
@@ -23,6 +24,9 @@ struct EventDetailView: View {
                         Text(description).font(.body)
                     }
                     facts
+                    if viewModel.showsParticipants {
+                        participantsSection
+                    }
                     if let lookingFor = event.lookingFor {
                         lookingForCard(lookingFor)
                     }
@@ -32,7 +36,45 @@ struct EventDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .task { viewModel.recordViewed() }
+        .task {
+            viewModel.recordViewed()
+            await viewModel.loadParticipants()
+        }
+    }
+
+    /// The title with "Hosted by <name>" under it, a link to the host's profile when the caller may open it.
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+            ScreenTitle(text: event.title)
+            if let host = viewModel.hostProfile {
+                NavigationLink(value: host) {
+                    HStack(spacing: DesignTokens.Spacing.xs) {
+                        ScreenSubtitle(text: AppBranding.hostedByTitle(for: event.hostName))
+                        Image(systemName: DesignTokens.Symbols.chevron)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(AccessibilityIdentifiers.eventHost)
+            } else {
+                ScreenSubtitle(text: AppBranding.hostedByTitle(for: event.hostName))
+            }
+        }
+    }
+
+    /// "Who's in": the host first, then everyone else, each row opening the person's profile except the caller's own.
+    private var participantsSection: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            Text(AppBranding.Events.participantsTitle)
+                .font(LilyTheme.Fonts.cardTitle)
+            if viewModel.isLoadingParticipants, viewModel.participants.isEmpty {
+                ProgressView().frame(maxWidth: .infinity)
+            }
+            ForEach(viewModel.participants) { participant in
+                ParticipantRow(participant: participant, isSelf: viewModel.isSelf(participant))
+            }
+        }
     }
 
     /// Time, place, price and level, then how full it is. Price only when the game costs something, level only when set.

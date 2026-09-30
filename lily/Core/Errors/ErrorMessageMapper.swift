@@ -28,6 +28,8 @@ nonisolated enum ErrorMessageMapper {
             chatMessage(for: error)
         case .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired:
             moderationMessage(for: error)
+        case .profileUnavailable, .conversationFailed, .conversationLimit:
+            peopleMessage(for: error)
         case .unknown:
             unknownMessage
         }

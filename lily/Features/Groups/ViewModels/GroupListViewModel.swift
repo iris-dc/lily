@@ -1,9 +1,9 @@
 import Foundation
 import Observation
 
-/// The groups lists: Mine (Home's rows) is a projection over `MyGroupsStore`, which owns the
-/// caller's groups for the app's lifetime; Discover pages through the public groups on its own (see the `+Discover`
-/// file) and works for guests too.
+/// The groups lists: Mine (Home's rows) is a projection over `MyGroupsStore.communities`, the store owning the
+/// caller's groups for the app's lifetime (its direct conversations are the Chats tab's, never rows here); Discover
+/// pages through the public groups on its own (see the `+Discover` file) and works for guests too.
 @Observable
 final class GroupListViewModel {
     let scope: GroupListScope
@@ -64,7 +64,7 @@ final class GroupListViewModel {
 
     var groups: [SportGroup] {
         switch scope {
-        case .mine: store.groups
+        case .mine: store.communities
         case .discover: discovered
         }
     }
@@ -87,7 +87,7 @@ final class GroupListViewModel {
     /// True until something was loaded, so the empty state waits for the first answer.
     var isInitialLoad: Bool {
         switch scope {
-        case .mine: store.isLoading && store.groups.isEmpty
+        case .mine: store.isLoading && store.communities.isEmpty
         case .discover: isLoadingDiscover && !hasSearched
         }
     }

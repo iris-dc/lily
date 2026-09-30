@@ -46,6 +46,24 @@ struct MockChatRepositoryTests {
         #expect(MockChatFixtures.messageID(groupID: kickers, index: 12) > MockChatFixtures.messageID(groupID: kickers, index: 9))
     }
 
+    /// The conversation with Marta has lines of its own: hers and the caller's in turn, no system row, her last three
+    /// unread, ending two hours before the launch; the group fixture points at them.
+    @Test func theConversationWithMartaHasItsOwnLines() async throws {
+        let conversation = MockGroupFixtures.martaConversationID
+        let marta = MockGroupFixtures.conversationCounterpart.userId
+
+        let page = try await makeRepository().newest(groupID: conversation)
+
+        #expect(page.items.count == 6 && !page.hasMore && page.channelEpoch == 1)
+        #expect(Set(page.items.map(\.senderUserId)) == [marta, "mock-apple"])
+        #expect(page.items.first?.text == "Hey! Are you coming on Sunday?")
+        #expect(page.items.allSatisfy { !$0.isSystem } && page.items.suffix(3).allSatisfy { $0.senderUserId == marta })
+        #expect(page.items.last?.id == MockChatFixtures.newestMessageID(for: conversation))
+        #expect(page.items[2].id == MockChatFixtures.lastReadMessageID(for: conversation), "the last read line is the caller's")
+        let end = Date(timeIntervalSince1970: 1_800_000_000 - MockChatFixtures.conversationLastMessageAge)
+        #expect(page.items.last?.sentAt == end && page.items.map(\.sentAt) == page.items.map(\.sentAt).sorted())
+    }
+
     @Test func pagingFollowsTheIds() async throws {
         let repository = makeRepository()
         let all = try await repository.newest(groupID: kickers).items

@@ -1,11 +1,14 @@
 import Foundation
 import Observation
 
-/// Owns the event shown on the detail screen and the join/leave action on it.
+/// Owns the event shown on the detail screen, the join/leave action on it and, for signed-in callers, who is in.
 @Observable
 final class EventDetailViewModel {
     private(set) var event: SportEvent
     private(set) var isBusy = false
+    /// Who is in, the host first; empty for guests, who see the count only.
+    private(set) var participants: [EventParticipant] = []
+    private(set) var isLoadingParticipants = false
 
     private let repository: any EventRepository
     private let identity: any IdentityProvider
@@ -41,6 +44,33 @@ final class EventDetailViewModel {
         Participation(event: event, userID: identity.currentUserID)
     }
 
+    /// Names are members-level information, like a roster: shown to signed-in callers only.
+    var showsParticipants: Bool { identity.currentUserID != nil }
+
+    /// The host's profile, when the caller may open it: signed in, the host known, and not the caller themselves.
+    var hostProfile: UserProfileDestination? {
+        guard let hostUserId = event.hostUserId, let caller = identity.currentUserID, hostUserId != caller else { return nil }
+        return UserProfileDestination(userId: hostUserId, displayName: event.hostName)
+    }
+
+    func isSelf(_ participant: EventParticipant) -> Bool {
+        participant.userId == identity.currentUserID
+    }
+
+    /// On appear and after every join, leave or refetch; a failure reaches the popup and keeps the last list.
+    func loadParticipants() async {
+        guard showsParticipants else { return }
+        isLoadingParticipants = true
+        defer { isLoadingParticipants = false }
+        do {
+            participants = try await repository.participants(eventId: event.id)
+        } catch {
+            guard !AppError.isCancellation(error) else { return }
+            logger.warning(.events, "Loading participants of event \(event.id) failed: \(error)")
+            errorCenter.report(error)
+        }
+    }
+
     /// One view per screen instance, however often the view's task restarts (a sheet over it comes and goes).
     func recordViewed() {
         guard !hasRecordedView else { return }
@@ -70,6 +100,7 @@ final class EventDetailViewModel {
             let updated = try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: { logRetry(action) }, change)
             apply(updated)
             logSuccess(action, updated)
+            await loadParticipants()
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logFailure(action, error)
@@ -119,6 +150,7 @@ final class EventDetailViewModel {
         }
         apply(fresh)
         logger.info(.events, "Refreshed event \(event.id) after \(appError): \(fresh.participantCount)/\(fresh.capacity)")
+        await loadParticipants()
         return fresh
     }
 

@@ -12,13 +12,38 @@ struct MockGroupRepositoryTests {
         MockGroupRepository(identity: identity, logger: logger)
     }
 
-    @Test func mineHoldsTheThreeJoinedGroupsMostRecentlyActiveFirst() async throws {
+    /// The three joined groups and the conversation with Marta, most recently active first, as the backend orders Mine.
+    @Test func mineHoldsTheJoinedGroupsAndTheConversationMostRecentlyActiveFirst() async throws {
         let mine = try await makeRepository().groups(in: .mine, cursor: nil)
 
-        #expect(mine.items.map(\.name) == ["Kreuzberg Kickers", "Tempelhof Runners", "Sunday Padel Crew"])
-        #expect(mine.items.map(\.role) == [.member, .admin, .owner])
-        #expect(mine.items[0].hasUnread && !mine.items[1].hasUnread)
+        #expect(mine.items.map(\.name) == ["Kreuzberg Kickers", "Marta", "Tempelhof Runners", "Sunday Padel Crew"])
+        #expect(mine.items.map(\.role) == [.member, .member, .admin, .owner])
+        #expect(mine.items.map(\.hasUnread) == [true, true, false, false])
+        #expect(mine.items.map(\.isDirect) == [false, true, false, false])
         #expect(mine.nextCursor == nil)
+    }
+
+    /// The fixture conversation is shaped like the backend's: kind `direct`, Marta as the counterpart and the name,
+    /// private and full at two, no powers, `member`, unread, its roster the two of them. Starting a conversation with
+    /// her answers it; with anyone else a new one is created under their id.
+    @Test func theMartaConversationIsAFixtureThatStartDirectReplays() async throws {
+        let repository = makeRepository()
+        let marta = MockGroupFixtures.conversationCounterpart
+
+        let conversation = try await repository.group(id: MockGroupFixtures.martaConversationID)
+        #expect(conversation.isDirect && conversation.counterpart == marta && conversation.name == "Marta")
+        #expect(conversation.visibility == .private && conversation.memberCount == 2 && conversation.maxMembers == 2)
+        #expect(!conversation.membersCanCreateEvents && !conversation.membersCanInvite && conversation.role == .member)
+        #expect(conversation.hasUnread && conversation.lastMessageId == MockChatFixtures.newestMessageID(for: conversation.id))
+        #expect(try await repository.members(id: conversation.id).map(\.displayName) == ["Marta", "You"])
+
+        #expect(repository.startDirect(with: marta.userId, name: marta.displayName) == conversation)
+        #expect(logger.messages(in: .groups, at: .info).contains("Mock conversation \(conversation.id) replayed"))
+        let jonas = MockGroupFixtures.memberID(for: "Jonas")
+        let started = repository.startDirect(with: jonas, name: "Jonas")
+        #expect(started.isDirect && started.counterpart == Counterpart(userId: jonas, displayName: "Jonas"))
+        #expect(started.id == MockGroupFixtures.directConversationID(for: jonas) && started.id != conversation.id)
+        #expect(try await repository.groups(in: .mine, cursor: nil).items.count(where: \.isDirect) == 2)
     }
 
     @Test func discoverListsPublicGroupsNewestFirstAndSearchesByPrefix() async throws {
@@ -50,7 +75,7 @@ struct MockGroupRepositoryTests {
         let joined = try await repository.join(id: MockGroupFixtures.basketballID)
         #expect(joined.role == .member && joined.memberCount == 59)
         #expect(try await repository.join(id: MockGroupFixtures.basketballID).memberCount == 59, "a replay changes nothing")
-        #expect(try await repository.groups(in: .mine, cursor: nil).items.count == 4)
+        #expect(try await repository.groups(in: .mine, cursor: nil).items.count == 5)
         #expect(logger.messages(in: .groups, at: .info).contains("Joined group \(MockGroupFixtures.basketballID) (public)"))
 
         await #expect(throws: AppError.groupFull) { try await repository.join(id: MockGroupFixtures.volleyID) }
@@ -107,6 +132,19 @@ struct MockGroupRepositoryTests {
         await #expect(throws: AppError.groupNotFound) { try await repository.members(id: MockGroupFixtures.climbingID) }
     }
 
+    /// A public group's roster answers any signed-in caller, without a row for someone who is not in; a guest gets the
+    /// backend's 401; a private group stays out of reach.
+    @Test func publicRostersAnswerOutsidersWithoutACallerRow() async throws {
+        let repository = makeRepository()
+
+        let basketball = try await repository.members(id: MockGroupFixtures.basketballID)
+        #expect(basketball.map(\.displayName) == ["Dev", "Marta"])
+        #expect(!basketball.contains { $0.userId == TestFixtures.user.id })
+
+        identity.currentUserID = nil
+        await #expect(throws: AppError.sessionExpired) { try await repository.members(id: MockGroupFixtures.basketballID) }
+    }
+
     /// The marker is monotonic like the backend's, and Mine reflects it: a room read here is read on the next load.
     @Test func markReadMovesTheMarkerForwardOnlyAndClearsTheUnreadFlag() async throws {
         let repository = makeRepository()
@@ -116,7 +154,8 @@ struct MockGroupRepositoryTests {
 
         #expect(try repository.markRead(id: kickers, messageID: newest) == newest)
         #expect(try await repository.group(id: kickers).hasUnread == false)
-        #expect(try await repository.groups(in: .mine, cursor: nil).items.allSatisfy { !$0.hasUnread })
+        #expect(try await repository.groups(in: .mine, cursor: nil).items.filter(\.hasUnread).map(\.id)
+                == [MockGroupFixtures.martaConversationID], "only the conversation's unread lines are left")
 
         #expect(try repository.markRead(id: kickers, messageID: older) == newest)
         #expect(try await repository.group(id: kickers).membership?.lastReadMessageId == newest)

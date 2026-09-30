@@ -193,6 +193,21 @@ struct MyGroupsStoreTests {
         #expect(store.eligibleForEvents.map(\.id) == ["member-open", "admin-closed"])
     }
 
+    /// A direct conversation is in `groups` (the Chats tab, the rooms, the unread set) and never in `communities`
+    /// (Home, the event form); `add` places it by activity like any group, and the picker never offers it.
+    @Test func communitiesLeaveTheConversationsToGroups() async {
+        repository.result = .success(mine)
+        let store = makeStore()
+        await store.reload()
+        let conversation = SportGroup.conversationFixture(id: "dm", lastMessageAt: Self.start.addingTimeInterval(10))
+
+        store.add(conversation)
+
+        #expect(store.groups.map(\.id) == ["dm", "a", "b"])
+        #expect(store.communities.map(\.id) == ["a", "b"])
+        #expect(store.eligibleForEvents.map(\.id) == ["a", "b"])
+    }
+
     /// Sign-out clears the list and the freshness, so the next user starts from a real load.
     @Test func signOutClearsTheStoreThroughTheObserverHook() async {
         repository.result = .success(mine)

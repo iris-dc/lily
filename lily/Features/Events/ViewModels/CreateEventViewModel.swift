@@ -74,7 +74,7 @@ final class CreateEventViewModel {
     /// map was quicker) is kept.
     func prepare() async {
         eligibleGroups = groups.eligibleForEvents.map(\.ref)
-        belongsToGroups = !groups.groups.isEmpty
+        belongsToGroups = !groups.communities.isEmpty
         guard draft.coordinate == nil else { return }
         let position = await locationService.currentLocation()
         if draft.coordinate == nil { draft.coordinate = position }

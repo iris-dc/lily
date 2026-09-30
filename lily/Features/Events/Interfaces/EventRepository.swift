@@ -7,6 +7,8 @@ protocol EventRepository {
     func events(in scope: EventScope, near position: Coordinate?) async throws -> [SportEvent]
     /// One event as the server sees it now; throws `AppError.eventNotFound` when it is gone.
     func event(id: String) async throws -> SportEvent
+    /// Who is in, the host first, then by join time; for signed-in callers who may read the event (guests see the count only).
+    func participants(eventId: String) async throws -> [EventParticipant]
     func join(eventId: String) async throws -> SportEvent
     func leave(eventId: String) async throws -> SportEvent
     /// Creates the event for the caller, who hosts it and is its first participant; answers the event as stored.

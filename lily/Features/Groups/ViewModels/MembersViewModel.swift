@@ -57,15 +57,16 @@ final class MembersViewModel {
         member.userId == identity.currentUserID
     }
 
-    /// The actions the caller may take on `member`; empty for the caller's own row and for rows above their reach.
+    /// The actions the caller may take on `member`; empty for the caller's own row, for rows above their reach and
+    /// for anyone reading a public roster from outside the group.
     func actions(for member: GroupMember) -> [MemberAction] {
-        guard !isSelf(member) else { return [] }
+        guard access.isMember, !isSelf(member) else { return [] }
         return MemberAction.allCases.filter { allows($0, on: member) }
     }
 
     /// The roster, and the banned list when the caller may act on it.
     func load() async {
-        guard access.canSeeMembers else { return }
+        guard access.canSeeMembers(in: group) else { return }
         isLoading = true
         defer { isLoading = false }
         do {

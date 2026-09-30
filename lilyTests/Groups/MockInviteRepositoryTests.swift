@@ -41,6 +41,18 @@ struct MockInviteRepositoryTests {
         #expect(candidates.map(\.displayName) == candidates.map(\.displayName).sorted())
     }
 
+    /// A conversation's roster never yields a candidate: its one other member is no one the caller shares a group with.
+    @Test func aConversationIsNoSharedGroup() async throws {
+        let groups = MockGroupRepository(identity: identity, logger: logger) { now }
+        let repository = MockInviteRepository(groups: groups, identity: identity, logger: logger) { now }
+        _ = groups.startDirect(with: "mock-user-zed", name: "Zed")
+
+        let candidates = try await repository.candidates(groupID: padel)
+
+        #expect(!candidates.contains { $0.displayName == "Zed" || $0.viaName == "Marta" || $0.viaName == "Zed" })
+        #expect(candidates.first { $0.userId == marta }?.viaName == "Kreuzberg Kickers")
+    }
+
     @Test func invitingMarksTheCandidateInvitedAndReplaysTheSameInvite() async throws {
         let repository = makeRepository()
 

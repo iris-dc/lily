@@ -4,7 +4,7 @@ nonisolated extension DesignTokens.Symbols {
     static let groups = "person.3"
     static let publicGroup = "globe"
     static let privateGroup = "lock"
-    static let chat = "bubble.left.and.bubble.right"
+    static let chat = "message"
     static let send = "paperplane.fill"
     /// Inviting a person directly (no links or codes).
     static let invite = "person.badge.plus"

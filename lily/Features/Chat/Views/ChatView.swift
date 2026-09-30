@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// A group's chat room: the transcript over the aurora, the composer pinned to the bottom, the group's name and
-/// member count in the bar and an info button that leads to the group. The tab bar hides while it is open.
+/// member count in the bar and an info button that leads to the group. A direct conversation is titled with the other
+/// person, has no member count and its info button leads to their profile. The tab bar hides while it is open.
 struct ChatView: View {
     @State private var viewModel: ChatViewModel
     private let dependencies: AppDependencies
@@ -22,16 +23,11 @@ struct ChatView: View {
                 .safeAreaInset(edge: .bottom) { MessageComposer(viewModel: viewModel) }
         }
         .navigationTitle(group.name)
-        .navigationSubtitle(AppBranding.Groups.members(group.memberCount))
+        .navigationSubtitle(ifPresent: viewModel.subtitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.hidden, for: .tabBar)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink(value: GroupInfoDestination(group: group)) {
-                    Label(AppBranding.Groups.title, systemImage: DesignTokens.Symbols.info)
-                }
-                .accessibilityIdentifier(AccessibilityIdentifiers.chatTitle)
-            }
+            ToolbarItem(placement: .topBarTrailing) { infoButton }
         }
         .task { await viewModel.appear() }
         .onDisappear { Task { await viewModel.cancel() } }
@@ -41,6 +37,22 @@ struct ChatView: View {
         // Out of the group, or the group is gone: nothing left to show here.
         .onChange(of: viewModel.isGone) {
             if viewModel.isGone { dismiss() }
+        }
+    }
+
+    /// The group's detail, or the other person's profile in a direct conversation (reached from the chat, so it offers
+    /// no "Message" back into it); one identifier either way.
+    @ViewBuilder private var infoButton: some View {
+        if let counterpart = group.counterpart {
+            NavigationLink(value: counterpart.profile(context: .fromChat)) {
+                Label(AppBranding.profileTitle, systemImage: DesignTokens.Symbols.info)
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.chatTitle)
+        } else {
+            NavigationLink(value: GroupInfoDestination(group: group)) {
+                Label(AppBranding.Groups.title, systemImage: DesignTokens.Symbols.info)
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.chatTitle)
         }
     }
 
@@ -54,6 +66,17 @@ struct ChatView: View {
                                title: AppBranding.Chat.emptyTitle,
                                message: AppBranding.Chat.emptyMessage)
             }
+        }
+    }
+}
+
+private extension View {
+    /// The subtitle when the room has one; a conversation's title alone names its two people.
+    @ViewBuilder func navigationSubtitle(ifPresent subtitle: String?) -> some View {
+        if let subtitle {
+            navigationSubtitle(subtitle)
+        } else {
+            self
         }
     }
 }

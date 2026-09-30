@@ -80,6 +80,15 @@ nonisolated extension AppBranding {
             parts.joined(separator: AppBranding.Events.captionSeparator)
         }
 
+        /// A group's caption from its count and type, with `suffix` appended when given ("Active today" on a row,
+        /// "Joined" on a tile); `SportGroup` and `GroupSummary` both format through here.
+        static func groupCaption(memberCount: Int, type: EventType?, suffix: String? = nil) -> String {
+            var parts = [members(memberCount)]
+            if let type { parts.append(type.displayName) }
+            if let suffix { parts.append(suffix) }
+            return caption(parts)
+        }
+
         enum Create {
             /// The create sheet's title; the "+" menu on Explore names its group item after it.
             static let title = "New group"

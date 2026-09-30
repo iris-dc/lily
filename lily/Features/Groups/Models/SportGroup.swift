@@ -1,8 +1,9 @@
 import Foundation
 
-/// Decodes the backend's `Group` directly: same keys, same optionality. Named like `SportEvent` because `Group` is a
-/// SwiftUI view and would shadow it in every view file. The owner's id is never on the wire; the roster's `role`
-/// says who owns the group, and `membership.role` what the caller is.
+/// Decodes the backend's `Group` directly: same keys, same optionality, except that a missing `kind` reads as a
+/// community. Named like `SportEvent` because `Group` is a SwiftUI view and would shadow it in every view file. The
+/// owner's id is never on the wire; the roster's `role` says who owns the group, and `membership.role` what the caller
+/// is. A direct conversation is a `Group` too (`kind == .direct`): private, two members, named after the other person.
 nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     let id: String
     private(set) var name: String
@@ -24,6 +25,16 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     private(set) var deletedAt: Date?
     /// Absent for non-members and for banned users.
     private(set) var membership: GroupMembership?
+    /// A community, or the direct conversation with `counterpart`; older payloads carry no `kind`.
+    let kind: GroupKind
+    /// The other person of a direct conversation, as the caller sees them; absent for a community.
+    let counterpart: Counterpart?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, description, visibility, type, ownerName, memberCount, maxMembers, channelEpoch
+        case membersCanCreateEvents, membersCanInvite, lastMessageId, lastMessageAt, createdAt, deletedAt, membership
+        case kind, counterpart
+    }
 
     init(id: String,
          name: String,
@@ -40,7 +51,9 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
          lastMessageAt: Date? = nil,
          createdAt: Date,
          deletedAt: Date? = nil,
-         membership: GroupMembership? = nil) {
+         membership: GroupMembership? = nil,
+         kind: GroupKind = .group,
+         counterpart: Counterpart? = nil) {
         self.id = id
         self.name = name
         self.description = description
@@ -57,9 +70,37 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
         self.createdAt = createdAt
         self.deletedAt = deletedAt
         self.membership = membership
+        self.kind = kind
+        self.counterpart = counterpart
+    }
+
+    /// Key for key like the synthesized decoder, except that a missing `kind` is a community: the field arrived after
+    /// the first groups shipped, and every fixture and contract sample without it must keep decoding.
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(id: try container.decode(String.self, forKey: .id),
+                  name: try container.decode(String.self, forKey: .name),
+                  description: try container.decodeIfPresent(String.self, forKey: .description),
+                  visibility: try container.decode(GroupVisibility.self, forKey: .visibility),
+                  type: try container.decodeIfPresent(EventType.self, forKey: .type),
+                  ownerName: try container.decode(String.self, forKey: .ownerName),
+                  memberCount: try container.decode(Int.self, forKey: .memberCount),
+                  maxMembers: try container.decode(Int.self, forKey: .maxMembers),
+                  channelEpoch: try container.decode(Int.self, forKey: .channelEpoch),
+                  membersCanCreateEvents: try container.decode(Bool.self, forKey: .membersCanCreateEvents),
+                  membersCanInvite: try container.decode(Bool.self, forKey: .membersCanInvite),
+                  lastMessageId: try container.decodeIfPresent(String.self, forKey: .lastMessageId),
+                  lastMessageAt: try container.decodeIfPresent(Date.self, forKey: .lastMessageAt),
+                  createdAt: try container.decode(Date.self, forKey: .createdAt),
+                  deletedAt: try container.decodeIfPresent(Date.self, forKey: .deletedAt),
+                  membership: try container.decodeIfPresent(GroupMembership.self, forKey: .membership),
+                  kind: try container.decodeIfPresent(GroupKind.self, forKey: .kind) ?? .group,
+                  counterpart: try container.decodeIfPresent(Counterpart.self, forKey: .counterpart))
     }
 
     var isFull: Bool { memberCount >= maxMembers }
+    /// A direct conversation between the caller and `counterpart`.
+    var isDirect: Bool { kind == .direct }
     var isDeleted: Bool { deletedAt != nil }
     var isPublic: Bool { visibility == .public }
     /// Whether the caller is in, as the backend saw it; a banned marker never counts.

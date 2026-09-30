@@ -9,6 +9,7 @@ struct GroupRepositories {
     let me: any MeRepository
     let moderation: any ModerationRepository
     let chat: any ChatRepository
+    let users: any UserRepository
     let realtimeTransport: any RealtimeTransport
     let makeRealtimeEndpointProvider: @MainActor (MeStore) -> any RealtimeEndpointProvider
 
@@ -21,14 +22,15 @@ struct GroupRepositories {
                           me: RemoteMeRepository(client: client),
                           moderation: RemoteModerationRepository(client: client),
                           chat: RemoteChatRepository(client: client),
+                          users: RemoteUserRepository(client: client),
                           realtimeTransport: NoRealtimeTransport(),
                           makeRealtimeEndpointProvider: { me in
                               RemoteRealtimeEndpointProvider(override: realtimeEndpoint, me: me)
                           })
     }
 
-    /// The invite mock reads the group mock's rosters, the inbox mock admits into its groups and the chat mock reads
-    /// them, so the four share one instance; the chat mock echoes over the one in-memory bus the controller subscribes to.
+    /// The invite mock reads the group mock's rosters, the inbox mock admits into its groups, the chat mock reads them
+    /// and the user mock builds profiles from them, so the five share one instance; the chat mock echoes over the one in-memory bus the controller subscribes to.
     static func mock(identity: any IdentityProvider, logger: any Logging, autoReplies: Bool) -> GroupRepositories {
         let groups = MockGroupRepository(identity: identity, logger: logger)
         let transport = MockRealtimeTransport(logger: logger)
@@ -42,6 +44,7 @@ struct GroupRepositories {
                                                           identity: identity,
                                                           logger: logger,
                                                           autoReplies: autoReplies),
+                                 users: MockUserRepository(groups: groups, identity: identity, logger: logger),
                                  realtimeTransport: transport,
                                  makeRealtimeEndpointProvider: { _ in
                                      FixedRealtimeEndpointProvider(url: AppConfig.Realtime.mockEndpoint)
@@ -58,6 +61,7 @@ struct GroupDependencies {
     let meRepository: any MeRepository
     let moderationRepository: any ModerationRepository
     let chatRepository: any ChatRepository
+    let userRepository: any UserRepository
     /// The one source of the caller's groups for every screen and store that needs them.
     let myGroups: MyGroupsStore
     let me: MeStore
@@ -87,6 +91,7 @@ struct GroupDependencies {
         meRepository = repositories.me
         moderationRepository = repositories.moderation
         chatRepository = repositories.chat
+        userRepository = repositories.users
         let myGroups = MyGroupsStore(repository: repositories.groups,
                                      identity: identity,
                                      changes: groupChanges,

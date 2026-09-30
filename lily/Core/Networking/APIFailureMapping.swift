@@ -36,10 +36,12 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case alreadyMember = "ALREADY_MEMBER"
     case cannotInvite = "CANNOT_INVITE"
     case blockLimit = "BLOCK_LIMIT"
+    /// The caller holds the maximum number of direct conversations.
+    case conversationLimit = "CONVERSATION_LIMIT"
 
     /// Every code maps to a case with copy; the domains are split so no switch grows past the complexity limit.
     var appError: AppError {
-        eventError ?? groupError ?? inviteError ?? moderationError ?? .unknown
+        eventError ?? groupError ?? inviteError ?? moderationError ?? peopleError ?? .unknown
     }
 
     private var eventError: AppError? {
@@ -89,6 +91,13 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .blockLimit: .blockLimitReached
         case .accountSuspended: .accountSuspended
         case .termsRequired: .termsRequired
+        default: nil
+        }
+    }
+
+    private var peopleError: AppError? {
+        switch self {
+        case .conversationLimit: .conversationLimit
         default: nil
         }
     }

@@ -20,11 +20,14 @@ final class FakeEventRepository: EventRepository {
     /// Thrown by `create` when set; otherwise the draft becomes an event hosted by `hostUserID`, joined, 1 of N.
     var createError: (any Error)?
     var hostUserID = "host"
+    /// Answered by `participants(eventId:)`.
+    var participantsResult: Result<[EventParticipant], AppError> = .success([])
     private let hold = RequestHold()
     private(set) var requestedScopes: [EventScope] = []
     /// The position each `events(in:near:)` carried, `nil` included, in call order.
     private(set) var requestedPositions: [Coordinate?] = []
     private(set) var fetchedEventIDs: [String] = []
+    private(set) var participantsRequests: [String] = []
     private(set) var joinedEventIDs: [String] = []
     private(set) var leftEventIDs: [String] = []
     private(set) var createdDrafts: [EventDraft] = []
@@ -43,6 +46,12 @@ final class FakeEventRepository: EventRepository {
         await hold.wait()
         if let thrownError { throw thrownError }
         return try stored(id)
+    }
+
+    func participants(eventId: String) async throws -> [EventParticipant] {
+        participantsRequests.append(eventId)
+        await hold.wait()
+        return try participantsResult.get()
     }
 
     func join(eventId: String) async throws -> SportEvent {

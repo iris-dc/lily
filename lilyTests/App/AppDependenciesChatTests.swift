@@ -78,17 +78,20 @@ struct AppDependenciesChatTests {
         await dependencies.realtime.setDesired(active: true, user: dependencies.sessionController.state.user)
         dependencies.myGroupsDidLoad()
         dependencies.myGroupsDidChange()
-        #expect(dependencies.unreadCenter.unreadGroupIDs == [MockGroupFixtures.kickersID])
-        #expect(dependencies.realtime.subscribedRooms.count == 3)
+        #expect(dependencies.unreadCenter.unreadGroupIDs == [MockGroupFixtures.kickersID, MockGroupFixtures.martaConversationID])
+        #expect(dependencies.realtime.subscribedRooms.count == 4, "the three groups and the conversation")
 
         let kickers = try #require(dependencies.myGroups.groups.first { $0.id == MockGroupFixtures.kickersID })
         let viewModel = dependencies.makeChatViewModel(for: kickers)
         await viewModel.appear()
-        #expect(viewModel.rows.count > AppConfig.Chat.mockMessagesPerRoom && dependencies.unreadCenter.unreadGroupIDs.isEmpty)
+        #expect(viewModel.rows.count > AppConfig.Chat.mockMessagesPerRoom)
+        #expect(dependencies.unreadCenter.unreadGroupIDs == [MockGroupFixtures.martaConversationID],
+                "the conversation is still unread")
 
         await dependencies.myGroups.reload()
         dependencies.myGroupsDidLoad()
-        #expect(dependencies.unreadCenter.unreadGroupIDs.isEmpty, "a load after reading the room brings no dot back")
+        #expect(dependencies.unreadCenter.unreadGroupIDs == [MockGroupFixtures.martaConversationID],
+                "a load after reading the room brings no dot back")
         #expect(dependencies.myGroups.groups.first { $0.id == MockGroupFixtures.kickersID }?.hasUnread == false)
 
         // The controller applies an envelope to the room cache before it hands it to its consumers, so once the probe

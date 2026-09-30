@@ -42,7 +42,7 @@ struct ChatTranscript: View {
         case .day(let day):
             DaySeparator(day: day, now: viewModel.now())
         case .message(let messageRow):
-            MessageBubble(row: messageRow)
+            MessageBubble(row: messageRow, profile: viewModel.profile(of: messageRow))
                 .contextMenu { MessageContextMenu(message: messageRow.message, viewModel: viewModel) }
         case .system(let message):
             // Every chat is on the Chats stack, which owns that stack's one `SportEvent` destination.

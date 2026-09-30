@@ -37,6 +37,8 @@ struct MembersList: View {
                 banned
             }
         }
+        // A container's identifier would otherwise stamp every row; the rows keep theirs (`member-row-<userId>`).
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AccessibilityIdentifiers.membersList)
         .task(id: ObjectIdentifier(viewModel)) { await viewModel.load() }
         .confirmationDialog(pending?.title ?? "",

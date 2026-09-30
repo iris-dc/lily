@@ -2,7 +2,8 @@ import Foundation
 
 /// What a group offers the caller, decided in one place from the group and the caller's id so the screens and their
 /// tests agree. The analogue of `Participation`. The server stays the authority: a stale role only changes which
-/// buttons show, every call is re-checked there.
+/// buttons show, every call is re-checked there. A direct conversation is its own case: chat and the two-person
+/// roster, nothing a group offers beyond that (the backend refuses those too).
 nonisolated enum GroupAccess: Equatable, Sendable {
     /// Guests see the group; joining needs an account.
     case guest
@@ -12,13 +13,17 @@ nonisolated enum GroupAccess: Equatable, Sendable {
     case member(MemberRole)
     /// No seats left and the caller is not in.
     case full
+    /// The caller's side of a direct conversation.
+    case conversation
 
     init(group: SportGroup, userID: String?) {
         guard userID != nil else {
             self = .guest
             return
         }
-        if let role = group.role {
+        if group.isDirect, group.isMember {
+            self = .conversation
+        } else if let role = group.role {
             self = .member(role)
         } else if group.isFull {
             self = .full
@@ -34,13 +39,19 @@ nonisolated enum GroupAccess: Equatable, Sendable {
         return nil
     }
 
-    var canChat: Bool { role != nil }
-    /// The roster is members-only in every group.
-    var canSeeMembers: Bool { role != nil }
-    var canLeave: Bool { role != nil && role != .owner }
+    var isMember: Bool { role != nil || self == .conversation }
+    var canChat: Bool { isMember }
+    /// Owners cannot leave; nobody leaves a conversation.
+    var canLeave: Bool { role.map { $0 != .owner } ?? false }
     var canEdit: Bool { role?.isAdmin ?? false }
     var canDelete: Bool { role == .owner }
     var canChangeRoles: Bool { role == .owner }
+
+    /// Members see the roster of any group; a public group's is open to every signed-in caller, a private group's
+    /// stays members-only. Guests see none: the backend answers the roster route with a token only.
+    func canSeeMembers(in group: SportGroup) -> Bool {
+        isMember || (self != .guest && group.isPublic)
+    }
 
     /// Owners and admins always; members when the group allows it.
     func canCreateEvents(in group: SportGroup) -> Bool {

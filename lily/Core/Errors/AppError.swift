@@ -74,6 +74,12 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case accountSuspended
     /// A write needs the current terms of use accepted first.
     case termsRequired
+    /// Loading a person's profile failed for a reason without a code of its own.
+    case profileUnavailable
+    /// Starting a direct conversation failed for a reason without a code of its own; repeating is safe (one id per pair).
+    case conversationFailed
+    /// The caller holds `AppConfig.People.maxConversations` conversations already (`CONVERSATION_LIMIT`).
+    case conversationLimit
     case unknown
 
     /// Normalises any thrown error into an `AppError`.

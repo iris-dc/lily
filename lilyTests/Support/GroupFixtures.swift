@@ -109,8 +109,9 @@ extension ContractSamples {
     "membersCanCreateEvents":true,"membersCanInvite":false,"lastMessageId":"01J8ZK7Q9X2M4N6P8R0T2V4W6Y",\
     "lastMessageAt":"2026-09-24T18:00:00Z","createdAt":"2026-06-01T10:00:00Z",\
     "membership":{"role":"admin","joinedAt":"2026-06-02T10:00:00Z",\
-    "lastReadMessageId":"01J8ZK7Q9X2M4N6P8R0T2V4W6X","hasUnread":true}}
+    "lastReadMessageId":"01J8ZK7Q9X2M4N6P8R0T2V4W6X","hasUnread":true},"kind":"group"}
     """
+    /// A payload from before `kind` was emitted, like every fixture built without one: it decodes as a community.
     static let minimalGroup = """
     {"id":"g2","name":"Spree Volley","visibility":"private","ownerName":"Luca","memberCount":12,"maxMembers":12,\
     "channelEpoch":1,"membersCanCreateEvents":true,"membersCanInvite":true,"createdAt":"2026-09-01T10:00:00Z"}

@@ -28,6 +28,8 @@ struct GroupAccessTests {
              userID: "u",
              expected: .member(.member)),
         Case(name: "full group, guest", group: full, userID: nil, expected: .guest),
+        Case(name: "conversation, participant", group: .conversationFixture(), userID: "u", expected: .conversation),
+        Case(name: "conversation, guest", group: .conversationFixture(), userID: nil, expected: .guest),
     ]
 
     @Test(arguments: cases)
@@ -35,19 +37,45 @@ struct GroupAccessTests {
         #expect(GroupAccess(group: testCase.group, userID: testCase.userID) == testCase.expected)
     }
 
-    /// Chat and the roster are members-only in every group; guests and outsiders get neither.
+    /// Chat is members-only in every group; guests and outsiders get none of the actions either.
     @Test(arguments: [GroupAccess.guest, .canJoin, .inviteOnly, .full])
     func outsidersCanDoNothingInside(access: GroupAccess) {
         let group = SportGroup.fixture()
-        #expect(!access.canChat && !access.canSeeMembers && !access.canLeave && !access.canEdit)
+        #expect(!access.isMember && !access.canChat && !access.canLeave && !access.canEdit)
         #expect(!access.canDelete && !access.canChangeRoles)
         #expect(!access.canCreateEvents(in: group) && !access.canInvite(in: group))
         #expect(!access.canRemove(.member) && !access.canBan(.member))
     }
 
+    /// A public group's roster is open to every signed-in caller, a private group's to its members; guests see none.
+    @Test func theRosterIsMembersOnlyInPrivateGroupsAndSignedInOnlyInPublicOnes() {
+        let publicGroup = SportGroup.fixture()
+        let privateGroup = SportGroup.fixture(visibility: .private)
+        for outsider in [GroupAccess.canJoin, .full] {
+            #expect(outsider.canSeeMembers(in: publicGroup))
+            #expect(!outsider.canSeeMembers(in: privateGroup))
+        }
+        #expect(!GroupAccess.inviteOnly.canSeeMembers(in: privateGroup))
+        #expect(!GroupAccess.guest.canSeeMembers(in: publicGroup) && !GroupAccess.guest.canSeeMembers(in: privateGroup))
+        for role in MemberRole.allCases where role != .banned {
+            #expect(GroupAccess.member(role).canSeeMembers(in: privateGroup))
+            #expect(GroupAccess.member(role).canSeeMembers(in: publicGroup))
+        }
+    }
+
+    /// A conversation is chat and the two-person roster; nothing a group offers beyond that, as the backend refuses too.
+    @Test func aConversationOffersChatAndTheRosterOnly() {
+        let conversation = SportGroup.conversationFixture()
+        let access = GroupAccess.conversation
+        #expect(access.isMember && access.canChat && access.canSeeMembers(in: conversation))
+        #expect(!access.canLeave && !access.canEdit && !access.canDelete && !access.canChangeRoles)
+        #expect(!access.canInvite(in: conversation) && !access.canCreateEvents(in: conversation))
+        #expect(!access.canRemove(.member) && !access.canBan(.member))
+    }
+
     @Test func membersChatSeeTheRosterAndLeave() {
         let member = GroupAccess.member(.member)
-        #expect(member.canChat && member.canSeeMembers && member.canLeave)
+        #expect(member.isMember && member.canChat && member.canSeeMembers(in: .fixture(visibility: .private)) && member.canLeave)
         #expect(!member.canEdit && !member.canDelete && !member.canChangeRoles)
         #expect(!member.canRemove(.member) && !member.canBan(.member))
     }

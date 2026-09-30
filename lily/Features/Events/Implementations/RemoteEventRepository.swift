@@ -16,6 +16,13 @@ final class RemoteEventRepository: EventRepository {
         try await client.send(.get(AppConfig.API.Paths.event(id: id)), failingWith: .eventsUnavailable)
     }
 
+    /// The list comes as `{items: [EventParticipant]}` without a cursor.
+    func participants(eventId: String) async throws -> [EventParticipant] {
+        let request = APIRequest<Page<EventParticipant>>.get(AppConfig.API.Paths.participants(eventId: eventId))
+        let page = try await client.send(request, failingWith: .eventsUnavailable)
+        return page.items
+    }
+
     func join(eventId: String) async throws -> SportEvent {
         try await client.send(.post(AppConfig.API.Paths.participants(eventId: eventId)), failingWith: .participationFailed)
     }

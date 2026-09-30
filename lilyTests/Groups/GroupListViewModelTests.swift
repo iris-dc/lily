@@ -38,6 +38,17 @@ struct GroupListViewModelTests {
         #expect(harness.repository.requestedScopes == [.mine, .mine])
     }
 
+    /// Home's rows are communities: a conversation in Mine (a Message tap put it there) is the Chats tab's alone.
+    @Test func mineLeavesTheConversationsOut() async {
+        harness.repository.result = .success(mine + [.conversationFixture(id: "dm")])
+        let viewModel = makeViewModel(scope: .mine)
+
+        await viewModel.loadIfStale()
+
+        #expect(viewModel.groups.map(\.id) == ["a", "b"] && harness.store.groups.count == 3)
+        #expect(!viewModel.isInitialLoad)
+    }
+
     /// "Joined" on a Discover card is the server's answer for one caller, so another caller earns a new search.
     @Test func discoverSearchesAgainForAnotherCaller() async {
         harness.repository.result = .success([.fixture(id: "p")])

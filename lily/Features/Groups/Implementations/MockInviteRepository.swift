@@ -56,10 +56,11 @@ final class MockInviteRepository: InviteRepository {
         return invite
     }
 
-    /// Every live member of the caller's other groups, each with the first group they share.
+    /// Every live member of the caller's other groups, each with the first group they share. A direct conversation is
+    /// no shared group: its one other member comes in through a community or a game, or not at all, as on the backend.
     private func groupCandidates(for groupID: String, seen: inout Set<String>) async throws -> [InviteCandidate] {
         var candidates: [InviteCandidate] = []
-        for group in try await groups.groups(in: .mine, cursor: nil).items where group.id != groupID {
+        for group in try await groups.groups(in: .mine, cursor: nil).items where group.id != groupID && !group.isDirect {
             for member in groups.roster(of: group.id) where member.role != .banned && !seen.contains(member.userId) {
                 seen.insert(member.userId)
                 candidates.append(InviteCandidate(userId: member.userId,

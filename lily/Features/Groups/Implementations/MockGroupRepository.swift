@@ -3,12 +3,13 @@ import Foundation
 /// Fixture groups with in-memory memberships and rosters, for previews, UI tests and `-mock-events` runs. The caller
 /// is whoever `identity` names at the moment of the call; the fixture memberships are theirs.
 final class MockGroupRepository: GroupRepository {
-    private var groups: [SportGroup]
+    /// Stored state is internal, not private, so `MockGroupRepository+Direct.swift` can reach it.
+    var groups: [SportGroup]
     /// The other members of each group, banned rows included; the caller's own row comes from the group's membership.
-    private var rosters: [String: [GroupMember]]
-    private let identity: any IdentityProvider
-    private let logger: any Logging
-    private let now: () -> Date
+    var rosters: [String: [GroupMember]]
+    let identity: any IdentityProvider
+    let logger: any Logging
+    let now: () -> Date
 
     init(identity: any IdentityProvider, logger: any Logging, now: @escaping () -> Date = { .now }) {
         let created = now()
@@ -105,14 +106,18 @@ final class MockGroupRepository: GroupRepository {
         return replace(target.withRole(role), in: id)
     }
 
+    /// Members see their own row too; a public group's roster answers any signed-in caller (a guest gets the 401), a
+    /// private group's is not there for outsiders (`readable`).
     func members(id: String) async throws -> [GroupMember] {
+        guard let callerID = identity.currentUserID else { throw AppError.sessionExpired }
         let group = try readable(id)
-        guard let role = group.role, let membership = group.membership else { throw AppError.notAMember }
-        let me = GroupMember(userId: identity.currentUserID ?? AppBranding.Groups.Create.mockOwnerName,
+        let others = others(in: id).filter { $0.role != .banned }
+        guard let role = group.role, let membership = group.membership else { return others.sorted(by: Self.rosterOrder) }
+        let me = GroupMember(userId: callerID,
                              displayName: AppBranding.Groups.Create.mockOwnerName,
                              role: role,
                              joinedAt: membership.joinedAt)
-        return (others(in: id).filter { $0.role != .banned } + [me]).sorted(by: Self.rosterOrder)
+        return (others + [me]).sorted(by: Self.rosterOrder)
     }
 
     func bans(id: String) async throws -> [GroupMember] {
@@ -155,7 +160,7 @@ final class MockGroupRepository: GroupRepository {
         return group
     }
 
-    private func find(_ id: String) -> SportGroup? {
+    func find(_ id: String) -> SportGroup? {
         groups.first { $0.id == id && !$0.isDeleted }
     }
 
