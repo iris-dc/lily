@@ -34,11 +34,23 @@ struct EventFilterTests {
         #expect(matching(filter).map(\.type).sorted { $0.rawValue < $1.rawValue } == [.padel, .tennis])
     }
 
-    @Test func otherIsAFilterableType() {
+    @Test func yogaAndOtherAreFilterableTypes() {
         var filter = EventFilter()
-        filter.toggle(.other)
+        filter.toggle(.yoga)
         #expect(matching(filter).map(\.title) == ["Sunrise yoga"])
+        #expect(EventType.yoga.displayName == "Yoga")
+        filter.toggle(.yoga)
+        filter.toggle(.other)
+        #expect(matching(filter).isEmpty, "no fixture is typed other any more")
         #expect(EventType.other.displayName == "Other")
+    }
+
+    /// The create forms and both filter panels draw `EventType.allCases`; a type is never hidden because no loaded game
+    /// has it (Tennis vanished from the Explore panel that way).
+    @Test func everyTypeIsOfferedEverywhereAndOtherComesLast() {
+        #expect(EventType.allCases.last == .other)
+        #expect(EventType.allCases.contains(.tennis) && EventType.allCases.contains(.yoga))
+        #expect(EventTypeChips(isSelected: { _ in false }, onSelect: { _ in }).types == EventType.allCases)
     }
 
     @Test func togglingTwiceRemovesTheType() {

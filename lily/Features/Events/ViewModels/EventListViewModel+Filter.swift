@@ -6,13 +6,6 @@ extension EventListViewModel {
     /// Events were loaded but the filter hides all of them, so the screen offers to clear it instead of saying "nothing yet".
     var isEverythingFilteredOut: Bool { !events.isEmpty && visibleEvents.isEmpty }
 
-    /// Types in the loaded events, plus any selected type a reload has since dropped so it can still be deselected,
-    /// in the canonical `EventType` order.
-    var availableTypes: [EventType] {
-        let present = Set(events.map(\.type))
-        return EventType.allCases.filter { present.contains($0) || filter.includes($0) }
-    }
-
     func toggleType(_ type: EventType) {
         updateFilter { $0.toggle(type) }
     }

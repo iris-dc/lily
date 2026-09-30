@@ -50,7 +50,6 @@ struct EventFilterPanel: View {
     private var typeChips: some View {
         EventTypeChips(anyTitle: Copy.anyType,
                        anyIdentifier: AccessibilityIdentifiers.filterTypeAny,
-                       types: viewModel.availableTypes,
                        isSelected: { type in type.map(viewModel.filter.includes) ?? viewModel.filter.types.isEmpty },
                        onSelect: { type in
                            if let type {

@@ -216,7 +216,7 @@ nonisolated enum MockEventFixtures {
         ),
         Template(
             title: "Sunrise yoga",
-            type: .other,
+            type: .yoga,
             location: "Tempelhofer Feld",
             capacity: 20,
             participants: 11,

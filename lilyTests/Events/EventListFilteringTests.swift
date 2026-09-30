@@ -22,16 +22,6 @@ struct EventListFilteringTests {
         #expect(viewModel.visibleEvents == events)
     }
 
-    @Test func availableTypesAreTheLoadedOnesInCanonicalOrder() async {
-        let repository = FakeEventRepository()
-        let events = MockEventFixtures.make(now: .now, count: 8).filter { [.padel, .football, .climbing].contains($0.type) }
-        repository.result = .success(events.reversed())
-        let viewModel = makeEventListViewModel(repository: repository)
-        await viewModel.load()
-
-        #expect(viewModel.availableTypes == [.football, .padel, .climbing])
-    }
-
     @Test func everythingFilteredOutOnlyWhenEventsExistButNoneMatch() async {
         let repository = FakeEventRepository()
         repository.result = .success(MockEventFixtures.make(now: .now, count: 1))
@@ -59,7 +49,7 @@ struct EventListFilteringTests {
         #expect(viewModel.visibleEvents.map(\.type) == [.basketball])
     }
 
-    @Test func availableTypesKeepASelectedTypeThatAReloadDropped() async {
+    @Test func aSelectedTypeSurvivesAReloadThatDroppedItsGames() async {
         let repository = FakeEventRepository()
         let all = MockEventFixtures.make(now: .now, count: 8)
         repository.result = .success(all.filter { [.football, .basketball].contains($0.type) })
@@ -70,7 +60,7 @@ struct EventListFilteringTests {
         repository.result = .success(all.filter { $0.type == .football })
         await viewModel.load()
 
-        #expect(viewModel.availableTypes == [.football, .basketball])
+        #expect(viewModel.filter.includes(.basketball))
         #expect(viewModel.isEverythingFilteredOut)
         viewModel.toggleType(.basketball)
         #expect(viewModel.visibleEvents.map(\.type) == [.football])
