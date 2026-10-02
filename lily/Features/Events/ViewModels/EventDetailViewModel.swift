@@ -17,6 +17,8 @@ final class EventDetailViewModel {
     private let logger: any Logging
     private let tryAgainDelay: Duration
     private let now: () -> Date
+    /// Asked after a successful join: the reminder it buys is for this very game.
+    private let pushOptIn: any PushOptIn
     private let onChange: @MainActor (SportEvent) -> Void
     private var hasRecordedView = false
 
@@ -28,8 +30,10 @@ final class EventDetailViewModel {
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
          now: @escaping () -> Date = { .now },
+         pushOptIn: any PushOptIn = NoPushOptIn(),
          onChange: @escaping @MainActor (SportEvent) -> Void) {
         self.event = event
+        self.pushOptIn = pushOptIn
         self.repository = repository
         self.identity = identity
         self.errorCenter = errorCenter
@@ -104,6 +108,9 @@ final class EventDetailViewModel {
             apply(updated)
             logSuccess(action, updated)
             await loadParticipants()
+            // The control is done before the permission prompt comes up, so it never spins behind the alert.
+            isBusy = false
+            if wantsToParticipate { await pushOptIn.offerReminders() }
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logFailure(action, error)

@@ -79,7 +79,7 @@ final class GroupHarness {
     func makeInboxViewModel() -> InboxViewModel {
         InboxViewModel(store: inbox,
                        repository: inboxRepository,
-                       events: events,
+                       opener: EventOpener(events: events, navigation: navigation, reporter: reporter, logger: logger),
                        myGroups: store,
                        navigation: navigation,
                        reporter: reporter,

@@ -25,6 +25,8 @@ final class CreateEventViewModel {
     private let errorCenter: ErrorCenter
     private let logger: any Logging
     private let now: () -> Date
+    /// Asked after a successful create: the host wants the reminder too.
+    private let pushOptIn: any PushOptIn
     private let onCreated: @MainActor (SportEvent) -> Void
 
     init(repository: any EventRepository,
@@ -34,6 +36,7 @@ final class CreateEventViewModel {
          errorCenter: ErrorCenter,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
+         pushOptIn: any PushOptIn = NoPushOptIn(),
          lockedGroup: EventGroupRef? = nil,
          onCreated: @escaping @MainActor (SportEvent) -> Void) {
         self.repository = repository
@@ -43,6 +46,7 @@ final class CreateEventViewModel {
         self.errorCenter = errorCenter
         self.logger = logger
         self.now = now
+        self.pushOptIn = pushOptIn
         self.lockedGroup = lockedGroup
         self.onCreated = onCreated
         self.draft = EventDraft(startsAt: Self.defaultStart(now: now()))
@@ -90,23 +94,25 @@ final class CreateEventViewModel {
         defer { isSubmitting = false }
         do {
             let event = try await repository.create(draft)
-            accept(event)
+            await accept(event)
             logger.info(.events, "Event created \(event.id) (\(event.capacity) spots)\(Self.groupSuffix(for: event))")
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logger.error(.events, "Create failed: \(error)")
             if let landed = await storedEvent(despite: error) {
                 logger.info(.events, "Create landed for event \(landed.id) despite \(error)")
-                accept(landed)
+                await accept(landed)
             } else {
                 errorCenter.report(error)
             }
         }
     }
 
-    private func accept(_ event: SportEvent) {
+    /// The sheet dismisses on `createdEvent`; the permission prompt, when it is due, comes up over the screen behind.
+    private func accept(_ event: SportEvent) async {
         createdEvent = event
         onCreated(event)
+        await pushOptIn.offerReminders()
     }
 
     /// A `.network` or `.eventCreationFailed` leaves the outcome unknown: the backend commits before it answers, so

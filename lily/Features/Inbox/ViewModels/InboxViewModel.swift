@@ -12,7 +12,7 @@ final class InboxViewModel {
     private(set) var openingItemID: String?
 
     private let repository: any InboxRepository
-    private let events: any EventRepository
+    private let opener: EventOpener
     private let myGroups: MyGroupsStore
     private let navigation: AppNavigation
     private let reporter: GroupErrorReporter
@@ -22,7 +22,7 @@ final class InboxViewModel {
 
     init(store: InboxStore,
          repository: any InboxRepository,
-         events: any EventRepository,
+         opener: EventOpener,
          myGroups: MyGroupsStore,
          navigation: AppNavigation,
          reporter: GroupErrorReporter,
@@ -31,7 +31,7 @@ final class InboxViewModel {
          now: @escaping () -> Date = { .now }) {
         self.store = store
         self.repository = repository
-        self.events = events
+        self.opener = opener
         self.myGroups = myGroups
         self.navigation = navigation
         self.reporter = reporter
@@ -98,14 +98,7 @@ final class InboxViewModel {
         guard let reminder = item.reminder, openingItemID == nil else { return }
         openingItemID = item.id
         defer { openingItemID = nil }
-        do {
-            let event = try await events.event(id: reminder.eventId)
-            navigation.openInChat(event)
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            logger.warning(.inbox, "Event \(reminder.eventId) behind reminder \(item.id) is unavailable: \(error)")
-            reporter.report(error)
-        }
+        await opener.open(eventID: reminder.eventId, from: "reminder \(item.id)")
     }
 
     /// One answer per invite at a time; `TRY_AGAIN` is repeated once. A verdict on the invite (answered already,

@@ -117,7 +117,8 @@ final class SessionController {
         observers.append(WeakSessionObserver(observer))
     }
 
-    /// Clears the local session before the remote call, so a late duplicate cannot undo a choice made meanwhile.
+    /// Observers get a last word while the user is still signed in (a device to unregister), then the local session is
+    /// cleared before the remote call, so a late duplicate cannot undo a choice made meanwhile.
     func signOut() async {
         guard !isSigningOut else {
             logger.debug(.auth, "Ignored sign-out: another sign-out is in progress")
@@ -126,6 +127,7 @@ final class SessionController {
         isSigningOut = true
         defer { isSigningOut = false }
         profileSync?.cancel()
+        await notifySessionWillEnd()
         let userID = state.user?.id
         sessionStore.clear()
         state = .signedOut
@@ -135,6 +137,12 @@ final class SessionController {
             try await authService.signOut()
         } catch {
             logger.warning(.auth, "Remote sign-out failed, local session already cleared: \(error)")
+        }
+    }
+
+    private func notifySessionWillEnd() async {
+        for observer in observers {
+            await observer.observer?.sessionWillEnd()
         }
     }
 

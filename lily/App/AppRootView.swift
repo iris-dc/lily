@@ -23,6 +23,7 @@ struct AppRootView: View {
         .task {
             await session.restore()
             dependencies.navigation.selectedTab = AppNavigation.startTab(for: session.state)
+            await dependencies.pushCoordinator.openPendingEvent()
         }
         // Going to the background is the last moment a small batch is sure to be sent.
         .onChange(of: scenePhase) {
@@ -53,11 +54,11 @@ struct AppRootView: View {
         let userID: String?
     }
 
-    /// The signed-in user's account, the realtime connection, their groups and their inbox, in that order: the account
-    /// names the realtime endpoint, and a connection that opens reloads Mine itself (the resume protocol), so the
-    /// store's own load afterwards is usually a no-op. The connection closes in the background; a guest has none of
-    /// this and the stores clear themselves. A run stops at the first await after its key changed, so the phase it
-    /// read is never applied over a newer one.
+    /// The signed-in user's account, the realtime connection, their groups, their inbox and the push registration, in
+    /// that order: the account names the realtime endpoint, and a connection that opens reloads Mine itself (the resume
+    /// protocol), so the store's own load afterwards is usually a no-op. The connection closes in the background; a
+    /// guest has none of this and the stores clear themselves. A run stops at the first await after its key changed,
+    /// so the phase it read is never applied over a newer one.
     private func syncAccountAndRealtime() async {
         let active = scenePhase != .background
         let user = session.state.user
@@ -68,6 +69,11 @@ struct AppRootView: View {
         if active { await dependencies.myGroups.loadIfStale() }
         guard !Task.isCancelled else { return }
         if active { await dependencies.inbox.loadIfStale() }
+        guard !Task.isCancelled else { return }
+        guard active, user != nil else { return }
+        // A signed-in user entering the app is asked for the permission once; a grant registers the device at once.
+        await dependencies.pushCoordinator.offerReminders()
+        await dependencies.pushCoordinator.sync()
     }
 }
 

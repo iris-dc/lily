@@ -19,6 +19,8 @@ final class AppDependencies {
     let eventChanges = ChangeTracker()
     /// Groups, chat, inbox and moderation collaborators; see `AppDependencies+Groups.swift`.
     let groups: GroupDependencies
+    /// The device registration and the game behind a tapped reminder; see `AppDependencies+Push.swift`.
+    let push: PushDependencies
 
     init(logger: any Logging,
          sessionStore: any SessionStore,
@@ -29,7 +31,10 @@ final class AppDependencies {
          profileRepository: any ProfileRepository,
          interactionRecorder: any InteractionRecorder,
          locationService: any LocationService,
-         groupRepositories: GroupRepositories) {
+         groupRepositories: GroupRepositories,
+         pushRegistrar: any PushRegistrar,
+         deviceRepository: any DeviceRepository,
+         defaults: UserDefaults = .standard) {
         self.logger = logger
         self.errorCenter = ErrorCenter(logger: logger)
         self.sessionStore = sessionStore
@@ -45,6 +50,13 @@ final class AppDependencies {
                                         tokenProvider: tokenProvider,
                                         errorCenter: errorCenter,
                                         logger: logger)
+        self.push = PushDependencies(registrar: pushRegistrar,
+                                     devices: deviceRepository,
+                                     events: eventRepository,
+                                     identity: identity,
+                                     groups: groups,
+                                     defaults: defaults,
+                                     logger: logger)
         self.sessionController = SessionController(authService: authService,
                                                    sessionStore: sessionStore,
                                                    profileRepository: profileRepository,
@@ -53,6 +65,7 @@ final class AppDependencies {
         // The repositories were built around `identity` before the controller existed; close the loop.
         identity.session = sessionController
         groups.sessionObservers.forEach(sessionController.addObserver)
+        sessionController.addObserver(push.coordinator)
     }
 
     /// Production wiring: Cognito through Amplify, whose access token the API client sends, unless a launch argument
@@ -77,7 +90,10 @@ final class AppDependencies {
                                profileRepository: repositories.profile,
                                interactionRecorder: repositories.interactions,
                                locationService: makeLocationService(arguments: arguments, logger: logger),
-                               groupRepositories: repositories.groups)
+                               groupRepositories: repositories.groups,
+                               pushRegistrar: repositories.pushRegistrar,
+                               deviceRepository: repositories.devices,
+                               defaults: defaults)
     }
 
     /// Isolated in-memory wiring for previews and tests.
@@ -95,57 +111,10 @@ final class AppDependencies {
                                profileRepository: repositories.profile,
                                interactionRecorder: repositories.interactions,
                                locationService: MockLocationService(),
-                               groupRepositories: repositories.groups)
-    }
-
-    /// Explore starts from the default filter (10 km around the user); a list without a filter button, such as
-    /// Home, must never hide a game, so it starts from `.everything`.
-    func makeEventListViewModel(scope: EventScope) -> EventListViewModel {
-        EventListViewModel(scope: scope,
-                           repository: eventRepository,
-                           identity: identity,
-                           locationService: locationService,
-                           changes: eventChanges,
-                           errorCenter: errorCenter,
-                           recorder: interactionRecorder,
-                           logger: logger,
-                           initialFilter: scope == .upcoming ? EventFilter() : .everything)
-    }
-
-    func makeEventDetailViewModel(for event: SportEvent,
-                                  onChange: @escaping @MainActor (SportEvent) -> Void) -> EventDetailViewModel {
-        EventDetailViewModel(event: event,
-                             repository: eventRepository,
-                             identity: identity,
-                             errorCenter: errorCenter,
-                             recorder: interactionRecorder,
-                             logger: logger,
-                             onChange: onChange)
-    }
-
-    /// `onChange` receives the event as the backend stored it after the host's edit; the detail behind the sheet takes
-    /// it through `EventDetailViewModel.accept`.
-    func makeEditEventViewModel(for event: SportEvent,
-                                onChange: @escaping @MainActor (SportEvent) -> Void) -> EditEventViewModel {
-        EditEventViewModel(event: event,
-                           repository: eventRepository,
-                           errorCenter: errorCenter,
-                           logger: logger,
-                           onChange: onChange)
-    }
-
-    /// `onCreated` receives the event as the backend stored it; the list behind the sheet adds it in place. A sheet
-    /// opened from a group's Events segment passes the group as `lockedGroup`, so the game is hosted there.
-    func makeCreateEventViewModel(onCreated: @escaping @MainActor (SportEvent) -> Void,
-                                  lockedGroup: EventGroupRef? = nil) -> CreateEventViewModel {
-        CreateEventViewModel(repository: eventRepository,
-                             identity: identity,
-                             locationService: locationService,
-                             groups: myGroups,
-                             errorCenter: errorCenter,
-                             logger: logger,
-                             lockedGroup: lockedGroup,
-                             onCreated: onCreated)
+                               groupRepositories: repositories.groups,
+                               pushRegistrar: repositories.pushRegistrar,
+                               deviceRepository: repositories.devices,
+                               defaults: defaults)
     }
 
     /// Applies the session launch arguments (`-reset-session`, `-start-as-guest`) to the persisted choice.
@@ -211,7 +180,13 @@ final class AppDependencies {
         if autoReplies { logger.info(.chat, "Launch argument requested mock chat replies") }
         let mockPicker = arguments.contains(AppConfig.LaunchArguments.mockAttachmentPicker)
         if mockPicker { logger.info(.chat, "Launch argument requested the mock attachment picker") }
-        return .mock(identity: identity, logger: logger, autoReplies: autoReplies, mockPicker: mockPicker)
+        let systemPush = arguments.contains(AppConfig.LaunchArguments.systemPush)
+        if systemPush { logger.info(.push, "Launch argument kept the system push registrar") }
+        return .mock(identity: identity,
+                     logger: logger,
+                     autoReplies: autoReplies,
+                     mockPicker: mockPicker,
+                     systemPush: systemPush)
     }
 
     /// The `-api-base-url` value when it is a URL with a scheme and a host, otherwise `AppConfig.API.baseURL`.
@@ -241,12 +216,14 @@ private struct Auth {
 }
 
 /// The data layer comes as a set: everything talks to the same backend, or everything stays in memory, so a mock run
-/// (previews, UI tests, `-mock-events`) never posts a statistic either.
+/// (previews, UI tests, `-mock-events`) never posts a statistic, registers a device or meets the permission alert.
 private struct Repositories {
     let events: any EventRepository
     let profile: any ProfileRepository
     let interactions: any InteractionRecorder
     let groups: GroupRepositories
+    let devices: any DeviceRepository
+    let pushRegistrar: any PushRegistrar
 
     static func remote(baseURL: URL,
                        realtimeEndpoint: URL?,
@@ -260,16 +237,22 @@ private struct Repositories {
                             groups: .remote(client: client,
                                             realtimeEndpoint: realtimeEndpoint,
                                             identity: identity,
-                                            logger: logger))
+                                            logger: logger),
+                            devices: RemoteDeviceRepository(client: client),
+                            pushRegistrar: SystemPushRegistrar(logger: logger))
     }
 
+    /// `systemPush` keeps the real permission prompt and token (`-system-push`); the registry stays in memory.
     static func mock(identity: any IdentityProvider,
                      logger: any Logging,
                      autoReplies: Bool = false,
-                     mockPicker: Bool = false) -> Repositories {
+                     mockPicker: Bool = false,
+                     systemPush: Bool = false) -> Repositories {
         Repositories(events: MockEventRepository(identity: identity, logger: logger),
                      profile: MockProfileRepository(logger: logger),
                      interactions: NoOpInteractionRecorder(),
-                     groups: .mock(identity: identity, logger: logger, autoReplies: autoReplies, mockPicker: mockPicker))
+                     groups: .mock(identity: identity, logger: logger, autoReplies: autoReplies, mockPicker: mockPicker),
+                     devices: MockDeviceRepository(identity: identity, logger: logger),
+                     pushRegistrar: systemPush ? SystemPushRegistrar(logger: logger) : MockPushRegistrar(logger: logger))
     }
 }

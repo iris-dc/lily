@@ -132,7 +132,7 @@ struct InboxViewModelTests {
 
         #expect(harness.presentedError == .eventNotFound && harness.navigation.chatPath.isEmpty)
         #expect(harness.events.fetchedEventIDs == ["e"])
-        #expect(harness.inboxLogs(.warning).count == 1)
+        #expect(harness.logger.messages(in: .events, at: .warning).count == 1)
     }
 
     /// An item that lands while the inbox is open counts as seen.

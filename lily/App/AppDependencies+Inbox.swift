@@ -8,7 +8,7 @@ extension AppDependencies {
     func makeInboxViewModel() -> InboxViewModel {
         InboxViewModel(store: inbox,
                        repository: inboxRepository,
-                       events: eventRepository,
+                       opener: eventOpener,
                        myGroups: myGroups,
                        navigation: navigation,
                        reporter: groups.errorReporter,

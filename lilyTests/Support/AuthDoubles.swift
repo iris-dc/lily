@@ -118,11 +118,18 @@ enum JWTFixtures {
     }
 }
 
-/// Counts `sessionDidEnd()` calls; `onSessionEnd` lets a test look at the controller at that moment.
+/// Counts `sessionWillEnd()` and `sessionDidEnd()` calls; the closures let a test look at the controller at that moment.
 @MainActor
 final class SpySessionObserver: SessionObserver {
+    private(set) var willEndCount = 0
     private(set) var endCount = 0
+    var onSessionWillEnd: () -> Void = {}
     var onSessionEnd: () -> Void = {}
+
+    func sessionWillEnd() async {
+        willEndCount += 1
+        onSessionWillEnd()
+    }
 
     func sessionDidEnd() {
         endCount += 1
