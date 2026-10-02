@@ -14,9 +14,10 @@ nonisolated struct EventDraft: Equatable, Sendable {
     var locationName = ""
     /// Starts from the user's position and is moved on the map; required.
     var coordinate: Coordinate?
+    /// The stepper's value, kept while the limit is `.unlimited` so switching back finds it again.
     var capacity = AppConfig.Events.Creation.defaultCapacity
-    /// Whether `capacity` is the number of players needed rather than a cap, so more may join.
-    var allowsExtraParticipants = false
+    /// Whether `capacity` caps the game, is the number needed, or is not sent at all.
+    var playerLimit: PlayerLimit = .maximum
     var description = ""
     var lookingFor = ""
     /// `nil` means any level.
@@ -41,8 +42,8 @@ nonisolated struct EventDraft: Equatable, Sendable {
         startsAt = event.startsAt
         locationName = event.locationName
         coordinate = event.location.coordinate
-        capacity = event.capacity
-        allowsExtraParticipants = event.allowsExtraParticipants
+        capacity = event.capacity ?? Self.proposedCapacity(for: event.participantCount)
+        playerLimit = event.playerLimit
         description = event.description ?? ""
         lookingFor = event.lookingFor ?? ""
         skillLevel = event.skillLevel
@@ -51,8 +52,8 @@ nonisolated struct EventDraft: Equatable, Sendable {
     }
 
     /// What a draft is judged against beyond the backend's limits: a create keeps the app's lead-time margin, an
-    /// edit only needs the future (the backend's rule) and never fewer spots than the people already in, unless the
-    /// draft allows extras, when the capacity is a target the host may set below them.
+    /// edit only needs the future (the backend's rule) and never a cap below the people already in; a number needed
+    /// is a target the host may set below them, and no limit has nothing to judge.
     struct Rules: Equatable, Sendable {
         let minimumLeadTime: TimeInterval
         let minimumCapacity: Int
@@ -65,11 +66,11 @@ nonisolated struct EventDraft: Equatable, Sendable {
                   minimumCapacity: max(AppConfig.Events.Creation.capacityRange.lowerBound, participantCount))
         }
 
-        /// The capacities the form's stepper offers under these rules: the backend's whole range while the draft allows
-        /// extras, else from the floor up.
-        func capacityRange(allowsExtraParticipants: Bool) -> ClosedRange<Int> {
+        /// The capacities the form's stepper offers under these rules: from the floor up for a cap, the backend's whole
+        /// range otherwise.
+        func capacityRange(for limit: PlayerLimit) -> ClosedRange<Int> {
             let limits = AppConfig.Events.Creation.capacityRange
-            return allowsExtraParticipants ? limits : minimumCapacity...limits.upperBound
+            return limit == .maximum ? minimumCapacity...limits.upperBound : limits
         }
     }
 
@@ -89,6 +90,9 @@ nonisolated struct EventDraft: Equatable, Sendable {
         case priceOutOfRange
     }
 
+    /// The capacity as the wire and the stored event carry it: none without a limit.
+    var capacityIfLimited: Int? { playerLimit.hasCapacity ? capacity : nil }
+    var allowsExtraParticipants: Bool { playerLimit.allowsExtraParticipants }
     var trimmedTitle: String { title.trimmingCharacters(in: .whitespacesAndNewlines) }
     var trimmedLocationName: String { locationName.trimmingCharacters(in: .whitespacesAndNewlines) }
     /// `nil` when the host wrote nothing, so the payload omits the field.
@@ -121,11 +125,12 @@ nonisolated struct EventDraft: Equatable, Sendable {
         return issues
     }
 
-    /// Outside the backend's range first; within it, below the people already in (an edit's floor), which a draft that
-    /// allows extras is free to be.
+    /// Nothing without a limit. Outside the backend's range first; within it, a cap below the people already in (an
+    /// edit's floor), which a number needed is free to be.
     private func capacityIssue(rules: Rules) -> Issue? {
+        guard playerLimit.hasCapacity else { return nil }
         guard AppConfig.Events.Creation.capacityRange.contains(capacity) else { return .capacityOutOfRange }
-        return !allowsExtraParticipants && capacity < rules.minimumCapacity ? .capacityBelowParticipants : nil
+        return playerLimit == .maximum && capacity < rules.minimumCapacity ? .capacityBelowParticipants : nil
     }
 
     /// The optional details.
@@ -156,7 +161,7 @@ nonisolated struct EventDraft: Equatable, Sendable {
                    type: type,
                    startsAt: startsAt,
                    location: EventLocation(name: trimmedLocationName, coordinate: coordinate),
-                   capacity: capacity,
+                   capacity: capacityIfLimited,
                    allowsExtraParticipants: allowsExtraParticipants,
                    participantCount: 1,
                    hostName: hostName,
@@ -167,6 +172,13 @@ nonisolated struct EventDraft: Equatable, Sendable {
                    skillLevel: skillLevel,
                    price: price(),
                    group: group)
+    }
+
+    /// What the stepper shows for a game without a limit: the default, or the people already in when more than that
+    /// are, so switching to a cap starts at the floor instead of below it; never past the backend's maximum.
+    private static func proposedCapacity(for participantCount: Int) -> Int {
+        let limits = AppConfig.Events.Creation.self
+        return min(max(limits.defaultCapacity, participantCount), limits.capacityRange.upperBound)
     }
 
     /// Non-negative, below the backend's integer-digit limit and at most two decimals.

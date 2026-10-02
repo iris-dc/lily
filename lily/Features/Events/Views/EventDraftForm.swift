@@ -108,21 +108,29 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
         }
     }
 
-    /// How many players, and whether that number is a cap or the number needed: the stepper's label says which.
+    /// Whether the game takes any number, up to a cap or at least a number it needs, and that number when there is
+    /// one; the stepper's label repeats which of the two it is.
     private var playersSection: some View {
         Section {
-            Stepper(value: $viewModel.draft.capacity, in: viewModel.capacityRange) {
-                Text(Copy.capacity(viewModel.draft.capacity, needed: viewModel.draft.allowsExtraParticipants))
+            Picker(Copy.playersSection, selection: $viewModel.draft.playerLimit) {
+                ForEach(PlayerLimit.allCases, id: \.self) { limit in
+                    Text(Copy.name(for: limit)).tag(limit)
+                }
             }
-            .accessibilityIdentifier(AccessibilityIdentifiers.createCapacity)
-            Toggle(Copy.allowsExtraParticipants, isOn: $viewModel.draft.allowsExtraParticipants)
-                .accessibilityIdentifier(AccessibilityIdentifiers.createAllowsExtraParticipants)
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier(AccessibilityIdentifiers.createPlayerLimit)
+            if viewModel.draft.playerLimit.hasCapacity {
+                Stepper(value: $viewModel.draft.capacity, in: viewModel.capacityRange) {
+                    Text(Copy.capacity(viewModel.draft.capacity, needed: viewModel.draft.allowsExtraParticipants))
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.createCapacity)
+            }
         } header: {
             Text(Copy.playersSection)
         } footer: {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-                if viewModel.draft.allowsExtraParticipants {
-                    Text(Copy.allowsExtraParticipantsHint)
+                if let hint = Copy.hint(for: viewModel.draft.playerLimit) {
+                    Text(hint)
                 }
                 issueText(viewModel.issue(for: .capacityOutOfRange, .capacityBelowParticipants))
             }

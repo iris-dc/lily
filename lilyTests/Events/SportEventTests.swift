@@ -95,6 +95,19 @@ struct SportEventTests {
         #expect(crowded.updatingParticipation(count: 7, isJoined: true).allowsExtraParticipants)
     }
 
+    /// Without a limit there is nothing to fill or to reach: the copy is the count alone and Join never goes away.
+    @Test func aGameWithoutALimitIsNeverFullAndCountsAlone() {
+        let open = SportEvent.fixture(capacity: nil, participants: 40)
+
+        #expect(open.playerLimit == .unlimited && !open.allowsExtraParticipants)
+        #expect(!open.isFull && !open.isNearlyFull && !open.hasPlayersNeeded)
+        #expect(open.spotsLeft == 0 && open.fillRatio == 0)
+        #expect(open.availabilityText == "40 joined" && open.capacityText == "40 joined")
+        #expect(open.spotsDescription == "no limit" && open.countDescription == "40")
+        #expect(Participation(event: open, userID: "u-1") == .join)
+        #expect(SportEvent.fixture(capacity: 4, participants: 3).countDescription == "3/4")
+    }
+
     @Test func participationDefaultsToNotJoined() {
         #expect(!makeEvent(capacity: 4, participants: 1).participates)
         #expect(makeEvent(capacity: 4, participants: 1).updatingParticipation(count: 2, isJoined: true).participates)
@@ -178,6 +191,15 @@ struct SportEventCodingTests {
         #expect(json.contains(#""participantCount":6"#))
         #expect(json.contains(#""allowsExtraParticipants":false"#))
         #expect(!json.contains(#""sport""#))
+    }
+
+    /// The backend omits `capacity` for a game without a limit, and the app omits it back.
+    @Test func aMissingCapacityIsNoLimit() throws {
+        let event = try decoder.decode(SportEvent.self, from: Data(ContractSamples.unlimitedEvent.utf8))
+
+        #expect(event.capacity == nil && event.playerLimit == .unlimited)
+        let json = try #require(String(bytes: APIJSONCoding.makeEncoder().encode(event), encoding: .utf8))
+        #expect(!json.contains("capacity"))
     }
 
     @Test func allowsExtraParticipantsRoundTripsWhenPresent() throws {

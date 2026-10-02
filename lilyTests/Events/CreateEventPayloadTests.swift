@@ -16,7 +16,7 @@ struct CreateEventPayloadTests {
         var draft = EventDraft.fixture(now: now, clientId: "3f2504e0-4f89-11d3-9a0c-0305e82c3301")
         draft.type = .tennis
         draft.capacity = 4
-        draft.allowsExtraParticipants = true
+        draft.playerLimit = .minimum
         draft.description = "Bring both colours"
         draft.lookingFor = "One more"
         draft.skillLevel = .intermediate
@@ -77,6 +77,19 @@ struct CreateEventPayloadTests {
         #expect(json["allowsExtraParticipants"] as? Bool == false, "always sent, so the backend never guesses")
         #expect(payload.description == nil && payload.lookingFor == nil)
         #expect(payload.skillLevel == nil && payload.price == nil)
+    }
+
+    /// Without a limit there is no capacity to send, and the extras flag is false whatever the stepper last held.
+    @Test func aGameWithoutALimitSendsNoCapacity() throws {
+        var draft = EventDraft.fixture(now: Self.now)
+        draft.playerLimit = .unlimited
+        draft.capacity = 7
+        let payload = try #require(CreateEventPayload(draft: draft))
+
+        let json = try encode(payload)
+
+        #expect(payload.capacity == nil && !payload.allowsExtraParticipants)
+        #expect(json["capacity"] == nil && json["allowsExtraParticipants"] as? Bool == false)
     }
 
     /// A game of its own sends no `groupId` at all: the backend reads absent as ungrouped, `null` as a validation failure.

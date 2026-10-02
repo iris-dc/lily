@@ -42,7 +42,19 @@ struct MockEventRepositoryParticipationTests {
         let joined = try await repository.join(eventId: crowded.id)
 
         #expect(joined.participates && joined.participantCount == crowded.participantCount + 1)
-        #expect(joined.participantCount > joined.capacity && !joined.isFull)
+        #expect(joined.hasPlayersNeeded && joined.spotsLeft == 0 && !joined.isFull)
+    }
+
+    /// The one fixture without a limit starts out joined (the stride pre-joins it), so the caller leaves it first.
+    @Test func joinAdmitsAnyoneToAGameWithoutALimit() async throws {
+        let events = try await repository.events(in: .upcoming, near: nil)
+        let open = try #require(events.first { $0.playerLimit == .unlimited })
+        let left = try await repository.leave(eventId: open.id)
+
+        let joined = try await repository.join(eventId: open.id)
+
+        #expect(!left.participates && joined.participates)
+        #expect(joined.capacity == nil && joined.participantCount == open.participantCount && !joined.isFull)
     }
 
     @Test func joinRejectsFullEventsAndRepeatedJoins() async throws {

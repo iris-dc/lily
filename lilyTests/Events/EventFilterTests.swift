@@ -98,8 +98,9 @@ struct EventFilterTests {
         filter.openSpotsOnly = true
         #expect(matching(filter).allSatisfy { !$0.isFull })
         #expect(matching(filter).count == events.count - events.filter(\.isFull).count)
-        #expect(matching(filter).contains { $0.allowsExtraParticipants && $0.participantCount > $0.capacity },
+        #expect(matching(filter).contains { $0.playerLimit == .minimum && $0.hasPlayersNeeded },
                 "a game that allows extras has open spots past the number it needs")
+        #expect(matching(filter).contains { $0.playerLimit == .unlimited }, "a game without a limit always has spots")
     }
 
     @Test func dateWindowKeepsOnlyGamesStartingInsideIt() {

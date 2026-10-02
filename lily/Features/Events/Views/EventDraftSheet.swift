@@ -10,7 +10,7 @@ protocol EventDraftEditing: AnyObject, Observable {
     var isDone: Bool { get }
     /// The earliest start the date picker offers.
     var earliestStart: Date { get }
-    /// The capacities the stepper offers; an edit's floor is the people already in, unless the draft allows extras.
+    /// The capacities the stepper offers; a cap's floor on an edit is the people already in.
     var capacityRange: ClosedRange<Int> { get }
     /// The group the game is hosted in when the form may not change it, shown read-only.
     var lockedGroup: EventGroupRef? { get }

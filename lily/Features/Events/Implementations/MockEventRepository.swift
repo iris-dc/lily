@@ -91,11 +91,11 @@ final class MockEventRepository: EventRepository {
         return event
     }
 
-    /// Like the backend: the host alone, and never fewer spots than people already in unless the draft allows extras.
+    /// Like the backend: the host alone, and never a cap below the people already in.
     func update(id: String, _ draft: EventDraft) async throws -> SportEvent {
         let event = try find(id)
         guard event.isHosted(by: identity.currentUserID) else { throw AppError.notHost }
-        guard draft.allowsExtraParticipants || draft.capacity >= event.participantCount else { throw AppError.capacityTooLow }
+        guard draft.playerLimit != .maximum || draft.capacity >= event.participantCount else { throw AppError.capacityTooLow }
         let updated = store(event.updating(with: draft))
         logger.info(.events, "Mock event \(updated.id) updated (\(updated.spotsDescription))")
         return updated
@@ -119,7 +119,8 @@ nonisolated enum MockEventFixtures {
         let title: String
         let type: EventType
         let location: String
-        let capacity: Int
+        /// `nil` for a game without a limit.
+        let capacity: Int?
         /// Fixed per template so the feed shows every capacity state: empty-ish, half, nearly full (amber), full, and
         /// (with `allowsExtraParticipants`) short of and past the number needed.
         let participants: Int
@@ -190,7 +191,7 @@ nonisolated enum MockEventFixtures {
             title: "Easy 8k loop",
             type: .running,
             location: "Canal Path",
-            capacity: 12,
+            capacity: nil,
             participants: 5,
             host: "Aiko",
             offset: (-0.2, 0.7),

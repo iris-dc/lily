@@ -63,9 +63,7 @@ final class CreateEventViewModel {
     /// The earliest start the date picker offers.
     var earliestStart: Date { EventDraft.earliestStart(now: now()) }
 
-    var capacityRange: ClosedRange<Int> {
-        EventDraft.Rules.creation.capacityRange(allowsExtraParticipants: draft.allowsExtraParticipants)
-    }
+    var capacityRange: ClosedRange<Int> { EventDraft.Rules.creation.capacityRange(for: draft.playerLimit) }
 
     /// The row shows for a preset group and for anyone in a group, so a member who may not host still sees why.
     var showsGroupRow: Bool { lockedGroup != nil || belongsToGroups }

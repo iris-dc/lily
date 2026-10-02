@@ -128,7 +128,7 @@ final class EventDetailViewModel {
     }
 
     private func logSuccess(_ action: String, _ updated: SportEvent) {
-        logger.info(.events, "\(action) succeeded for event \(updated.id): \(updated.participantCount)/\(updated.capacity)")
+        logger.info(.events, "\(action) succeeded for event \(updated.id): \(updated.countDescription)")
         if updated.isFull { logger.info(.events, "Capacity reached for event \(updated.id)") }
     }
 
@@ -159,7 +159,7 @@ final class EventDetailViewModel {
             return nil
         }
         apply(fresh)
-        logger.info(.events, "Refreshed event \(event.id) after \(appError): \(fresh.participantCount)/\(fresh.capacity)")
+        logger.info(.events, "Refreshed event \(event.id) after \(appError): \(fresh.countDescription)")
         await loadParticipants()
         return fresh
     }

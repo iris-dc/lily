@@ -49,12 +49,22 @@ struct MockEventRepositoryUpdateTests {
         let created = try await repository.create(.fixture())
         var draft = EventDraft(editing: created)
         draft.capacity = 0
-        draft.allowsExtraParticipants = true
+        draft.playerLimit = .minimum
 
         let updated = try await repository.update(id: created.id, draft)
 
         #expect(updated.capacity == 0 && updated.allowsExtraParticipants && updated.participantCount == 1)
         #expect(!updated.isFull)
+    }
+
+    @Test func liftingTheLimitDropsTheCapacity() async throws {
+        let created = try await repository.create(.fixture())
+        var draft = EventDraft(editing: created)
+        draft.playerLimit = .unlimited
+
+        let updated = try await repository.update(id: created.id, draft)
+
+        #expect(updated.capacity == nil && updated.playerLimit == .unlimited && !updated.isFull)
     }
 
     @Test func anUnknownGameIsNotFound() async {

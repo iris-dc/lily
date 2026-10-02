@@ -24,7 +24,7 @@ nonisolated enum AccessibilityIdentifiers {
     static let createMap = "create-map"
     static let createMapDone = "create-map-done"
     static let createCapacity = "create-capacity"
-    static let createAllowsExtraParticipants = "create-allows-extra"
+    static let createPlayerLimit = "create-player-limit"
     static let createPrice = "create-price"
     static let createSubmit = "create-submit"
     static let createCancel = "create-cancel"

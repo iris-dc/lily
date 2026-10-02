@@ -8,7 +8,8 @@ nonisolated struct UpdateEventPayload: Encodable, Equatable, Sendable {
     let type: EventType
     let startsAt: Date
     let location: CreateEventPayload.Location
-    let capacity: Int
+    /// Omitted for a game without a limit, which the backend reads as lifting one.
+    let capacity: Int?
     let allowsExtraParticipants: Bool
     let description: String?
     let lookingFor: String?
@@ -22,7 +23,7 @@ nonisolated struct UpdateEventPayload: Encodable, Equatable, Sendable {
         type = draft.type
         startsAt = draft.startsAt
         location = CreateEventPayload.Location(name: draft.trimmedLocationName, coordinate: coordinate)
-        capacity = draft.capacity
+        capacity = draft.capacityIfLimited
         allowsExtraParticipants = draft.allowsExtraParticipants
         description = draft.trimmedDescription
         lookingFor = draft.trimmedLookingFor

@@ -48,7 +48,7 @@ final class EditEventViewModel {
 
     var earliestStart: Date { EventDraft.earliestStart(now: now(), rules: rules) }
 
-    var capacityRange: ClosedRange<Int> { rules.capacityRange(allowsExtraParticipants: draft.allowsExtraParticipants) }
+    var capacityRange: ClosedRange<Int> { rules.capacityRange(for: draft.playerLimit) }
 
     /// The group a game is hosted in cannot change, so the row shows it read-only, or not at all for a game of its own.
     var lockedGroup: EventGroupRef? { original.group }

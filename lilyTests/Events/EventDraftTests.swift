@@ -49,7 +49,7 @@ struct EventDraftTests {
 
         #expect(draft.title.isEmpty && draft.locationName.isEmpty && draft.coordinate == nil)
         #expect(draft.type == .football)
-        #expect(draft.capacity == Self.limits.defaultCapacity && !draft.allowsExtraParticipants)
+        #expect(draft.capacity == Self.limits.defaultCapacity && draft.playerLimit == .maximum)
         #expect(draft.skillLevel == nil && draft.price == nil && draft.isFree)
         #expect(issues(of: draft) == [.titleMissing, .locationNameMissing, .coordinateMissing])
         #expect(!draft.isValid(now: Self.now))

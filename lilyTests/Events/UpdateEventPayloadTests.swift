@@ -20,7 +20,7 @@ struct UpdateEventPayloadTests {
         var draft = EventDraft.fixture(now: Self.now)
         draft.type = .tennis
         draft.capacity = 4
-        draft.allowsExtraParticipants = true
+        draft.playerLimit = .minimum
         draft.description = "Bring both colours"
         draft.lookingFor = "One more"
         draft.skillLevel = .intermediate
@@ -62,6 +62,16 @@ struct UpdateEventPayloadTests {
         let payload = try #require(UpdateEventPayload(draft: draft))
 
         #expect(payload.title == "Sunset 5-a-side" && payload.location.name == "Riverside Pitch 2")
+    }
+
+    /// An absent capacity lifts the limit on the backend, so an unlimited draft leaves the key out.
+    @Test func liftingTheLimitLeavesTheCapacityOut() throws {
+        var draft = EventDraft.fixture(now: Self.now)
+        draft.playerLimit = .unlimited
+
+        let json = try encode(try #require(UpdateEventPayload(draft: draft)))
+
+        #expect(json["capacity"] == nil && json["allowsExtraParticipants"] as? Bool == false)
     }
 
     @Test func aDraftWithoutACoordinateHasNoPayload() {

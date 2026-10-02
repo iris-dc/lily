@@ -34,7 +34,7 @@ struct EventDraftEditingTests {
         #expect(draft.clientId == event.id)
         #expect(draft.title == event.title && draft.type == event.type && draft.startsAt == event.startsAt)
         #expect(draft.locationName == event.locationName && draft.coordinate == event.location.coordinate)
-        #expect(draft.capacity == event.capacity && draft.allowsExtraParticipants)
+        #expect(draft.capacity == event.capacity && draft.playerLimit == .minimum)
         #expect(draft.description == "Two halves" && draft.lookingFor.isEmpty)
         #expect(draft.skillLevel == .intermediate && draft.price == 5)
         #expect(draft.group == Self.kickers)
@@ -48,13 +48,38 @@ struct EventDraftEditingTests {
         #expect(event.updating(with: EventDraft(editing: event)) == event)
     }
 
+    /// A game without a limit has no capacity to carry: the draft holds a number for the stepper (the default, or the
+    /// people in when more than that are, so a cap starts at its floor), judges nothing about it, and hands none back.
+    @Test func aGameWithoutALimitRoundTripsThroughAProposedCapacity() {
+        let unlimited = SportEvent.fixture(capacity: nil,
+                                           participants: 30,
+                                           startsAt: Self.now.addingTimeInterval(3600),
+                                           hostUserId: "marta",
+                                           isJoined: true)
+        var draft = EventDraft(editing: unlimited)
+
+        #expect(draft.playerLimit == .unlimited && draft.capacity == 30)
+        let few = EventDraft(editing: .fixture(capacity: nil, participants: 3))
+        #expect(few.capacity == AppConfig.Events.Creation.defaultCapacity)
+        #expect(draft.capacityIfLimited == nil && !draft.allowsExtraParticipants)
+        #expect(unlimited.updating(with: draft) == unlimited)
+        draft.capacity = 1
+        #expect(draft.issues(now: Self.now, rules: .editing(participantCount: 30)).isEmpty, "an unsent number is not judged")
+        draft.playerLimit = .maximum
+        #expect(draft.issues(now: Self.now, rules: .editing(participantCount: 30)) == [.capacityOutOfRange])
+        draft.capacity = 10
+        #expect(draft.issues(now: Self.now, rules: .editing(participantCount: 30)) == [.capacityBelowParticipants],
+                "capping below the people in is refused, as on the backend")
+        #expect(unlimited.updating(with: draft).capacity == 10)
+    }
+
     @Test func updatingTakesTheDraftsFieldsAndKeepsWhoIsInAndWhoHosts() {
         let event = Self.makeEvent()
         var draft = EventDraft(editing: event)
         draft.title = "  Late kick-off "
         draft.startsAt = Self.now.addingTimeInterval(7200)
         draft.capacity = 12
-        draft.allowsExtraParticipants = false
+        draft.playerLimit = .maximum
         draft.description = "   "
         draft.lookingFor = "Two defenders"
         draft.skillLevel = nil
@@ -89,18 +114,18 @@ struct EventDraftEditingTests {
     /// people in, which is what the backend's condition allows too.
     @Test func editingRulesFloorTheCapacityAtThePeopleAlreadyInUnlessExtrasAreAllowed() {
         var draft = EventDraft(editing: Self.makeEvent())
-        draft.allowsExtraParticipants = false
+        draft.playerLimit = .maximum
         let rules = EventDraft.Rules.editing(participantCount: 6)
         let limits = AppConfig.Events.Creation.capacityRange
-        #expect(rules.capacityRange(allowsExtraParticipants: false) == 6...limits.upperBound)
-        #expect(rules.capacityRange(allowsExtraParticipants: true) == limits)
-        #expect(EventDraft.Rules.editing(participantCount: 1).capacityRange(allowsExtraParticipants: false) == limits,
+        #expect(rules.capacityRange(for: .maximum) == 6...limits.upperBound)
+        #expect(rules.capacityRange(for: .minimum) == limits && rules.capacityRange(for: .unlimited) == limits)
+        #expect(EventDraft.Rules.editing(participantCount: 1).capacityRange(for: .maximum) == limits,
                 "the host alone never lowers the floor below the backend's minimum")
 
         draft.capacity = 5
         #expect(draft.issues(now: Self.now, rules: rules) == [.capacityBelowParticipants])
         #expect(draft.issues(now: Self.now).isEmpty, "a create has no participants to protect")
-        draft.allowsExtraParticipants = true
+        draft.playerLimit = .minimum
         #expect(draft.issues(now: Self.now, rules: rules).isEmpty, "needing fewer than are in is fine when more may join")
         draft.capacity = 1
         #expect(draft.issues(now: Self.now, rules: rules) == [.capacityOutOfRange], "outside the range comes first")

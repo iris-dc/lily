@@ -22,20 +22,22 @@ struct MockEventRepositoryTests {
     }
 
     /// A cap is never exceeded; a game that allows extras may stand past the number it needs.
-    @Test func fixturesNeverExceedACap() {
-        for event in MockEventFixtures.make(now: .now, count: 40) where !event.allowsExtraParticipants {
-            #expect(event.participantCount <= event.capacity)
+    @Test func fixturesNeverExceedACap() throws {
+        for event in MockEventFixtures.make(now: .now, count: 40) where event.playerLimit == .maximum {
+            let capacity = try #require(event.capacity)
+            #expect(event.participantCount <= capacity)
             #expect(event.spotsLeft >= 0)
         }
     }
 
-    /// Explore shows a game short of the players it needs and one past them, neither of which can be full.
-    @Test func feedSizedFixturesShowAGameThatAllowsExtrasOnBothSidesOfItsNumber() {
-        let open = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize)
-            .filter { $0.isListed && $0.allowsExtraParticipants }
-        #expect(open.contains { !$0.hasPlayersNeeded })
-        #expect(open.contains { $0.participantCount > $0.capacity })
-        #expect(open.allSatisfy { !$0.isFull })
+    /// Explore shows a game short of the players it needs, one past them and one without any limit; none can be full.
+    @Test func feedSizedFixturesShowEveryKindOfOpenGame() {
+        let listed = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize).filter(\.isListed)
+        let needing = listed.filter { $0.playerLimit == .minimum }
+        #expect(needing.contains { !$0.hasPlayersNeeded })
+        #expect(needing.contains { $0.hasPlayersNeeded && $0.spotsLeft == 0 })
+        #expect(listed.contains { $0.playerLimit == .unlimited && $0.participantCount > 0 })
+        #expect(listed.filter { $0.playerLimit != .maximum }.allSatisfy { !$0.isFull })
     }
 
     @Test func fixturesAreInTheFutureAndChronological() {

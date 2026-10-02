@@ -87,7 +87,7 @@ struct CreateEventViewModelTests {
         #expect(!harness.viewModel.isSubmitting)
         #expect(harness.errorCenter.current == nil)
         let creationLines = harness.logger.messages(in: .events, at: .info).filter { $0.contains("Event created") }
-        #expect(creationLines.contains { $0.contains(created.id) && $0.contains("\(created.capacity) spots") })
+        #expect(creationLines.contains { $0.contains(created.id) && $0.contains(created.spotsDescription) })
     }
 
     @Test func submitIsIgnoredWhileTheDraftHasIssues() async {

@@ -138,6 +138,8 @@ enum ContractSamples {
     "isJoined":false,"description":"Bring both colours","skillLevel":"intermediate","price":{"amount":7.5,"currencyCode":"EUR"}}
     """
     static let eventList = "[\(event)]"
+    /// A game without a limit: the backend omits `capacity` altogether.
+    static let unlimitedEvent = minimalEvent.replacingOccurrences(of: #""capacity":2,"#, with: "")
     static let minimalEvent = """
     {"id":"evt_02","title":"Anything goes","type":"other","startsAt":"2026-09-13T17:00:00Z",\
     "location":{"name":"Park","coordinate":{"latitude":52.5,"longitude":13.4}},"capacity":2,"participantCount":1,"hostName":"Dev"}
