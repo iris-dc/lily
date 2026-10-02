@@ -77,6 +77,24 @@ struct SportEventTests {
         #expect(manyLeft.capacityText == "1 of 4 joined")
     }
 
+    /// With extras allowed the capacity is a target: the game is never full, never amber, and the copy counts towards and
+    /// past the number needed instead of down to a cap.
+    @Test func aGameThatAllowsExtrasIsNeverFull() {
+        let short = SportEvent.fixture(capacity: 4, allowsExtraParticipants: true, participants: 1)
+        let exact = SportEvent.fixture(capacity: 4, allowsExtraParticipants: true, participants: 4)
+        let crowded = SportEvent.fixture(capacity: 4, allowsExtraParticipants: true, participants: 6)
+
+        #expect(!short.hasPlayersNeeded && exact.hasPlayersNeeded && crowded.hasPlayersNeeded)
+        #expect(!short.isFull && !exact.isFull && !crowded.isFull)
+        #expect(!SportEvent.fixture(capacity: 4, allowsExtraParticipants: true, participants: 3).isNearlyFull)
+        #expect(crowded.fillRatio == 1 && crowded.spotsLeft == 0)
+        #expect(short.availabilityText == "3 more needed" && short.capacityText == "1 joined · 4 needed")
+        #expect(exact.availabilityText == "4 joined" && exact.capacityText == "4 joined · 4 needed")
+        #expect(crowded.availabilityText == "6 joined" && crowded.capacityText == "6 joined · 4 needed")
+        #expect(Participation(event: crowded, userID: "u-1") == .join)
+        #expect(crowded.updatingParticipation(count: 7, isJoined: true).allowsExtraParticipants)
+    }
+
     @Test func participationDefaultsToNotJoined() {
         #expect(!makeEvent(capacity: 4, participants: 1).participates)
         #expect(makeEvent(capacity: 4, participants: 1).updatingParticipation(count: 2, isJoined: true).participates)
@@ -113,6 +131,7 @@ struct SportEventCodingTests {
         #expect(event.startsAt == Date(timeIntervalSince1970: 1_789_318_800))
         #expect(event.location.coordinate == Coordinate(latitude: 52.529, longitude: 13.387))
         #expect(event.capacity == 10)
+        #expect(!event.allowsExtraParticipants)
         #expect(event.participantCount == 6)
         #expect(event.hostUserId == "seed-marta")
         #expect(event.hostName == "Marta")
@@ -123,9 +142,10 @@ struct SportEventCodingTests {
         #expect(event.price == Price(amount: 7.5, currencyCode: "EUR"))
     }
 
-    /// Optional fields are absent rather than `null`.
+    /// Optional fields are absent rather than `null`, and a payload from before `allowsExtraParticipants` is capped.
     @Test func optionalFieldsMayBeAbsent() throws {
         let event = try decoder.decode(SportEvent.self, from: Data(ContractSamples.minimalEvent.utf8))
+        #expect(!event.allowsExtraParticipants)
         #expect(event.hostUserId == nil)
         #expect(event.isJoined == nil)
         #expect(!event.participates)
@@ -156,6 +176,18 @@ struct SportEventCodingTests {
         let json = try #require(String(bytes: APIJSONCoding.makeEncoder().encode(event), encoding: .utf8))
         #expect(json.contains(#""type":"football""#))
         #expect(json.contains(#""participantCount":6"#))
+        #expect(json.contains(#""allowsExtraParticipants":false"#))
         #expect(!json.contains(#""sport""#))
+    }
+
+    @Test func allowsExtraParticipantsRoundTripsWhenPresent() throws {
+        let open = ContractSamples.event
+            .replacingOccurrences(of: #""allowsExtraParticipants":false"#, with: #""allowsExtraParticipants":true"#)
+
+        let event = try decoder.decode(SportEvent.self, from: Data(open.utf8))
+
+        #expect(event.allowsExtraParticipants && !event.isFull)
+        let json = try #require(String(bytes: APIJSONCoding.makeEncoder().encode(event), encoding: .utf8))
+        #expect(json.contains(#""allowsExtraParticipants":true"#))
     }
 }

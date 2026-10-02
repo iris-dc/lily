@@ -5,14 +5,19 @@ nonisolated struct EventLocation: Hashable, Codable, Sendable {
     let coordinate: Coordinate
 }
 
-/// Decodes the backend's `Event` directly: same keys, same optionality.
+/// Decodes the backend's `Event` directly: same keys, same optionality. `CodingKeys` and `init(from:)` are written out
+/// for one reason: `allowsExtraParticipants` reads as `false` when absent, so fixtures and payloads from before it keep
+/// decoding, while the synthesized encoder still writes it.
 nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     let id: String
     let title: String
     let type: EventType
     let startsAt: Date
     let location: EventLocation
+    /// The players the host wants: a cap, or with `allowsExtraParticipants` the number needed.
     let capacity: Int
+    /// Whether players may join past `capacity`; such a game is never full.
+    let allowsExtraParticipants: Bool
     let participantCount: Int
     let hostName: String
     /// Set by the backend; `nil` for fixtures, which predate hosts having ids.
@@ -35,6 +40,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
          startsAt: Date,
          location: EventLocation,
          capacity: Int,
+         allowsExtraParticipants: Bool = false,
          participantCount: Int,
          hostName: String,
          hostUserId: String? = nil,
@@ -50,6 +56,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
         self.startsAt = startsAt
         self.location = location
         self.capacity = capacity
+        self.allowsExtraParticipants = allowsExtraParticipants
         self.participantCount = participantCount
         self.hostName = hostName
         self.hostUserId = hostUserId
@@ -61,13 +68,45 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
         self.group = group
     }
 
+    enum CodingKeys: String, CodingKey {
+        case id, title, type, startsAt, location, capacity, allowsExtraParticipants, participantCount, hostName, hostUserId
+        case isJoined, description, lookingFor, skillLevel, price, group
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        type = try container.decode(EventType.self, forKey: .type)
+        startsAt = try container.decode(Date.self, forKey: .startsAt)
+        location = try container.decode(EventLocation.self, forKey: .location)
+        capacity = try container.decode(Int.self, forKey: .capacity)
+        allowsExtraParticipants = try container.decodeIfPresent(Bool.self, forKey: .allowsExtraParticipants) ?? false
+        participantCount = try container.decode(Int.self, forKey: .participantCount)
+        hostName = try container.decode(String.self, forKey: .hostName)
+        hostUserId = try container.decodeIfPresent(String.self, forKey: .hostUserId)
+        isJoined = try container.decodeIfPresent(Bool.self, forKey: .isJoined)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        lookingFor = try container.decodeIfPresent(String.self, forKey: .lookingFor)
+        skillLevel = try container.decodeIfPresent(SkillLevel.self, forKey: .skillLevel)
+        price = try container.decodeIfPresent(Price.self, forKey: .price)
+        group = try container.decodeIfPresent(EventGroupRef.self, forKey: .group)
+    }
+
     var locationName: String { location.name }
+    /// Seats under the cap; zero for a game that allows extras once the needed number is in.
     var spotsLeft: Int { max(capacity - participantCount, 0) }
-    var isFull: Bool { spotsLeft == 0 }
-    var isNearlyFull: Bool { !isFull && fillRatio >= AppConfig.Events.nearlyFullRatio }
+    /// A game that allows extras is never full; any other is once the count reaches the cap.
+    var isFull: Bool { !allowsExtraParticipants && spotsLeft == 0 }
+    /// Amber warns that a cap is near; a game that allows extras has no cap to warn about.
+    var isNearlyFull: Bool { !allowsExtraParticipants && !isFull && fillRatio >= AppConfig.Events.nearlyFullRatio }
+    /// The people the host asked for are in; what a game that allows extras counts up to before it counts past.
+    var hasPlayersNeeded: Bool { participantCount >= capacity }
     var fillRatio: Double { capacity > 0 ? min(1, Double(participantCount) / Double(capacity)) : 0 }
     var participates: Bool { isJoined ?? false }
     var isFree: Bool { price?.isFree ?? true }
+    /// For the create and update log lines: the shape of the capacity, never a name.
+    var spotsDescription: String { "\(capacity) spots" + (allowsExtraParticipants ? ", extras allowed" : "") }
     /// Whether Explore lists the event, the backend's rule repeated on device: every ungrouped game and those of public
     /// groups; a private group's game is found under its group and on Home only.
     var isListed: Bool { !(group?.isPrivate ?? false) }
@@ -95,6 +134,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
                    location: EventLocation(name: draft.trimmedLocationName,
                                            coordinate: draft.coordinate ?? location.coordinate),
                    capacity: draft.capacity,
+                   allowsExtraParticipants: draft.allowsExtraParticipants,
                    participantCount: participantCount,
                    hostName: hostName,
                    hostUserId: hostUserId,
@@ -114,6 +154,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
                    startsAt: startsAt,
                    location: location,
                    capacity: capacity,
+                   allowsExtraParticipants: allowsExtraParticipants,
                    participantCount: count,
                    hostName: hostName,
                    hostUserId: hostUserId,
@@ -128,14 +169,22 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
 
 /// The one source for how many seats are open, so no two surfaces can disagree about a full event.
 extension SportEvent {
-    /// Short form for compact cards: "Full" or "3 spots left".
+    /// Short form for compact cards: "Full" or "3 spots left" under a cap; "3 more needed" or "12 joined" for a game
+    /// that allows extras.
     var availabilityText: String {
-        isFull ? AppBranding.Events.full : AppBranding.Events.spotsLeft(spotsLeft)
+        if allowsExtraParticipants {
+            return hasPlayersNeeded ? AppBranding.Events.joinedCount(participantCount) : AppBranding.Events.moreNeeded(spotsLeft)
+        }
+        return isFull ? AppBranding.Events.full : AppBranding.Events.spotsLeft(spotsLeft)
     }
 
-    /// Long form under the capacity bar: "Full" or "7 of 10 joined", counting the way the bar fills.
+    /// Long form under the capacity bar: "Full" or "7 of 10 joined" under a cap, counting the way the bar fills;
+    /// "7 joined · 10 needed" for a game that allows extras, whatever side of the number it is on.
     var capacityText: String {
-        isFull ? AppBranding.Events.full : AppBranding.Events.joined(participantCount, of: capacity)
+        if allowsExtraParticipants {
+            return AppBranding.Events.joined(participantCount, needed: capacity)
+        }
+        return isFull ? AppBranding.Events.full : AppBranding.Events.joined(participantCount, of: capacity)
     }
 }
 

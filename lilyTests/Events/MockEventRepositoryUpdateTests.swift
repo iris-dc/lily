@@ -44,6 +44,19 @@ struct MockEventRepositoryUpdateTests {
         #expect(try await repository.event(id: created.id) == created)
     }
 
+    /// With extras allowed the capacity is a target, so the host may need fewer than are in, as on the backend.
+    @Test func needingFewerThanAreInIsFineWhileExtrasAreAllowed() async throws {
+        let created = try await repository.create(.fixture())
+        var draft = EventDraft(editing: created)
+        draft.capacity = 0
+        draft.allowsExtraParticipants = true
+
+        let updated = try await repository.update(id: created.id, draft)
+
+        #expect(updated.capacity == 0 && updated.allowsExtraParticipants && updated.participantCount == 1)
+        #expect(!updated.isFull)
+    }
+
     @Test func anUnknownGameIsNotFound() async {
         await #expect(throws: AppError.eventNotFound) {
             try await repository.update(id: "nope", .fixture())

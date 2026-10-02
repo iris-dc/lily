@@ -108,16 +108,24 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
         }
     }
 
+    /// How many players, and whether that number is a cap or the number needed: the stepper's label says which.
     private var playersSection: some View {
         Section {
             Stepper(value: $viewModel.draft.capacity, in: viewModel.capacityRange) {
-                Text(Copy.capacity(viewModel.draft.capacity))
+                Text(Copy.capacity(viewModel.draft.capacity, needed: viewModel.draft.allowsExtraParticipants))
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.createCapacity)
+            Toggle(Copy.allowsExtraParticipants, isOn: $viewModel.draft.allowsExtraParticipants)
+                .accessibilityIdentifier(AccessibilityIdentifiers.createAllowsExtraParticipants)
         } header: {
             Text(Copy.playersSection)
         } footer: {
-            issueText(viewModel.issue(for: .capacityOutOfRange, .capacityBelowParticipants))
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                if viewModel.draft.allowsExtraParticipants {
+                    Text(Copy.allowsExtraParticipantsHint)
+                }
+                issueText(viewModel.issue(for: .capacityOutOfRange, .capacityBelowParticipants))
+            }
         }
     }
 

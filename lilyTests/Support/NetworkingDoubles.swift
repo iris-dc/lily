@@ -134,8 +134,8 @@ enum ContractSamples {
     static let event = """
     {"id":"evt_01J","title":"Sunset 5-a-side","type":"football","startsAt":"2026-09-13T17:00:00Z",\
     "location":{"name":"Riverside Pitch 2","coordinate":{"latitude":52.529,"longitude":13.387}},\
-    "capacity":10,"participantCount":6,"hostUserId":"seed-marta","hostName":"Marta","isJoined":false,\
-    "description":"Bring both colours","skillLevel":"intermediate","price":{"amount":7.5,"currencyCode":"EUR"}}
+    "capacity":10,"allowsExtraParticipants":false,"participantCount":6,"hostUserId":"seed-marta","hostName":"Marta",\
+    "isJoined":false,"description":"Bring both colours","skillLevel":"intermediate","price":{"amount":7.5,"currencyCode":"EUR"}}
     """
     static let eventList = "[\(event)]"
     static let minimalEvent = """

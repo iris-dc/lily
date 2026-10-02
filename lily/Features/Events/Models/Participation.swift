@@ -6,7 +6,7 @@ nonisolated enum Participation: Equatable, Sendable {
     case hidden
     case join
     case leave
-    /// No spots left and the caller is not in, so there is nothing to do.
+    /// No spots left and the caller is not in, so there is nothing to do; never for a game that allows extras.
     case full
     /// The host is in for good; neither join nor leave applies.
     case hosting

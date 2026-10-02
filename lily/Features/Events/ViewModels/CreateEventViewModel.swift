@@ -63,7 +63,9 @@ final class CreateEventViewModel {
     /// The earliest start the date picker offers.
     var earliestStart: Date { EventDraft.earliestStart(now: now()) }
 
-    var capacityRange: ClosedRange<Int> { EventDraft.Rules.creation.capacityRange }
+    var capacityRange: ClosedRange<Int> {
+        EventDraft.Rules.creation.capacityRange(allowsExtraParticipants: draft.allowsExtraParticipants)
+    }
 
     /// The row shows for a preset group and for anyone in a group, so a member who may not host still sees why.
     var showsGroupRow: Bool { lockedGroup != nil || belongsToGroups }
@@ -95,7 +97,7 @@ final class CreateEventViewModel {
         do {
             let event = try await repository.create(draft)
             await accept(event)
-            logger.info(.events, "Event created \(event.id) (\(event.capacity) spots)\(Self.groupSuffix(for: event))")
+            logger.info(.events, "Event created \(event.id) (\(event.spotsDescription))\(Self.groupSuffix(for: event))")
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logger.error(.events, "Create failed: \(error)")

@@ -85,6 +85,14 @@ class LilyUITestCase: XCTestCase {
         item.tap()
     }
 
+    /// Flips a SwiftUI `Toggle` in a `Form`. Its one accessibility element spans the whole row, so a plain `tap()` lands
+    /// on the label and flips nothing; the switch sits at the trailing end.
+    @MainActor
+    func flip(_ toggle: XCUIElement) {
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5), "missing toggle")
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+    }
+
     /// Focuses a text field and types into it.
     @MainActor
     func enter(_ text: String, into field: XCUIElement) {

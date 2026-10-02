@@ -87,17 +87,18 @@ final class MockEventRepository: EventRepository {
                                     hostName: AppBranding.Events.Create.mockHostName,
                                     coordinate: coordinate)
         events.append(event)
-        logger.info(.events, "Mock event \(event.id) created (\(event.capacity) spots)")
+        logger.info(.events, "Mock event \(event.id) created (\(event.spotsDescription))")
         return event
     }
 
-    /// Like the backend: the host alone, and never fewer spots than people already in.
+    /// Like the backend: the host alone, and never fewer spots than people already in unless the draft allows extras.
     func update(id: String, _ draft: EventDraft) async throws -> SportEvent {
         let event = try find(id)
         guard event.isHosted(by: identity.currentUserID) else { throw AppError.notHost }
-        guard draft.capacity >= event.participantCount else { throw AppError.capacityTooLow }
-        logger.info(.events, "Mock event \(event.id) updated (\(draft.capacity) spots)")
-        return store(event.updating(with: draft))
+        guard draft.allowsExtraParticipants || draft.capacity >= event.participantCount else { throw AppError.capacityTooLow }
+        let updated = store(event.updating(with: draft))
+        logger.info(.events, "Mock event \(updated.id) updated (\(updated.spotsDescription))")
+        return updated
     }
 
     private func find(_ eventId: String) throws -> SportEvent {
@@ -119,8 +120,10 @@ nonisolated enum MockEventFixtures {
         let type: EventType
         let location: String
         let capacity: Int
-        /// Fixed per template so the feed shows every capacity state: empty-ish, half, nearly full (amber) and full.
+        /// Fixed per template so the feed shows every capacity state: empty-ish, half, nearly full (amber), full, and
+        /// (with `allowsExtraParticipants`) short of and past the number needed.
         let participants: Int
+        var allowsExtraParticipants = false
         let host: String
         /// Offset from the demo centre as a fraction of `AppConfig.Location.fixtureSpreadDegrees`.
         let offset: (lat: Double, lon: Double)
@@ -211,6 +214,7 @@ nonisolated enum MockEventFixtures {
             location: "Old Mill Car Park",
             capacity: 15,
             participants: 3,
+            allowsExtraParticipants: true,
             host: "Sam",
             offset: (0.5, 1.0),
             description: "60 km with two proper climbs. Bring lights for the way back.",
@@ -220,8 +224,9 @@ nonisolated enum MockEventFixtures {
             title: "Bouldering intro",
             type: .climbing,
             location: "Crux Climbing",
-            capacity: 6,
-            participants: 2,
+            capacity: 4,
+            participants: 6,
+            allowsExtraParticipants: true,
             host: "Noor",
             offset: (-0.7, -0.3)
         ),
@@ -254,6 +259,7 @@ nonisolated enum MockEventFixtures {
                 startsAt: now.addingTimeInterval(hoursAhead * secondsPerHour),
                 location: EventLocation(name: template.location, coordinate: coordinate(for: template)),
                 capacity: template.capacity,
+                allowsExtraParticipants: template.allowsExtraParticipants,
                 participantCount: template.participants,
                 hostName: template.host,
                 description: template.description,

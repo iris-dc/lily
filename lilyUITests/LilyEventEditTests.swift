@@ -41,6 +41,32 @@ final class LilyEventEditTests: LilyUITestCase {
         XCTAssertFalse(app.staticTexts["Thursday five-a-side"].exists, "the old title must be gone")
     }
 
+    /// "Allow extra players" turns the stepper's count into the number needed, and the created game counts towards it
+    /// instead of down to a cap.
+    @MainActor
+    func testCreatingAGameThatAllowsExtraPlayersCountsTowardsTheNumberNeeded() {
+        tapSignInWithApple()
+        tapCreateButton()
+        XCTAssertTrue(app.navigationBars["New game"].waitForExistence(timeout: 5))
+        enter("Open run", into: app.textFields["create-title"])
+        enter("Canal Path", into: app.textFields["create-location-name"])
+        XCTAssertTrue(app.staticTexts["10 players"].exists, "the stepper names a cap until extras are allowed")
+
+        let toggle = app.switches["create-allows-extra"]
+        if !toggle.isHittable { app.swipeUp() }
+        flip(toggle)
+        XCTAssertTrue(app.staticTexts["10 players needed"].waitForExistence(timeout: 5), "the stepper names the number needed")
+        app.buttons["create-submit"].tap()
+        XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+
+        app.tabBars.buttons["Home"].tap()
+        let card = app.staticTexts["Open run"]
+        if !card.waitForExistence(timeout: 10) { app.swipeUp() }
+        XCTAssertTrue(card.waitForExistence(timeout: 5), "the hosted game must be listed under Home")
+        card.tap()
+        XCTAssertTrue(app.staticTexts["1 joined · 10 needed"].waitForExistence(timeout: 5), "the bar counts towards the number")
+    }
+
     @MainActor
     func testAParticipantSeesNoEditButton() {
         tapSignInWithApple()

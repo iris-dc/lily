@@ -5,7 +5,9 @@ import Testing
 /// The body of `POST /api/events`, key for key as the backend's `CreateEventRequest` reads it.
 struct CreateEventPayloadTests {
     private static let now = Date(timeIntervalSince1970: 1_800_000_000)
-    private static let requiredKeys: Set<String> = ["clientEventId", "title", "type", "startsAt", "location", "capacity"]
+    private static let requiredKeys: Set<String> = [
+        "clientEventId", "title", "type", "startsAt", "location", "capacity", "allowsExtraParticipants",
+    ]
     private static let optionalKeys: Set<String> = ["description", "lookingFor", "skillLevel", "price", "groupId"]
     private static let kickers = EventGroupRef(id: "7b1c2d3e", name: "Kreuzberg Kickers", visibility: .public, isDeleted: false)
 
@@ -14,6 +16,7 @@ struct CreateEventPayloadTests {
         var draft = EventDraft.fixture(now: now, clientId: "3f2504e0-4f89-11d3-9a0c-0305e82c3301")
         draft.type = .tennis
         draft.capacity = 4
+        draft.allowsExtraParticipants = true
         draft.description = "Bring both colours"
         draft.lookingFor = "One more"
         draft.skillLevel = .intermediate
@@ -40,6 +43,7 @@ struct CreateEventPayloadTests {
         #expect(json["type"] as? String == "tennis")
         #expect(json["startsAt"] as? String == "2027-01-16T08:00:00Z")
         #expect(json["capacity"] as? Int == 4)
+        #expect(json["allowsExtraParticipants"] as? Bool == true)
         #expect(json["description"] as? String == "Bring both colours")
         #expect(json["lookingFor"] as? String == "One more")
         #expect(json["skillLevel"] as? String == "intermediate")
@@ -70,6 +74,7 @@ struct CreateEventPayloadTests {
         let json = try encode(payload)
 
         #expect(Set(json.keys) == Self.requiredKeys)
+        #expect(json["allowsExtraParticipants"] as? Bool == false, "always sent, so the backend never guesses")
         #expect(payload.description == nil && payload.lookingFor == nil)
         #expect(payload.skillLevel == nil && payload.price == nil)
     }

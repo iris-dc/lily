@@ -21,11 +21,21 @@ struct MockEventRepositoryTests {
         #expect(joined.allSatisfy(upcoming.contains))
     }
 
-    @Test func fixturesNeverExceedCapacity() {
-        for event in MockEventFixtures.make(now: .now, count: 40) {
+    /// A cap is never exceeded; a game that allows extras may stand past the number it needs.
+    @Test func fixturesNeverExceedACap() {
+        for event in MockEventFixtures.make(now: .now, count: 40) where !event.allowsExtraParticipants {
             #expect(event.participantCount <= event.capacity)
             #expect(event.spotsLeft >= 0)
         }
+    }
+
+    /// Explore shows a game short of the players it needs and one past them, neither of which can be full.
+    @Test func feedSizedFixturesShowAGameThatAllowsExtrasOnBothSidesOfItsNumber() {
+        let open = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize)
+            .filter { $0.isListed && $0.allowsExtraParticipants }
+        #expect(open.contains { !$0.hasPlayersNeeded })
+        #expect(open.contains { $0.participantCount > $0.capacity })
+        #expect(open.allSatisfy { !$0.isFull })
     }
 
     @Test func fixturesAreInTheFutureAndChronological() {

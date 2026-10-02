@@ -34,6 +34,17 @@ struct MockEventRepositoryParticipationTests {
         #expect(!joinedAfterLeaving.contains { $0.id == open.id })
     }
 
+    /// The fixture past the players it needs still takes the caller, as the backend's condition does.
+    @Test func joinAdmitsPastTheNumberNeededWhenExtrasAreAllowed() async throws {
+        let events = try await repository.events(in: .upcoming, near: nil)
+        let crowded = try #require(events.first { $0.allowsExtraParticipants && $0.hasPlayersNeeded && !$0.participates })
+
+        let joined = try await repository.join(eventId: crowded.id)
+
+        #expect(joined.participates && joined.participantCount == crowded.participantCount + 1)
+        #expect(joined.participantCount > joined.capacity && !joined.isFull)
+    }
+
     @Test func joinRejectsFullEventsAndRepeatedJoins() async throws {
         let events = try await repository.events(in: .upcoming, near: nil)
         let fullWithoutTheCaller = events.filter { $0.isFull && !$0.participates }

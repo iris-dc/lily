@@ -48,7 +48,7 @@ final class EditEventViewModel {
 
     var earliestStart: Date { EventDraft.earliestStart(now: now(), rules: rules) }
 
-    var capacityRange: ClosedRange<Int> { rules.capacityRange }
+    var capacityRange: ClosedRange<Int> { rules.capacityRange(allowsExtraParticipants: draft.allowsExtraParticipants) }
 
     /// The group a game is hosted in cannot change, so the row shows it read-only, or not at all for a game of its own.
     var lockedGroup: EventGroupRef? { original.group }
@@ -75,7 +75,7 @@ final class EditEventViewModel {
             }
             updatedEvent = event
             onChange(event)
-            logger.info(.events, "Event \(event.id) updated (\(event.capacity) spots)")
+            logger.info(.events, "Event \(event.id) updated (\(event.spotsDescription))")
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logger.error(.events, "Update failed for event \(original.id): \(error)")

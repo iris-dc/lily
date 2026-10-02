@@ -14,6 +14,7 @@ struct EventDraftEditingTests {
                    startsAt: now.addingTimeInterval(3600),
                    location: EventLocation(name: "Riverside Pitch 2", coordinate: AppConfig.Location.mockCenter),
                    capacity: 10,
+                   allowsExtraParticipants: true,
                    participantCount: 6,
                    hostName: "Marta",
                    hostUserId: "marta",
@@ -33,7 +34,7 @@ struct EventDraftEditingTests {
         #expect(draft.clientId == event.id)
         #expect(draft.title == event.title && draft.type == event.type && draft.startsAt == event.startsAt)
         #expect(draft.locationName == event.locationName && draft.coordinate == event.location.coordinate)
-        #expect(draft.capacity == event.capacity)
+        #expect(draft.capacity == event.capacity && draft.allowsExtraParticipants)
         #expect(draft.description == "Two halves" && draft.lookingFor.isEmpty)
         #expect(draft.skillLevel == .intermediate && draft.price == 5)
         #expect(draft.group == Self.kickers)
@@ -53,6 +54,7 @@ struct EventDraftEditingTests {
         draft.title = "  Late kick-off "
         draft.startsAt = Self.now.addingTimeInterval(7200)
         draft.capacity = 12
+        draft.allowsExtraParticipants = false
         draft.description = "   "
         draft.lookingFor = "Two defenders"
         draft.skillLevel = nil
@@ -62,7 +64,7 @@ struct EventDraftEditingTests {
         let updated = event.updating(with: draft)
 
         #expect(updated.id == event.id && updated.title == "Late kick-off")
-        #expect(updated.startsAt == draft.startsAt && updated.capacity == 12)
+        #expect(updated.startsAt == draft.startsAt && updated.capacity == 12 && !updated.allowsExtraParticipants)
         #expect(updated.description == nil && updated.lookingFor == "Two defenders")
         #expect(updated.skillLevel == nil && updated.price == nil)
         #expect(updated.location.coordinate == event.location.coordinate, "a draft without a spot keeps the event's")
@@ -83,16 +85,23 @@ struct EventDraftEditingTests {
         #expect(draft.issues(now: Self.now, rules: rules) == [.startsAtTooSoon])
     }
 
-    @Test func editingRulesFloorTheCapacityAtThePeopleAlreadyIn() {
+    /// The floor protects a cap. A draft that allows extras treats the capacity as a target and may set it below the
+    /// people in, which is what the backend's condition allows too.
+    @Test func editingRulesFloorTheCapacityAtThePeopleAlreadyInUnlessExtrasAreAllowed() {
         var draft = EventDraft(editing: Self.makeEvent())
+        draft.allowsExtraParticipants = false
         let rules = EventDraft.Rules.editing(participantCount: 6)
-        #expect(rules.capacityRange == 6...AppConfig.Events.Creation.capacityRange.upperBound)
-        #expect(EventDraft.Rules.editing(participantCount: 1).capacityRange == AppConfig.Events.Creation.capacityRange,
+        let limits = AppConfig.Events.Creation.capacityRange
+        #expect(rules.capacityRange(allowsExtraParticipants: false) == 6...limits.upperBound)
+        #expect(rules.capacityRange(allowsExtraParticipants: true) == limits)
+        #expect(EventDraft.Rules.editing(participantCount: 1).capacityRange(allowsExtraParticipants: false) == limits,
                 "the host alone never lowers the floor below the backend's minimum")
 
         draft.capacity = 5
         #expect(draft.issues(now: Self.now, rules: rules) == [.capacityBelowParticipants])
         #expect(draft.issues(now: Self.now).isEmpty, "a create has no participants to protect")
+        draft.allowsExtraParticipants = true
+        #expect(draft.issues(now: Self.now, rules: rules).isEmpty, "needing fewer than are in is fine when more may join")
         draft.capacity = 1
         #expect(draft.issues(now: Self.now, rules: rules) == [.capacityOutOfRange], "outside the range comes first")
     }

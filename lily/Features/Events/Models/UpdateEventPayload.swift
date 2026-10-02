@@ -9,6 +9,7 @@ nonisolated struct UpdateEventPayload: Encodable, Equatable, Sendable {
     let startsAt: Date
     let location: CreateEventPayload.Location
     let capacity: Int
+    let allowsExtraParticipants: Bool
     let description: String?
     let lookingFor: String?
     let skillLevel: SkillLevel?
@@ -22,6 +23,7 @@ nonisolated struct UpdateEventPayload: Encodable, Equatable, Sendable {
         startsAt = draft.startsAt
         location = CreateEventPayload.Location(name: draft.trimmedLocationName, coordinate: coordinate)
         capacity = draft.capacity
+        allowsExtraParticipants = draft.allowsExtraParticipants
         description = draft.trimmedDescription
         lookingFor = draft.trimmedLookingFor
         skillLevel = draft.skillLevel

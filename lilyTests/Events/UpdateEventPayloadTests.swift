@@ -5,7 +5,9 @@ import Testing
 /// The body of `PUT /api/events/{id}`, key for key as the backend's `UpdateEventRequest` reads it.
 struct UpdateEventPayloadTests {
     private static let now = Date(timeIntervalSince1970: 1_800_000_000)
-    private static let requiredKeys: Set<String> = ["title", "type", "startsAt", "location", "capacity"]
+    private static let requiredKeys: Set<String> = [
+        "title", "type", "startsAt", "location", "capacity", "allowsExtraParticipants",
+    ]
     private static let optionalKeys: Set<String> = ["description", "lookingFor", "skillLevel", "price"]
 
     private func encode(_ payload: UpdateEventPayload) throws -> [String: Any] {
@@ -18,6 +20,7 @@ struct UpdateEventPayloadTests {
         var draft = EventDraft.fixture(now: Self.now)
         draft.type = .tennis
         draft.capacity = 4
+        draft.allowsExtraParticipants = true
         draft.description = "Bring both colours"
         draft.lookingFor = "One more"
         draft.skillLevel = .intermediate
@@ -31,6 +34,7 @@ struct UpdateEventPayloadTests {
         #expect(json["type"] as? String == "tennis")
         #expect(json["startsAt"] as? String == "2027-01-16T08:00:00Z")
         #expect(json["capacity"] as? Int == 4)
+        #expect(json["allowsExtraParticipants"] as? Bool == true)
         #expect(json["skillLevel"] as? String == "intermediate")
         let location = try #require(json["location"] as? [String: Any])
         #expect(location["name"] as? String == "Test Park")

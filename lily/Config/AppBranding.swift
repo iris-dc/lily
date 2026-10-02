@@ -10,7 +10,8 @@ nonisolated enum AppBranding {
         /// Open-spot counts for compact cards: `%ld` is the number of spots.
         static let oneSpotLeftFormat = "%ld spot left"
         static let spotsLeftFormat = "%ld spots left"
-        /// Under the capacity bar, counting the same way the bar fills: `%ld` participants of `%ld` capacity.
+        /// Under the capacity bar, counting the same way the bar fills: `%ld` participants of `%ld` capacity. The copy
+        /// of a game that allows extras is in `AppBranding+Capacity.swift`.
         static let joinedOfCapacityFormat = "%ld of %ld joined"
 
         /// Filter panel on Explore, dropped down from the toolbar button.

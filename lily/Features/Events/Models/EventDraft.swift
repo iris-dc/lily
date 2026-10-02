@@ -15,6 +15,8 @@ nonisolated struct EventDraft: Equatable, Sendable {
     /// Starts from the user's position and is moved on the map; required.
     var coordinate: Coordinate?
     var capacity = AppConfig.Events.Creation.defaultCapacity
+    /// Whether `capacity` is the number of players needed rather than a cap, so more may join.
+    var allowsExtraParticipants = false
     var description = ""
     var lookingFor = ""
     /// `nil` means any level.
@@ -40,6 +42,7 @@ nonisolated struct EventDraft: Equatable, Sendable {
         locationName = event.locationName
         coordinate = event.location.coordinate
         capacity = event.capacity
+        allowsExtraParticipants = event.allowsExtraParticipants
         description = event.description ?? ""
         lookingFor = event.lookingFor ?? ""
         skillLevel = event.skillLevel
@@ -48,7 +51,8 @@ nonisolated struct EventDraft: Equatable, Sendable {
     }
 
     /// What a draft is judged against beyond the backend's limits: a create keeps the app's lead-time margin, an
-    /// edit only needs the future (the backend's rule) and never fewer spots than the people already in.
+    /// edit only needs the future (the backend's rule) and never fewer spots than the people already in, unless the
+    /// draft allows extras, when the capacity is a target the host may set below them.
     struct Rules: Equatable, Sendable {
         let minimumLeadTime: TimeInterval
         let minimumCapacity: Int
@@ -61,9 +65,11 @@ nonisolated struct EventDraft: Equatable, Sendable {
                   minimumCapacity: max(AppConfig.Events.Creation.capacityRange.lowerBound, participantCount))
         }
 
-        /// The capacities the form's stepper offers under these rules.
-        var capacityRange: ClosedRange<Int> {
-            minimumCapacity...AppConfig.Events.Creation.capacityRange.upperBound
+        /// The capacities the form's stepper offers under these rules: the backend's whole range while the draft allows
+        /// extras, else from the floor up.
+        func capacityRange(allowsExtraParticipants: Bool) -> ClosedRange<Int> {
+            let limits = AppConfig.Events.Creation.capacityRange
+            return allowsExtraParticipants ? limits : minimumCapacity...limits.upperBound
         }
     }
 
@@ -115,10 +121,11 @@ nonisolated struct EventDraft: Equatable, Sendable {
         return issues
     }
 
-    /// Outside the backend's range first; within it, below the people already in (an edit's floor).
+    /// Outside the backend's range first; within it, below the people already in (an edit's floor), which a draft that
+    /// allows extras is free to be.
     private func capacityIssue(rules: Rules) -> Issue? {
         guard AppConfig.Events.Creation.capacityRange.contains(capacity) else { return .capacityOutOfRange }
-        return capacity < rules.minimumCapacity ? .capacityBelowParticipants : nil
+        return !allowsExtraParticipants && capacity < rules.minimumCapacity ? .capacityBelowParticipants : nil
     }
 
     /// The optional details.
@@ -150,6 +157,7 @@ nonisolated struct EventDraft: Equatable, Sendable {
                    startsAt: startsAt,
                    location: EventLocation(name: trimmedLocationName, coordinate: coordinate),
                    capacity: capacity,
+                   allowsExtraParticipants: allowsExtraParticipants,
                    participantCount: 1,
                    hostName: hostName,
                    hostUserId: hostUserId,
