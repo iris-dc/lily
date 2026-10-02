@@ -15,4 +15,13 @@ protocol ChatRepository {
     func delete(groupID: String, messageID: String) async throws -> ChatMessage
     /// Monotonic: an older id leaves the marker where it was, and the answer says where it is.
     func markRead(groupID: String, messageID: String) async throws -> ReadMarker
+    /// Moves the caller's history floor to now (and hides a conversation from their Mine): the caller alone stops
+    /// seeing what came before. Twice is fine.
+    func clearHistory(groupID: String) async throws -> ClearedHistory
+    /// A presigned upload for one attachment of a message about to be sent in the group; the PUT itself goes through
+    /// `AttachmentUploader`, and the send names the ticket's `attachmentId`.
+    func requestUpload(groupID: String, _ request: UploadRequestPayload) async throws -> UploadTicket
+    /// Fresh presigned links for an attachment whose links expired or were refused; the message id is in the path
+    /// because the caller's history floor is checked against the message.
+    func refreshAttachment(groupID: String, messageID: String, attachmentID: String) async throws -> AttachmentLink
 }

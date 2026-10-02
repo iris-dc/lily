@@ -410,6 +410,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = iskra;
+				INFOPLIST_KEY_NSCameraUsageDescription = "iskra uses the camera to take photos for your chats.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "iskra connects to a Laurel backend running on your Mac during development.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "iskra shows games near you and how far away they are.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -445,6 +446,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = iskra;
+				INFOPLIST_KEY_NSCameraUsageDescription = "iskra uses the camera to take photos for your chats.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "iskra shows games near you and how far away they are.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

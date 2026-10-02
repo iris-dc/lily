@@ -1,7 +1,7 @@
 import Foundation
 
-/// Copy for groups, chat and moderation; `message(for:)` routes exactly those cases here. In its own file because the
-/// mapper's type body is at SwiftLint's limit.
+/// Copy for groups and moderation (the chat's is in `ErrorMessageMapper+Chat.swift`); `message(for:)` routes exactly
+/// those cases here. In its own file because the mapper's type body is at SwiftLint's limit.
 nonisolated extension ErrorMessageMapper {
     static func groupMessage(for error: AppError) -> ErrorMessage {
         switch error {
@@ -26,19 +26,6 @@ nonisolated extension ErrorMessageMapper {
                          body: "You can be in at most \(AppConfig.Groups.maxMemberships) groups. Leave one to join another.")
         default:
             groupWriteMessage(for: error)
-        }
-    }
-
-    static func chatMessage(for error: AppError) -> ErrorMessage {
-        switch error {
-        case .chatUnavailable:
-            ErrorMessage(title: "Chat unavailable", body: "We couldn't load messages right now. Try again in a moment.")
-        case .messageSendFailed:
-            ErrorMessage(title: "Not sent", body: "Your message didn't go through. Tap it to retry.")
-        case .messageNotFound:
-            ErrorMessage(title: "Message not found", body: "This message was already deleted.")
-        default:
-            unknownMessage
         }
     }
 

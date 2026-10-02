@@ -3,13 +3,16 @@ import Observation
 
 /// One open chat room. The room's messages live in the shared `ChatHistoryCache` (the realtime controller writes
 /// there too, so this screen never holds a stale copy); this owns what is local to the screen: the draft, the unsent
-/// messages, the roster for live names, the read marker, the history paging (`ChatViewModel+History.swift`) and the
-/// live subscription (`ChatViewModel+Live.swift`).
+/// messages, the pictures being attached (`ChatViewModel+Attachments.swift`), the roster for live names, the read
+/// marker, the history paging (`ChatViewModel+History.swift`), the live subscription (`ChatViewModel+Live.swift`) and
+/// the clear (`ChatViewModel+Clear.swift`).
 @Observable
 final class ChatViewModel {
     var group: SportGroup
     var draft = MessageDraft()
     var pending: [PendingMessage] = []
+    /// The pictures picked for the draft, with their uploads.
+    let attachments: AttachmentComposerModel
     private(set) var members: [GroupMember] = []
     var isLoadingHistory = false
     var isLoadingOlder = false
@@ -38,9 +41,15 @@ final class ChatViewModel {
     let realtime: RealtimeSessionController
     let catchUp: ChatCatchUp
     let unread: UnreadCenter
+    /// Whether the backend takes attachments comes from here.
+    let me: MeStore
+    /// The bytes of stored pictures, for the bubbles and the viewer.
+    let attachmentLoader: AttachmentLoader
     let identity: any IdentityProvider
     /// Failures reach the popup through it, and a `TERMS_REQUIRED` raises the terms sheet as on the groups screens.
     let reporter: GroupErrorReporter
+    /// Clears the room for the caller; shared with the Chats rows, so both do exactly the same.
+    let clearer: ChatHistoryClearer
     let recorder: any InteractionRecorder
     let logger: any Logging
     let now: () -> Date
@@ -57,8 +66,12 @@ final class ChatViewModel {
          realtime: RealtimeSessionController,
          catchUp: ChatCatchUp,
          unread: UnreadCenter,
+         me: MeStore,
+         attachments: AttachmentComposerModel,
+         attachmentLoader: AttachmentLoader,
          identity: any IdentityProvider,
          reporter: GroupErrorReporter,
+         clearer: ChatHistoryClearer,
          recorder: any InteractionRecorder,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
@@ -75,8 +88,12 @@ final class ChatViewModel {
         self.realtime = realtime
         self.catchUp = catchUp
         self.unread = unread
+        self.me = me
+        self.attachments = attachments
+        self.attachmentLoader = attachmentLoader
         self.identity = identity
         self.reporter = reporter
+        self.clearer = clearer
         self.recorder = recorder
         self.logger = logger
         self.now = now
@@ -103,7 +120,7 @@ final class ChatViewModel {
     var cooldownSeconds: Int? {
         cooldownUntil.map { Int($0.timeIntervalSince(now()).rounded(.up)) }.flatMap { $0 > 0 ? $0 : nil }
     }
-    var canSend: Bool { draft.isValid && !isCoolingDown && !isGone }
+    var canSend: Bool { outgoingDraft.isValid && !attachments.isBusy && !isCoolingDown && !isGone }
 
     /// Subscribe, then history (the first page, or a catch-up from the watermark), then live events and the marker.
     func appear() async {

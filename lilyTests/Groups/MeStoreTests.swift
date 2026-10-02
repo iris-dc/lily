@@ -31,6 +31,19 @@ struct MeStoreTests {
         #expect(repository.meCallCount == 2)
     }
 
+    /// Off until the account says otherwise, so no attach button shows for a backend that takes none.
+    @Test func attachmentsEnabledFollowsTheAccount() async {
+        let store = makeStore()
+        #expect(!store.attachmentsEnabled)
+
+        repository.meResult = .success(.fixture(attachmentsEnabled: true))
+        await store.loadIfNeeded()
+        #expect(store.attachmentsEnabled)
+
+        store.sessionDidEnd()
+        #expect(!store.attachmentsEnabled)
+    }
+
     @Test func guestsHaveNoAccountAndCauseNoRequest() async {
         let store = makeStore()
         await store.loadIfNeeded()

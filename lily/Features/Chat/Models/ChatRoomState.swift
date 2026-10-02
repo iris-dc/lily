@@ -88,6 +88,15 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
         messages.contains { $0.clientMessageId == clientMessageID }
     }
 
+    func contains(id: String) -> Bool {
+        messages.contains { $0.id == id }
+    }
+
+    /// Whether this room knows `id` as deleted: tombstoned here, or held as a tombstone a page delivered.
+    func isDeleted(id: String) -> Bool {
+        tombstonedIDs.contains(id) || messages.contains { $0.id == id && $0.isDeleted }
+    }
+
     /// The same room holding only its newest `limit` messages; what the cache keeps for a room nobody is looking at.
     func trimmed(toNewest limit: Int) -> ChatRoomState {
         guard messages.count > limit else { return self }

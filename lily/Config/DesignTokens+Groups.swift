@@ -20,7 +20,10 @@ nonisolated extension DesignTokens.Symbols {
     static let edit = "pencil"
     static let leave = "rectangle.portrait.and.arrow.right"
     static let delete = "trash"
+    /// Clearing a chat for the caller alone.
+    static let clearChat = "eraser"
     static let copy = "doc.on.doc"
+    static let reply = "arrowshape.turn.up.left"
 }
 
 nonisolated extension DesignTokens.Layout {
@@ -49,13 +52,28 @@ nonisolated extension DesignTokens.Layout {
     /// Text inset inside a chat bubble.
     static let bubbleHorizontalPadding: CGFloat = DesignTokens.Spacing.md
     static let bubbleVerticalPadding: CGFloat = DesignTokens.Spacing.sm
+    /// The coloured bar at the leading edge of a quote (in a bubble and in the composer's preview), and how many lines
+    /// of the quoted text a bubble shows.
+    static let quoteBarWidth: CGFloat = 3
+    static let quoteExcerptLines = 2
 }
 
 nonisolated extension DesignTokens.Radius {
     static let bubble: CGFloat = 18
+    /// The quote block inside a bubble: tighter than the bubble so it reads as an inset, not a second bubble.
+    static let quote: CGFloat = 10
 }
 
 nonisolated extension DesignTokens.Opacity {
     /// A message that is still on its way to the backend.
     static let pendingMessage: Double = 0.6
+    /// The quote block's fill inside a bubble (white on the accent, ink on the surface), faint so the bubble stays one.
+    static let quoteFill: Double = 0.16
+    /// The accent wash on a message a tapped quote scrolled to.
+    static let messageHighlight: Double = 0.22
+}
+
+nonisolated extension DesignTokens.Duration {
+    /// How long the message a quote scrolled to stays washed in the accent.
+    static let messageHighlight: TimeInterval = 1.2
 }

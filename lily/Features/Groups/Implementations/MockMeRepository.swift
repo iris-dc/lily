@@ -1,7 +1,7 @@
 import Foundation
 
 /// Answers a signed-in mock user: terms accepted, an operator when signed in as the Apple tester (so the operator
-/// queue can be seen), no realtime endpoint.
+/// queue can be seen), no realtime endpoint, attachments on (the mock store stands in for the bucket).
 final class MockMeRepository: MeRepository {
     private let identity: any IdentityProvider
     private let logger: any Logging
@@ -19,7 +19,8 @@ final class MockMeRepository: MeRepository {
         return Account(userId: userID,
                        isOperator: userID == MockUsers.user(for: .apple).id,
                        termsVersion: AppConfig.Moderation.mockTermsVersion,
-                       acceptedTermsVersion: AppConfig.Moderation.mockTermsVersion)
+                       acceptedTermsVersion: AppConfig.Moderation.mockTermsVersion,
+                       attachmentsEnabled: true)
     }
 
     func acceptTerms(version: Int) async throws -> TermsAcceptance {

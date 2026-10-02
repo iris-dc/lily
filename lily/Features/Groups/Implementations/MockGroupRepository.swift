@@ -7,6 +7,8 @@ final class MockGroupRepository: GroupRepository {
     var groups: [SportGroup]
     /// The other members of each group, banned rows included; the caller's own row comes from the group's membership.
     var rosters: [String: [GroupMember]]
+    /// Conversations the caller cleared (`MockChatRepository.clearHistory`): out of Mine until a new line arrives.
+    var hiddenConversationIDs: Set<String> = []
     let identity: any IdentityProvider
     let logger: any Logging
     let now: () -> Date
@@ -27,7 +29,8 @@ final class MockGroupRepository: GroupRepository {
         let live = groups.filter { !$0.isDeleted }
         switch scope {
         case .mine:
-            return Page(items: live.filter(\.isMember).sorted(by: Self.mostRecentlyActiveFirst))
+            let mine = live.filter { $0.isMember && !hiddenConversationIDs.contains($0.id) }
+            return Page(items: mine.sorted(by: Self.mostRecentlyActiveFirst))
         case .discover(let query, let type):
             let matching = live.filter { $0.isPublic && $0.matches(query: query, type: type) }
             let byName = matching.sorted { $0.name < $1.name }

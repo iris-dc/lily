@@ -28,6 +28,8 @@ final class MeStore: SessionObserver {
     var needsTerms: Bool { termsOutdated || account.map { !$0.termsAccepted } ?? false }
     var isOperator: Bool { account?.isOperator ?? false }
     var realtimeEndpoint: URL? { account?.realtimeEndpoint }
+    /// Whether the backend takes chat attachments; off until the account is known, so no button shows for nothing.
+    var attachmentsEnabled: Bool { account?.attachmentsEnabled ?? false }
     var isLoading: Bool { load.isRunning }
 
     /// Loads for the signed-in user unless already loaded for them; a guest has nothing to load and is cleared.

@@ -35,5 +35,23 @@ struct MessageDraftTests {
 
         #expect(pending.id == "c-1" && pending.text == "retry me")
         #expect(pending.draft.clientMessageID == "c-1" && pending.draft.trimmedText == "retry me")
+        #expect(pending.replyTo == nil && pending.draft.payload.replyToMessageId == nil)
+    }
+
+    /// A reply sends its target's id; the pending bubble keeps the quote for the retry and can drop it for a retry as
+    /// a plain message, keeping its id and text.
+    @Test func aReplyCarriesItsTargetThroughThePayloadAndTheRetry() {
+        var draft = MessageDraft(clientMessageID: "c-1")
+        draft.text = "Thursday works"
+        draft.replyTo = .fixture()
+        #expect(draft.payload == SendMessagePayload(clientMessageId: "c-1", text: "Thursday works", replyToMessageId: "m1"))
+        #expect(draft.isValid)
+
+        let pending = PendingMessage(draft: draft, sentAt: .now)
+        #expect(pending.replyTo == .fixture() && pending.draft == draft)
+
+        let plain = pending.droppingReply()
+        #expect(plain.replyTo == nil && plain.draft.payload.replyToMessageId == nil)
+        #expect(plain.id == "c-1" && plain.text == "Thursday works" && plain.state == pending.state)
     }
 }

@@ -46,6 +46,29 @@ struct MockGroupRepositoryTests {
         #expect(try await repository.groups(in: .mine, cursor: nil).items.count(where: \.isDirect) == 2)
     }
 
+    /// A cleared conversation is out of Mine but still readable; a new line or a replayed start brings it back, and a
+    /// community cannot be hidden.
+    @Test func aHiddenConversationLeavesMineUntilTheCounterpartWrites() async throws {
+        let repository = makeRepository()
+        let marta = MockGroupFixtures.martaConversationID
+
+        repository.hideConversation(id: marta)
+
+        let mine = try await repository.groups(in: .mine, cursor: nil).items
+        #expect(mine.map(\.name) == ["Kreuzberg Kickers", "Tempelhof Runners", "Sunday Padel Crew"])
+        #expect(try await repository.group(id: marta).isDirect, "the room stays readable while it is cleared")
+        #expect(logger.messages(in: .groups, at: .info).contains("Mock conversation \(marta) hidden"))
+
+        repository.unhideConversation(id: marta)
+        #expect(try await repository.groups(in: .mine, cursor: nil).items.contains { $0.id == marta })
+        repository.hideConversation(id: marta)
+        _ = repository.startDirect(with: MockGroupFixtures.conversationCounterpart.userId, name: "Marta")
+        #expect(try await repository.groups(in: .mine, cursor: nil).items.contains { $0.id == marta })
+
+        repository.hideConversation(id: MockGroupFixtures.kickersID)
+        #expect(try await repository.groups(in: .mine, cursor: nil).items.count == 4, "only a conversation can be hidden")
+    }
+
     @Test func discoverListsPublicGroupsNewestFirstAndSearchesByPrefix() async throws {
         let repository = makeRepository()
 

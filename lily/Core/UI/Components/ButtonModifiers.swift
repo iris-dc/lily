@@ -36,6 +36,15 @@ extension View {
             .buttonBorderShape(.circle)
             .controlSize(controlSize)
     }
+
+    /// A glyph in a plain glass circle, the quiet sibling of `lilyIconButton()`: the attach menu beside the composer's
+    /// field, the viewer's Close and Share. The label reads as ink, like every glass button that is not a call to action.
+    func lilyGlassIconButton(controlSize: ControlSize = .large) -> some View {
+        buttonStyle(.glass)
+            .tint(Color.lilyInk)
+            .buttonBorderShape(.circle)
+            .controlSize(controlSize)
+    }
 }
 
 private extension View {

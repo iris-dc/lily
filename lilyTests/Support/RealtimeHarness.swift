@@ -26,12 +26,19 @@ final class RealtimeHarness {
     let clock = DateClock()
     let recorder = SpyInteractionRecorder()
     let unread = UnreadCenter()
+    let meRepository = FakeMeRepository()
+    let uploader = FakeAttachmentUploader()
+    let preparer = FakeMediaPreparer()
+    let attachmentCache = FakeAttachmentCache()
     let errorCenter: ErrorCenter
     let reporter: GroupErrorReporter
     let store: MyGroupsStore
     let inbox: InboxStore
+    let me: MeStore
     let cache: InMemoryChatHistoryCache
     let catchUp: ChatCatchUp
+    let clearer: ChatHistoryClearer
+    let attachmentLoader: AttachmentLoader
     let controller: RealtimeSessionController
     /// What the controller's jitter draws; a test replaces `pick` to steer it.
     let jitter = JitterSource()
@@ -47,8 +54,16 @@ final class RealtimeHarness {
         reporter = GroupErrorReporter(errorCenter: errorCenter) { termsRequests.increment() }
         store = MyGroupsStore(repository: groups, identity: identity, changes: changes, errorCenter: errorCenter, logger: logger)
         inbox = InboxStore(repository: inboxRepository, identity: identity, errorCenter: errorCenter, logger: logger)
+        me = MeStore(repository: meRepository, identity: identity, errorCenter: errorCenter, logger: logger)
         cache = InMemoryChatHistoryCache(logger: logger)
         catchUp = ChatCatchUp(repository: chat, cache: cache, logger: logger)
+        attachmentLoader = AttachmentLoader(repository: chat, cache: attachmentCache, logger: logger)
+        clearer = ChatHistoryClearer(repository: chat,
+                                     cache: cache,
+                                     myGroups: store,
+                                     unread: unread,
+                                     reporter: reporter,
+                                     logger: logger)
         let sleep = self.sleep
         let clock = self.clock
         let jitter = self.jitter
@@ -90,13 +105,29 @@ final class RealtimeHarness {
                       realtime: controller,
                       catchUp: catchUp,
                       unread: unread,
+                      me: me,
+                      attachments: makeAttachmentComposer(for: group),
+                      attachmentLoader: attachmentLoader,
                       identity: identity,
                       reporter: reporter,
+                      clearer: clearer,
                       recorder: recorder,
                       logger: logger,
                       now: { [clock] in clock.now },
                       sleep: { [sleep] in try await sleep.sleep(for: $0) },
                       tryAgainDelay: .zero)
+    }
+
+    func makeAttachmentComposer(for group: SportGroup,
+                                maxPerMessage: Int = AppConfig.Chat.Attachments.maxPerMessage) -> AttachmentComposerModel {
+        AttachmentComposerModel(groupID: group.id,
+                                repository: chat,
+                                uploader: uploader,
+                                preparer: preparer,
+                                cache: attachmentCache,
+                                reporter: reporter,
+                                logger: logger,
+                                maxPerMessage: maxPerMessage)
     }
 
     /// Gives fire-and-forget work every chance to run, so "nothing more happened" can be asserted.

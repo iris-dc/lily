@@ -2,25 +2,28 @@ import Foundation
 import Testing
 @testable import lily
 
+/// The harness is internal, not private, so `MockChatRepositoryReplyTests.swift` can extend the suite.
 @MainActor
 struct MockChatRepositoryTests {
-    private let identity = FakeIdentityProvider(currentUserID: "mock-apple")
-    private let logger = SpyLogger()
-    private let sleep = HeldSleep()
-    private let transport: MockRealtimeTransport
-    private let groups: MockGroupRepository
-    private let kickers = MockGroupFixtures.kickersID
+    let identity = FakeIdentityProvider(currentUserID: "mock-apple")
+    let logger = SpyLogger()
+    let sleep = HeldSleep()
+    let transport: MockRealtimeTransport
+    let groups: MockGroupRepository
+    let kickers = MockGroupFixtures.kickersID
 
     init() {
         transport = MockRealtimeTransport(logger: logger)
         groups = MockGroupRepository(identity: identity, logger: logger)
     }
 
-    private func makeRepository(autoReplies: Bool = false) -> MockChatRepository {
+    func makeRepository(autoReplies: Bool = false,
+                        attachments: MockAttachmentStore = MockAttachmentStore()) -> MockChatRepository {
         MockChatRepository(groups: groups,
                            transport: transport,
                            identity: identity,
                            logger: logger,
+                           attachments: attachments,
                            autoReplies: autoReplies,
                            now: { Date(timeIntervalSince1970: 1_800_000_000) },
                            sleep: { [sleep] in try await sleep.sleep(for: $0) })
@@ -150,5 +153,34 @@ struct MockChatRepositoryTests {
 
         #expect(try await repository.markRead(groupID: kickers, messageID: "b").lastReadMessageId == "b")
         #expect(try await repository.markRead(groupID: kickers, messageID: "a").lastReadMessageId == "b")
+    }
+
+    /// A clear moves the caller's floor past every stored row: the pages answer nothing until a new line, which
+    /// alone shows; a conversation also leaves Mine until that line.
+    @Test func clearHistoryHidesOlderLinesAndShowsNewOnes() async throws {
+        let repository = makeRepository()
+        let newest = MockChatFixtures.newestMessageID(for: kickers)
+        var draft = MessageDraft()
+        draft.text = "hi"
+
+        let cleared = try await repository.clearHistory(groupID: kickers)
+
+        #expect(!cleared.hidden && cleared.channelEpoch == 1 && cleared.historyFloor > newest)
+        let page = try await repository.newest(groupID: kickers)
+        #expect(page.items.isEmpty && !page.hasMore)
+        #expect(try await repository.older(groupID: kickers, before: newest).items.isEmpty)
+        let lastRead = MockChatFixtures.lastReadMessageID(for: kickers)
+        #expect(try await repository.newer(groupID: kickers, after: lastRead).items.isEmpty)
+        _ = try await repository.send(groupID: kickers, draft)
+        #expect(try await repository.newest(groupID: kickers).items.map(\.text) == ["hi"])
+        #expect(logger.messages(in: .chat, at: .info).contains("Mock chat history cleared for group \(kickers)"))
+
+        let conversation = MockGroupFixtures.martaConversationID
+        #expect(try await repository.clearHistory(groupID: conversation).hidden)
+        #expect(try await !groups.groups(in: .mine, cursor: nil).items.contains { $0.id == conversation })
+        var reply = MessageDraft(clientMessageID: "c-2")
+        reply.text = "back"
+        _ = try await repository.send(groupID: conversation, reply)
+        #expect(try await groups.groups(in: .mine, cursor: nil).items.contains { $0.id == conversation })
     }
 }

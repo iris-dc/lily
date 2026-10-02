@@ -32,6 +32,11 @@ nonisolated extension AppConfig {
         static let mockFailingPrefix = "!fail"
         /// How often the composer's cooldown caption counts down.
         static let cooldownTick: Duration = .seconds(1)
+        /// A reply quotes this much of the original's text (UTF-16 units, cut at a character); Laurel's
+        /// `chat.reply-excerpt-length` says the same, so the preview matches what the backend stores.
+        static let replyExcerptLength = 120
+        /// How many older pages a tap on a quote may load to bring the original on screen.
+        static let maxReplyLookupPages = 3
     }
 }
 

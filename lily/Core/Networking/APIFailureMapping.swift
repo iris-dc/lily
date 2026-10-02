@@ -42,10 +42,18 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case blockLimit = "BLOCK_LIMIT"
     /// The caller holds the maximum number of direct conversations.
     case conversationLimit = "CONVERSATION_LIMIT"
+    /// A reply named a message that is gone, deleted, or below the caller's history floor.
+    case replyTargetNotFound = "REPLY_TARGET_NOT_FOUND"
+    /// A send named an attachment the bucket does not hold, or another user's upload; also a link to one that is gone.
+    case attachmentNotFound = "ATTACHMENT_NOT_FOUND"
+    case attachmentTooLarge = "ATTACHMENT_TOO_LARGE"
+    case attachmentTypeNotAllowed = "ATTACHMENT_TYPE_NOT_ALLOWED"
+    /// The backend has no bucket configured.
+    case attachmentsDisabled = "ATTACHMENTS_DISABLED"
 
     /// Every code maps to a case with copy; the domains are split so no switch grows past the complexity limit.
     var appError: AppError {
-        eventError ?? groupError ?? inviteError ?? moderationError ?? peopleError ?? .unknown
+        eventError ?? groupError ?? inviteError ?? moderationError ?? chatError ?? peopleError ?? .unknown
     }
 
     private var eventError: AppError? {
@@ -97,6 +105,17 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .blockLimit: .blockLimitReached
         case .accountSuspended: .accountSuspended
         case .termsRequired: .termsRequired
+        default: nil
+        }
+    }
+
+    private var chatError: AppError? {
+        switch self {
+        case .replyTargetNotFound: .replyTargetNotFound
+        case .attachmentNotFound: .attachmentNotFound
+        case .attachmentTooLarge: .attachmentTooLarge
+        case .attachmentTypeNotAllowed: .attachmentTypeNotAllowed
+        case .attachmentsDisabled: .attachmentsDisabled
         default: nil
         }
     }

@@ -6,8 +6,9 @@ import Foundation
 extension ChatViewModel {
     func send() async {
         guard canSend else { return }
-        let draft = self.draft
+        let draft = outgoingDraft
         self.draft = MessageDraft()
+        attachments.reset()
         pending.append(PendingMessage(draft: draft, sentAt: now()))
         await perform(draft)
     }
@@ -49,6 +50,7 @@ extension ChatViewModel {
     /// The stored message replaces the bubble; the live echo arriving first has already done so.
     private func settle(_ clientMessageID: String, with message: ChatMessage) {
         mutateRoom { $0.insert(message) }
+        seedAttachmentCache(for: clientMessageID, with: message)
         pending.removeAll { $0.clientMessageID == clientMessageID }
     }
 
@@ -62,8 +64,13 @@ extension ChatViewModel {
             return
         }
         markFailed(clientMessageID)
-        if case .rateLimited(let retryAfter) = error as? AppError {
+        switch error as? AppError {
+        case .rateLimited(let retryAfter):
             cooldownUntil = now().addingTimeInterval(retryAfter ?? AppConfig.Chat.rateLimitCooldownFallback)
+        case .replyTargetNotFound:
+            dropReply(from: clientMessageID)
+        default:
+            break
         }
         report(error, during: "Send")
     }

@@ -1,14 +1,19 @@
 import SwiftUI
 
-/// What a long press on a bubble offers: copy the text, delete when the caller may. Report and Block are listed but
-/// disabled until moderation ships, so the menu's shape is final.
+/// What a long press on a bubble offers: reply to it (any member's message that is not deleted), copy the text, delete
+/// when the caller may. Report and Block are listed but disabled until moderation ships, so the menu's shape is final.
 struct MessageContextMenu: View {
-    let message: ChatMessage
+    let row: MessageRow
     let viewModel: ChatViewModel
 
     private typealias Copy = AppBranding.Chat
 
+    private var message: ChatMessage { row.message }
+
     var body: some View {
+        if viewModel.canReply(to: message) {
+            Button(Copy.reply, systemImage: DesignTokens.Symbols.reply) { viewModel.startReply(to: row) }
+        }
         if message.text != nil {
             Button(Copy.copyMessage, systemImage: DesignTokens.Symbols.copy) { viewModel.copy(message) }
         }

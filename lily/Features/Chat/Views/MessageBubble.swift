@@ -2,11 +2,20 @@ import SwiftUI
 
 /// One member's message as a bubble: the caller's in the accent, trailing; everyone else's on the surface colour,
 /// leading, with the sender's avatar and current name on the first bubble of a run (both open `profile`, the sender's,
-/// as the view model frames it for this room) and the time under the last. Plain fills, never glass: a chat scrolls
-/// dozens of these at once.
+/// as the view model frames it for this room) and the time under the last. A reply shows the quoted original above
+/// its text; tapping the quote asks `onTapQuote` to find it. Pictures and videos show as a gallery above the words (or
+/// as the bubble itself when there are no words) and files as cards under it; tapping a tile asks `onTapAttachment` to
+/// open it, tapping a card downloads the file and asks `onOpenFile` to preview it. Plain fills, never glass: a chat
+/// scrolls dozens of these at once. The row is an accessibility container, so what is inside keeps its own identifier.
 struct MessageBubble: View {
     let row: MessageRow
     let profile: UserProfileDestination
+    let loader: AttachmentLoader
+    /// Whether this device knows the quoted original is gone (`ChatViewModel.quoteIsDeleted`).
+    var isQuoteDeleted = false
+    var onTapQuote: (ReplyQuote) -> Void = { _ in }
+    var onTapAttachment: (Attachment) -> Void = { _ in }
+    var onOpenFile: (URL) -> Void = { _ in }
 
     var body: some View {
         HStack(alignment: .top, spacing: DesignTokens.Spacing.sm) {
@@ -18,6 +27,7 @@ struct MessageBubble: View {
             }
         }
         .bubbleRow(side: side)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(identifier)
     }
 
@@ -62,8 +72,20 @@ struct MessageBubble: View {
                 .foregroundStyle(.secondary)
                 .bubbleFill(own: row.isOwn)
         } else {
-            Text(verbatim: row.message.text ?? "")
-                .bubbleFill(own: row.isOwn)
+            BubbleContent(text: row.message.text ?? "",
+                          quote: row.message.replyTo,
+                          isQuoteDeleted: isQuoteDeleted,
+                          own: row.isOwn,
+                          hasMedia: row.message.hasAttachments,
+                          mediaStandsAlone: row.message.attachments.allSatisfy(\.kind.isMedia),
+                          onTapQuote: onTapQuote) {
+                AttachmentGallery(message: row.message,
+                                  loader: loader,
+                                  own: row.isOwn,
+                                  alignment: side,
+                                  onTap: onTapAttachment,
+                                  onOpenFile: onOpenFile)
+            }
         }
     }
 
@@ -80,78 +102,6 @@ struct MessageBubble: View {
     }
 }
 
-/// The caller's message before the backend confirmed it: faded with a spinner, or marked failed with the hint and a
-/// Retry / Delete menu. Tapping a failed bubble retries.
-struct PendingMessageBubble: View {
-    let message: PendingMessage
-    let viewModel: ChatViewModel
-
-    private typealias Copy = AppBranding.Chat
-
-    var body: some View {
-        VStack(alignment: .trailing, spacing: DesignTokens.Spacing.xs) {
-            HStack(alignment: .center, spacing: DesignTokens.Spacing.sm) {
-                status
-                Text(verbatim: message.text)
-                    .bubbleFill(own: true)
-                    .opacity(message.hasFailed ? 1 : DesignTokens.Opacity.pendingMessage)
-            }
-            if message.hasFailed {
-                Text(Copy.failedHint)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .bubbleRow(side: .trailing)
-        .contentShape(.rect)
-        .onTapGesture {
-            if message.hasFailed { Task { await viewModel.retry(message) } }
-        }
-        .accessibilityAddTraits(message.hasFailed ? .isButton : [])
-        .contextMenu {
-            if message.hasFailed {
-                Button(Copy.retry, systemImage: DesignTokens.Symbols.send) { Task { await viewModel.retry(message) } }
-                Button(Copy.deleteMessage, systemImage: DesignTokens.Symbols.delete, role: .destructive) {
-                    viewModel.discard(message)
-                }
-            }
-        }
-        .accessibilityIdentifier(AccessibilityIdentifiers.message(clientID: message.clientMessageID))
-    }
-
-    @ViewBuilder private var status: some View {
-        if message.hasFailed {
-            Image(systemName: DesignTokens.Symbols.failed)
-                .foregroundStyle(Color.lilyAccent)
-                .accessibilityLabel(Copy.failedHint)
-        } else {
-            ProgressView()
-                .controlSize(.small)
-                .accessibilityHidden(true)
-        }
-    }
-}
-
-private extension View {
-    /// Body text on a plain rounded fill: accent with white text for the caller, surface with ink for the others.
-    func bubbleFill(own: Bool) -> some View {
-        font(.body)
-            .foregroundStyle(own ? Color.white : Color.lilyInk)
-            .padding(.horizontal, DesignTokens.Layout.bubbleHorizontalPadding)
-            .padding(.vertical, DesignTokens.Layout.bubbleVerticalPadding)
-            .background(own ? Color.lilyAccent : Color.lilySurface, in: .rect(cornerRadius: DesignTokens.Radius.bubble))
-    }
-
-    /// A row of the transcript: the content may take `bubbleMaxWidthFraction` of the list and hugs its side.
-    func bubbleRow(side: Alignment) -> some View {
-        frame(maxWidth: .infinity, alignment: side)
-            .containerRelativeFrame(.horizontal, alignment: side) { length, _ in
-                length * DesignTokens.Layout.bubbleMaxWidthFraction
-            }
-            .frame(maxWidth: .infinity, alignment: side)
-    }
-}
-
 #Preview {
     let now = Date.now
     let other = ChatMessage(id: "1",
@@ -162,21 +112,35 @@ private extension View {
                             sentAt: now)
     let own = ChatMessage(id: "2", groupId: "g", senderUserId: "me", senderName: "You", text: "Thursday works.", sentAt: now)
     let deleted = ChatMessage(id: "3", groupId: "g", senderUserId: "u-2", senderName: "Marta", sentAt: now, isDeleted: true)
+    let reply = ChatMessage(id: "4",
+                            groupId: "g",
+                            senderUserId: "u-2",
+                            senderName: "Marta",
+                            text: "Great, see you there.",
+                            sentAt: now,
+                            replyTo: ReplyQuote(quoting: own, senderName: "You"))
+    let loader = AppDependencies.makeMock().groups.attachments.loader
     ContentScreen {
         VStack(spacing: DesignTokens.Spacing.xs) {
-            bubble(other, isOwn: false, isFirstInRun: true, isLastInRun: false)
-            bubble(deleted, isOwn: false, isFirstInRun: false, isLastInRun: true)
-            bubble(own, isOwn: true, isFirstInRun: true, isLastInRun: true)
+            bubble(other, isOwn: false, isFirstInRun: true, isLastInRun: false, loader: loader)
+            bubble(deleted, isOwn: false, isFirstInRun: false, isLastInRun: true, loader: loader)
+            bubble(own, isOwn: true, isFirstInRun: true, isLastInRun: true, loader: loader)
+            bubble(reply, isOwn: false, isFirstInRun: true, isLastInRun: true, loader: loader)
         }
         .padding()
     }
 }
 
-private func bubble(_ message: ChatMessage, isOwn: Bool, isFirstInRun: Bool, isLastInRun: Bool) -> MessageBubble {
+private func bubble(_ message: ChatMessage,
+                    isOwn: Bool,
+                    isFirstInRun: Bool,
+                    isLastInRun: Bool,
+                    loader: AttachmentLoader) -> MessageBubble {
     MessageBubble(row: MessageRow(message: message,
                                   isOwn: isOwn,
                                   senderName: message.senderName,
                                   isFirstInRun: isFirstInRun,
                                   isLastInRun: isLastInRun),
-                  profile: UserProfileDestination(userId: message.senderUserId, displayName: message.senderName))
+                  profile: UserProfileDestination(userId: message.senderUserId, displayName: message.senderName),
+                  loader: loader)
 }

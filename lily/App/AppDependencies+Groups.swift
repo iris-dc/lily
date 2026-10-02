@@ -12,10 +12,20 @@ struct GroupRepositories {
     let users: any UserRepository
     let realtimeTransport: any RealtimeTransport
     let makeRealtimeEndpointProvider: @MainActor (MeStore) -> any RealtimeEndpointProvider
+    /// Moves attachment files into the bucket (or the mock store) through presigned targets.
+    let attachmentUploader: any AttachmentUploader
+    /// Turns picked pictures, videos and files into drafts; the mock one also stands in for the pickers under
+    /// `-mock-attachment-picker`.
+    let mediaPreparer: any MediaPreparer
+    /// Downloads attachment bytes from their presigned links; the mock one resolves the mock store's `mock://` URLs.
+    let attachmentSession: URLSession
 
     /// The remote set over the app's one API client. The transport is `NoRealtimeTransport` until the AppSync client
     /// is added; the endpoint provider already discovers the endpoint, so that swap is one line here.
-    static func remote(client: any APIClient, realtimeEndpoint: URL?, identity: any IdentityProvider) -> GroupRepositories {
+    static func remote(client: any APIClient,
+                       realtimeEndpoint: URL?,
+                       identity: any IdentityProvider,
+                       logger: any Logging) -> GroupRepositories {
         GroupRepositories(groups: RemoteGroupRepository(client: client, identity: identity),
                           invites: RemoteInviteRepository(client: client),
                           inbox: RemoteInboxRepository(client: client),
@@ -26,14 +36,25 @@ struct GroupRepositories {
                           realtimeTransport: NoRealtimeTransport(),
                           makeRealtimeEndpointProvider: { me in
                               RemoteRealtimeEndpointProvider(override: realtimeEndpoint, me: me)
-                          })
+                          },
+                          attachmentUploader: URLSessionAttachmentUploader(logger: logger),
+                          mediaPreparer: DeviceMediaPreparer(logger: logger),
+                          attachmentSession: URLSession(configuration: .default))
     }
 
     /// The invite mock reads the group mock's rosters, the inbox mock admits into its groups, the chat mock reads them
-    /// and the user mock builds profiles from them, so the five share one instance; the chat mock echoes over the one in-memory bus the controller subscribes to.
-    static func mock(identity: any IdentityProvider, logger: any Logging, autoReplies: Bool) -> GroupRepositories {
+    /// and the user mock builds profiles from them, so the five share one instance; the chat mock echoes over the one
+    /// in-memory bus the controller subscribes to, and the chat mock, the uploader and the loader's session share one
+    /// attachment store. `mockPicker` swaps the system pickers for the bundled photo, clip and document
+    /// (`-mock-attachment-picker`).
+    static func mock(identity: any IdentityProvider,
+                     logger: any Logging,
+                     autoReplies: Bool,
+                     mockPicker: Bool = false) -> GroupRepositories {
         let groups = MockGroupRepository(identity: identity, logger: logger)
         let transport = MockRealtimeTransport(logger: logger)
+        let attachments = MockAttachmentStore()
+        MockAttachmentURLProtocol.serve(attachments)
         return GroupRepositories(groups: groups,
                                  invites: MockInviteRepository(groups: groups, identity: identity, logger: logger),
                                  inbox: MockInboxRepository(groups: groups, identity: identity, logger: logger),
@@ -43,12 +64,18 @@ struct GroupRepositories {
                                                           transport: transport,
                                                           identity: identity,
                                                           logger: logger,
+                                                          attachments: attachments,
                                                           autoReplies: autoReplies),
                                  users: MockUserRepository(groups: groups, identity: identity, logger: logger),
                                  realtimeTransport: transport,
                                  makeRealtimeEndpointProvider: { _ in
                                      FixedRealtimeEndpointProvider(url: AppConfig.Realtime.mockEndpoint)
-                                 })
+                                 },
+                                 attachmentUploader: MockAttachmentUploader(store: attachments),
+                                 mediaPreparer: mockPicker
+                                     ? MockMediaPreparer(logger: logger)
+                                     : DeviceMediaPreparer(logger: logger),
+                                 attachmentSession: MockAttachmentURLProtocol.makeSession())
     }
 }
 
@@ -72,6 +99,8 @@ struct GroupDependencies {
     let unreadCenter: UnreadCenter
     let catchUp: ChatCatchUp
     let realtime: RealtimeSessionController
+    /// The cache, loader, uploader and preparer of chat attachments (`AppDependencies+Chat.swift`).
+    let attachments: AttachmentDependencies
     /// Every groups and chat screen reports failures through it: the popup, plus `MeStore.noteTermsRequired()` on `TERMS_REQUIRED`.
     let errorReporter: GroupErrorReporter
     let pasteboard: any Pasteboard
@@ -109,6 +138,7 @@ struct GroupDependencies {
         self.unreadCenter = unreadCenter
         let catchUp = ChatCatchUp(repository: repositories.chat, cache: chatHistory, logger: logger)
         self.catchUp = catchUp
+        attachments = AttachmentDependencies(repositories: repositories, logger: logger)
         realtime = RealtimeSessionController(transport: repositories.realtimeTransport,
                                              endpointProvider: repositories.makeRealtimeEndpointProvider(me),
                                              tokenProvider: tokenProvider,
@@ -126,7 +156,9 @@ struct GroupDependencies {
     }
 
     /// Everything here that holds state for the signed-in user; `SessionController` tells them when the session ends.
-    var sessionObservers: [any SessionObserver] { [myGroups, me, inbox, chatHistory, unreadCenter, realtime, navigation] }
+    var sessionObservers: [any SessionObserver] {
+        [myGroups, me, inbox, chatHistory, unreadCenter, attachments.cache, realtime, navigation]
+    }
 }
 
 extension AppDependencies {

@@ -86,11 +86,15 @@ extension SentInvite {
 }
 
 extension Account {
-    static func fixture(termsVersion: Int = 1, acceptedTermsVersion: Int? = 1, isOperator: Bool = false) -> Account {
+    static func fixture(termsVersion: Int = 1,
+                        acceptedTermsVersion: Int? = 1,
+                        isOperator: Bool = false,
+                        attachmentsEnabled: Bool = false) -> Account {
         Account(userId: TestFixtures.user.id,
                 isOperator: isOperator,
                 termsVersion: termsVersion,
-                acceptedTermsVersion: acceptedTermsVersion)
+                acceptedTermsVersion: acceptedTermsVersion,
+                attachmentsEnabled: attachmentsEnabled)
     }
 }
 
@@ -130,9 +134,10 @@ extension ContractSamples {
     {"id":"01J9B4X6KQ2M8N0P3R5T7V9W1Y","groupId":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","inviteeUserId":"seed-marta",\
     "inviteeName":"Marta","status":"pending","createdAt":"2026-09-29T10:00:00Z","expiresAt":"2026-10-06T10:00:00Z"}
     """
+    /// `GET /api/me`; `attachmentsEnabled` is its last field since chat wave 3 (B-C), always present.
     static let me = """
     {"userId":"u-1","isOperator":true,"termsVersion":2,"acceptedTermsVersion":1,\
-    "realtimeEndpoint":"https://abc.appsync-api.eu-central-1.amazonaws.com/event"}
+    "realtimeEndpoint":"https://abc.appsync-api.eu-central-1.amazonaws.com/event","attachmentsEnabled":true}
     """
     static let minimalMe = #"{"userId":"u-1","isOperator":false,"termsVersion":1}"#
     static let termsAcceptance = #"{"acceptedTermsVersion":2,"acceptedTermsAt":"2026-09-25T09:00:00Z"}"#

@@ -20,6 +20,12 @@ nonisolated extension AccessibilityIdentifiers {
     static let chatComposer = "chat-composer"
     static let chatSend = "chat-send"
     static let chatTitle = "chat-title"
+    /// The room's "more" menu and its one item, Clear chat or Delete chat.
+    static let chatMore = "chat-more"
+    static let chatClear = "chat-clear"
+    /// The composer's reply preview (a container; its children keep their own identifiers) and the X that drops it.
+    static let chatReplyPreview = "chat-reply-preview"
+    static let chatReplyCancel = "chat-reply-cancel"
     /// Fields and actions of the create-group sheet; `createGroup` is the event form's group row.
     static let createGroupName = "create-group-name"
     static let createGroupDescription = "create-group-description"
@@ -43,6 +49,11 @@ nonisolated extension AccessibilityIdentifiers {
 
     static func message(id: String) -> String {
         "message-\(id)"
+    }
+
+    /// The quote inside a reply's bubble, keyed by the original's id.
+    static func messageQuote(id: String) -> String {
+        "message-quote-\(id)"
     }
 
     static func memberRow(_ userID: String) -> String {

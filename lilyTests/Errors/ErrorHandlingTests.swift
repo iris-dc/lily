@@ -12,7 +12,9 @@ struct ErrorMessageMapperTests {
         .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned, .ownerCannotLeave,
         .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed, .contentRejected,
         .inviteExpired, .inviteUnavailable, .inboxUnavailable, .inviteActionFailed, .inviteNotPending, .alreadyMember,
-        .cannotInvite, .chatUnavailable, .messageSendFailed, .messageNotFound,
+        .cannotInvite, .chatUnavailable, .messageSendFailed, .messageNotFound, .replyTargetNotFound,
+        .attachmentNotFound, .attachmentTooLarge, .attachmentTypeNotAllowed, .attachmentsDisabled, .attachmentUploadFailed,
+        .attachmentUnavailable,
         .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired,
         .profileUnavailable, .conversationFailed, .conversationLimit,
         .unknown,
@@ -89,8 +91,23 @@ struct ErrorMessageMapperTests {
         #expect(ErrorMessageMapper.message(for: .inviteExpired).title == "Invite expired")
         #expect(ErrorMessageMapper.message(for: .messageSendFailed).title == "Not sent")
         #expect(ErrorMessageMapper.message(for: .termsRequired).title == "Please accept the updated terms")
+        #expect(ErrorMessageMapper.message(for: .replyTargetNotFound)
+                == ErrorMessage(title: "That message is gone", body: "It was deleted before your reply was sent."))
         #expect(ErrorMessageMapper.message(for: .membershipLimitReached).body.contains("\(AppConfig.Groups.maxMemberships)"))
         #expect(ErrorMessageMapper.message(for: .accountSuspended).body.contains(AppConfig.Moderation.supportEmail))
+    }
+
+    /// Pinned: an attachment refused, missing or failed each say so, and the size caps name the numbers from config
+    /// for all three kinds.
+    @Test func attachmentErrorsHaveTheirOwnTitles() {
+        #expect(ErrorMessageMapper.message(for: .attachmentNotFound).title == "Attachment missing")
+        #expect(ErrorMessageMapper.message(for: .attachmentTooLarge).title == "That's too big")
+        let caps = ErrorMessageMapper.message(for: .attachmentTooLarge).body
+        #expect(caps.contains("10 MB") && caps.contains("50 MB") && caps.contains("3 minutes") && caps.contains("25 MB"))
+        #expect(ErrorMessageMapper.message(for: .attachmentTypeNotAllowed).title == "That can't be sent")
+        #expect(ErrorMessageMapper.message(for: .attachmentsDisabled).title == "Attachments are off")
+        #expect(ErrorMessageMapper.message(for: .attachmentUploadFailed).title == "Couldn't upload the attachment")
+        #expect(ErrorMessageMapper.message(for: .attachmentUnavailable).title == "Couldn't load the attachment")
     }
 
     /// Pinned like the rest: a profile that would not load and a conversation that would not start each say so, and the
@@ -198,6 +215,9 @@ struct BackendErrorCodeTests {
             "INVITE_EXPIRED": .inviteExpired, "INVITE_NOT_PENDING": .inviteNotPending,
             "INBOX_ITEM_NOT_FOUND": .inviteNotPending, "ALREADY_MEMBER": .alreadyMember, "CANNOT_INVITE": .cannotInvite,
             "BLOCK_LIMIT": .blockLimitReached, "CONVERSATION_LIMIT": .conversationLimit,
+            "REPLY_TARGET_NOT_FOUND": .replyTargetNotFound, "ATTACHMENT_NOT_FOUND": .attachmentNotFound,
+            "ATTACHMENT_TOO_LARGE": .attachmentTooLarge, "ATTACHMENT_TYPE_NOT_ALLOWED": .attachmentTypeNotAllowed,
+            "ATTACHMENTS_DISABLED": .attachmentsDisabled,
         ]
         for (raw, error) in expected {
             #expect(BackendErrorCode(rawValue: raw)?.appError == error, "\(raw)")

@@ -1,7 +1,8 @@
 import Foundation
 
-/// Chat from the Laurel backend (plan section 3.4). Reads fall back to `.chatUnavailable`, a send to
-/// `.messageSendFailed`; the codes with copy of their own map through the shared `BackendErrorCode`.
+/// Chat from the Laurel backend (plan section 3.4). Reads, the read marker and the clear fall back to
+/// `.chatUnavailable`, a send to `.messageSendFailed`, an upload ticket to `.attachmentUploadFailed` and a link
+/// refresh to `.attachmentUnavailable`; the codes with copy of their own map through the shared `BackendErrorCode`.
 final class RemoteChatRepository: ChatRepository {
     private let client: any APIClient
 
@@ -37,6 +38,21 @@ final class RemoteChatRepository: ChatRepository {
         let request = APIRequest<ReadMarker>.put(AppConfig.API.Paths.read(id: groupID),
                                                  body: ReadMarkerPayload(messageId: messageID))
         return try await client.send(request, failingWith: .chatUnavailable)
+    }
+
+    func clearHistory(groupID: String) async throws -> ClearedHistory {
+        let request = APIRequest<ClearedHistory>.delete(AppConfig.API.Paths.messages(id: groupID))
+        return try await client.send(request, failingWith: .chatUnavailable)
+    }
+
+    func requestUpload(groupID: String, _ request: UploadRequestPayload) async throws -> UploadTicket {
+        let call = APIRequest<UploadTicket>.post(AppConfig.API.Paths.uploads(id: groupID), body: request)
+        return try await client.send(call, failingWith: .attachmentUploadFailed)
+    }
+
+    func refreshAttachment(groupID: String, messageID: String, attachmentID: String) async throws -> AttachmentLink {
+        let path = AppConfig.API.Paths.attachment(id: groupID, messageID: messageID, attachmentID: attachmentID)
+        return try await client.send(.get(path), failingWith: .attachmentUnavailable)
     }
 
     private func page(groupID: String, query: [URLQueryItem]) async throws -> MessagePage {

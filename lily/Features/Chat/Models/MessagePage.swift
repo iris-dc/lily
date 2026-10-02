@@ -34,10 +34,29 @@ nonisolated struct ReadMarker: Hashable, Codable, Sendable {
     let channelEpoch: Int
 }
 
-/// Body of `POST /api/groups/{id}/messages`.
+/// Answer of `DELETE /api/groups/{id}/messages`: the caller's new history floor (everything stored before it is gone
+/// from their pages alone), `hidden` only for a conversation, which then leaves Mine until someone writes again.
+nonisolated struct ClearedHistory: Hashable, Codable, Sendable {
+    let historyFloor: String
+    let hidden: Bool
+    let channelEpoch: Int
+}
+
+/// Body of `POST /api/groups/{id}/messages`; every optional is omitted, never `null`: `replyToMessageId` on a plain
+/// message, `attachments` on a message without any, and `text` on a message that is its pictures alone (the backend
+/// accepts a blank text only with attachments).
 nonisolated struct SendMessagePayload: Encodable, Equatable, Sendable {
     let clientMessageId: String
-    let text: String
+    let text: String?
+    let replyToMessageId: String?
+    let attachments: [AttachmentRef]?
+
+    init(clientMessageId: String, text: String?, replyToMessageId: String? = nil, attachments: [AttachmentRef]? = nil) {
+        self.clientMessageId = clientMessageId
+        self.text = text
+        self.replyToMessageId = replyToMessageId
+        self.attachments = attachments
+    }
 }
 
 /// Body of `PUT /api/groups/{id}/read`.

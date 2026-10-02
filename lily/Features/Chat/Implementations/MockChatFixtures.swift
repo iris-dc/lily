@@ -43,6 +43,9 @@ nonisolated enum MockChatFixtures {
     private static let secondsBetweenConversationLines = 120.0
     /// The system row sits after this many text messages.
     private static let systemRowAfter = 5
+    /// The caller's line at this index of the Kickers room answers the text row before it, so a quote is on screen
+    /// the moment the room opens.
+    private static let replyLineIndex = 7
     /// The game each fixture room announces; a room without one has no system row.
     private static let createdEvents: [String: (eventID: String, sender: String)] = [
         MockGroupFixtures.kickersID: ("mock-event-0", "Marta"),
@@ -94,13 +97,16 @@ nonisolated enum MockChatFixtures {
             }
             let isCaller = lineIndex % (senders.count + 1) == senders.count
             let sender = senders[lineIndex % senders.count]
+            let isReply = lineIndex == replyLineIndex && groupID == MockGroupFixtures.kickersID
+            let quoted = isReply ? rows.last { !$0.isSystem } : nil
             rows.append(ChatMessage(id: id,
                                     groupId: groupID,
                                     senderUserId: isCaller ? callerID : MockGroupFixtures.memberID(for: sender),
                                     senderName: isCaller ? callerName : sender,
                                     text: lines[lineIndex % lines.count],
                                     clientMessageId: isCaller ? "mock-client-\(index)" : nil,
-                                    sentAt: sentAt))
+                                    sentAt: sentAt,
+                                    replyTo: quoted.map { ReplyQuote(quoting: $0, senderName: $0.senderName) }))
             lineIndex += 1
         }
         return rows

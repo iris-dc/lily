@@ -40,6 +40,26 @@ struct AppDependenciesChatTests {
         #expect((dependencies.chatRepository as? MockChatRepository)?.autoReplies == true)
     }
 
+    /// The attachment collaborators follow the data layer: the mock store's uploader with mock events, the real
+    /// preparer unless the mock picker is asked for, the bucket uploader and the disk cache otherwise.
+    @Test func attachmentCollaboratorsFollowTheLaunchArguments() {
+        let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeTestDefaults())
+        #expect(mocked.groups.attachments.uploader is MockAttachmentUploader)
+        #expect(mocked.groups.attachments.preparer is DeviceMediaPreparer)
+
+        let picker = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents,
+                                                             AppConfig.LaunchArguments.mockAttachmentPicker],
+                                                 defaults: makeTestDefaults())
+        #expect(picker.groups.attachments.preparer is MockMediaPreparer)
+        #expect(picker.makeAttachmentComposer(for: SportGroup.fixture(id: "g")).picksWithoutPicker)
+
+        let remote = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
+        #expect(remote.groups.attachments.uploader is URLSessionAttachmentUploader)
+        #expect(remote.groups.attachments.preparer is DeviceMediaPreparer)
+        #expect(!remote.makeAttachmentComposer(for: SportGroup.fixture(id: "g")).picksWithoutPicker)
+        #expect(remote.groups.sessionObservers.contains { $0 === remote.groups.attachments.cache })
+    }
+
     @Test func chatCollaboratorsAreSharedInstances() {
         let dependencies = AppDependencies.makeMock()
         #expect(dependencies.realtime === dependencies.groups.realtime)

@@ -1,10 +1,13 @@
 import SwiftUI
 
 /// A group's chat room: the transcript over the aurora, the composer pinned to the bottom, the group's name and
-/// member count in the bar and an info button that leads to the group. A direct conversation is titled with the other
-/// person, has no member count and its info button leads to their profile. The tab bar hides while it is open.
+/// member count in the bar, an info button that leads to the group and a "more" menu whose one item clears the chat
+/// for the caller after a confirmation. A direct conversation is titled with the other person, has no member count,
+/// its info button leads to their profile and its menu reads "Delete chat". The tab bar hides while it is open.
 struct ChatView: View {
     @State private var viewModel: ChatViewModel
+    /// The room awaiting the caller's word on a clear; `nil` while nothing is asked.
+    @State private var clearing: SportGroup?
     private let dependencies: AppDependencies
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
@@ -28,13 +31,19 @@ struct ChatView: View {
         .toolbarVisibility(.hidden, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { infoButton }
+            ToolbarItem(placement: .topBarTrailing) {
+                ChatRoomMenu(group: group, userID: viewModel.identity.currentUserID) { clearing = group }
+            }
+        }
+        .chatClearConfirmation(for: $clearing) { _ in
+            Task { await viewModel.clearHistory() }
         }
         .task { await viewModel.appear() }
         .onDisappear { Task { await viewModel.cancel() } }
         .onChange(of: scenePhase) {
             if scenePhase == .background { Task { await viewModel.sceneDidEnterBackground() } }
         }
-        // Out of the group, or the group is gone: nothing left to show here.
+        // Out of the group, the group is gone, or the conversation was deleted: nothing left to show here.
         .onChange(of: viewModel.isGone) {
             if viewModel.isGone { dismiss() }
         }
@@ -56,7 +65,7 @@ struct ChatView: View {
         }
     }
 
-    /// A spinner while the first page loads; the empty state for a room nobody has written in.
+    /// A spinner while the first page loads; the empty state for a room nobody has written in (or one just cleared).
     @ViewBuilder private var placeholder: some View {
         if viewModel.rows.isEmpty {
             if viewModel.isLoadingHistory {

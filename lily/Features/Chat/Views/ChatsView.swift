@@ -1,11 +1,14 @@
 import SwiftUI
 
 /// The Chats root: the inbox pinned first, then the caller's rooms (group rooms and direct conversations together,
-/// most recently active first), each opening its chat on this stack. A guest is asked to sign in instead, and nothing
+/// most recently active first), each opening its chat on this stack; a long press on a room offers Clear chat or
+/// Delete chat, after the same confirmation as the room's own menu. A guest is asked to sign in instead, and nothing
 /// is requested for them; the loads run again for whoever signs in from here. Pull-to-refresh reloads the rooms and
 /// the inbox.
 struct ChatsView: View {
     let dependencies: AppDependencies
+    /// The room awaiting the caller's word on a clear; `nil` while nothing is asked.
+    @State private var clearing: SportGroup?
 
     private typealias Copy = AppBranding.Chats
 
@@ -45,6 +48,9 @@ struct ChatsView: View {
                 dependencies.eventChanges.recordChange()
             }, dependencies: dependencies)
         }
+        .chatClearConfirmation(for: $clearing) { group in
+            Task { await dependencies.makeChatHistoryClearer().clear(group) }
+        }
         .task(id: loadKey) { await loadIfStale() }
     }
 
@@ -66,7 +72,7 @@ struct ChatsView: View {
 
     @ViewBuilder private var rooms: some View {
         if !myGroups.groups.isEmpty {
-            GroupRowList(groups: myGroups.groups, unread: dependencies.unreadCenter) {
+            GroupRowList(groups: myGroups.groups, unread: dependencies.unreadCenter, rowMenu: rowMenu) {
                 dependencies.navigation.open(chat: $0)
             }
         } else if myGroups.isLoading {
@@ -75,6 +81,13 @@ struct ChatsView: View {
                 .padding(.vertical, DesignTokens.Spacing.lg)
         } else {
             noRooms
+        }
+    }
+
+    /// What a long press on a room offers: the same clear or delete item as the room's menu, for anyone who may chat.
+    @ViewBuilder private func rowMenu(for group: SportGroup) -> some View {
+        if GroupAccess(group: group, userID: dependencies.identity.currentUserID).canChat {
+            ChatClearMenuItem(group: group) { clearing = group }
         }
     }
 

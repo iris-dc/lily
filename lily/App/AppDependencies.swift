@@ -209,7 +209,9 @@ final class AppDependencies {
         logger.info(.events, "Launch argument requested mock events")
         let autoReplies = arguments.contains(AppConfig.LaunchArguments.mockChatReplies)
         if autoReplies { logger.info(.chat, "Launch argument requested mock chat replies") }
-        return .mock(identity: identity, logger: logger, autoReplies: autoReplies)
+        let mockPicker = arguments.contains(AppConfig.LaunchArguments.mockAttachmentPicker)
+        if mockPicker { logger.info(.chat, "Launch argument requested the mock attachment picker") }
+        return .mock(identity: identity, logger: logger, autoReplies: autoReplies, mockPicker: mockPicker)
     }
 
     /// The `-api-base-url` value when it is a URL with a scheme and a host, otherwise `AppConfig.API.baseURL`.
@@ -255,13 +257,19 @@ private struct Repositories {
         return Repositories(events: RemoteEventRepository(client: client),
                             profile: RemoteProfileRepository(client: client),
                             interactions: RemoteInteractionRecorder(client: client, identity: identity, logger: logger),
-                            groups: .remote(client: client, realtimeEndpoint: realtimeEndpoint, identity: identity))
+                            groups: .remote(client: client,
+                                            realtimeEndpoint: realtimeEndpoint,
+                                            identity: identity,
+                                            logger: logger))
     }
 
-    static func mock(identity: any IdentityProvider, logger: any Logging, autoReplies: Bool = false) -> Repositories {
+    static func mock(identity: any IdentityProvider,
+                     logger: any Logging,
+                     autoReplies: Bool = false,
+                     mockPicker: Bool = false) -> Repositories {
         Repositories(events: MockEventRepository(identity: identity, logger: logger),
                      profile: MockProfileRepository(logger: logger),
                      interactions: NoOpInteractionRecorder(),
-                     groups: .mock(identity: identity, logger: logger, autoReplies: autoReplies))
+                     groups: .mock(identity: identity, logger: logger, autoReplies: autoReplies, mockPicker: mockPicker))
     }
 }

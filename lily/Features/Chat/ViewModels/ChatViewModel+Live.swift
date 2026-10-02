@@ -19,6 +19,7 @@ extension ChatViewModel {
         switch envelope {
         case .message(let message):
             if let clientMessageID = message.clientMessageId, message.isSent(by: identity.currentUserID) {
+                seedAttachmentCache(for: clientMessageID, with: message)
                 pending.removeAll { $0.clientMessageID == clientMessageID }
             }
             // A game announced here was created elsewhere; the group's Events segment behind this screen must reload.

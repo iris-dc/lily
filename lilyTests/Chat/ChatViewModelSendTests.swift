@@ -171,6 +171,34 @@ struct ChatViewModelSendTests {
         #expect(!harness.transport.subscribedChannels.contains(.room(groupID: "g", epoch: 1)))
     }
 
+    /// A picture without words: Send waits for the upload, the bubble previews the picked file, the stored message
+    /// carries the attachment, and its files seed the cache under the stored id.
+    @Test func anImageOnlySendShowsPendingBubbleThenStoredOne() async throws {
+        let (harness, viewModel) = await makeOpenChat()
+        viewModel.draft.text = ""
+        harness.uploader.holdsRequests = true
+        viewModel.attachments.add(imageData: Data(repeating: 1, count: 300))
+        await settle(until: { harness.uploader.inFlight == 1 })
+        #expect(!viewModel.canSend && viewModel.attachments.isBusy, "no send while the picture is on its way")
+
+        harness.uploader.releaseRequests()
+        await settle(until: { viewModel.canSend })
+        harness.chat.holdsRequests = true
+        let send = Task { await viewModel.send() }
+        await settle(until: { viewModel.pending.count == 1 && harness.chat.sentDrafts.count == 1 })
+        let bubble = viewModel.pending[0]
+        #expect(bubble.text.isEmpty && bubble.attachments.map { $0.uploadedRef?.attachmentId } == ["att-1"])
+        #expect(viewModel.attachments.isEmpty, "the composer starts over as soon as the send leaves")
+        #expect(harness.chat.sentDrafts[0].payload.text == nil && harness.chat.sentDrafts[0].payload.attachments?.count == 1)
+        harness.chat.releaseRequests()
+        await send.value
+
+        let stored = try #require(viewModel.room.messages.last)
+        #expect(viewModel.pending.isEmpty && stored.text == nil && stored.attachments.map(\.id) == ["att-1"])
+        #expect(harness.attachmentCache.copied.map(\.id) == ["att-1", "att-1"], "the sent files seed the cache")
+        #expect(harness.attachmentCache.fileURL(for: "att-1", variant: .thumbnail) != nil)
+    }
+
     @Test func aSendWhileGoneOrBlankIsIgnored() async {
         let (harness, viewModel) = await makeOpenChat()
         viewModel.draft.text = "   "

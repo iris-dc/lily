@@ -73,6 +73,20 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case chatUnavailable
     case messageSendFailed
     case messageNotFound
+    /// The message a reply answers is gone (deleted, or below the caller's history floor; `REPLY_TARGET_NOT_FOUND`).
+    case replyTargetNotFound
+    /// A send named an attachment the bucket does not hold, or one another user uploaded (`ATTACHMENT_NOT_FOUND`).
+    case attachmentNotFound
+    /// The picture is over its cap after the device re-encoded it, or the backend measured it so (`ATTACHMENT_TOO_LARGE`).
+    case attachmentTooLarge
+    /// Not a picture the app can send, or a type the backend refuses (`ATTACHMENT_TYPE_NOT_ALLOWED`).
+    case attachmentTypeNotAllowed
+    /// The backend runs without a bucket (`ATTACHMENTS_DISABLED`); `GET /api/me` says so too and the button hides.
+    case attachmentsDisabled
+    /// The upload ticket or the PUT itself failed for a reason without a code of its own; Retry asks for a new ticket.
+    case attachmentUploadFailed
+    /// A link refresh or a download failed for a reason without a code of its own.
+    case attachmentUnavailable
     case reportFailed
     case blockLimitReached
     case userNotFound

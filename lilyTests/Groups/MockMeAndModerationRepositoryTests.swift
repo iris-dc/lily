@@ -12,7 +12,7 @@ struct MockMeAndModerationRepositoryTests {
 
         let account = try await repository.me()
         #expect(account.userId == identity.currentUserID && account.isOperator && account.termsAccepted)
-        #expect(account.realtimeEndpoint == nil)
+        #expect(account.realtimeEndpoint == nil && account.attachmentsEnabled, "the mock store stands in for the bucket")
 
         identity.currentUserID = "mock-google"
         #expect(try await repository.me().isOperator == false)

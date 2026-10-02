@@ -15,6 +15,15 @@ final class FakeChatRepository: ChatRepository {
     var pageError: (any Error)?
     var deleteError: (any Error)?
     var readMarkerError: (any Error)?
+    var clearError: (any Error)?
+    /// Whether a clear answers `hidden`, as the backend does for a conversation.
+    var clearAnswersHidden = false
+    /// Answered to the next upload requests, one each; a fixture ticket numbered by the request once they run dry.
+    var uploadTickets: [UploadTicket] = []
+    var uploadError: (any Error)?
+    /// Answered to the next link refreshes, one each; `.attachmentUnavailable` once they run dry.
+    var refreshLinks: [AttachmentLink] = []
+    var refreshError: (any Error)?
     /// The epoch the next send and read marker answers carry; `epoch` otherwise.
     var responseEpoch: Int?
     /// While true, every request suspends until `releaseRequests()`.
@@ -31,7 +40,17 @@ final class FakeChatRepository: ChatRepository {
     private(set) var sentDrafts: [MessageDraft] = []
     private(set) var deletedMessageIDs: [String] = []
     private(set) var readMarks: [(groupID: String, messageID: String)] = []
+    private(set) var clearedGroupIDs: [String] = []
+    private(set) var uploadRequests: [(groupID: String, request: UploadRequestPayload)] = []
+    private(set) var refreshRequests: [RefreshRequest] = []
     private var sequence = 0
+    private var ticketSequence = 0
+
+    struct RefreshRequest: Equatable {
+        let groupID: String
+        let messageID: String
+        let attachmentID: String
+    }
 
     func newest(groupID: String) async throws -> MessagePage {
         newestGroupIDs.append(groupID)
@@ -57,9 +76,26 @@ final class FakeChatRepository: ChatRepository {
         let message = ChatMessage.fixture(id: "sent-\(sequence)",
                                           groupID: groupID,
                                           senderUserID: TestFixtures.user.id,
-                                          text: draft.trimmedText,
-                                          clientMessageID: draft.clientMessageID)
+                                          text: draft.payload.text,
+                                          clientMessageID: draft.clientMessageID,
+                                          replyTo: draft.replyTo,
+                                          attachments: (draft.payload.attachments ?? []).map(Attachment.fixture(from:)))
         return SentMessage(message: message, channelEpoch: responseEpoch ?? epoch)
+    }
+
+    func requestUpload(groupID: String, _ request: UploadRequestPayload) async throws -> UploadTicket {
+        uploadRequests.append((groupID, request))
+        if let uploadError { throw uploadError }
+        if !uploadTickets.isEmpty { return uploadTickets.removeFirst() }
+        ticketSequence += 1
+        return .fixture(attachmentID: "att-\(ticketSequence)", thumbnail: request.thumbnail != nil)
+    }
+
+    func refreshAttachment(groupID: String, messageID: String, attachmentID: String) async throws -> AttachmentLink {
+        refreshRequests.append(RefreshRequest(groupID: groupID, messageID: messageID, attachmentID: attachmentID))
+        if let refreshError { throw refreshError }
+        guard !refreshLinks.isEmpty else { throw AppError.attachmentUnavailable }
+        return refreshLinks.removeFirst()
     }
 
     func delete(groupID: String, messageID: String) async throws -> ChatMessage {
@@ -72,6 +108,13 @@ final class FakeChatRepository: ChatRepository {
         readMarks.append((groupID, messageID))
         if let readMarkerError { throw readMarkerError }
         return ReadMarker(lastReadMessageId: messageID, channelEpoch: responseEpoch ?? epoch)
+    }
+
+    func clearHistory(groupID: String) async throws -> ClearedHistory {
+        clearedGroupIDs.append(groupID)
+        if let clearError { throw clearError }
+        sequence += 1
+        return ClearedHistory(historyFloor: "floor-\(sequence)", hidden: clearAnswersHidden, channelEpoch: responseEpoch ?? epoch)
     }
 
     func releaseRequests() {

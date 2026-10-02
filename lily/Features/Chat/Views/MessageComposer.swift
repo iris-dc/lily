@@ -1,23 +1,38 @@
 import SwiftUI
 
-/// The field and the send button at the bottom of a chat, on glass. The field grows to five lines, a counter shows
-/// once the text nears the limit, and after a 429 the button stays closed while a caption counts the cooldown down.
+/// The field and the send button at the bottom of a chat, on glass, with the attach "+" leading the field while the
+/// backend takes attachments. The field grows to five lines, a counter shows once the text nears the limit, and after
+/// a 429 the button stays closed while a caption counts the cooldown down. While the draft answers a message,
+/// `ReplyPreviewBar` sits above the field and the field takes focus; while pictures are picked, `AttachmentStrip` does.
 struct MessageComposer: View {
     @Bindable var viewModel: ChatViewModel
     /// Advanced once a second while the cooldown runs, so the caption and the button follow the clock.
     @State private var tick = 0
+    @FocusState private var isFieldFocused: Bool
 
     private typealias Copy = AppBranding.Chat
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
             GlassEffectContainer {
-                HStack(alignment: .bottom, spacing: DesignTokens.Spacing.sm) {
-                    TextField(Copy.placeholder, text: $viewModel.draft.text, axis: .vertical)
-                        .lineLimit(DesignTokens.Layout.multilineFieldLines)
-                        .lilyMultilineField()
-                        .accessibilityIdentifier(AccessibilityIdentifiers.chatComposer)
-                    sendButton
+                VStack(spacing: DesignTokens.Spacing.sm) {
+                    if let quote = viewModel.replyTarget {
+                        ReplyPreviewBar(quote: quote) { viewModel.cancelReply() }
+                    }
+                    if !viewModel.attachments.isEmpty {
+                        AttachmentStrip(attachments: viewModel.attachments)
+                    }
+                    HStack(alignment: .bottom, spacing: DesignTokens.Spacing.sm) {
+                        if viewModel.attachmentsEnabled {
+                            AttachmentMenuButton(attachments: viewModel.attachments)
+                        }
+                        TextField(Copy.placeholder, text: $viewModel.draft.text, axis: .vertical)
+                            .lineLimit(DesignTokens.Layout.multilineFieldLines)
+                            .lilyMultilineField()
+                            .focused($isFieldFocused)
+                            .accessibilityIdentifier(AccessibilityIdentifiers.chatComposer)
+                        sendButton
+                    }
                 }
             }
             if let caption = caption(tick: tick) {
@@ -29,6 +44,9 @@ struct MessageComposer: View {
         }
         .padding(DesignTokens.Spacing.md)
         .task(id: viewModel.cooldownUntil) { await countDown() }
+        .onChange(of: viewModel.replyTarget) {
+            if viewModel.replyTarget != nil { isFieldFocused = true }
+        }
     }
 
     private var sendButton: some View {
