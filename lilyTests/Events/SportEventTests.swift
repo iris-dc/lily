@@ -40,6 +40,16 @@ struct SportEventTests {
         #expect(event.fillRatio == 1)
     }
 
+    /// The backend's listing rule, repeated on device for the mock feed and the local insert into Explore.
+    @Test func onlyAPrivateGroupsGameIsUnlisted() {
+        let kickers = EventGroupRef(id: "k", name: "Kickers", visibility: .public, isDeleted: false)
+        let padel = EventGroupRef(id: "p", name: "Padel", visibility: .private, isDeleted: false)
+
+        #expect(SportEvent.fixture().isListed)
+        #expect(SportEvent.fixture(group: kickers).isListed)
+        #expect(!SportEvent.fixture(group: padel).isListed)
+    }
+
     @Test func zeroCapacityDoesNotDivideByZero() {
         let event = makeEvent(capacity: 0, participants: 0)
         #expect(event.fillRatio == 0)

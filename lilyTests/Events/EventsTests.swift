@@ -4,9 +4,12 @@ import Testing
 
 @MainActor
 struct MockEventRepositoryTests {
-    @Test func upcomingReturnsRequestedCount() async throws {
+    /// `count` sizes the fixture set; Explore lists all of them but the private group's game (index 3), like the backend.
+    @Test func upcomingListsTheRequestedFixturesButThePrivateGroups() async throws {
         let repository = MockEventRepository(now: .now, count: 5, identity: FakeIdentityProvider(), logger: SpyLogger())
-        #expect(try await repository.events(in: .upcoming, near: nil).count == 5)
+        let upcoming = try await repository.events(in: .upcoming, near: nil)
+        #expect(upcoming.count == 4)
+        #expect(upcoming.allSatisfy { $0.isListed })
     }
 
     @Test func joinedIsNonEmptyStrictSubsetOfUpcoming() async throws {
@@ -32,20 +35,22 @@ struct MockEventRepositoryTests {
         #expect(events.map(\.startsAt) == events.map(\.startsAt).sorted())
     }
 
-    /// Two fixtures are hosted in groups (one public, one private), so the badge and "Hosted in" have data; the group
-    /// scope lists exactly the games of that group.
-    @Test func twoFixturesCarryGroupRefsAndTheGroupScopeFiltersByThem() async throws {
+    /// Two fixtures are hosted in groups (one public, one private), so the badge and "Hosted in" have data. Like the
+    /// backend, Explore lists the public group's game only; the private group's is found under its group's scope.
+    @Test func groupedFixturesFollowTheirGroupsVisibility() async throws {
         let repository = MockEventRepository(now: .now,
                                              count: AppConfig.Events.mockFeedSize,
                                              identity: FakeIdentityProvider(),
                                              logger: SpyLogger())
-        let all = try await repository.events(in: .upcoming, near: nil)
+        let upcoming = try await repository.events(in: .upcoming, near: nil)
+        let kickers = try await repository.events(in: .group(id: MockGroupFixtures.kickersID), near: nil)
+        let padel = try await repository.events(in: .group(id: MockGroupFixtures.padelID), near: nil)
 
-        let grouped = all.filter { $0.group != nil }
-        #expect(grouped.map(\.group?.id) == [MockGroupFixtures.kickersID, MockGroupFixtures.padelID])
-        #expect(grouped.map(\.group?.visibility) == [.public, .private])
-        #expect(grouped.allSatisfy { $0.group?.isDeleted == false })
-        #expect(try await repository.events(in: .group(id: MockGroupFixtures.kickersID), near: nil) == [grouped[0]])
+        #expect(upcoming.filter { $0.group != nil } == kickers)
+        #expect(kickers.map(\.group?.visibility) == [.public])
+        #expect(padel.map(\.group?.visibility) == [.private])
+        #expect(!upcoming.contains { $0.group?.isPrivate == true })
+        #expect((kickers + padel).allSatisfy { $0.group?.isDeleted == false })
         #expect(try await repository.events(in: .group(id: "nowhere"), near: nil).isEmpty)
     }
 
@@ -55,15 +60,16 @@ struct MockEventRepositoryTests {
         #expect(Set(titles).count == titles.count)
     }
 
-    /// Keeps the map's selected-pin card exercising the "Full" copy, which once read "0 spots left".
+    /// Keeps the map's selected-pin card exercising the "Full" copy, which once read "0 spots left"; the full game must
+    /// be one Explore lists, since the private group's game is not.
     @Test func feedSizedFixturesIncludeAFullEvent() {
-        let events = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize)
+        let events = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize).filter(\.isListed)
         #expect(events.contains { $0.isFull })
     }
 
     /// The feed should show every capacity state of the bar: an open, a nearly full (amber) and a full event.
     @Test func feedSizedFixturesCoverEveryCapacityState() {
-        let events = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize)
+        let events = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize).filter(\.isListed)
         #expect(events.contains { $0.isNearlyFull })
         #expect(events.contains { !$0.isNearlyFull && !$0.isFull && $0.participantCount > 0 })
     }

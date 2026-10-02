@@ -2,7 +2,7 @@ import Foundation
 
 /// Fixture events with in-memory joins, for previews, UI tests and `-mock-events` runs without a backend.
 final class MockEventRepository: EventRepository {
-    /// Every n-th fixture starts out joined so the Home tab has content. Four leaves the full padel game
+    /// Every n-th fixture starts out joined so the Home tab has content. Four leaves the full basketball game
     /// unjoined, so the disabled "Event is full" state is visible somewhere in the mock feed.
     private static let joinedStride = 4
 
@@ -22,11 +22,12 @@ final class MockEventRepository: EventRepository {
         self.logger = logger
     }
 
-    /// The position is ignored: the fixtures keep their start order.
+    /// The position is ignored: the fixtures keep their start order. Like the backend, Explore never lists a private
+    /// group's game; its group's scope and Home do.
     func events(in scope: EventScope, near position: Coordinate?) async throws -> [SportEvent] {
         logger.debug(.events, "Mock events served for scope \(scope)")
         switch scope {
-        case .upcoming: return events
+        case .upcoming: return events.filter(\.isListed)
         case .joined: return events.filter(\.participates)
         case .group(let id): return events.filter { $0.group?.id == id }
         }
@@ -128,7 +129,8 @@ nonisolated enum MockEventFixtures {
         var lookingFor: String?
         var skillLevel: SkillLevel?
         var priceAmount: Decimal?
-        /// The group the game is hosted in; two fixtures carry one so the badge and "Hosted in" have data.
+        /// The group the game is hosted in; two fixtures carry one so the badge and "Hosted in" have data. The private
+        /// group's game is off Explore, as on the backend, and reached through its group's Events segment.
         var group: EventGroupRef?
     }
 
@@ -152,7 +154,7 @@ nonisolated enum MockEventFixtures {
             type: .basketball,
             location: "Westside Courts",
             capacity: 8,
-            participants: 7,
+            participants: 8,
             host: "Dev",
             offset: (-0.5, -0.9),
             description: "Half-court pickup under the lights. Winners stay on.",

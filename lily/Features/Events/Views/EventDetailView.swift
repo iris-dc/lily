@@ -128,7 +128,7 @@ struct EventDetailView: View {
                 Label(AppBranding.Groups.hostedIn(groupName: group.name), systemImage: DesignTokens.Symbols.groups)
                     .foregroundStyle(.secondary)
             }
-            if group.visibility == .private {
+            if group.isPrivate {
                 Text(AppBranding.Groups.membersOnly)
                     .font(LilyTheme.Fonts.caption)
                     .foregroundStyle(.secondary)

@@ -124,23 +124,24 @@ final class EventListViewModel {
     }
 
     /// Takes an event just created from this screen so it shows without a round trip: first on Explore, whose order
-    /// is the backend's relevance for the caller and where their own new game belongs on top; by start time on a
-    /// joined-only list, which stays chronological and takes it only when the caller participates (the host always
-    /// does), and on a group's list, which takes only that group's games. Recorded like `replace`, so every other
-    /// list reloads on its next appearance; repeated for one id, a no-op.
+    /// is the backend's relevance for the caller and where their own new game belongs on top, unless its group is
+    /// private (the backend never lists one there, so neither does this list); by start time on a joined-only list,
+    /// which stays chronological and takes it only when the caller participates (the host always does), and on a
+    /// group's list, which takes only that group's games. Recorded like `replace`, so every other list reloads on its
+    /// next appearance; repeated for one id, a no-op.
     func add(_ event: SportEvent) {
         guard !events.contains(where: { $0.id == event.id }) else {
             logger.debug(.cache, "Event \(event.id) already in scope \(scope); add ignored")
             return
         }
         switch scope {
-        case .upcoming:
+        case .upcoming where event.isListed:
             events.insert(event, at: 0)
         case .joined where event.participates:
             insertByStart(event)
         case .group(let id) where event.group?.id == id:
             insertByStart(event)
-        case .joined, .group:
+        case .upcoming, .joined, .group:
             break
         }
         changes.recordChange()

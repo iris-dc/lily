@@ -28,7 +28,8 @@ extension SportEvent {
                         description: String? = nil,
                         lookingFor: String? = nil,
                         skillLevel: SkillLevel? = nil,
-                        price: Price? = nil) -> SportEvent {
+                        price: Price? = nil,
+                        group: EventGroupRef? = nil) -> SportEvent {
         SportEvent(
             id: id,
             title: title,
@@ -43,7 +44,8 @@ extension SportEvent {
             description: description,
             lookingFor: lookingFor,
             skillLevel: skillLevel,
-            price: price
+            price: price,
+            group: group
         )
     }
 }

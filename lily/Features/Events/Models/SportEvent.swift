@@ -68,6 +68,9 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     var fillRatio: Double { capacity > 0 ? min(1, Double(participantCount) / Double(capacity)) : 0 }
     var participates: Bool { isJoined ?? false }
     var isFree: Bool { price?.isFree ?? true }
+    /// Whether Explore lists the event, the backend's rule repeated on device: every ungrouped game and those of public
+    /// groups; a private group's game is found under its group and on Home only.
+    var isListed: Bool { !(group?.isPrivate ?? false) }
     /// "Free" or the per-person amount; the one formatter for every surface that shows a price. Surfaces check `isFree`
     /// first and show nothing for free games, so "Free" is the model fallback, not screen copy (the filter's price cap
     /// treats 0 as free only).

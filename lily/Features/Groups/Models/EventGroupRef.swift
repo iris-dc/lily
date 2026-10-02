@@ -9,4 +9,5 @@ nonisolated struct EventGroupRef: Identifiable, Hashable, Codable, Sendable {
 
     /// A public, live group is worth a link to its detail; a private or deleted one shows its name only.
     var isLinkable: Bool { visibility == .public && !isDeleted }
+    var isPrivate: Bool { visibility == .private }
 }

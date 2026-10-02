@@ -150,6 +150,24 @@ struct EventListGroupAddTests {
 
         #expect(viewModel.events.map(\.id) == ["g0", "g1", "ours", "g2"])
     }
+
+    /// Explore takes a created game first unless its group is private: the backend never lists one there, so neither
+    /// does the list behind the sheet; the game reaches Home and the group's own list instead.
+    @Test func exploreLeavesAPrivateGroupsGameOut() async {
+        let loaded = makeLoaded()
+        let repository = FakeEventRepository()
+        repository.result = .success(loaded)
+        let viewModel = makeEventListViewModel(repository: repository)
+        await viewModel.load()
+        let host = TestFixtures.user.id
+        let membersOnly = SportEvent.fixture(id: "members-only", hostUserId: host, isJoined: true).hosted(in: padel)
+        let open = SportEvent.fixture(id: "open", hostUserId: host, isJoined: true).hosted(in: kickers)
+
+        viewModel.add(membersOnly)
+        viewModel.add(open)
+
+        #expect(viewModel.events.map(\.id) == ["open", "g0", "g1", "g2"])
+    }
 }
 
 private extension SportEvent {
