@@ -11,14 +11,23 @@ struct PushModelsTests {
         #expect(PushPayload.eventID(from: ["aps": ["alert": "x"]]) == nil)
     }
 
-    @Test func aRegistrationIsCurrentForTheSameTokenAndUserWithinTheInterval() {
+    @Test func aRegistrationIsCurrentForTheSameTokenUserAndLanguageWithinTheInterval() {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
-        let registration = LastDeviceRegistration(token: "t", userID: "u", registeredAt: now)
+        let registration = LastDeviceRegistration(token: "t", userID: "u", locale: "en", registeredAt: now)
 
-        #expect(registration.isCurrent(token: "t", userID: "u", now: now.addingTimeInterval(3_599), within: 3_600))
-        #expect(!registration.isCurrent(token: "t", userID: "u", now: now.addingTimeInterval(3_600), within: 3_600))
-        #expect(!registration.isCurrent(token: "other", userID: "u", now: now, within: 3_600))
-        #expect(!registration.isCurrent(token: "t", userID: "someone", now: now, within: 3_600))
+        #expect(registration.isCurrent(token: "t", userID: "u", locale: "en", now: now.addingTimeInterval(3_599), within: 3_600))
+        #expect(!registration.isCurrent(token: "t", userID: "u", locale: "en", now: now.addingTimeInterval(3_600), within: 3_600))
+        #expect(!registration.isCurrent(token: "other", userID: "u", locale: "en", now: now, within: 3_600))
+        #expect(!registration.isCurrent(token: "t", userID: "someone", locale: "en", now: now, within: 3_600))
+        #expect(!registration.isCurrent(token: "t", userID: "u", locale: "ru", now: now, within: 3_600))
+    }
+
+    @Test func aRegistrationStoredBeforeTheAppSpokeLanguagesReadsWithoutOneAndIsNotCurrent() throws {
+        let stored = try JSONDecoder.apiDecoder.decode(LastDeviceRegistration.self, from: Data("""
+        {"token":"t","userID":"u","registeredAt":"2026-10-02T10:00:00Z"}
+        """.utf8))
+        #expect(stored.locale == nil)
+        #expect(!stored.isCurrent(token: "t", userID: "u", locale: "en", now: stored.registeredAt, within: 3_600))
     }
 
     @Test func theCurrentEnvironmentFollowsTheBuildAndTheWireNamesAreLowerCase() throws {
@@ -27,9 +36,14 @@ struct PushModelsTests {
         #else
         #expect(PushEnvironment.current == .production)
         #endif
-        let payload = DeviceRegistrationPayload(token: "ab", platform: "ios", environment: .sandbox, appVersion: "1.0 (42)")
+        let payload = DeviceRegistrationPayload(token: "ab",
+                                                platform: "ios",
+                                                environment: .sandbox,
+                                                appVersion: "1.0 (42)",
+                                                locale: "ru")
         let json = try #require(String(data: JSONEncoder().encode(payload), encoding: .utf8))
         #expect(json.contains("\"environment\":\"sandbox\"") && json.contains("\"platform\":\"ios\""))
+        #expect(json.contains("\"locale\":\"ru\""))
         let registration = try JSONDecoder.apiDecoder.decode(DeviceRegistration.self, from: Data("""
         {"token":"ab","environment":"production","registeredAt":"2026-10-02T10:00:00Z"}
         """.utf8))

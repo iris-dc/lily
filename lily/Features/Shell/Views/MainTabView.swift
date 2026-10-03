@@ -33,7 +33,9 @@ struct MainTabView: View {
                 .accessibilityValue(Text(AppBranding.Chats.unreadChats(unreadChats)), isEnabled: unreadChats > 0)
             }
             Tab(value: .profile) {
-                ProfileView(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
+                ProfileView(session: dependencies.sessionController,
+                            language: dependencies.language,
+                            errorCenter: dependencies.errorCenter)
             } label: {
                 tabLabel(AppBranding.profileTitle, symbol: DesignTokens.Symbols.profile)
             }

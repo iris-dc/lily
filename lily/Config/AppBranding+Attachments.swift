@@ -5,27 +5,25 @@ nonisolated extension AppBranding.Chat {
     /// a bubble, the full-screen viewer and the player.
     enum Attachments {
         /// VoiceOver name of the "+" that opens the attach menu (its label is a glyph).
-        static let attach = "Attach"
-        static let photoLibrary = "Photo library"
-        static let camera = "Camera"
-        static let file = "File"
+        static var attach: String { localized("Attach") }
+        static var photoLibrary: String { localized("Photo library") }
+        static var camera: String { localized("Camera") }
+        static var file: String { localized("File") }
         /// VoiceOver name of the X on a picked picture.
-        static let remove = "Remove"
+        static var remove: String { localized("Remove") }
         /// Under a picture whose upload failed; tapping it tries again.
-        static let retryUpload = "Upload failed. Tap to retry."
+        static var retryUpload: String { localized("Upload failed. Tap to retry.") }
         /// VoiceOver names of a picture and a video in a bubble, and what a file card is called when the sender named none.
-        static let photo = "Photo"
-        static let video = "Video"
-        static let fileFallbackName = "File"
+        static var photo: String { localized("Photo") }
+        static var video: String { localized("Video") }
+        static var fileFallbackName: String { localized("File") }
         /// VoiceOver hint on a file card whose bytes are not on the device yet.
-        static let download = "Download"
-        static let share = "Share"
-        static let close = "Close"
-        /// On the last tile of a gallery with more pictures than it shows: `%ld` is how many are hidden.
-        static let moreFormat = "+%ld"
-
+        static var download: String { localized("Download") }
+        static var share: String { localized("Share") }
+        static var close: String { localized("Close") }
+        /// On the last tile of a gallery with more pictures than it shows: how many are hidden.
         static func more(_ count: Int) -> String {
-            String(format: moreFormat, count)
+            localized("+\(count)")
         }
     }
 }

@@ -8,8 +8,8 @@ nonisolated struct Price: Hashable, Codable, Sendable {
     var isFree: Bool { amount <= 0 }
 
     /// "Free" for a zero amount; whole amounts without minor units ("€5"), anything else in the currency's usual form
-    /// ("€7.50"), in the user's locale.
-    var text: String { text(in: .current) }
+    /// ("€7.50"), in the app's language and the user's region.
+    var text: String { text(in: AppLocale.locale) }
 
     func text(in locale: Locale) -> String {
         guard !isFree else { return AppBranding.Events.free }
@@ -18,7 +18,7 @@ nonisolated struct Price: Hashable, Codable, Sendable {
     }
 
     /// The symbol the user's locale uses for a currency code ("€" for EUR), for input fields.
-    static func symbol(for currencyCode: String, locale: Locale = .current) -> String {
+    static func symbol(for currencyCode: String, locale: Locale = AppLocale.locale) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.locale = locale
@@ -31,7 +31,7 @@ nonisolated struct Price: Hashable, Codable, Sendable {
     static let inputFormat = Decimal.FormatStyle.number.precision(.fractionLength(0...2))
 
     /// Reads typed text as an amount, locale-aware ("6,5" and "6.5"); empty, unreadable or negative text is no amount.
-    static func parseAmount(_ text: String, locale: Locale = .current) -> Decimal? {
+    static func parseAmount(_ text: String, locale: Locale = AppLocale.locale) -> Decimal? {
         guard let amount = try? inputFormat.locale(locale).parseStrategy.parse(text), amount >= 0 else { return nil }
         return amount
     }

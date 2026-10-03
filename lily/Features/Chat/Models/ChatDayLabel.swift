@@ -7,7 +7,7 @@ nonisolated enum ChatDayLabel {
         if let yesterday = calendar.date(byAdding: .day, value: -1, to: now), calendar.isDate(day, inSameDayAs: yesterday) {
             return AppBranding.Chat.yesterday
         }
-        var style = Date.FormatStyle(date: .abbreviated, time: .omitted)
+        var style = Date.FormatStyle(date: .abbreviated, time: .omitted, locale: AppLocale.locale)
         style.calendar = calendar
         style.timeZone = calendar.timeZone
         return day.formatted(style)

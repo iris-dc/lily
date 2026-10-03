@@ -4,5 +4,11 @@ import Foundation
 nonisolated enum SkillLevel: String, CaseIterable, Codable, Sendable {
     case beginner, intermediate, advanced
 
-    var displayName: String { rawValue.capitalized }
+    var displayName: String {
+        switch self {
+        case .beginner: localized("Beginner")
+        case .intermediate: localized("Intermediate")
+        case .advanced: localized("Advanced")
+        }
+    }
 }

@@ -1,0 +1,30 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSCameraUsageDescription" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "iskra uses the camera to take photos for your chats." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "iskra usa la cámara para hacer fotos para tus chats." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "iskra utilise l’appareil photo pour prendre des photos pour vos discussions." } },
+        "pl" : { "stringUnit" : { "state" : "translated", "value" : "iskra używa aparatu, aby robić zdjęcia do Twoich czatów." } },
+        "pt" : { "stringUnit" : { "state" : "translated", "value" : "A iskra usa a câmera para tirar fotos para as suas conversas." } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "iskra использует камеру, чтобы снимать фото для ваших чатов." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "iskra використовує камеру, щоб робити фото для ваших чатів." } }
+      }
+    },
+    "NSLocationWhenInUseUsageDescription" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "iskra shows games near you and how far away they are." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "iskra muestra partidos cerca de ti y a qué distancia están." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "iskra affiche les matchs près de vous et leur distance." } },
+        "pl" : { "stringUnit" : { "state" : "translated", "value" : "iskra pokazuje gry w pobliżu i ich odległość od Ciebie." } },
+        "pt" : { "stringUnit" : { "state" : "translated", "value" : "A iskra mostra jogos perto de si e a que distância ficam." } },
+        "ru" : { "stringUnit" : { "state" : "translated", "value" : "iskra показывает игры рядом с вами и расстояние до них." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "iskra показує ігри поруч із вами та відстань до них." } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

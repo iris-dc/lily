@@ -7,6 +7,7 @@ struct AppRootView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     private var session: SessionController { dependencies.sessionController }
+    private var language: LanguageStore { dependencies.language }
 
     var body: some View {
         Group {
@@ -19,6 +20,9 @@ struct AppRootView: View {
                 MainTabView(dependencies: dependencies)
             }
         }
+        // Copy is read into views as plain strings, so a new language needs the tree rebuilt, not re-rendered.
+        .id(language.language)
+        .environment(\.locale, language.locale)
         .animation(.smooth(duration: DesignTokens.Duration.slow), value: rootScreen)
         .task {
             await session.restore()
@@ -29,7 +33,9 @@ struct AppRootView: View {
         .onChange(of: scenePhase) {
             if scenePhase == .background { Task { await dependencies.interactionRecorder.flush() } }
         }
-        .task(id: SyncKey(phase: scenePhase, userID: session.state.user?.id)) { await syncAccountAndRealtime() }
+        .task(id: SyncKey(phase: scenePhase, userID: session.state.user?.id, language: language.language)) {
+            await syncAccountAndRealtime()
+        }
         .onChange(of: dependencies.myGroups.groups) { dependencies.myGroupsDidChange() }
         .onChange(of: dependencies.myGroups.loadVersion) { dependencies.myGroupsDidLoad() }
         .errorPopup(dependencies.errorCenter)
@@ -48,10 +54,12 @@ struct AppRootView: View {
         case launch, landing, shell
     }
 
-    /// What one run of the sync is for; a new key cancels the run still going for the old one.
+    /// What one run of the sync is for; a new key cancels the run still going for the old one. The language is part of
+    /// it so a change registers the device again, in the new language.
     private struct SyncKey: Hashable {
         let phase: ScenePhase
         let userID: String?
+        let language: AppLanguage
     }
 
     /// The signed-in user's account, the realtime connection, their groups, their inbox and the push registration, in

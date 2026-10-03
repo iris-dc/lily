@@ -20,7 +20,7 @@ nonisolated enum AuthProvider: Hashable, Sendable {
             switch self {
             case .apple: "Apple"
             case .google: "Google"
-            case .email: "Email"
+            case .email: localized("Email")
             }
         }
     }

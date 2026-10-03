@@ -16,6 +16,7 @@ final class FakeCognitoClient: CognitoClient {
     var signOutError: CognitoClientError?
     private(set) var signIns: [EmailCredentials] = []
     private(set) var signUps: [EmailCredentials] = []
+    private(set) var languageCodes: [String] = []
     private(set) var confirmations: [FakeAuthService.ConfirmationRequest] = []
     private(set) var resendEmails: [String] = []
     private(set) var signOutCount = 0
@@ -41,8 +42,9 @@ final class FakeCognitoClient: CognitoClient {
         return step
     }
 
-    func signUp(email: String, password: String) async throws -> CognitoSignUpStep {
+    func signUp(email: String, password: String, languageCode: String) async throws -> CognitoSignUpStep {
         signUps.append(EmailCredentials(email: email, password: password))
+        languageCodes.append(languageCode)
         return try signUpResult.get()
     }
 
@@ -51,8 +53,9 @@ final class FakeCognitoClient: CognitoClient {
         if let confirmError { throw confirmError }
     }
 
-    func resendCode(email: String) async throws {
+    func resendCode(email: String, languageCode: String) async throws {
         resendEmails.append(email)
+        languageCodes.append(languageCode)
         if let resendError { throw resendError }
     }
 

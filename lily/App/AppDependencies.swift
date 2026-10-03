@@ -16,6 +16,8 @@ final class AppDependencies {
     /// Where the event screens report their taps; the root view flushes it when the app goes to the background.
     let interactionRecorder: any InteractionRecorder
     let locationService: any LocationService
+    /// The language the copy is in and the user's choice behind it; the root view re-renders from it.
+    let language: LanguageStore
     let eventChanges = ChangeTracker()
     /// Groups, chat, inbox and moderation collaborators; see `AppDependencies+Groups.swift`.
     let groups: GroupDependencies
@@ -34,8 +36,11 @@ final class AppDependencies {
          groupRepositories: GroupRepositories,
          pushRegistrar: any PushRegistrar,
          deviceRepository: any DeviceRepository,
+         language: LanguageStore? = nil,
          defaults: UserDefaults = .standard) {
         self.logger = logger
+        let language = language ?? LanguageStore(store: UserDefaultsLanguagePreferenceStore(defaults: defaults), logger: logger)
+        self.language = language
         self.errorCenter = ErrorCenter(logger: logger)
         self.sessionStore = sessionStore
         self.authService = authService
@@ -56,6 +61,7 @@ final class AppDependencies {
                                      identity: identity,
                                      groups: groups,
                                      defaults: defaults,
+                                     languageCode: { language.language.code },
                                      logger: logger)
         self.sessionController = SessionController(authService: authService,
                                                    sessionStore: sessionStore,
@@ -74,9 +80,10 @@ final class AppDependencies {
     static func makeDefault(arguments: [String] = AppConfig.LaunchArguments.isHonored ? CommandLine.arguments : [],
                             defaults: UserDefaults = .standard) -> AppDependencies {
         let logger = OSLogLogger()
+        let language = makeLanguageStore(arguments: arguments, defaults: defaults, logger: logger)
         let store = makeSessionStore(arguments: arguments, defaults: defaults, logger: logger)
         let identity = SessionIdentityProvider()
-        let auth = makeAuthService(arguments: arguments, store: store, logger: logger)
+        let auth = makeAuthService(arguments: arguments, store: store, language: language, logger: logger)
         let repositories = makeRepositories(arguments: arguments,
                                             identity: identity,
                                             tokenProvider: auth.tokenProvider,
@@ -93,6 +100,7 @@ final class AppDependencies {
                                groupRepositories: repositories.groups,
                                pushRegistrar: repositories.pushRegistrar,
                                deviceRepository: repositories.devices,
+                               language: language,
                                defaults: defaults)
     }
 
@@ -135,7 +143,10 @@ final class AppDependencies {
 
     /// The Cognito service doubles as the token provider; the mock has no token to offer. `-mock-user-id` is read
     /// only with the mock: a Cognito user is whoever the pool says.
-    private static func makeAuthService(arguments: [String], store: any SessionStore, logger: any Logging) -> Auth {
+    private static func makeAuthService(arguments: [String],
+                                        store: any SessionStore,
+                                        language: LanguageStore,
+                                        logger: any Logging) -> Auth {
         if let behavior = mockAuthBehavior(from: arguments) {
             logger.info(.auth, "Launch argument requested mock auth: \(behavior)")
             let userID = AppConfig.LaunchArguments.value(following: AppConfig.LaunchArguments.mockUserID, in: arguments)
@@ -143,7 +154,10 @@ final class AppDependencies {
             let mock = MockAuthService(behavior: behavior, store: store, userIDOverride: userID)
             return Auth(service: mock, tokenProvider: nil)
         }
-        let cognito = CognitoAuthService(client: AmplifyCognitoClient(logger: logger), store: store, logger: logger)
+        let cognito = CognitoAuthService(client: AmplifyCognitoClient(logger: logger),
+                                         store: store,
+                                         languageCode: { language.language.code },
+                                         logger: logger)
         return Auth(service: cognito, tokenProvider: cognito)
     }
 

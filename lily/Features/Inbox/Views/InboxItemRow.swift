@@ -22,8 +22,9 @@ private struct InviteCard: View {
     let viewModel: InboxViewModel
 
     private typealias Copy = AppBranding.Inbox
-    /// The `String(format:)` token the names replace in `invitedYouFormat`.
-    private static let nameToken = "%@"
+    /// Stand-ins formatted into the copy in place of the names, so the bold runs land wherever a language puts them.
+    private static let inviterMarker = "\u{FFFC}1"
+    private static let groupMarker = "\u{FFFC}2"
 
     var body: some View {
         HStack(alignment: .top, spacing: DesignTokens.Spacing.md) {
@@ -51,24 +52,19 @@ private struct InviteCard: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.inboxItem(item.id))
     }
 
-    /// "**Noor** invited you to **Climbing Buddies**": the names in bold, the words between from the format string.
+    /// "**Noor** invited you to **Climbing Buddies**": the names in bold, the words around them from the copy.
     private var inviteText: Text {
-        let pieces = Copy.invitedYouFormat.components(separatedBy: Self.nameToken)
-        guard pieces.count == 3 else {
-            return Text(verbatim: Copy.invitedYou(inviter: invite.inviterName, group: invite.groupName))
-        }
-        var text = AttributedString(pieces[0])
-        text += Self.emphasised(invite.inviterName)
-        text += AttributedString(pieces[1])
-        text += Self.emphasised(invite.groupName)
-        text += AttributedString(pieces[2])
+        var text = AttributedString(Copy.invitedYou(inviter: Self.inviterMarker, group: Self.groupMarker))
+        Self.replace(Self.inviterMarker, with: invite.inviterName, in: &text)
+        Self.replace(Self.groupMarker, with: invite.groupName, in: &text)
         return Text(text)
     }
 
-    private static func emphasised(_ name: String) -> AttributedString {
-        var text = AttributedString(name)
-        text.inlinePresentationIntent = .stronglyEmphasized
-        return text
+    private static func replace(_ marker: String, with name: String, in text: inout AttributedString) {
+        guard let range = text.range(of: marker) else { return }
+        var emphasised = AttributedString(name)
+        emphasised.inlinePresentationIntent = .stronglyEmphasized
+        text.replaceSubrange(range, with: emphasised)
     }
 
     /// Regular-size capsules: inside a card the large ones read as a screen's call to action and dwarf its text.

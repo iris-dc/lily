@@ -22,11 +22,16 @@ nonisolated enum AppConfig {
         static let appClientId = "54dul3essertek166u2st78s4a"
         /// Length of the verification code Cognito emails after sign-up.
         static let confirmationCodeLength = 6
+        /// `clientMetadata` key of the app's language on sign-up and resend; rose's Custom Message trigger reads it to
+        /// send the code in that language.
+        static let localeMetadataKey = "locale"
     }
 
     enum Storage {
         enum Keys {
             static let storedSession = "lily.session.stored"
+            /// The language chosen on Profile: a language code, or `system`.
+            static let languagePreference = "lily.language.preference"
         }
         /// Each preview gets its own `UserDefaults` suite so mock sessions never bleed into the real app.
         static let previewSuitePrefix = "lily.preview."

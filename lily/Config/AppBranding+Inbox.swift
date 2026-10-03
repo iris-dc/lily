@@ -2,19 +2,16 @@ import Foundation
 
 nonisolated extension AppBranding {
     /// Tab title, doubling as the navigation title of the Chats root.
-    static let chatsTitle = "Chats"
+    static var chatsTitle: String { localized("Chats") }
 
     /// The Chats tab: the inbox row, the caller's rooms and the states around them.
     enum Chats {
-        static let noRooms = "No group chats yet. Join a group to start one."
-        static let noRoomsAction = "Explore"
-        static let guestMessage = "Sign in to see your chats, invites and game reminders."
+        static var noRooms: String { localized("No group chats yet. Join a group to start one.") }
+        static var noRoomsAction: String { localized("Explore") }
+        static var guestMessage: String { localized("Sign in to see your chats, invites and game reminders.") }
         /// What the Chats tab's badge means to assistive technology (the badge itself is not exposed).
-        static let oneUnreadChat = "1 unread chat"
-        static let unreadChatsFormat = "%ld unread chats"
-
         static func unreadChats(_ count: Int) -> String {
-            count == 1 ? oneUnreadChat : String(format: unreadChatsFormat, count)
+            localized("\(count) unread chats")
         }
     }
 
@@ -22,31 +19,28 @@ nonisolated extension AppBranding {
     enum Inbox {
         static let title = AppBranding.name
         /// Caption of the Chats row while the inbox is empty.
-        static let emptyCaption = "Invites and game reminders"
-        /// `%@` inviter, `%@` group; the row draws both names in bold.
-        static let invitedYouFormat = "%@ invited you to %@"
-        static let accept = "Accept"
-        static let decline = "Decline"
-        static let joined = "You joined"
-        static let declined = "Declined"
-        static let expired = "Expired"
-        static let reminderTitle = "Game reminder"
+        static var emptyCaption: String { localized("Invites and game reminders") }
+        static var accept: String { localized("Accept") }
+        static var decline: String { localized("Decline") }
+        static var joined: String { localized("You joined") }
+        static var declined: String { localized("Declined") }
+        static var expired: String { localized("Expired") }
+        static var reminderTitle: String { localized("Game reminder") }
         /// VoiceOver name of the reminder card's chevron.
-        static let openGame = "Open game"
-        static let emptyTitle = "Nothing here yet"
-        static let emptyMessage = "Invites and reminders for your games show up here."
-        static let loadFailedTitle = "Couldn't load your notifications"
-        static let loadEarlier = "Load earlier"
-        /// `%@` the day as the chat's day chips name it ("Today"), `%@` the clock time; the reminder card puts how far
-        /// off the start is after them ("Today, 6:30 PM · in 1 hour").
-        static let dayAndTimeFormat = "%@, %@"
-
+        static var openGame: String { localized("Open game") }
+        static var emptyTitle: String { localized("Nothing here yet") }
+        static var emptyMessage: String { localized("Invites and reminders for your games show up here.") }
+        static var loadFailedTitle: String { localized("Couldn't load your notifications") }
+        static var loadEarlier: String { localized("Load earlier") }
+        /// The inviter and the group; the card draws both names in bold through `inviteText(inviter:group:)`.
         static func invitedYou(inviter: String, group: String) -> String {
-            String(format: invitedYouFormat, inviter, group)
+            localized("\(inviter) invited you to \(group)")
         }
 
+        /// The day as the chat's day chips name it ("Today") and the clock time; the reminder card puts how far off the
+        /// start is after them ("Today, 6:30 PM · in 1 hour").
         static func dayAndTime(day: String, time: String) -> String {
-            String(format: dayAndTimeFormat, day, time)
+            localized("\(day), \(time)")
         }
     }
 }

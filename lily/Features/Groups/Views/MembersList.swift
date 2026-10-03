@@ -17,8 +17,8 @@ struct MembersList: View {
 
         var title: String {
             switch action {
-            case .remove: String(format: Copy.removeConfirmationFormat, member.displayName)
-            case .ban: String(format: Copy.banConfirmationFormat, member.displayName)
+            case .remove: Copy.removeConfirmation(memberName: member.displayName)
+            case .ban: Copy.banConfirmation(memberName: member.displayName)
             case .makeAdmin, .removeAdmin: action.title
             }
         }

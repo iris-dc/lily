@@ -21,8 +21,8 @@ nonisolated struct FileCardInfo: Equatable, Sendable {
         return DesignTokens.Symbols.fileGlyphs.first { type.conforms(to: $0.type) }?.symbol ?? DesignTokens.Symbols.file
     }
 
-    /// "812 kB", "1.5 MB": the file style, in `locale` (the reader's by default; tests pin one).
-    func sizeText(locale: Locale = .autoupdatingCurrent) -> String {
+    /// "812 kB", "1.5 MB": the file style, in `locale` (the app's language by default; tests pin one).
+    func sizeText(locale: Locale = AppLocale.locale) -> String {
         Int64(sizeBytes).formatted(.byteCount(style: .file).locale(locale))
     }
 

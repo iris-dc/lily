@@ -1,9 +1,9 @@
 import Foundation
 
 /// Keeps the backend's device registry in step with this device, asks for the permission at the right moment and
-/// opens the game behind a tapped reminder. The registration is repeated when the token or the user changed or the
-/// last one is a day old, and undone before a sign-out while the Bearer is still there. Failures are logged, never
-/// shown: a reminder that does not arrive is not worth a popup.
+/// opens the game behind a tapped reminder. The registration is repeated when the token, the user or the app's
+/// language changed or the last one is a day old, and undone before a sign-out while the Bearer is still there.
+/// Failures are logged, never shown: a reminder that does not arrive is not worth a popup.
 final class PushCoordinator: SessionObserver, PushOptIn {
     private(set) var registered: LastDeviceRegistration?
     /// The game of a notification tapped before the session was restored; opened once a user is known.
@@ -17,6 +17,8 @@ final class PushCoordinator: SessionObserver, PushOptIn {
     private let relay: PushEventRelay
     private let defaults: UserDefaults
     private let appVersion: AppVersion
+    /// The language the app shows, read at each registration so the backend's reminder follows a change.
+    private let languageCode: () -> String
     private let unregisterTimeout: Duration
     private let logger: any Logging
     private let now: () -> Date
@@ -28,6 +30,7 @@ final class PushCoordinator: SessionObserver, PushOptIn {
          relay: PushEventRelay = .shared,
          defaults: UserDefaults,
          appVersion: AppVersion = .current(),
+         languageCode: @escaping () -> String,
          unregisterTimeout: Duration = AppConfig.Push.unregisterTimeout,
          logger: any Logging,
          now: @escaping () -> Date = { .now }) {
@@ -38,6 +41,7 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         self.relay = relay
         self.defaults = defaults
         self.appVersion = appVersion
+        self.languageCode = languageCode
         self.unregisterTimeout = unregisterTimeout
         self.logger = logger
         self.now = now
@@ -103,19 +107,22 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         defer { isRegistering = false }
         do {
             let token = try await registrar.deviceToken()
+            let locale = languageCode()
             let interval = AppConfig.Push.reregisterInterval
-            if let registered, registered.isCurrent(token: token, userID: userID, now: now(), within: interval) {
+            if let registered,
+               registered.isCurrent(token: token, userID: userID, locale: locale, now: now(), within: interval) {
                 logger.debug(.push, "Device registration still current")
                 return
             }
             let payload = DeviceRegistrationPayload(token: token,
                                                     platform: AppConfig.Push.platform,
                                                     environment: .current,
-                                                    appVersion: appVersion.headerValue)
+                                                    appVersion: appVersion.headerValue,
+                                                    locale: locale)
             let registration = try await devices.register(payload)
             guard identity.isStillCaller(userID, orDrop: "Device registration", logger: logger) else { return }
-            store(LastDeviceRegistration(token: registration.token, userID: userID, registeredAt: now()))
-            logger.info(.push, "Device registered for push (\(registration.environment.rawValue))")
+            store(LastDeviceRegistration(token: registration.token, userID: userID, locale: locale, registeredAt: now()))
+            logger.info(.push, "Device registered for push (\(registration.environment.rawValue), \(locale))")
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logger.warning(.push, "Device registration failed: \(error)")

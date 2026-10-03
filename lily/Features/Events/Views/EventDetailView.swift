@@ -100,7 +100,11 @@ struct EventDetailView: View {
     private var facts: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                Label(event.startsAt.formatted(date: .abbreviated, time: .shortened), systemImage: DesignTokens.Symbols.time)
+                Label {
+                    Text(event.startsAt, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
+                } icon: {
+                    Image(systemName: DesignTokens.Symbols.time)
+                }
                 Label(event.locationName, systemImage: DesignTokens.Symbols.location)
                 if !event.isFree {
                     Label(AppBranding.Events.perPerson(event.priceText), systemImage: DesignTokens.Symbols.price)

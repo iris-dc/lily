@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ProfileView: View {
     let session: SessionController
+    let language: LanguageStore
     let errorCenter: ErrorCenter
     @State private var isSignInPresented = false
 
@@ -14,6 +15,7 @@ struct ProfileView: View {
                     } else {
                         guest
                     }
+                    LanguageRow(language: language)
                     Spacer()
                 }
                 .padding(.horizontal, DesignTokens.Layout.screenMargin)

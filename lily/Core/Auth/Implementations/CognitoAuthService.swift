@@ -5,11 +5,17 @@ import Foundation
 final class CognitoAuthService: AuthService, AuthTokenProvider {
     private let client: any CognitoClient
     private let store: any SessionStore
+    private let languageCode: () -> String
     private let logger: any Logging
 
-    init(client: any CognitoClient, store: any SessionStore, logger: any Logging) {
+    /// `languageCode` is the app's language at the time of a sign-up or resend, for the pool's mail.
+    init(client: any CognitoClient,
+         store: any SessionStore,
+         languageCode: @escaping () -> String = { AppLanguage.systemChoice().code },
+         logger: any Logging) {
         self.client = client
         self.store = store
+        self.languageCode = languageCode
         self.logger = logger
     }
 
@@ -40,7 +46,7 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
     }
 
     func signUp(email: String, password: String) async throws -> SignUpOutcome {
-        switch try await mapped({ try await client.signUp(email: email, password: password) }) {
+        switch try await mapped({ try await client.signUp(email: email, password: password, languageCode: languageCode()) }) {
         case .done: .signedUp
         case .confirmationRequired: .confirmationRequired
         }
@@ -51,7 +57,7 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
     }
 
     func resendConfirmationCode(email: String) async throws {
-        try await mapped { try await client.resendCode(email: email) }
+        try await mapped { try await client.resendCode(email: email, languageCode: languageCode()) }
     }
 
     func signOut() async throws {

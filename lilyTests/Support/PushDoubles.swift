@@ -87,6 +87,8 @@ final class PushHarness {
     let defaults = makeTestDefaults()
     let logger = SpyLogger()
     let clock = DateBox(PushHarness.now)
+    /// What the coordinator registers as the device's language; a test changes it to see a registration repeated.
+    var languageCode = "en"
     let errorCenter: ErrorCenter
     /// Built with the harness, so the relay's tap handler is set before a test taps.
     private(set) lazy var coordinator: PushCoordinator = makeCoordinator()
@@ -108,6 +110,7 @@ final class PushHarness {
                         relay: relay ?? self.relay,
                         defaults: defaults,
                         appVersion: AppVersion(marketing: "1.0", build: "42"),
+                        languageCode: { [weak self] in self?.languageCode ?? "en" },
                         unregisterTimeout: unregisterTimeout,
                         logger: logger,
                         now: { [clock] in clock.now })

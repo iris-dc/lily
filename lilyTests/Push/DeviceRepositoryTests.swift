@@ -10,7 +10,11 @@ struct DeviceRepositoryTests {
     private var remote: RemoteDeviceRepository { RemoteDeviceRepository(client: client) }
 
     @Test func registerPutsThePayloadToTheDevicesRoute() async throws {
-        let payload = DeviceRegistrationPayload(token: token, platform: "ios", environment: .sandbox, appVersion: "1.0 (42)")
+        let payload = DeviceRegistrationPayload(token: token,
+                                                platform: "ios",
+                                                environment: .sandbox,
+                                                appVersion: "1.0 (42)",
+                                                locale: "en")
         let stored = DeviceRegistration(token: token, environment: .sandbox, registeredAt: .now)
         client.responses = [stored]
 
@@ -32,7 +36,7 @@ struct DeviceRepositoryTests {
         client.error = APIError.http(status: 401, body: nil)
         await #expect(throws: AppError.sessionExpired) { try await remote.unregister(token: token) }
         client.error = APIError.http(status: 400, body: APIErrorBody(code: "VALIDATION_FAILED", message: "m"))
-        let payload = DeviceRegistrationPayload(token: "x", platform: "ios", environment: .sandbox, appVersion: "1")
+        let payload = DeviceRegistrationPayload(token: "x", platform: "ios", environment: .sandbox, appVersion: "1", locale: "en")
         await #expect(throws: AppError.unknown) { try await remote.register(payload) }
         client.error = URLError(.notConnectedToInternet)
         await #expect(throws: AppError.network) { try await remote.unregister(token: token) }
@@ -44,7 +48,8 @@ struct DeviceRepositoryTests {
         let payload = DeviceRegistrationPayload(token: token.uppercased(),
                                                 platform: "ios",
                                                 environment: .sandbox,
-                                                appVersion: "1")
+                                                appVersion: "1",
+                                                locale: "en")
         await #expect(throws: AppError.sessionExpired) { try await mock.register(payload) }
 
         identity.currentUserID = TestFixtures.user.id

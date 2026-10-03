@@ -27,3 +27,6 @@ amplify_outputs.json
 
 # Xcode shared schemes: the local one passes -api-base-url for production runs and must not ship
 lily.xcodeproj/xcshareddata/
+
+# Python
+__pycache__/

@@ -46,8 +46,9 @@ protocol CognitoClient {
     /// The signed-in user's verified email attribute, when the pool has one.
     func fetchEmail() async throws -> String?
     func signIn(username: String, password: String) async throws -> CognitoSignInStep
-    func signUp(email: String, password: String) async throws -> CognitoSignUpStep
+    /// `languageCode` is the app's language, sent as client metadata so the pool mails the code in it.
+    func signUp(email: String, password: String, languageCode: String) async throws -> CognitoSignUpStep
     func confirmSignUp(email: String, code: String) async throws
-    func resendCode(email: String) async throws
+    func resendCode(email: String, languageCode: String) async throws
     func signOut() async throws
 }

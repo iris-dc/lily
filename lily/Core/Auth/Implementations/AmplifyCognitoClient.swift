@@ -64,10 +64,11 @@ final class AmplifyCognitoClient: CognitoClient {
         }
     }
 
-    func signUp(email: String, password: String) async throws -> CognitoSignUpStep {
+    func signUp(email: String, password: String, languageCode: String) async throws -> CognitoSignUpStep {
         try await ready()
         return try await mapped {
-            let options = AuthSignUpRequest.Options(userAttributes: [AuthUserAttribute(.email, value: email)])
+            let options = AuthSignUpRequest.Options(userAttributes: [AuthUserAttribute(.email, value: email)],
+                                                    pluginOptions: AWSAuthSignUpOptions(metadata: Self.metadata(languageCode)))
             let result = try await Amplify.Auth.signUp(username: email, password: password, options: options)
             return result.isSignUpComplete ? .done : .confirmationRequired
         }
@@ -78,9 +79,18 @@ final class AmplifyCognitoClient: CognitoClient {
         try await mapped { _ = try await Amplify.Auth.confirmSignUp(for: email, confirmationCode: code) }
     }
 
-    func resendCode(email: String) async throws {
+    func resendCode(email: String, languageCode: String) async throws {
         try await ready()
-        try await mapped { _ = try await Amplify.Auth.resendSignUpCode(for: email) }
+        try await mapped {
+            let options = AuthResendSignUpCodeRequest.Options(
+                pluginOptions: AWSAuthResendSignUpCodeOptions(metadata: Self.metadata(languageCode)))
+            _ = try await Amplify.Auth.resendSignUpCode(for: email, options: options)
+        }
+    }
+
+    /// The client metadata the pool's Custom Message trigger reads the mail's language from.
+    private static func metadata(_ languageCode: String) -> [String: String] {
+        [AppConfig.Cognito.localeMetadataKey: languageCode]
     }
 
     /// A partial sign-out (tokens not revoked at the pool) still ended the local session, which is what the app needs.

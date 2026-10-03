@@ -8,7 +8,11 @@ struct PushCoordinatorTests {
     private let harness = PushHarness()
 
     private var expectedPayload: DeviceRegistrationPayload {
-        DeviceRegistrationPayload(token: harness.registrar.token, platform: "ios", environment: .current, appVersion: "1.0 (42)")
+        DeviceRegistrationPayload(token: harness.registrar.token,
+                                  platform: "ios",
+                                  environment: .current,
+                                  appVersion: "1.0 (42)",
+                                  locale: harness.languageCode)
     }
 
     @Test func syncRegistersAnAuthorizedDeviceOnceAndRemembersIt() async {
@@ -18,7 +22,7 @@ struct PushCoordinatorTests {
         #expect(harness.devices.registrations == [expectedPayload])
         #expect(harness.coordinator.registered?.token == harness.registrar.token)
         #expect(harness.coordinator.registered?.userID == TestFixtures.user.id)
-        #expect(harness.logs(.info) == ["Device registered for push (\(PushEnvironment.current.rawValue))"])
+        #expect(harness.logs(.info) == ["Device registered for push (\(PushEnvironment.current.rawValue), en)"])
         #expect(harness.makeCoordinator().registered == harness.coordinator.registered, "a relaunch reads the same registration")
     }
 
@@ -34,17 +38,20 @@ struct PushCoordinatorTests {
         #expect(harness.devices.registrations.isEmpty && harness.registrar.tokenRequestCount == 0)
     }
 
-    @Test func syncRepeatsForANewTokenAnotherUserOrAStaleRegistration() async {
+    @Test func syncRepeatsForANewTokenAnotherUserAnotherLanguageOrAStaleRegistration() async {
         await harness.coordinator.sync()
         harness.registrar.token = "ef".repeated(32)
         await harness.coordinator.sync()
         harness.identity.currentUserID = "someone-else"
         await harness.coordinator.sync()
+        harness.languageCode = "ru"
+        await harness.coordinator.sync()
         harness.clock.now = PushHarness.now.addingTimeInterval(AppConfig.Push.reregisterInterval + 1)
         await harness.coordinator.sync()
 
-        #expect(harness.devices.registrations.count == 4)
-        #expect(harness.coordinator.registered?.userID == "someone-else")
+        #expect(harness.devices.registrations.count == 5)
+        #expect(harness.devices.registrations.map(\.locale) == ["en", "en", "en", "ru", "ru"])
+        #expect(harness.coordinator.registered?.userID == "someone-else" && harness.coordinator.registered?.locale == "ru")
     }
 
     @Test func offerRemindersAsksOnceAndRegistersOnAGrant() async {

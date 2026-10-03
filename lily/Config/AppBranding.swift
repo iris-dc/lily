@@ -1,115 +1,94 @@
 import Foundation
 
-/// Everything that identifies the product to the user. Change here, and every screen follows.
+/// Everything that identifies the product to the user. Change here, and every screen follows. Every line of copy is
+/// read through `localized(_:)`, so it comes back in the app's language (`AppLocale`); the English text is the key.
 nonisolated enum AppBranding {
     static let name = "iskra"
 
     /// Copy shared by every event surface, so a preview card and a capacity bar can never disagree.
     enum Events {
-        static let full = "Full"
-        /// Open-spot counts for compact cards: `%ld` is the number of spots.
-        static let oneSpotLeftFormat = "%ld spot left"
-        static let spotsLeftFormat = "%ld spots left"
-        /// Under the capacity bar, counting the same way the bar fills: `%ld` participants of `%ld` capacity. The copy
-        /// of a game that allows extras is in `AppBranding+Capacity.swift`.
-        static let joinedOfCapacityFormat = "%ld of %ld joined"
+        static var full: String { localized("Full") }
 
         /// Filter panel on Explore, dropped down from the toolbar button.
         enum Filter {
-            static let title = "Filters"
-            static let eventType = "Event type"
-            static let anyType = "Any type"
+            static var title: String { localized("Filters") }
+            static var eventType: String { localized("Event type") }
+            static var anyType: String { localized("Any type") }
             /// The reference point is the user's position for now; a chosen place is the intended next step.
-            static let distance = "Distance from me"
-            static let anywhere = "Any"
+            static var distance: String { localized("Distance from me") }
+            static var anywhere: String { localized("Any") }
             /// Shown while the user's position is unknown: still pending, timed out or denied.
-            static let locationUnavailable = "Distance needs your location"
-            static let maxPrice = "Max price"
-            static let anyPrice = "Any"
-            static let freeOnly = "Free only"
-            static let level = "Level"
-            static let anyLevel = "Any level"
-            static let dates = "Specific dates"
-            static let from = "From"
-            static let until = "Until"
-            static let openSpotsOnly = "Open spots only"
-            static let reset = "Reset"
-            static let done = "Done"
-            static let emptyTitle = "Nothing matches"
-            static let emptyMessage = "Try fewer filters, or show all events."
-            static let showAll = "Show all events"
+            static var locationUnavailable: String { localized("Distance needs your location") }
+            static var maxPrice: String { localized("Max price") }
+            static var anyPrice: String { localized("Any") }
+            static var freeOnly: String { localized("Free only") }
+            static var level: String { localized("Level") }
+            static var anyLevel: String { localized("Any level") }
+            static var dates: String { localized("Specific dates") }
+            static var from: String { localized("From") }
+            static var until: String { localized("Until") }
+            static var openSpotsOnly: String { localized("Open spots only") }
+            static var reset: String { localized("Reset") }
+            static var done: String { localized("Done") }
+            static var emptyTitle: String { localized("Nothing matches") }
+            static var emptyMessage: String { localized("Try fewer filters, or show all events.") }
+            static var showAll: String { localized("Show all events") }
             /// VoiceOver value of the toolbar button: whether any criterion is active.
-            static let activeValue = "On"
-            static let inactiveValue = "Off"
+            static var activeValue: String { localized("On") }
+            static var inactiveValue: String { localized("Off") }
         }
 
         /// Optional event details on the detail screen. `free` is the model fallback in `SportEvent.priceText` and
-        /// `Price.text`; cards and the detail screen check
-        /// `isFree` first and never render it.
-        static let free = "Free"
+        /// `Price.text`; cards and the detail screen check `isFree` first and never render it.
+        static var free: String { localized("Free") }
         /// The dot between caption parts. `EventCard` draws it as its own view; `captionSeparator` pads it for
         /// `joined(separator:)` ("in 3 hours · 4 spots left · €5").
         static let separatorGlyph = "·"
         static let captionSeparator = " \(separatorGlyph) "
-        static let perPersonFormat = "%@ per person"
-        static let levelFormat = "%@ level"
-        static let lookingForTitle = "Looking for"
+        static var lookingForTitle: String { localized("Looking for") }
 
-        static let loadFailedTitle = "Couldn't load events"
+        static var loadFailedTitle: String { localized("Couldn't load events") }
         /// Heading over the Explore cards while the groups carousel sits above them.
-        static let eventsSection = "Events"
-        static let loadFailedMessage = "Pull down to try again."
+        static var eventsSection: String { localized("Events") }
+        static var loadFailedMessage: String { localized("Pull down to try again.") }
 
         /// The create sheet, opened from the floating "+" on Explore; `title` doubles as the "+" menu's game item.
         enum Create {
             /// VoiceOver label of the floating "+", a menu with a game and a group.
-            static let menu = "Create"
-            static let title = "New game"
-            static let submit = "Create game"
-            static let cancel = "Cancel"
-            static let gameSection = "Game"
-            static let titleField = "Title"
-            static let titlePlaceholder = "Sunset 5-a-side"
-            static let eventType = "Event type"
-            static let startsAt = "When"
-            static let whereSection = "Where"
-            static let locationNamePlaceholder = "Place name"
-            static let pickOnMap = "Set the spot on the map"
+            static var menu: String { localized("Create") }
+            static var title: String { localized("New game") }
+            static var submit: String { localized("Create game") }
+            static var cancel: String { localized("Cancel") }
+            static var gameSection: String { localized("Game") }
+            static var titleField: String { localized("Title") }
+            static var titlePlaceholder: String { localized("Sunset 5-a-side") }
+            static var eventType: String { localized("Event type") }
+            static var startsAt: String { localized("When") }
+            static var whereSection: String { localized("Where") }
+            static var locationNamePlaceholder: String { localized("Place name") }
+            static var pickOnMap: String { localized("Set the spot on the map") }
             /// Value of the map row while the draft has no coordinate yet.
-            static let spotNotSet = "Not set"
-            /// Value of the map row once a spot is set: `%f` latitude, `%f` longitude, four decimals (about 10 m).
+            static var spotNotSet: String { localized("Not set") }
+            /// Value of the map row once a spot is set: `%f` latitude, `%f` longitude, four decimals (about 10 m). Never
+            /// localized: a comma for the decimals would collide with the one between them.
             static let coordinateFormat = "%.4f, %.4f"
-            static let mapTitle = "Where is it?"
-            static let mapHint = "Move the map until the pin sits on the spot."
-            static let mapDone = "Done"
-            static let playersSection = "Players"
-            /// Stepper label: `%ld` is the capacity, the host included.
-            static let capacityFormat = "%ld players"
-            static let detailsSection = "Details (optional)"
-            static let descriptionPlaceholder = "What to expect"
-            static let lookingForPlaceholder = "Who are you looking for?"
-            static let level = "Level"
-            static let anyLevel = "Any level"
-            static let price = "Price per person"
-            static let pricePlaceholder = "Free"
+            static var mapTitle: String { localized("Where is it?") }
+            static var mapHint: String { localized("Move the map until the pin sits on the spot.") }
+            static var mapDone: String { localized("Done") }
+            static var playersSection: String { localized("Players") }
+            static var detailsSection: String { localized("Details (optional)") }
+            static var descriptionPlaceholder: String { localized("What to expect") }
+            static var lookingForPlaceholder: String { localized("Who are you looking for?") }
+            static var level: String { localized("Level") }
+            static var anyLevel: String { localized("Any level") }
+            static var price: String { localized("Price per person") }
+            static var pricePlaceholder: String { localized("Free") }
             /// The mock repository has no profile to read the host's name from; the backend stamps the real one.
-            static let mockHostName = "You"
-            /// Guests are shown the sign-in sheet instead; the sheet's own title and subtitle already explain why.
-            /// One line per `EventDraft.Issue`, shown under the field it concerns.
-            static let issueTitleMissing = "Give the game a title"
-            static let issueTitleTooLong = "Keep the title under %ld characters"
-            static let issueStartsAtTooSoon = "Pick a start at least %ld minutes from now"
-            static let issueLocationNameMissing = "Name the place"
-            static let issueLocationNameTooLong = "Keep the place name under %ld characters"
-            static let issueCoordinateMissing = "Set the spot on the map"
-            static let issueCapacityOutOfRange = "Between %ld and %ld players"
-            static let issueCapacityBelowParticipants = "Keep at least as many spots as players who joined"
-            static let issueDescriptionTooLong = "Keep the description under %ld characters"
-            static let issueLookingForTooLong = "Keep it under %ld characters"
-            static let issuePriceOutOfRange = "Enter a price with at most two decimals"
+            static var mockHostName: String { localized("You") }
 
+            /// Stepper label: `count` is the capacity, the host included.
             static func capacity(_ count: Int) -> String {
-                String(format: capacityFormat, count)
+                localized("\(count) players")
             }
 
             static func coordinateText(_ coordinate: Coordinate) -> String {
@@ -125,12 +104,12 @@ nonisolated enum AppBranding {
             private static func textMessage(for issue: EventDraft.Issue) -> String? {
                 let limits = AppConfig.Events.Creation.self
                 return switch issue {
-                case .titleMissing: issueTitleMissing
-                case .titleTooLong: String(format: issueTitleTooLong, limits.titleMaxLength)
-                case .locationNameMissing: issueLocationNameMissing
-                case .locationNameTooLong: String(format: issueLocationNameTooLong, limits.locationNameMaxLength)
-                case .descriptionTooLong: String(format: issueDescriptionTooLong, limits.descriptionMaxLength)
-                case .lookingForTooLong: String(format: issueLookingForTooLong, limits.lookingForMaxLength)
+                case .titleMissing: localized("Give the game a title")
+                case .titleTooLong: localized("Keep the title under \(limits.titleMaxLength) characters")
+                case .locationNameMissing: localized("Name the place")
+                case .locationNameTooLong: localized("Keep the place name under \(limits.locationNameMaxLength) characters")
+                case .descriptionTooLong: localized("Keep the description under \(limits.descriptionMaxLength) characters")
+                case .lookingForTooLong: localized("Keep it under \(limits.lookingForMaxLength) characters")
                 default: nil
                 }
             }
@@ -139,122 +118,124 @@ nonisolated enum AppBranding {
             private static func valueMessage(for issue: EventDraft.Issue) -> String {
                 let limits = AppConfig.Events.Creation.self
                 return switch issue {
-                case .startsAtTooSoon: String(format: issueStartsAtTooSoon, limits.minimumLeadTimeMinutes)
-                case .coordinateMissing: issueCoordinateMissing
+                case .startsAtTooSoon: localized("Pick a start at least \(limits.minimumLeadTimeMinutes) minutes from now")
+                case .coordinateMissing: pickOnMap
                 case .capacityOutOfRange:
-                    String(format: issueCapacityOutOfRange, limits.capacityRange.lowerBound, limits.capacityRange.upperBound)
-                case .capacityBelowParticipants: issueCapacityBelowParticipants
-                case .priceOutOfRange: issuePriceOutOfRange
+                    localized("Between \(limits.capacityRange.lowerBound) and \(limits.capacityRange.upperBound) players")
+                case .capacityBelowParticipants: localized("Keep at least as many spots as players who joined")
+                case .priceOutOfRange: localized("Enter a price with at most two decimals")
                 default: ""
                 }
             }
         }
 
         /// Segmented toolbar picker on Explore; the label is what VoiceOver reads for the control.
-        static let presentationPicker = "View"
-        static let listPresentation = "List"
-        static let mapPresentation = "Map"
+        static var presentationPicker: String { localized("View") }
+        static var listPresentation: String { localized("List") }
+        static var mapPresentation: String { localized("Map") }
 
+        /// Open-spot counts for compact cards.
         static func spotsLeft(_ count: Int) -> String {
-            String(format: count == 1 ? oneSpotLeftFormat : spotsLeftFormat, count)
+            localized("\(count) spots left")
         }
 
+        /// Under the capacity bar, counting the way the bar fills: participants of capacity. The copy of a game that
+        /// allows extras is in `AppBranding+Capacity.swift`.
         static func joined(_ count: Int, of capacity: Int) -> String {
-            String(format: joinedOfCapacityFormat, count, capacity)
+            localized("\(count) of \(capacity) joined")
         }
 
         static func perPerson(_ priceText: String) -> String {
-            String(format: perPersonFormat, priceText)
+            localized("\(priceText) per person")
         }
 
         static func level(_ levelName: String) -> String {
-            String(format: levelFormat, levelName)
+            localized("\(levelName) level")
         }
     }
 
     /// Landing headline, one line per element. The last line is highlighted in the accent color.
-    static let headline = ["Pick a sport.", "Find your people.", "Play tonight."]
-    static let subheadline = "Real games near you, organised by people like you. Join one or start your own."
+    static var headline: [String] {
+        [localized("Pick a sport."), localized("Find your people."), localized("Play tonight.")]
+    }
+    static var subheadline: String {
+        localized("Real games near you, organised by people like you. Join one or start your own.")
+    }
 
-    static let landingPrimaryAction = "Find a game near you"
-    static let signInPrompt = "Already have an account?"
-    static let signInAction = "Sign in"
+    static var landingPrimaryAction: String { localized("Find a game near you") }
+    static var signInPrompt: String { localized("Already have an account?") }
+    static var signInAction: String { localized("Sign in") }
 
-    static let guestProfileTitle = "You're browsing as a guest"
-    static let guestProfileMessage = "Sign in to create events, join games and chat with players."
+    static var guestProfileTitle: String { localized("You're browsing as a guest") }
+    static var guestProfileMessage: String { localized("Sign in to create events, join games and chat with players.") }
 
-    static let signInSheetTitle = "Welcome back"
-    static let signInSheetSubtitle = "Sign in to create games, join and chat."
+    static var signInSheetTitle: String { localized("Welcome back") }
+    static var signInSheetSubtitle: String { localized("Sign in to create games, join and chat.") }
 
-    /// Copy templates for sign-in buttons: `%@` is the provider's display name.
-    static let signInButtonFormat = "Continue with %@"
-
+    /// Sign-in buttons: `providerName` is the provider's display name.
     static func signInButtonTitle(for providerName: String) -> String {
-        String(format: signInButtonFormat, providerName)
+        localized("Continue with \(providerName)")
     }
 
     /// VoiceOver value of a provider button while its sign-in is in flight.
-    static let signingInStatus = "Signing in"
-    static let dismissAction = "Dismiss"
-    static let signOutAction = "Sign out"
+    static var signingInStatus: String { localized("Signing in") }
+    static var dismissAction: String { localized("Dismiss") }
+    static var signOutAction: String { localized("Sign out") }
 
     /// Email form inside the sign-in sheet. The sign-in title is `signInSheetTitle`, so sheet and form cannot drift.
-    static let emailSignInSubtitle = "Use your email and a password."
-    static let emailFieldPlaceholder = "Email"
-    static let passwordFieldPlaceholder = "Password"
-    static let signUpSheetTitle = "Create your account"
-    static let signUpAction = "Sign up"
-    static let signUpPrompt = "New here? Create an account"
-    /// `%d` is the minimum password length from `AppConfig.Auth`.
-    static let passwordHintFormat = "At least %d characters"
+    static var emailSignInSubtitle: String { localized("Use your email and a password.") }
+    static var emailFieldPlaceholder: String { localized("Email") }
+    static var passwordFieldPlaceholder: String { localized("Password") }
+    static var signUpSheetTitle: String { localized("Create your account") }
+    static var signUpAction: String { localized("Sign up") }
+    static var signUpPrompt: String { localized("New here? Create an account") }
 
+    /// `minimumLength` is the minimum password length from `AppConfig.Auth`.
     static func passwordHint(minimumLength: Int) -> String {
-        String(format: passwordHintFormat, minimumLength)
+        localized("At least \(minimumLength) characters")
     }
 
-    /// Confirmation step of the email form, after a sign-up (or a sign-in refused as unconfirmed). `%@` is the email.
-    static let confirmEmailTitle = "Check your email"
-    static let confirmEmailSubtitleFormat = "We sent a code to %@"
-    static let confirmationCodePlaceholder = "Confirmation code"
-    static let confirmAction = "Confirm"
-    static let resendCodeAction = "Resend code"
-    static let backToSignInAction = "Back to sign in"
+    /// Confirmation step of the email form, after a sign-up (or a sign-in refused as unconfirmed).
+    static var confirmEmailTitle: String { localized("Check your email") }
+    static var confirmationCodePlaceholder: String { localized("Confirmation code") }
+    static var confirmAction: String { localized("Confirm") }
+    static var resendCodeAction: String { localized("Resend code") }
+    static var backToSignInAction: String { localized("Back to sign in") }
 
     static func confirmEmailSubtitle(email: String) -> String {
-        String(format: confirmEmailSubtitleFormat, email)
+        localized("We sent a code to \(email)")
     }
 
     /// Tab titles double as navigation titles.
-    static let homeTitle = "Home"
-    static let exploreTitle = "Explore"
-    static let profileTitle = "Profile"
+    static var homeTitle: String { localized("Home") }
+    static var exploreTitle: String { localized("Explore") }
+    static var profileTitle: String { localized("Profile") }
 
-    static let exploreEmptyTitle = "Nothing yet"
-    static let exploreEmptyMessage = "New games show up here as people create them."
+    static var exploreEmptyTitle: String { localized("Nothing yet") }
+    static var exploreEmptyMessage: String { localized("New games show up here as people create them.") }
 
     /// The Home tab: the caller's groups and games, and the states around them.
     enum Home {
-        static let groupsSection = "Your groups"
-        static let gamesSection = "Your games"
-        static let noGroups = "No groups yet. Find one on Explore, or create your own."
-        static let noGames = "Games you join or host will appear here."
-        static let emptyTitle = "Nothing here yet"
-        static let emptyMessage = "Games you join or host and groups you belong to appear here."
-        static let exploreAction = "Explore"
-        static let loadFailedTitle = "Couldn't load your groups and games"
-        static let guestMessage = "Sign in to see your groups and the games you join or host."
-        static let groupsLoadFailed = "Couldn't load your groups. Pull down to try again."
-        static let gamesLoadFailed = "Couldn't load your games. Pull down to try again."
+        static var groupsSection: String { localized("Your groups") }
+        static var gamesSection: String { localized("Your games") }
+        static var noGroups: String { localized("No groups yet. Find one on Explore, or create your own.") }
+        static var noGames: String { localized("Games you join or host will appear here.") }
+        static var emptyTitle: String { localized("Nothing here yet") }
+        static var emptyMessage: String { localized("Games you join or host and groups you belong to appear here.") }
+        static var exploreAction: String { localized("Explore") }
+        static var loadFailedTitle: String { localized("Couldn't load your groups and games") }
+        static var guestMessage: String { localized("Sign in to see your groups and the games you join or host.") }
+        static var groupsLoadFailed: String { localized("Couldn't load your groups. Pull down to try again.") }
+        static var gamesLoadFailed: String { localized("Couldn't load your games. Pull down to try again.") }
     }
 
-    /// Event detail. `%@` in `hostedByFormat` is the host's display name.
-    static let joinAction = "Join"
-    static let leaveAction = "Leave"
-    static let eventFullAction = "Event is full"
-    static let hostingNotice = "You host this game"
-    static let hostedByFormat = "Hosted by %@"
+    /// Event detail.
+    static var joinAction: String { localized("Join") }
+    static var leaveAction: String { localized("Leave") }
+    static var eventFullAction: String { localized("Event is full") }
+    static var hostingNotice: String { localized("You host this game") }
 
     static func hostedByTitle(for hostName: String) -> String {
-        String(format: hostedByFormat, hostName)
+        localized("Hosted by \(hostName)")
     }
 }

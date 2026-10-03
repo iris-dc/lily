@@ -7,13 +7,14 @@ nonisolated extension ErrorMessageMapper {
     static func chatMessage(for error: AppError) -> ErrorMessage {
         switch error {
         case .chatUnavailable:
-            ErrorMessage(title: "Chat unavailable", body: "We couldn't load messages right now. Try again in a moment.")
+            ErrorMessage(title: localized("Chat unavailable"),
+                         body: localized("We couldn't load messages right now. Try again in a moment."))
         case .messageSendFailed:
-            ErrorMessage(title: "Not sent", body: "Your message didn't go through. Tap it to retry.")
+            ErrorMessage(title: localized("Not sent"), body: localized("Your message didn't go through. Tap it to retry."))
         case .messageNotFound:
-            ErrorMessage(title: "Message not found", body: "This message was already deleted.")
+            ErrorMessage(title: localized("Message not found"), body: localized("This message was already deleted."))
         case .replyTargetNotFound:
-            ErrorMessage(title: "That message is gone", body: "It was deleted before your reply was sent.")
+            ErrorMessage(title: localized("That message is gone"), body: localized("It was deleted before your reply was sent."))
         default:
             unknownMessage
         }
@@ -22,17 +23,19 @@ nonisolated extension ErrorMessageMapper {
     static func attachmentMessage(for error: AppError) -> ErrorMessage {
         switch error {
         case .attachmentNotFound:
-            ErrorMessage(title: "Attachment missing", body: "The upload didn't finish. Remove it and add it again.")
+            ErrorMessage(title: localized("Attachment missing"),
+                         body: localized("The upload didn't finish. Remove it and add it again."))
         case .attachmentTooLarge:
-            ErrorMessage(title: "That's too big", body: attachmentCapsBody)
+            ErrorMessage(title: localized("That's too big"), body: attachmentCapsBody)
         case .attachmentTypeNotAllowed:
-            ErrorMessage(title: "That can't be sent", body: "Try a photo, a video or another file.")
+            ErrorMessage(title: localized("That can't be sent"), body: localized("Try a photo, a video or another file."))
         case .attachmentsDisabled:
-            ErrorMessage(title: "Attachments are off", body: "Attachments can't be sent right now. Try again later.")
+            ErrorMessage(title: localized("Attachments are off"),
+                         body: localized("Attachments can't be sent right now. Try again later."))
         case .attachmentUploadFailed:
-            ErrorMessage(title: "Couldn't upload the attachment", body: "Tap it to try again.")
+            ErrorMessage(title: localized("Couldn't upload the attachment"), body: localized("Tap it to try again."))
         case .attachmentUnavailable:
-            ErrorMessage(title: "Couldn't load the attachment", body: "Try again in a moment.")
+            ErrorMessage(title: localized("Couldn't load the attachment"), body: localized("Try again in a moment."))
         default:
             unknownMessage
         }
@@ -45,6 +48,9 @@ nonisolated extension ErrorMessageMapper {
         let videos = AppConfig.Chat.Attachments.videoMaxBytes / mebibyte
         let minutes = Int(AppConfig.Chat.Attachments.videoMaxDurationSeconds) / 60
         let files = AppConfig.Chat.Attachments.fileMaxBytes / mebibyte
-        return "Pictures can be up to \(pictures) MB, videos up to \(videos) MB and \(minutes) minutes, files up to \(files) MB."
+        return localized("""
+            Pictures can be up to \(pictures) MB, videos up to \(videos) MB and \(minutes) minutes, \
+            files up to \(files) MB.
+            """)
     }
 }

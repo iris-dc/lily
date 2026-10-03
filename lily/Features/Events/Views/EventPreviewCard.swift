@@ -53,7 +53,8 @@ struct EventPreviewCard: View {
 
     /// "in 3 hours · 4 spots left", plus the price when the game costs something.
     private var caption: String {
-        var parts = [event.startsAt.formatted(.relative(presentation: .named)), event.availabilityText]
+        let relativeStart = event.startsAt.formatted(.relative(presentation: .named).locale(AppLocale.locale))
+        var parts = [relativeStart, event.availabilityText]
         if !event.isFree { parts.append(event.priceText) }
         return parts.joined(separator: AppBranding.Events.captionSeparator)
     }

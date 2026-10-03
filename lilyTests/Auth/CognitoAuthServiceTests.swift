@@ -10,8 +10,9 @@ struct CognitoAuthServiceTests {
         let logger = SpyLogger()
         let service: CognitoAuthService
 
-        init() {
-            service = CognitoAuthService(client: client, store: store, logger: logger)
+        /// `languageCode` is what the service tells the pool, so a test can see it travel.
+        init(languageCode: String = "en") {
+            service = CognitoAuthService(client: client, store: store, languageCode: { languageCode }, logger: logger)
         }
     }
 
@@ -167,6 +168,15 @@ struct CognitoAuthServiceTests {
         harness.client.signUpResult = .success(.done)
         #expect(try await harness.service.signUp(email: email, password: password) == .signedUp)
         #expect(harness.client.signUps == [credentials, credentials])
+    }
+
+    @Test func signUpAndResendTellThePoolTheAppsLanguage() async throws {
+        let harness = Harness(languageCode: "uk")
+
+        _ = try await harness.service.signUp(email: credentials.email, password: credentials.password)
+        try await harness.service.resendConfirmationCode(email: credentials.email)
+
+        #expect(harness.client.languageCodes == ["uk", "uk"])
     }
 
     @Test func confirmAndResendReachTheClient() async throws {

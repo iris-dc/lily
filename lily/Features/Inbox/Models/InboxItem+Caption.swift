@@ -29,15 +29,18 @@ nonisolated extension InvitePayload {
 nonisolated extension ReminderPayload {
     /// When the game starts, for the reminder card: the day as the chat's day chips name it, the clock time in the
     /// app's short time style, then how far off it is ("Today, 6:30 PM · in 1 hour"), so the reader has the time and
-    /// the countdown in one line. The clock time follows the calendar's locale and zone, so a test can pin it.
+    /// the countdown in one line. The clock time follows the calendar's zone and the calendar's locale when it has one
+    /// (so a test can pin it), else the app's language.
     func startsAtCaption(now: Date, calendar: Calendar = .autoupdatingCurrent) -> String {
+        let locale = calendar.locale ?? AppLocale.locale
         let timeStyle = Date.FormatStyle(date: .omitted,
                                          time: .shortened,
-                                         locale: calendar.locale ?? .autoupdatingCurrent,
+                                         locale: locale,
                                          calendar: calendar,
                                          timeZone: calendar.timeZone)
         let day = ChatDayLabel.text(for: startsAt, now: now, calendar: calendar)
         let dayAndTime = AppBranding.Inbox.dayAndTime(day: day, time: startsAt.formatted(timeStyle))
-        return AppBranding.Groups.caption([dayAndTime, startsAt.formatted(.relative(presentation: .named))])
+        let distance = startsAt.formatted(.relative(presentation: .named).locale(locale))
+        return AppBranding.Groups.caption([dayAndTime, distance])
     }
 }

@@ -15,6 +15,7 @@ struct PushDependencies {
          identity: any IdentityProvider,
          groups: GroupDependencies,
          defaults: UserDefaults,
+         languageCode: @escaping () -> String,
          logger: any Logging) {
         let opener = EventOpener(events: events,
                                  navigation: groups.navigation,
@@ -28,6 +29,7 @@ struct PushDependencies {
                                       identity: identity,
                                       opener: opener,
                                       defaults: defaults,
+                                      languageCode: languageCode,
                                       logger: logger)
     }
 }

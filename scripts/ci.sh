@@ -77,6 +77,9 @@ run_lint() {
     exit 1
   fi
   swiftlint --strict --quiet --reporter emoji
+  # Every localized("...") in the code must be a catalog key translated into every language the app ships.
+  echo "==> l10n"
+  python3 scripts/l10n-check.py
 }
 
 # The UI tests type into text fields, which needs the simulator's software keyboard; with "Connect Hardware Keyboard"

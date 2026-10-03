@@ -120,8 +120,8 @@ struct GroupDetailView: View {
 
     private var confirmationTitle: String {
         switch confirmation {
-        case .leave: String(format: Copy.leaveConfirmationFormat, group.name)
-        case .delete: String(format: Copy.deleteConfirmationFormat, group.name)
+        case .leave: Copy.leaveConfirmation(groupName: group.name)
+        case .delete: Copy.deleteConfirmation(groupName: group.name)
         case nil: ""
         }
     }
