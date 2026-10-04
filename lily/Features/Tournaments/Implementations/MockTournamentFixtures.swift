@@ -45,7 +45,8 @@ nonisolated enum MockTournamentFixtures {
                                      Result(matchID: "r01p003", scoreA: 3, scoreB: 0)]
     /// Round two: Jonas reported his win over the caller, who has yet to confirm it.
     static let tableTennisReport = Report(matchID: "r02p003", scoreA: 3, scoreB: 2, by: "Jonas")
-    /// Round two: Noor reported her win over Ayşe, who disputed it; back to pending with the flag, for Marta to decide.
+    /// Round two: Noor reported her win over Ayşe, who disputed it; open again with the flag and without the score, for
+    /// Marta to decide.
     static let tableTennisDispute = Report(matchID: "r02p002", scoreA: 3, scoreB: 1, by: "Noor")
 
     private static let secondsPerHour = 3600.0
@@ -162,6 +163,8 @@ nonisolated enum MockTournamentFixtures {
                                     teamSize: 5,
                                     maxEntries: 8,
                                     entryCount: entries.count,
+                                    // Football's default, as the backend fills it; a knockout refuses a draw regardless.
+                                    allowsDraws: true,
                                     startsAt: now.addingTimeInterval(kickersStartsInDays * secondsPerDay),
                                     registrationClosesAt: now.addingTimeInterval(kickersDeadlineInDays * secondsPerDay),
                                     location: EventLocation(name: "Görlitzer Park pitch",
@@ -221,12 +224,12 @@ nonisolated enum MockTournamentFixtures {
         }
         for result in tableTennisResults {
             guard let index = matches.firstIndex(where: { $0.id == result.matchID }) else { continue }
-            matches[index] = matches[index].scored(result.scoreA, result.scoreB, by: organizerID, confirmed: true, at: startedAt)
+            matches[index] = matches[index].recording(result.scoreA, result.scoreB, by: organizerID, at: startedAt)
         }
         for (report, disputed) in [(tableTennisReport, false), (tableTennisDispute, true)] {
             guard let index = matches.firstIndex(where: { $0.id == report.matchID }) else { continue }
             let reporter = MockGroupFixtures.memberID(for: report.by)
-            let reported = matches[index].scored(report.scoreA, report.scoreB, by: reporter, confirmed: false, at: reportedAt)
+            let reported = matches[index].reporting(report.scoreA, report.scoreB, by: reporter, at: reportedAt)
             matches[index] = disputed ? reported.disputing() : reported
         }
         return matches

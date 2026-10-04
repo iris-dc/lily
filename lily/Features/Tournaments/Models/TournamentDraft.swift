@@ -49,17 +49,24 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
     }
 
     /// What a draft is judged against beyond the backend's limits: a create keeps the app's lead-time margin, an edit
-    /// only needs the future and never fewer entries than are already in.
+    /// only needs the future and never fewer entries than are already in, and once the tournament started the schedule
+    /// is fixed and not judged at all.
     struct Rules: Equatable, Sendable {
         let minimumLeadTime: TimeInterval
         let minimumEntries: Int
+        /// Whether the start and the deadline are judged. Not once the tournament started: the form shows them
+        /// read-only and the payload repeats them as stored, which the backend compares and never re-validates.
+        let judgesSchedule: Bool
 
         static let creation = Rules(minimumLeadTime: AppConfig.Tournaments.minimumLeadTime,
-                                    minimumEntries: AppConfig.Tournaments.entriesRange.lowerBound)
+                                    minimumEntries: AppConfig.Tournaments.entriesRange.lowerBound,
+                                    judgesSchedule: true)
 
-        static func editing(entryCount: Int) -> Rules {
+        /// An edit: no lead time, never fewer entries than are in; `isLocked` once the tournament started.
+        static func editing(entryCount: Int, isLocked: Bool = false) -> Rules {
             Rules(minimumLeadTime: AppConfig.Events.Editing.minimumLeadTime,
-                  minimumEntries: max(AppConfig.Tournaments.entriesRange.lowerBound, entryCount))
+                  minimumEntries: max(AppConfig.Tournaments.entriesRange.lowerBound, entryCount),
+                  judgesSchedule: !isLocked)
         }
 
         /// The entries the form's stepper offers under these rules for a format: from the floor to the format's cap.
@@ -132,6 +139,7 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
 
     /// When: the start and the deadline before it.
     private func scheduleIssues(now: Date, rules: Rules) -> [Issue] {
+        guard rules.judgesSchedule else { return [] }
         var issues: [Issue] = []
         if startsAt < Self.earliestStart(now: now, rules: rules) { issues.append(.startsAtTooSoon) }
         if let registrationClosesAt, registrationClosesAt >= startsAt { issues.append(.registrationClosesAfterStart) }

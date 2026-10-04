@@ -11,7 +11,10 @@ extension FakeTournamentRepository {
         try throwIfScripted()
         let (detail, match) = try storedMatch(id, matchID)
         let isOrganizer = detail.tournament.organizerUserId == TestFixtures.user.id
-        return replace(match.scored(scoreA, scoreB, by: TestFixtures.user.id, confirmed: isOrganizer, at: .now), in: detail)
+        let scored = isOrganizer
+            ? match.recording(scoreA, scoreB, by: TestFixtures.user.id, at: .now)
+            : match.reporting(scoreA, scoreB, by: TestFixtures.user.id, at: .now)
+        return replace(scored, in: detail)
     }
 
     func confirm(id: String, matchID: String) async throws -> TournamentDetail {
@@ -37,7 +40,7 @@ extension FakeTournamentRepository {
 
     private func storedMatch(_ id: String, _ matchID: String) throws -> (TournamentDetail, TournamentMatch) {
         let detail = try stored(id)
-        guard let match = detail.match(id: matchID) else { throw AppError.matchNotReady }
+        guard let match = detail.match(id: matchID) else { throw AppError.matchNotFound }
         return (detail, match)
     }
 

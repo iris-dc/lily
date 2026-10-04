@@ -10,7 +10,7 @@ struct StandingsTable: View {
     private typealias Copy = AppBranding.Tournaments.Standings
     private typealias Layout = DesignTokens.Layout
 
-    private var showsDraws: Bool { detail.tournament.allowsDraws }
+    private var showsDraws: Bool { detail.tournament.permitsDraws }
 
     var body: some View {
         VStack(spacing: DesignTokens.Spacing.xs) {

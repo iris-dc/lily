@@ -51,6 +51,8 @@ nonisolated enum MatchStatus: String, Codable, Sendable {
 
     /// A result nobody can change but the organiser.
     var isDecided: Bool { self == .confirmed || self == .walkover || self == .bye }
+    /// Waiting for a result, with or without a time.
+    var isOpen: Bool { self == .pending || self == .scheduled }
 }
 
 /// Which side of the next match a winner advances into.

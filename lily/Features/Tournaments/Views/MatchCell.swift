@@ -2,7 +2,7 @@ import SwiftUI
 
 /// One match as a plain fill on the surface, never glass (a bracket draws dozens at once, and Liquid Glass is for the
 /// controls): both sides with their seeds, the score or an en dash, the winner in ink and the loser faded, "Bye" or
-/// "TBD" for an empty side, a flag on a disputed match, and a faint accent border on the caller's own match. The list
+/// "TBD" for an empty side, a flag while a dispute is open, and a faint accent border on the caller's own match. The list
 /// variant adds the status and, when set, the time and place under the sides.
 struct MatchCell: View {
     let match: TournamentMatch
@@ -15,7 +15,7 @@ struct MatchCell: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-            side(match.entryAId, score: match.scoreA, flagged: match.isDisputed)
+            side(match.entryAId, score: match.scoreA, flagged: match.isOpenDispute)
             side(match.entryBId, score: match.scoreB, flagged: false)
             if showsDetails {
                 details
@@ -58,11 +58,11 @@ struct MatchCell: View {
         .opacity(isLoser(entryID) ? DesignTokens.Opacity.matchLoser : 1)
     }
 
-    /// The status (the dispute wins over it) and the schedule, in one caption line.
+    /// The status (an open dispute wins over it) and the schedule, in one caption line.
     private var details: some View {
         HStack(spacing: DesignTokens.Spacing.md) {
-            Text(match.isDisputed ? Copy.Match.disputed : Copy.Match.status(match.status))
-                .foregroundStyle(match.isDisputed ? AnyShapeStyle(Color.lilyAccent) : AnyShapeStyle(.secondary))
+            Text(match.isOpenDispute ? Copy.Match.disputed : Copy.Match.status(match.status))
+                .foregroundStyle(match.isOpenDispute ? AnyShapeStyle(Color.lilyAccent) : AnyShapeStyle(.secondary))
             if let scheduledAt = match.scheduledAt {
                 Label {
                     Text(scheduledAt, format: Self.dateStyle)

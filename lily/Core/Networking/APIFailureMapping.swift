@@ -65,6 +65,8 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     /// The entry is gone, or the player named is not in it.
     case entryNotFound = "ENTRY_NOT_FOUND"
     case notEnoughEntries = "NOT_ENOUGH_ENTRIES"
+    /// A well-formed match id that names no match of the tournament.
+    case matchNotFound = "MATCH_NOT_FOUND"
     case notInMatch = "NOT_IN_MATCH"
     case matchNotReady = "MATCH_NOT_READY"
     case drawNotAllowed = "DRAW_NOT_ALLOWED"
@@ -72,7 +74,7 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     /// Every code maps to a case with copy; the domains are split so no switch grows past the complexity limit.
     var appError: AppError {
         eventError ?? groupError ?? inviteError ?? moderationError ?? chatError ?? peopleError ?? tournamentError
-            ?? entryError ?? .unknown
+            ?? entryError ?? matchError ?? .unknown
     }
 
     private var eventError: AppError? {
@@ -146,7 +148,7 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         }
     }
 
-    /// The tournament itself and its matches; entering it is `entryError`, so neither switch passes nine cases.
+    /// The tournament itself; entering it is `entryError` and its matches `matchError`, so no switch passes nine cases.
     private var tournamentError: AppError? {
         switch self {
         case .tournamentNotFound: .tournamentNotFound
@@ -155,9 +157,6 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .notOrganizer: .notOrganizer
         case .tournamentLocked: .tournamentLocked
         case .notEnoughEntries: .notEnoughEntries
-        case .notInMatch: .notInMatch
-        case .matchNotReady: .matchNotReady
-        case .drawNotAllowed: .drawNotAllowed
         default: nil
         }
     }
@@ -169,6 +168,16 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .alreadyEntered: .alreadyEntered
         case .teamFull: .teamFull
         case .entryNotFound: .entryNotFound
+        default: nil
+        }
+    }
+
+    private var matchError: AppError? {
+        switch self {
+        case .matchNotFound: .matchNotFound
+        case .notInMatch: .notInMatch
+        case .matchNotReady: .matchNotReady
+        case .drawNotAllowed: .drawNotAllowed
         default: nil
         }
     }

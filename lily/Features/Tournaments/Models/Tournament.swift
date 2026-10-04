@@ -93,6 +93,9 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
     var isListed: Bool { isPublic && status == .registration }
     var fillRatio: Double { min(1, Double(entryCount) / Double(max(maxEntries, 1))) }
     var canStart: Bool { status == .registration && entryCount >= format.minimumEntriesToStart }
+    /// Whether a match may end level: a knockout match always needs a winner, whatever `allowsDraws` says (the backend
+    /// refuses a draw there); a round robin follows the setting.
+    var permitsDraws: Bool { allowsDraws && format == .roundRobin }
     /// "3 of 8 teams" or "6 of 12 players".
     var entriesText: String { AppBranding.Tournaments.entries(entryCount, of: maxEntries, teamSize: teamSize) }
     /// For log lines: the shape of the field, never a name.

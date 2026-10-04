@@ -16,7 +16,7 @@ struct MatchSheet: View {
 
     /// The match as the detail holds it now; a write's answer changes it under the sheet.
     private var match: TournamentMatch? { viewModel.detail?.match(id: matchID) }
-    private var allowsDraws: Bool { viewModel.tournament?.allowsDraws ?? false }
+    private var permitsDraws: Bool { viewModel.tournament?.permitsDraws ?? false }
 
     var body: some View {
         NavigationStack {
@@ -63,7 +63,7 @@ struct MatchSheet: View {
 
     /// What the caller should know before acting: the other side's report, their own report waiting, or a dispute.
     private func notice(for match: TournamentMatch, actions: MatchActions) -> String? {
-        if match.isDisputed { return Copy.disputedNotice }
+        if match.isOpenDispute { return Copy.disputedNotice }
         if actions.awaitsOtherSide { return Copy.awaitingOtherSide }
         guard actions.canConfirm, let scoreA = match.scoreA, let scoreB = match.scoreB else { return nil }
         let reporter = viewModel.detail?.entry(containing: match.reportedBy)?.name ?? viewModel.entryName(match.entryAId)
@@ -176,7 +176,7 @@ struct MatchSheet: View {
 
     private var isDisallowedDraw: Bool {
         guard let scores = parsedScores else { return false }
-        return scores.a == scores.b && !allowsDraws
+        return scores.a == scores.b && !permitsDraws
     }
 
     private var canSubmitScore: Bool { parsedScores != nil && !isDisallowedDraw }

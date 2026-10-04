@@ -1,10 +1,13 @@
 import Foundation
 
-/// Entering and leaving: the rules of the backend's entry transactions, in memory. Every write that puts a player in
-/// or takes them out moves the room's roster in the group mock the same way.
+/// Entering and leaving: the rules of the backend's entry transactions, in memory, with the refusals read in the order
+/// the backend reads them (the entry's before the root's, who may act before the registration window). Every write that
+/// puts a player in or takes them out moves the room's roster in the group mock the same way.
 extension MockTournamentRepository {
     func join(id: String, teamName: String?) async throws -> TournamentEntry {
-        let detail = try enterable(id)
+        guard identity.currentUserID != nil else { throw AppError.sessionExpired }
+        let detail = try readable(id)
+        try requireEnterable(detail)
         let tournament = detail.tournament
         guard !tournament.isFull else { throw AppError.tournamentFull }
         let name = teamName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -25,11 +28,16 @@ extension MockTournamentRepository {
         return entry.replacingUser(caller, with: identity.currentUserID)
     }
 
+    /// The team's refusals come first (gone, the caller in it, full), then the tournament's (registration over, the
+    /// caller in another entry), as the backend's transaction reads them.
     func joinTeam(id: String, entryID: String) async throws -> TournamentEntry {
-        let detail = try enterable(id)
+        guard identity.currentUserID != nil else { throw AppError.sessionExpired }
+        let detail = try readable(id)
         guard let index = detail.entries.firstIndex(where: { $0.id == entryID }) else { throw AppError.entryNotFound }
-        guard !detail.entries[index].isFull(teamSize: detail.tournament.teamSize) else { throw AppError.teamFull }
         let caller = MockTournamentFixtures.callerMarker
+        guard !detail.entries[index].contains(userID: caller) else { throw AppError.alreadyEntered }
+        guard !detail.entries[index].isFull(teamSize: detail.tournament.teamSize) else { throw AppError.teamFull }
+        try requireEnterable(detail)
         let member = EntryMember(userId: caller, displayName: AppBranding.Tournaments.Create.mockOrganizerName)
         var entries = detail.entries
         entries[index] = entries[index].adding(member)
@@ -41,18 +49,19 @@ extension MockTournamentRepository {
         return entries[index].replacingUser(caller, with: identity.currentUserID)
     }
 
-    /// The player themselves, their captain or the organiser; an emptied entry is deleted and the count drops.
+    /// The player themselves, their captain or the organiser, judged before the registration window as the backend
+    /// judges it; an emptied entry is deleted and the count drops.
     func leave(id: String, entryID: String, userID: String) async throws -> TournamentEntry? {
         let detail = try readable(id)
-        guard detail.tournament.status == .registration else { throw AppError.registrationClosed }
         guard let index = detail.entries.firstIndex(where: { $0.id == entryID }) else { throw AppError.entryNotFound }
         let entry = detail.entries[index]
         let caller = MockTournamentFixtures.callerMarker
         let target = userID == identity.currentUserID ? caller : userID
-        guard entry.contains(userID: target) else { throw AppError.entryNotFound }
         guard target == caller || entry.isCaptain(caller) || detail.tournament.organizerUserId == caller else {
             throw AppError.insufficientRole
         }
+        guard detail.tournament.status == .registration else { throw AppError.registrationClosed }
+        guard entry.contains(userID: target) else { throw AppError.entryNotFound }
         var entries = detail.entries
         let remaining = entry.removing(userID: target)
         if let remaining { entries[index] = remaining } else { entries.remove(at: index) }
@@ -65,11 +74,11 @@ extension MockTournamentRepository {
         return remaining?.replacingUser(caller, with: identity.currentUserID)
     }
 
-    /// The organiser drops a whole entry; every member leaves the room.
+    /// The organiser drops a whole entry while registration is open; every member leaves the room.
     func removeEntry(id: String, entryID: String) async throws {
         let detail = try organized(id)
-        guard detail.tournament.status == .registration else { throw AppError.registrationClosed }
         guard let entry = detail.entry(id: entryID) else { throw AppError.entryNotFound }
+        guard detail.tournament.status == .registration else { throw AppError.registrationClosed }
         let entries = detail.entries.filter { $0.id != entryID }
         let caller = MockTournamentFixtures.callerMarker
         let myEntryId = entry.contains(userID: caller) ? nil : detail.tournament.myEntryId
@@ -80,13 +89,10 @@ extension MockTournamentRepository {
         }
     }
 
-    /// The detail for a write that puts the caller in: registration open and the caller not in yet.
-    private func enterable(_ id: String) throws -> TournamentDetail {
-        guard identity.currentUserID != nil else { throw AppError.sessionExpired }
-        let detail = try readable(id)
+    /// The root's conditions on an entering write: registration open (status and deadline) and the caller not in yet.
+    private func requireEnterable(_ detail: TournamentDetail) throws {
         guard detail.tournament.isRegistrationOpen(now: now()) else { throw AppError.registrationClosed }
         guard detail.entry(containing: MockTournamentFixtures.callerMarker) == nil else { throw AppError.alreadyEntered }
-        return detail
     }
 
     private func enter(_ detail: TournamentDetail, logging message: String) {

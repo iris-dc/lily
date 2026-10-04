@@ -28,7 +28,7 @@ final class EditTournamentViewModel {
          onChange: @escaping @MainActor (TournamentDetail) -> Void) {
         self.original = tournament
         self.draft = TournamentDraft(editing: tournament)
-        self.rules = .editing(entryCount: tournament.entryCount)
+        self.rules = .editing(entryCount: tournament.entryCount, isLocked: tournament.status != .registration)
         self.repository = repository
         self.reporter = reporter
         self.logger = logger
@@ -43,8 +43,8 @@ final class EditTournamentViewModel {
     var isDone: Bool { updated != nil }
     var earliestStart: Date { TournamentDraft.earliestStart(now: now(), rules: rules) }
     var entriesRange: ClosedRange<Int> { rules.entriesRange(for: draft.format) }
-    /// After the start the schedule, the draws and the entries are fixed.
-    var isLocked: Bool { original.status != .registration }
+    /// After the start the schedule, the draws and the entries are fixed, and the rules stop judging the schedule.
+    var isLocked: Bool { !rules.judgesSchedule }
     /// The group cannot change; the row shows it read-only, or not at all for a standalone tournament.
     var lockedGroup: EventGroupRef? { original.group }
     var showsGroupRow: Bool { lockedGroup != nil }

@@ -1,7 +1,7 @@
 import Foundation
 
-/// Copy for tournaments; `message(for:)` routes exactly those cases here. Two switches, so neither grows past the
-/// complexity limit: the tournament itself, then entering and playing it.
+/// Copy for tournaments; `message(for:)` routes exactly those cases here. Three switches, so none grows past the
+/// complexity limit: the tournament itself, entering it, then its matches.
 nonisolated extension ErrorMessageMapper {
     static func tournamentMessage(for error: AppError) -> ErrorMessage {
         switch error {
@@ -36,7 +36,7 @@ nonisolated extension ErrorMessageMapper {
                             body: localized("You can run at most \(limit) open tournaments. Finish or cancel one first."))
     }
 
-    /// Entering, leaving and the matches.
+    /// Entering, leaving and the start.
     private static func entryMessage(for error: AppError) -> ErrorMessage {
         switch error {
         case .registrationClosed:
@@ -53,12 +53,23 @@ nonisolated extension ErrorMessageMapper {
         case .notEnoughEntries:
             ErrorMessage(title: localized("Not enough entries"),
                          body: localized("More teams or players need to enter before it can start."))
+        default:
+            matchMessage(for: error)
+        }
+    }
+
+    /// The matches: who may write one, and what it can take.
+    private static func matchMessage(for error: AppError) -> ErrorMessage {
+        switch error {
         case .notInMatch:
             ErrorMessage(title: localized("Not your match"),
                          body: localized("Only the players of a match can report its result."))
         case .matchNotReady:
             ErrorMessage(title: localized("Match not ready"),
                          body: localized("This match has no result to take yet, or is already decided."))
+        case .matchNotFound:
+            ErrorMessage(title: localized("Match not found"),
+                         body: localized("This match is no longer part of the tournament."))
         case .drawNotAllowed:
             ErrorMessage(title: localized("No draws here"),
                          body: localized("This tournament doesn't allow a draw. Enter a winner."))

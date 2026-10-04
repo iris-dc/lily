@@ -131,6 +131,24 @@ struct EditTournamentViewModelTests {
         #expect(harness.logs(.info).contains { $0.contains("updated") })
     }
 
+    /// A tournament under way has its start behind it; the schedule is sent as stored, so a rename still goes through.
+    @Test func aStartedTournamentCanStillBeRenamed() async {
+        let started = Tournament.fixture(id: "t",
+                                         status: .inProgress,
+                                         entryCount: 4,
+                                         startsAt: TournamentHarness.now.addingTimeInterval(-3600),
+                                         organizerUserId: TestFixtures.user.id)
+        harness.repository.details["t"] = .fixture(tournament: started)
+        let viewModel = harness.makeEditViewModel(for: started)
+        #expect(viewModel.isLocked && viewModel.issues.isEmpty && !viewModel.canSubmit, "nothing changed yet")
+
+        viewModel.draft.name = "Renamed Cup"
+        #expect(viewModel.canSubmit)
+        await viewModel.submit()
+
+        #expect(viewModel.isDone && harness.sink.details.last?.tournament.name == "Renamed Cup")
+    }
+
     @Test func aStartedTournamentIsLocked() {
         let viewModel = harness.makeEditViewModel(for: .fixture(status: .inProgress))
         #expect(viewModel.isLocked)

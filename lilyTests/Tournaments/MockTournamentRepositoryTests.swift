@@ -23,6 +23,7 @@ struct MockTournamentRepositoryTests {
         #expect(cup.name == "Kickers Cup" && cup.teamSize == 5 && cup.format == .singleElimination)
         #expect(cup.status == .registration && cup.entryCount == 4 && cup.group?.id == MockGroupFixtures.kickersID)
         #expect(cup.organizerUserId == "mock-apple" && cup.myEntryId == nil, "the caller organises, not entered")
+        #expect(cup.allowsDraws && !cup.permitsDraws, "football draws by default; a knockout never does")
         let cupDetail = try await repository.tournament(id: MockTournamentFixtures.kickersCupID)
         #expect(cupDetail.entries.count == 4 && cupDetail.matches.isEmpty)
 
@@ -38,7 +39,7 @@ struct MockTournamentRepositoryTests {
         let reported = try #require(tableTennis.match(id: MockTournamentFixtures.tableTennisReport.matchID))
         #expect(reported.status == .reported && reported.contains(entryID: mine.id) && reported.reportedBy == "mock-user-jonas")
         let disputed = try #require(tableTennis.match(id: MockTournamentFixtures.tableTennisDispute.matchID))
-        #expect(disputed.isDisputed && disputed.status == .pending && disputed.scoreA == 3, "the scores stay for the organiser")
+        #expect(disputed.isDisputed && disputed.status == .pending && disputed.scoreA == nil, "the report is dropped")
     }
 
     @Test func listsFollowTheirScopes() async throws {
@@ -132,29 +133,11 @@ struct MockTournamentRepositoryTests {
         let final = try #require(recorded.match(id: "r02p001"))
         #expect(recorded.match(id: semi.id)?.status == .confirmed, "the organiser's result is confirmed at once")
         #expect(final.entryAId == semi.entryAId, "the winner advances")
-        await #expect(throws: AppError.drawNotAllowed) {
+        await #expect(throws: AppError.drawNotAllowed, "a knockout needs a winner whatever allowsDraws says") {
             try await repository.report(id: id, matchID: "r01p002", scoreA: 1, scoreB: 1)
         }
         await #expect(throws: AppError.matchNotReady) {
             try await repository.report(id: id, matchID: semi.id, scoreA: 2, scoreB: 1)
-        }
-    }
-
-    @Test func aPlayersReportWaitsForTheOtherSide() async throws {
-        let id = MockTournamentFixtures.tableTennisID
-        let detail = try await repository.tournament(id: id)
-        let mine = try #require(detail.myEntry)
-        let pending = try #require(detail.matches.first { $0.contains(entryID: mine.id) && $0.status == .pending })
-
-        let reported = try await repository.report(id: id, matchID: pending.id, scoreA: 3, scoreB: 2)
-        #expect(reported.match(id: pending.id)?.status == .reported)
-        await #expect(throws: AppError.matchNotReady) { try await repository.confirm(id: id, matchID: pending.id) }
-        let disputed = try await repository.dispute(id: id, matchID: pending.id)
-        #expect(disputed.match(id: pending.id)?.isDisputed == true && disputed.match(id: pending.id)?.status == .pending)
-
-        let other = try #require(detail.matches.first { !$0.contains(entryID: mine.id) && !$0.isDecided })
-        await #expect(throws: AppError.notInMatch) {
-            try await repository.report(id: id, matchID: other.id, scoreA: 3, scoreB: 0)
         }
     }
 

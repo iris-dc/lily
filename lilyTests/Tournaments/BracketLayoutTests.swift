@@ -38,8 +38,8 @@ struct BracketLayoutTests {
             TournamentMatch(pairing: $0, tournamentId: "t")
         }
         // Round 1: e1-e4 3:1, e2-e3 2:2 (a draw); round 2: e1-e3 is a walkover for e3.
-        matches[0] = matches[0].scored(3, 1, by: "u1", confirmed: true, at: .now)
-        matches[1] = matches[1].scored(2, 2, by: "u2", confirmed: true, at: .now)
+        matches[0] = matches[0].recording(3, 1, by: "u1", at: .now)
+        matches[1] = matches[1].recording(2, 2, by: "u2", at: .now)
         matches[2] = matches[2].walkover(winnerEntryId: "e3", by: "org", at: .now)
 
         let table = RoundRobinStandings.compute(entries: entries, matches: matches)

@@ -19,7 +19,7 @@ struct ErrorMessageMapperTests {
         .profileUnavailable, .conversationFailed, .conversationLimit,
         .tournamentsUnavailable, .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed,
         .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked,
-        .notEnoughEntries, .notInMatch, .matchNotReady, .drawNotAllowed, .tournamentLimit,
+        .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit,
         .unknown,
     ]
 
@@ -225,7 +225,8 @@ struct BackendErrorCodeTests {
             "TOURNAMENT_LIMIT": .tournamentLimit, "NOT_ORGANIZER": .notOrganizer, "TOURNAMENT_LOCKED": .tournamentLocked,
             "REGISTRATION_CLOSED": .registrationClosed, "TOURNAMENT_FULL": .tournamentFull, "ALREADY_ENTERED": .alreadyEntered,
             "TEAM_FULL": .teamFull, "ENTRY_NOT_FOUND": .entryNotFound, "NOT_ENOUGH_ENTRIES": .notEnoughEntries,
-            "NOT_IN_MATCH": .notInMatch, "MATCH_NOT_READY": .matchNotReady, "DRAW_NOT_ALLOWED": .drawNotAllowed,
+            "NOT_IN_MATCH": .notInMatch, "MATCH_NOT_READY": .matchNotReady, "MATCH_NOT_FOUND": .matchNotFound,
+            "DRAW_NOT_ALLOWED": .drawNotAllowed,
         ]
         for (raw, error) in expected {
             #expect(BackendErrorCode(rawValue: raw)?.appError == error, "\(raw)")

@@ -80,8 +80,11 @@ nonisolated struct TournamentMatch: Identifiable, Hashable, Codable, Sendable {
 
     var hasBothSides: Bool { entryAId != nil && entryBId != nil }
     var isDecided: Bool { status.isDecided }
+    /// A dispute nobody has answered yet: the match is open again and no fresh score is in. `isDisputed` itself stays
+    /// set for good once a result was disputed, as the backend keeps it, so the screens read this.
+    var isOpenDispute: Bool { isDisputed && status.isOpen }
     /// Whether a result may be taken: both sides known, not decided, the tournament's state being the caller's check.
-    var isReadyForResult: Bool { hasBothSides && (status == .pending || status == .scheduled || status == .reported) }
+    var isReadyForResult: Bool { hasBothSides && (status.isOpen || status == .reported) }
 
     func contains(entryID: String?) -> Bool {
         entryID != nil && (entryAId == entryID || entryBId == entryID)
@@ -97,45 +100,70 @@ nonisolated struct TournamentMatch: Identifiable, Hashable, Codable, Sendable {
         return copy
     }
 
-    /// A score one side reported, or the organiser recorded (then `confirmed` at once).
-    func scored(_ scoreA: Int, _ scoreB: Int, by userID: String, confirmed: Bool, at date: Date) -> TournamentMatch {
+    /// A side's provisional score: `reported`, the reporter stamped; a report before it is replaced.
+    func reporting(_ scoreA: Int, _ scoreB: Int, by userID: String, at date: Date) -> TournamentMatch {
         var copy = self
+        copy.status = .reported
         copy.scoreA = scoreA
         copy.scoreB = scoreB
-        copy.isDisputed = false
-        if confirmed {
-            copy.status = .confirmed
-            copy.winnerEntryId = scoreA == scoreB ? nil : (scoreA > scoreB ? entryAId : entryBId)
-            copy.confirmedBy = userID
-            copy.confirmedAt = date
-        } else {
-            copy.status = .reported
-            copy.reportedBy = userID
-            copy.reportedAt = date
-        }
+        copy.reportedBy = userID
+        copy.reportedAt = date
         return copy
     }
 
-    func confirming(by userID: String, at date: Date) -> TournamentMatch {
-        guard let scoreA, let scoreB else { return self }
-        return scored(scoreA, scoreB, by: userID, confirmed: true, at: date)
+    /// The organiser's score: final at once, the organiser stamped as reporter and confirmer alike.
+    func recording(_ scoreA: Int, _ scoreB: Int, by userID: String, at date: Date) -> TournamentMatch {
+        var copy = settled(scoreA, scoreB, by: userID, at: date)
+        copy.reportedBy = userID
+        copy.reportedAt = date
+        return copy
     }
 
-    /// Back to pending with the dispute flagged; the scores stay for the organiser to look at.
+    /// The other side, or the organiser, stands behind the reported score; the reporter stays as stamped.
+    func confirming(by userID: String, at date: Date) -> TournamentMatch {
+        guard let scoreA, let scoreB else { return self }
+        return settled(scoreA, scoreB, by: userID, at: date)
+    }
+
+    /// The report rejected: open again (`scheduled` when the match has a time), the score and the reporter dropped,
+    /// the flag set for good.
     func disputing() -> TournamentMatch {
-        var copy = self
-        copy.status = .pending
+        var copy = droppingReport
+        copy.status = openStatus
         copy.isDisputed = true
+        return copy
+    }
+
+    /// A no-show: the named side wins without a score, and any report is dropped.
+    func walkover(winnerEntryId: String, by userID: String, at date: Date) -> TournamentMatch {
+        var copy = droppingReport
+        copy.status = .walkover
+        copy.winnerEntryId = winnerEntryId
+        copy.confirmedBy = userID
+        copy.confirmedAt = date
+        return copy
+    }
+
+    /// What a match without a result is called: `scheduled` with a time, `pending` without.
+    private var openStatus: MatchStatus { scheduledAt == nil ? .pending : .scheduled }
+
+    /// The stored report gone: no score, no reporter.
+    private var droppingReport: TournamentMatch {
+        var copy = self
+        copy.scoreA = nil
+        copy.scoreB = nil
         copy.reportedBy = nil
         copy.reportedAt = nil
         return copy
     }
 
-    func walkover(winnerEntryId: String, by userID: String, at date: Date) -> TournamentMatch {
+    /// A score that stands: `confirmed`, the winner from the score (none for a draw), the confirmer stamped.
+    private func settled(_ scoreA: Int, _ scoreB: Int, by userID: String, at date: Date) -> TournamentMatch {
         var copy = self
-        copy.status = .walkover
-        copy.winnerEntryId = winnerEntryId
-        copy.isDisputed = false
+        copy.status = .confirmed
+        copy.scoreA = scoreA
+        copy.scoreB = scoreB
+        copy.winnerEntryId = scoreA == scoreB ? nil : (scoreA > scoreB ? entryAId : entryBId)
         copy.confirmedBy = userID
         copy.confirmedAt = date
         return copy
@@ -154,8 +182,8 @@ nonisolated struct TournamentMatch: Identifiable, Hashable, Codable, Sendable {
         var copy = self
         copy.scheduledAt = schedule.scheduledAt
         copy.location = schedule.location
-        if copy.status == .pending || copy.status == .scheduled {
-            copy.status = schedule.scheduledAt == nil ? .pending : .scheduled
+        if copy.status.isOpen {
+            copy.status = copy.openStatus
         }
         return copy
     }

@@ -65,13 +65,13 @@ final class MockTournamentRepository: TournamentRepository {
         return resolved(detail)
     }
 
-    /// Like the backend: the organiser alone; after the start only the name, description and place may differ.
+    /// Like the backend: the organiser alone; once registration is over (started, completed or cancelled alike) only
+    /// the name, description and place may differ from what is stored.
     func update(id: String, _ draft: TournamentDraft) async throws -> TournamentDetail {
         let detail = try organized(id)
         let tournament = detail.tournament
         if tournament.status != .registration {
-            guard !tournament.status.isOver, draft.startsAt == tournament.startsAt,
-                  draft.registrationClosesAt == tournament.registrationClosesAt,
+            guard draft.startsAt == tournament.startsAt, draft.registrationClosesAt == tournament.registrationClosesAt,
                   draft.resolvedAllowsDraws == tournament.allowsDraws, draft.maxEntries == tournament.maxEntries else {
                 throw AppError.tournamentLocked
             }
@@ -148,11 +148,12 @@ final class MockTournamentRepository: TournamentRepository {
         tournament.group.flatMap { groups.find($0.id) }?.isMember ?? false
     }
 
-    /// In progress first, then registration by start, then the finished ones newest first, as the backend orders Mine.
+    /// In progress first, then registration by start, then the finished ones most recently changed first, as the
+    /// backend orders Mine.
     private static func mineOrder(_ lhs: Tournament, _ rhs: Tournament) -> Bool {
         let rank: (TournamentStatus) -> Int = { $0 == .inProgress ? 0 : $0 == .registration ? 1 : 2 }
         if rank(lhs.status) != rank(rhs.status) { return rank(lhs.status) < rank(rhs.status) }
-        return lhs.status.isOver ? lhs.startsAt > rhs.startsAt : lhs.startsAt < rhs.startsAt
+        return lhs.status.isOver ? lhs.lastChange > rhs.lastChange : lhs.startsAt < rhs.startsAt
     }
 }
 
@@ -174,6 +175,9 @@ extension TournamentEntry {
 }
 
 private extension Tournament {
+    /// When a finished tournament last moved: its completion, else its last edit, else its creation.
+    var lastChange: Date { completedAt ?? updatedAt ?? createdAt }
+
     /// The tournament with `marker` read as the caller's id in the organiser's seat, and the caller's entry set.
     func replacingOrganizer(_ marker: String, with userID: String?, myEntryId: String?) -> Tournament {
         Tournament(id: id,

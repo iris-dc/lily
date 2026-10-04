@@ -58,6 +58,17 @@ struct TournamentDraftTests {
         #expect(draft.issues(now: Self.now, rules: rules) == [.maxEntriesBelowEntries])
     }
 
+    /// Once the tournament started its schedule is sent as stored, so a start that has passed is no issue for a rename.
+    @Test func aLockedEditDoesNotJudgeTheSchedule() {
+        let started = Tournament.fixture(status: .inProgress, entryCount: 6, startsAt: Self.now.addingTimeInterval(-86_400))
+        var draft = TournamentDraft(editing: started)
+        draft.name = "Wednesday Table Tennis"
+        #expect(draft.issues(now: Self.now, rules: .editing(entryCount: 6)) == [.startsAtTooSoon])
+        #expect(draft.issues(now: Self.now, rules: .editing(entryCount: 6, isLocked: true)).isEmpty)
+        #expect(!TournamentDraft.Rules.editing(entryCount: 6, isLocked: true).judgesSchedule)
+        #expect(TournamentDraft.Rules.creation.judgesSchedule && TournamentDraft.Rules.editing(entryCount: 6).judgesSchedule)
+    }
+
     @Test func editingADraftRoundTripsThroughTheTournament() {
         let tournament = Tournament.fixture(allowsDraws: true, registrationClosesAt: Self.now.addingTimeInterval(1000))
         var draft = TournamentDraft(editing: tournament)

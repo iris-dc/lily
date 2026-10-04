@@ -11711,6 +11711,46 @@
         }
       }
     },
+    "Match not found": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Матч не найден"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partido no encontrado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Match introuvable"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Матч не знайдено"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie znaleziono meczu"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partida não encontrada"
+          }
+        }
+      }
+    },
     "Match not ready": {
       "localizations": {
         "ru": {
@@ -20507,6 +20547,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Esta partida ainda não tem resultado a registrar, ou já está decidida."
+          }
+        }
+      }
+    },
+    "This match is no longer part of the tournament.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этого матча больше нет в турнире."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este partido ya no forma parte del torneo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce match ne fait plus partie du tournoi."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цього матчу більше немає в турнірі."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ten mecz nie jest już częścią turnieju."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta partida já não faz parte do torneio."
           }
         }
       }

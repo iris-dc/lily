@@ -125,6 +125,8 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case notInMatch
     /// The match misses a side, is decided already, or the tournament is not in progress (`MATCH_NOT_READY`).
     case matchNotReady
+    /// A well-formed match id that names no match of the tournament (`MATCH_NOT_FOUND`).
+    case matchNotFound
     case drawNotAllowed
     /// The organiser runs `AppConfig.Tournaments.maxOrganizedOpen` open tournaments already (`TOURNAMENT_LIMIT`).
     case tournamentLimit

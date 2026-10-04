@@ -1,9 +1,13 @@
 import Foundation
 
-/// The start and the results: the backend's match rules in memory. A start draws the matches through
-/// `TournamentSchedule`; a result from a side is `reported` until the other side confirms (or reports the same score),
-/// the organiser's is `confirmed` at once; a confirmed result advances the winner in single elimination and completes
-/// the tournament on the final; a round robin's standings are recomputed on every write.
+/// The start and the results: the backend's match rules in memory, its refusals in its order. A start draws the matches
+/// through `TournamentSchedule`; every match route needs the tournament under way (`MATCH_NOT_READY` whoever asks) and
+/// a match the id names (`MATCH_NOT_FOUND`), then asks who the caller is (`NOT_IN_MATCH`) before what the match can
+/// take. A side's score is `reported` until the other side confirms it or reports the same score; the organiser's is
+/// `confirmed` at once; a report is answered by the other side or the organiser, never by the side that made it, which
+/// reports again instead; a settled result advances the winner in a bracket and completes the tournament on the final,
+/// or on a round robin's last open match with the table's leader as winner; a round robin's standings are recomputed on
+/// every write.
 extension MockTournamentRepository {
     func start(id: String) async throws -> TournamentDetail {
         let detail = try organized(id)
@@ -21,78 +25,122 @@ extension MockTournamentRepository {
     }
 
     func report(id: String, matchID: String, scoreA: Int, scoreB: Int) async throws -> TournamentDetail {
-        let (detail, match) = try openMatch(id, matchID)
-        guard AppConfig.Tournaments.scoreRange.contains(scoreA), AppConfig.Tournaments.scoreRange.contains(scoreB) else {
-            throw AppError.tournamentActionFailed
-        }
-        guard scoreA != scoreB || detail.tournament.allowsDraws else { throw AppError.drawNotAllowed }
+        let range = AppConfig.Tournaments.scoreRange
+        guard range.contains(scoreA), range.contains(scoreB) else { throw AppError.tournamentActionFailed }
+        let (detail, match) = try runningMatch(id, matchID)
+        try requireSideOrOrganizer(match, in: detail)
+        try requireOpen(match)
+        guard scoreA != scoreB || detail.tournament.permitsDraws else { throw AppError.drawNotAllowed }
         let caller = MockTournamentFixtures.callerMarker
-        let isOrganizer = detail.tournament.organizerUserId == caller
-        guard isOrganizer || isSide(of: match, in: detail) else { throw AppError.notInMatch }
-        let agrees = match.status == .reported && match.scoreA == scoreA && match.scoreB == scoreB && match.reportedBy != caller
-        let scored = match.scored(scoreA, scoreB, by: caller, confirmed: isOrganizer || agrees, at: now())
+        let scored: TournamentMatch
+        if isOrganizer(of: detail) {
+            scored = match.recording(scoreA, scoreB, by: caller, at: now())
+        } else if match.status == .reported, !reportedBySide(of: caller, match, in: detail),
+                  match.scoreA == scoreA, match.scoreB == scoreB {
+            scored = match.confirming(by: caller, at: now())
+        } else {
+            scored = match.reporting(scoreA, scoreB, by: caller, at: now())
+        }
         logger.info(.tournaments, "Mock result for match \(matchID) of \(id): \(scored.status.rawValue)")
         return resolved(settle(scored, in: detail))
     }
 
     func confirm(id: String, matchID: String) async throws -> TournamentDetail {
-        let (detail, match) = try openMatch(id, matchID)
-        let caller = MockTournamentFixtures.callerMarker
-        guard match.status == .reported, match.reportedBy != caller else { throw AppError.matchNotReady }
-        guard detail.tournament.organizerUserId == caller || isSide(of: match, in: detail) else { throw AppError.notInMatch }
-        return resolved(settle(match.confirming(by: caller, at: now()), in: detail))
+        let (detail, match) = try runningMatch(id, matchID)
+        try requireAnswerable(match, in: detail)
+        return resolved(settle(match.confirming(by: MockTournamentFixtures.callerMarker, at: now()), in: detail))
     }
 
     func dispute(id: String, matchID: String) async throws -> TournamentDetail {
-        let (detail, match) = try openMatch(id, matchID)
-        guard match.status == .reported else { throw AppError.matchNotReady }
-        guard detail.tournament.organizerUserId == MockTournamentFixtures.callerMarker || isSide(of: match, in: detail) else {
-            throw AppError.notInMatch
-        }
+        let (detail, match) = try runningMatch(id, matchID)
+        try requireAnswerable(match, in: detail)
+        logger.info(.tournaments, "Mock dispute of match \(matchID) of \(id)")
         return resolved(replace(match.disputing(), in: detail))
     }
 
     func walkover(id: String, matchID: String, winnerEntryID: String) async throws -> TournamentDetail {
-        let detail = try organized(id)
-        let (_, match) = try openMatch(id, matchID)
+        let (detail, match) = try runningMatch(id, matchID)
+        try requireOrganizer(of: detail)
+        try requireOpen(match)
         guard match.contains(entryID: winnerEntryID) else { throw AppError.tournamentActionFailed }
         let settled = match.walkover(winnerEntryId: winnerEntryID, by: MockTournamentFixtures.callerMarker, at: now())
         return resolved(settle(settled, in: detail))
     }
 
     func schedule(id: String, matchID: String, _ schedule: MatchSchedule) async throws -> TournamentMatch {
-        let detail = try organized(id)
-        guard let match = detail.match(id: matchID) else { throw AppError.matchNotReady }
+        let (detail, match) = try runningMatch(id, matchID)
+        try requireOrganizer(of: detail)
         guard !match.isDecided else { throw AppError.matchNotReady }
         let scheduled = match.scheduling(schedule)
         replace(scheduled, in: detail)
         return scheduled
     }
 
-    /// A match that may still take a result, in a tournament under way.
-    private func openMatch(_ id: String, _ matchID: String) throws -> (TournamentDetail, TournamentMatch) {
+    /// A match of a tournament under way, under the read rule: not in progress refuses whoever asks, and a well-formed
+    /// id that names no match is its own refusal, in that order.
+    private func runningMatch(_ id: String, _ matchID: String) throws -> (TournamentDetail, TournamentMatch) {
         let detail = try readable(id)
-        guard detail.tournament.status == .inProgress, let match = detail.match(id: matchID), match.isReadyForResult else {
-            throw AppError.matchNotReady
-        }
+        guard detail.tournament.status == .inProgress else { throw AppError.matchNotReady }
+        guard let match = detail.match(id: matchID) else { throw AppError.matchNotFound }
         return (detail, match)
     }
 
-    private func isSide(of match: TournamentMatch, in detail: TournamentDetail) -> Bool {
-        match.contains(entryID: detail.entry(containing: MockTournamentFixtures.callerMarker)?.id)
+    private func isOrganizer(of detail: TournamentDetail) -> Bool {
+        detail.tournament.organizerUserId == MockTournamentFixtures.callerMarker
     }
 
-    /// A confirmed result: the winner advances in a bracket, the final completes the tournament.
+    private func requireOrganizer(of detail: TournamentDetail) throws {
+        guard isOrganizer(of: detail) else { throw AppError.notOrganizer }
+    }
+
+    /// The organiser and the players of either side write a match; nobody else.
+    private func requireSideOrOrganizer(_ match: TournamentMatch, in detail: TournamentDetail) throws {
+        let mine = detail.entry(containing: MockTournamentFixtures.callerMarker)?.id
+        guard isOrganizer(of: detail) || match.contains(entryID: mine) else { throw AppError.notInMatch }
+    }
+
+    /// A match that can take a result: both sides known, nothing final.
+    private func requireOpen(_ match: TournamentMatch) throws {
+        guard match.isReadyForResult else { throw AppError.matchNotReady }
+    }
+
+    /// A report is answered by the other side or the organiser; the side that made it reports again instead.
+    private func requireAnswerable(_ match: TournamentMatch, in detail: TournamentDetail) throws {
+        try requireSideOrOrganizer(match, in: detail)
+        guard match.status == .reported else { throw AppError.matchNotReady }
+        guard isOrganizer(of: detail) || !reportedBySide(of: MockTournamentFixtures.callerMarker, match, in: detail) else {
+            throw AppError.matchNotReady
+        }
+    }
+
+    /// Whether the stored report came from the user's side; a teammate's report counts as theirs.
+    private func reportedBySide(of userID: String, _ match: TournamentMatch, in detail: TournamentDetail) -> Bool {
+        guard let reporter = match.reportedBy, let side = detail.entry(containing: reporter) else { return false }
+        return side.id == detail.entry(containing: userID)?.id
+    }
+
+    /// A settled result: the winner stands in the next match of a bracket; the final's result, or a round robin's last,
+    /// completes the tournament.
     private func settle(_ match: TournamentMatch, in detail: TournamentDetail) -> TournamentDetail {
         var detail = replace(match, in: detail)
-        guard match.isDecided, let winner = match.winnerEntryId else { return detail }
-        if let nextID = match.nextMatchId, let slot = match.nextSlot, let next = detail.match(id: nextID) {
+        guard match.isDecided else { return detail }
+        if let nextID = match.nextMatchId, let slot = match.nextSlot, let winner = match.winnerEntryId,
+           let next = detail.match(id: nextID) {
             detail = replace(next.placing(winner, in: slot), in: detail)
-        } else if detail.tournament.format == .singleElimination {
-            detail = store(detail.replacing(tournament: detail.tournament.completing(winnerEntryId: winner, at: now())))
+        } else if let champion = champion(of: detail) {
+            detail = store(detail.replacing(tournament: detail.tournament.completing(winnerEntryId: champion, at: now())))
             logger.info(.tournaments, "Mock tournament \(detail.id) completed")
         }
         return detail
+    }
+
+    /// The winner once nothing is left to play: the final's in a bracket, the table's leader in a round robin.
+    private func champion(of detail: TournamentDetail) -> String? {
+        guard detail.matches.allSatisfy(\.isDecided) else { return nil }
+        switch detail.tournament.format {
+        case .singleElimination: return detail.matches.first { $0.nextMatchId == nil }?.winnerEntryId
+        case .roundRobin: return detail.standings.first?.entryId
+        }
     }
 
     @discardableResult
