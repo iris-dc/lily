@@ -2,7 +2,8 @@ import Foundation
 import Observation
 
 /// Owns the tournament shown on the detail screen: fetched by id (a card, a tile, a chat's info button or a room row
-/// name only the id), kept on a failed reload, and changed through the entry actions in the `+Entries` file.
+/// name only the id), kept on a failed reload, and changed through the entry actions in the `+Entries` file and the
+/// start and the results in the `+Matches` file.
 @Observable
 final class TournamentDetailViewModel {
     enum State: Equatable {
@@ -141,17 +142,21 @@ final class TournamentDetailViewModel {
     }
 
     /// One action at a time; `TRY_AGAIN` is repeated once; every failure reaches the popup through the reporter, so a
-    /// `TERMS_REQUIRED` raises the terms sheet. Shared with the `+Entries` file.
-    func perform(_ action: String, _ work: () async throws -> Void) async {
-        guard !isBusy, identity.currentUserID != nil else { return }
+    /// `TERMS_REQUIRED` raises the terms sheet. Answers whether the work went through, so a sheet can close on success.
+    /// Shared with the `+Entries` and `+Matches` files.
+    @discardableResult
+    func perform(_ action: String, _ work: () async throws -> Void) async -> Bool {
+        guard !isBusy, identity.currentUserID != nil else { return false }
         isBusy = true
         defer { isBusy = false }
         do {
             try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: { logRetry(action) }, work)
+            return true
         } catch {
-            guard !AppError.isCancellation(error) else { return }
+            guard !AppError.isCancellation(error) else { return false }
             logger.error(.tournaments, "\(action) failed for tournament \(destination.id): \(error)")
             reporter.report(error)
+            return false
         }
     }
 

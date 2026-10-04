@@ -1,7 +1,7 @@
 import Foundation
 
-/// The segments under a tournament's facts: who is in, the bracket or the standings (by format), and the matches. The
-/// last two draw with the bracket (the next slice); until then they explain themselves.
+/// The segments under a tournament's facts: who is in, the bracket or the standings (by format), and the matches; the
+/// last two show an empty state until the organiser started the tournament (`TournamentResultsSegment`).
 nonisolated enum TournamentDetailSection: Hashable, CaseIterable, Sendable {
     case entries, results, matches
 

@@ -80,8 +80,8 @@ struct ChatTranscript: View {
                 .contextMenu { MessageContextMenu(row: messageRow, viewModel: viewModel) }
                 .messageHighlight(highlightedMessageID == messageRow.message.id)
         case .system(let message):
-            // Every chat is on the Chats stack, which owns that stack's one `SportEvent` destination.
-            SystemMessageRow(message: message, viewModel: viewModel) { dependencies.navigation.openInChat($0) }
+            // Every chat is on the Chats stack, which registers the game and the tournament destinations.
+            SystemMessageRow(message: message, viewModel: viewModel) { $0.open(through: dependencies.navigation) }
         case .pending(let pending):
             PendingMessageBubble(message: pending, viewModel: viewModel, onTapQuote: reveal)
         }

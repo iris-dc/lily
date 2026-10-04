@@ -2,12 +2,16 @@ import XCTest
 
 /// Tournaments against the mock repositories: creating one from Explore's "+" and finding it on Home, entering the
 /// team tournament the caller organises by naming a team, the tournament room on Chats whose info button opens the
-/// tournament, and a group's Tournaments segment. Identifiers mirror `AccessibilityIdentifiers(+Tournaments)`; the mock
-/// ids mirror `MockTournamentFixtures`.
+/// tournament, a group's Tournaments segment, the organiser's start and the bracket it draws, and a player confirming
+/// and reporting results. Identifiers mirror `AccessibilityIdentifiers(+Tournaments)`; the mock ids mirror
+/// `MockTournamentFixtures`. Helpers in `LilyTournamentTests+Helpers.swift`.
 final class LilyTournamentTests: LilyUITestCase {
     let kickersCupRow = "tournament-row-mock-tournament-kickers-cup"
+    let tableTennisRow = "tournament-row-mock-tournament-table-tennis"
     let tableTennisRoom = "group-row-mock-tournament-table-tennis"
     let kickersGroupRow = "group-row-mock-group-kickers"
+    /// Jonas's entry in Tuesday Table Tennis (`MockTournamentFixtures.entryID`, index 1).
+    let jonasStanding = "standing-01J9ENTRYTT00000000000001"
 
     /// "New tournament" on Explore's "+" opens the form; a name and a place complete it (the spot comes from the mock
     /// location); the organiser lands on the new tournament's detail on Home, and Home lists it under "Your tournaments".
@@ -43,19 +47,72 @@ final class LilyTournamentTests: LilyUITestCase {
         tapSignInWithApple()
         openKickersCup()
 
-        let createTeam = app.buttons["tournament-create-team"]
-        scrollUntilHittable(createTeam)
-        createTeam.tap()
-        XCTAssertTrue(app.navigationBars["Name your team"].waitForExistence(timeout: 5))
-        enter("Late Bloomers", into: app.textFields["tournament-team-name"])
-        let submit = app.buttons["tournament-team-submit"]
-        XCTAssertTrue(submit.isEnabled, "two characters make a team name")
-        submit.tap()
+        createTeam(named: "Late Bloomers")
 
-        XCTAssertTrue(app.navigationBars["Name your team"].waitForNonExistence(timeout: 10), "the sheet must close once entered")
-        XCTAssertTrue(app.buttons["tournament-leave"].waitForExistence(timeout: 10), "an entrant may leave")
         XCTAssertTrue(labelled("Late Bloomers").exists, "the Teams segment lists the new team")
         XCTAssertTrue(labelled("5 of 8 teams").exists, "the count moved")
+    }
+
+    /// The organiser enters a fifth team and starts the Kickers Cup from its menu, after the confirmation that names
+    /// the entries: the bracket of eight comes up with its three byes, the one first-round match, the semi-finals
+    /// waiting on it and the final, and registration is closed.
+    @MainActor
+    func testOrganizerStartsAndTheBracketShows() {
+        tapSignInWithApple()
+        openKickersCup()
+        createTeam(named: "Late Bloomers")
+
+        app.buttons["tournament-more"].tap()
+        let start = app.buttons["tournament-start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5), "the organiser's menu offers Start")
+        XCTAssertTrue(start.isEnabled, "five teams are enough to start")
+        start.tap()
+        XCTAssertTrue(app.staticTexts["Start Kickers Cup?"].waitForExistence(timeout: 5), "the confirmation names it")
+        XCTAssertTrue(labelled("5 of 8 teams are in").exists, "and the entries")
+        app.sheets.firstMatch.buttons["Start tournament"].tap()
+
+        XCTAssertTrue(app.staticTexts["In progress"].waitForExistence(timeout: 10), "the status moved")
+        let bye = app.buttons["match-r01p001"]
+        XCTAssertTrue(bye.waitForExistence(timeout: 10), "the bracket shows right after the start")
+        XCTAssertTrue(bye.label.contains("Görli Giants") && bye.label.contains("Bye"), "seed 1 gets a bye: \(bye.label)")
+        let played = app.buttons["match-r01p002"]
+        XCTAssertTrue(played.label.contains("Hasenheide United") && played.label.contains("Late Bloomers"),
+                      "seeds 4 and 5 meet in the only first-round match: \(played.label)")
+        XCTAssertTrue(app.buttons["match-r02p002"].label.contains("Late Tackles"), "a bye's winner stands in the semi-final")
+        XCTAssertTrue(app.staticTexts["Quarter-finals"].exists && app.staticTexts["Final"].exists, "the rounds are titled")
+        XCTAssertFalse(app.buttons["tournament-leave"].exists, "registration closed with the start")
+    }
+
+    /// The caller plays Tuesday Table Tennis: Jonas reported his win over them, so that match offers Confirm, and the
+    /// confirmed result lifts him to the top of the standings; their match against Dev is still to play, and the score
+    /// they report there waits for Dev as "Reported".
+    @MainActor
+    func testConfirmingAndReportingResultsUpdateTheStandingsAndTheMatches() {
+        tapSignInWithApple()
+        openTableTennis()
+        pickSection("Standings")
+        let jonas = app.descendants(matching: .any)[jonasStanding]
+        XCTAssertTrue(jonas.waitForExistence(timeout: 10), "the table lists every player")
+        XCTAssertTrue(jonas.label.hasSuffix("3"), "one win so far: \(jonas.label)")
+
+        pickSection("Matches")
+        openMatch("r02p003")
+        XCTAssertTrue(labelled("Jonas reported 3–2").waitForExistence(timeout: 5), "the other side's report is named")
+        app.buttons["match-confirm"].tap()
+        XCTAssertTrue(app.navigationBars["Match"].waitForNonExistence(timeout: 10), "the sheet closes once confirmed")
+        pickSection("Standings")
+        XCTAssertTrue(jonas.waitForExistence(timeout: 10))
+        XCTAssertTrue(jonas.label.hasPrefix("1") && jonas.label.hasSuffix("6"), "two wins lead the table: \(jonas.label)")
+
+        pickSection("Matches")
+        openMatch("r03p002")
+        enter("1", into: app.textFields["match-score-a"])
+        enter("3", into: app.textFields["match-score-b"])
+        app.buttons["match-report"].tap()
+        XCTAssertTrue(app.navigationBars["Match"].waitForNonExistence(timeout: 10), "the sheet closes once reported")
+        let reported = app.buttons["match-r03p002"]
+        XCTAssertTrue(reported.waitForExistence(timeout: 5))
+        XCTAssertTrue(reported.label.contains("Reported"), "a side's score waits for the other side: \(reported.label)")
     }
 
     /// Tuesday Table Tennis is a tournament the caller plays in: its room is listed on Chats with the trophy's caption,
@@ -98,18 +155,5 @@ final class LilyTournamentTests: LilyUITestCase {
         XCTAssertTrue(card.label.contains("Kickers Cup") && card.label.contains("4 of 8 teams"), "the card: \(card.label)")
         card.tap()
         XCTAssertTrue(app.staticTexts["Hosted in Kreuzberg Kickers"].waitForExistence(timeout: 10))
-    }
-
-    /// Opens the Kickers Cup from Home's "Your tournaments" section.
-    @MainActor
-    private func openKickersCup() {
-        openHomeTab()
-        let card = app.buttons[kickersCupRow]
-        if !card.waitForExistence(timeout: 10) { app.swipeUp() }
-        XCTAssertTrue(card.waitForExistence(timeout: 5), "Home lists the tournament the caller organises")
-        scrollUntilHittable(card)
-        card.tap()
-        XCTAssertTrue(app.navigationBars["Kickers Cup"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["You organise this tournament"].waitForExistence(timeout: 10))
     }
 }

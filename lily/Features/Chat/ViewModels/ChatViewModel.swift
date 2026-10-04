@@ -29,13 +29,13 @@ final class ChatViewModel {
     /// The epoch this screen made sure it is subscribed at; epochs only grow, so a newer one is adopted once.
     var subscribedEpoch: Int
     var hasRecordedOpen = false
-    /// The games behind the system rows on screen, fetched once each (`ChatViewModel+Events.swift`).
-    var linkedEvents: [String: SportEvent] = [:]
+    /// The games and tournaments behind the system rows on screen, fetched once each (`ChatViewModel+Events.swift`).
+    var linked = LinkedContent()
 
     let repository: any ChatRepository
     let groups: any GroupRepository
-    let events: any EventRepository
-    let eventChanges: ChangeTracker
+    /// What the system rows point at, and the change counters a live one bumps.
+    let links: SystemRowLinks
     let pasteboard: any Pasteboard
     let cache: any ChatHistoryCache
     let realtime: RealtimeSessionController
@@ -59,8 +59,7 @@ final class ChatViewModel {
     init(group: SportGroup,
          repository: any ChatRepository,
          groups: any GroupRepository,
-         events: any EventRepository,
-         eventChanges: ChangeTracker,
+         links: SystemRowLinks,
          pasteboard: any Pasteboard,
          cache: any ChatHistoryCache,
          realtime: RealtimeSessionController,
@@ -81,8 +80,7 @@ final class ChatViewModel {
         self.subscribedEpoch = group.channelEpoch
         self.repository = repository
         self.groups = groups
-        self.events = events
-        self.eventChanges = eventChanges
+        self.links = links
         self.pasteboard = pasteboard
         self.cache = cache
         self.realtime = realtime

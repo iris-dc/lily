@@ -160,6 +160,28 @@ extension ContractSamples {
     {"tournament":\(startedTournament),"entries":[\(entry)],"matches":[\(confirmedMatch)],"standings":[\(standing)]}
     """
     static let tournamentList = #"{"items":[\#(tournament)]}"#
+    /// The system rows of a tournament's room (plan 2.4): `tournamentId` on every one, `matchId` on a result and a
+    /// dispute, the server-rendered names as `text`; Laurel appends the two ids after the message's other fields.
+    static let tournamentStartedMessage = """
+    {"id":"01J8ZK7Q9X2M4N6P8R0T2V4W80","groupId":"0d9e8f7a-6b5c-4d3e-9f2a-1b0c9d8e7f6a","senderUserId":"seed-marta",\
+    "senderName":"Marta","kind":"tournament_started","sentAt":"2026-10-02T18:00:00Z","isDeleted":false,\
+    "tournamentId":"0d9e8f7a-6b5c-4d3e-9f2a-1b0c9d8e7f6a"}
+    """
+    static let matchResultMessage = """
+    {"id":"01J8ZK7Q9X2M4N6P8R0T2V4W81","groupId":"0d9e8f7a-6b5c-4d3e-9f2a-1b0c9d8e7f6a","senderUserId":"seed-noor",\
+    "senderName":"Noor","kind":"match_result","text":"Marta 3–1 Noor","sentAt":"2026-10-07T20:05:00Z","isDeleted":false,\
+    "tournamentId":"0d9e8f7a-6b5c-4d3e-9f2a-1b0c9d8e7f6a","matchId":"r01p001"}
+    """
+    static let matchDisputedMessage = """
+    {"id":"01J8ZK7Q9X2M4N6P8R0T2V4W82","groupId":"0d9e8f7a-6b5c-4d3e-9f2a-1b0c9d8e7f6a","senderUserId":"seed-ayse",\
+    "senderName":"Ayşe","kind":"match_disputed","text":"Noor – Ayşe","sentAt":"2026-10-08T19:00:00Z","isDeleted":false,\
+    "tournamentId":"0d9e8f7a-6b5c-4d3e-9f2a-1b0c9d8e7f6a","matchId":"r02p002"}
+    """
+    static let tournamentCompletedMessage = """
+    {"id":"01J8ZK7Q9X2M4N6P8R0T2V4W83","groupId":"0d9e8f7a-6b5c-4d3e-9f2a-1b0c9d8e7f6a","senderUserId":"seed-marta",\
+    "senderName":"Marta","kind":"tournament_completed","text":"Marta","sentAt":"2026-10-21T20:00:00Z","isDeleted":false,\
+    "tournamentId":"0d9e8f7a-6b5c-4d3e-9f2a-1b0c9d8e7f6a"}
+    """
     /// The room of a tournament, as `GET /api/groups?scope=mine` lists it: kind `tournament`, the fixed fields of 2.1.
     static let tournamentRoom = """
     {"id":"9c1f2e3d-4b5a-4c6d-8e7f-0a1b2c3d4e5f","name":"Kickers Cup","visibility":"public","type":"football",\

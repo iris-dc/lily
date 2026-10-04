@@ -22,8 +22,8 @@ extension ChatViewModel {
                 seedAttachmentCache(for: clientMessageID, with: message)
                 pending.removeAll { $0.clientMessageID == clientMessageID }
             }
-            // A game announced here was created elsewhere; the group's Events segment behind this screen must reload.
-            if message.kind == .eventCreated { eventChanges.recordChange() }
+            // A game or a tournament's progress announced here changed elsewhere; the lists behind this screen must reload.
+            links.recordChange(for: message.kind)
             noteRead()
         case .memberJoined(_, _, let memberCount, let epoch):
             group = group.updatingMembership(group.membership, memberCount: memberCount, channelEpoch: epoch)

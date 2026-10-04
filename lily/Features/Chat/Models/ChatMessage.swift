@@ -14,6 +14,9 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
     let text: String?
     /// The game an `event_created` row points at.
     let eventId: String?
+    /// The tournament a tournament note points at, and the match a result or a dispute names.
+    let tournamentId: String?
+    let matchId: String?
     /// The id the sender chose, echoed so the optimistic bubble can be replaced; absent on system rows.
     let clientMessageId: String?
     let sentAt: Date
@@ -24,8 +27,8 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
     let attachments: [Attachment]
 
     private enum CodingKeys: String, CodingKey {
-        case id, groupId, senderUserId, senderName, kind, text, eventId, clientMessageId, sentAt, isDeleted, replyTo
-        case attachments
+        case id, groupId, senderUserId, senderName, kind, text, eventId, tournamentId, matchId, clientMessageId, sentAt
+        case isDeleted, replyTo, attachments
     }
 
     init(id: String,
@@ -35,6 +38,8 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
          kind: MessageKind = .text,
          text: String? = nil,
          eventId: String? = nil,
+         tournamentId: String? = nil,
+         matchId: String? = nil,
          clientMessageId: String? = nil,
          sentAt: Date,
          isDeleted: Bool = false,
@@ -47,6 +52,8 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
         self.kind = kind
         self.text = text
         self.eventId = eventId
+        self.tournamentId = tournamentId
+        self.matchId = matchId
         self.clientMessageId = clientMessageId
         self.sentAt = sentAt
         self.isDeleted = isDeleted
@@ -65,6 +72,8 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
                   kind: try container.decode(MessageKind.self, forKey: .kind),
                   text: try container.decodeIfPresent(String.self, forKey: .text),
                   eventId: try container.decodeIfPresent(String.self, forKey: .eventId),
+                  tournamentId: try container.decodeIfPresent(String.self, forKey: .tournamentId),
+                  matchId: try container.decodeIfPresent(String.self, forKey: .matchId),
                   clientMessageId: try container.decodeIfPresent(String.self, forKey: .clientMessageId),
                   sentAt: try container.decode(Date.self, forKey: .sentAt),
                   isDeleted: try container.decode(Bool.self, forKey: .isDeleted),
@@ -87,6 +96,8 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
                     senderName: senderName,
                     kind: kind,
                     eventId: eventId,
+                    tournamentId: tournamentId,
+                    matchId: matchId,
                     clientMessageId: clientMessageId,
                     sentAt: sentAt,
                     isDeleted: true)

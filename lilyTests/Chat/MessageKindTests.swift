@@ -32,22 +32,22 @@ struct MessageKindTests {
     /// A message of a kind a newer backend sends decodes with every other field intact, counts as a system note and
     /// goes back out with the same kind.
     @Test func aMessageOfAnUnknownKindDecodesAsASystemNote() throws {
-        let sample = ContractSamples.systemMessage.replacingOccurrences(of: "event_created", with: "tournament_started")
+        let sample = ContractSamples.systemMessage.replacingOccurrences(of: "event_created", with: "poll_created")
         try #require(sample != ContractSamples.systemMessage)
 
         let message = try ContractSamples.decode(ChatMessage.self, from: sample)
 
-        #expect(message.kind == .unknown("tournament_started") && message.isSystem)
+        #expect(message.kind == .unknown("poll_created") && message.isSystem)
         #expect(message.id == "01J8ZK7Q9X2M4N6P8R0T2V4W6Z" && message.senderName == "Marta" && message.eventId == "evt_01J")
         let json = try #require(String(bytes: try APIJSONCoding.makeEncoder().encode(message), encoding: .utf8))
-        #expect(json.contains(#""kind":"tournament_started""#))
+        #expect(json.contains(#""kind":"poll_created""#))
         #expect(try ContractSamples.decode(ChatMessage.self, from: json) == message)
     }
 
     /// The transcript shows nothing for a kind it does not know: no row, no day chip for it alone, and the run around it
     /// is judged as if it were not there.
     @Test func theTimelineDropsRowsOfAnUnknownKind() {
-        let unknown = message("m2", after: 10, kind: .unknown("tournament_started"))
+        let unknown = message("m2", after: 10, kind: .unknown("poll_created"))
 
         let rows = rows([message("m1", after: 0), unknown, message("m3", after: 20)])
 

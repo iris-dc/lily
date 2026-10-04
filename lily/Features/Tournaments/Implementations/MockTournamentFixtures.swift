@@ -2,9 +2,10 @@ import Foundation
 
 /// The two tournaments of a mock run, with the rooms and rosters the group mock lists for them: the "Kickers Cup", a
 /// 5-a-side bracket in Kreuzberg Kickers that the caller organises and has not entered, with four teams in; and
-/// "Tuesday Table Tennis", Marta's round robin of six players, the caller among them, under way with three results in,
-/// so the standings are on screen at launch. The caller is `callerMarker` in every stored row; the repository swaps
-/// in whoever is signed in when it answers.
+/// "Tuesday Table Tennis", Marta's round robin of six players, the caller among them, under way with three results in
+/// (so the standings are on screen at launch), a score Jonas reported against the caller (so Confirm and Dispute are a
+/// tap away) and a disputed match for the organiser. The caller is `callerMarker` in every stored row; the repository
+/// swaps in whoever is signed in when it answers.
 nonisolated enum MockTournamentFixtures {
     static let kickersCupID = "mock-tournament-kickers-cup"
     static let tableTennisID = "mock-tournament-table-tennis"
@@ -30,10 +31,22 @@ nonisolated enum MockTournamentFixtures {
         let scoreB: Int
     }
 
+    /// A score one side reported, by the reporter's name.
+    struct Report {
+        let matchID: String
+        let scoreA: Int
+        let scoreB: Int
+        let by: String
+    }
+
     /// The three results in: round one's matches.
     static let tableTennisResults = [Result(matchID: "r01p001", scoreA: 3, scoreB: 1),
                                      Result(matchID: "r01p002", scoreA: 3, scoreB: 2),
                                      Result(matchID: "r01p003", scoreA: 3, scoreB: 0)]
+    /// Round two: Jonas reported his win over the caller, who has yet to confirm it.
+    static let tableTennisReport = Report(matchID: "r02p003", scoreA: 3, scoreB: 2, by: "Jonas")
+    /// Round two: Noor reported her win over Ayşe, who disputed it; back to pending with the flag, for Marta to decide.
+    static let tableTennisDispute = Report(matchID: "r02p002", scoreA: 3, scoreB: 1, by: "Noor")
 
     private static let secondsPerHour = 3600.0
     private static let secondsPerDay = 86_400.0
@@ -41,6 +54,7 @@ nonisolated enum MockTournamentFixtures {
     private static let kickersDeadlineInDays = 7.0
     private static let kickersCreatedDaysAgo = 12.0
     private static let tableTennisStartedDaysAgo = 2.0
+    private static let tableTennisReportedDaysAgo = 1.0
     private static let tableTennisCreatedDaysAgo = 16.0
     private static let tableTennisLastMessageHoursAgo = 3.0
     private static let entryIDPrefix = "01J9ENTRY"
@@ -174,13 +188,7 @@ nonisolated enum MockTournamentFixtures {
                                    createdAt: createdAt.addingTimeInterval(Double(index + 1) * secondsPerDay))
         }
         let organizerID = MockGroupFixtures.memberID(for: tableTennisOrganizer)
-        var matches = TournamentSchedule.pairings(format: .roundRobin, seeds: entries.map(\.id)).map {
-            TournamentMatch(pairing: $0, tournamentId: tableTennisID)
-        }
-        for result in tableTennisResults {
-            guard let index = matches.firstIndex(where: { $0.id == result.matchID }) else { continue }
-            matches[index] = matches[index].scored(result.scoreA, result.scoreB, by: organizerID, confirmed: true, at: startedAt)
-        }
+        let matches = tableTennisMatches(entries: entries, organizerID: organizerID, startedAt: startedAt, now: now)
         let tournament = Tournament(id: tableTennisID,
                                     name: "Tuesday Table Tennis",
                                     description: "Best of five every Tuesday evening until everyone has played everyone.",
@@ -200,6 +208,28 @@ nonisolated enum MockTournamentFixtures {
                                 entries: entries,
                                 matches: matches,
                                 standings: RoundRobinStandings.compute(entries: entries, matches: matches))
+    }
+
+    /// The round robin's matches: the organiser's three results, Jonas's report and the disputed one.
+    private static func tableTennisMatches(entries: [TournamentEntry],
+                                           organizerID: String,
+                                           startedAt: Date,
+                                           now: Date) -> [TournamentMatch] {
+        let reportedAt = now.addingTimeInterval(-tableTennisReportedDaysAgo * secondsPerDay)
+        var matches = TournamentSchedule.pairings(format: .roundRobin, seeds: entries.map(\.id)).map {
+            TournamentMatch(pairing: $0, tournamentId: tableTennisID)
+        }
+        for result in tableTennisResults {
+            guard let index = matches.firstIndex(where: { $0.id == result.matchID }) else { continue }
+            matches[index] = matches[index].scored(result.scoreA, result.scoreB, by: organizerID, confirmed: true, at: startedAt)
+        }
+        for (report, disputed) in [(tableTennisReport, false), (tableTennisDispute, true)] {
+            guard let index = matches.firstIndex(where: { $0.id == report.matchID }) else { continue }
+            let reporter = MockGroupFixtures.memberID(for: report.by)
+            let reported = matches[index].scored(report.scoreA, report.scoreB, by: reporter, confirmed: false, at: reportedAt)
+            matches[index] = disputed ? reported.disputing() : reported
+        }
+        return matches
     }
 
     private static func coordinate(offset: (lat: Double, lon: Double)) -> Coordinate {

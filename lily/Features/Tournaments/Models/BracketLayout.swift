@@ -14,6 +14,13 @@ nonisolated enum BracketLayout {
         matches.map(\.round).max() ?? 0
     }
 
+    /// The height a cell of `round` (1-based) takes in its column, the cell centred in it: twice the slot of the round
+    /// before plus the gap, so a match sits level with the middle of the two matches that feed it.
+    static func slotHeight(round: Int, cellHeight: CGFloat, spacing: CGFloat) -> CGFloat {
+        let feeders = CGFloat(1 << max(round - 1, 0))
+        return (cellHeight + spacing) * feeders - spacing
+    }
+
     /// Final, Semi-finals, Quarter-finals and "Round of N" for a bracket, counted back from the last round; a round
     /// robin's rounds are numbered.
     static func roundTitle(round: Int, of rounds: Int, format: TournamentFormat) -> String {

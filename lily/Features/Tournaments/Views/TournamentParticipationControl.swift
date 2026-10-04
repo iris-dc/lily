@@ -72,11 +72,13 @@ struct TournamentParticipationControl: View {
     }
 }
 
-/// The room's "more" menu of a tournament, for the organiser and the players: Open chat, and the organiser's Edit and
-/// Cancel; Start, Invite and Report arrive with later slices.
+/// The "more" menu of a tournament, for the organiser and the players: Open chat, and the organiser's Start (while
+/// registration is open; disabled under the format's minimum, with the reason as its subtitle), Edit and Cancel;
+/// Invite and Report arrive with the next slice.
 struct TournamentMenu: View {
     let viewModel: TournamentDetailViewModel
     let onOpenChat: () -> Void
+    let onStart: () -> Void
     let onEdit: () -> Void
     let onCancel: () -> Void
 
@@ -87,6 +89,16 @@ struct TournamentMenu: View {
             if viewModel.canOpenChat {
                 Button(AppBranding.Groups.openChat, systemImage: DesignTokens.Symbols.chat, action: onOpenChat)
                     .accessibilityIdentifier(AccessibilityIdentifiers.tournamentOpenChat)
+            }
+            if viewModel.showsStart {
+                Button(action: onStart) {
+                    Label(Copy.start, systemImage: DesignTokens.Symbols.play)
+                    if let reason = viewModel.startBlockedReason {
+                        Text(reason)
+                    }
+                }
+                .disabled(!viewModel.canStart)
+                .accessibilityIdentifier(AccessibilityIdentifiers.tournamentStart)
             }
             if viewModel.canEdit {
                 Button(AppBranding.Groups.edit, systemImage: DesignTokens.Symbols.edit, action: onEdit)

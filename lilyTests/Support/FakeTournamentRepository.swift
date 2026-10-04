@@ -2,7 +2,7 @@ import Foundation
 @testable import lily
 
 /// Scriptable `TournamentRepository`: lists answer from `result`, the detail from `details`, writes change the stored
-/// detail the way the backend would, and every call is recorded.
+/// detail the way the backend would (the results in `FakeTournamentRepository+Matches.swift`), and every call is recorded.
 @MainActor
 final class FakeTournamentRepository: TournamentRepository {
     var result: Result<[Tournament], AppError> = .success([])
@@ -41,6 +41,17 @@ final class FakeTournamentRepository: TournamentRepository {
     private(set) var removedEntries: [(id: String, entryID: String)] = []
     private(set) var cancelledIDs: [String] = []
     private(set) var startedIDs: [String] = []
+    /// The results, recorded by the `+Matches` file, hence not `private(set)`.
+    var reports: [Report] = []
+    var confirmedMatchIDs: [String] = []
+    var disputedMatchIDs: [String] = []
+    var walkovers: [(matchID: String, winnerEntryID: String)] = []
+
+    struct Report: Equatable {
+        let matchID: String
+        let scoreA: Int
+        let scoreB: Int
+    }
 
     func tournaments(in scope: TournamentScope, near position: Coordinate?) async throws -> [Tournament] {
         requestedScopes.append(scope)
@@ -131,31 +142,20 @@ final class FakeTournamentRepository: TournamentRepository {
             .replacing(tournament: detail.tournament.updatingEntries(count: entries.count, myEntryId: nil, at: .now)))
     }
 
+    /// Draws the matches like the backend, through the shared pairings.
     func start(id: String) async throws -> TournamentDetail {
         startedIDs.append(id)
         try throwIfScripted()
         let detail = try stored(id)
-        return store(detail.replacing(tournament: detail.tournament.starting(at: .now)))
-    }
-
-    func report(id: String, matchID: String, scoreA: Int, scoreB: Int) async throws -> TournamentDetail {
-        try throwIfScripted()
-        return try stored(id)
-    }
-
-    func confirm(id: String, matchID: String) async throws -> TournamentDetail {
-        try throwIfScripted()
-        return try stored(id)
-    }
-
-    func dispute(id: String, matchID: String) async throws -> TournamentDetail {
-        try throwIfScripted()
-        return try stored(id)
-    }
-
-    func walkover(id: String, matchID: String, winnerEntryID: String) async throws -> TournamentDetail {
-        try throwIfScripted()
-        return try stored(id)
+        let seeds = detail.registeredEntries.sorted { $0.seed < $1.seed }.map(\.id)
+        let matches = TournamentSchedule.pairings(format: detail.tournament.format, seeds: seeds).map {
+            TournamentMatch(pairing: $0, tournamentId: id)
+        }
+        let standings = detail.tournament.format == .roundRobin
+            ? RoundRobinStandings.compute(entries: detail.registeredEntries, matches: matches)
+            : []
+        let started = detail.replacing(tournament: detail.tournament.starting(at: .now))
+        return store(started.replacing(matches: matches, standings: standings))
     }
 
     func schedule(id: String, matchID: String, _ schedule: MatchSchedule) async throws -> TournamentMatch {
@@ -180,18 +180,19 @@ final class FakeTournamentRepository: TournamentRepository {
         EntryMember(userId: TestFixtures.user.id, displayName: TestFixtures.user.displayName)
     }
 
-    private func throwIfScripted() throws {
+    /// Shared with the `+Matches` file, hence not `private`.
+    func throwIfScripted() throws {
         if !transientErrors.isEmpty { throw transientErrors.removeFirst() }
         if let actionError { throw actionError }
     }
 
-    private func stored(_ id: String) throws -> TournamentDetail {
+    func stored(_ id: String) throws -> TournamentDetail {
         guard let detail = details[id] else { throw AppError.tournamentNotFound }
         return detail
     }
 
     @discardableResult
-    private func store(_ detail: TournamentDetail) -> TournamentDetail {
+    func store(_ detail: TournamentDetail) -> TournamentDetail {
         details[detail.id] = detail
         return detail
     }

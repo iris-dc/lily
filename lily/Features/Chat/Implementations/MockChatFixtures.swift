@@ -37,15 +37,27 @@ nonisolated enum MockChatFixtures {
         (true, "Bring a ball if you have one, ours went flat."),
         (true, "See you there!"),
     ]
-    /// The table-tennis tournament's room: the organiser and the players sorting out round one; no system row until
-    /// the tournament kinds land. The Kickers Cup's room shows the general lines.
-    private static let tournamentLines: [(sender: String, text: String)] = [
-        ("Marta", "Round one is up. Find your opponent and agree on an evening."),
-        ("Jonas", "Dev, Tuesday at seven? Table two."),
-        ("Dev", "Works for me. Bring the good balls."),
-        ("Ayşe", "Who has spare balls? Mine are done for."),
-        ("Noor", "I'll bring a box."),
-        ("Marta", "Three results in already. Keep them coming!"),
+    /// One row of the table-tennis room: a line someone wrote, or a tournament note the backend would have posted
+    /// (the start, a result with the names rendered server-side, a dispute), naming its match where there is one.
+    private struct TournamentLine {
+        let sender: String
+        var kind: MessageKind = .text
+        var text: String?
+        var matchID: String?
+    }
+
+    /// The table-tennis tournament's room: the start, the organiser and the players sorting out round one, the first
+    /// result and the disputed one (`MockTournamentFixtures`). The Kickers Cup's room shows the general lines.
+    private static let tournamentLines: [TournamentLine] = [
+        TournamentLine(sender: "Marta", kind: .tournamentStarted),
+        TournamentLine(sender: "Marta", text: "Round one is up. Find your opponent and agree on an evening."),
+        TournamentLine(sender: "Jonas", text: "Dev, Tuesday at seven? Table two."),
+        TournamentLine(sender: "Dev", text: "Works for me. Bring the good balls."),
+        TournamentLine(sender: "Ayşe", text: "Who has spare balls? Mine are done for."),
+        TournamentLine(sender: "Noor", text: "I'll bring a box."),
+        TournamentLine(sender: "Marta", kind: .matchResult, text: "Marta 3–1 Noor", matchID: "r01p001"),
+        TournamentLine(sender: "Marta", text: "Three results in already. Keep them coming!"),
+        TournamentLine(sender: "Ayşe", kind: .matchDisputed, text: "Noor – Ayşe", matchID: "r02p002"),
     ]
     /// How long before the launch Marta's last line was written; the group fixture's `lastMessageAt` says the same.
     static let conversationLastMessageAge: TimeInterval = 2 * 3600
@@ -143,7 +155,8 @@ nonisolated enum MockChatFixtures {
         }
     }
 
-    /// The table-tennis room's lines, nine minutes apart like every room's, ending three hours before the launch.
+    /// The table-tennis room's rows, nine minutes apart like every room's, ending three hours before the launch; the
+    /// room is the tournament, so a note's `tournamentId` is the room's id.
     private static func tournamentMessages(now: Date) -> [ChatMessage] {
         let groupID = MockTournamentFixtures.tableTennisID
         let end = now.addingTimeInterval(-tournamentLastMessageAge)
@@ -153,7 +166,10 @@ nonisolated enum MockChatFixtures {
                         groupId: groupID,
                         senderUserId: MockGroupFixtures.memberID(for: line.sender),
                         senderName: line.sender,
+                        kind: line.kind,
                         text: line.text,
+                        tournamentId: line.kind.isTournamentNote ? groupID : nil,
+                        matchId: line.matchID,
                         sentAt: start.addingTimeInterval(Double(index) * secondsBetweenMessages))
         }
     }

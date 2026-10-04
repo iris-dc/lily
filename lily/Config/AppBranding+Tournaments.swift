@@ -1,7 +1,8 @@
 import Foundation
 
 nonisolated extension AppBranding {
-    /// Copy of the tournament screens: the carousel and lists, the detail, the entries and the create sheet.
+    /// Copy of the tournament screens: the carousel and lists, the detail, the entries and the create sheet; the
+    /// bracket, the standings and the matches are in `AppBranding+TournamentResults.swift`.
     enum Tournaments {
         static var title: String { localized("Tournaments") }
         /// The Home section, between the groups and the games.
@@ -36,9 +37,8 @@ nonisolated extension AppBranding {
         static var leave: String { localized("Leave tournament") }
         static var captain: String { localized("Captain") }
         static var noEntries: String { localized("Nobody has entered yet") }
-        /// The bracket, standings and matches segments until they draw (the next slice).
-        static var resultsPending: String { localized("Results show up here once matches are played.") }
-        /// The segments under the facts; the last two arrive with the bracket.
+        /// The segments under the facts: who is in, the bracket or the standings, and the matches (the last two and the
+        /// match sheet's copy are in `AppBranding+TournamentResults.swift`).
         static var playersSection: String { Events.Create.playersSection }
         static var teamsSection: String { localized("Teams") }
         static var bracketSection: String { localized("Bracket") }

@@ -2,7 +2,8 @@ import Foundation
 @testable import lily
 
 extension ChatMessage {
-    /// A text message in group `g`; ids given by tests sort as ULIDs do (plain strings compared).
+    /// A text message in group `g`; ids given by tests sort as ULIDs do (plain strings compared). A system row has no
+    /// text unless it is a tournament note, which carries the server-rendered names.
     static func fixture(id: String,
                         groupID: String = "g",
                         senderUserID: String = "u-2",
@@ -10,6 +11,8 @@ extension ChatMessage {
                         kind: MessageKind = .text,
                         text: String? = "hello",
                         eventID: String? = nil,
+                        tournamentID: String? = nil,
+                        matchID: String? = nil,
                         clientMessageID: String? = nil,
                         sentAt: Date = Date(timeIntervalSince1970: 1_800_000_000),
                         isDeleted: Bool = false,
@@ -20,8 +23,10 @@ extension ChatMessage {
                     senderUserId: senderUserID,
                     senderName: senderName,
                     kind: kind,
-                    text: kind == .text ? text : nil,
+                    text: kind == .text || kind.isTournamentNote ? text : nil,
                     eventId: eventID,
+                    tournamentId: tournamentID,
+                    matchId: matchID,
                     clientMessageId: clientMessageID,
                     sentAt: sentAt,
                     isDeleted: isDeleted,

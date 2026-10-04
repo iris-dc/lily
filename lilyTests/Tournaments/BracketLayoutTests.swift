@@ -23,6 +23,14 @@ struct BracketLayoutTests {
         #expect(BracketLayout.columns(of: []).isEmpty && BracketLayout.roundCount(of: []) == 0)
     }
 
+    /// Round 1 cells take their own height; every later round takes two slots of the round before plus the gap, so a
+    /// match sits level with the middle of its two feeders.
+    @Test func slotHeightDoublesPerRound() {
+        #expect(BracketLayout.slotHeight(round: 1, cellHeight: 72, spacing: 12) == 72)
+        #expect(BracketLayout.slotHeight(round: 2, cellHeight: 72, spacing: 12) == 156)
+        #expect(BracketLayout.slotHeight(round: 3, cellHeight: 72, spacing: 12) == 324)
+    }
+
     /// 3 / 1 / 0 points, ranked by points, difference, scored, then seed; a walkover counts as a win without goals.
     @Test func standingsRankByPointsDifferenceScoredAndSeed() throws {
         let entries = (1...4).map { TournamentEntry.fixture(id: "e\($0)", name: "E\($0)", captainUserId: "u\($0)", seed: $0) }

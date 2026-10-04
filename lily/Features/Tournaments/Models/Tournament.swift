@@ -175,10 +175,17 @@ nonisolated enum TournamentScope: Hashable, Sendable {
 }
 
 /// A tournament's detail, pushed from a card, a tile, a chat's info button or a room row. The name shows until the
-/// detail answers, like `UserProfileDestination`.
+/// detail answers, like `UserProfileDestination`; a system row about a match names it, and the detail opens it.
 nonisolated struct TournamentDestination: Hashable, Sendable {
     let id: String
     let name: String
+    let matchID: String?
+
+    init(id: String, name: String, matchID: String? = nil) {
+        self.id = id
+        self.name = name
+        self.matchID = matchID
+    }
 }
 
 /// Pushes the Discover tournaments screen; a value with no payload, so a `NavigationLink` can name it.

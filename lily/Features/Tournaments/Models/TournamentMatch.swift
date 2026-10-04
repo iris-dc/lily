@@ -141,6 +141,15 @@ nonisolated struct TournamentMatch: Identifiable, Hashable, Codable, Sendable {
         return copy
     }
 
+    /// The match with `marker` read as `userID` wherever it reported or confirmed; the mock stores the caller as a marker.
+    func replacingUser(_ marker: String, with userID: String?) -> TournamentMatch {
+        guard let userID, reportedBy == marker || confirmedBy == marker else { return self }
+        var copy = self
+        copy.reportedBy = reportedBy == marker ? userID : reportedBy
+        copy.confirmedBy = confirmedBy == marker ? userID : confirmedBy
+        return copy
+    }
+
     func scheduling(_ schedule: MatchSchedule) -> TournamentMatch {
         var copy = self
         copy.scheduledAt = schedule.scheduledAt

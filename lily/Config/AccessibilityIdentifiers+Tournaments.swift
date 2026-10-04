@@ -16,6 +16,19 @@ nonisolated extension AccessibilityIdentifiers {
     static let tournamentEdit = "tournament-edit"
     static let tournamentCancel = "tournament-cancel"
     static let tournamentOpenChat = "tournament-open-chat"
+    static let tournamentStart = "tournament-start"
+    /// The bracket, the standings table and the matches list, each containing its cells or rows.
+    static let tournamentBracket = "tournament-bracket"
+    static let tournamentStandings = "tournament-standings"
+    static let tournamentMatches = "tournament-matches"
+    /// The match sheet: both score fields and every action.
+    static let matchScoreA = "match-score-a"
+    static let matchScoreB = "match-score-b"
+    static let matchReport = "match-report"
+    static let matchConfirm = "match-confirm"
+    static let matchDispute = "match-dispute"
+    static let matchRecord = "match-record"
+    static let matchWalkover = "match-walkover"
     /// The team-name sheet: its one field and its submit.
     static let tournamentTeamName = "tournament-team-name"
     static let tournamentTeamSubmit = "tournament-team-submit"
@@ -43,5 +56,20 @@ nonisolated extension AccessibilityIdentifiers {
 
     static func tournamentJoinTeam(_ entryID: String) -> String {
         "tournament-join-team-\(entryID)"
+    }
+
+    /// A match's cell in the bracket and its row in the list.
+    static func match(_ id: String) -> String {
+        "match-\(id)"
+    }
+
+    /// The walkover menu's item naming the winner.
+    static func matchWalkoverWinner(_ entryID: String) -> String {
+        "match-walkover-\(entryID)"
+    }
+
+    /// An entry's row of the standings.
+    static func standing(_ entryID: String) -> String {
+        "standing-\(entryID)"
     }
 }

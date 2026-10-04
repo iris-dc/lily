@@ -23,25 +23,25 @@ struct ChatViewModelEventsTests {
         harness.events.result = .success([game])
         #expect(viewModel.systemText(for: systemRow) == "Marta created a game")
 
-        await viewModel.loadEvent(for: systemRow)
-        await viewModel.loadEvent(for: systemRow)
+        await viewModel.loadLinkedContent(for: systemRow)
+        await viewModel.loadLinkedContent(for: systemRow)
         #expect(viewModel.systemText(for: systemRow) == "Marta created Sunday 5-a-side")
         #expect(harness.events.fetchedEventIDs == ["e"])
-        #expect(await viewModel.eventToOpen(for: systemRow) == game)
+        #expect(await viewModel.destination(for: systemRow) == .event(game))
         #expect(harness.events.fetchedEventIDs == ["e"], "the tap reuses the loaded game")
     }
 
     @Test func aGoneGameKeepsTheFallbackQuietlyAndReportsOnlyWhenOpened() async {
         let (harness, viewModel) = await makeChat()
 
-        await viewModel.loadEvent(for: systemRow)
+        await viewModel.loadLinkedContent(for: systemRow)
         #expect(viewModel.systemText(for: systemRow) == "Marta created a game")
         #expect(harness.errorCenter.current == nil)
         #expect(harness.logger.messages(in: .chat, at: .warning).contains { $0.hasPrefix("Event e behind a system row") })
 
-        #expect(await viewModel.eventToOpen(for: systemRow) == nil)
+        #expect(await viewModel.destination(for: systemRow) == nil)
         #expect(harness.errorCenter.current?.error == .eventNotFound)
-        #expect(await viewModel.eventToOpen(for: .fixture(id: "t", text: "plain")) == nil, "a text row has no game")
+        #expect(await viewModel.destination(for: .fixture(id: "t", text: "plain")) == nil, "a text row has no game")
     }
 
     @Test func aLiveEventCreatedRowBumpsTheEventChanges() async {

@@ -1,27 +1,23 @@
 import SwiftUI
 
-/// A tournament: chips, name and organiser, where it is hosted, its facts, the entries and the control the caller has.
-/// Fetched by id, so a tile, a card, a room row and a chat's info button all open it the same way. The view model
-/// decides what the caller may do; this draws it and hosts the sheets and confirmations.
+/// A tournament: chips, name and organiser, where it is hosted, its facts, the entries, the bracket or the standings
+/// and the matches once it started, and the control the caller has. Fetched by id, so a tile, a card, a room row and
+/// a chat's info button all open it the same way; a system row about a match opens it with that match's sheet up. The
+/// view model decides what the caller may do; this draws it and hosts the sheets and confirmations.
 struct TournamentDetailView: View {
     @State private var viewModel: TournamentDetailViewModel
     @State private var section: TournamentDetailSection = .entries
     @State private var presentedSheet: DetailSheet?
-    @State private var confirmation: Confirmation?
+    @State private var confirmation: TournamentConfirmation?
+    /// The match the destination named was raised once; a reload must not raise it again.
+    @State private var hasShownLinkedMatch = false
     private let dependencies: AppDependencies
 
     private typealias Copy = AppBranding.Tournaments
 
-    private enum DetailSheet: String, Identifiable {
+    private enum DetailSheet: Hashable, Identifiable {
         case edit, teamName
-
-        var id: String { rawValue }
-    }
-
-    /// A destructive action waiting for the caller's word.
-    private enum Confirmation: Hashable, Identifiable {
-        case cancel, leave
-        case removeEntry(TournamentEntry)
+        case match(id: String)
 
         var id: Self { self }
     }
@@ -58,26 +54,37 @@ struct TournamentDetailView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     TournamentMenu(viewModel: viewModel,
                                    onOpenChat: { Task { await viewModel.openChat() } },
+                                   onStart: { confirmation = .start },
                                    onEdit: { presentedSheet = .edit },
                                    onCancel: { confirmation = .cancel })
                 }
             }
         }
-        .task { await viewModel.load() }
-        .sheet(item: $presentedSheet) { sheet in
-            switch sheet {
-            case .edit:
-                if let tournament = viewModel.tournament {
-                    EditTournamentSheet(viewModel: dependencies.makeEditTournamentViewModel(for: tournament,
-                                                                                            onChange: viewModel.accept),
-                                        errorCenter: dependencies.errorCenter)
-                }
-            case .teamName:
-                TeamNameSheet(viewModel: viewModel, errorCenter: dependencies.errorCenter)
-            }
+        .task {
+            await viewModel.load()
+            showLinkedMatchIfNeeded()
         }
+        .sheet(item: $presentedSheet) { sheet($0) }
         .confirmationDialog(confirmationTitle, isPresented: isConfirming, titleVisibility: .visible, presenting: confirmation) {
             confirmationButton(for: $0)
+        } message: { confirmation in
+            if let tournament = viewModel.tournament, let message = confirmation.message(entries: tournament.entriesText) {
+                Text(message)
+            }
+        }
+    }
+
+    @ViewBuilder private func sheet(_ sheet: DetailSheet) -> some View {
+        switch sheet {
+        case .edit:
+            if let tournament = viewModel.tournament {
+                let editing = dependencies.makeEditTournamentViewModel(for: tournament, onChange: viewModel.accept)
+                EditTournamentSheet(viewModel: editing, errorCenter: dependencies.errorCenter)
+            }
+        case .teamName:
+            TeamNameSheet(viewModel: viewModel, errorCenter: dependencies.errorCenter)
+        case .match(let id):
+            MatchSheet(viewModel: viewModel, matchID: id, errorCenter: dependencies.errorCenter)
         }
     }
 
@@ -115,47 +122,56 @@ struct TournamentDetailView: View {
         case .entries:
             TournamentEntriesSegment(viewModel: viewModel, detail: detail) { confirmation = .removeEntry($0) }
         case .results, .matches:
-            EmptyStateView(symbolName: section.symbolName,
-                           title: section.title(for: detail.tournament),
-                           message: Copy.resultsPending)
+            TournamentResultsSegment(section: section, detail: detail, viewModel: viewModel) {
+                presentedSheet = .match(id: $0.id)
+            }
         }
     }
 
+    /// A system row about a match opened this screen: the Matches segment, with that match's sheet up, once.
+    private func showLinkedMatchIfNeeded() {
+        guard !hasShownLinkedMatch, let matchID = viewModel.destination.matchID,
+              viewModel.detail?.match(id: matchID) != nil else { return }
+        hasShownLinkedMatch = true
+        section = .matches
+        presentedSheet = .match(id: matchID)
+    }
+
     private var confirmationTitle: String {
-        switch confirmation {
-        case .cancel: Copy.cancelConfirmation(name: viewModel.name)
-        case .leave: Copy.leaveConfirmation(name: viewModel.name)
-        case .removeEntry(let entry): Copy.removeEntryConfirmation(name: entry.name)
-        case nil: ""
-        }
+        confirmation?.title(name: viewModel.name) ?? ""
     }
 
     private var isConfirming: Binding<Bool> {
         Binding(get: { confirmation != nil }, set: { if !$0 { confirmation = nil } })
     }
 
-    private func confirmationButton(for confirmation: Confirmation) -> some View {
-        Button(role: .destructive) {
-            Task {
-                switch confirmation {
-                case .cancel: await viewModel.cancel()
-                case .leave: await viewModel.leave()
-                case .removeEntry(let entry): await viewModel.removeEntry(entry)
-                }
-            }
+    private func confirmationButton(for confirmation: TournamentConfirmation) -> some View {
+        Button(role: confirmation.isDestructive ? .destructive : nil) {
+            Task { await run(confirmation) }
         } label: {
-            switch confirmation {
-            case .cancel: Text(Copy.cancel)
-            case .leave: Text(Copy.leave)
-            case .removeEntry: Text(Copy.removeEntry)
-            }
+            Text(confirmation.buttonTitle)
+        }
+    }
+
+    /// The start shows the bracket or the standings as soon as the draw is in.
+    private func run(_ confirmation: TournamentConfirmation) async {
+        switch confirmation {
+        case .cancel:
+            await viewModel.cancel()
+        case .leave:
+            await viewModel.leave()
+        case .start:
+            await viewModel.start()
+            if viewModel.hasMatches { section = .results }
+        case .removeEntry(let entry):
+            await viewModel.removeEntry(entry)
         }
     }
 }
 
 #Preview {
     let dependencies = AppDependencies.makeMock()
-    let destination = MockTournamentFixtures.make(now: .now)[0].tournament.destination
+    let destination = MockTournamentFixtures.make(now: .now)[1].tournament.destination
     NavigationStack {
         TournamentDetailView(viewModel: dependencies.makeTournamentDetailViewModel(for: destination) { _ in },
                              dependencies: dependencies)

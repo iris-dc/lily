@@ -35,6 +35,10 @@ struct MockTournamentRepositoryTests {
         let mine = try #require(tableTennis.myEntry)
         #expect(mine.seed == MockTournamentFixtures.callerTableTennisSeed && mine.contains(userID: "mock-apple"))
         #expect(tableTennis.standings.first?.points == 3, "a winner leads the table")
+        let reported = try #require(tableTennis.match(id: MockTournamentFixtures.tableTennisReport.matchID))
+        #expect(reported.status == .reported && reported.contains(entryID: mine.id) && reported.reportedBy == "mock-user-jonas")
+        let disputed = try #require(tableTennis.match(id: MockTournamentFixtures.tableTennisDispute.matchID))
+        #expect(disputed.isDisputed && disputed.status == .pending && disputed.scoreA == 3, "the scores stay for the organiser")
     }
 
     @Test func listsFollowTheirScopes() async throws {
@@ -140,7 +144,7 @@ struct MockTournamentRepositoryTests {
         let id = MockTournamentFixtures.tableTennisID
         let detail = try await repository.tournament(id: id)
         let mine = try #require(detail.myEntry)
-        let pending = try #require(detail.matches.first { $0.contains(entryID: mine.id) && !$0.isDecided })
+        let pending = try #require(detail.matches.first { $0.contains(entryID: mine.id) && $0.status == .pending })
 
         let reported = try await repository.report(id: id, matchID: pending.id, scoreA: 3, scoreB: 2)
         #expect(reported.match(id: pending.id)?.status == .reported)
@@ -151,6 +155,49 @@ struct MockTournamentRepositoryTests {
         let other = try #require(detail.matches.first { !$0.contains(entryID: mine.id) && !$0.isDecided })
         await #expect(throws: AppError.notInMatch) {
             try await repository.report(id: id, matchID: other.id, scoreA: 3, scoreB: 0)
+        }
+    }
+
+    /// Jonas reported 3–2 against the caller: confirming it, or reporting the same score, makes it final and moves him
+    /// to the top of the table; a different score is a report of the caller's own, waiting for Jonas.
+    @Test func theOtherSidesReportIsConfirmedByAgreeingWithIt() async throws {
+        let id = MockTournamentFixtures.tableTennisID
+        let matchID = MockTournamentFixtures.tableTennisReport.matchID
+
+        let confirmed = try await repository.confirm(id: id, matchID: matchID)
+        #expect(confirmed.match(id: matchID)?.status == .confirmed && confirmed.match(id: matchID)?.confirmedBy == "mock-apple")
+        let leader = try #require(confirmed.standings.first)
+        #expect(leader.points == 6 && confirmed.entry(id: leader.entryId)?.name == "Jonas")
+
+        let second = MockTournamentRepository(groups: groups, identity: identity, logger: logger, now: { now })
+        let agreed = try await second.report(id: id, matchID: matchID, scoreA: 3, scoreB: 2)
+        #expect(agreed.match(id: matchID)?.status == .confirmed, "the same score from the other side confirms")
+
+        let third = MockTournamentRepository(groups: groups, identity: identity, logger: logger, now: { now })
+        let disagreed = try await third.report(id: id, matchID: matchID, scoreA: 2, scoreB: 3)
+        #expect(disagreed.match(id: matchID)?.status == .reported && disagreed.match(id: matchID)?.reportedBy == "mock-apple")
+    }
+
+    /// The organiser's walkover advances like a result, and the final's result completes the bracket.
+    @Test func aWalkoverAdvancesAndTheFinalCompletesTheTournament() async throws {
+        let id = MockTournamentFixtures.kickersCupID
+        let started = try await repository.start(id: id)
+        let semi = try #require(started.match(id: "r01p001"))
+        let winner = try #require(semi.entryBId)
+
+        let afterWalkover = try await repository.walkover(id: id, matchID: semi.id, winnerEntryID: winner)
+        #expect(afterWalkover.match(id: semi.id)?.status == .walkover && afterWalkover.match(id: "r02p001")?.entryAId == winner)
+        await #expect(throws: AppError.tournamentActionFailed) {
+            try await repository.walkover(id: id, matchID: "r01p002", winnerEntryID: "nobody")
+        }
+
+        let afterSecond = try await repository.report(id: id, matchID: "r01p002", scoreA: 0, scoreB: 2)
+        let final = try #require(afterSecond.match(id: "r02p001"))
+        #expect(final.hasBothSides && final.entryBId == afterSecond.match(id: "r01p002")?.entryBId)
+        let completed = try await repository.report(id: id, matchID: final.id, scoreA: 1, scoreB: 0)
+        #expect(completed.tournament.status == .completed && completed.tournament.winnerEntryId == winner)
+        await #expect(throws: AppError.matchNotReady) {
+            try await repository.report(id: id, matchID: final.id, scoreA: 1, scoreB: 0)
         }
     }
 }

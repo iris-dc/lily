@@ -115,12 +115,15 @@ final class MockTournamentRepository: TournamentRepository {
         return detail
     }
 
-    /// The stored rows with `callerMarker` swapped for the caller of the moment, and `myEntryId` set from the roster.
+    /// The stored rows with `callerMarker` swapped for the caller of the moment (the entries' members, a match's reporter
+    /// and confirmer), and `myEntryId` set from the roster.
     func resolved(_ detail: TournamentDetail) -> TournamentDetail {
         let caller = identity.currentUserID
-        let entries = detail.entries.map { $0.replacingUser(MockTournamentFixtures.callerMarker, with: caller) }
-        let tournament = resolved(detail.tournament, myEntryId: detail.entry(containing: MockTournamentFixtures.callerMarker)?.id)
-        return TournamentDetail(tournament: tournament, entries: entries, matches: detail.matches, standings: detail.standings)
+        let marker = MockTournamentFixtures.callerMarker
+        let entries = detail.entries.map { $0.replacingUser(marker, with: caller) }
+        let matches = detail.matches.map { $0.replacingUser(marker, with: caller) }
+        let tournament = resolved(detail.tournament, myEntryId: detail.entry(containing: marker)?.id)
+        return TournamentDetail(tournament: tournament, entries: entries, matches: matches, standings: detail.standings)
     }
 
     func resolved(_ tournament: Tournament) -> Tournament {

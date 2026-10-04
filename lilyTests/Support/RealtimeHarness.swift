@@ -18,6 +18,8 @@ final class RealtimeHarness {
     let inboxRepository = FakeInboxRepository()
     let events = FakeEventRepository()
     let eventChanges = ChangeTracker()
+    let tournaments = FakeTournamentRepository()
+    let tournamentChanges = ChangeTracker()
     let pasteboard = SpyPasteboard()
     let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
     let changes = ChangeTracker()
@@ -98,8 +100,10 @@ final class RealtimeHarness {
         ChatViewModel(group: group,
                       repository: chat,
                       groups: groups,
-                      events: events,
-                      eventChanges: eventChanges,
+                      links: SystemRowLinks(events: events,
+                                            tournaments: tournaments,
+                                            eventChanges: eventChanges,
+                                            tournamentChanges: tournamentChanges),
                       pasteboard: pasteboard,
                       cache: cache,
                       realtime: controller,
