@@ -32,7 +32,16 @@ struct ReportViewModelTests {
         #expect(report?.targetType == .tournament && report?.targetId == "t1" && report?.groupId == "t1")
         #expect(report?.reason == .harassment && report?.comment == "Fixed results")
         #expect(viewModel.isSubmitted && !viewModel.isSubmitting && harness.presentedError == nil)
-        #expect(harness.logs(.info).contains { $0.hasPrefix("Report ") && $0.hasSuffix(" filed on tournament t1") })
+        #expect(harness.tournamentLogs(.info).contains { $0.hasPrefix("Report ") && $0.hasSuffix(" filed on tournament t1") })
+        #expect(harness.logs().isEmpty, "a tournament's report is logged under the tournaments")
+    }
+
+    @Test func theLogCategoryFollowsTheTarget() {
+        #expect(ReportTarget.tournament(id: "t").logCategory == .tournaments)
+        #expect(ReportTarget.group(id: "g").logCategory == .groups && ReportTarget.user(id: "u").logCategory == .groups)
+        #expect(ReportTarget.message(id: "m", groupID: "g").logCategory == .groups)
+        #expect(InviteTarget.tournament(id: "t").logCategory == .tournaments)
+        #expect(InviteTarget.group(id: "g").logCategory == .groups)
     }
 
     @Test func aCommentOverTheLimitHoldsTheSend() {
@@ -51,7 +60,7 @@ struct ReportViewModelTests {
 
         await viewModel.submit()
         #expect(harness.presentedError == .reportFailed && !viewModel.isSubmitted)
-        #expect(harness.logs(.error) == ["Report on tournament t1 failed: reportFailed"])
+        #expect(harness.tournamentLogs(.error) == ["Report on tournament t1 failed: reportFailed"])
 
         moderation.error = .termsRequired
         await viewModel.submit()

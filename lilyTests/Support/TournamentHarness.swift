@@ -76,6 +76,7 @@ final class TournamentHarness {
         return TournamentDetailViewModel(destination: destination,
                                          repository: repository,
                                          groupRepository: groupRepository,
+                                         myGroups: groups,
                                          identity: identity,
                                          navigation: navigation,
                                          changes: changes,

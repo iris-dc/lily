@@ -10,6 +10,7 @@ final class LilyTournamentTests: LilyUITestCase {
     let kickersCupRow = "tournament-row-mock-tournament-kickers-cup"
     let tableTennisRow = "tournament-row-mock-tournament-table-tennis"
     let tableTennisRoom = "group-row-mock-tournament-table-tennis"
+    let padelOpenRoom = "group-row-mock-tournament-padel-open"
     let kickersGroupRow = "group-row-mock-group-kickers"
     /// Jonas's entry in Tuesday Table Tennis (`MockTournamentFixtures.entryID`, index 1).
     let jonasStanding = "standing-01J9ENTRYTT00000000000001"
@@ -138,21 +139,40 @@ final class LilyTournamentTests: LilyUITestCase {
     @MainActor
     func testAcceptingATournamentInviteOpensTheDetail() {
         tapSignInWithApple()
-        openInbox()
-        XCTAssertTrue(labelled("Padel · Round robin · Individuals").waitForExistence(timeout: 10), "the invite names the shape")
-        let accept = app.buttons["inbox-accept-\(tournamentInviteID)"]
-        XCTAssertTrue(accept.waitForExistence(timeout: 5))
-        accept.tap()
-
-        XCTAssertTrue(app.navigationBars["Padel Open"].waitForExistence(timeout: 10), "the tournament's detail opens")
-        XCTAssertTrue(app.buttons["tournament-leave"].waitForExistence(timeout: 10), "the accept entered the caller")
+        acceptPadelOpenInvite()
         XCTAssertTrue(app.staticTexts["Organised by Noor"].exists)
 
         // The Chats stack still shows the inbox (which hides the tab bar), so the tab alone brings it back.
         app.tabBars.buttons["Chats"].tap()
         XCTAssertTrue(app.navigationBars["iskra"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["You joined"].waitForExistence(timeout: 5))
-        XCTAssertFalse(accept.exists, "an answered invite offers no Accept")
+        XCTAssertFalse(app.buttons["inbox-accept-\(tournamentInviteID)"].exists, "an answered invite offers no Accept")
+    }
+
+    /// Entering and leaving move the tournament's room on Chats at once: the accept of Noor's invite lists the Padel
+    /// Open's room, and Leave from the detail takes it off again without waiting for Mine's next stale load.
+    @MainActor
+    func testLeavingATournamentFromTheDetailRemovesItsRoomFromChats() {
+        tapSignInWithApple()
+        acceptPadelOpenInvite()
+        app.tabBars.buttons["Chats"].tap()
+        XCTAssertTrue(app.navigationBars["iskra"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons.firstMatch.tap()
+        let room = app.buttons[padelOpenRoom]
+        XCTAssertTrue(room.waitForExistence(timeout: 10), "the accept put the room on Chats")
+
+        app.tabBars.buttons["Home"].tap()
+        XCTAssertTrue(app.navigationBars["Padel Open"].waitForExistence(timeout: 5), "the detail is still up on Home")
+        let leave = app.buttons["tournament-leave"]
+        scrollUntilHittable(leave)
+        leave.tap()
+        app.sheets.firstMatch.buttons["Leave tournament"].tap()
+        XCTAssertTrue(app.buttons["tournament-join"].waitForExistence(timeout: 10), "the caller is out")
+
+        // The scroll down to Leave minimised the tab bar (iOS 26 `tabBarMinimizeBehavior`); a scroll back up restores it.
+        app.swipeDown()
+        openChatsTab()
+        XCTAssertTrue(room.waitForNonExistence(timeout: 10), "the room left Chats with the entry")
     }
 
     /// Tuesday Table Tennis is a tournament the caller plays in: its room is listed on Chats with the trophy's caption,

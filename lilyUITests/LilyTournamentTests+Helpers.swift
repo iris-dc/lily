@@ -55,6 +55,18 @@ extension LilyTournamentTests {
         XCTAssertTrue(app.navigationBars["iskra"].waitForExistence(timeout: 5))
     }
 
+    /// Accepts Noor's invite into the Padel Open from the inbox and waits for its detail with the caller entered.
+    @MainActor
+    func acceptPadelOpenInvite() {
+        openInbox()
+        XCTAssertTrue(labelled("Padel · Round robin · Individuals").waitForExistence(timeout: 10), "the invite names the shape")
+        let accept = app.buttons["inbox-accept-\(tournamentInviteID)"]
+        XCTAssertTrue(accept.waitForExistence(timeout: 5))
+        accept.tap()
+        XCTAssertTrue(app.navigationBars["Padel Open"].waitForExistence(timeout: 10), "the tournament's detail opens")
+        XCTAssertTrue(app.buttons["tournament-leave"].waitForExistence(timeout: 10), "the accept entered the caller")
+    }
+
     /// Picks a segment of the detail's picker, scrolling back to it when the segment's content pushed it off screen.
     @MainActor
     func pickSection(_ title: String) {

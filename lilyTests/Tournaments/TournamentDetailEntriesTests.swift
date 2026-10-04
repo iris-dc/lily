@@ -3,7 +3,7 @@ import Testing
 @testable import lily
 
 /// Entering and leaving from the detail; every write refetches the detail, so the count and the caller's entry are the
-/// backend's.
+/// backend's, and reloads Mine, so the Chats tab lists or drops the tournament's room at once.
 @MainActor
 struct TournamentDetailEntriesTests {
     private let harness = TournamentHarness()
@@ -30,6 +30,7 @@ struct TournamentDetailEntriesTests {
         #expect(harness.sink.tournaments.last?.entryCount == 2 && pushOptIn.offerCount == 1)
         #expect(harness.logs(.info).contains { $0.contains("joined as entry") })
         #expect(harness.repository.fetchedIDs.count == 2, "one load, one refetch")
+        #expect(harness.groupRepository.requestedScopes == [.mine], "Mine reloads for the room the caller is now in")
     }
 
     @Test func creatingATeamSendsItsNameAndJoiningOneItsId() async {
@@ -44,6 +45,7 @@ struct TournamentDetailEntriesTests {
         #expect(harness.repository.joins.map(\.teamName) == ["Late Tackles"])
         #expect(viewModel.tournament?.entryCount == 2 && viewModel.participation == .leave)
         #expect(!viewModel.canJoin(team), "once in, no other team is offered")
+        #expect(harness.groupRepository.requestedScopes == [.mine])
 
         let second = TournamentHarness()
         second.repository.details["t"] = .fixture(tournament: .fixture(teamSize: 5, entryCount: 1), entries: [team])
@@ -51,6 +53,7 @@ struct TournamentDetailEntriesTests {
         await joiner.load()
         await joiner.joinTeam(team)
         #expect(second.repository.teamJoins.map(\.entryID) == ["team-1"] && joiner.tournament?.myEntryId == "team-1")
+        #expect(second.groupRepository.requestedScopes == [.mine])
     }
 
     @Test func aFullTeamIsNotOffered() async {
@@ -71,6 +74,27 @@ struct TournamentDetailEntriesTests {
         #expect(harness.repository.leaves == [expected])
         #expect(viewModel.tournament?.hasEntered == false && viewModel.participation == .join)
         #expect(harness.logs(.info).contains { $0.contains("left (entry mine)") })
+        #expect(harness.groupRepository.requestedScopes == [.mine], "Mine reloads for the room the caller left")
+    }
+
+    /// Mine's by-user index may still list the room right after the leave, so the room leaves Mine locally too; an
+    /// organiser who also played keeps the room they own.
+    @Test func leavingDropsTheRoomEvenWhenMineStillListsIt() async {
+        await harness.loadGroups([.tournamentRoomFixture(id: "t"), .fixture(id: "g")])
+        let mine = TournamentEntry.fixture(id: "mine", captainUserId: TestFixtures.user.id)
+        let viewModel = await loaded(.fixture(entryCount: 1, myEntryId: "mine"), entries: [mine])
+
+        await viewModel.leave()
+        #expect(harness.groups.groups.map(\.id) == ["g"])
+
+        let organiser = TournamentHarness()
+        await organiser.loadGroups([.tournamentRoomFixture(id: "t")])
+        let playing = Tournament.fixture(entryCount: 1, organizerUserId: TestFixtures.user.id, myEntryId: "mine")
+        organiser.repository.details["t"] = .fixture(tournament: playing, entries: [mine])
+        let own = organiser.makeDetailViewModel(for: destination)
+        await own.load()
+        await own.leave()
+        #expect(organiser.repository.leaves.count == 1 && organiser.groups.groups.map(\.id) == ["t"])
     }
 
     @Test func theOrganiserRemovesAnEntry() async {
@@ -80,6 +104,7 @@ struct TournamentDetailEntriesTests {
         await viewModel.removeEntry(entry)
 
         #expect(harness.repository.removedEntries.map(\.entryID) == ["e1"] && viewModel.detail?.entries.isEmpty == true)
+        #expect(harness.groupRepository.requestedScopes.isEmpty, "the organiser's own rooms are unchanged")
     }
 
     @Test func aRefusalReachesThePopupAndAnUnknownOutcomeIsNotSecondGuessed() async {
@@ -90,6 +115,7 @@ struct TournamentDetailEntriesTests {
 
         #expect(harness.presentedError == .tournamentFull && viewModel.participation == .join)
         #expect(harness.logs(.error).contains { $0.contains("Join failed") })
+        #expect(harness.groupRepository.requestedScopes.isEmpty, "a refused entry moves no room")
     }
 
     @Test func aFailedRefetchAfterAWriteKeepsTheScreenQuiet() async {
@@ -100,6 +126,7 @@ struct TournamentDetailEntriesTests {
 
         #expect(harness.repository.joins.count == 1 && harness.presentedError == nil)
         #expect(harness.logs(.warning).contains { $0.contains("Could not refresh") })
+        #expect(harness.groupRepository.requestedScopes == [.mine], "the entry landed, so the room did too")
     }
 
     @Test func oneActionAtATime() async {

@@ -19,4 +19,12 @@ nonisolated enum InviteTarget: Hashable, Sendable {
         case .tournament(let id): "tournament \(id)"
         }
     }
+
+    /// Where those log lines go: the tournaments' category for a tournament, the groups' otherwise.
+    var logCategory: LogCategory {
+        switch self {
+        case .group: .groups
+        case .tournament: .tournaments
+        }
+    }
 }

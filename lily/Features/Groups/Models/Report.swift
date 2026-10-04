@@ -24,6 +24,9 @@ nonisolated struct ReportTarget: Hashable, Sendable {
     let id: String
     let groupID: String?
 
+    /// Where a report's log lines go: the tournaments' category for a tournament, the groups' for the rest.
+    var logCategory: LogCategory { kind == .tournament ? .tournaments : .groups }
+
     static func message(id: String, groupID: String) -> ReportTarget {
         ReportTarget(kind: .message, id: id, groupID: groupID)
     }

@@ -77,6 +77,10 @@ final class GroupHarness {
         logger.messages(in: .inbox, at: level)
     }
 
+    func tournamentLogs(_ level: LogLevel? = nil) -> [String] {
+        logger.messages(in: .tournaments, at: level)
+    }
+
     func makeInboxViewModel() -> InboxViewModel {
         InboxViewModel(store: inbox,
                        repository: inboxRepository,

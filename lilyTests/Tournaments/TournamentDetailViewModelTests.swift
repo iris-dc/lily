@@ -80,6 +80,29 @@ struct TournamentDetailViewModelTests {
         #expect(third.state == .failed)
     }
 
+    /// A 404 on a reload of a loaded detail means the tournament was deleted meanwhile (an operator): the screen is gone,
+    /// its room leaves Mine and the lists behind reload; a first load's 404 only shows the empty state.
+    @Test func aTournamentDeletedAfterItLoadedIsGoneAndTellsTheLists() async {
+        await harness.loadGroups([.tournamentRoomFixture(id: "t"), .fixture(id: "g")])
+        harness.repository.details["t"] = .fixture()
+        let viewModel = harness.makeDetailViewModel(for: destination)
+        await viewModel.load()
+        #expect(!viewModel.isGone && harness.changes.version == 0)
+
+        harness.repository.details["t"] = nil
+        await viewModel.load()
+
+        #expect(viewModel.isGone && viewModel.state == .notFound && viewModel.tournament == nil)
+        #expect(harness.changes.version == 1, "the lists behind drop the row")
+        #expect(harness.groups.groups.map(\.id) == ["g"], "its room left Mine")
+        await viewModel.loadIfNeeded()
+        #expect(harness.repository.fetchedIDs == ["t", "t"], "a gone screen asks for nothing more")
+
+        let fresh = harness.makeDetailViewModel(for: destination)
+        await fresh.load()
+        #expect(fresh.state == .notFound && !fresh.isGone, "a stale row's 404 keeps the empty state")
+    }
+
     @Test func theOrganiserGetsEditCancelAndTheMenuUntilTheTournamentIsOver() async {
         harness.repository.details["t"] = .fixture(tournament: .fixture(organizerUserId: TestFixtures.user.id))
         let viewModel = harness.makeDetailViewModel(for: destination)

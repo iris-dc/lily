@@ -115,4 +115,11 @@ enum LaurelTournamentInboxJSON {
     {"type":"match_updated","match":{"id":"r01p002","tournamentId":"t1","round":1,"position":2,"entryAId":"e4","entryBId":"e5",\
     "status":"scheduled","isDisputed":false,"scheduledAt":"2026-09-25T10:00:00Z","nextMatchId":"r02p001","nextSlot":"b"}}
     """
+    /// `inbox_item` on `users/<sub>`, carrying a tournament invite like any kind (`RealtimeEventTest`).
+    static let inboxItemEnvelope = #"{"type":"inbox_item","item":\#(tournamentInvite)}"#
+    /// `PUT .../matches/{matchId}/schedule` as `TournamentMatchControllerIt` sends it; an absent body clears.
+    static let scheduleRequest = """
+    {"scheduledAt":"2026-10-18T12:00:00Z","location":{"name":"Tempelhofer Feld",\
+    "coordinate":{"latitude":52.4731,"longitude":13.4039}}}
+    """
 }

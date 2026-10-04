@@ -43,10 +43,10 @@ final class ReportViewModel {
         do {
             let receipt = try await repository.report(ReportPayload(target: target, reason: reason, comment: comment))
             isSubmitted = true
-            logger.info(.groups, "Report \(receipt.id) filed on \(target.kind.rawValue) \(target.id)")
+            logger.info(target.logCategory, "Report \(receipt.id) filed on \(target.kind.rawValue) \(target.id)")
         } catch {
             guard !AppError.isCancellation(error) else { return }
-            logger.error(.groups, "Report on \(target.kind.rawValue) \(target.id) failed: \(error)")
+            logger.error(target.logCategory, "Report on \(target.kind.rawValue) \(target.id) failed: \(error)")
             reporter.report(error)
         }
     }

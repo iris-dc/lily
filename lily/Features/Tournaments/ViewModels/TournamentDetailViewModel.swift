@@ -18,9 +18,13 @@ final class TournamentDetailViewModel {
     let destination: TournamentDestination
     private(set) var state: State = .loading
     private(set) var isBusy = false
+    /// The tournament was there and is gone now (an operator deleted it): the screen dismisses, as a gone group's does.
+    private(set) var isGone = false
 
     /// Shared with the `+Entries` file, hence not `private`.
     let repository: any TournamentRepository
+    /// Entering and leaving move the caller's room, so the entry writes reload Mine and a gone tournament drops it.
+    let myGroups: MyGroupsStore
     let identity: any IdentityProvider
     let reporter: GroupErrorReporter
     let logger: any Logging
@@ -39,6 +43,7 @@ final class TournamentDetailViewModel {
     init(destination: TournamentDestination,
          repository: any TournamentRepository,
          groupRepository: any GroupRepository,
+         myGroups: MyGroupsStore,
          identity: any IdentityProvider,
          navigation: AppNavigation,
          changes: ChangeTracker,
@@ -52,6 +57,7 @@ final class TournamentDetailViewModel {
         self.destination = destination
         self.repository = repository
         self.groupRepository = groupRepository
+        self.myGroups = myGroups
         self.identity = identity
         self.navigation = navigation
         self.changes = changes
@@ -112,10 +118,11 @@ final class TournamentDetailViewModel {
 
     /// The view's one entry, re-run on every change of the tracker: the first load, and a reload whenever a tournament
     /// changed elsewhere (a live room event, a sibling screen) since this screen last agreed with the tracker. A change
-    /// this screen made itself is acknowledged in `accept`, so it costs no second request.
+    /// this screen made itself is acknowledged in `accept`, so it costs no second request; a gone tournament asks for
+    /// nothing more.
     func loadIfNeeded() async {
         let version = changes.version
-        guard detail == nil || acknowledgedVersion != version else { return }
+        guard !isGone, detail == nil || acknowledgedVersion != version else { return }
         acknowledgedVersion = version
         await load()
     }
@@ -130,7 +137,7 @@ final class TournamentDetailViewModel {
             recordViewed(detail.tournament)
         } catch AppError.tournamentNotFound {
             logger.info(.tournaments, "Tournament \(destination.id) is not available to the caller")
-            if detail == nil { state = .notFound }
+            markGone()
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logger.error(.tournaments, "Loading tournament \(destination.id) failed: \(error)")
@@ -144,6 +151,19 @@ final class TournamentDetailViewModel {
     func accept(_ detail: TournamentDetail) {
         state = .loaded(detail)
         onChange(detail.tournament)
+        acknowledgedVersion = changes.version
+    }
+
+    /// A 404 shows the empty state when nothing was loaded yet (a stale row named the tournament). After a loaded detail
+    /// it means the tournament was deleted meanwhile: the screen dismisses, its room leaves Mine and the lists behind
+    /// are told to reload; that version is this screen's own.
+    private func markGone() {
+        let wasLoaded = detail != nil
+        state = .notFound
+        guard wasLoaded else { return }
+        isGone = true
+        myGroups.remove(id: destination.id)
+        changes.recordChange()
         acknowledgedVersion = changes.version
     }
 

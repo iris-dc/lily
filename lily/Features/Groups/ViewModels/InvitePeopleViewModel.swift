@@ -66,11 +66,11 @@ final class InvitePeopleViewModel {
             candidates = try await repository.candidates(groupID: target.id)
             hasLoaded = true
             loadFailed = false
-            logger.debug(.groups, "Loaded \(candidates.count) invite candidates for \(target.logName)")
+            logger.debug(target.logCategory, "Loaded \(candidates.count) invite candidates for \(target.logName)")
         } catch {
             guard !AppError.isCancellation(error) else { return }
             loadFailed = true
-            logger.error(.groups, "Loading invite candidates for \(target.logName) failed: \(error)")
+            logger.error(target.logCategory, "Loading invite candidates for \(target.logName) failed: \(error)")
             reporter.report(error)
         }
     }
@@ -86,10 +86,10 @@ final class InvitePeopleViewModel {
                                                 onRetry: { logRetry(current) },
                                                 { try await repository.invite(groupID: target.id, userID: current.userId) })
             markInvited(current.userId)
-            logger.info(.groups, "Invite sent to \(current.userId) for \(target.logName)")
+            logger.info(target.logCategory, "Invite sent to \(current.userId) for \(target.logName)")
         } catch {
             guard !AppError.isCancellation(error) else { return }
-            logger.error(.groups, "Invite to \(current.userId) for \(target.logName) failed: \(error)")
+            logger.error(target.logCategory, "Invite to \(current.userId) for \(target.logName) failed: \(error)")
             reporter.report(error)
         }
     }
@@ -100,6 +100,6 @@ final class InvitePeopleViewModel {
     }
 
     private func logRetry(_ candidate: InviteCandidate) {
-        logger.info(.groups, "Invite to \(candidate.userId) for \(target.logName) lost a race; retrying once")
+        logger.info(target.logCategory, "Invite to \(candidate.userId) for \(target.logName) lost a race; retrying once")
     }
 }

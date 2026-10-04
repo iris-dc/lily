@@ -29,6 +29,7 @@ extension AppDependencies {
         TournamentDetailViewModel(destination: destination,
                                   repository: tournamentRepository,
                                   groupRepository: groupRepository,
+                                  myGroups: myGroups,
                                   identity: identity,
                                   navigation: navigation,
                                   changes: tournamentChanges,

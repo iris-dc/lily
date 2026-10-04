@@ -12,6 +12,7 @@ struct TournamentDetailView: View {
     @State private var confirmation: TournamentConfirmation?
     /// The match the destination named was raised once; a reload must not raise it again.
     @State private var hasShownLinkedMatch = false
+    @Environment(\.dismiss) private var dismiss
     private let dependencies: AppDependencies
 
     private typealias Copy = AppBranding.Tournaments
@@ -68,6 +69,10 @@ struct TournamentDetailView: View {
         .task(id: dependencies.tournamentChanges.version) {
             await viewModel.loadIfNeeded()
             showLinkedMatchIfNeeded()
+        }
+        // Deleted while on screen: there is nothing left to show here (a first load's 404 keeps its empty state).
+        .onChange(of: viewModel.isGone) {
+            if viewModel.isGone { dismiss() }
         }
         .sheet(item: $presentedSheet) { sheet($0) }
         .confirmationDialog(confirmationTitle, isPresented: isConfirming, titleVisibility: .visible, presenting: confirmation) {

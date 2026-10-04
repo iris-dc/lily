@@ -86,6 +86,33 @@ struct TournamentInboxContractTests {
         #expect(updated.groupID == "t1" && updated.channelEpoch == nil)
     }
 
+    /// The caller's own channel carries the tournament kinds inside the one `inbox_item` envelope every kind uses.
+    @Test func theInboxEnvelopeCarriesTheTournamentKinds() throws {
+        let envelope = try ContractSamples.decode(RealtimeEnvelope.self, from: Laurel.inboxItemEnvelope)
+        guard case .inboxItem(let item) = envelope else { Issue.record("expected .inboxItem"); return }
+        #expect(item.kind == .tournamentInvite && item.tournamentInvite?.tournamentId == Laurel.tournamentID && item.isVisible)
+        #expect(envelope.groupID == nil && envelope.channelEpoch == nil, "the caller's own channel, not a room")
+
+        let reminder = try ContractSamples.decode(RealtimeEnvelope.self,
+                                                  from: #"{"type":"inbox_item","item":\#(Laurel.matchReminder)}"#)
+        guard case .inboxItem(let reminded) = reminder else { Issue.record("expected .inboxItem"); return }
+        #expect(reminded.kind == .matchReminder && reminded.matchReminder?.matchId == "r01p002")
+    }
+
+    /// The organiser's schedule encodes to `ScheduleMatchRequest` key for key: the instant without fractions, the place
+    /// with its coordinate; a schedule without either is `{}`, which clears.
+    @Test func theScheduleRequestEncodesLaurelsBody() throws {
+        let feld = EventLocation(name: "Tempelhofer Feld", coordinate: Coordinate(latitude: 52.4731, longitude: 13.4039))
+        let at = try #require(APIJSONCoding.parseInstant("2026-10-18T12:00:00Z"))
+        let encoder = APIJSONCoding.makeEncoder()
+
+        let payload = MatchSchedulePayload(schedule: MatchSchedule(scheduledAt: at, location: feld))
+        let sent = try JSONSerialization.jsonObject(with: encoder.encode(payload))
+        let expected = try JSONSerialization.jsonObject(with: Data(Laurel.scheduleRequest.utf8))
+        #expect(sent as? NSDictionary == expected as? NSDictionary)
+        #expect(String(bytes: try encoder.encode(MatchSchedulePayload(schedule: MatchSchedule())), encoding: .utf8) == "{}")
+    }
+
     /// The helpers the inbox cards and the mock read, over the fixture builders.
     @Test func theItemsAnswerAndCaptionLikeTheGroupInvite() {
         let invite = InboxItem.tournamentInvite()
