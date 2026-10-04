@@ -198,6 +198,17 @@ nonisolated struct MatchSchedule: Hashable, Codable, Sendable {
         self.scheduledAt = scheduledAt
         self.location = location
     }
+
+    /// Where the organiser's schedule form opens: the match's own time and place when set, else the tournament's start
+    /// (or the next full hour of the calendar's zone, when the start has passed) at the tournament's venue.
+    static func proposal(for match: TournamentMatch,
+                         in tournament: Tournament,
+                         now: Date,
+                         calendar: Calendar = .autoupdatingCurrent) -> MatchSchedule {
+        let nextHour = calendar.nextDate(after: now, matching: DateComponents(minute: 0, second: 0), matchingPolicy: .nextTime)
+        return MatchSchedule(scheduledAt: match.scheduledAt ?? max(tournament.startsAt, nextHour ?? now),
+                             location: match.location ?? tournament.location)
+    }
 }
 
 /// One row of a round robin's table, computed by the backend on every read.
@@ -214,59 +225,4 @@ nonisolated struct TournamentStanding: Identifiable, Hashable, Codable, Sendable
 
     var id: String { entryId }
     var scoreDifference: Int { scored - conceded }
-}
-
-/// A tournament with everything on its screen: the entries in seed order, the matches by round and position once it
-/// started, and the standings of a round robin in progress (empty for a bracket).
-nonisolated struct TournamentDetail: Hashable, Codable, Sendable {
-    private(set) var tournament: Tournament
-    private(set) var entries: [TournamentEntry]
-    private(set) var matches: [TournamentMatch]
-    private(set) var standings: [TournamentStanding]
-
-    init(tournament: Tournament,
-         entries: [TournamentEntry] = [],
-         matches: [TournamentMatch] = [],
-         standings: [TournamentStanding] = []) {
-        self.tournament = tournament
-        self.entries = entries
-        self.matches = matches
-        self.standings = standings
-    }
-
-    var id: String { tournament.id }
-    var myEntry: TournamentEntry? { tournament.myEntryId.flatMap(entry(id:)) }
-    var registeredEntries: [TournamentEntry] { entries.filter(\.isRegistered) }
-
-    func entry(id: String) -> TournamentEntry? {
-        entries.first { $0.id == id }
-    }
-
-    func match(id: String) -> TournamentMatch? {
-        matches.first { $0.id == id }
-    }
-
-    /// The entry the caller is in, from the roster rather than `myEntryId` (the mock's lists carry no caller).
-    func entry(containing userID: String?) -> TournamentEntry? {
-        entries.first { $0.contains(userID: userID) }
-    }
-
-    func replacing(tournament: Tournament) -> TournamentDetail {
-        var copy = self
-        copy.tournament = tournament
-        return copy
-    }
-
-    func replacing(entries: [TournamentEntry]) -> TournamentDetail {
-        var copy = self
-        copy.entries = entries
-        return copy
-    }
-
-    func replacing(matches: [TournamentMatch], standings: [TournamentStanding]) -> TournamentDetail {
-        var copy = self
-        copy.matches = matches
-        copy.standings = standings
-        return copy
-    }
 }

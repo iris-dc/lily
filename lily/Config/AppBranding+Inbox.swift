@@ -26,8 +26,10 @@ nonisolated extension AppBranding {
         static var declined: String { localized("Declined") }
         static var expired: String { localized("Expired") }
         static var reminderTitle: String { localized("Game reminder") }
-        /// VoiceOver name of the reminder card's chevron.
+        static var matchReminderTitle: String { localized("Match reminder") }
+        /// VoiceOver names of the reminder cards' chevrons.
         static var openGame: String { localized("Open game") }
+        static var openTournament: String { localized("Open tournament") }
         static var emptyTitle: String { localized("Nothing here yet") }
         static var emptyMessage: String { localized("Invites and reminders for your games show up here.") }
         static var loadFailedTitle: String { localized("Couldn't load your notifications") }
@@ -41,6 +43,11 @@ nonisolated extension AppBranding {
         /// start is after them ("Today, 6:30 PM · in 1 hour").
         static func dayAndTime(day: String, time: String) -> String {
             localized("\(day), \(time)")
+        }
+
+        /// The match reminder's opponent line.
+        static func versus(_ opponent: String) -> String {
+            localized("vs \(opponent)")
         }
     }
 }

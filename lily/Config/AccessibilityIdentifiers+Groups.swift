@@ -33,9 +33,7 @@ nonisolated extension AccessibilityIdentifiers {
     static let createGroupSubmit = "create-group-submit"
     static let createGroupCancel = "create-group-cancel"
     static let createGroup = "create-group"
-    /// Report sheet and terms sheet.
-    static let reportReason = "report-reason"
-    static let reportSubmit = "report-submit"
+    /// The terms sheet; the report sheet's identifiers are in `AccessibilityIdentifiers+Moderation.swift`.
     static let termsAccept = "terms-accept"
 
     static func groupRow(_ id: String) -> String {

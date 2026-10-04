@@ -1,20 +1,20 @@
 import Foundation
 
 /// Where the app delegate's push callbacks land: the device token (or the refusal) for whoever is waiting on
-/// `registerForRemoteNotifications`, and a tapped notification's game for the coordinator. The delegate is created by
-/// SwiftUI before the composition root exists, so it posts to the shared relay and the coordinator subscribes.
+/// `registerForRemoteNotifications`, and a tapped notification's target for the coordinator. The delegate is created
+/// by SwiftUI before the composition root exists, so it posts to the shared relay and the coordinator subscribes.
 final class PushEventRelay {
     static let shared = PushEventRelay()
 
     /// Set by the coordinator; a tap that arrives before it is set waits here.
-    var tapHandler: ((String) -> Void)? {
+    var tapHandler: ((PushTap) -> Void)? {
         didSet {
-            guard let tapHandler, let pendingEventID else { return }
-            self.pendingEventID = nil
-            tapHandler(pendingEventID)
+            guard let tapHandler, let pendingTap else { return }
+            self.pendingTap = nil
+            tapHandler(pendingTap)
         }
     }
-    private var pendingEventID: String?
+    private var pendingTap: PushTap?
     private var waiters: [Waiter] = []
 
     /// Whether a registration is waiting for the system's answer.
@@ -48,12 +48,12 @@ final class PushEventRelay {
         resumeAll(with: .failure(PushRegistrationError.refused(error.localizedDescription)))
     }
 
-    /// A notification was tapped for `eventID`; handed on at once, or kept until the coordinator subscribes.
-    func notificationTapped(eventID: String) {
+    /// A notification was tapped; handed on at once, or kept until the coordinator subscribes.
+    func notificationTapped(_ tap: PushTap) {
         if let tapHandler {
-            tapHandler(eventID)
+            tapHandler(tap)
         } else {
-            pendingEventID = eventID
+            pendingTap = tap
         }
     }
 

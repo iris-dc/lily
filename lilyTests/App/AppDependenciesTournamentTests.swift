@@ -8,10 +8,22 @@ struct AppDependenciesTournamentTests {
     @Test func mockEventsSelectTheMockRepositoryAndTheDefaultTheRemoteOne() {
         let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeTestDefaults())
         #expect(mocked.tournamentRepository is MockTournamentRepository)
+        #expect(mocked.tournamentInviteRepository is MockTournamentInviteRepository)
         #expect(AppDependencies.makeMock().tournamentRepository is MockTournamentRepository)
 
         let remote = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
         #expect(remote.tournamentRepository is RemoteTournamentRepository)
+        #expect(remote.tournamentInviteRepository is RemoteTournamentInviteRepository)
+    }
+
+    /// One change counter for the lists, the realtime controller and the inbox; the invite and report sheets open on
+    /// the tournament's id.
+    @Test func theTournamentCollaboratorsShareOneChangeCounter() {
+        let dependencies = AppDependencies.makeMock()
+        #expect(dependencies.tournamentChanges === dependencies.realtime.tournamentChanges)
+        #expect(dependencies.makeTournamentInvitePeopleViewModel(for: "t1").target == .tournament(id: "t1"))
+        let report = dependencies.makeReportViewModel(for: .tournament(id: "t1"), title: AppBranding.Tournaments.report)
+        #expect(report.target == .tournament(id: "t1") && report.title == "Report tournament")
     }
 
     /// The factories hand every view model the shared repository and change counter, and the mock's two tournaments

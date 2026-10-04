@@ -141,37 +141,49 @@ struct PushCoordinatorTests {
     @Test func aTappedReminderOpensTheGameOnTheChatsStack() async {
         harness.events.result = .success([.fixture(id: "e1")])
 
-        harness.relay.notificationTapped(eventID: "e1")
+        harness.relay.notificationTapped(.event(id: "e1"))
         await settle(until: { !harness.navigation.chatPath.isEmpty })
 
         #expect(harness.events.fetchedEventIDs == ["e1"])
-        #expect(harness.navigation.selectedTab == .chat && harness.coordinator.pendingEventID == nil)
+        #expect(harness.navigation.selectedTab == .chat && harness.coordinator.pendingTap == nil)
         #expect(harness.logs(.info) == ["Notification tapped for event e1"])
+    }
+
+    /// A match reminder's tap fetches the tournament (for its name) and opens its detail with the match named.
+    @Test func aTappedMatchReminderOpensTheTournamentWithTheMatchOnTheChatsStack() async {
+        harness.tournaments.details["t1"] = .fixture(tournament: .fixture(id: "t1", name: "Kickers Cup"))
+
+        harness.relay.notificationTapped(.match(tournamentID: "t1", matchID: "r01p002"))
+        await settle(until: { !harness.navigation.chatPath.isEmpty })
+
+        #expect(harness.tournaments.fetchedIDs == ["t1"] && harness.events.fetchedEventIDs.isEmpty)
+        #expect(harness.navigation.selectedTab == .chat && harness.coordinator.pendingTap == nil)
+        #expect(harness.logs(.info) == ["Notification tapped for match r01p002 of tournament t1"])
     }
 
     @Test func aTapBeforeTheSessionIsRestoredWaitsForIt() async {
         harness.events.result = .success([.fixture(id: "e1")])
         harness.identity.currentUserID = nil
 
-        harness.coordinator.handleTap(eventID: "e1")
-        await harness.coordinator.openPendingEvent()
-        #expect(harness.coordinator.pendingEventID == "e1" && harness.events.fetchedEventIDs.isEmpty)
+        harness.coordinator.handleTap(.event(id: "e1"))
+        await harness.coordinator.openPendingTap()
+        #expect(harness.coordinator.pendingTap == .event(id: "e1") && harness.events.fetchedEventIDs.isEmpty)
 
         harness.identity.currentUserID = TestFixtures.user.id
-        await harness.coordinator.openPendingEvent()
+        await harness.coordinator.openPendingTap()
 
         #expect(harness.events.fetchedEventIDs == ["e1"] && harness.navigation.chatPath.count == 1)
-        #expect(harness.coordinator.pendingEventID == nil)
+        #expect(harness.coordinator.pendingTap == nil)
     }
 
     @Test func aTapBeforeTheCoordinatorExistsIsHandedOverOnSubscription() async {
         let relay = PushEventRelay()
-        relay.notificationTapped(eventID: "e9")
+        relay.notificationTapped(.event(id: "e9"))
         harness.identity.currentUserID = nil
 
         let coordinator = harness.makeCoordinator(relay: relay)
 
-        #expect(coordinator.pendingEventID == "e9")
+        #expect(coordinator.pendingTap == .event(id: "e9"))
     }
 }
 

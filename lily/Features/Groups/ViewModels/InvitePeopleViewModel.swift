@@ -2,7 +2,8 @@ import Foundation
 import Observation
 
 /// The invite-people sheet: the people the caller shares a group or a game with, narrowed by name as the caller types,
-/// and one invite per row. The invitee answers from their inbox; nothing here waits for that answer.
+/// and one invite per row into the target, a group or a tournament (the repository decides which routes answer). The
+/// invitee answers from their inbox; nothing here waits for that answer.
 @Observable
 final class InvitePeopleViewModel {
     /// What the sheet shows under its title.
@@ -10,7 +11,7 @@ final class InvitePeopleViewModel {
         case loading, failed, nobody, noMatches, people
     }
 
-    let group: SportGroup
+    let target: InviteTarget
     private(set) var candidates: [InviteCandidate] = []
     private(set) var isLoading = false
     private(set) var loadFailed = false
@@ -24,12 +25,12 @@ final class InvitePeopleViewModel {
     private let logger: any Logging
     private let tryAgainDelay: Duration
 
-    init(group: SportGroup,
+    init(target: InviteTarget,
          repository: any InviteRepository,
          reporter: GroupErrorReporter,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay) {
-        self.group = group
+        self.target = target
         self.repository = repository
         self.reporter = reporter
         self.logger = logger
@@ -62,14 +63,14 @@ final class InvitePeopleViewModel {
         isLoading = true
         defer { isLoading = false }
         do {
-            candidates = try await repository.candidates(groupID: group.id)
+            candidates = try await repository.candidates(groupID: target.id)
             hasLoaded = true
             loadFailed = false
-            logger.debug(.groups, "Loaded \(candidates.count) invite candidates for group \(group.id)")
+            logger.debug(.groups, "Loaded \(candidates.count) invite candidates for \(target.logName)")
         } catch {
             guard !AppError.isCancellation(error) else { return }
             loadFailed = true
-            logger.error(.groups, "Loading invite candidates for group \(group.id) failed: \(error)")
+            logger.error(.groups, "Loading invite candidates for \(target.logName) failed: \(error)")
             reporter.report(error)
         }
     }
@@ -83,12 +84,12 @@ final class InvitePeopleViewModel {
         do {
             _ = try await LostRace.attemptTwice(delay: tryAgainDelay,
                                                 onRetry: { logRetry(current) },
-                                                { try await repository.invite(groupID: group.id, userID: current.userId) })
+                                                { try await repository.invite(groupID: target.id, userID: current.userId) })
             markInvited(current.userId)
-            logger.info(.groups, "Invite sent to \(current.userId) for group \(group.id)")
+            logger.info(.groups, "Invite sent to \(current.userId) for \(target.logName)")
         } catch {
             guard !AppError.isCancellation(error) else { return }
-            logger.error(.groups, "Invite to \(current.userId) for group \(group.id) failed: \(error)")
+            logger.error(.groups, "Invite to \(current.userId) for \(target.logName) failed: \(error)")
             reporter.report(error)
         }
     }
@@ -99,6 +100,6 @@ final class InvitePeopleViewModel {
     }
 
     private func logRetry(_ candidate: InviteCandidate) {
-        logger.info(.groups, "Invite to \(candidate.userId) for group \(group.id) lost a race; retrying once")
+        logger.info(.groups, "Invite to \(candidate.userId) for \(target.logName) lost a race; retrying once")
     }
 }

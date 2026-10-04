@@ -59,8 +59,9 @@ struct InboxItemCodingTests {
 
     @Test func theAnswersOfAcceptDeclineAndTheReadMarkerDecode() throws {
         let acceptance = try ContractSamples.decode(InviteAcceptance.self, from: ContractSamples.inviteAccepted)
-        #expect(acceptance.item.invite?.status == .accepted && acceptance.group.id == acceptance.item.invite?.groupId)
-        #expect(acceptance.group.role == .admin, "the group comes with the caller's membership")
+        #expect(acceptance.item.invite?.status == .accepted && acceptance.group?.id == acceptance.item.invite?.groupId)
+        #expect(acceptance.group?.role == .admin, "the group comes with the caller's membership")
+        #expect(acceptance.tournament == nil)
 
         let declination = try ContractSamples.decode(InviteDeclination.self, from: ContractSamples.inviteDeclined)
         #expect(declination.item.invite?.status == .declined)

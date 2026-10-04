@@ -111,17 +111,17 @@ extension RealtimeSessionController {
         case .messageDeleted(_, let id):
             cache.update(groupID: groupID) { $0.markDeleted(id: id) }
         case .memberLeft(_, let userID, let epoch, let memberCount):
-            if userID == identity.currentUserID {
-                removeGroupLocally(groupID, reason: "removed from group")
-            } else {
-                resubscribeJittered(groupID, to: epoch, from: subscribedEpoch, memberCount: memberCount)
-            }
+            applyMemberLeft(userID: userID, groupID: groupID, epoch: epoch, from: subscribedEpoch, memberCount: memberCount)
         case .groupDeleted:
             removeGroupLocally(groupID, reason: "group deleted")
         case .groupUpdated(let group):
             store.apply(group)
             adoptEpoch(envelope.channelEpoch, for: groupID, from: subscribedEpoch)
         case .memberJoined:
+            adoptEpoch(envelope.channelEpoch, for: groupID, from: subscribedEpoch)
+        case .tournamentChanged, .matchUpdated:
+            // The tournament screens refetch the detail; a change's epoch is the room's new one.
+            tournamentChanges.recordChange()
             adoptEpoch(envelope.channelEpoch, for: groupID, from: subscribedEpoch)
         case .membershipChanged, .inboxItem:
             // Both belong to the user channel; on a room they say nothing about the room.
@@ -130,6 +130,15 @@ extension RealtimeSessionController {
         case .unknown(let type):
             let channel = RealtimeChannel.room(groupID: groupID, epoch: subscribedEpoch)
             logger.debug(.chat, "Ignored a \(type) event on \(channel.path)")
+        }
+    }
+
+    /// The caller's own departure drops the room; anyone else's moves the epoch, which is followed with jitter.
+    private func applyMemberLeft(userID: String, groupID: String, epoch: Int, from subscribedEpoch: Int, memberCount: Int) {
+        if userID == identity.currentUserID {
+            removeGroupLocally(groupID, reason: "removed from group")
+        } else {
+            resubscribeJittered(groupID, to: epoch, from: subscribedEpoch, memberCount: memberCount)
         }
     }
 

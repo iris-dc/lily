@@ -13,11 +13,11 @@ nonisolated enum ReportReason: String, CaseIterable, Codable, Sendable {
     }
 }
 
-/// What a report is about. A message's or a group's report carries the group so the backend can check the reporter
-/// may see the target.
+/// What a report is about. A message's, a group's or a tournament's report carries the room so the backend can check
+/// the reporter may see the target; a tournament's room is the tournament's own id.
 nonisolated struct ReportTarget: Hashable, Sendable {
     enum Kind: String, Codable, Sendable {
-        case message, group, user
+        case message, group, user, tournament
     }
 
     let kind: Kind
@@ -30,6 +30,10 @@ nonisolated struct ReportTarget: Hashable, Sendable {
 
     static func group(id: String) -> ReportTarget {
         ReportTarget(kind: .group, id: id, groupID: id)
+    }
+
+    static func tournament(id: String) -> ReportTarget {
+        ReportTarget(kind: .tournament, id: id, groupID: id)
     }
 
     static func user(id: String) -> ReportTarget {

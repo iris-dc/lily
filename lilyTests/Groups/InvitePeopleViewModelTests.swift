@@ -125,4 +125,22 @@ struct InvitePeopleViewModelTests {
         #expect(ayse.caption == "Played Sunset 5-a-side")
         #expect(marta.markingInvited().isInvited && marta.id == "u-2")
     }
+
+    /// The same sheet over a tournament's invite repository: the routes are keyed by the tournament's id and the log
+    /// lines name the tournament; a refusal of the tournament's own reaches the popup like any other.
+    @Test func aTournamentTargetInvitesThroughTheTournamentsRepository() async {
+        harness.invites.candidatesResult = .success([marta, ayse])
+        let viewModel = harness.makeInvitePeopleViewModel(for: .tournament(id: "t1"))
+        await viewModel.load()
+        #expect(viewModel.target == .tournament(id: "t1") && harness.invites.candidateRequests == ["t1"])
+
+        await viewModel.invite(marta)
+        #expect(harness.invites.sentInvites == [FakeInviteRepository.SentInviteRequest(groupID: "t1", userID: "u-2")])
+        #expect(viewModel.candidates[0].isInvited && harness.logs(.info).contains("Invite sent to u-2 for tournament t1"))
+
+        harness.invites.inviteResult = .failure(.inviteeAlreadyEntered)
+        await viewModel.invite(ayse)
+        #expect(harness.presentedError == .inviteeAlreadyEntered && !viewModel.candidates[1].isInvited)
+        #expect(harness.logs(.error) == ["Invite to u-3 for tournament t1 failed: inviteeAlreadyEntered"])
+    }
 }

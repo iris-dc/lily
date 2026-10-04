@@ -29,15 +29,15 @@ extension LilyAppDelegate: UNUserNotificationCenterDelegate {
         completionHandler([.banner, .sound, .list])
     }
 
-    /// Only the game's id crosses to the main actor: the payload dictionary is not `Sendable`.
+    /// Only the ids cross to the main actor, as a `PushTap`: the payload dictionary is not `Sendable`.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        let eventID = PushPayload.eventID(from: response.notification.request.content.userInfo)
+        let tap = PushPayload.tap(from: response.notification.request.content.userInfo)
         Task { @MainActor in
-            if let eventID { PushEventRelay.shared.notificationTapped(eventID: eventID) }
+            if let tap { PushEventRelay.shared.notificationTapped(tap) }
             completionHandler()
         }
     }

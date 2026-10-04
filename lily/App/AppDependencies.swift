@@ -60,12 +60,14 @@ final class AppDependencies {
         self.push = PushDependencies(registrar: pushRegistrar,
                                      devices: deviceRepository,
                                      events: eventRepository,
+                                     tournaments: groupRepositories.tournaments,
                                      identity: identity,
                                      groups: groups,
                                      defaults: defaults,
                                      languageCode: { language.language.code },
                                      logger: logger)
-        self.tournaments = TournamentDependencies(repository: groupRepositories.tournaments)
+        self.tournaments = TournamentDependencies(repository: groupRepositories.tournaments,
+                                                  tournamentChanges: groups.tournamentChanges)
         self.sessionController = SessionController(authService: authService,
                                                    sessionStore: sessionStore,
                                                    profileRepository: profileRepository,

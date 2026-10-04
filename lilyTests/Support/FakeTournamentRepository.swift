@@ -41,6 +41,7 @@ final class FakeTournamentRepository: TournamentRepository {
     private(set) var removedEntries: [(id: String, entryID: String)] = []
     private(set) var cancelledIDs: [String] = []
     private(set) var startedIDs: [String] = []
+    private(set) var schedules: [(matchID: String, schedule: MatchSchedule)] = []
     /// The results, recorded by the `+Matches` file, hence not `private(set)`.
     var reports: [Report] = []
     var confirmedMatchIDs: [String] = []
@@ -158,10 +159,15 @@ final class FakeTournamentRepository: TournamentRepository {
         return store(started.replacing(matches: matches, standings: standings))
     }
 
+    /// Answers the match alone, as the backend does; the stored detail follows so a refetch agrees.
     func schedule(id: String, matchID: String, _ schedule: MatchSchedule) async throws -> TournamentMatch {
+        schedules.append((matchID, schedule))
         try throwIfScripted()
-        guard let match = try stored(id).match(id: matchID) else { throw AppError.matchNotReady }
-        return match.scheduling(schedule)
+        let detail = try stored(id)
+        guard let match = detail.match(id: matchID) else { throw AppError.matchNotFound }
+        let scheduled = match.scheduling(schedule)
+        store(detail.replacing(match: scheduled))
+        return scheduled
     }
 
     func cancel(id: String) async throws -> TournamentDetail {

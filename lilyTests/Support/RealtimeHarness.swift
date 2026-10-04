@@ -79,6 +79,7 @@ final class RealtimeHarness {
                                                unread: unread,
                                                inbox: inbox,
                                                groupChanges: changes,
+                                               tournamentChanges: tournamentChanges,
                                                groupRepository: groups,
                                                errorCenter: errorCenter,
                                                logger: logger,

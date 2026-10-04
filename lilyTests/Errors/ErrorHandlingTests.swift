@@ -20,6 +20,7 @@ struct ErrorMessageMapperTests {
         .tournamentsUnavailable, .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed,
         .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked,
         .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit,
+        .inviteeAlreadyEntered, .cannotInviteToTournament,
         .unknown,
     ]
 
@@ -115,6 +116,11 @@ struct ErrorMessageMapperTests {
 
     /// Pinned like the rest: a profile that would not load and a conversation that would not start each say so, and the
     /// conversation cap names the number from config.
+    @Test func tournamentInviteRefusalsHaveTheirOwnTitles() {
+        #expect(ErrorMessageMapper.message(for: .inviteeAlreadyEntered).title == "They're already in this tournament")
+        #expect(ErrorMessageMapper.message(for: .cannotInviteToTournament).title == "Only players can invite")
+    }
+
     @Test func peopleErrorsHaveTheirOwnTitles() {
         #expect(ErrorMessageMapper.message(for: .profileUnavailable).title == "Couldn't load this profile")
         #expect(ErrorMessageMapper.message(for: .conversationFailed).title == "Couldn't start the conversation")

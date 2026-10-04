@@ -72,15 +72,17 @@ struct TournamentParticipationControl: View {
     }
 }
 
-/// The "more" menu of a tournament, for the organiser and the players: Open chat, and the organiser's Start (while
-/// registration is open; disabled under the format's minimum, with the reason as its subtitle), Edit and Cancel;
-/// Invite and Report arrive with the next slice.
+/// The "more" menu of a tournament, for the organiser, the players and anyone signed in: Open chat and Invite (entrants
+/// and the organiser, while registration is open), the organiser's Start (while registration is open; disabled under
+/// the format's minimum, with the reason as its subtitle), Edit and Cancel, and Report tournament for everyone else.
 struct TournamentMenu: View {
     let viewModel: TournamentDetailViewModel
     let onOpenChat: () -> Void
+    let onInvite: () -> Void
     let onStart: () -> Void
     let onEdit: () -> Void
     let onCancel: () -> Void
+    let onReport: () -> Void
 
     private typealias Copy = AppBranding.Tournaments
 
@@ -89,6 +91,10 @@ struct TournamentMenu: View {
             if viewModel.canOpenChat {
                 Button(AppBranding.Groups.openChat, systemImage: DesignTokens.Symbols.chat, action: onOpenChat)
                     .accessibilityIdentifier(AccessibilityIdentifiers.tournamentOpenChat)
+            }
+            if viewModel.canInvite {
+                Button(AppBranding.Groups.invite, systemImage: DesignTokens.Symbols.invite, action: onInvite)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.tournamentInvite)
             }
             if viewModel.showsStart {
                 Button(action: onStart) {
@@ -107,6 +113,10 @@ struct TournamentMenu: View {
             if viewModel.canCancel {
                 Button(Copy.cancel, systemImage: DesignTokens.Symbols.dismiss, role: .destructive, action: onCancel)
                     .accessibilityIdentifier(AccessibilityIdentifiers.tournamentCancel)
+            }
+            if viewModel.canReport {
+                Button(Copy.report, systemImage: DesignTokens.Symbols.report, action: onReport)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.tournamentReport)
             }
         } label: {
             Label(Copy.tournament, systemImage: DesignTokens.Symbols.more)

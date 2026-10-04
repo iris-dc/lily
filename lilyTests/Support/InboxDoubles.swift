@@ -17,8 +17,10 @@ final class FakeInboxRepository: InboxRepository {
     var pageError: (any Error)?
     /// What accept and decline answer from; an id not held answers a fixture invite of that id.
     var items: [InboxItem] = []
-    /// The group an accept answers, membership included.
+    /// The group an accept of a group invite answers, membership included.
     var acceptedGroup: SportGroup = .fixture(id: "g3", name: "Climbing Buddies", visibility: .private, role: .member)
+    /// The tournament an accept of a tournament invite answers; one named after the invite's id when not set.
+    var acceptedTournament: Tournament?
     /// Thrown by the next accepts, one each, before `acceptError` is consulted: a `.tryAgain` that a repeat gets past.
     var transientAcceptErrors: [AppError] = []
     var acceptError: (any Error)?
@@ -56,7 +58,12 @@ final class FakeInboxRepository: InboxRepository {
         try await holdIfRequested()
         if !transientAcceptErrors.isEmpty { throw transientAcceptErrors.removeFirst() }
         if let acceptError { throw acceptError }
-        return InviteAcceptance(item: stored(itemID).responding(.accepted, at: now), group: acceptedGroup)
+        let item = stored(itemID)
+        if let invite = item.tournamentInvite {
+            let tournament = acceptedTournament ?? .fixture(id: invite.tournamentId, name: invite.tournamentName)
+            return InviteAcceptance(item: item.responding(.accepted, at: now), tournament: tournament)
+        }
+        return InviteAcceptance(item: item.responding(.accepted, at: now), group: acceptedGroup)
     }
 
     func decline(itemID: String) async throws -> InboxItem {

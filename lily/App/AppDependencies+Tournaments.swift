@@ -1,15 +1,12 @@
 import Foundation
 
 /// The tournaments feature's collaborators, held as one value so `AppDependencies` gains a single stored property: the
-/// repository, and the change counter every tournament list reloads on.
+/// repository, and the change counter every tournament list reloads on (`GroupDependencies` owns it, so the realtime
+/// controller bumps the same one).
 struct TournamentDependencies {
     let repository: any TournamentRepository
     /// Counts tournament changes made anywhere, as `eventChanges` does for events.
-    let tournamentChanges = ChangeTracker()
-
-    init(repository: any TournamentRepository) {
-        self.repository = repository
-    }
+    let tournamentChanges: ChangeTracker
 }
 
 extension AppDependencies {
@@ -34,6 +31,7 @@ extension AppDependencies {
                                   groupRepository: groupRepository,
                                   identity: identity,
                                   navigation: navigation,
+                                  changes: tournamentChanges,
                                   reporter: groups.errorReporter,
                                   recorder: interactionRecorder,
                                   logger: logger,

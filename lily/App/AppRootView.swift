@@ -27,7 +27,7 @@ struct AppRootView: View {
         .task {
             await session.restore()
             dependencies.navigation.selectedTab = AppNavigation.startTab(for: session.state)
-            await dependencies.pushCoordinator.openPendingEvent()
+            await dependencies.pushCoordinator.openPendingTap()
         }
         // Going to the background is the last moment a small batch is sure to be sent.
         .onChange(of: scenePhase) {

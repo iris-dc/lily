@@ -1,8 +1,9 @@
 import Foundation
 import Observation
 
-/// The inbox screen: the store's items as rows, Accept / Decline on an invite, and the game behind a reminder. The
-/// items live in `InboxStore`, which the realtime controller and the Chats row share, so the screen never holds a copy.
+/// The inbox screen: the store's items as rows, Accept / Decline on an invite, the game behind a game reminder and
+/// the tournament behind a match reminder. The items live in `InboxStore`, which the realtime controller and the Chats
+/// row share, so the screen never holds a copy.
 @Observable
 final class InboxViewModel {
     let store: InboxStore
@@ -14,6 +15,7 @@ final class InboxViewModel {
     private let repository: any InboxRepository
     private let opener: EventOpener
     private let myGroups: MyGroupsStore
+    private let tournamentChanges: ChangeTracker
     private let navigation: AppNavigation
     private let reporter: GroupErrorReporter
     private let logger: any Logging
@@ -24,6 +26,7 @@ final class InboxViewModel {
          repository: any InboxRepository,
          opener: EventOpener,
          myGroups: MyGroupsStore,
+         tournamentChanges: ChangeTracker,
          navigation: AppNavigation,
          reporter: GroupErrorReporter,
          logger: any Logging,
@@ -33,6 +36,7 @@ final class InboxViewModel {
         self.repository = repository
         self.opener = opener
         self.myGroups = myGroups
+        self.tournamentChanges = tournamentChanges
         self.navigation = navigation
         self.reporter = reporter
         self.logger = logger
@@ -75,14 +79,26 @@ final class InboxViewModel {
         await store.markRead()
     }
 
-    /// Joins the group: the item shows as accepted, the group goes into Mine at once, and its chat opens.
+    /// Accepts: the item shows as accepted; a group goes into Mine at once and its chat opens; a tournament's lists
+    /// reload and its detail opens (with the caller entered, so Mine is reloaded for the room they are now in, or, for
+    /// a team tournament, ready to pick or name a team).
     func accept(_ item: InboxItem) async {
         await answer(item, verb: "accept") {
             let acceptance = try await repository.accept(itemID: item.id)
             store.replace(acceptance.item)
-            myGroups.add(acceptance.group)
-            logger.info(.inbox, "Invite \(item.id) accepted into group \(acceptance.group.id)")
-            navigation.open(chat: acceptance.group)
+            if let group = acceptance.group {
+                myGroups.add(group)
+                logger.info(.inbox, "Invite \(item.id) accepted into group \(group.id)")
+                navigation.open(chat: group)
+            } else if let tournament = acceptance.tournament {
+                tournamentChanges.recordChange()
+                let entry = tournament.myEntryId.map { " as entry \($0)" } ?? ""
+                logger.info(.inbox, "Invite \(item.id) accepted into tournament \(tournament.id)\(entry)")
+                if tournament.hasEntered { await myGroups.reload() }
+                navigation.open(tournament: tournament.destination)
+            } else {
+                logger.warning(.inbox, "Invite \(item.id) accepted into nothing this build knows")
+            }
         }
     }
 
@@ -99,6 +115,14 @@ final class InboxViewModel {
         openingItemID = item.id
         defer { openingItemID = nil }
         await opener.open(eventID: reminder.eventId, from: "reminder \(item.id)")
+    }
+
+    /// The tournament a match reminder points at, pushed on the Chats stack with that match's sheet up; the card
+    /// carries the name, so nothing is fetched here (the detail is).
+    func openTournament(for item: InboxItem) {
+        guard let reminder = item.matchReminder else { return }
+        logger.info(.inbox, "Reminder \(item.id) opened match \(reminder.matchId) of tournament \(reminder.tournamentId)")
+        navigation.openInChat(reminder.destination)
     }
 
     /// One answer per invite at a time; `TRY_AGAIN` is repeated once. A verdict on the invite (answered already,

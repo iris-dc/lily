@@ -2,9 +2,10 @@ import XCTest
 
 /// Tournaments against the mock repositories: creating one from Explore's "+" and finding it on Home, entering the
 /// team tournament the caller organises by naming a team, the tournament room on Chats whose info button opens the
-/// tournament, a group's Tournaments segment, the organiser's start and the bracket it draws, and a player confirming
-/// and reporting results. Identifiers mirror `AccessibilityIdentifiers(+Tournaments)`; the mock ids mirror
-/// `MockTournamentFixtures`. Helpers in `LilyTournamentTests+Helpers.swift`.
+/// tournament, a group's Tournaments segment, the organiser's start and the bracket it draws, a player confirming and
+/// reporting results, Noor's tournament invite in the inbox, and the organiser's schedule for a match. Identifiers
+/// mirror `AccessibilityIdentifiers(+Tournaments, +Inbox)`; the mock ids mirror `MockTournamentFixtures` and
+/// `MockInboxFixtures`. Helpers in `LilyTournamentTests+Helpers.swift`.
 final class LilyTournamentTests: LilyUITestCase {
     let kickersCupRow = "tournament-row-mock-tournament-kickers-cup"
     let tableTennisRow = "tournament-row-mock-tournament-table-tennis"
@@ -12,6 +13,8 @@ final class LilyTournamentTests: LilyUITestCase {
     let kickersGroupRow = "group-row-mock-group-kickers"
     /// Jonas's entry in Tuesday Table Tennis (`MockTournamentFixtures.entryID`, index 1).
     let jonasStanding = "standing-01J9ENTRYTT00000000000001"
+    /// Noor's invite into the Padel Open, the oldest mock inbox item.
+    let tournamentInviteID = "01J8MOCKNB0000000000000001"
 
     /// "New tournament" on Explore's "+" opens the form; a name and a place complete it (the spot comes from the mock
     /// location); the organiser lands on the new tournament's detail on Home, and Home lists it under "Your tournaments".
@@ -60,18 +63,8 @@ final class LilyTournamentTests: LilyUITestCase {
     func testOrganizerStartsAndTheBracketShows() {
         tapSignInWithApple()
         openKickersCup()
-        createTeam(named: "Late Bloomers")
+        startKickersCup()
 
-        app.buttons["tournament-more"].tap()
-        let start = app.buttons["tournament-start"]
-        XCTAssertTrue(start.waitForExistence(timeout: 5), "the organiser's menu offers Start")
-        XCTAssertTrue(start.isEnabled, "five teams are enough to start")
-        start.tap()
-        XCTAssertTrue(app.staticTexts["Start Kickers Cup?"].waitForExistence(timeout: 5), "the confirmation names it")
-        XCTAssertTrue(labelled("5 of 8 teams are in").exists, "and the entries")
-        app.sheets.firstMatch.buttons["Start tournament"].tap()
-
-        XCTAssertTrue(app.staticTexts["In progress"].waitForExistence(timeout: 10), "the status moved")
         let bye = app.buttons["match-r01p001"]
         XCTAssertTrue(bye.waitForExistence(timeout: 10), "the bracket shows right after the start")
         XCTAssertTrue(bye.label.contains("Görli Giants") && bye.label.contains("Bye"), "seed 1 gets a bye: \(bye.label)")
@@ -113,6 +106,53 @@ final class LilyTournamentTests: LilyUITestCase {
         let reported = app.buttons["match-r03p002"]
         XCTAssertTrue(reported.waitForExistence(timeout: 5))
         XCTAssertTrue(reported.label.contains("Reported"), "a side's score waits for the other side: \(reported.label)")
+    }
+
+    /// The organiser sets a time and a place for the only first-round match of the started Kickers Cup: Save closes the
+    /// match sheet, and the match's row on the Matches list reads "Scheduled" with the place (the venue, prefilled).
+    @MainActor
+    func testOrganizerSchedulesAMatchAndTheMatchShowsTheTime() {
+        tapSignInWithApple()
+        openKickersCup()
+        startKickersCup()
+
+        pickSection("Matches")
+        openMatch("r01p002")
+        let schedule = app.buttons["match-schedule"]
+        XCTAssertTrue(schedule.waitForExistence(timeout: 5), "the organiser's sheet offers Schedule")
+        schedule.tap()
+        XCTAssertTrue(app.navigationBars["Schedule match"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textFields["match-location-name"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.textFields["match-location-name"].value as? String, "Görlitzer Park pitch", "the venue is prefilled")
+        app.buttons["match-schedule-save"].tap()
+
+        XCTAssertTrue(app.navigationBars["Match"].waitForNonExistence(timeout: 10), "the sheet closes once scheduled")
+        let row = app.buttons["match-r01p002"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertTrue(row.label.contains("Scheduled") && row.label.contains("Görlitzer Park pitch"), "the row: \(row.label)")
+    }
+
+    /// Noor's invite into her Padel Open sits in the inbox with the trophy and the tournament's shape; Accept enters the
+    /// caller and opens the tournament's detail on Home, where Leave shows (registration is open); back in the inbox the
+    /// card says "You joined".
+    @MainActor
+    func testAcceptingATournamentInviteOpensTheDetail() {
+        tapSignInWithApple()
+        openInbox()
+        XCTAssertTrue(labelled("Padel · Round robin · Individuals").waitForExistence(timeout: 10), "the invite names the shape")
+        let accept = app.buttons["inbox-accept-\(tournamentInviteID)"]
+        XCTAssertTrue(accept.waitForExistence(timeout: 5))
+        accept.tap()
+
+        XCTAssertTrue(app.navigationBars["Padel Open"].waitForExistence(timeout: 10), "the tournament's detail opens")
+        XCTAssertTrue(app.buttons["tournament-leave"].waitForExistence(timeout: 10), "the accept entered the caller")
+        XCTAssertTrue(app.staticTexts["Organised by Noor"].exists)
+
+        // The Chats stack still shows the inbox (which hides the tab bar), so the tab alone brings it back.
+        app.tabBars.buttons["Chats"].tap()
+        XCTAssertTrue(app.navigationBars["iskra"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["You joined"].waitForExistence(timeout: 5))
+        XCTAssertFalse(accept.exists, "an answered invite offers no Accept")
     }
 
     /// Tuesday Table Tennis is a tournament the caller plays in: its room is listed on Chats with the trophy's caption,

@@ -22,7 +22,45 @@ struct TournamentDetailViewModelTests {
         #expect(interaction?.tournamentId == "t" && interaction?.tournamentFormat == .roundRobin)
         #expect(interaction?.eventType == .tableTennis)
         #expect(viewModel.organizerProfile?.userId == "seed-marta" && viewModel.showsEntries)
-        #expect(!viewModel.canEdit && !viewModel.showsMenu)
+        #expect(!viewModel.canEdit && !viewModel.canInvite && viewModel.canReport, "an outsider may report")
+        #expect(viewModel.showsMenu)
+        #expect(viewModel.reportTarget == .tournament(id: "t") && viewModel.winnerName == nil)
+    }
+
+    /// The screen's one entry: the first load, a reload only when a tournament changed elsewhere since, never for a
+    /// change this screen made itself (its `accept` acknowledges the version the lists are told about).
+    @Test func loadIfNeededReloadsOnAChangeMadeElsewhereNotOnItsOwn() async {
+        let detail = TournamentDetail.fixture(tournament: .fixture(id: "t", organizerUserId: TestFixtures.user.id))
+        harness.repository.details["t"] = detail
+        let viewModel = harness.makeDetailViewModel(for: destination)
+
+        await viewModel.loadIfNeeded()
+        await viewModel.loadIfNeeded()
+        #expect(harness.repository.fetchedIDs == ["t"], "nothing changed since the first load")
+
+        harness.changes.recordChange()
+        await viewModel.loadIfNeeded()
+        #expect(harness.repository.fetchedIDs == ["t", "t"], "a change elsewhere reloads once")
+
+        viewModel.accept(detail)
+        #expect(harness.changes.version == 2, "the lists were told")
+        await viewModel.loadIfNeeded()
+        #expect(harness.repository.fetchedIDs == ["t", "t"], "an own change costs no request")
+    }
+
+    /// A completed tournament names its winner from the entries; an unknown entry names nobody.
+    @Test func theWinnerIsNamedFromTheEntriesOnceCompleted() async {
+        let marta = TournamentEntry.fixture(id: "e1", name: "Marta")
+        let completed = Tournament.fixture(id: "t", status: .inProgress, entryCount: 1).completing(winnerEntryId: "e1", at: .now)
+        harness.repository.details["t"] = .fixture(tournament: completed, entries: [marta])
+        let viewModel = harness.makeDetailViewModel(for: destination)
+        await viewModel.load()
+        #expect(viewModel.winnerName == "Marta")
+
+        let unknown = completed.completing(winnerEntryId: "zz", at: .now)
+        harness.repository.details["t"] = .fixture(tournament: unknown, entries: [marta])
+        await viewModel.load()
+        #expect(viewModel.winnerName == nil)
     }
 
     @Test func aMissingTournamentIsNotFoundAndAFailureKeepsTheLastDetail() async {

@@ -7,6 +7,9 @@ final class MockTournamentRepository: TournamentRepository {
     /// Stored state is internal, not private, so the `+Entries` and `+Matches` files can reach it.
     var details: [String: TournamentDetail]
     var entrySequence = 0
+    /// Private tournaments the caller was invited into: readable before they enter, as the backend's `invitedUserIds`
+    /// makes them (`MockInboxRepository` notes the pending invites).
+    private var invitedTournamentIDs: Set<String> = []
     let groups: MockGroupRepository
     let identity: any IdentityProvider
     let logger: any Logging
@@ -91,15 +94,27 @@ final class MockTournamentRepository: TournamentRepository {
         return resolved(store(detail.replacing(tournament: detail.tournament.cancelling(at: now()))))
     }
 
-    /// The detail as a reader may see it: a private tournament is there for its players, its organiser and the members
-    /// of the group it is hosted in; nobody else.
+    /// The detail as a reader may see it: a private tournament is there for its players, its organiser, the members of
+    /// the group it is hosted in and the people invited into it; nobody else.
     func readable(_ id: String) throws -> TournamentDetail {
         guard let detail = details[id] else { throw AppError.tournamentNotFound }
         let tournament = detail.tournament
-        guard tournament.isPublic || isInRoom(tournament) || isInHostingGroup(tournament) else {
+        let isInvited = invitedTournamentIDs.contains(id)
+        guard tournament.isPublic || isInRoom(tournament) || isInHostingGroup(tournament) || isInvited else {
             throw AppError.tournamentNotFound
         }
         return detail
+    }
+
+    /// The caller holds an invite into the tournament: a private one opens to them from now on.
+    func noteInvitee(of id: String) {
+        invitedTournamentIDs.insert(id)
+    }
+
+    /// The tournament as an accepted invite answers it, whoever may read it: the invitee was let in a moment ago.
+    func invited(_ id: String) throws -> Tournament {
+        guard let detail = details[id] else { throw AppError.tournamentNotFound }
+        return resolved(detail).tournament
     }
 
     /// The detail for a write only the organiser may make.

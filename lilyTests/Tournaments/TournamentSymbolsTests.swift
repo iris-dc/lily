@@ -8,7 +8,8 @@ struct TournamentSymbolsTests {
 
     @Test func everyTournamentSymbolExists() {
         let names = [Symbols.tournament, Symbols.bracket, Symbols.standings, Symbols.team, Symbols.captain, Symbols.format,
-                     Symbols.registrationCloses, Symbols.disputed, Symbols.walkover, Symbols.scheduled, Symbols.play]
+                     Symbols.registrationCloses, Symbols.disputed, Symbols.walkover, Symbols.scheduled, Symbols.play,
+                     Symbols.winner]
         for name in names {
             #expect(UIImage(systemName: name) != nil, "no SF Symbol named \(name)")
         }

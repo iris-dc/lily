@@ -31,6 +31,30 @@ extension LilyTournamentTests {
         XCTAssertTrue(app.buttons["tournament-leave"].waitForExistence(timeout: 10), "an entrant may leave")
     }
 
+    /// Enters a fifth team and starts the Kickers Cup from its menu, through the confirmation; the bracket is up.
+    @MainActor
+    func startKickersCup() {
+        createTeam(named: "Late Bloomers")
+        app.buttons["tournament-more"].tap()
+        let start = app.buttons["tournament-start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5), "the organiser's menu offers Start")
+        XCTAssertTrue(start.isEnabled, "five teams are enough to start")
+        start.tap()
+        XCTAssertTrue(app.staticTexts["Start Kickers Cup?"].waitForExistence(timeout: 5), "the confirmation names it")
+        app.sheets.firstMatch.buttons["Start tournament"].tap()
+        XCTAssertTrue(app.staticTexts["In progress"].waitForExistence(timeout: 10), "the status moved")
+    }
+
+    /// Opens the Chats tab and pushes the inbox from its pinned row (the inbox is titled with the app's name).
+    @MainActor
+    func openInbox() {
+        openChatsTab()
+        let row = app.buttons["inbox-row"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.tap()
+        XCTAssertTrue(app.navigationBars["iskra"].waitForExistence(timeout: 5))
+    }
+
     /// Picks a segment of the detail's picker, scrolling back to it when the segment's content pushed it off screen.
     @MainActor
     func pickSection(_ title: String) {

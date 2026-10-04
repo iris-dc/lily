@@ -32,6 +32,15 @@ struct RemoteModerationRepositoryTests {
         #expect(ReportTarget.group(id: "g1").groupID == "g1")
     }
 
+    /// A tournament's report names the tournament and its room, which share the id (B3: `targetType: "tournament"`).
+    @Test func aTournamentReportCarriesTheTournamentAsItsRoom() throws {
+        let payload = ReportPayload(target: .tournament(id: "t1"), reason: .inappropriate)
+        let data = try APIJSONCoding.makeEncoder().encode(payload)
+        let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: String])
+
+        #expect(json == ["targetType": "tournament", "targetId": "t1", "groupId": "t1", "reason": "inappropriate"])
+    }
+
     @Test func blockRoutesAnswerTheWholeListAsASet() async throws {
         client.responses = [BlockedUsers(blockedUserIds: ["u-7"]), BlockedUsers(blockedUserIds: ["u-7", "u-9"]),
                             BlockedUsers(blockedUserIds: ["u-9"])]

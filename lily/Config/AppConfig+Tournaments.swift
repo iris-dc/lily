@@ -123,4 +123,14 @@ nonisolated extension AppConfig.API.Paths {
     static func groupTournaments(id: String) -> String {
         "\(group(id: id))/tournaments"
     }
+
+    /// `GET`: the people an entrant or the organiser may invite, in the group invitee shape.
+    static func tournamentInvitees(id: String) -> String {
+        "\(tournament(id: id))/invitees"
+    }
+
+    /// `POST {userId}`: sends the invite; the invitee answers it from their inbox.
+    static func tournamentInvites(id: String) -> String {
+        "\(tournament(id: id))/invites"
+    }
 }

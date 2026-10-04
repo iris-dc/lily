@@ -105,6 +105,18 @@ struct InteractionTests {
         #expect(encoded["groupId"] as? String == "grp_01")
     }
 
+    /// Laurel's `TOURNAMENT_VIEWED` reads exactly `kind`, `occurredAt`, `tournamentId`, `tournamentFormat` and `eventType`
+    /// (B3's follow-up); never the name.
+    @Test func tournamentViewedCarriesTheIdTheFormatAndTheTypeAndNothingElse() throws {
+        let tournament = Tournament.fixture(id: "t1", name: "Padel Open", type: .padel, format: .roundRobin)
+
+        let encoded = try json(Interaction.tournamentViewed(tournament, at: Self.date))
+
+        let expected: [String: String] = ["kind": "tournament_viewed", "occurredAt": Self.dateText, "tournamentId": "t1",
+                                          "tournamentFormat": "round_robin", "eventType": "padel"]
+        #expect(encoded as NSDictionary == expected as NSDictionary)
+    }
+
     @Test func theBatchWrapsInteractionsAndTheReceiptDecodes() throws {
         let batch = try json(InteractionBatch(interactions: [.presentationChanged(.list, at: Self.date)]))
         #expect(Set(batch.keys) == ["interactions"])

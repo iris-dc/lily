@@ -3,12 +3,23 @@ import Testing
 @testable import lily
 
 struct PushModelsTests {
-    @Test func eventIDIsReadFromAReminderPayloadOnly() {
-        #expect(PushPayload.eventID(from: ["kind": "event_reminder", "eventId": "e1"]) == "e1")
-        #expect(PushPayload.eventID(from: ["kind": "group_invite", "eventId": "e1"]) == nil)
-        #expect(PushPayload.eventID(from: ["kind": "event_reminder", "eventId": ""]) == nil)
-        #expect(PushPayload.eventID(from: ["kind": "event_reminder"]) == nil)
-        #expect(PushPayload.eventID(from: ["aps": ["alert": "x"]]) == nil)
+    @Test func theTapIsReadFromAReminderPayloadOnly() {
+        #expect(PushPayload.tap(from: ["kind": "event_reminder", "eventId": "e1"]) == .event(id: "e1"))
+        #expect(PushPayload.tap(from: ["kind": "group_invite", "eventId": "e1"]) == nil)
+        #expect(PushPayload.tap(from: ["kind": "event_reminder", "eventId": ""]) == nil)
+        #expect(PushPayload.tap(from: ["kind": "event_reminder"]) == nil)
+        #expect(PushPayload.tap(from: ["aps": ["alert": "x"]]) == nil)
+    }
+
+    /// Laurel's `MatchReminderPush` data: `{kind, tournamentId, matchId, inboxItemId}`; the item id is not needed to open.
+    @Test func aMatchReminderNamesItsTournamentAndMatch() {
+        let payload: [AnyHashable: Any] = ["kind": "match_reminder", "tournamentId": "t1", "matchId": "r01p002",
+                                           "inboxItemId": "01ARYZ6S41TSV4RRFFQ69G5FAY"]
+        #expect(PushPayload.tap(from: payload) == .match(tournamentID: "t1", matchID: "r01p002"))
+        #expect(PushPayload.tap(from: ["kind": "match_reminder", "tournamentId": "t1"]) == nil, "a match is needed")
+        #expect(PushPayload.tap(from: ["kind": "match_reminder", "tournamentId": "", "matchId": "r01p002"]) == nil)
+        #expect(PushTap.match(tournamentID: "t1", matchID: "r01p002").logName == "match r01p002 of tournament t1")
+        #expect(PushTap.event(id: "e1").logName == "event e1")
     }
 
     @Test func aRegistrationIsCurrentForTheSameTokenUserAndLanguageWithinTheInterval() {

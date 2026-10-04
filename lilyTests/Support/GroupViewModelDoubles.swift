@@ -41,6 +41,7 @@ final class GroupHarness {
     let events = FakeEventRepository()
     let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
     let changes = ChangeTracker()
+    let tournamentChanges = ChangeTracker()
     let logger = SpyLogger()
     let recorder = SpyInteractionRecorder()
     let pasteboard = SpyPasteboard()
@@ -81,6 +82,7 @@ final class GroupHarness {
                        repository: inboxRepository,
                        opener: EventOpener(events: events, navigation: navigation, reporter: reporter, logger: logger),
                        myGroups: store,
+                       tournamentChanges: tournamentChanges,
                        navigation: navigation,
                        reporter: reporter,
                        logger: logger,
@@ -88,6 +90,10 @@ final class GroupHarness {
     }
 
     func makeInvitePeopleViewModel(for group: SportGroup) -> InvitePeopleViewModel {
-        InvitePeopleViewModel(group: group, repository: invites, reporter: reporter, logger: logger, tryAgainDelay: .zero)
+        makeInvitePeopleViewModel(for: .group(id: group.id))
+    }
+
+    func makeInvitePeopleViewModel(for target: InviteTarget) -> InvitePeopleViewModel {
+        InvitePeopleViewModel(target: target, repository: invites, reporter: reporter, logger: logger, tryAgainDelay: .zero)
     }
 }

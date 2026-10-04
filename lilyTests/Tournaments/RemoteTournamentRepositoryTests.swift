@@ -79,7 +79,9 @@ struct RemoteTournamentRepositoryTests {
         _ = try await repository.confirm(id: "t", matchID: "r01p001")
         _ = try await repository.dispute(id: "t", matchID: "r01p001")
         _ = try await repository.walkover(id: "t", matchID: "r01p001", winnerEntryID: "e1")
-        _ = try await repository.schedule(id: "t", matchID: "r01p001", MatchSchedule())
+        let place = EventLocation(name: "Table two", coordinate: Coordinate(latitude: 52.54, longitude: 13.41))
+        let schedule = MatchSchedule(scheduledAt: Date(timeIntervalSince1970: 1_800_000_000), location: place)
+        _ = try await repository.schedule(id: "t", matchID: "r01p001", schedule)
         _ = try await repository.cancel(id: "t")
 
         let paths = client.requests.map { "\($0.method.rawValue) \($0.path)" }
@@ -89,6 +91,16 @@ struct RemoteTournamentRepositoryTests {
                           "POST /api/tournaments/t/cancel"])
         #expect(client.requests[1].body as? MatchResultPayload == MatchResultPayload(scoreA: 3, scoreB: 1))
         #expect(client.requests[4].body as? WalkoverPayload == WalkoverPayload(winnerEntryId: "e1"))
+        #expect(client.requests[5].body as? MatchSchedulePayload == MatchSchedulePayload(schedule: schedule))
+    }
+
+    /// `{scheduledAt?, location?}`: both absent clears the schedule, and an absent field is omitted, never `null`.
+    @Test func theSchedulePayloadOmitsWhatIsNotSet() throws {
+        let encoder = APIJSONCoding.makeEncoder()
+        #expect(String(bytes: try encoder.encode(MatchSchedulePayload(schedule: MatchSchedule())), encoding: .utf8) == "{}")
+        let timed = MatchSchedulePayload(schedule: MatchSchedule(scheduledAt: Date(timeIntervalSince1970: 1_800_000_000)))
+        let json = try #require(try JSONSerialization.jsonObject(with: try encoder.encode(timed)) as? [String: Any])
+        #expect(Set(json.keys) == ["scheduledAt"])
     }
 
     @Test(arguments: codeCases)

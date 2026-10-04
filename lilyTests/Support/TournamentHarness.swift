@@ -67,21 +67,28 @@ final class TournamentHarness {
                                 now: { Self.now })
     }
 
-    /// `pushOptIn` is created in the body when not given: a main-actor default argument would run off the actor.
+    /// `pushOptIn` is created in the body when not given: a main-actor default argument would run off the actor. The
+    /// `onChange` records the tournament and bumps the tracker, as `GroupDestinations` does in the app.
     func makeDetailViewModel(for destination: TournamentDestination,
                              pushOptIn: (any PushOptIn)? = nil) -> TournamentDetailViewModel {
-        TournamentDetailViewModel(destination: destination,
-                                  repository: repository,
-                                  groupRepository: groupRepository,
-                                  identity: identity,
-                                  navigation: navigation,
-                                  reporter: reporter,
-                                  recorder: recorder,
-                                  logger: logger,
-                                  tryAgainDelay: .zero,
-                                  now: { Self.now },
-                                  pushOptIn: pushOptIn ?? NoPushOptIn(),
-                                  onChange: sink.record)
+        let sink = self.sink
+        let changes = self.changes
+        return TournamentDetailViewModel(destination: destination,
+                                         repository: repository,
+                                         groupRepository: groupRepository,
+                                         identity: identity,
+                                         navigation: navigation,
+                                         changes: changes,
+                                         reporter: reporter,
+                                         recorder: recorder,
+                                         logger: logger,
+                                         tryAgainDelay: .zero,
+                                         now: { Self.now },
+                                         pushOptIn: pushOptIn ?? NoPushOptIn(),
+                                         onChange: { tournament in
+                                             sink.record(tournament)
+                                             changes.recordChange()
+                                         })
     }
 
     func makeCreateViewModel(locationService: (any LocationService)? = nil,

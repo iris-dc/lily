@@ -40,6 +40,9 @@ extension ChatViewModel {
             await adoptEpoch(updated.channelEpoch)
         case .groupDeleted:
             isGone = true
+        case .tournamentChanged, .matchUpdated:
+            // The controller records the change for every subscribed room, open or not; nothing in the room moved.
+            break
         case .messageDeleted, .membershipChanged, .inboxItem, .unknown:
             break
         }

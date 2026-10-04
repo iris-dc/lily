@@ -1,19 +1,20 @@
 import Foundation
 
 /// Keeps the backend's device registry in step with this device, asks for the permission at the right moment and
-/// opens the game behind a tapped reminder. The registration is repeated when the token, the user or the app's
-/// language changed or the last one is a day old, and undone before a sign-out while the Bearer is still there.
+/// opens the game or the match behind a tapped reminder. The registration is repeated when the token, the user or the
+/// app's language changed or the last one is a day old, and undone before a sign-out while the Bearer is still there.
 /// Failures are logged, never shown: a reminder that does not arrive is not worth a popup.
 final class PushCoordinator: SessionObserver, PushOptIn {
     private(set) var registered: LastDeviceRegistration?
-    /// The game of a notification tapped before the session was restored; opened once a user is known.
-    private(set) var pendingEventID: String?
+    /// A notification tapped before the session was restored; opened once a user is known.
+    private(set) var pendingTap: PushTap?
     private var isRegistering = false
 
     private let registrar: any PushRegistrar
     private let devices: any DeviceRepository
     private let identity: any IdentityProvider
     private let opener: EventOpener
+    private let tournamentOpener: TournamentOpener
     private let relay: PushEventRelay
     private let defaults: UserDefaults
     private let appVersion: AppVersion
@@ -27,6 +28,7 @@ final class PushCoordinator: SessionObserver, PushOptIn {
          devices: any DeviceRepository,
          identity: any IdentityProvider,
          opener: EventOpener,
+         tournamentOpener: TournamentOpener,
          relay: PushEventRelay = .shared,
          defaults: UserDefaults,
          appVersion: AppVersion = .current(),
@@ -38,6 +40,7 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         self.devices = devices
         self.identity = identity
         self.opener = opener
+        self.tournamentOpener = tournamentOpener
         self.relay = relay
         self.defaults = defaults
         self.appVersion = appVersion
@@ -46,7 +49,7 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         self.logger = logger
         self.now = now
         registered = Self.loadRegistration(from: defaults)
-        relay.tapHandler = { [weak self] eventID in self?.handleTap(eventID: eventID) }
+        relay.tapHandler = { [weak self] tap in self?.handleTap(tap) }
     }
 
     /// On every shell sync for a signed-in user: registers when the permission is granted and the backend is behind.
@@ -68,18 +71,23 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         if granted { await sync() }
     }
 
-    /// A tapped reminder: opened now when a user is signed in, else kept for `openPendingEvent()` after the restore.
-    func handleTap(eventID: String) {
-        logger.info(.push, "Notification tapped for event \(eventID)")
-        pendingEventID = eventID
+    /// A tapped reminder: opened now when a user is signed in, else kept for `openPendingTap()` after the restore.
+    func handleTap(_ tap: PushTap) {
+        logger.info(.push, "Notification tapped for \(tap.logName)")
+        pendingTap = tap
         guard identity.currentUserID != nil else { return }
-        Task { await openPendingEvent() }
+        Task { await openPendingTap() }
     }
 
-    func openPendingEvent() async {
-        guard let eventID = pendingEventID, identity.currentUserID != nil else { return }
-        pendingEventID = nil
-        await opener.open(eventID: eventID, from: "a notification")
+    func openPendingTap() async {
+        guard let tap = pendingTap, identity.currentUserID != nil else { return }
+        pendingTap = nil
+        switch tap {
+        case .event(let eventID):
+            await opener.open(eventID: eventID, from: "a notification")
+        case .match(let tournamentID, let matchID):
+            await tournamentOpener.open(tournamentID: tournamentID, matchID: matchID, from: "a notification")
+        }
     }
 
     /// The Bearer is still sent here, so the backend stops pushing to this device before the session is gone; a
@@ -98,7 +106,7 @@ final class PushCoordinator: SessionObserver, PushOptIn {
 
     func sessionDidEnd() {
         store(nil)
-        pendingEventID = nil
+        pendingTap = nil
     }
 
     private func register(for userID: String) async {

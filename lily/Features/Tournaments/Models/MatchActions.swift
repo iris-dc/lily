@@ -3,13 +3,15 @@ import Foundation
 /// What the caller may do with one match, decided in one place from the tournament's state, the match's status and
 /// who the caller is, so the sheet, the cells and the tests agree. Nothing is offered before the start or after the
 /// end, to guests, outsiders or an entrant whose match it is not. The organiser records (confirmed at once), gives a
-/// walkover and confirms a reported score; a side reports until the other side has reported, then confirms or disputes.
+/// walkover, confirms a reported score and sets the time and place of any match not yet decided (a later round's
+/// before its sides are known); a side reports until the other side has reported, then confirms or disputes.
 nonisolated struct MatchActions: Equatable, Sendable {
     let canReport: Bool
     let canConfirm: Bool
     let canDispute: Bool
     let canRecord: Bool
     let canWalkover: Bool
+    let canSchedule: Bool
     /// The caller's side reported and the other side has not answered yet: a caption, no action.
     let awaitsOtherSide: Bool
 
@@ -18,6 +20,7 @@ nonisolated struct MatchActions: Equatable, Sendable {
                                    canDispute: false,
                                    canRecord: false,
                                    canWalkover: false,
+                                   canSchedule: false,
                                    awaitsOtherSide: false)
 
     var isEmpty: Bool { self == .none }
@@ -46,13 +49,15 @@ nonisolated extension MatchActions {
         }
     }
 
-    /// The organiser's word is final: a record confirms at once, a reported score is confirmed with one tap.
+    /// The organiser's word is final: a record confirms at once, a reported score is confirmed with one tap; the time
+    /// and place may be set until the match is decided (the backend refuses a schedule on a confirmed match alone).
     private static func organizer(_ match: TournamentMatch) -> MatchActions {
         MatchActions(canReport: false,
                      canConfirm: match.status == .reported,
                      canDispute: false,
                      canRecord: match.isReadyForResult,
                      canWalkover: match.isReadyForResult,
+                     canSchedule: !match.isDecided,
                      awaitsOtherSide: false)
     }
 
@@ -66,6 +71,7 @@ nonisolated extension MatchActions {
                             canDispute: otherSideReported,
                             canRecord: false,
                             canWalkover: false,
+                            canSchedule: false,
                             awaitsOtherSide: match.status == .reported && reportedByMySide)
     }
 }

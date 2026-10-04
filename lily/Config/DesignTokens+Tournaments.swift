@@ -3,6 +3,8 @@ import Foundation
 nonisolated extension DesignTokens.Symbols {
     /// A tournament: its room on Chats, its carousel, the "+" menu item.
     static let tournament = "trophy"
+    /// The winner's line on a completed tournament's detail.
+    static let winner = "trophy.fill"
     static let bracket = "rectangle.split.3x1"
     static let standings = "list.number"
     /// A team entry on the Players segment; an individual entry draws the person's avatar instead.

@@ -33,7 +33,7 @@ struct AppDependenciesInboxTests {
     @Test func theInboxClearsOnSignOut() async {
         let dependencies = await makeSignedInMock()
         await dependencies.inbox.reload()
-        #expect(dependencies.inbox.items.count == 2 && dependencies.inbox.hasUnread)
+        #expect(dependencies.inbox.items.count == 4 && dependencies.inbox.hasUnread)
 
         await dependencies.sessionController.signOut()
 
@@ -47,9 +47,9 @@ struct AppDependenciesInboxTests {
         let viewModel = dependencies.makeInboxViewModel()
 
         await viewModel.appear()
-        #expect(dependencies.inbox.items.count == 2 && !dependencies.inbox.hasUnread, "opening the inbox marks it read")
+        #expect(dependencies.inbox.items.count == 4 && !dependencies.inbox.hasUnread, "opening the inbox marks it read")
         let cards = viewModel.rows.filter { if case .item = $0 { true } else { false } }
-        #expect(cards.count == 2, "both fixtures are kinds this build draws")
+        #expect(cards.count == 4, "every fixture is a kind this build draws")
 
         let invite = try #require(dependencies.inbox.items.first { $0.invite != nil })
         await viewModel.accept(invite)

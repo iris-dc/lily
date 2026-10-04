@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// A tournament: chips, name and organiser, where it is hosted, its facts, the entries, the bracket or the standings
-/// and the matches once it started, and the control the caller has. Fetched by id, so a tile, a card, a room row and
-/// a chat's info button all open it the same way; a system row about a match opens it with that match's sheet up. The
-/// view model decides what the caller may do; this draws it and hosts the sheets and confirmations.
+/// A tournament: chips, name and organiser, the winner once it is over, where it is hosted, its facts, the entries,
+/// the bracket or the standings and the matches once it started, and the control the caller has. Fetched by id, so a
+/// tile, a card, a room row, a chat's info button and a match reminder all open it the same way; a system row or a
+/// reminder about a match opens it with that match's sheet up. The view model decides what the caller may do; this
+/// draws it and hosts the sheets (edit, team name, match, invite, report) and confirmations.
 struct TournamentDetailView: View {
     @State private var viewModel: TournamentDetailViewModel
     @State private var section: TournamentDetailSection = .entries
@@ -16,7 +17,7 @@ struct TournamentDetailView: View {
     private typealias Copy = AppBranding.Tournaments
 
     private enum DetailSheet: Hashable, Identifiable {
-        case edit, teamName
+        case edit, teamName, invite, report
         case match(id: String)
 
         var id: Self { self }
@@ -54,14 +55,18 @@ struct TournamentDetailView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     TournamentMenu(viewModel: viewModel,
                                    onOpenChat: { Task { await viewModel.openChat() } },
+                                   onInvite: { presentedSheet = .invite },
                                    onStart: { confirmation = .start },
                                    onEdit: { presentedSheet = .edit },
-                                   onCancel: { confirmation = .cancel })
+                                   onCancel: { confirmation = .cancel },
+                                   onReport: { presentedSheet = .report })
                 }
             }
         }
-        .task {
-            await viewModel.load()
+        // Re-runs on every tournament change made elsewhere (a live room event, a sibling screen); an own write is
+        // acknowledged by the view model and costs no second request.
+        .task(id: dependencies.tournamentChanges.version) {
+            await viewModel.loadIfNeeded()
             showLinkedMatchIfNeeded()
         }
         .sheet(item: $presentedSheet) { sheet($0) }
@@ -85,13 +90,21 @@ struct TournamentDetailView: View {
             TeamNameSheet(viewModel: viewModel, errorCenter: dependencies.errorCenter)
         case .match(let id):
             MatchSheet(viewModel: viewModel, matchID: id, errorCenter: dependencies.errorCenter)
+        case .invite:
+            InvitePeopleSheet(viewModel: dependencies.makeTournamentInvitePeopleViewModel(for: viewModel.destination.id),
+                              errorCenter: dependencies.errorCenter)
+        case .report:
+            ReportSheet(viewModel: dependencies.makeReportViewModel(for: viewModel.reportTarget, title: Copy.report),
+                        errorCenter: dependencies.errorCenter)
         }
     }
 
     private func content(_ detail: TournamentDetail) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                TournamentHeader(tournament: detail.tournament, organizerProfile: viewModel.organizerProfile)
+                TournamentHeader(tournament: detail.tournament,
+                                 organizerProfile: viewModel.organizerProfile,
+                                 winnerName: viewModel.winnerName)
                 if let description = detail.tournament.description {
                     Text(description).font(.body)
                 }

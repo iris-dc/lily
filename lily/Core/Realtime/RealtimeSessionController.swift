@@ -49,6 +49,8 @@ final class RealtimeSessionController: SessionObserver {
     /// Where an `inbox_item` off the user channel lands.
     let inbox: InboxStore
     let groupChanges: ChangeTracker
+    /// Bumped on a room's `tournament_changed` and `match_updated`; the tournament screens refetch on it.
+    let tournamentChanges: ChangeTracker
     let groupRepository: any GroupRepository
     let errorCenter: ErrorCenter
     let logger: any Logging
@@ -67,6 +69,7 @@ final class RealtimeSessionController: SessionObserver {
          unread: UnreadCenter,
          inbox: InboxStore,
          groupChanges: ChangeTracker,
+         tournamentChanges: ChangeTracker,
          groupRepository: any GroupRepository,
          errorCenter: ErrorCenter,
          logger: any Logging,
@@ -83,6 +86,7 @@ final class RealtimeSessionController: SessionObserver {
         self.unread = unread
         self.inbox = inbox
         self.groupChanges = groupChanges
+        self.tournamentChanges = tournamentChanges
         self.groupRepository = groupRepository
         self.errorCenter = errorCenter
         self.logger = logger

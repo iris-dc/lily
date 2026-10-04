@@ -9,6 +9,7 @@ nonisolated extension AccessibilityIdentifiers {
     /// The detail: its Players | Bracket | Matches picker, the organiser line, the participation control and the menu.
     static let tournamentSection = "tournament-section"
     static let tournamentOrganizer = "tournament-organizer"
+    static let tournamentWinner = "tournament-winner"
     static let tournamentJoin = "tournament-join"
     static let tournamentCreateTeam = "tournament-create-team"
     static let tournamentLeave = "tournament-leave"
@@ -17,6 +18,8 @@ nonisolated extension AccessibilityIdentifiers {
     static let tournamentCancel = "tournament-cancel"
     static let tournamentOpenChat = "tournament-open-chat"
     static let tournamentStart = "tournament-start"
+    static let tournamentInvite = "tournament-invite"
+    static let tournamentReport = "tournament-report"
     /// The bracket, the standings table and the matches list, each containing its cells or rows.
     static let tournamentBracket = "tournament-bracket"
     static let tournamentStandings = "tournament-standings"
@@ -29,6 +32,12 @@ nonisolated extension AccessibilityIdentifiers {
     static let matchDispute = "match-dispute"
     static let matchRecord = "match-record"
     static let matchWalkover = "match-walkover"
+    /// The organiser's schedule: the link on the match sheet, then the time, the place, Save and Clear.
+    static let matchSchedule = "match-schedule"
+    static let matchScheduleTime = "match-schedule-time"
+    static let matchLocationName = "match-location-name"
+    static let matchScheduleSave = "match-schedule-save"
+    static let matchScheduleClear = "match-schedule-clear"
     /// The team-name sheet: its one field and its submit.
     static let tournamentTeamName = "tournament-team-name"
     static let tournamentTeamSubmit = "tournament-team-submit"

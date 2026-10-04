@@ -3,7 +3,8 @@ import SwiftUI
 /// One match as a plain fill on the surface, never glass (a bracket draws dozens at once, and Liquid Glass is for the
 /// controls): both sides with their seeds, the score or an en dash, the winner in ink and the loser faded, "Bye" or
 /// "TBD" for an empty side, a flag while a dispute is open, and a faint accent border on the caller's own match. The list
-/// variant adds the status and, when set, the time and place under the sides.
+/// variant adds the status and, when set, the time and place under the sides; a bye's empty side already reads "Bye",
+/// so its caption is left out rather than saying it twice.
 struct MatchCell: View {
     let match: TournamentMatch
     let viewModel: TournamentDetailViewModel
@@ -17,7 +18,7 @@ struct MatchCell: View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
             side(match.entryAId, score: match.scoreA, flagged: match.isOpenDispute)
             side(match.entryBId, score: match.scoreB, flagged: false)
-            if showsDetails {
+            if showsDetails, hasDetails {
                 details
             }
         }
@@ -58,11 +59,17 @@ struct MatchCell: View {
         .opacity(isLoser(entryID) ? DesignTokens.Opacity.matchLoser : 1)
     }
 
+    private var hasSchedule: Bool { match.scheduledAt != nil || match.location != nil }
+    /// A bye says so on its empty side; anything else has a status to caption.
+    private var hasDetails: Bool { match.status != .bye || hasSchedule }
+
     /// The status (an open dispute wins over it) and the schedule, in one caption line.
     private var details: some View {
         HStack(spacing: DesignTokens.Spacing.md) {
-            Text(match.isOpenDispute ? Copy.Match.disputed : Copy.Match.status(match.status))
-                .foregroundStyle(match.isOpenDispute ? AnyShapeStyle(Color.lilyAccent) : AnyShapeStyle(.secondary))
+            if match.status != .bye {
+                Text(match.isOpenDispute ? Copy.Match.disputed : Copy.Match.status(match.status))
+                    .foregroundStyle(match.isOpenDispute ? AnyShapeStyle(Color.lilyAccent) : AnyShapeStyle(.secondary))
+            }
             if let scheduledAt = match.scheduledAt {
                 Label {
                     Text(scheduledAt, format: Self.dateStyle)

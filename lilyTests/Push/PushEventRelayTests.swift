@@ -31,12 +31,12 @@ struct PushEventRelayTests {
     }
 
     @Test func aTapWaitsForTheHandlerAndLaterOnesGoStraightThrough() {
-        var opened: [String] = []
-        relay.notificationTapped(eventID: "e1")
+        var opened: [PushTap] = []
+        relay.notificationTapped(.event(id: "e1"))
 
         relay.tapHandler = { opened.append($0) }
-        relay.notificationTapped(eventID: "e2")
+        relay.notificationTapped(.match(tournamentID: "t1", matchID: "r01p001"))
 
-        #expect(opened == ["e1", "e2"])
+        #expect(opened == [.event(id: "e1"), .match(tournamentID: "t1", matchID: "r01p001")])
     }
 }

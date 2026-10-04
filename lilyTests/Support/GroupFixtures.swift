@@ -71,14 +71,16 @@ extension InviteCandidate {
 }
 
 extension SentInvite {
-    /// A pending invite as the backend answers a send, a week before it expires.
+    /// A pending invite as the backend answers a send, a week before it expires; into a group unless a tournament is named.
     static func fixture(id: String = "01J9INVITE0000000000000001",
-                        groupID: String = "g",
+                        groupID: String? = "g",
+                        tournamentID: String? = nil,
                         inviteeUserId: String = "u-2",
                         inviteeName: String = "Marta",
                         createdAt: Date = Date(timeIntervalSince1970: 1_800_000_000)) -> SentInvite {
         SentInvite(id: id,
                    groupId: groupID,
+                   tournamentId: tournamentID,
                    inviteeUserId: inviteeUserId,
                    inviteeName: inviteeName,
                    status: .pending,

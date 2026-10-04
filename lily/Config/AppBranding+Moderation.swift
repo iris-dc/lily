@@ -17,8 +17,12 @@ nonisolated extension AppBranding {
         static var reasonInappropriate: String { localized("Inappropriate content") }
         static var reasonOther: String { localized("Something else") }
         static var commentPlaceholder: String { localized("Anything else we should know? (optional)") }
-        static var submit: String { localized("Send report") }
+        /// The bar button: one word, so the inline title beside it is not squeezed to "Report tourna…" (seen 2026-10-04).
+        static var send: String { Chat.send }
         static var thanks: String { localized("Thanks, we'll look into it") }
+        /// Under `thanks` once a report went out.
+        static var thanksMessage: String { localized("We review every report and act where the terms were broken.") }
+        static var done: String { Groups.Invite.done }
         static var termsTitle: String { localized("Before you join in") }
         static var termsMessage: String {
             localized("""

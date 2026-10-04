@@ -81,6 +81,7 @@ final class PushHarness {
     let registrar = FakePushRegistrar()
     let devices = FakeDeviceRepository()
     let events = FakeEventRepository()
+    let tournaments = FakeTournamentRepository()
     let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
     let navigation = AppNavigation()
     let relay = PushEventRelay()
@@ -107,6 +108,7 @@ final class PushHarness {
                         devices: devices ?? self.devices,
                         identity: identity,
                         opener: makeOpener(),
+                        tournamentOpener: makeTournamentOpener(),
                         relay: relay ?? self.relay,
                         defaults: defaults,
                         appVersion: AppVersion(marketing: "1.0", build: "42"),
@@ -121,6 +123,13 @@ final class PushHarness {
                     navigation: navigation,
                     reporter: GroupErrorReporter(errorCenter: errorCenter) {},
                     logger: logger)
+    }
+
+    func makeTournamentOpener() -> TournamentOpener {
+        TournamentOpener(tournaments: tournaments,
+                         navigation: navigation,
+                         reporter: GroupErrorReporter(errorCenter: errorCenter) {},
+                         logger: logger)
     }
 
     func logs(_ level: LogLevel? = nil) -> [String] {

@@ -80,6 +80,18 @@ extension TournamentDetailViewModel {
         }
     }
 
+    /// The organiser's time and place for a match (`MatchActions.canSchedule`); the route answers the match alone, which
+    /// takes its place in the detail. An empty schedule clears both.
+    @discardableResult
+    func schedule(_ match: TournamentMatch, _ schedule: MatchSchedule) async -> Bool {
+        await perform("Schedule") { [self] in
+            let updated = try await repository.schedule(id: destination.id, matchID: match.id, schedule)
+            guard let current = detail else { return }
+            accept(current.replacing(match: updated))
+            logMatch(match.id, schedule.scheduledAt == nil && schedule.location == nil ? "schedule cleared" : "scheduled")
+        }
+    }
+
     /// The write's answer replaces the detail; a completion is worth a line of its own.
     @discardableResult
     private func write(_ action: String, _ write: () async throws -> TournamentDetail) async -> Bool {

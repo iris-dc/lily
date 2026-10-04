@@ -55,7 +55,7 @@ struct RemoteInboxRepositoryTests {
                             InviteDeclination(item: declined)]
 
         let acceptance = try await repository.accept(itemID: "i1")
-        #expect(acceptance.item == accepted && acceptance.group.isMember)
+        #expect(acceptance.item == accepted && acceptance.group?.isMember == true)
         #expect(try await repository.decline(itemID: "i1") == declined)
 
         #expect(client.requests.map(\.method) == [.post, .post])

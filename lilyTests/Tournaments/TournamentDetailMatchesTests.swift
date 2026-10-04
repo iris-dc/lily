@@ -85,6 +85,7 @@ struct TournamentDetailMatchesTests {
         let final = try #require(viewModel.detail?.match(id: "r02p001"))
         #expect(await viewModel.report(final, scoreA: 3, scoreB: 0))
         #expect(viewModel.tournament?.status == .completed && viewModel.tournament?.winnerEntryId == "e1")
+        #expect(viewModel.winnerName == "Team 1", "the winner line names the entry")
         #expect(harness.logs(.info).contains { $0 == "Tournament t completed" })
         #expect(harness.sink.tournaments.count == 4, "the start and every result reached the lists")
     }
@@ -130,6 +131,57 @@ struct TournamentDetailMatchesTests {
         #expect(harness.logs(.error).contains { $0.contains("Report result failed") })
         harness.identity.currentUserID = nil
         #expect(await viewModel.confirm(semi) == false, "a guest never writes")
+    }
+
+    /// The organiser's schedule: the route's match takes its place in the detail, the lists behind learn of it, and a
+    /// side may not schedule.
+    @Test func theOrganiserSchedulesAMatchAndTheMatchShowsTheTime() async throws {
+        let viewModel = await loaded(cup, entries: teams)
+        await viewModel.start()
+        let semi = try #require(viewModel.detail?.match(id: "r01p001"))
+        let when = TournamentHarness.now.addingTimeInterval(86_400)
+        let place = EventLocation(name: "Pitch 2", coordinate: AppConfig.Location.mockCenter)
+        #expect(viewModel.actions(for: semi).canSchedule)
+
+        #expect(await viewModel.schedule(semi, MatchSchedule(scheduledAt: when, location: place)))
+
+        let scheduled = try #require(viewModel.detail?.match(id: "r01p001"))
+        #expect(scheduled.status == .scheduled && scheduled.scheduledAt == when && scheduled.location == place)
+        #expect(viewModel.detail?.matches.count == 3 && viewModel.detail?.match(id: "r02p001")?.status == .pending)
+        #expect(harness.repository.schedules.map(\.matchID) == ["r01p001"] && harness.sink.tournaments.count == 2)
+        #expect(harness.logs(.info).contains("Match r01p001 of tournament t: scheduled"))
+
+        #expect(await viewModel.schedule(scheduled, MatchSchedule()))
+        let cleared = viewModel.detail?.match(id: "r01p001")
+        #expect(cleared?.scheduledAt == nil && cleared?.location == nil && cleared?.status == .pending)
+        #expect(harness.logs(.info).contains("Match r01p001 of tournament t: schedule cleared"))
+
+        let player = await loaded(.fixture(id: "t", status: .inProgress, entryCount: 4, myEntryId: "e1"), entries: teams)
+        #expect(!player.actions(for: semi).canSchedule)
+    }
+
+    /// Where the schedule form opens: the match's own time and place, else the start (or the next full hour of the
+    /// calendar's zone once the start has passed: the harness clock is 08:25:07 UTC) at the tournament's venue.
+    @Test func theScheduleProposalStartsFromTheMatchTheStartOrTheNextHour() {
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(identifier: "UTC")!
+        let now = TournamentHarness.now
+        let nextHour = now.addingTimeInterval(34 * 60 + 53)
+        let semi = TournamentMatch(id: "r01p001", tournamentId: "t", round: 1, position: 1, entryAId: "e1", entryBId: "e2")
+        let started = Tournament.fixture(id: "t", status: .inProgress, startsAt: now.addingTimeInterval(-3_600))
+        let upcoming = Tournament.fixture(id: "t", status: .inProgress, startsAt: now.addingTimeInterval(86_400))
+        let place = EventLocation(name: "Pitch 2", coordinate: AppConfig.Location.mockCenter)
+        let timed = semi.scheduling(MatchSchedule(scheduledAt: now.addingTimeInterval(7_200), location: place))
+
+        let fromStart = MatchSchedule.proposal(for: semi, in: started, now: now, calendar: utc)
+        #expect(fromStart == MatchSchedule(scheduledAt: nextHour, location: started.location))
+        #expect(MatchSchedule.proposal(for: semi, in: upcoming, now: now, calendar: utc).scheduledAt == upcoming.startsAt)
+        let kept = MatchSchedule.proposal(for: timed, in: started, now: now, calendar: utc)
+        #expect(kept == MatchSchedule(scheduledAt: timed.scheduledAt, location: place))
+        var halfHour = utc
+        halfHour.timeZone = TimeZone(identifier: "Asia/Kolkata")!
+        let inKolkata = MatchSchedule.proposal(for: semi, in: started, now: now, calendar: halfHour)
+        #expect(inKolkata.scheduledAt == now.addingTimeInterval(4 * 60 + 53), "the next full hour of a half-hour zone")
     }
 
     @Test func aTryAgainOnTheStartIsRepeatedOnce() async {

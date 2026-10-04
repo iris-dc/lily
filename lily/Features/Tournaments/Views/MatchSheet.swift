@@ -2,8 +2,9 @@ import SwiftUI
 
 /// One match, from its cell: both sides and where the match stands, then what the caller may do (`MatchActions`): a
 /// side types and reports a score, or confirms or disputes the score the other side reported; the organiser records a
-/// score (final at once), confirms a reported one or gives a walkover to either side. Everyone else reads. Closes once
-/// a write went through; the detail behind it already shows the answer.
+/// score (final at once), confirms a reported one, gives a walkover to either side or sets the time and place
+/// (`MatchScheduleView`, pushed in this sheet's stack). Everyone else reads. Closes once a write went through; the
+/// detail behind it already shows the answer.
 struct MatchSheet: View {
     let viewModel: TournamentDetailViewModel
     let matchID: String
@@ -119,6 +120,16 @@ struct MatchSheet: View {
         }
         if actions.canWalkover {
             walkoverMenu(match)
+        }
+        if actions.canSchedule {
+            NavigationLink {
+                MatchScheduleView(viewModel: viewModel, match: match) { dismiss() }
+            } label: {
+                Label(AppBranding.Tournaments.Schedule.title, systemImage: DesignTokens.Symbols.scheduled)
+            }
+            .lilyGlassButton(labelColor: .lilyInk)
+            .disabled(viewModel.isBusy)
+            .accessibilityIdentifier(AccessibilityIdentifiers.matchSchedule)
         }
     }
 

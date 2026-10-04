@@ -1,10 +1,13 @@
 import SwiftUI
 
 /// Top of the tournament detail: chips for type, format and status, the name, who organises it (a link to their
-/// profile when the caller may open it) and where it is hosted.
+/// profile when the caller may open it), the outcome once the tournament is over (the winner with the trophy, or that
+/// it was cancelled) and where it is hosted.
 struct TournamentHeader: View {
     let tournament: Tournament
     let organizerProfile: UserProfileDestination?
+    /// The winning entry's name of a completed tournament; the line is left out without one.
+    var winnerName: String?
 
     private typealias Copy = AppBranding.Tournaments
 
@@ -16,9 +19,24 @@ struct TournamentHeader: View {
                 TournamentStatusChip(status: tournament.status)
             }
             titleBlock
+            outcome
             if let group = tournament.group {
                 groupLine(group)
             }
+        }
+    }
+
+    /// "Winner: Marta" in the accent under the title, or the cancelled notice; nothing while the tournament runs.
+    @ViewBuilder private var outcome: some View {
+        if tournament.status == .completed, let winnerName {
+            Label(Copy.winner(winnerName), systemImage: DesignTokens.Symbols.winner)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.lilyAccent)
+                .accessibilityIdentifier(AccessibilityIdentifiers.tournamentWinner)
+        } else if tournament.status == .cancelled {
+            Text(Copy.cancelledNotice)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
     }
 

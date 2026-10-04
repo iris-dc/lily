@@ -31,6 +31,9 @@ final class TournamentDetailViewModel {
     private let groupRepository: any GroupRepository
     private let navigation: AppNavigation
     private let recorder: any InteractionRecorder
+    /// Tournament changes made anywhere; the screen reloads when it moved past the version it last agreed with.
+    private let changes: ChangeTracker
+    private var acknowledgedVersion: Int?
     private var hasRecordedView = false
 
     init(destination: TournamentDestination,
@@ -38,6 +41,7 @@ final class TournamentDetailViewModel {
          groupRepository: any GroupRepository,
          identity: any IdentityProvider,
          navigation: AppNavigation,
+         changes: ChangeTracker,
          reporter: GroupErrorReporter,
          recorder: any InteractionRecorder,
          logger: any Logging,
@@ -50,6 +54,7 @@ final class TournamentDetailViewModel {
         self.groupRepository = groupRepository
         self.identity = identity
         self.navigation = navigation
+        self.changes = changes
         self.reporter = reporter
         self.recorder = recorder
         self.logger = logger
@@ -79,7 +84,20 @@ final class TournamentDetailViewModel {
     var canRemoveEntries: Bool { role.isOrganizer && tournament?.status == .registration }
     /// Members of the room chat: the organiser and every player in.
     var canOpenChat: Bool { AppConfig.FeatureFlags.chat && (role.isOrganizer || (tournament?.hasEntered ?? false)) }
-    var showsMenu: Bool { canOpenChat || canEdit || canCancel }
+    /// Entrants and the organiser invite while registration is open, as the backend allows.
+    var canInvite: Bool {
+        guard let tournament, role.isOrganizer || tournament.hasEntered else { return false }
+        return tournament.isRegistrationOpen(now: now())
+    }
+    /// Anyone signed in may report a tournament that is not their own.
+    var canReport: Bool { tournament != nil && identity.currentUserID != nil && !role.isOrganizer }
+    var reportTarget: ReportTarget { .tournament(id: destination.id) }
+    var showsMenu: Bool { canOpenChat || canEdit || canCancel || canInvite || canReport }
+    /// The winning entry's name once the tournament is completed; `nil` before and when the entry is unknown.
+    var winnerName: String? {
+        guard let detail, detail.tournament.status == .completed else { return nil }
+        return detail.tournament.winnerEntryId.flatMap(detail.entry(id:))?.name
+    }
     /// Entries are members-level information, like a roster: shown to signed-in callers only.
     var showsEntries: Bool { identity.currentUserID != nil }
     /// The organiser's profile, when the caller may open it: signed in, and not the organiser themselves.
@@ -90,6 +108,16 @@ final class TournamentDetailViewModel {
 
     func isSelf(_ userID: String) -> Bool {
         userID == identity.currentUserID
+    }
+
+    /// The view's one entry, re-run on every change of the tracker: the first load, and a reload whenever a tournament
+    /// changed elsewhere (a live room event, a sibling screen) since this screen last agreed with the tracker. A change
+    /// this screen made itself is acknowledged in `accept`, so it costs no second request.
+    func loadIfNeeded() async {
+        let version = changes.version
+        guard detail == nil || acknowledgedVersion != version else { return }
+        acknowledgedVersion = version
+        await load()
     }
 
     /// Fetches the detail; a loaded detail stays on screen while the view's task re-runs it and when that reload fails,
@@ -111,10 +139,12 @@ final class TournamentDetailViewModel {
         }
     }
 
-    /// Takes the detail as the edit sheet or an action answered it: shown here and handed on to the lists behind.
+    /// Takes the detail as the edit sheet or an action answered it: shown here and handed on to the lists behind, whose
+    /// change the tracker records; that version is this screen's own and needs no reload.
     func accept(_ detail: TournamentDetail) {
         state = .loaded(detail)
         onChange(detail.tournament)
+        acknowledgedVersion = changes.version
     }
 
     /// One view per screen instance, however often the view's task restarts.

@@ -1,7 +1,7 @@
 import Foundation
 
-/// Copy for tournaments; `message(for:)` routes exactly those cases here. Three switches, so none grows past the
-/// complexity limit: the tournament itself, entering it, then its matches.
+/// Copy for tournaments; `message(for:)` routes exactly those cases here. Four switches, so none grows past the
+/// complexity limit: the tournament itself, entering it, its matches, then its invites.
 nonisolated extension ErrorMessageMapper {
     static func tournamentMessage(for error: AppError) -> ErrorMessage {
         switch error {
@@ -73,6 +73,20 @@ nonisolated extension ErrorMessageMapper {
         case .drawNotAllowed:
             ErrorMessage(title: localized("No draws here"),
                          body: localized("This tournament doesn't allow a draw. Enter a winner."))
+        default:
+            tournamentInviteMessage(for: error)
+        }
+    }
+
+    /// Inviting people into a tournament: the backend's `ALREADY_ENTERED` and `FORBIDDEN` read differently here than
+    /// on an entry of the caller's own.
+    private static func tournamentInviteMessage(for error: AppError) -> ErrorMessage {
+        switch error {
+        case .inviteeAlreadyEntered:
+            ErrorMessage(title: localized("They're already in this tournament"), body: localized("No invite needed."))
+        case .cannotInviteToTournament:
+            ErrorMessage(title: localized("Only players can invite"),
+                         body: localized("Enter the tournament first, or ask the organiser to send the invite."))
         default:
             unknownMessage
         }

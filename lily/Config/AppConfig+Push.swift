@@ -17,11 +17,14 @@ nonisolated extension AppConfig {
         /// The token the mock registrar answers: 64 hex characters, like a real one.
         static let mockToken = String(repeating: "ab", count: 32)
 
-        /// Keys of the notification payload, as Laurel's `ReminderPush` writes them beside `aps`.
+        /// Keys of the notification payload, as Laurel's `ReminderPush` and `MatchReminderPush` write them beside `aps`.
         enum Payload {
             static let kind = "kind"
             static let eventID = "eventId"
             static let eventReminder = "event_reminder"
+            static let matchReminder = "match_reminder"
+            static let tournamentID = "tournamentId"
+            static let matchID = "matchId"
         }
     }
 }

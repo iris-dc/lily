@@ -3,10 +3,11 @@ import XCTest
 /// The Chats tab against the mock repositories: the pinned inbox row over the caller's rooms, the inbox itself with
 /// Noor's invite into Climbing Buddies and the reminder for the first fixture game, deleting the conversation with
 /// Marta from the room's menu, replying, and attaching a photo and a file through the mock picker. Identifiers mirror
-/// `AccessibilityIdentifiers(+Inbox, +Attachments)`; the item ids mirror `MockInboxFixtures`.
+/// `AccessibilityIdentifiers(+Inbox, +Attachments)`; the item ids mirror `MockInboxFixtures` (the tournament invite
+/// and the match reminder, ids 1 and 3, are `LilyTournamentTests`').
 final class LilyChatTests: LilyUITestCase {
-    let inviteID = "01J8MOCKNB0000000000000002"
-    let reminderID = "01J8MOCKNB0000000000000001"
+    let inviteID = "01J8MOCKNB0000000000000004"
+    let reminderID = "01J8MOCKNB0000000000000002"
 
     @MainActor
     func testChatsTabShowsInboxRowAndRooms() {

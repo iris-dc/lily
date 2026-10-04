@@ -188,7 +188,7 @@ nonisolated enum MockGroupFixtures {
     /// The other members of a group (never the caller), oldest first; banned rows included. A conversation's roster is
     /// the other person; a tournament room's its players and organiser.
     static func roster(for groupID: String, now: Date) -> [GroupMember] {
-        if groupID == MockTournamentFixtures.kickersCupID || groupID == MockTournamentFixtures.tableTennisID {
+        if MockTournamentFixtures.ids.contains(groupID) {
             return MockTournamentFixtures.roster(for: groupID, now: now)
         }
         if groupID == martaConversationID {

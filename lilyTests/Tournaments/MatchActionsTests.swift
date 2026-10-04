@@ -74,8 +74,22 @@ struct MatchActionsTests {
         #expect(reported.canRecord && reported.canConfirm && reported.canWalkover && !reported.canDispute)
 
         #expect(MatchActions(detail: detail(organizer: me, myEntryId: nil), match: match(.confirmed), userID: me) == .none)
-        #expect(MatchActions(detail: detail(organizer: me, myEntryId: nil), match: match(entryB: nil), userID: me) == .none)
+        let unpaired = MatchActions(detail: detail(organizer: me, myEntryId: nil), match: match(entryB: nil), userID: me)
+        #expect(unpaired.canSchedule && !unpaired.canRecord && !unpaired.canWalkover, "a time may be set before the sides are")
         let playing = MatchActions(detail: detail(organizer: me), match: match(), userID: me)
         #expect(playing.canRecord && !playing.canReport, "an organiser who plays still records")
+    }
+
+    /// The time and place are the organiser's to set on any match not yet decided; a side never schedules.
+    @Test func onlyTheOrganiserSchedulesAndOnlyAnUndecidedMatch() {
+        for open in [MatchStatus.pending, .scheduled, .reported] {
+            #expect(MatchActions(detail: detail(organizer: me, myEntryId: nil), match: match(open), userID: me).canSchedule)
+            #expect(!MatchActions(detail: detail(), match: match(open), userID: me).canSchedule, "a side: \(open)")
+        }
+        for decided in [MatchStatus.confirmed, .walkover, .bye] {
+            #expect(!MatchActions(detail: detail(organizer: me, myEntryId: nil), match: match(decided), userID: me).canSchedule)
+        }
+        #expect(!MatchActions(detail: detail(status: .registration, organizer: me, myEntryId: nil), match: match(), userID: me)
+            .canSchedule)
     }
 }
