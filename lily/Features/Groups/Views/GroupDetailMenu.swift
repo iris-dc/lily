@@ -5,6 +5,7 @@ import SwiftUI
 struct GroupDetailMenu: View {
     let viewModel: GroupDetailViewModel
     let onInvite: () -> Void
+    let onCreateTournament: () -> Void
     let onEdit: () -> Void
     let onLeave: () -> Void
     let onDelete: () -> Void
@@ -18,6 +19,11 @@ struct GroupDetailMenu: View {
         Menu {
             if access.canInvite(in: group) {
                 Button(Copy.invite, systemImage: DesignTokens.Symbols.invite, action: onInvite)
+            }
+            if AppConfig.FeatureFlags.tournaments, access.canCreateEvents(in: group) {
+                Button(AppBranding.Tournaments.Create.menuItem,
+                       systemImage: DesignTokens.Symbols.tournament,
+                       action: onCreateTournament)
             }
             if access.canEdit {
                 Button(Copy.edit, systemImage: DesignTokens.Symbols.edit, action: onEdit)

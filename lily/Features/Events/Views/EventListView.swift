@@ -20,7 +20,7 @@ struct EventListView<Header: View>: View {
     @State private var presentedSheet: ExploreSheet?
 
     private enum ExploreSheet: String, Identifiable {
-        case createGame, createGroup, signIn
+        case createGame, createGroup, createTournament, signIn
 
         var id: String { rawValue }
     }
@@ -94,6 +94,13 @@ struct EventListView<Header: View>: View {
                 // through `groupChanges` and the store.
                 CreateGroupSheet(viewModel: dependencies.makeCreateGroupViewModel { dependencies.navigation.open(group: $0) },
                                  errorCenter: dependencies.errorCenter)
+            case .createTournament:
+                // The organiser lands in the new tournament (on Home, where theirs live); the carousel and Home learn
+                // of it through `tournamentChanges`.
+                CreateTournamentSheet(viewModel: dependencies.makeCreateTournamentViewModel { detail in
+                    dependencies.tournamentChanges.recordChange()
+                    dependencies.navigation.open(tournament: detail.tournament.destination)
+                }, errorCenter: dependencies.errorCenter)
             case .signIn:
                 SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
             }
@@ -106,7 +113,9 @@ struct EventListView<Header: View>: View {
         if creatable {
             ZStack(alignment: .bottomTrailing) {
                 content
-                CreateMenuButton(onCreateGame: { presentForUser(.createGame) }, onCreateGroup: { presentForUser(.createGroup) })
+                CreateMenuButton(onCreateGame: { presentForUser(.createGame) },
+                                 onCreateGroup: { presentForUser(.createGroup) },
+                                 onCreateTournament: { presentForUser(.createTournament) })
                     .padding(DesignTokens.Spacing.lg)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

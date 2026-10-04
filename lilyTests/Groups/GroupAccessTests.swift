@@ -47,6 +47,10 @@ struct GroupAccessTests {
              group: .fixture(visibility: .private, kind: .unknown("tournament")),
              userID: "u",
              expected: .inviteOnly),
+        Case(name: "tournament room, organiser", group: .tournamentRoomFixture(role: .owner), userID: "u", expected: .room),
+        Case(name: "tournament room, player", group: .tournamentRoomFixture(role: .member), userID: "u", expected: .room),
+        Case(name: "tournament room, guest", group: .tournamentRoomFixture(role: nil), userID: nil, expected: .guest),
+        Case(name: "tournament room, not a member", group: .tournamentRoomFixture(role: nil), userID: "u", expected: .canJoin),
     ]
 
     @Test(arguments: cases)

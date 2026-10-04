@@ -20,7 +20,9 @@ struct DiscoverGroupsView: View {
                     placement: .navigationBarDrawer(displayMode: .always),
                     prompt: AppBranding.Groups.discover)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) { GroupTypeFilterButton(viewModel: viewModel) }
+            ToolbarItem(placement: .topBarTrailing) {
+                TypeFilterButton(typeFilter: $viewModel.typeFilter, identifier: AccessibilityIdentifiers.groupsTypeFilter)
+            }
         }
         .task { await viewModel.loadIfStale() }
         .onDisappear { viewModel.cancel() }

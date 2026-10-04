@@ -101,7 +101,11 @@ final class URLSessionAPIClient: APIClient {
         return .http(status: response.statusCode, body: body, retryAfter: retryAfter)
     }
 
+    /// An empty body (`204`) is an answer for the types that allow one (`EmptyDecodable`); every other type needs JSON.
     private func decode<Response: Decodable>(_ type: Response.Type, from data: Data, endpoint: String) throws -> Response {
+        if data.isEmpty, let empty = (type as? any EmptyDecodable.Type)?.empty as? Response {
+            return empty
+        }
         do {
             return try decoder.decode(type, from: data)
         } catch {

@@ -1,0 +1,77 @@
+{
+  "format": "single_elimination",
+  "seeds": [
+    "entry-01",
+    "entry-02",
+    "entry-03",
+    "entry-04",
+    "entry-05"
+  ],
+  "matches": [
+    {
+      "id": "r01p001",
+      "round": 1,
+      "position": 1,
+      "entryAId": "entry-01",
+      "status": "bye",
+      "winnerEntryId": "entry-01",
+      "nextMatchId": "r02p001",
+      "nextSlot": "a"
+    },
+    {
+      "id": "r01p002",
+      "round": 1,
+      "position": 2,
+      "entryAId": "entry-04",
+      "entryBId": "entry-05",
+      "status": "pending",
+      "nextMatchId": "r02p001",
+      "nextSlot": "b"
+    },
+    {
+      "id": "r01p003",
+      "round": 1,
+      "position": 3,
+      "entryAId": "entry-02",
+      "status": "bye",
+      "winnerEntryId": "entry-02",
+      "nextMatchId": "r02p002",
+      "nextSlot": "a"
+    },
+    {
+      "id": "r01p004",
+      "round": 1,
+      "position": 4,
+      "entryAId": "entry-03",
+      "status": "bye",
+      "winnerEntryId": "entry-03",
+      "nextMatchId": "r02p002",
+      "nextSlot": "b"
+    },
+    {
+      "id": "r02p001",
+      "round": 2,
+      "position": 1,
+      "entryAId": "entry-01",
+      "status": "pending",
+      "nextMatchId": "r03p001",
+      "nextSlot": "a"
+    },
+    {
+      "id": "r02p002",
+      "round": 2,
+      "position": 2,
+      "entryAId": "entry-02",
+      "entryBId": "entry-03",
+      "status": "pending",
+      "nextMatchId": "r03p001",
+      "nextSlot": "b"
+    },
+    {
+      "id": "r03p001",
+      "round": 3,
+      "position": 1,
+      "status": "pending"
+    }
+  ]
+}

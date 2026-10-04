@@ -224,6 +224,19 @@ struct MyGroupsStoreTests {
         #expect(store.communities.map(\.id) == ["a", "b"] && store.eligibleForEvents.map(\.id) == ["a", "b"])
     }
 
+    /// A tournament's room is in `groups` (Chats, the rooms, the unread set) and never a community (Home, the forms).
+    @Test func communitiesLeaveTournamentRoomsOut() async {
+        repository.result = .success(mine)
+        let store = makeStore()
+        await store.reload()
+        let room = SportGroup.tournamentRoomFixture(id: "t", role: .owner, lastMessageAt: Self.start.addingTimeInterval(10))
+
+        store.add(room)
+
+        #expect(store.groups.map(\.id) == ["t", "a", "b"])
+        #expect(store.communities.map(\.id) == ["a", "b"] && store.eligibleForEvents.map(\.id) == ["a", "b"])
+    }
+
     /// Sign-out clears the list and the freshness, so the next user starts from a real load.
     @Test func signOutClearsTheStoreThroughTheObserverHook() async {
         repository.result = .success(mine)

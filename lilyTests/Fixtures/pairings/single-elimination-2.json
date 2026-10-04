@@ -1,0 +1,17 @@
+{
+  "format": "single_elimination",
+  "seeds": [
+    "entry-01",
+    "entry-02"
+  ],
+  "matches": [
+    {
+      "id": "r01p001",
+      "round": 1,
+      "position": 1,
+      "entryAId": "entry-01",
+      "entryBId": "entry-02",
+      "status": "pending"
+    }
+  ]
+}

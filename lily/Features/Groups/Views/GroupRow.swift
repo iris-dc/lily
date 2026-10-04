@@ -18,7 +18,11 @@ struct GroupRow: View {
                             hasUnread: hasUnread,
                             isPerson: true)
         } else {
-            GroupRowContent(name: group.name, visibility: group.visibility, caption: caption, hasUnread: hasUnread)
+            GroupRowContent(name: group.name,
+                            visibility: group.visibility,
+                            caption: caption,
+                            hasUnread: hasUnread,
+                            avatarSymbol: group.avatarSymbol)
         }
     }
 
@@ -30,7 +34,8 @@ struct GroupRow: View {
 
 /// The row itself, from the fields a row needs, so a group known only as a summary (a profile's "Groups in common")
 /// draws the same as one of the caller's own. A person gets the accent mark every avatar that stands for one person
-/// carries (the roster, the profile) where a group's is the secondary, and no glyph after the name.
+/// carries (the roster, the profile) where a group's is the secondary, and no glyph after the name; a tournament's room
+/// draws the trophy in its mark instead of initials.
 struct GroupRowContent: View {
     let name: String
     /// The glyph after the name; `nil` for a person.
@@ -38,6 +43,8 @@ struct GroupRowContent: View {
     let caption: String
     let hasUnread: Bool
     var isPerson = false
+    /// Drawn in the mark instead of the initials (a tournament's trophy).
+    var avatarSymbol: String?
 
     var body: some View {
         ConversationRow(caption: caption, hasUnread: hasUnread) {
@@ -52,6 +59,7 @@ struct GroupRowContent: View {
             AvatarCircle(initials: name.initials, size: DesignTokens.Layout.avatarMedium)
         } else {
             AvatarCircle(initials: name.initials,
+                         systemImage: avatarSymbol,
                          size: DesignTokens.Layout.avatarMedium,
                          tint: .lilySecondary,
                          tintOpacity: DesignTokens.Opacity.secondaryGlassTint)

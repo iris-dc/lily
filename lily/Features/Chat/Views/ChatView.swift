@@ -49,12 +49,17 @@ struct ChatView: View {
         }
     }
 
-    /// The group's detail, or the other person's profile in a direct conversation (reached from the chat, so it offers
-    /// no "Message" back into it); one identifier either way.
+    /// The group's detail, the other person's profile in a direct conversation (reached from the chat, so it offers
+    /// no "Message" back into it), or the tournament of a tournament's room; one identifier either way.
     @ViewBuilder private var infoButton: some View {
         if let counterpart = group.counterpart {
             NavigationLink(value: counterpart.profile(context: .fromChat)) {
                 Label(AppBranding.profileTitle, systemImage: DesignTokens.Symbols.info)
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.chatTitle)
+        } else if group.isTournamentRoom {
+            NavigationLink(value: TournamentDestination(id: group.id, name: group.name)) {
+                Label(AppBranding.Tournaments.tournament, systemImage: DesignTokens.Symbols.info)
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.chatTitle)
         } else {

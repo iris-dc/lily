@@ -2,8 +2,8 @@ import SwiftUI
 
 /// The group destinations every `NavigationStack` root registers, so a "Hosted in" link works from Explore as well as
 /// from Home: a group, a group reached from its chat, a group reference that still has to be fetched, a chat, the
-/// Discover screen and a person's profile. A direct conversation pushed as a group shows the other person's profile:
-/// it has no detail of its own.
+/// Discover screens, a person's profile and a tournament. A direct conversation pushed as a group shows the other
+/// person's profile and a tournament's room its tournament: neither has a group detail of its own.
 private struct GroupDestinations: ViewModifier {
     let dependencies: AppDependencies
 
@@ -23,11 +23,26 @@ private struct GroupDestinations: ViewModifier {
             .navigationDestination(for: UserProfileDestination.self) { destination in
                 UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: destination))
             }
+            .navigationDestination(for: TournamentDestination.self) { destination in
+                tournamentDetail(for: destination)
+            }
+            .navigationDestination(for: DiscoverTournamentsDestination.self) { _ in
+                DiscoverTournamentsView(dependencies: dependencies)
+            }
+    }
+
+    /// Every list reloads on `tournamentChanges`, so a change made on the detail only has to be recorded.
+    private func tournamentDetail(for destination: TournamentDestination) -> some View {
+        TournamentDetailView(viewModel: dependencies.makeTournamentDetailViewModel(for: destination) { _ in
+            dependencies.tournamentChanges.recordChange()
+        }, dependencies: dependencies)
     }
 
     @ViewBuilder private func detail(for group: SportGroup, context: GroupDetailContext) -> some View {
         if let counterpart = group.counterpart {
             UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: counterpart.profile()))
+        } else if group.isTournamentRoom {
+            tournamentDetail(for: TournamentDestination(id: group.id, name: group.name))
         } else {
             // Home shows the caller's groups from the store and Discover searches again after a change, so nothing
             // listens here.

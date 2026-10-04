@@ -50,10 +50,29 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case attachmentTypeNotAllowed = "ATTACHMENT_TYPE_NOT_ALLOWED"
     /// The backend has no bucket configured.
     case attachmentsDisabled = "ATTACHMENTS_DISABLED"
+    /// Also a private tournament to an outsider.
+    case tournamentNotFound = "TOURNAMENT_NOT_FOUND"
+    /// Like the group codes: the generic creation failure, and the refetch by client id finds what did land.
+    case tournamentIdTaken = "TOURNAMENT_ID_TAKEN"
+    case tournamentIdReused = "TOURNAMENT_ID_REUSED"
+    case tournamentLimit = "TOURNAMENT_LIMIT"
+    case notOrganizer = "NOT_ORGANIZER"
+    case tournamentLocked = "TOURNAMENT_LOCKED"
+    case registrationClosed = "REGISTRATION_CLOSED"
+    case tournamentFull = "TOURNAMENT_FULL"
+    case alreadyEntered = "ALREADY_ENTERED"
+    case teamFull = "TEAM_FULL"
+    /// The entry is gone, or the player named is not in it.
+    case entryNotFound = "ENTRY_NOT_FOUND"
+    case notEnoughEntries = "NOT_ENOUGH_ENTRIES"
+    case notInMatch = "NOT_IN_MATCH"
+    case matchNotReady = "MATCH_NOT_READY"
+    case drawNotAllowed = "DRAW_NOT_ALLOWED"
 
     /// Every code maps to a case with copy; the domains are split so no switch grows past the complexity limit.
     var appError: AppError {
-        eventError ?? groupError ?? inviteError ?? moderationError ?? chatError ?? peopleError ?? .unknown
+        eventError ?? groupError ?? inviteError ?? moderationError ?? chatError ?? peopleError ?? tournamentError
+            ?? entryError ?? .unknown
     }
 
     private var eventError: AppError? {
@@ -123,6 +142,33 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     private var peopleError: AppError? {
         switch self {
         case .conversationLimit: .conversationLimit
+        default: nil
+        }
+    }
+
+    /// The tournament itself and its matches; entering it is `entryError`, so neither switch passes nine cases.
+    private var tournamentError: AppError? {
+        switch self {
+        case .tournamentNotFound: .tournamentNotFound
+        case .tournamentIdTaken, .tournamentIdReused: .tournamentCreationFailed
+        case .tournamentLimit: .tournamentLimit
+        case .notOrganizer: .notOrganizer
+        case .tournamentLocked: .tournamentLocked
+        case .notEnoughEntries: .notEnoughEntries
+        case .notInMatch: .notInMatch
+        case .matchNotReady: .matchNotReady
+        case .drawNotAllowed: .drawNotAllowed
+        default: nil
+        }
+    }
+
+    private var entryError: AppError? {
+        switch self {
+        case .registrationClosed: .registrationClosed
+        case .tournamentFull: .tournamentFull
+        case .alreadyEntered: .alreadyEntered
+        case .teamFull: .teamFull
+        case .entryNotFound: .entryNotFound
         default: nil
         }
     }

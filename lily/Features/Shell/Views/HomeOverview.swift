@@ -6,6 +6,7 @@ import SwiftUI
 struct HomeOverview: View {
     let groups: GroupListViewModel
     let events: EventListViewModel
+    let tournaments: TournamentListViewModel
     let dependencies: AppDependencies
 
     private typealias Copy = AppBranding.Home
@@ -13,7 +14,11 @@ struct HomeOverview: View {
     private var showsGroups: Bool { AppConfig.FeatureFlags.groups }
     private var hasGroups: Bool { showsGroups && !groups.groups.isEmpty }
     private var hasGames: Bool { !events.visibleEvents.isEmpty }
-    private var isEmpty: Bool { !hasGroups && !hasGames }
+    /// The section shows only while the caller organises or plays in something, or its load failed; most callers have none.
+    private var showsTournaments: Bool {
+        AppConfig.FeatureFlags.tournaments && (!tournaments.visibleTournaments.isEmpty || tournaments.loadFailed)
+    }
+    private var isEmpty: Bool { !hasGroups && !hasGames && !showsTournaments }
     private var isLoadingSomething: Bool { events.isInitialLoad || (showsGroups && groups.isInitialLoad) }
     private var loadFailed: Bool { events.loadFailed || (showsGroups && groups.loadFailed) }
 
@@ -32,6 +37,9 @@ struct HomeOverview: View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
             if showsGroups {
                 section(Copy.groupsSection) { groupsContent }
+                if showsTournaments {
+                    section(AppBranding.Tournaments.mineSection) { tournamentsContent }
+                }
                 section(Copy.gamesSection) { gamesContent }
             } else {
                 gamesContent
@@ -49,6 +57,15 @@ struct HomeOverview: View {
             loading
         } else {
             note(groups.loadFailed ? Copy.groupsLoadFailed : Copy.noGroups)
+        }
+    }
+
+    /// A card opens the tournament's detail, where entries are made and the organiser runs it.
+    @ViewBuilder private var tournamentsContent: some View {
+        if tournaments.loadFailed, tournaments.visibleTournaments.isEmpty {
+            note(AppBranding.Tournaments.mineLoadFailed)
+        } else {
+            TournamentCardList(tournaments: tournaments.visibleTournaments, distance: tournaments.distanceText)
         }
     }
 
@@ -101,6 +118,7 @@ struct HomeOverview: View {
     private func refreshableScroll(@ViewBuilder _ content: @escaping () -> some View) -> some View {
         RefreshableScroll(action: {
             if showsGroups { await groups.refresh() }
+            if AppConfig.FeatureFlags.tournaments { await tournaments.load() }
             await events.load()
         }, content: content)
     }
@@ -112,6 +130,7 @@ struct HomeOverview: View {
         ContentScreen {
             HomeOverview(groups: dependencies.makeGroupListViewModel(scope: .mine),
                          events: dependencies.makeEventListViewModel(scope: .joined),
+                         tournaments: dependencies.makeTournamentListViewModel(scope: .mine),
                          dependencies: dependencies)
         }
     }

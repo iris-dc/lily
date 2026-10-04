@@ -28,6 +28,11 @@ final class AppNavigation: SessionObserver {
         openInHome(group)
     }
 
+    /// A tournament's detail, on Home: entries and plans live there like a group's.
+    func open(tournament destination: TournamentDestination) {
+        openInHome(destination)
+    }
+
     /// The group's chat, on the Chats tab; the group itself while chat is switched off, so the push still lands somewhere.
     func open(chat group: SportGroup) {
         if AppConfig.FeatureFlags.chat {

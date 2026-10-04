@@ -10,6 +10,8 @@ struct GroupRepositories {
     let moderation: any ModerationRepository
     let chat: any ChatRepository
     let users: any UserRepository
+    /// Tournaments and their entries; the mock shares the group mock, whose rooms a tournament's players enter.
+    let tournaments: any TournamentRepository
     let realtimeTransport: any RealtimeTransport
     let makeRealtimeEndpointProvider: @MainActor (MeStore) -> any RealtimeEndpointProvider
     /// Moves attachment files into the bucket (or the mock store) through presigned targets.
@@ -33,6 +35,7 @@ struct GroupRepositories {
                           moderation: RemoteModerationRepository(client: client),
                           chat: RemoteChatRepository(client: client),
                           users: RemoteUserRepository(client: client),
+                          tournaments: RemoteTournamentRepository(client: client),
                           realtimeTransport: NoRealtimeTransport(),
                           makeRealtimeEndpointProvider: { me in
                               RemoteRealtimeEndpointProvider(override: realtimeEndpoint, me: me)
@@ -67,6 +70,7 @@ struct GroupRepositories {
                                                           attachments: attachments,
                                                           autoReplies: autoReplies),
                                  users: MockUserRepository(groups: groups, identity: identity, logger: logger),
+                                 tournaments: MockTournamentRepository(groups: groups, identity: identity, logger: logger),
                                  realtimeTransport: transport,
                                  makeRealtimeEndpointProvider: { _ in
                                      FixedRealtimeEndpointProvider(url: AppConfig.Realtime.mockEndpoint)

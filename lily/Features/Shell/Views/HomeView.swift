@@ -7,6 +7,7 @@ struct HomeView: View {
     private let dependencies: AppDependencies
     @State private var groups: GroupListViewModel
     @State private var events: EventListViewModel
+    @State private var tournaments: TournamentListViewModel
 
     private typealias Copy = AppBranding.Home
 
@@ -14,18 +15,22 @@ struct HomeView: View {
     private struct LoadKey: Hashable {
         let userID: String?
         let eventsVersion: Int
+        let tournamentsVersion: Int
     }
 
     init(dependencies: AppDependencies) {
         self.dependencies = dependencies
         _groups = State(initialValue: dependencies.makeGroupListViewModel(scope: .mine))
         _events = State(initialValue: dependencies.makeEventListViewModel(scope: .joined))
+        _tournaments = State(initialValue: dependencies.makeTournamentListViewModel(scope: .mine))
     }
 
     private var content: HomeContent { HomeContent(for: dependencies.sessionController.state) }
 
     private var loadKey: LoadKey {
-        LoadKey(userID: dependencies.sessionController.state.user?.id, eventsVersion: dependencies.eventChanges.version)
+        LoadKey(userID: dependencies.sessionController.state.user?.id,
+                eventsVersion: dependencies.eventChanges.version,
+                tournamentsVersion: dependencies.tournamentChanges.version)
     }
 
     var body: some View {
@@ -36,7 +41,7 @@ struct HomeView: View {
                                   message: Copy.guestMessage,
                                   dependencies: dependencies)
             case .overview:
-                HomeOverview(groups: groups, events: events, dependencies: dependencies)
+                HomeOverview(groups: groups, events: events, tournaments: tournaments, dependencies: dependencies)
             }
         }
         .navigationTitle(AppBranding.homeTitle)
@@ -55,6 +60,10 @@ struct HomeView: View {
         await events.loadIfStale()
         await events.loadUserLocation()
         if AppConfig.FeatureFlags.groups { await groups.loadIfStale() }
+        if AppConfig.FeatureFlags.tournaments {
+            await tournaments.loadIfStale()
+            await tournaments.loadUserLocation()
+        }
     }
 }
 

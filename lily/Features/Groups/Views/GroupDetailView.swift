@@ -8,6 +8,8 @@ struct GroupDetailView: View {
     @State private var section: GroupDetailSection = .events
     /// The group's upcoming games; a game created from here lands in it through `add`.
     @State private var events: EventListViewModel
+    /// The group's tournaments; one created from here lands in it the same way.
+    @State private var tournaments: TournamentListViewModel
     /// Built for whoever may see the roster and rebuilt when the caller's role changes, since its menus follow the role.
     @State private var members: MembersViewModel?
     @State private var presentedSheet: DetailSheet?
@@ -18,7 +20,7 @@ struct GroupDetailView: View {
     private typealias Copy = AppBranding.Groups
 
     private enum DetailSheet: String, Identifiable {
-        case invite, edit, createEvent, signIn
+        case invite, edit, createEvent, createTournament, signIn
 
         var id: String { rawValue }
     }
@@ -33,6 +35,7 @@ struct GroupDetailView: View {
     init(viewModel: GroupDetailViewModel, dependencies: AppDependencies) {
         _viewModel = State(initialValue: viewModel)
         _events = State(initialValue: dependencies.makeEventListViewModel(scope: .group(id: viewModel.group.id)))
+        _tournaments = State(initialValue: dependencies.makeTournamentListViewModel(scope: .group(id: viewModel.group.id)))
         self.dependencies = dependencies
     }
 
@@ -66,7 +69,13 @@ struct GroupDetailView: View {
         .task { viewModel.recordViewed() }
         // Re-runs when a game changes anywhere (a join on Explore, a create here), so the segment stays current.
         .task(id: dependencies.eventChanges.version) { await events.loadIfStale() }
-        .task { await events.loadUserLocation() }
+        .task(id: dependencies.tournamentChanges.version) {
+            if AppConfig.FeatureFlags.tournaments { await tournaments.loadIfStale() }
+        }
+        .task {
+            await events.loadUserLocation()
+            if AppConfig.FeatureFlags.tournaments { await tournaments.loadUserLocation() }
+        }
         .onChange(of: group.role, initial: true) { rebuildMembers() }
         // Deleted, or out of a private group: there is nothing left to show here.
         .onChange(of: viewModel.isGone) {
@@ -84,6 +93,11 @@ struct GroupDetailView: View {
                 // The game is hosted in this group, and lands in the segment behind the sheet at once.
                 CreateEventSheet(viewModel: dependencies.makeCreateEventViewModel(onCreated: events.add, lockedGroup: group.ref),
                                  errorCenter: dependencies.errorCenter)
+            case .createTournament:
+                // The tournament is hosted in this group, and lands in the segment behind the sheet at once.
+                CreateTournamentSheet(viewModel: dependencies.makeCreateTournamentViewModel(lockedGroup: group.ref) {
+                    tournaments.add($0.tournament)
+                }, errorCenter: dependencies.errorCenter)
             case .signIn:
                 SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
             }
@@ -95,7 +109,7 @@ struct GroupDetailView: View {
 
     private var sectionPicker: some View {
         Picker(Copy.title, selection: $section) {
-            ForEach(GroupDetailSection.allCases, id: \.self) { Text($0.title).tag($0) }
+            ForEach(GroupDetailSection.available, id: \.self) { Text($0.title).tag($0) }
         }
         .pickerStyle(.segmented)
         .accessibilityIdentifier(AccessibilityIdentifiers.groupSection)
@@ -105,6 +119,8 @@ struct GroupDetailView: View {
     @ViewBuilder private var segment: some View {
         if section == .members, let members {
             MembersList(viewModel: members)
+        } else if section == .tournaments, AppConfig.FeatureFlags.tournaments {
+            GroupTournamentsSegment(viewModel: tournaments)
         } else {
             GroupEventsSegment(viewModel: events)
         }
@@ -113,6 +129,7 @@ struct GroupDetailView: View {
     private var menu: some View {
         GroupDetailMenu(viewModel: viewModel,
                         onInvite: { presentedSheet = .invite },
+                        onCreateTournament: { presentedSheet = .createTournament },
                         onEdit: { presentedSheet = .edit },
                         onLeave: { confirmation = .leave },
                         onDelete: { confirmation = .delete })
@@ -153,6 +170,8 @@ struct GroupDetailView: View {
     private func refresh() async {
         if section == .members, let members {
             await members.load()
+        } else if section == .tournaments {
+            await tournaments.load()
         } else {
             await events.load()
         }

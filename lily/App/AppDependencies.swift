@@ -23,6 +23,8 @@ final class AppDependencies {
     let groups: GroupDependencies
     /// The device registration and the game behind a tapped reminder; see `AppDependencies+Push.swift`.
     let push: PushDependencies
+    /// The tournament repository and change counter; see `AppDependencies+Tournaments.swift`.
+    let tournaments: TournamentDependencies
 
     init(logger: any Logging,
          sessionStore: any SessionStore,
@@ -63,6 +65,7 @@ final class AppDependencies {
                                      defaults: defaults,
                                      languageCode: { language.language.code },
                                      logger: logger)
+        self.tournaments = TournamentDependencies(repository: groupRepositories.tournaments)
         self.sessionController = SessionController(authService: authService,
                                                    sessionStore: sessionStore,
                                                    profileRepository: profileRepository,

@@ -8,6 +8,7 @@ nonisolated enum InteractionKind: String, Codable, Sendable {
     case groupViewed = "group_viewed"
     case groupSearchPerformed = "group_search_performed"
     case chatOpened = "chat_opened"
+    case tournamentViewed = "tournament_viewed"
 }
 
 /// One reported interaction. By construction it carries ids, types and flags only: never a coordinate, an amount, a date
@@ -24,6 +25,8 @@ nonisolated struct Interaction: Encodable, Equatable, Sendable {
     var groupVisibility: GroupVisibility?
     var hasQuery: Bool?
     var resultCount: Int?
+    var tournamentId: String?
+    var tournamentFormat: TournamentFormat?
 
     static func viewed(_ event: SportEvent, at date: Date) -> Interaction {
         Interaction(kind: .eventViewed,
@@ -52,5 +55,14 @@ nonisolated struct Interaction: Encodable, Equatable, Sendable {
 
     static func chatOpened(groupID: String, at date: Date) -> Interaction {
         Interaction(kind: .chatOpened, occurredAt: date, groupId: groupID)
+    }
+
+    /// The tournament's id, format and event type; never its name.
+    static func tournamentViewed(_ tournament: Tournament, at date: Date) -> Interaction {
+        Interaction(kind: .tournamentViewed,
+                    occurredAt: date,
+                    eventType: tournament.type,
+                    tournamentId: tournament.id,
+                    tournamentFormat: tournament.format)
     }
 }

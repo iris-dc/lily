@@ -17,6 +17,9 @@ struct ErrorMessageMapperTests {
         .attachmentUnavailable,
         .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired,
         .profileUnavailable, .conversationFailed, .conversationLimit,
+        .tournamentsUnavailable, .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed,
+        .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked,
+        .notEnoughEntries, .notInMatch, .matchNotReady, .drawNotAllowed, .tournamentLimit,
         .unknown,
     ]
 
@@ -217,7 +220,12 @@ struct BackendErrorCodeTests {
             "BLOCK_LIMIT": .blockLimitReached, "CONVERSATION_LIMIT": .conversationLimit,
             "REPLY_TARGET_NOT_FOUND": .replyTargetNotFound, "ATTACHMENT_NOT_FOUND": .attachmentNotFound,
             "ATTACHMENT_TOO_LARGE": .attachmentTooLarge, "ATTACHMENT_TYPE_NOT_ALLOWED": .attachmentTypeNotAllowed,
-            "ATTACHMENTS_DISABLED": .attachmentsDisabled,
+            "ATTACHMENTS_DISABLED": .attachmentsDisabled, "TOURNAMENT_NOT_FOUND": .tournamentNotFound,
+            "TOURNAMENT_ID_TAKEN": .tournamentCreationFailed, "TOURNAMENT_ID_REUSED": .tournamentCreationFailed,
+            "TOURNAMENT_LIMIT": .tournamentLimit, "NOT_ORGANIZER": .notOrganizer, "TOURNAMENT_LOCKED": .tournamentLocked,
+            "REGISTRATION_CLOSED": .registrationClosed, "TOURNAMENT_FULL": .tournamentFull, "ALREADY_ENTERED": .alreadyEntered,
+            "TEAM_FULL": .teamFull, "ENTRY_NOT_FOUND": .entryNotFound, "NOT_ENOUGH_ENTRIES": .notEnoughEntries,
+            "NOT_IN_MATCH": .notInMatch, "MATCH_NOT_READY": .matchNotReady, "DRAW_NOT_ALLOWED": .drawNotAllowed,
         ]
         for (raw, error) in expected {
             #expect(BackendErrorCode(rawValue: raw)?.appError == error, "\(raw)")

@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// Toolbar button on Discover that drops the type chips down as a popover (a dropdown, never a chip row on the
-/// page). The glyph fills while a type is chosen.
-struct GroupTypeFilterButton: View {
-    let viewModel: GroupListViewModel
+/// Toolbar button that drops the event-type chips down as a popover (a dropdown, never a chip row on the page): the
+/// one criterion of Discover groups and Discover tournaments. The glyph fills while a type is chosen.
+struct TypeFilterButton: View {
+    @Binding var typeFilter: EventType?
+    let identifier: String
     @State private var isPresented = false
 
     private typealias Copy = AppBranding.Events.Filter
@@ -14,22 +15,22 @@ struct GroupTypeFilterButton: View {
         } label: {
             Label(Copy.eventType, systemImage: iconName)
         }
-        .accessibilityIdentifier(AccessibilityIdentifiers.groupsTypeFilter)
-        .accessibilityValue(viewModel.typeFilter == nil ? Copy.inactiveValue : Copy.activeValue)
+        .accessibilityIdentifier(identifier)
+        .accessibilityValue(typeFilter == nil ? Copy.inactiveValue : Copy.activeValue)
         .popover(isPresented: $isPresented, arrowEdge: .top) {
-            GroupTypeFilterPanel(viewModel: viewModel) { isPresented = false }
+            TypeFilterPanel(typeFilter: $typeFilter) { isPresented = false }
                 .presentationCompactAdaptation(.popover)
         }
     }
 
     private var iconName: String {
-        viewModel.typeFilter == nil ? DesignTokens.Symbols.filter : DesignTokens.Symbols.filterActive
+        typeFilter == nil ? DesignTokens.Symbols.filter : DesignTokens.Symbols.filterActive
     }
 }
 
 /// The one Discover criterion: a single event type, or any.
-struct GroupTypeFilterPanel: View {
-    @Bindable var viewModel: GroupListViewModel
+struct TypeFilterPanel: View {
+    @Binding var typeFilter: EventType?
     let onDone: () -> Void
 
     private typealias Copy = AppBranding.Events.Filter
@@ -42,9 +43,7 @@ struct GroupTypeFilterPanel: View {
                 Button(Copy.done, action: onDone)
                     .lilyProminentButton(sizing: .fitted, controlSize: .small)
             }
-            EventTypeChips(anyTitle: Copy.anyType,
-                           isSelected: { $0 == viewModel.typeFilter },
-                           onSelect: { viewModel.typeFilter = $0 })
+            EventTypeChips(anyTitle: Copy.anyType, isSelected: { $0 == typeFilter }, onSelect: { typeFilter = $0 })
         }
         .padding(DesignTokens.Spacing.lg)
         .frame(width: DesignTokens.Layout.filterPanelWidth)
@@ -54,5 +53,6 @@ struct GroupTypeFilterPanel: View {
 }
 
 #Preview {
-    GroupTypeFilterPanel(viewModel: AppDependencies.makeMock().makeGroupListViewModel(scope: .discover)) {}
+    @Previewable @State var type: EventType? = .padel
+    TypeFilterPanel(typeFilter: $type) {}
 }

@@ -2,7 +2,8 @@ import Foundation
 
 /// The six groups of a mock run: three the caller is in (as member, admin and owner), one to join, one that is full,
 /// and one private group reachable only through the mock inbox's invite (`MockInboxFixtures`); plus one direct
-/// conversation, with Marta, unread, so the Chats tab shows a person row from the start.
+/// conversation, with Marta, unread, so the Chats tab shows a person row from the start; plus the rooms of the two
+/// fixture tournaments (`MockTournamentFixtures.rooms`), so Chats lists them like the backend's Mine does.
 nonisolated enum MockGroupFixtures {
     static let kickersID = "mock-group-kickers"
     static let runnersID = "mock-group-runners"
@@ -116,7 +117,7 @@ nonisolated enum MockGroupFixtures {
     private static let conversationAgeDays = 14.0
 
     static func make(now: Date) -> [SportGroup] {
-        templates.map { makeGroup($0, now: now) } + [martaConversation(now: now)]
+        templates.map { makeGroup($0, now: now) } + [martaConversation(now: now)] + MockTournamentFixtures.rooms(now: now)
     }
 
     private static func makeGroup(_ template: Template, now: Date) -> SportGroup {
@@ -185,8 +186,11 @@ nonisolated enum MockGroupFixtures {
     }
 
     /// The other members of a group (never the caller), oldest first; banned rows included. A conversation's roster is
-    /// the other person.
+    /// the other person; a tournament room's its players and organiser.
     static func roster(for groupID: String, now: Date) -> [GroupMember] {
+        if groupID == MockTournamentFixtures.kickersCupID || groupID == MockTournamentFixtures.tableTennisID {
+            return MockTournamentFixtures.roster(for: groupID, now: now)
+        }
         if groupID == martaConversationID {
             return [GroupMember(userId: conversationCounterpart.userId,
                                 displayName: conversationCounterpart.displayName,

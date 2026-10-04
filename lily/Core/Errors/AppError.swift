@@ -100,6 +100,34 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case conversationFailed
     /// The caller holds `AppConfig.People.maxConversations` conversations already (`CONVERSATION_LIMIT`).
     case conversationLimit
+    case tournamentsUnavailable
+    /// Also what a private tournament answers to an outsider, and what a deleted one answers.
+    case tournamentNotFound
+    /// Creating a tournament failed for a reason without copy of its own, including an id another organiser owns.
+    case tournamentCreationFailed
+    case tournamentUpdateFailed
+    /// A tournament write (an entry, a result, a cancel) failed for a reason without copy of its own.
+    case tournamentActionFailed
+    /// Entries are over: the tournament started, was cancelled or passed its deadline (`REGISTRATION_CLOSED`).
+    case registrationClosed
+    case tournamentFull
+    /// The caller holds an entry already, alone or in a team (`ALREADY_ENTERED`).
+    case alreadyEntered
+    case teamFull
+    /// The entry is gone, or the player is not in it (`ENTRY_NOT_FOUND`).
+    case entryNotFound
+    /// The backend refused what only the organiser may do (`NOT_ORGANIZER`).
+    case notOrganizer
+    /// After the start only the name, description and place may change; completed and cancelled lock everything.
+    case tournamentLocked
+    case notEnoughEntries
+    /// A result from someone who is on neither side of the match (`NOT_IN_MATCH`).
+    case notInMatch
+    /// The match misses a side, is decided already, or the tournament is not in progress (`MATCH_NOT_READY`).
+    case matchNotReady
+    case drawNotAllowed
+    /// The organiser runs `AppConfig.Tournaments.maxOrganizedOpen` open tournaments already (`TOURNAMENT_LIMIT`).
+    case tournamentLimit
     case unknown
 
     /// Normalises any thrown error into an `AppError`.

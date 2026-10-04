@@ -37,6 +37,16 @@ nonisolated enum MockChatFixtures {
         (true, "Bring a ball if you have one, ours went flat."),
         (true, "See you there!"),
     ]
+    /// The table-tennis tournament's room: the organiser and the players sorting out round one; no system row until
+    /// the tournament kinds land. The Kickers Cup's room shows the general lines.
+    private static let tournamentLines: [(sender: String, text: String)] = [
+        ("Marta", "Round one is up. Find your opponent and agree on an evening."),
+        ("Jonas", "Dev, Tuesday at seven? Table two."),
+        ("Dev", "Works for me. Bring the good balls."),
+        ("Ayşe", "Who has spare balls? Mine are done for."),
+        ("Noor", "I'll bring a box."),
+        ("Marta", "Three results in already. Keep them coming!"),
+    ]
     /// How long before the launch Marta's last line was written; the group fixture's `lastMessageAt` says the same.
     static let conversationLastMessageAge: TimeInterval = 2 * 3600
     /// Two minutes apart, within `AppConfig.Chat.groupingWindow`, so one person's consecutive lines draw as one run.
@@ -77,6 +87,9 @@ nonisolated enum MockChatFixtures {
     static func messages(groupID: String, callerID: String, callerName: String, now: Date, count: Int? = nil) -> [ChatMessage] {
         if groupID == MockGroupFixtures.martaConversationID {
             return conversationMessages(callerID: callerID, callerName: callerName, now: now)
+        }
+        if groupID == MockTournamentFixtures.tableTennisID {
+            return tournamentMessages(now: now)
         }
         let count = count ?? rowCount(for: groupID)
         let start = now.addingTimeInterval(-Double(count) * secondsBetweenMessages)
@@ -130,8 +143,26 @@ nonisolated enum MockChatFixtures {
         }
     }
 
+    /// The table-tennis room's lines, nine minutes apart like every room's, ending three hours before the launch.
+    private static func tournamentMessages(now: Date) -> [ChatMessage] {
+        let groupID = MockTournamentFixtures.tableTennisID
+        let end = now.addingTimeInterval(-tournamentLastMessageAge)
+        let start = end.addingTimeInterval(-Double(tournamentLines.count - 1) * secondsBetweenMessages)
+        return tournamentLines.enumerated().map { index, line in
+            ChatMessage(id: messageID(groupID: groupID, index: index),
+                        groupId: groupID,
+                        senderUserId: MockGroupFixtures.memberID(for: line.sender),
+                        senderName: line.sender,
+                        text: line.text,
+                        sentAt: start.addingTimeInterval(Double(index) * secondsBetweenMessages))
+        }
+    }
+
+    private static let tournamentLastMessageAge: TimeInterval = 3 * 3600
+
     private static func rowCount(for groupID: String) -> Int {
         if groupID == MockGroupFixtures.martaConversationID { return conversationLines.count }
+        if groupID == MockTournamentFixtures.tableTennisID { return tournamentLines.count }
         return AppConfig.Chat.mockMessagesPerRoom + (createdEvents[groupID] == nil ? 0 : 1)
     }
 

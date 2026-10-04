@@ -7,25 +7,35 @@ import SwiftUI
 struct ExploreTab: View {
     private let dependencies: AppDependencies
     @State private var discover: GroupListViewModel
+    /// The public tournaments open for entries, under the groups; it keeps a failure to itself like Discover does.
+    @State private var tournaments: TournamentListViewModel
 
     init(dependencies: AppDependencies) {
         self.dependencies = dependencies
         let discover = dependencies.makeGroupListViewModel(scope: .discover)
         discover.reportsSearchFailures = false
         _discover = State(initialValue: discover)
+        let tournaments = dependencies.makeTournamentListViewModel(scope: .upcoming)
+        tournaments.reportsFailures = false
+        _tournaments = State(initialValue: tournaments)
     }
 
     private var showsGroups: Bool { AppConfig.FeatureFlags.groups && !discover.groups.isEmpty }
+    private var showsTournaments: Bool { AppConfig.FeatureFlags.tournaments && !tournaments.visibleTournaments.isEmpty }
 
     @ViewBuilder
-    private func carousel() -> some View {
+    private func carousels() -> some View {
         if AppConfig.FeatureFlags.groups {
             GroupCarousel(viewModel: discover)
         }
+        if AppConfig.FeatureFlags.tournaments {
+            TournamentCarousel(viewModel: tournaments)
+        }
     }
 
-    private func refreshCarousel() async {
+    private func refreshCarousels() async {
         if AppConfig.FeatureFlags.groups { await discover.refresh() }
+        if AppConfig.FeatureFlags.tournaments { await tournaments.load() }
     }
 
     var body: some View {
@@ -33,16 +43,19 @@ struct ExploreTab: View {
                       emptyState: EmptyStateView(symbolName: DesignTokens.Symbols.explore,
                                                  title: AppBranding.exploreEmptyTitle,
                                                  message: AppBranding.exploreEmptyMessage),
-                      listTitle: showsGroups ? AppBranding.Events.eventsSection : nil,
+                      listTitle: showsGroups || showsTournaments ? AppBranding.Events.eventsSection : nil,
                       showsMap: true,
                       filterable: true,
                       creatable: true,
                       scope: .upcoming,
                       dependencies: dependencies,
-                      refreshHeader: refreshCarousel,
-                      header: carousel)
+                      refreshHeader: refreshCarousels,
+                      header: carousels)
         .task(id: dependencies.groupChanges.version) {
             if AppConfig.FeatureFlags.groups { await discover.loadIfStale() }
+        }
+        .task(id: dependencies.tournamentChanges.version) {
+            if AppConfig.FeatureFlags.tournaments { await tournaments.loadIfStale() }
         }
     }
 }

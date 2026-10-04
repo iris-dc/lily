@@ -32,7 +32,8 @@ final class MockGroupRepository: GroupRepository {
             let mine = live.filter { $0.isMember && !hiddenConversationIDs.contains($0.id) }
             return Page(items: mine.sorted(by: Self.mostRecentlyActiveFirst))
         case .discover(let query, let type):
-            let matching = live.filter { $0.isPublic && $0.matches(query: query, type: type) }
+            // Like the backend: only communities are discoverable; rooms are reached through their tournament or person.
+            let matching = live.filter { $0.isCommunity && $0.isPublic && $0.matches(query: query, type: type) }
             let byName = matching.sorted { $0.name < $1.name }
             return Page(items: query == nil ? matching.sorted { $0.createdAt > $1.createdAt } : byName)
         }
