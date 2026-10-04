@@ -30,6 +30,23 @@ struct GroupAccessTests {
         Case(name: "full group, guest", group: full, userID: nil, expected: .guest),
         Case(name: "conversation, participant", group: .conversationFixture(), userID: "u", expected: .conversation),
         Case(name: "conversation, guest", group: .conversationFixture(), userID: nil, expected: .guest),
+        Case(name: "unknown kind, member",
+             group: .fixture(role: .member, kind: .unknown("tournament")),
+             userID: "u",
+             expected: .room),
+        Case(name: "unknown kind, owner",
+             group: .fixture(role: .owner, kind: .unknown("tournament")),
+             userID: "u",
+             expected: .room),
+        Case(name: "unknown kind, guest", group: .fixture(kind: .unknown("tournament")), userID: nil, expected: .guest),
+        Case(name: "unknown kind, public, not a member",
+             group: .fixture(kind: .unknown("tournament")),
+             userID: "u",
+             expected: .canJoin),
+        Case(name: "unknown kind, private, not a member",
+             group: .fixture(visibility: .private, kind: .unknown("tournament")),
+             userID: "u",
+             expected: .inviteOnly),
     ]
 
     @Test(arguments: cases)
@@ -63,13 +80,14 @@ struct GroupAccessTests {
         }
     }
 
-    /// A conversation is chat and the two-person roster; nothing a group offers beyond that, as the backend refuses too.
-    @Test func aConversationOffersChatAndTheRosterOnly() {
-        let conversation = SportGroup.conversationFixture()
-        let access = GroupAccess.conversation
-        #expect(access.isMember && access.canChat && access.canSeeMembers(in: conversation))
+    /// A conversation, and a room of a kind this build does not know, is chat and the roster; nothing a group offers
+    /// beyond that, whatever the group's settings say: the backend refuses those too, or has rules this build cannot know.
+    @Test(arguments: [GroupAccess.conversation, .room])
+    func roomsOfferChatAndTheRosterOnly(access: GroupAccess) {
+        let room = SportGroup.fixture(visibility: .private, membersCanCreateEvents: true, membersCanInvite: true, role: .owner)
+        #expect(access.isMember && access.canChat && access.canSeeMembers(in: room))
         #expect(!access.canLeave && !access.canEdit && !access.canDelete && !access.canChangeRoles)
-        #expect(!access.canInvite(in: conversation) && !access.canCreateEvents(in: conversation))
+        #expect(!access.canInvite(in: room) && !access.canCreateEvents(in: room))
         #expect(!access.canRemove(.member) && !access.canBan(.member))
     }
 

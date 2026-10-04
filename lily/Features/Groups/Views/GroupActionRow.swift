@@ -16,7 +16,7 @@ struct GroupActionRow: View {
 
     var body: some View {
         switch access {
-        case .member, .conversation:
+        case .member, .conversation, .room:
             memberActions
         case .canJoin:
             busyButton(Copy.joinGroup) { await viewModel.join() }

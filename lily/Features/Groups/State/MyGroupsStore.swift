@@ -43,10 +43,11 @@ final class MyGroupsStore: SessionObserver {
     var loadFailed: Bool { freshness.loadFailed }
     var isLoading: Bool { load.isRunning }
 
-    /// Mine without the direct conversations: what "your groups" means on Home, in the event form and anywhere else a
-    /// group is a community. `groups` (everything) feeds the Chats tab, the unread set and the room subscriptions.
+    /// The communities in Mine (kind `group`): what "your groups" means on Home, in the event form and anywhere else a
+    /// group is a community; conversations and rooms of a kind this build does not know stay out. `groups` (everything)
+    /// feeds the Chats tab, the unread set and the room subscriptions.
     var communities: [SportGroup] {
-        groups.filter { !$0.isDirect }
+        groups.filter(\.isCommunity)
     }
 
     /// The groups the caller may create a game in, for the create form's picker.

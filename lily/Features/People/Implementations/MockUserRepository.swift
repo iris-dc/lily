@@ -18,7 +18,7 @@ final class MockUserRepository: UserRepository {
     func profile(userID: String) async throws -> UserProfile {
         guard let caller = identity.currentUserID else { throw AppError.sessionExpired }
         let mine = try await groups.groups(in: .mine, cursor: nil).items
-            .filter { !$0.isDirect }
+            .filter(\.isCommunity)
         if userID == caller {
             return UserProfile(userId: caller,
                                displayName: AppBranding.Groups.Create.mockOwnerName,

@@ -208,6 +208,22 @@ struct MyGroupsStoreTests {
         #expect(store.eligibleForEvents.map(\.id) == ["a", "b"])
     }
 
+    /// A room of a kind this build does not know (a newer backend's) is in `groups` like any room and never a community.
+    @Test func communitiesLeaveTheRoomsOfAnUnknownKindToGroups() async {
+        repository.result = .success(mine)
+        let store = makeStore()
+        await store.reload()
+        let room = SportGroup.fixture(id: "t",
+                                      lastMessageAt: Self.start.addingTimeInterval(10),
+                                      role: .owner,
+                                      kind: .unknown("tournament"))
+
+        store.add(room)
+
+        #expect(store.groups.map(\.id) == ["t", "a", "b"])
+        #expect(store.communities.map(\.id) == ["a", "b"] && store.eligibleForEvents.map(\.id) == ["a", "b"])
+    }
+
     /// Sign-out clears the list and the freshness, so the next user starts from a real load.
     @Test func signOutClearsTheStoreThroughTheObserverHook() async {
         repository.result = .success(mine)

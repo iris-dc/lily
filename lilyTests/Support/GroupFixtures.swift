@@ -18,7 +18,8 @@ extension SportGroup {
                         deletedAt: Date? = nil,
                         role: MemberRole? = nil,
                         lastReadMessageId: String? = nil,
-                        hasUnread: Bool = false) -> SportGroup {
+                        hasUnread: Bool = false,
+                        kind: GroupKind = .group) -> SportGroup {
         SportGroup(id: id,
                    name: name,
                    visibility: visibility,
@@ -35,7 +36,8 @@ extension SportGroup {
                    deletedAt: deletedAt,
                    membership: role.map {
                        GroupMembership(role: $0, joinedAt: createdAt, lastReadMessageId: lastReadMessageId, hasUnread: hasUnread)
-                   })
+                   },
+                   kind: kind)
     }
 }
 

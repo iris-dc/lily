@@ -25,7 +25,8 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     private(set) var deletedAt: Date?
     /// Absent for non-members and for banned users.
     private(set) var membership: GroupMembership?
-    /// A community, or the direct conversation with `counterpart`; older payloads carry no `kind`.
+    /// A community, or the direct conversation with `counterpart`; older payloads carry no `kind`, and a kind this
+    /// build does not know is kept by name.
     let kind: GroupKind
     /// The other person of a direct conversation, as the caller sees them; absent for a community.
     let counterpart: Counterpart?
@@ -101,6 +102,9 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     var isFull: Bool { memberCount >= maxMembers }
     /// A direct conversation between the caller and `counterpart`.
     var isDirect: Bool { kind == .direct }
+    /// A community: what "your groups" means on Home and in the event form. Neither a conversation nor a room of a kind
+    /// this build does not know.
+    var isCommunity: Bool { kind == .group }
     var isDeleted: Bool { deletedAt != nil }
     var isPublic: Bool { visibility == .public }
     /// Whether the caller is in, as the backend saw it; a banned marker never counts.

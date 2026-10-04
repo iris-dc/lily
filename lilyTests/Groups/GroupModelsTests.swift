@@ -50,6 +50,29 @@ struct GroupModelsTests {
         #expect(community.contains(#""kind":"group""#) && !community.contains("counterpart"), "no counterpart on a community")
     }
 
+    /// A kind a newer backend sends is kept by name: the group decodes with everything else intact, is neither a
+    /// conversation nor a community, and goes back out with the same kind.
+    @Test func aGroupOfAnUnknownKindDecodesByNameAndRoundTrips() throws {
+        try #require(ContractSamples.group.contains(#""kind":"group""#))
+        let sample = ContractSamples.group.replacingOccurrences(of: #""kind":"group""#, with: #""kind":"tournament""#)
+
+        let room = try ContractSamples.decode(SportGroup.self, from: sample)
+
+        #expect(room.kind == .unknown("tournament") && room.kind.isUnknown && room.kind.wireName == "tournament")
+        #expect(!room.isDirect && !room.isCommunity && room.counterpart == nil && room.name == "Kreuzberg Kickers")
+        #expect(room.role == .admin && room.isMember, "the membership reads as for any group")
+        let json = try #require(String(bytes: try APIJSONCoding.makeEncoder().encode(room), encoding: .utf8))
+        #expect(json.contains(#""kind":"tournament""#))
+        #expect(try ContractSamples.decode(SportGroup.self, from: json) == room)
+        #expect(SportGroup.fixture().isCommunity && !SportGroup.conversationFixture().isCommunity)
+    }
+
+    @Test func knownGroupKindsRoundTripThroughTheirWireNames() {
+        #expect(GroupKind(wireName: "group") == .group && GroupKind(wireName: "direct") == .direct)
+        #expect(GroupKind.group.wireName == "group" && GroupKind.direct.wireName == "direct")
+        #expect(!GroupKind.group.isUnknown && !GroupKind.direct.isUnknown)
+    }
+
     /// A banned marker must never read as a membership, whatever the backend sends.
     @Test func bannedMembershipIsNoMembership() {
         let group = SportGroup.fixture(role: .banned)

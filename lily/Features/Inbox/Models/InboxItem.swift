@@ -40,7 +40,7 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
 
 /// `group_invite` or `event_reminder`; anything else keeps its name, so a page or a stream from a newer backend
 /// still decodes.
-nonisolated enum InboxItemKind: Hashable, Codable, Sendable {
+nonisolated enum InboxItemKind: WireNamedKind {
     case groupInvite
     case eventReminder
     case unknown(String)
@@ -62,15 +62,6 @@ nonisolated enum InboxItemKind: Hashable, Codable, Sendable {
         case .eventReminder: Self.eventReminderName
         case .unknown(let name): name
         }
-    }
-
-    init(from decoder: any Decoder) throws {
-        self.init(wireName: try decoder.singleValueContainer().decode(String.self))
-    }
-
-    func encode(to encoder: any Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(wireName)
     }
 }
 

@@ -3,7 +3,8 @@ import Foundation
 /// What a group offers the caller, decided in one place from the group and the caller's id so the screens and their
 /// tests agree. The analogue of `Participation`. The server stays the authority: a stale role only changes which
 /// buttons show, every call is re-checked there. A direct conversation is its own case: chat and the two-person
-/// roster, nothing a group offers beyond that (the backend refuses those too).
+/// roster, nothing a group offers beyond that (the backend refuses those too). A member of a room of a kind this build
+/// does not know (a newer backend's) gets the same: its rules are the backend's, not this build's to guess.
 nonisolated enum GroupAccess: Equatable, Sendable {
     /// Guests see the group; joining needs an account.
     case guest
@@ -15,6 +16,8 @@ nonisolated enum GroupAccess: Equatable, Sendable {
     case full
     /// The caller's side of a direct conversation.
     case conversation
+    /// A member of a room of a kind this build does not know: chat and the roster, nothing a group offers beyond that.
+    case room
 
     init(group: SportGroup, userID: String?) {
         guard userID != nil else {
@@ -23,6 +26,8 @@ nonisolated enum GroupAccess: Equatable, Sendable {
         }
         if group.isDirect, group.isMember {
             self = .conversation
+        } else if group.kind.isUnknown, group.isMember {
+            self = .room
         } else if let role = group.role {
             self = .member(role)
         } else if group.isFull {
@@ -39,9 +44,14 @@ nonisolated enum GroupAccess: Equatable, Sendable {
         return nil
     }
 
-    var isMember: Bool { role != nil || self == .conversation }
+    var isMember: Bool {
+        switch self {
+        case .member, .conversation, .room: true
+        case .guest, .canJoin, .inviteOnly, .full: false
+        }
+    }
     var canChat: Bool { isMember }
-    /// Owners cannot leave; nobody leaves a conversation.
+    /// Owners cannot leave; nobody leaves a conversation or a room of an unknown kind, whose rule is the backend's.
     var canLeave: Bool { role.map { $0 != .owner } ?? false }
     var canEdit: Bool { role?.isAdmin ?? false }
     var canDelete: Bool { role == .owner }
