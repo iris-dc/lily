@@ -20,8 +20,6 @@ nonisolated enum DesignTokens {
         static let fast: TimeInterval = 0.2
         static let normal: TimeInterval = 0.35
         static let slow: TimeInterval = 0.6
-        /// Delay between each preview card appearing on the landing screen.
-        static let previewCardStagger: TimeInterval = 0.12
     }
 
     enum Layout {
@@ -45,12 +43,6 @@ nonisolated enum DesignTokens {
         static let filterPanelWidth: CGFloat = 340
         /// Width of the price input in the filter panel.
         static let filterPriceFieldWidth: CGFloat = 96
-        /// Landing preview deck: card offsets and tilt for the stacked event cards.
-        static let previewCardTilt: Double = 2
-        static let previewCardShift: CGFloat = 18
-        static let previewCardWidth: CGFloat = 310
-        /// Starting scale of a preview card before it settles into the deck.
-        static let previewCardEntranceScale: CGFloat = 0.94
         static let mapPinSize: CGFloat = 40
         /// Growth of a map pin when selected.
         static let mapPinSelectedScale: CGFloat = 1.15

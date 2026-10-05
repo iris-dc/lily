@@ -3,11 +3,27 @@ import XCTest
 /// End-to-end smoke tests against the real app in the simulator: landing, Explore, map, filters, joining, creating.
 /// Sign-in flows are in `LilySignInTests`; both share `LilyUITestCase`.
 final class LilySmokeTests: LilyUITestCase {
+    /// The landing is a vertical feed of three slides (what this is, how to join, what else it offers) with the two
+    /// ways in under every one of them.
     @MainActor
-    func testLandingExplainsProductAndOffersEntry() {
+    func testLandingIntroSwipesThroughThreeSlidesAndKeepsTheWaysIn() {
         XCTAssertTrue(app.staticTexts["Play tonight."].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Find a game near you"].exists)
         XCTAssertTrue(app.buttons["Sign in"].exists)
+
+        // Every slide is in the tree from the start (a plain VStack), so hittability is what tells the page on screen.
+        let pager = app.scrollViews["intro-pager"]
+        XCTAssertTrue(pager.exists)
+        XCTAssertTrue(app.staticTexts["Play tonight."].isHittable)
+        XCTAssertFalse(app.staticTexts["Join in one tap."].isHittable)
+        pager.swipeUp()
+        XCTAssertTrue(app.staticTexts["Join in one tap."].wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertFalse(app.staticTexts["Play tonight."].isHittable)
+        XCTAssertFalse(app.staticTexts["Bring your people."].isHittable, "one swipe must move one page")
+        pager.swipeUp()
+        XCTAssertTrue(app.staticTexts["Bring your people."].wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertTrue(app.buttons["Find a game near you"].isHittable)
+        XCTAssertTrue(app.buttons["Sign in"].isHittable)
     }
 
     @MainActor

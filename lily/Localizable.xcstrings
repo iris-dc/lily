@@ -2635,6 +2635,46 @@
         }
       }
     },
+    "Anyone up for Thursday evening?": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Кто за игру в четверг вечером?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Alguien se apunta el jueves por la tarde?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quelqu’un pour jeudi soir ?"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Хто за гру в четвер увечері?"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ktoś chętny na czwartek wieczorem?"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alguém alinha na quinta à noite?"
+          }
+        }
+      }
+    },
     "Anything else we should know? (optional)": {
       "localizations": {
         "ru": {
@@ -3739,6 +3779,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chaveamento"
+          }
+        }
+      }
+    },
+    "Bring your people.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Собери своих."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reúne a tu gente."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rassemblez votre équipe."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Збери своїх."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zbierz swoich ludzi."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Junte a sua gente."
           }
         }
       }
@@ -5863,6 +5943,46 @@
         }
       }
     },
+    "Count me in, I'll bring the bibs.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Я в деле, манишки принесу."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuenta conmigo, llevo los petos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je suis là, j’apporte les chasubles."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Я в грі, манішки принесу."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wchodzę, przyniosę znaczniki."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contem comigo, levo os coletes."
+          }
+        }
+      }
+    },
     "Create": {
       "localizations": {
         "ru": {
@@ -7943,6 +8063,46 @@
         }
       }
     },
+    "Filter by sport, distance and time. Tap Join and you're in, chat included.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Фильтруй по виду спорта, расстоянию и времени. Нажми «Присоединиться» — и ты в игре, чат уже открыт."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtra por deporte, distancia y hora. Toca Unirse y ya estás dentro, chat incluido."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtrez par sport, distance et horaire. Touchez Rejoindre et c’est fait, discussion incluse."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Фільтруй за видом спорту, відстанню та часом. Натисни «Приєднатися» — і ти в грі, чат уже відкрито."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtruj według sportu, odległości i czasu. Dotknij Dołącz i jesteś w grze, razem z czatem."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtre por desporto, distância e hora. Toque em Participar e está dentro, com chat incluído."
+          }
+        }
+      }
+    },
     "Filters": {
       "localizations": {
         "ru": {
@@ -8063,46 +8223,6 @@
         }
       }
     },
-    "Find your people.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Найди своих."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Encuentra a tu gente."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trouvez votre équipe."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Знайди своїх."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Znajdź swoich ludzi."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Encontre a sua gente."
-          }
-        }
-      }
-    },
     "Fitness": {
       "localizations": {
         "ru": {
@@ -8179,6 +8299,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Futebol"
+          }
+        }
+      }
+    },
+    "Football, padel, running and more, set up by people like you.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Футбол, падел, бег и не только — их организуют такие же люди, как ты."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fútbol, pádel, running y más, organizados por gente como tú."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Football, padel, course à pied et plus encore, organisés par des gens comme vous."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Футбол, падел, біг і не тільки — їх організовують такі ж люди, як ти."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piłka nożna, padel, bieganie i więcej — organizowane przez ludzi takich jak Ty."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Futebol, padel, corrida e muito mais, organizados por pessoas como nós."
           }
         }
       }
@@ -9291,6 +9451,46 @@
         }
       }
     },
+    "Host a game, build a group with its own chat, or run a whole tournament.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Организуй игру, создай группу со своим чатом или проведи целый турнир."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organiza un partido, crea un grupo con su propio chat o monta un torneo entero."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organisez un match, créez un groupe avec sa propre discussion ou lancez un tournoi entier."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Організуй гру, створи групу зі своїм чатом або проведи цілий турнір."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zorganizuj grę, załóż grupę z własnym czatem albo poprowadź cały turniej."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organize um jogo, crie um grupo com o seu próprio chat ou faça um torneio inteiro."
+          }
+        }
+      }
+    },
     "Hosted by %@": {
       "localizations": {
         "ru": {
@@ -10127,6 +10327,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Entrar no grupo"
+          }
+        }
+      }
+    },
+    "Join in one tap.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вступай в игру."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Únete con un toque."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un geste suffit."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вступай у гру."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dołącz w sekundę."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entre com um toque."
           }
         }
       }
@@ -15300,7 +15540,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choisissez un sport."
+            "value": "Un sport au choix."
           }
         },
         "uk": {
@@ -16351,42 +16591,42 @@
         }
       }
     },
-    "Real games near you, organised by people like you. Join one or start your own.": {
+    "Real games near you.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Настоящие игры рядом, которые организуют такие же люди, как ты. Присоединяйся или создай свою."
+            "value": "Настоящие игры рядом."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Partidos reales cerca de ti, organizados por gente como tú. Únete a uno o crea el tuyo."
+            "value": "Partidos reales cerca de ti."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "De vrais matchs près de chez vous, organisés par des gens comme vous. Rejoignez-en un ou lancez le vôtre."
+            "value": "De vrais matchs près de vous."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Справжні ігри поруч, які організовують такі ж люди, як ти. Приєднуйся або створи свою."
+            "value": "Справжні ігри поруч."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prawdziwe gry w Twojej okolicy, organizowane przez ludzi takich jak Ty. Dołącz albo stwórz własną."
+            "value": "Prawdziwe gry w pobliżu."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jogos reais perto de si, organizados por pessoas como você. Participe num ou crie o seu."
+            "value": "Jogos reais perto de si."
           }
         }
       }
@@ -17911,6 +18151,46 @@
         }
       }
     },
+    "See you at the pitch at 7!": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Увидимся на поле в 7!"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¡Nos vemos en el campo a las 7!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rendez-vous au terrain à 19 h !"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Побачимось на полі о 7!"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do zobaczenia na boisku o 7!"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vemo-nos no campo às 7!"
+          }
+        }
+      }
+    },
     "Seed %lld": {
       "localizations": {
         "ru": {
@@ -19111,6 +19391,46 @@
         }
       }
     },
+    "Start your own.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Создай свою."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea el tuyo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lancez le vôtre."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Створи свою."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stwórz własną."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crie o seu."
+          }
+        }
+      }
+    },
     "Starts": {
       "localizations": {
         "ru": {
@@ -19307,6 +19627,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Natação"
+          }
+        }
+      }
+    },
+    "Swipe up": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Смахни вверх"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desliza hacia arriba"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balayez vers le haut"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проведи вгору"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Przesuń w górę"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deslize para cima"
           }
         }
       }

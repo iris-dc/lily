@@ -8,8 +8,7 @@ struct AppBrandingTests {
 
     @Test func brandingStringsAreNotEmpty() {
         #expect(!AppBranding.name.isEmpty)
-        #expect(AppBranding.headline.count >= 2)
-        #expect(AppBranding.headline.allSatisfy { !$0.isEmpty })
         #expect(!AppBranding.landingPrimaryAction.isEmpty)
+        #expect(!AppBranding.signInAction.isEmpty)
     }
 }

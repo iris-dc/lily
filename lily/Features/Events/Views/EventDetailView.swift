@@ -26,7 +26,7 @@ struct EventDetailView: View {
                     if let description = event.description {
                         Text(description).font(.body)
                     }
-                    facts
+                    EventFactsCard(event: event)
                     if viewModel.showsParticipants {
                         participantsSection
                     }
@@ -93,28 +93,6 @@ struct EventDetailView: View {
             ForEach(viewModel.participants) { participant in
                 ParticipantRow(participant: participant, isSelf: viewModel.isSelf(participant))
             }
-        }
-    }
-
-    /// Time, place, price and level, then how full it is. Price only when the game costs something, level only when set.
-    private var facts: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                Label {
-                    Text(event.startsAt, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
-                } icon: {
-                    Image(systemName: DesignTokens.Symbols.time)
-                }
-                Label(event.locationName, systemImage: DesignTokens.Symbols.location)
-                if !event.isFree {
-                    Label(AppBranding.Events.perPerson(event.priceText), systemImage: DesignTokens.Symbols.price)
-                }
-                if let level = event.skillLevel {
-                    Label(AppBranding.Events.level(level.displayName), systemImage: DesignTokens.Symbols.level)
-                }
-                CapacityBar(event: event)
-            }
-            .labelStyle(.iconColumn)
         }
     }
 

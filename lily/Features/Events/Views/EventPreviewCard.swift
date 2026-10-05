@@ -15,11 +15,7 @@ struct EventPreviewCard: View {
             ? AnyLayout(HStackLayout(spacing: DesignTokens.Spacing.md))
             : AnyLayout(VStackLayout(alignment: .leading, spacing: DesignTokens.Spacing.sm))
         layout {
-            Image(systemName: event.type.symbolName)
-                .font(.title3.weight(.medium))
-                .foregroundStyle(Color.lilySecondary)
-                .frame(width: DesignTokens.Layout.controlHeight, height: DesignTokens.Layout.controlHeight)
-                .glassEffect(.regular.tint(Color.lilySecondary.opacity(DesignTokens.Opacity.glassTint)), in: .circle)
+            GlassGlyph(systemName: event.type.symbolName)
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                 Text(event.title)
                     .font(.subheadline.weight(.semibold))

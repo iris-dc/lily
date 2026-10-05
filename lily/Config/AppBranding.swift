@@ -154,14 +154,7 @@ nonisolated enum AppBranding {
         }
     }
 
-    /// Landing headline, one line per element. The last line is highlighted in the accent color.
-    static var headline: [String] {
-        [localized("Pick a sport."), localized("Find your people."), localized("Play tonight.")]
-    }
-    static var subheadline: String {
-        localized("Real games near you, organised by people like you. Join one or start your own.")
-    }
-
+    /// The landing's slides are `AppBranding.Intro`; these are the two buttons under them.
     static var landingPrimaryAction: String { localized("Find a game near you") }
     static var signInPrompt: String { localized("Already have an account?") }
     static var signInAction: String { localized("Sign in") }

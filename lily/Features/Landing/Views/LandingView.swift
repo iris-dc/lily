@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// First screen. Explains the product in one glance and gets the user into the app in one tap.
+/// First screen: a swipeable intro of three full-page slides (what this is, how to join, what else it offers), each a
+/// framed miniature of a real screen over the aurora, with the two ways into the app pinned under every slide.
 struct LandingView: View {
     @State private var viewModel: LandingViewModel
+    @State private var visibleSlide: IntroSlide? = .first
     private let session: SessionController
     private let errorCenter: ErrorCenter
 
@@ -17,18 +19,23 @@ struct LandingView: View {
     var body: some View {
         ZStack {
             AuroraBackground(intensity: DesignTokens.Aurora.landingIntensity)
-            VStack(alignment: .leading, spacing: 0) {
-                Spacer(minLength: DesignTokens.Spacing.xl)
-                LandingHeadline()
-                Spacer(minLength: DesignTokens.Spacing.xl)
-                EventPreviewDeck(events: viewModel.previewEvents)
-                    .frame(maxWidth: .infinity)
-                Spacer(minLength: DesignTokens.Spacing.xl)
+            VStack(spacing: 0) {
+                IntroPager(slides: viewModel.slides,
+                           content: viewModel.introContent,
+                           showsSwipeHint: viewModel.showsSwipeHint,
+                           visibleSlide: $visibleSlide)
+                    .overlay(alignment: .trailing) {
+                        // At the edge, vertically centred: a row of bars under the slides read as "swipe sideways".
+                        IntroPageIndicator(slides: viewModel.slides, current: viewModel.currentSlide)
+                            .padding(.trailing, DesignTokens.Spacing.lg)
+                    }
                 actions
+                    .padding(.top, DesignTokens.Spacing.md)
+                    .padding(.horizontal, DesignTokens.Spacing.xl)
+                    .padding(.bottom, DesignTokens.Spacing.lg)
             }
-            .padding(.horizontal, DesignTokens.Spacing.xl)
-            .padding(.bottom, DesignTokens.Spacing.lg)
         }
+        .onChange(of: visibleSlide) { viewModel.slideShown(visibleSlide) }
         .task { await viewModel.loadPreview() }
         .sheet(isPresented: $viewModel.isSignInPresented) {
             SignInSheet(session: session, errorCenter: errorCenter)
@@ -48,20 +55,23 @@ struct LandingView: View {
     }
 }
 
-/// Multi-line headline; the last line carries the accent color.
+/// A slide's caption: two headline lines, the last in the accent colour, and the message under them.
 struct LandingHeadline: View {
+    let lines: [String]
+    let subtitle: String
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Each line is its own Text, so the tight line gap is the stack spacing, not `lineSpacing`.
             VStack(alignment: .leading, spacing: DesignTokens.Typography.headlineLineSpacing) {
-                ForEach(Array(AppBranding.headline.enumerated()), id: \.offset) { index, line in
+                ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                     Text(line)
                         .font(LilyTheme.Fonts.headline)
                         .tracking(DesignTokens.Typography.headlineTracking)
-                        .foregroundStyle(index == AppBranding.headline.indices.last ? Color.lilyAccent : Color.lilyInk)
+                        .foregroundStyle(index == lines.indices.last ? Color.lilyAccent : Color.lilyInk)
                 }
             }
-            Text(AppBranding.subheadline)
+            Text(subtitle)
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .padding(.top, DesignTokens.Spacing.md)

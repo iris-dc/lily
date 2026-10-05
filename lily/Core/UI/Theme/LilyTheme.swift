@@ -15,6 +15,8 @@ enum LilyTheme {
         /// The glyph of the floating create button: heavier and larger than button text so it reads from across the screen.
         static var floatingAction: Font { .system(.title2, design: .default, weight: .bold) }
         static var caption: Font { .system(.footnote, design: .default, weight: .medium) }
+        /// A symbol as a mark in a `GlassGlyph`: the type glyph on the map's preview card.
+        static var glyph: Font { .system(.title3, design: .default, weight: .medium) }
     }
 
     /// The one selected look for toggling controls (map pins, `ChoiceChip`): accent glass with a white label when on,
