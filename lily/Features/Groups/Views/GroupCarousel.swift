@@ -33,7 +33,7 @@ struct GroupCarousel: View {
             LazyHGrid(rows: rows, spacing: DesignTokens.Spacing.md) {
                 ForEach(viewModel.groups) { group in
                     NavigationLink(value: group) {
-                        GroupTile(group: group)
+                        GroupTile(group: group, distance: viewModel.distanceText(for: group))
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier(AccessibilityIdentifiers.groupRow(group.id))
@@ -56,5 +56,8 @@ struct GroupCarousel: View {
             GroupCarousel(viewModel: discover)
         }
     }
-    .task { await discover.loadIfStale() }
+    .task {
+        await discover.loadUserLocation()
+        await discover.loadIfStale()
+    }
 }

@@ -24,7 +24,7 @@ final class MockGroupRepository: GroupRepository {
         self.now = now
     }
 
-    func groups(in scope: GroupScope, cursor: String?) async throws -> Page<SportGroup> {
+    func groups(in scope: GroupScope, cursor: String?, near position: Coordinate?) async throws -> Page<SportGroup> {
         logger.debug(.groups, "Mock groups served for \(scope == .mine ? "mine" : "discover")")
         let live = groups.filter { !$0.isDeleted }
         switch scope {
@@ -34,8 +34,26 @@ final class MockGroupRepository: GroupRepository {
         case .discover(let query, let type):
             // Like the backend: only communities are discoverable; rooms are reached through their tournament or person.
             let matching = live.filter { $0.isCommunity && $0.isPublic && $0.matches(query: query, type: type) }
-            let byName = matching.sorted { $0.name < $1.name }
-            return Page(items: query == nil ? matching.sorted { $0.createdAt > $1.createdAt } : byName)
+            return Page(items: Self.discoverOrder(matching, query: query, near: position))
+        }
+    }
+
+    /// The backend's three Discover orders: by name for a search, nearest first around a position (a group without a
+    /// place last), newest first otherwise.
+    private static func discoverOrder(_ groups: [SportGroup], query: String?, near position: Coordinate?) -> [SportGroup] {
+        if query != nil {
+            return groups.sorted { $0.name < $1.name }
+        }
+        guard let position else {
+            return groups.sorted { $0.createdAt > $1.createdAt }
+        }
+        return groups.sorted { lhs, rhs in
+            switch (lhs.distance(from: position), rhs.distance(from: position)) {
+            case (let left?, let right?): left < right
+            case (.some, nil): true
+            case (nil, .some): false
+            case (nil, nil): lhs.createdAt > rhs.createdAt
+            }
         }
     }
 

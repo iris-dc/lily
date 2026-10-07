@@ -37,7 +37,8 @@ nonisolated extension DesignTokens.Layout {
     static let groupBadgeMaxWidth: CGFloat = 140
     /// A tile in the Explore groups carousel, and how many rows of them scroll together.
     static let groupTileWidth: CGFloat = 250
-    static let groupTileHeight: CGFloat = 64
+    /// Three lines beside the mark: the name, the caption and the place.
+    static let groupTileHeight: CGFloat = 84
     static let groupCarouselRows = 2
     /// Lines the preview card gives its title and caption once the row has become a column at accessibility sizes.
     static let accessibilityPreviewLines = 2

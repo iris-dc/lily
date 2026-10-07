@@ -24,6 +24,10 @@ final class TournamentListViewModel {
     private let now: () -> Date
     private var freshness = ContentFreshness(staleAfter: AppConfig.Tournaments.listStaleAfter,
                                              retryAfterFailure: AppConfig.Tournaments.retryAfterFailure)
+    /// The position the current content was asked for, as `Coordinate.coarse` (the rounding the backend, which ranks
+    /// by distance, receives); `nil` after a load without one. Explore content for another position than the user's
+    /// now is stale, as the events list's is.
+    private var loadedPosition: Coordinate?
 
     init(scope: TournamentScope,
          repository: any TournamentRepository,
@@ -54,9 +58,10 @@ final class TournamentListViewModel {
         typeFilter.map { type in tournaments.filter { $0.type == type } } ?? tournaments
     }
 
-    /// Loads once per `AppConfig.Tournaments.listStaleAfter`, or sooner when a tournament changed elsewhere or the
-    /// caller changed; a failed load waits `retryAfterFailure` unless one of those happened. A guest asks for nothing
-    /// user-scoped: `.mine` is cleared without a request.
+    /// Loads once per `AppConfig.Tournaments.listStaleAfter`, or sooner when a tournament changed elsewhere, the
+    /// caller changed, or the position is not the one Explore content was loaded for (it became known after a load
+    /// without one, or the user moved; the backend ranks by distance); a failed load waits `retryAfterFailure` unless
+    /// one of those happened. A guest asks for nothing user-scoped: `.mine` is cleared without a request.
     func loadIfStale() async {
         if scope == .mine, identity.currentUserID == nil {
             tournaments = []
@@ -69,7 +74,7 @@ final class TournamentListViewModel {
             logger.debug(.cache, "Tournaments for scope \(scope) failed to load recently; not retrying yet")
             return
         }
-        guard let reason = freshness.stalenessReason(now: now(), version: version, userID: userID) else {
+        guard let reason = freshness.stalenessReason(now: now(), version: version, userID: userID) ?? positionReason else {
             logger.debug(.cache, "Tournaments for scope \(scope) are fresh; skipping reload")
             return
         }
@@ -77,28 +82,59 @@ final class TournamentListViewModel {
         await load()
     }
 
-    /// Always asks the repository (pull-to-refresh). A call made while one is in flight is dropped.
+    /// Always asks the repository (pull-to-refresh). A call made while one is in flight is dropped. Explore sends the
+    /// user's position when known; one that arrived or moved while the request was out earns one reload right away.
     func load() async {
         guard !isLoading else { return }
         isLoading = true
-        defer { isLoading = false }
-        let version = changes.version
-        let userID = identity.currentUserID
-        do {
-            tournaments = try await repository.tournaments(in: scope, near: scope == .upcoming ? userLocation : nil)
-            freshness.recordSuccess(at: now(), version: version, userID: userID)
-            logger.info(.tournaments, "Loaded \(tournaments.count) tournaments for scope \(scope)")
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            freshness.recordFailure(at: now(), version: version, userID: userID)
-            logger.error(.tournaments, "Loading tournaments failed for scope \(scope): \(error)")
-            if reportsFailures { errorCenter.report(error) }
+        let succeeded = await performLoad(near: requestPosition)
+        isLoading = false
+        if succeeded, let reason = positionReason {
+            logger.debug(.cache, "Tournaments for scope \(scope): \(reason) while loading; reloading")
+            await load()
         }
     }
 
-    /// Asks for the position on every appearance (the cache answers within its TTL); distances need it, nothing else.
+    /// Asks for the position on every appearance (the cache answers within its TTL): the distances need it, and
+    /// Explore content loaded for another position (or none) is stale then; a load in flight notices the position
+    /// itself when it finishes.
     func loadUserLocation() async {
         if let fix = await locationService.currentLocation() { userLocation = fix }
+        if positionReason != nil, !isLoading {
+            await loadIfStale()
+        }
+    }
+
+    /// One request and its bookkeeping; answers whether it succeeded. Version and caller are taken before the request:
+    /// a change or a sign-in landing mid-flight may be missing from the answer, and must reload.
+    private func performLoad(near position: Coordinate?) async -> Bool {
+        let version = changes.version
+        let userID = identity.currentUserID
+        do {
+            tournaments = try await repository.tournaments(in: scope, near: position)
+            freshness.recordSuccess(at: now(), version: version, userID: userID)
+            loadedPosition = position?.coarse
+            logger.info(.tournaments,
+                        "Loaded \(tournaments.count) tournaments for scope \(scope); with position: \(position != nil)")
+            return true
+        } catch {
+            guard !AppError.isCancellation(error) else { return false }
+            freshness.recordFailure(at: now(), version: version, userID: userID)
+            logger.error(.tournaments, "Loading tournaments failed for scope \(scope): \(error)")
+            if reportsFailures { errorCenter.report(error) }
+            return false
+        }
+    }
+
+    /// Only Explore is ranked by distance; Home and a group's segment are their own lists, in start order.
+    private var requestPosition: Coordinate? { scope == .upcoming ? userLocation : nil }
+
+    /// Why the user's position makes the content stale, or `nil`: it was loaded without one that is known now, or for
+    /// another one than the user's now.
+    private var positionReason: String? {
+        guard freshness.hasLoaded, let position = requestPosition?.coarse else { return nil }
+        guard let loadedPosition else { return "position became known" }
+        return loadedPosition == position ? nil : "position changed"
     }
 
     /// Takes the tournament a detail just changed: in place, or out of a list it no longer belongs to (a cancelled

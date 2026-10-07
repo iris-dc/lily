@@ -193,6 +193,7 @@ extension AppDependencies {
                            store: myGroups,
                            repository: groupRepository,
                            identity: identity,
+                           locationService: locationService,
                            errorCenter: errorCenter,
                            recorder: interactionRecorder,
                            logger: logger)
@@ -220,6 +221,7 @@ extension AppDependencies {
     func makeCreateGroupViewModel(onCreated: @escaping @MainActor (SportGroup) -> Void) -> CreateGroupViewModel {
         CreateGroupViewModel(repository: groupRepository,
                              store: myGroups,
+                             locationService: locationService,
                              reporter: groups.errorReporter,
                              logger: logger,
                              onCreated: onCreated)

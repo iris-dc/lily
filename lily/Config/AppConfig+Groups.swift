@@ -5,6 +5,8 @@ nonisolated extension AppConfig {
     enum Groups {
         static let nameLength = 3...60
         static let descriptionMaxLength = 500
+        /// The group's place name, the backend's `LocationDto` limit (the event form's too).
+        static let locationNameMaxLength = AppConfig.Events.Creation.locationNameMaxLength
         static let maxMembers = 500
         static let maxMemberships = 50
         static let discoverPageSize = 50

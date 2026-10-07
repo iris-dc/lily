@@ -1,7 +1,8 @@
 import Foundation
 
 /// The six groups of a mock run: three the caller is in (as member, admin and owner), one to join, one that is full,
-/// and one private group reachable only through the mock inbox's invite (`MockInboxFixtures`); plus one direct
+/// and one private group reachable only through the mock inbox's invite (`MockInboxFixtures`), each at a real Berlin
+/// place so the carousel's distances read as on a real Explore; plus one direct
 /// conversation, with Marta, unread, so the Chats tab shows a person row from the start; plus the rooms of the two
 /// fixture tournaments (`MockTournamentFixtures.rooms`), so Chats lists them like the backend's Mine does.
 nonisolated enum MockGroupFixtures {
@@ -14,25 +15,6 @@ nonisolated enum MockGroupFixtures {
     /// The other side of the fixture conversation; `startDirect(with:)` for her answers the fixture instead of a new room.
     static let conversationCounterpart = Counterpart(userId: memberID(for: "Marta"), displayName: "Marta")
     static let martaConversationID = directConversationID(for: conversationCounterpart.userId)
-
-    private struct Template {
-        let id: String
-        let name: String
-        let description: String
-        let visibility: GroupVisibility
-        let type: EventType
-        let ownerName: String
-        let memberCount: Int
-        var maxMembers = AppConfig.Groups.maxMembers
-        /// The caller's role, `nil` when they are not in.
-        var role: MemberRole?
-        var hasUnread = false
-        /// Hours since the last message; `nil` for a silent group.
-        var lastMessageHoursAgo: Double?
-        let createdDaysAgo: Double
-        /// The other members shown on the roster (never the caller): name and role.
-        let roster: [(name: String, role: MemberRole)]
-    }
 
     private static let templates: [Template] = [
         Template(
@@ -47,7 +29,8 @@ nonisolated enum MockGroupFixtures {
             hasUnread: true,
             lastMessageHoursAgo: 1,
             createdDaysAgo: 120,
-            roster: [("Marta", .owner), ("Jonas", .admin), ("Ayşe", .member), ("Dev", .member)]
+            roster: [("Marta", .owner), ("Jonas", .admin), ("Ayşe", .member), ("Dev", .member)],
+            place: Place("Görlitzer Park", 52.4967, 13.4374)
         ),
         Template(
             id: runnersID,
@@ -60,7 +43,8 @@ nonisolated enum MockGroupFixtures {
             role: .admin,
             lastMessageHoursAgo: 26,
             createdDaysAgo: 60,
-            roster: [("Aiko", .owner), ("Sam", .member), ("Noor", .member)]
+            roster: [("Aiko", .owner), ("Sam", .member), ("Noor", .member)],
+            place: Place("Tempelhofer Feld", 52.4731, 13.4039)
         ),
         Template(
             id: padelID,
@@ -73,7 +57,8 @@ nonisolated enum MockGroupFixtures {
             role: .owner,
             lastMessageHoursAgo: 72,
             createdDaysAgo: 30,
-            roster: [("Tom", .admin), ("Ines", .member), ("Luca", .member), ("Priya", .banned)]
+            roster: [("Tom", .admin), ("Ines", .member), ("Luca", .member), ("Priya", .banned)],
+            place: Place("Padel Club Prenzlauer Berg", 52.5429, 13.4186)
         ),
         Template(
             id: basketballID,
@@ -84,7 +69,8 @@ nonisolated enum MockGroupFixtures {
             ownerName: "Dev",
             memberCount: 58,
             createdDaysAgo: 200,
-            roster: [("Dev", .owner), ("Marta", .member)]
+            roster: [("Dev", .owner), ("Marta", .member)],
+            place: Place("Mauerpark Courts", 52.5416, 13.4023)
         ),
         Template(
             id: volleyID,
@@ -96,7 +82,8 @@ nonisolated enum MockGroupFixtures {
             memberCount: 12,
             maxMembers: 12,
             createdDaysAgo: 10,
-            roster: [("Luca", .owner), ("Ayşe", .member)]
+            roster: [("Luca", .owner), ("Ayşe", .member)],
+            place: Place("Beach Mitte", 52.5319, 13.3871)
         ),
         Template(
             id: climbingID,
@@ -107,7 +94,8 @@ nonisolated enum MockGroupFixtures {
             ownerName: "Noor",
             memberCount: 9,
             createdDaysAgo: 45,
-            roster: [("Noor", .owner), ("Priya", .member)]
+            roster: [("Noor", .owner), ("Priya", .member)],
+            place: Place("Boulderwelt Ostkreuz", 52.5027, 13.4659)
         ),
     ]
 
@@ -141,7 +129,8 @@ nonisolated enum MockGroupFixtures {
                                     ? MockChatFixtures.lastReadMessageID(for: template.id)
                                     : MockChatFixtures.newestMessageID(for: template.id),
                                 hasUnread: template.hasUnread)
-            }
+            },
+            location: template.place.location
         )
     }
 

@@ -26,7 +26,6 @@ nonisolated extension AppBranding.Tournaments {
         static var time: String { localized("Time") }
         static var place: String { AppBranding.Events.Create.whereSection }
         static var placePlaceholder: String { AppBranding.Events.Create.locationNamePlaceholder }
-        static var pickOnMap: String { AppBranding.Events.Create.pickOnMap }
         static var save: String { AppBranding.Groups.Create.save }
         /// Removes the time and the place; shown only while the match has either.
         static var clear: String { localized("Clear schedule") }

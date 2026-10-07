@@ -19,7 +19,8 @@ extension SportGroup {
                         role: MemberRole? = nil,
                         lastReadMessageId: String? = nil,
                         hasUnread: Bool = false,
-                        kind: GroupKind = .group) -> SportGroup {
+                        kind: GroupKind = .group,
+                        location: EventLocation? = nil) -> SportGroup {
         SportGroup(id: id,
                    name: name,
                    visibility: visibility,
@@ -37,15 +38,20 @@ extension SportGroup {
                    membership: role.map {
                        GroupMembership(role: $0, joinedAt: createdAt, lastReadMessageId: lastReadMessageId, hasUnread: hasUnread)
                    },
-                   kind: kind)
+                   kind: kind,
+                   location: location)
     }
 }
 
 extension GroupDraft {
-    /// A draft that passes validation, with a lower-case UUID like a real draft's.
-    static func fixture(clientId: String = "3f2504e0-4f89-11d3-9a0c-0305e82c3302") -> GroupDraft {
+    /// A public draft that passes validation: a name and a place at the demo centre; `coordinate: nil` exercises the
+    /// missing-spot path.
+    static func fixture(clientId: String = "3f2504e0-4f89-11d3-9a0c-0305e82c3302",
+                        coordinate: Coordinate? = AppConfig.Location.mockCenter) -> GroupDraft {
         var draft = GroupDraft(clientId: clientId)
         draft.name = "Kreuzberg Kickers"
+        draft.locationName = "Görlitzer Park"
+        draft.coordinate = coordinate
         return draft
     }
 }
@@ -119,6 +125,10 @@ extension ContractSamples {
     "membership":{"role":"admin","joinedAt":"2026-06-02T10:00:00Z",\
     "lastReadMessageId":"01J8ZK7Q9X2M4N6P8R0T2V4W6X","hasUnread":true},"kind":"group"}
     """
+    /// The same group with the place its owner named, appended as Laurel does once a group has one (relevance plan 2.1).
+    static let locatedGroup = group.replacingOccurrences(
+        of: #""kind":"group"}"#,
+        with: #""kind":"group","location":{"name":"Görlitzer Park","coordinate":{"latitude":52.4967,"longitude":13.4374}}}"#)
     /// A payload from before `kind` was emitted, like every fixture built without one: it decodes as a community.
     static let minimalGroup = """
     {"id":"g2","name":"Spree Volley","visibility":"private","ownerName":"Luca","memberCount":12,"maxMembers":12,\

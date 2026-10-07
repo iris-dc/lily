@@ -91,7 +91,7 @@ final class MyGroupsStore: SessionObserver {
     private func performLoad(for userID: String) async {
         let version = changes.version
         do {
-            let loaded = try await repository.groups(in: .mine, cursor: nil).items
+            let loaded = try await repository.groups(in: .mine, cursor: nil, near: nil).items
             guard identity.isStillCaller(userID, orDrop: "Groups answer", logger: logger) else { return }
             groups = loaded
             loadVersion += 1

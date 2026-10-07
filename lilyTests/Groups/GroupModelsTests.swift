@@ -21,6 +21,26 @@ struct GroupModelsTests {
         #expect(group.kind == .group && group.counterpart == nil && !group.isDirect)
     }
 
+    /// A group with a place decodes it as the events' `location` and writes it back; the sample without one has none,
+    /// so every older payload and fixture keeps decoding.
+    @Test func aLocatedGroupDecodesItsPlaceAndRoundTrips() throws {
+        let located = try ContractSamples.decode(SportGroup.self, from: ContractSamples.locatedGroup)
+        let place = try #require(located.location)
+        #expect(place.name == "Görlitzer Park" && place.coordinate == Coordinate(latitude: 52.4967, longitude: 13.4374))
+        #expect(try ContractSamples.decode(SportGroup.self, from: ContractSamples.group).location == nil)
+
+        let encoder = APIJSONCoding.makeEncoder()
+        let json = try #require(String(bytes: try encoder.encode(located), encoding: .utf8))
+        #expect(json.contains(#""location":{"#) && json.contains(#""name":"Görlitzer Park""#))
+        #expect(try ContractSamples.decode(SportGroup.self, from: json) == located)
+        let plain = try #require(String(bytes: try encoder.encode(SportGroup.fixture()), encoding: .utf8))
+        #expect(!plain.contains("location"), "no key for a group without a place")
+
+        let origin = Coordinate(latitude: 52.52, longitude: 13.405)
+        #expect(located.distance(from: origin).map { ($0.value / 1000).rounded() } == 3, "about three kilometres")
+        #expect(located.distance(from: nil) == nil && SportGroup.fixture().distance(from: origin) == nil)
+    }
+
     /// Optionals the backend leaves out decode as absent; a full private group reads as full and as no membership.
     @Test func minimalGroupDecodesWithAbsentOptionals() throws {
         let group = try ContractSamples.decode(SportGroup.self, from: ContractSamples.minimalGroup)

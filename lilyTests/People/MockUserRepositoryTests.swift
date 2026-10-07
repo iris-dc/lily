@@ -59,7 +59,7 @@ struct MockUserRepositoryTests {
         #expect(conversation.visibility == .private && conversation.memberCount == 2 && conversation.maxMembers == 2)
         #expect(conversation.role == .member && !conversation.membersCanCreateEvents && !conversation.membersCanInvite)
         #expect(try await repository.startConversation(with: jonas) == conversation)
-        #expect(try await groups.groups(in: .mine, cursor: nil).items.contains(conversation))
+        #expect(try await groups.groups(in: .mine, cursor: nil, near: nil).items.contains(conversation))
         #expect(try await groups.members(id: conversation.id).map(\.displayName) == ["Jonas", "You"])
         #expect(try await repository.profile(userID: jonas).sharedGroups.map(\.name) == ["Kreuzberg Kickers"])
         #expect(logger.messages(in: .groups, at: .info).contains("Mock conversation \(conversation.id) created with \(jonas)"))
@@ -72,6 +72,6 @@ struct MockUserRepositoryTests {
 
         #expect(conversation.id == MockGroupFixtures.martaConversationID && conversation.hasUnread)
         #expect(conversation.counterpart == MockGroupFixtures.conversationCounterpart)
-        #expect(try await groups.groups(in: .mine, cursor: nil).items.count(where: \.isDirect) == 1)
+        #expect(try await groups.groups(in: .mine, cursor: nil, near: nil).items.count(where: \.isDirect) == 1)
     }
 }

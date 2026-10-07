@@ -40,6 +40,8 @@ final class GroupHarness {
     let inboxRepository = FakeInboxRepository()
     let events = FakeEventRepository()
     let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
+    /// Answers no position until a test sets `result`, so Discover sends none by default.
+    let location = FakeLocationService()
     let changes = ChangeTracker()
     let tournamentChanges = ChangeTracker()
     let logger = SpyLogger()

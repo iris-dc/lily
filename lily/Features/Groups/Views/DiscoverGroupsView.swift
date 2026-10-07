@@ -25,6 +25,7 @@ struct DiscoverGroupsView: View {
             }
         }
         .task { await viewModel.loadIfStale() }
+        .task { await viewModel.loadUserLocation() }
         .onDisappear { viewModel.cancel() }
     }
 }

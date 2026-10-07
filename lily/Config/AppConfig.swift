@@ -32,6 +32,8 @@ nonisolated enum AppConfig {
             static let storedSession = "lily.session.stored"
             /// The language chosen on Profile: a language code, or `system`.
             static let languagePreference = "lily.language.preference"
+            /// Explore's filter as last set (`PersistedEventFilter` as JSON), restored on launch.
+            static let eventFilter = "lily.events.filter"
         }
         /// Each preview gets its own `UserDefaults` suite so mock sessions never bleed into the real app.
         static let previewSuitePrefix = "lily.preview."

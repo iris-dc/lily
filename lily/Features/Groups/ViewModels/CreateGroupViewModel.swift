@@ -1,8 +1,9 @@
 import Foundation
 import Observation
 
-/// Owns the draft of a new group and sends it once. The draft judges itself (`GroupDraft.issues`); this decides when
-/// it may go, keeps a second tap from sending it twice, and hands the created group to Mine and the sheet's caller.
+/// Owns the draft of a new group and sends it once. The draft judges itself (`GroupDraft.issues`); this proposes the
+/// device's position as the spot, decides when the draft may go, keeps a second tap from sending it twice, and hands
+/// the created group to Mine and the sheet's caller.
 @Observable
 final class CreateGroupViewModel {
     var draft = GroupDraft()
@@ -12,20 +13,33 @@ final class CreateGroupViewModel {
 
     private let repository: any GroupRepository
     private let store: MyGroupsStore
+    private let locationService: any LocationService
     private let reporter: GroupErrorReporter
     private let logger: any Logging
     private let onCreated: @MainActor (SportGroup) -> Void
 
     init(repository: any GroupRepository,
          store: MyGroupsStore,
+         locationService: any LocationService,
          reporter: GroupErrorReporter,
          logger: any Logging,
          onCreated: @escaping @MainActor (SportGroup) -> Void) {
         self.repository = repository
         self.store = store
+        self.locationService = locationService
         self.reporter = reporter
         self.logger = logger
         self.onCreated = onCreated
+    }
+
+    /// Proposes the device's position as the group's spot, as the event form does, so naming the place is all a
+    /// public group asks; a spot already chosen (the map was opened first) is kept.
+    func prepare() async {
+        guard draft.coordinate == nil else { return }
+        let position = await locationService.currentLocation()
+        if draft.coordinate == nil { draft.coordinate = position }
+        logger.debug(.location, position == nil ? "No position for the new group; the spot is set on the map"
+                                                : "New group proposed at the user's position")
     }
 
     var issues: [GroupDraft.Issue] { draft.issues }

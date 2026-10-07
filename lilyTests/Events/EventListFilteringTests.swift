@@ -37,6 +37,28 @@ struct EventListFilteringTests {
         #expect(!viewModel.isEverythingFilteredOut)
     }
 
+    /// Every way the filter changes (a chip, the panel, the empty state's "show everything", a clear) is written to the
+    /// store, so the next launch starts from it; the initial filter is whatever the composition root restored.
+    @Test func everyFilterChangeIsStoredForTheNextLaunch() async {
+        let store = InMemoryEventFilterStore()
+        var restored = EventFilter()
+        restored.toggle(.padel)
+        let viewModel = makeEventListViewModel(repository: FakeEventRepository(), initialFilter: restored, filterStore: store)
+        #expect(viewModel.filter == restored && store.saveCount == 0, "restoring is not a change")
+
+        viewModel.toggleType(.tennis)
+        #expect(store.stored?.types == [.padel, .tennis] && store.saveCount == 1)
+
+        viewModel.updateFilter { $0.maxDistanceMeters = 25_000 }
+        #expect(store.stored?.maxDistanceMeters == 25_000 && store.saveCount == 2)
+
+        viewModel.showEverything()
+        #expect(store.stored == .everything && store.saveCount == 3)
+
+        viewModel.clearFilter()
+        #expect(store.stored == EventFilter() && store.saveCount == 4)
+    }
+
     @Test func filterSurvivesAReload() async {
         let repository = FakeEventRepository()
         repository.result = .success(MockEventFixtures.make(now: .now, count: 3))

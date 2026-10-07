@@ -12,6 +12,15 @@ struct SportGroupCaptionTests {
         #expect(group.caption(suffix: "Joined") == "1 member · Joined")
     }
 
+    /// The place line of a tile: the name, then the distance once the position is known; nothing without a place.
+    @Test func placeCaptionNamesThePlaceAndAppendsTheDistance() {
+        let park = EventLocation(name: "Görlitzer Park", coordinate: AppConfig.Location.mockCenter)
+        let located = SportGroup.fixture(location: park)
+        #expect(located.placeCaption(distance: nil) == "Görlitzer Park")
+        #expect(located.placeCaption(distance: "1.2 km") == "Görlitzer Park · 1.2 km")
+        #expect(SportGroup.fixture().placeCaption(distance: "1.2 km") == nil)
+    }
+
     /// A tournament's room names what it is and how many players are in; its mark is the trophy.
     @Test func aTournamentRoomReadsTournamentAndItsPlayers() {
         let room = SportGroup.tournamentRoomFixture(memberCount: 6)

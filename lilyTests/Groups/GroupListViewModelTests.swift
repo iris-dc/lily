@@ -12,6 +12,7 @@ struct GroupListViewModelTests {
                            store: harness.store,
                            repository: harness.repository,
                            identity: harness.identity,
+                           locationService: harness.location,
                            errorCenter: harness.errorCenter,
                            recorder: harness.recorder,
                            logger: harness.logger) { [sleep] in try await sleep.sleep(for: $0) }

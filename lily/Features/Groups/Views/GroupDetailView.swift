@@ -45,7 +45,7 @@ struct GroupDetailView: View {
         ContentScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                    GroupHeader(group: group)
+                    GroupHeader(group: group, distance: group.distance(from: events.userLocation)?.roadText)
                     GroupActionRow(viewModel: viewModel,
                                    onOpenChat: { dependencies.navigation.open(chat: group) },
                                    onInvite: { presentedSheet = .invite },

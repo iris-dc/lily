@@ -33,14 +33,7 @@ struct MatchScheduleView: View {
                         .textInputAutocapitalization(.words)
                         .submitLabel(.done)
                         .accessibilityIdentifier(AccessibilityIdentifiers.matchLocationName)
-                    NavigationLink {
-                        LocationPickerView(coordinate: $draft.coordinate)
-                    } label: {
-                        LabeledContent(Copy.pickOnMap) {
-                            Text(draft.coordinate.map(AppBranding.Events.Create.coordinateText)
-                                 ?? AppBranding.Events.Create.spotNotSet)
-                        }
-                    }
+                    PlacePickerRow(coordinate: $draft.coordinate)
                 } header: {
                     Text(Copy.place)
                 } footer: {

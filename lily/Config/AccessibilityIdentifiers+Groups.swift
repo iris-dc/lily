@@ -30,6 +30,9 @@ nonisolated extension AccessibilityIdentifiers {
     static let createGroupName = "create-group-name"
     static let createGroupDescription = "create-group-description"
     static let createGroupVisibility = "create-group-visibility"
+    /// The group form's place: its name field and the row that opens the map.
+    static let createGroupLocationName = "create-group-location-name"
+    static let createGroupPickOnMap = "create-group-pick-on-map"
     static let createGroupSubmit = "create-group-submit"
     static let createGroupCancel = "create-group-cancel"
     static let createGroup = "create-group"

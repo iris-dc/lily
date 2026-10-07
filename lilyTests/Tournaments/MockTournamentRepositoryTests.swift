@@ -57,9 +57,27 @@ struct MockTournamentRepositoryTests {
         #expect(guestView.first?.organizerUserId == MockTournamentFixtures.callerMarker, "a guest sees no organiser of their own")
     }
 
+    /// Around a position Explore's list comes nearest first, like the backend's ranked answer; without one by start.
+    @Test func upcomingComesNearestFirstAroundAPosition() async throws {
+        let cup = try await repository.tournament(id: MockTournamentFixtures.kickersCupID).tournament
+        var draft = TournamentDraft.fixture(now: now, coordinate: .aroundMockCenter(lat: 3, lon: 3))
+        draft.name = "Far Cup"
+        draft.startsAt = cup.startsAt.addingTimeInterval(86_400)
+        let far = try await repository.create(draft).tournament
+        try #require(far.startsAt > cup.startsAt, "the fixture cup starts first")
+
+        let byStart = try await repository.tournaments(in: .upcoming, near: nil)
+        #expect(byStart.map(\.id) == [cup.id, far.id])
+
+        let nearFar = try await repository.tournaments(in: .upcoming, near: .aroundMockCenter(lat: 3, lon: 3))
+        #expect(nearFar.map(\.id) == [far.id, cup.id])
+        let nearCup = try await repository.tournaments(in: .upcoming, near: cup.location.coordinate)
+        #expect(nearCup.map(\.id) == [cup.id, far.id])
+    }
+
     /// The rooms are in the group mock: Chats lists them, Home (communities) does not.
     @Test func theRoomsAreGroupsOfKindTournament() async throws {
-        let mine = try await groups.groups(in: .mine, cursor: nil).items
+        let mine = try await groups.groups(in: .mine, cursor: nil, near: nil).items
         let cup = try #require(mine.first { $0.id == MockTournamentFixtures.kickersCupID })
         #expect(cup.isTournamentRoom && cup.role == .owner && cup.maxMembers == 41 && !cup.isCommunity)
         let tableTennis = try #require(mine.first { $0.id == MockTournamentFixtures.tableTennisID })

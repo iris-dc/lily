@@ -30,11 +30,14 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     let kind: GroupKind
     /// The other person of a direct conversation, as the caller sees them; absent for a community.
     let counterpart: Counterpart?
+    /// Where the group plays, when its owner named a place: what Discover orders a public group by and what its card
+    /// shows a distance to. Absent on conversations, rooms and groups from before the field (the backend omits it).
+    private(set) var location: EventLocation?
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, visibility, type, ownerName, memberCount, maxMembers, channelEpoch
         case membersCanCreateEvents, membersCanInvite, lastMessageId, lastMessageAt, createdAt, deletedAt, membership
-        case kind, counterpart
+        case kind, counterpart, location
     }
 
     init(id: String,
@@ -54,7 +57,8 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
          deletedAt: Date? = nil,
          membership: GroupMembership? = nil,
          kind: GroupKind = .group,
-         counterpart: Counterpart? = nil) {
+         counterpart: Counterpart? = nil,
+         location: EventLocation? = nil) {
         self.id = id
         self.name = name
         self.description = description
@@ -73,6 +77,7 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
         self.membership = membership
         self.kind = kind
         self.counterpart = counterpart
+        self.location = location
     }
 
     /// Key for key like the synthesized decoder, except that a missing `kind` is a community: the field arrived after
@@ -96,7 +101,8 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
                   deletedAt: try container.decodeIfPresent(Date.self, forKey: .deletedAt),
                   membership: try container.decodeIfPresent(GroupMembership.self, forKey: .membership),
                   kind: try container.decodeIfPresent(GroupKind.self, forKey: .kind) ?? .group,
-                  counterpart: try container.decodeIfPresent(Counterpart.self, forKey: .counterpart))
+                  counterpart: try container.decodeIfPresent(Counterpart.self, forKey: .counterpart),
+                  location: try container.decodeIfPresent(EventLocation.self, forKey: .location))
     }
 
     var isFull: Bool { memberCount >= maxMembers }
@@ -115,6 +121,12 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     var hasUnread: Bool { membership?.hasUnread ?? false }
     /// The moment the group was last active, for the Mine order; a silent group counts from its creation.
     var lastActivityAt: Date { lastMessageAt ?? createdAt }
+
+    /// Meters from `origin` to the group's place; `nil` while the user's position is unknown or the group has none.
+    func distance(from origin: Coordinate?) -> Measurement<UnitLength>? {
+        guard let location, let origin else { return nil }
+        return Measurement(value: location.coordinate.distance(to: origin), unit: .meters)
+    }
 
     /// The group as its badge on an event shows it.
     var ref: EventGroupRef {
@@ -144,6 +156,7 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
         copy.type = draft.type
         copy.membersCanCreateEvents = draft.membersCanCreateEvents
         copy.membersCanInvite = draft.membersCanInvite
+        copy.location = draft.location
         return copy
     }
 

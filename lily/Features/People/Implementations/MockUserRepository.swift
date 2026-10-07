@@ -17,7 +17,7 @@ final class MockUserRepository: UserRepository {
     /// The caller's own id answers their own groups, as the backend does.
     func profile(userID: String) async throws -> UserProfile {
         guard let caller = identity.currentUserID else { throw AppError.sessionExpired }
-        let mine = try await groups.groups(in: .mine, cursor: nil).items
+        let mine = try await groups.groups(in: .mine, cursor: nil, near: nil).items
             .filter(\.isCommunity)
         if userID == caller {
             return UserProfile(userId: caller,

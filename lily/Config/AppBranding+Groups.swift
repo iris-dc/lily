@@ -116,6 +116,10 @@ nonisolated extension AppBranding {
             static var visibility: String { localized("Who can join") }
             /// The mock repository has no profile to read the owner's name from; the backend stamps the real one.
             static var mockOwnerName: String { localized("You") }
+            /// Under the place fields while nothing is wrong with them: why a public group names one, and that a
+            /// private one need not.
+            static var placePublicFooter: String { localized("People nearby find the group by where it plays.") }
+            static var placePrivateFooter: String { localized("Optional for a private group.") }
 
             /// The line under a field for one issue, naming the limit from `AppConfig.Groups`.
             static func message(for issue: GroupDraft.Issue) -> String {
@@ -124,6 +128,9 @@ nonisolated extension AppBranding {
                 case .nameTooShort: localized("Give the group a name of at least \(limits.nameLength.lowerBound) characters")
                 case .nameTooLong: localized("Keep the name under \(limits.nameLength.upperBound) characters")
                 case .descriptionTooLong: localized("Keep the description under \(limits.descriptionMaxLength) characters")
+                case .locationNameMissing: localized("Name the place where the group plays")
+                case .locationNameTooLong: localized("Keep the place name under \(limits.locationNameMaxLength) characters")
+                case .coordinateMissing: AppBranding.Events.Create.pickOnMap
                 }
             }
         }

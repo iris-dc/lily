@@ -16,6 +16,8 @@ final class AppDependencies {
     /// Where the event screens report their taps; the root view flushes it when the app goes to the background.
     let interactionRecorder: any InteractionRecorder
     let locationService: any LocationService
+    /// Explore's filter between launches; see `AppDependencies+Events.swift`.
+    let eventFilterStore: any EventFilterStore
     /// The language the copy is in and the user's choice behind it; the root view re-renders from it.
     let language: LanguageStore
     let eventChanges = ChangeTracker()
@@ -39,8 +41,10 @@ final class AppDependencies {
          pushRegistrar: any PushRegistrar,
          deviceRepository: any DeviceRepository,
          language: LanguageStore? = nil,
+         eventFilterStore: any EventFilterStore = NoOpEventFilterStore(),
          defaults: UserDefaults = .standard) {
         self.logger = logger
+        self.eventFilterStore = eventFilterStore
         let language = language ?? LanguageStore(store: UserDefaultsLanguagePreferenceStore(defaults: defaults), logger: logger)
         self.language = language
         self.errorCenter = ErrorCenter(logger: logger)
@@ -106,6 +110,7 @@ final class AppDependencies {
                                pushRegistrar: repositories.pushRegistrar,
                                deviceRepository: repositories.devices,
                                language: language,
+                               eventFilterStore: makeEventFilterStore(arguments: arguments, defaults: defaults, logger: logger),
                                defaults: defaults)
     }
 

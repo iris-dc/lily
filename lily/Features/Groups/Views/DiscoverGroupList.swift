@@ -20,7 +20,7 @@ struct DiscoverGroupList: View {
         LazyVStack(spacing: DesignTokens.Spacing.md) {
             ForEach(viewModel.groups) { group in
                 NavigationLink(value: group) {
-                    GroupCard(group: group)
+                    GroupCard(group: group, distance: viewModel.distanceText(for: group))
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier(AccessibilityIdentifiers.groupRow(group.id))

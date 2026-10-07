@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Every field of a group, for the create and edit sheets: name and description, the event type, who can join (fixed
-/// once created, so the edit sheet leaves it out) and what members may do. Under the first group the first thing still
-/// wrong with it.
+/// Every field of a group, for the create and edit sheets: name and description, the event type, where it plays (a
+/// public group must say, a private one may), who can join (fixed once created, so the edit sheet leaves it out) and
+/// what members may do. Under each section the first thing still wrong with it.
 struct GroupDraftForm: View {
     @Binding var draft: GroupDraft
     let issues: [GroupDraft.Issue]
@@ -13,6 +13,7 @@ struct GroupDraftForm: View {
     var body: some View {
         Form {
             groupSection
+            whereSection
             if allowsVisibilityChoice {
                 visibilitySection
             }
@@ -45,6 +46,26 @@ struct GroupDraftForm: View {
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
             EventTypeChips(anyTitle: Copy.anyType, isSelected: { $0 == draft.type }, onSelect: { draft.type = $0 })
+        }
+    }
+
+    /// The place the group plays at: Discover orders public groups by it and shows the distance to it.
+    private var whereSection: some View {
+        Section {
+            TextField(AppBranding.Events.Create.locationNamePlaceholder, text: $draft.locationName)
+                .textInputAutocapitalization(.words)
+                .submitLabel(.done)
+                .accessibilityIdentifier(AccessibilityIdentifiers.createGroupLocationName)
+            PlacePickerRow(coordinate: $draft.coordinate)
+                .accessibilityIdentifier(AccessibilityIdentifiers.createGroupPickOnMap)
+        } header: {
+            Text(AppBranding.Events.Create.whereSection)
+        } footer: {
+            if let issue = first(of: .locationNameMissing, .locationNameTooLong, .coordinateMissing) {
+                Text(Copy.message(for: issue))
+            } else {
+                Text(draft.visibility == .public ? Copy.placePublicFooter : Copy.placePrivateFooter)
+            }
         }
     }
 

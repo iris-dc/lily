@@ -15,7 +15,7 @@ struct MockGroupRepositoryTests {
     /// The three joined groups, the conversation with Marta and the two tournament rooms, most recently active first,
     /// as the backend orders Mine.
     @Test func mineHoldsTheJoinedGroupsAndTheConversationMostRecentlyActiveFirst() async throws {
-        let mine = try await makeRepository().groups(in: .mine, cursor: nil)
+        let mine = try await makeRepository().groups(in: .mine, cursor: nil, near: nil)
 
         #expect(mine.items.map(\.name) == ["Kreuzberg Kickers", "Marta", "Tuesday Table Tennis", "Tempelhof Runners",
                                            "Sunday Padel Crew", "Kickers Cup"])
@@ -46,7 +46,7 @@ struct MockGroupRepositoryTests {
         let started = repository.startDirect(with: jonas, name: "Jonas")
         #expect(started.isDirect && started.counterpart == Counterpart(userId: jonas, displayName: "Jonas"))
         #expect(started.id == MockGroupFixtures.directConversationID(for: jonas) && started.id != conversation.id)
-        #expect(try await repository.groups(in: .mine, cursor: nil).items.count(where: \.isDirect) == 2)
+        #expect(try await repository.groups(in: .mine, cursor: nil, near: nil).items.count(where: \.isDirect) == 2)
     }
 
     /// A cleared conversation is out of Mine but still readable; a new line or a replayed start brings it back, and a
@@ -57,34 +57,55 @@ struct MockGroupRepositoryTests {
 
         repository.hideConversation(id: marta)
 
-        let mine = try await repository.groups(in: .mine, cursor: nil).items
+        let mine = try await repository.groups(in: .mine, cursor: nil, near: nil).items
         #expect(mine.map(\.name) == ["Kreuzberg Kickers", "Tuesday Table Tennis", "Tempelhof Runners", "Sunday Padel Crew",
                                      "Kickers Cup"])
         #expect(try await repository.group(id: marta).isDirect, "the room stays readable while it is cleared")
         #expect(logger.messages(in: .groups, at: .info).contains("Mock conversation \(marta) hidden"))
 
         repository.unhideConversation(id: marta)
-        #expect(try await repository.groups(in: .mine, cursor: nil).items.contains { $0.id == marta })
+        #expect(try await repository.groups(in: .mine, cursor: nil, near: nil).items.contains { $0.id == marta })
         repository.hideConversation(id: marta)
         _ = repository.startDirect(with: MockGroupFixtures.conversationCounterpart.userId, name: "Marta")
-        #expect(try await repository.groups(in: .mine, cursor: nil).items.contains { $0.id == marta })
+        #expect(try await repository.groups(in: .mine, cursor: nil, near: nil).items.contains { $0.id == marta })
 
         repository.hideConversation(id: MockGroupFixtures.kickersID)
-        #expect(try await repository.groups(in: .mine, cursor: nil).items.count == 6, "only a conversation can be hidden")
+        let afterHidingAGroup = try await repository.groups(in: .mine, cursor: nil, near: nil).items
+        #expect(afterHidingAGroup.count == 6, "only a conversation can be hidden")
     }
 
     @Test func discoverListsPublicGroupsNewestFirstAndSearchesByPrefix() async throws {
         let repository = makeRepository()
 
-        let all = try await repository.groups(in: .discover(query: nil, type: nil), cursor: nil).items
+        let all = try await repository.groups(in: .discover(query: nil, type: nil), cursor: nil, near: nil).items
         #expect(all.map(\.name) == ["Spree Volley", "Tempelhof Runners", "Kreuzberg Kickers", "Berlin Basketball"])
         #expect(all.count == AppConfig.Groups.mockGroupCount - 2, "the two private groups never appear")
 
-        let searched = try await repository.groups(in: .discover(query: "ber", type: nil), cursor: nil).items
+        let searched = try await repository.groups(in: .discover(query: "ber", type: nil), cursor: nil, near: nil).items
         #expect(searched.map(\.name) == ["Berlin Basketball"])
 
-        let typed = try await repository.groups(in: .discover(query: nil, type: .football), cursor: nil).items
+        let typed = try await repository.groups(in: .discover(query: nil, type: .football), cursor: nil, near: nil).items
         #expect(typed.map(\.name) == ["Kreuzberg Kickers"])
+    }
+
+    /// Around a position the public groups come nearest first, like the backend's ranked page; every fixture community
+    /// has a Berlin place, while the conversation and the rooms have none.
+    @Test func discoverAroundAPositionComesNearestFirstAndEveryCommunityHasAPlace() async throws {
+        let repository = makeRepository()
+
+        let center = AppConfig.Location.mockCenter
+        let near = try await repository.groups(in: .discover(query: nil, type: nil), cursor: nil, near: center)
+        #expect(near.items.map(\.name) == ["Spree Volley", "Berlin Basketball", "Kreuzberg Kickers", "Tempelhof Runners"])
+        let distances = near.items.compactMap { $0.distance(from: center)?.value }
+        #expect(distances == distances.sorted() && distances.count == 4)
+
+        let far = Coordinate.aroundMockCenter(lat: 5, lon: 5)
+        let searched = try await repository.groups(in: .discover(query: "ber", type: nil), cursor: nil, near: far)
+        #expect(searched.items.map(\.name) == ["Berlin Basketball"], "a search ignores the position")
+
+        let all = try await repository.groups(in: .mine, cursor: nil, near: nil).items
+        #expect(all.filter(\.isCommunity).allSatisfy { $0.location != nil })
+        #expect(all.filter { !$0.isCommunity }.allSatisfy { $0.location == nil })
     }
 
     /// A private group is not there for an outsider, on reads and writes alike.
@@ -102,7 +123,7 @@ struct MockGroupRepositoryTests {
         let joined = try await repository.join(id: MockGroupFixtures.basketballID)
         #expect(joined.role == .member && joined.memberCount == 59)
         #expect(try await repository.join(id: MockGroupFixtures.basketballID).memberCount == 59, "a replay changes nothing")
-        #expect(try await repository.groups(in: .mine, cursor: nil).items.count == 7)
+        #expect(try await repository.groups(in: .mine, cursor: nil, near: nil).items.count == 7)
         #expect(logger.messages(in: .groups, at: .info).contains("Joined group \(MockGroupFixtures.basketballID) (public)"))
 
         await #expect(throws: AppError.groupFull) { try await repository.join(id: MockGroupFixtures.volleyID) }
@@ -181,7 +202,7 @@ struct MockGroupRepositoryTests {
 
         #expect(try repository.markRead(id: kickers, messageID: newest) == newest)
         #expect(try await repository.group(id: kickers).hasUnread == false)
-        #expect(try await repository.groups(in: .mine, cursor: nil).items.filter(\.hasUnread).map(\.id)
+        #expect(try await repository.groups(in: .mine, cursor: nil, near: nil).items.filter(\.hasUnread).map(\.id)
                 == [MockGroupFixtures.martaConversationID], "only the conversation's unread lines are left")
 
         #expect(try repository.markRead(id: kickers, messageID: older) == newest)

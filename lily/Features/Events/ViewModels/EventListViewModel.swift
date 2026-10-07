@@ -24,6 +24,8 @@ final class EventListViewModel {
     private let locationService: any LocationService
     private let changes: ChangeTracker
     private let errorCenter: ErrorCenter
+    /// Where every filter change is kept for the next launch; a no-op for the lists that start from `.everything`.
+    private let filterStore: any EventFilterStore
     /// TTL, the change counter and caller the content reflects, and the cooldown after a failed load.
     private var freshness = ContentFreshness(staleAfter: AppConfig.Events.listStaleAfter,
                                              retryAfterFailure: AppConfig.Events.retryAfterFailure)
@@ -41,7 +43,8 @@ final class EventListViewModel {
          recorder: any InteractionRecorder,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
-         initialFilter: EventFilter = EventFilter()) {
+         initialFilter: EventFilter = EventFilter(),
+         filterStore: any EventFilterStore = NoOpEventFilterStore()) {
         self.filter = initialFilter
         self.scope = scope
         self.repository = repository
@@ -49,6 +52,7 @@ final class EventListViewModel {
         self.locationService = locationService
         self.changes = changes
         self.errorCenter = errorCenter
+        self.filterStore = filterStore
         self.recorder = recorder
         self.logger = logger
         self.now = now
@@ -63,9 +67,11 @@ final class EventListViewModel {
     /// Distance is judged from the user's position; while that is unknown the distance criterion is skipped.
     var visibleEvents: [SportEvent] { events.filter { filter.matches($0, from: userLocation) } }
 
-    /// The one way views change the filter, so every change is logged and the filter stays `private(set)`.
+    /// The one way views change the filter, so every change is logged, kept for the next launch and the filter stays
+    /// `private(set)`.
     func updateFilter(_ change: (inout EventFilter) -> Void) {
         change(&filter)
+        filterStore.save(filter)
         logger.debug(.events, "Filter changed; active: \(filter.isActive), visible: \(visibleEvents.count) of \(events.count)")
     }
 

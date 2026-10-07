@@ -6,6 +6,16 @@ nonisolated struct CreateEventPayload: Encodable, Equatable, Sendable {
     struct Location: Encodable, Equatable, Sendable {
         let name: String
         let coordinate: Coordinate
+
+        init(name: String, coordinate: Coordinate) {
+            self.name = name
+            self.coordinate = coordinate
+        }
+
+        /// A stored place as a payload's, for the group bodies that send one.
+        init(_ location: EventLocation) {
+            self.init(name: location.name, coordinate: location.coordinate)
+        }
     }
 
     let clientEventId: String

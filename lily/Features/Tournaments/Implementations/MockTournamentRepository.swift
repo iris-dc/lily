@@ -23,18 +23,27 @@ final class MockTournamentRepository: TournamentRepository {
         self.now = now
     }
 
-    /// The position is ignored: the fixtures keep their start order, like the backend's upcoming list.
+    /// Explore's list comes nearest first around a position, like the backend's ranked answer, and by start without one.
     func tournaments(in scope: TournamentScope, near position: Coordinate?) async throws -> [Tournament] {
         logger.debug(.tournaments, "Mock tournaments served for scope \(scope)")
         let all = details.values.map(\.tournament)
         let moment = now()
         switch scope {
         case .upcoming:
-            return all.filter { $0.isListed && $0.startsAt >= moment }.sorted { $0.startsAt < $1.startsAt }.map(resolved)
+            let listed = all.filter { $0.isListed && $0.startsAt >= moment }
+            return Self.upcomingOrder(listed, near: position).map(resolved)
         case .mine:
             return all.filter(isInRoom).sorted(by: Self.mineOrder).map(resolved)
         case .group(let id):
             return all.filter { $0.group?.id == id && $0.status != .cancelled }.sorted { $0.startsAt < $1.startsAt }.map(resolved)
+        }
+    }
+
+    private static func upcomingOrder(_ tournaments: [Tournament], near position: Coordinate?) -> [Tournament] {
+        guard let position else { return tournaments.sorted { $0.startsAt < $1.startsAt } }
+        return tournaments.sorted { lhs, rhs in
+            let (left, right) = (lhs.location.coordinate.distance(to: position), rhs.location.coordinate.distance(to: position))
+            return left == right ? lhs.startsAt < rhs.startsAt : left < right
         }
     }
 

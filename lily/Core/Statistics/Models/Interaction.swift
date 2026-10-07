@@ -44,8 +44,13 @@ nonisolated struct Interaction: Encodable, Equatable, Sendable {
         Interaction(kind: .presentationChanged, occurredAt: date, presentation: presentation.wireValue)
     }
 
+    /// The group's id, visibility and event type (its type feeds the caller's preferences; "any type" says nothing).
     static func groupViewed(_ group: SportGroup, at date: Date) -> Interaction {
-        Interaction(kind: .groupViewed, occurredAt: date, groupId: group.id, groupVisibility: group.visibility)
+        Interaction(kind: .groupViewed,
+                    occurredAt: date,
+                    eventType: group.type,
+                    groupId: group.id,
+                    groupVisibility: group.visibility)
     }
 
     /// Whether a name was typed and how many groups came back; never the name.

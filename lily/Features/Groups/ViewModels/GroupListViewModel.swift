@@ -3,7 +3,8 @@ import Observation
 
 /// The groups lists: Mine (Home's rows) is a projection over `MyGroupsStore.communities`, the store owning the
 /// caller's groups for the app's lifetime (its direct conversations are the Chats tab's, never rows here); Discover
-/// pages through the public groups on its own (see the `+Discover` file) and works for guests too.
+/// pages through the public groups on its own (see the `+Discover` file), sends the user's position so the backend
+/// answers the groups around it, and works for guests too.
 @Observable
 final class GroupListViewModel {
     let scope: GroupListScope
@@ -29,6 +30,12 @@ final class GroupListViewModel {
     @ObservationIgnored var searchedUserID: String?
     /// The group-changes version the Discover pages were fetched at; a join, leave or create anywhere moves it.
     @ObservationIgnored var searchedChangesVersion: Int?
+    /// The position the Discover pages on screen were searched for (`Coordinate.coarse`, the rounding the backend
+    /// receives); `nil` for none. Set by an answer only, so a search that failed or was cancelled leaves it truthful,
+    /// and a browse made for another position than the user's now is stale.
+    @ObservationIgnored var searchedPosition: Coordinate?
+    /// Known once the location service answered; distances on the cards and the position Discover sends need it.
+    private(set) var userLocation: Coordinate?
     /// Off for the carousel on Explore: the events list there reports its own failure, and a second popup would only
     /// repeat it.
     var reportsSearchFailures = true
@@ -36,6 +43,7 @@ final class GroupListViewModel {
     let store: MyGroupsStore
     let repository: any GroupRepository
     let identity: any IdentityProvider
+    let locationService: any LocationService
     let errorCenter: ErrorCenter
     let recorder: any InteractionRecorder
     let logger: any Logging
@@ -46,6 +54,7 @@ final class GroupListViewModel {
          store: MyGroupsStore,
          repository: any GroupRepository,
          identity: any IdentityProvider,
+         locationService: any LocationService,
          errorCenter: ErrorCenter,
          recorder: any InteractionRecorder,
          logger: any Logging,
@@ -55,6 +64,7 @@ final class GroupListViewModel {
         self.store = store
         self.repository = repository
         self.identity = identity
+        self.locationService = locationService
         self.errorCenter = errorCenter
         self.recorder = recorder
         self.logger = logger
@@ -103,6 +113,23 @@ final class GroupListViewModel {
 
     private var isDiscoverStale: Bool {
         !hasSearched || searchedUserID != identity.currentUserID || searchedChangesVersion != store.changesVersion
+            || searchedPosition != discoverPosition
+    }
+
+    /// Asks for the position on every appearance (the cache answers within its TTL). A Discover browse answered for
+    /// another position than the user's now (or none) is searched again, so the page is the one around the user; a
+    /// search in flight notices the position itself when it answers (`search()`), and Mine never searches.
+    func loadUserLocation() async {
+        if let fix = await locationService.currentLocation() { userLocation = fix }
+        guard scope == .discover, hasSearched, !isLoadingDiscover, searchedPosition != discoverPosition else { return }
+        logger.debug(.cache, "Discover searched for another position; searching again")
+        await search()
+    }
+
+    /// Road distance from the user to the group's place, formatted; `nil` while the position is unknown or the group
+    /// has no place.
+    func distanceText(for group: SportGroup) -> String? {
+        group.distance(from: userLocation)?.roadText
     }
 
     /// Pull-to-refresh: always asks the backend.

@@ -31,7 +31,7 @@ struct MockTournamentFixtureTests {
         await #expect(throws: AppError.tournamentNotFound) { try await repository.join(id: id, teamName: nil) }
         #expect(try await repository.tournaments(in: .upcoming, near: nil).map(\.id) == [MockTournamentFixtures.kickersCupID])
         let mineBefore = try await repository.tournaments(in: .mine, near: nil)
-        let roomsBefore = try await groups.groups(in: .mine, cursor: nil).items
+        let roomsBefore = try await groups.groups(in: .mine, cursor: nil, near: nil).items
         #expect(!mineBefore.contains { $0.id == id } && !roomsBefore.contains { $0.id == id })
         #expect(groups.find(id)?.isTournamentRoom == true && groups.find(id)?.isMember == false)
 

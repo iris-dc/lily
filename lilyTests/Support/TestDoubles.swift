@@ -147,7 +147,8 @@ func makeEventListViewModel(scope: EventScope = .upcoming,
                             recorder: SpyInteractionRecorder? = nil,
                             logger: SpyLogger? = nil,
                             now: @escaping () -> Date = { .now },
-                            initialFilter: EventFilter = EventFilter()) -> EventListViewModel {
+                            initialFilter: EventFilter = EventFilter(),
+                            filterStore: (any EventFilterStore)? = nil) -> EventListViewModel {
     EventListViewModel(scope: scope,
                        repository: repository,
                        identity: identity ?? FakeIdentityProvider(),
@@ -157,7 +158,8 @@ func makeEventListViewModel(scope: EventScope = .upcoming,
                        recorder: recorder ?? SpyInteractionRecorder(),
                        logger: logger ?? SpyLogger(),
                        now: now,
-                       initialFilter: initialFilter)
+                       initialFilter: initialFilter,
+                       filterStore: filterStore ?? NoOpEventFilterStore())
 }
 
 /// A `UserDefaults` suite of its own, so tests that build the composition root never share a stored session.
@@ -200,6 +202,28 @@ final class FakeLocationUpdateSource: LocationUpdateSource, Sendable {
             if let error { continuation.finish(throwing: error) }
             continuation.onTermination = { [self] _ in terminated.withLock { $0 = true } }
         }
+    }
+}
+
+/// Keeps the last saved filter and counts the saves, so a test can see what a view model wrote.
+@MainActor
+final class InMemoryEventFilterStore: EventFilterStore {
+    var stored: EventFilter?
+    private(set) var saveCount = 0
+
+    init(stored: EventFilter? = nil) {
+        self.stored = stored
+    }
+
+    func load() -> EventFilter? { stored }
+
+    func save(_ filter: EventFilter) {
+        stored = filter
+        saveCount += 1
+    }
+
+    func clear() {
+        stored = nil
     }
 }
 

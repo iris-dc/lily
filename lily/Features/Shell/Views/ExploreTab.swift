@@ -2,8 +2,9 @@ import SwiftUI
 
 /// The Explore tab: the upcoming games as a list or a map, with the public groups to discover in a carousel above the
 /// list. The carousel's Discover view model lives here so it survives the list's own state changes; it searches once
-/// per caller and again after a group changed anywhere (a join, a leave, a create), and keeps a failure to itself
-/// because the list reports its own.
+/// per caller and position and again after a group changed anywhere (a join, a leave, a create), and keeps a failure
+/// to itself because the list reports its own. Both carousels ask for the position on appearance: the backend orders
+/// what they show by distance, and the tiles show it.
 struct ExploreTab: View {
     private let dependencies: AppDependencies
     @State private var discover: GroupListViewModel
@@ -56,6 +57,10 @@ struct ExploreTab: View {
         }
         .task(id: dependencies.tournamentChanges.version) {
             if AppConfig.FeatureFlags.tournaments { await tournaments.loadIfStale() }
+        }
+        .task {
+            if AppConfig.FeatureFlags.groups { await discover.loadUserLocation() }
+            if AppConfig.FeatureFlags.tournaments { await tournaments.loadUserLocation() }
         }
     }
 }

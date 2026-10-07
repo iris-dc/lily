@@ -93,14 +93,8 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
                 .focused($focusedField, equals: .locationName)
                 .submitLabel(.done)
                 .accessibilityIdentifier(AccessibilityIdentifiers.createLocationName)
-            NavigationLink {
-                LocationPickerView(coordinate: $viewModel.draft.coordinate)
-            } label: {
-                LabeledContent(Copy.pickOnMap) {
-                    Text(viewModel.draft.coordinate.map(Copy.coordinateText) ?? Copy.spotNotSet)
-                }
-            }
-            .accessibilityIdentifier(AccessibilityIdentifiers.createPickOnMap)
+            PlacePickerRow(coordinate: $viewModel.draft.coordinate)
+                .accessibilityIdentifier(AccessibilityIdentifiers.createPickOnMap)
         } header: {
             Text(Copy.whereSection)
         } footer: {

@@ -8,6 +8,8 @@ protocol GroupDraftEditing: AnyObject, Observable {
     var canSubmit: Bool { get }
     /// The backend answered; the sheet closes.
     var isDone: Bool { get }
+    /// Run once when the sheet opens, before the user types: a create proposes the device's position as the spot.
+    func prepare() async
     func submit() async
 }
 
@@ -17,6 +19,9 @@ extension CreateGroupViewModel: GroupDraftEditing {
 
 extension EditGroupViewModel: GroupDraftEditing {
     var isDone: Bool { updatedGroup != nil }
+
+    /// The group's own place is the draft's already; nothing to propose.
+    func prepare() async {}
 }
 
 /// The group form in a sheet: Cancel and the submit button in the bar, the fields below. Closes itself once the
@@ -67,6 +72,7 @@ struct GroupDraftSheet<Model: GroupDraftEditing>: View {
         .interactiveDismissDisabled(viewModel.isSubmitting)
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
         .errorPopup(errorCenter)
+        .task { await viewModel.prepare() }
         .onChange(of: viewModel.isDone) {
             if viewModel.isDone { dismiss() }
         }

@@ -14,6 +14,10 @@ nonisolated struct GroupDraft: Equatable, Sendable {
     var type: EventType?
     var membersCanCreateEvents = true
     var membersCanInvite = true
+    /// Where the group plays. A public group needs one (Discover orders by it); a private group may leave it out.
+    var locationName = ""
+    /// Prefilled from the device's position when the sheet opens, else set on the map.
+    var coordinate: Coordinate?
 
     init(clientId: String = UUID().uuidString.lowercased()) {
         self.clientId = clientId
@@ -28,6 +32,8 @@ nonisolated struct GroupDraft: Equatable, Sendable {
         type = group.type
         membersCanCreateEvents = group.membersCanCreateEvents
         membersCanInvite = group.membersCanInvite
+        locationName = group.location?.name ?? ""
+        coordinate = group.location?.coordinate
     }
 
     /// One reason a draft cannot be sent, in the order the form shows its fields.
@@ -35,9 +41,15 @@ nonisolated struct GroupDraft: Equatable, Sendable {
         case nameTooShort
         case nameTooLong
         case descriptionTooLong
+        /// A public group without a place; a private one may have none.
+        case locationNameMissing
+        case locationNameTooLong
+        /// A place was named but its spot not set (the device had no position and the map was never opened).
+        case coordinateMissing
     }
 
     var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var trimmedLocationName: String { locationName.trimmingCharacters(in: .whitespacesAndNewlines) }
     /// `nil` when nothing was written, so the payload omits the field.
     var trimmedDescription: String? {
         let trimmed = description.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -51,10 +63,30 @@ nonisolated struct GroupDraft: Equatable, Sendable {
         if trimmedName.wireLength < limits.nameLength.lowerBound { issues.append(.nameTooShort) }
         if trimmedName.wireLength > limits.nameLength.upperBound { issues.append(.nameTooLong) }
         if trimmedDescription.wireLength > limits.descriptionMaxLength { issues.append(.descriptionTooLong) }
+        issues += locationIssues
+        return issues
+    }
+
+    /// The place is judged like the event form's, except that only a public group must have one: a private group is
+    /// reached by invite, a public one is found by where it plays.
+    private var locationIssues: [Issue] {
+        var issues: [Issue] = []
+        if trimmedLocationName.isEmpty {
+            if visibility == .public { issues.append(.locationNameMissing) }
+            return issues
+        }
+        if trimmedLocationName.wireLength > AppConfig.Groups.locationNameMaxLength { issues.append(.locationNameTooLong) }
+        if coordinate == nil { issues.append(.coordinateMissing) }
         return issues
     }
 
     var isValid: Bool { issues.isEmpty }
+
+    /// The place as the payload and the stored group carry it; `nil` when none was named or its spot is not set.
+    var location: EventLocation? {
+        guard !trimmedLocationName.isEmpty, let coordinate else { return nil }
+        return EventLocation(name: trimmedLocationName, coordinate: coordinate)
+    }
 
     /// The group this draft becomes once stored: the caller owns it and is its first member. What the mock
     /// repository and the test fake answer for a create; the backend builds the same shape from the payload.
@@ -69,6 +101,7 @@ nonisolated struct GroupDraft: Equatable, Sendable {
                    membersCanCreateEvents: membersCanCreateEvents,
                    membersCanInvite: membersCanInvite,
                    createdAt: now,
-                   membership: GroupMembership(role: .owner, joinedAt: now))
+                   membership: GroupMembership(role: .owner, joinedAt: now),
+                   location: location)
     }
 }

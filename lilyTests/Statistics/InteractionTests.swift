@@ -91,6 +91,16 @@ struct InteractionTests {
         #expect(encoded as NSDictionary == expected as NSDictionary)
     }
 
+    /// A typed group's view feeds the caller's type preferences, so its type travels in `eventType` like a game's.
+    @Test func groupViewedCarriesTheTypeWhenTheGroupHasOne() throws {
+        let group = SportGroup.fixture(id: "grp_02", visibility: .public, type: .padel)
+
+        let encoded = try json(Interaction.groupViewed(group, at: Self.date))
+
+        #expect(Set(encoded.keys) == ["kind", "occurredAt", "groupId", "groupVisibility", "eventType"])
+        #expect(encoded["eventType"] as? String == "padel")
+    }
+
     @Test func groupSearchCarriesTheFlagAndTheCountNeverTheText() throws {
         let encoded = try json(Interaction.groupSearchPerformed(hasQuery: true, resultCount: 3, at: Self.date))
 

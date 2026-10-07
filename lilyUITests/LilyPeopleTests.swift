@@ -37,10 +37,9 @@ final class LilyPeopleTests: LilyUITestCase {
         tapSignInWithApple()
         let carousel = app.scrollViews["group-carousel"]
         XCTAssertTrue(carousel.waitForExistence(timeout: 10), "the carousel shows once Discover answered")
+        // Nearest first around the mock position: Berlin Basketball is the second tile of the first column.
         let basketball = app.buttons[basketballRow]
         XCTAssertTrue(basketball.waitForExistence(timeout: 10))
-        // The second column of tiles peeks in at the right edge; one swipe aligns it.
-        carousel.swipeLeft()
         waitUntilHittableAndStill(basketball)
         basketball.tap()
 

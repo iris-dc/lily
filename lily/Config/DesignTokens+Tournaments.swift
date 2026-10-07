@@ -21,7 +21,8 @@ nonisolated extension DesignTokens.Symbols {
 nonisolated extension DesignTokens.Layout {
     /// A tile in the Explore tournaments carousel: the group tile's width, one row.
     static let tournamentTileWidth: CGFloat = groupTileWidth
-    static let tournamentTileHeight: CGFloat = groupTileHeight
+    /// Two lines beside the mark; the group tile grew a third for its place.
+    static let tournamentTileHeight: CGFloat = 64
     /// The bar under a tournament's facts: the capacity bar's height, one look for every "how full" bar.
     static let entriesBarHeight: CGFloat = capacityBarHeight
     /// One round of a bracket (`BracketView`), one match cell in it, and the gaps between columns and cells; a later

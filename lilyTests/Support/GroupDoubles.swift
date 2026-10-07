@@ -22,6 +22,8 @@ final class FakeGroupRepository: GroupRepository {
     private let hold = RequestHold()
     private(set) var requestedScopes: [GroupScope] = []
     private(set) var requestedCursors: [String?] = []
+    /// The position each list request carried (`nil` for none), in call order.
+    private(set) var requestedPositions: [Coordinate?] = []
     private(set) var fetchedGroupIDs: [String] = []
     private(set) var createdDrafts: [GroupDraft] = []
     private(set) var updatedDrafts: [(id: String, draft: GroupDraft)] = []
@@ -38,9 +40,10 @@ final class FakeGroupRepository: GroupRepository {
     }
     private(set) var unbans: [(id: String, userID: String)] = []
 
-    func groups(in scope: GroupScope, cursor: String?) async throws -> Page<SportGroup> {
+    func groups(in scope: GroupScope, cursor: String?, near position: Coordinate?) async throws -> Page<SportGroup> {
         requestedScopes.append(scope)
         requestedCursors.append(cursor)
+        requestedPositions.append(position)
         try await holdIfRequested()
         if let thrownError { throw thrownError }
         return Page(items: try result.get(), nextCursor: nextCursor)

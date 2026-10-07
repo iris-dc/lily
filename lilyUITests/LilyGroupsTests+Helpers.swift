@@ -11,7 +11,8 @@ extension LilyGroupsTests {
         XCTAssertTrue(app.navigationBars["Discover groups"].waitForExistence(timeout: 5))
     }
 
-    /// Kreuzberg Kickers (public, the caller is a member) is the first tile of the carousel on Explore.
+    /// Kreuzberg Kickers (public, the caller is a member) heads the carousel's second column on Explore, which peeks in
+    /// at the right edge far enough to tap.
     @MainActor
     func openKickersDetail() {
         let kickers = app.buttons[kickersRow]

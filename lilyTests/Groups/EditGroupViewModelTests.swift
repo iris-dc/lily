@@ -5,7 +5,8 @@ import Testing
 @MainActor
 struct EditGroupViewModelTests {
     private let harness = GroupHarness()
-    private let group = SportGroup.fixture(id: "g", name: "Old name", role: .owner)
+    private let group = SportGroup.fixture(id: "g", name: "Old name", role: .owner, location: Self.place)
+    private static let place = EventLocation(name: "Görlitzer Park", coordinate: AppConfig.Location.mockCenter)
     private let viewModel: EditGroupViewModel
 
     init() {
@@ -38,6 +39,31 @@ struct EditGroupViewModelTests {
         #expect(harness.changed.map(\.name) == ["New name"])
         #expect(harness.repository.updatedDrafts.map(\.id) == ["g"])
         #expect(harness.logs(.info).contains("Group g updated"))
+    }
+
+    /// A public group from before places existed asks for one the first time it is edited; a private one does not.
+    @Test func anOldPublicGroupWithoutAPlaceAsksForOneOnEdit() {
+        let old = SportGroup.fixture(id: "old", name: "Old name", role: .owner)
+        let viewModel = EditGroupViewModel(group: old,
+                                           repository: harness.repository,
+                                           store: harness.store,
+                                           reporter: harness.reporter,
+                                           logger: harness.logger,
+                                           onChange: harness.sink.record)
+        #expect(viewModel.issues == [.locationNameMissing] && !viewModel.canSubmit)
+
+        viewModel.draft.locationName = "Görlitzer Park"
+        viewModel.draft.coordinate = AppConfig.Location.mockCenter
+        #expect(viewModel.hasChanges && viewModel.canSubmit)
+
+        let privateGroup = SportGroup.fixture(id: "p", visibility: .private, role: .owner)
+        let privateViewModel = EditGroupViewModel(group: privateGroup,
+                                                  repository: harness.repository,
+                                                  store: harness.store,
+                                                  reporter: harness.reporter,
+                                                  logger: harness.logger,
+                                                  onChange: harness.sink.record)
+        #expect(privateViewModel.issues.isEmpty)
     }
 
     @Test func anInvalidDraftCannotBeSaved() {

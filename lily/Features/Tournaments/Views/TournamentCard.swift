@@ -12,15 +12,7 @@ struct TournamentCard: View {
                 header
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                     Text(tournament.name).font(LilyTheme.Fonts.cardTitle)
-                    HStack(spacing: DesignTokens.Spacing.sm) {
-                        Label(tournament.locationName, systemImage: DesignTokens.Symbols.location)
-                        if let distance {
-                            Text(AppBranding.Events.separatorGlyph)
-                            Label(distance, systemImage: DesignTokens.Symbols.distance)
-                        }
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    PlaceLine(name: tournament.locationName, distance: distance)
                 }
                 EntriesBar(tournament: tournament)
             }

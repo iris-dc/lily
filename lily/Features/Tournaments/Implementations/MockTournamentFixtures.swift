@@ -190,8 +190,6 @@ nonisolated enum MockTournamentFixtures {
     }
 
     static func coordinate(offset: (lat: Double, lon: Double)) -> Coordinate {
-        let center = AppConfig.Location.mockCenter
-        let spread = AppConfig.Location.fixtureSpreadDegrees
-        return Coordinate(latitude: center.latitude + offset.lat * spread, longitude: center.longitude + offset.lon * spread)
+        .aroundMockCenter(lat: offset.lat, lon: offset.lon)
     }
 }

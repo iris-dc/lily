@@ -4,8 +4,9 @@ import Foundation
 /// counts and roles. Failures arrive as `AppError`, ready for the popup.
 protocol GroupRepository {
     /// `.mine` answers every group the caller is in, most recently active first, in one page; `.discover` pages
-    /// through the public groups with `cursor` from the previous page's `nextCursor`.
-    func groups(in scope: GroupScope, cursor: String?) async throws -> Page<SportGroup>
+    /// through the public groups with `cursor` from the previous page's `nextCursor`. `position` matters to Discover
+    /// without a query alone: the backend then answers the groups around it, ranked, in one page without a cursor.
+    func groups(in scope: GroupScope, cursor: String?, near position: Coordinate?) async throws -> Page<SportGroup>
     /// Throws `AppError.groupNotFound` when it is gone, and for a private group the caller is not in.
     func group(id: String) async throws -> SportGroup
     /// Creates the group for the caller, who owns it and is its first member. Repeating a create with the same

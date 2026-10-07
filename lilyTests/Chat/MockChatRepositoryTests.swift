@@ -177,10 +177,10 @@ struct MockChatRepositoryTests {
 
         let conversation = MockGroupFixtures.martaConversationID
         #expect(try await repository.clearHistory(groupID: conversation).hidden)
-        #expect(try await !groups.groups(in: .mine, cursor: nil).items.contains { $0.id == conversation })
+        #expect(try await !groups.groups(in: .mine, cursor: nil, near: nil).items.contains { $0.id == conversation })
         var reply = MessageDraft(clientMessageID: "c-2")
         reply.text = "back"
         _ = try await repository.send(groupID: conversation, reply)
-        #expect(try await groups.groups(in: .mine, cursor: nil).items.contains { $0.id == conversation })
+        #expect(try await groups.groups(in: .mine, cursor: nil, near: nil).items.contains { $0.id == conversation })
     }
 }

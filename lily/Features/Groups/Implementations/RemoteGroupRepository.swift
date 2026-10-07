@@ -10,8 +10,11 @@ final class RemoteGroupRepository: GroupRepository {
         self.identity = identity
     }
 
-    func groups(in scope: GroupScope, cursor: String?) async throws -> Page<SportGroup> {
+    func groups(in scope: GroupScope, cursor: String?, near position: Coordinate?) async throws -> Page<SportGroup> {
         var query = scope.queryItems
+        if let position, scope.takesPosition {
+            query += position.queryItems
+        }
         if let cursor {
             query.append(URLQueryItem(name: AppConfig.API.Query.cursor, value: cursor))
         }
@@ -78,6 +81,13 @@ final class RemoteGroupRepository: GroupRepository {
 }
 
 private extension GroupScope {
+    /// Only a browse of Discover is ordered by place: a name is searched because it is known, not because it is near,
+    /// and Mine is the caller's own.
+    var takesPosition: Bool {
+        if case .discover(let query, _) = self { return query?.isEmpty ?? true }
+        return false
+    }
+
     /// The `scope` parameter and, for Discover, the optional criteria and the page size.
     var queryItems: [URLQueryItem] {
         let keys = AppConfig.API.Query.self

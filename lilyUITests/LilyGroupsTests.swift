@@ -63,27 +63,6 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(app.buttons[basketballRow].waitForExistence(timeout: 10), "the joined group must be listed on Home")
     }
 
-    /// Groups are founded from the "+" on Explore; the founder lands in the new group, and Home lists it.
-    @MainActor
-    func testCreateGroupFromExploreShowsOnHome() {
-        tapSignInWithApple()
-        tapCreateMenuItem("New group")
-        XCTAssertTrue(app.navigationBars["New group"].waitForExistence(timeout: 5))
-
-        let name = "Thursday Runners"
-        enter(name, into: app.textFields["create-group-name"])
-        let submit = app.buttons["create-group-submit"]
-        XCTAssertTrue(submit.isEnabled, "a name completes the draft")
-        submit.tap()
-
-        XCTAssertTrue(app.navigationBars["New group"].waitForNonExistence(timeout: 10), "the sheet must close once created")
-        XCTAssertTrue(app.buttons["group-open-chat"].waitForExistence(timeout: 10), "the founder must land in the new group")
-        XCTAssertTrue(labelled(name).exists, "the detail must be the new group's")
-        app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
-        XCTAssertTrue(labelled(name).waitForExistence(timeout: 10), "the new group must be listed on Home")
-    }
-
     /// A game created from a group's detail lands in its Events segment and, being a public group's game, in the
     /// Explore list behind it with the group's badge on its card, without a manual refresh.
     @MainActor

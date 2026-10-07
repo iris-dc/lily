@@ -2,8 +2,9 @@ import Foundation
 
 /// The event screens' view models over the shared repositories, changes tracker and the push opt-in.
 extension AppDependencies {
-    /// Explore starts from the default filter (10 km around the user); a list without a filter button, such as
-    /// Home, must never hide a game, so it starts from `.everything`.
+    /// Explore starts from the filter as the user last left it (the defaults, 10 km around the user, on a fresh
+    /// install) and keeps every change; a list without a filter button, such as Home, must never hide a game, so it
+    /// starts from `.everything` and keeps nothing.
     func makeEventListViewModel(scope: EventScope) -> EventListViewModel {
         EventListViewModel(scope: scope,
                            repository: eventRepository,
@@ -13,7 +14,16 @@ extension AppDependencies {
                            errorCenter: errorCenter,
                            recorder: interactionRecorder,
                            logger: logger,
-                           initialFilter: scope == .upcoming ? EventFilter() : .everything)
+                           initialFilter: scope == .upcoming ? eventFilterStore.load() ?? EventFilter() : .everything,
+                           filterStore: scope == .upcoming ? eventFilterStore : NoOpEventFilterStore())
+    }
+
+    /// Explore's filter as last set, forgotten by `-reset-session` like the session and the language choice, so UI
+    /// tests and screenshot runs start from the defaults.
+    static func makeEventFilterStore(arguments: [String], defaults: UserDefaults, logger: any Logging) -> any EventFilterStore {
+        let store = UserDefaultsEventFilterStore(defaults: defaults, logger: logger)
+        if arguments.contains(AppConfig.LaunchArguments.resetSession) { store.clear() }
+        return store
     }
 
     func makeEventDetailViewModel(for event: SportEvent,

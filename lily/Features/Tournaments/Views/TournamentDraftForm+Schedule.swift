@@ -55,15 +55,8 @@ extension TournamentDraftForm {
                 .focused($focusedField, equals: .locationName)
                 .submitLabel(.done)
                 .accessibilityIdentifier(AccessibilityIdentifiers.tournamentLocationName)
-            NavigationLink {
-                LocationPickerView(coordinate: $viewModel.draft.coordinate)
-            } label: {
-                LabeledContent(AppBranding.Events.Create.pickOnMap) {
-                    Text(viewModel.draft.coordinate.map(AppBranding.Events.Create.coordinateText)
-                         ?? AppBranding.Events.Create.spotNotSet)
-                }
-            }
-            .accessibilityIdentifier(AccessibilityIdentifiers.createPickOnMap)
+            PlacePickerRow(coordinate: $viewModel.draft.coordinate)
+                .accessibilityIdentifier(AccessibilityIdentifiers.createPickOnMap)
         } header: {
             Text(Copy.whereSection)
         } footer: {

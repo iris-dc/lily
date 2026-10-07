@@ -25,7 +25,7 @@ struct RemoteGroupRepositoryTests {
     @Test func mineAsksForTheScopeOnly() async throws {
         client.responses = [Page<SportGroup>(items: [group])]
 
-        let page = try await repository.groups(in: .mine, cursor: nil)
+        let page = try await repository.groups(in: .mine, cursor: nil, near: nil)
 
         #expect(page.items == [group])
         let request = try #require(client.requests.first)
@@ -37,8 +37,8 @@ struct RemoteGroupRepositoryTests {
     @Test func discoverSendsItsCriteriaAndThePageSize() async throws {
         client.responses = [Page<SportGroup>(items: []), Page<SportGroup>(items: [])]
 
-        _ = try await repository.groups(in: .discover(query: nil, type: nil), cursor: nil)
-        _ = try await repository.groups(in: .discover(query: "kre", type: .football), cursor: "abc")
+        _ = try await repository.groups(in: .discover(query: nil, type: nil), cursor: nil, near: nil)
+        _ = try await repository.groups(in: .discover(query: "kre", type: .football), cursor: "abc", near: nil)
 
         let limit = URLQueryItem(name: "limit", value: "\(AppConfig.Groups.discoverPageSize)")
         #expect(client.requests[0].queryItems == [URLQueryItem(name: "scope", value: "public"), limit])
@@ -49,10 +49,29 @@ struct RemoteGroupRepositoryTests {
                                                   URLQueryItem(name: "cursor", value: "abc")])
     }
 
+    /// A browse around the user sends `lat`/`lon` as Explore does (two decimals, a `.`), after the page size; a name
+    /// search and Mine send none, since the backend orders neither by place.
+    @Test func aBrowseSendsTheCoarsePositionASearchAndMineDoNot() async throws {
+        client.responses = [Page<SportGroup>(items: []), Page<SportGroup>(items: []), Page<SportGroup>(items: [])]
+        let position = Coordinate(latitude: 52.5231, longitude: 13.4049)
+
+        _ = try await repository.groups(in: .discover(query: nil, type: .padel), cursor: nil, near: position)
+        _ = try await repository.groups(in: .discover(query: "kre", type: nil), cursor: nil, near: position)
+        _ = try await repository.groups(in: .mine, cursor: nil, near: position)
+
+        #expect(client.requests[0].queryItems == [URLQueryItem(name: "scope", value: "public"),
+                                                  URLQueryItem(name: "type", value: "padel"),
+                                                  URLQueryItem(name: "limit", value: "\(AppConfig.Groups.discoverPageSize)"),
+                                                  URLQueryItem(name: "lat", value: "52.52"),
+                                                  URLQueryItem(name: "lon", value: "13.40")])
+        #expect(client.requests[1].queryItems.map(\.name) == ["scope", "q", "limit"])
+        #expect(client.requests[2].queryItems.map(\.name) == ["scope"])
+    }
+
     @Test func anEmptyQueryIsNotSent() async throws {
         client.responses = [Page<SportGroup>(items: [])]
 
-        _ = try await repository.groups(in: .discover(query: "", type: nil), cursor: nil)
+        _ = try await repository.groups(in: .discover(query: "", type: nil), cursor: nil, near: nil)
 
         #expect(client.requests.first?.queryItems.map(\.name) == ["scope", "limit"])
     }
@@ -141,7 +160,7 @@ struct RemoteGroupRepositoryTests {
     @Test func otherFailuresOnReadsBecomeGroupsUnavailableAndOnWritesGroupActionFailed() async {
         for error in Self.otherFailures {
             client.error = error
-            await #expect(throws: AppError.groupsUnavailable) { try await repository.groups(in: .mine, cursor: nil) }
+            await #expect(throws: AppError.groupsUnavailable) { try await repository.groups(in: .mine, cursor: nil, near: nil) }
             await #expect(throws: AppError.groupsUnavailable) { try await repository.group(id: "g1") }
             await #expect(throws: AppError.groupsUnavailable) { try await repository.members(id: "g1") }
             await #expect(throws: AppError.groupActionFailed) { try await repository.join(id: "g1") }
@@ -152,7 +171,7 @@ struct RemoteGroupRepositoryTests {
 
     @Test func statusOnlyFailuresAndTransportKeepTheSharedMapping() async {
         client.error = APIError.http(status: 401, body: nil)
-        await #expect(throws: AppError.sessionExpired) { try await repository.groups(in: .mine, cursor: nil) }
+        await #expect(throws: AppError.sessionExpired) { try await repository.groups(in: .mine, cursor: nil, near: nil) }
 
         client.error = APIError.http(status: 429, body: nil)
         await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.join(id: "g1") }
@@ -161,6 +180,6 @@ struct RemoteGroupRepositoryTests {
         await #expect(throws: AppError.network) { try await repository.group(id: "g1") }
 
         client.error = URLError(.cancelled)
-        await #expect(throws: URLError(.cancelled)) { try await repository.groups(in: .mine, cursor: nil) }
+        await #expect(throws: URLError(.cancelled)) { try await repository.groups(in: .mine, cursor: nil, near: nil) }
     }
 }

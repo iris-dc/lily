@@ -273,9 +273,6 @@ nonisolated enum MockEventFixtures {
     }
 
     private static func coordinate(for template: Template) -> Coordinate {
-        let center = AppConfig.Location.mockCenter
-        let spread = AppConfig.Location.fixtureSpreadDegrees
-        return Coordinate(latitude: center.latitude + template.offset.lat * spread,
-                          longitude: center.longitude + template.offset.lon * spread)
+        .aroundMockCenter(lat: template.offset.lat, lon: template.offset.lon)
     }
 }

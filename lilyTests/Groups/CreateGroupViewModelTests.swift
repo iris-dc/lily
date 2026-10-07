@@ -13,21 +13,60 @@ struct CreateGroupViewModelTests {
     init() {
         viewModel = CreateGroupViewModel(repository: harness.repository,
                                          store: harness.store,
+                                         locationService: harness.location,
                                          reporter: harness.reporter,
                                          logger: harness.logger,
                                          onCreated: harness.sink.record)
     }
 
+    /// A complete public draft: the name and a place with its spot, as the sheet's `prepare()` would have proposed.
+    private func fillDraft(of viewModel: CreateGroupViewModel? = nil) {
+        let viewModel = viewModel ?? self.viewModel
+        viewModel.draft.name = "Kreuzberg Kickers"
+        viewModel.draft.locationName = "Görlitzer Park"
+        viewModel.draft.coordinate = AppConfig.Location.mockCenter
+    }
+
     @Test func aNewDraftIsPublicAndNotYetSubmittable() {
         #expect(viewModel.draft.visibility == .public)
-        #expect(viewModel.issues == [.nameTooShort])
+        #expect(viewModel.issues == [.nameTooShort, .locationNameMissing])
         #expect(!viewModel.canSubmit)
         #expect(viewModel.issue(for: .nameTooShort, .nameTooLong) == .nameTooShort)
         #expect(viewModel.issue(for: .descriptionTooLong) == nil)
     }
 
-    @Test func submitCreatesTheGroupPutsItIntoMineAndHandsItOn() async {
+    /// Opening the sheet proposes the device's position as the spot, so a public group needs only its place named;
+    /// a spot the user chose first is kept, and without a position the map stays the way to set it.
+    @Test func prepareProposesTheDevicePositionAsTheSpot() async {
+        harness.location.result = AppConfig.Location.mockCenter
         viewModel.draft.name = "Kreuzberg Kickers"
+
+        await viewModel.prepare()
+        #expect(viewModel.draft.coordinate == AppConfig.Location.mockCenter)
+        #expect(viewModel.issues == [.locationNameMissing] && !viewModel.canSubmit)
+
+        viewModel.draft.locationName = "Görlitzer Park"
+        #expect(viewModel.canSubmit)
+
+        let chosen = Coordinate(latitude: 1, longitude: 2)
+        viewModel.draft.coordinate = chosen
+        await viewModel.prepare()
+        #expect(viewModel.draft.coordinate == chosen && harness.location.callCount == 1, "a chosen spot is not asked over")
+
+        let unpositioned = CreateGroupViewModel(repository: harness.repository,
+                                                store: harness.store,
+                                                locationService: FakeLocationService(),
+                                                reporter: harness.reporter,
+                                                logger: harness.logger,
+                                                onCreated: harness.sink.record)
+        unpositioned.draft.name = "Kreuzberg Kickers"
+        unpositioned.draft.locationName = "Görlitzer Park"
+        await unpositioned.prepare()
+        #expect(unpositioned.draft.coordinate == nil && unpositioned.issues == [.coordinateMissing])
+    }
+
+    @Test func submitCreatesTheGroupPutsItIntoMineAndHandsItOn() async {
+        fillDraft()
         viewModel.draft.visibility = .private
 
         await viewModel.submit()
@@ -41,7 +80,7 @@ struct CreateGroupViewModelTests {
     }
 
     @Test func aSecondSubmitWhileInFlightIsDropped() async {
-        viewModel.draft.name = "Kreuzberg Kickers"
+        fillDraft()
         harness.repository.holdsRequests = true
         let first = Task { await viewModel.submit() }
         await settle(until: { harness.repository.createdDrafts.count == 1 })
@@ -56,7 +95,7 @@ struct CreateGroupViewModelTests {
 
     /// The same client id travels with every attempt, so the group the backend already has is found and accepted.
     @Test(arguments: unknownOutcomes) func anUnknownOutcomeAcceptsTheGroupTheCallerOwns(_ error: AppError) async {
-        viewModel.draft.name = "Kreuzberg Kickers"
+        fillDraft()
         harness.repository.actionError = error
         harness.repository.result = .success([viewModel.draft.makeGroup(ownerName: "Me", now: .now)])
 
@@ -69,7 +108,7 @@ struct CreateGroupViewModelTests {
     }
 
     @Test func anotherOwnersGroupUnderTheIdKeepsTheFailure() async {
-        viewModel.draft.name = "Kreuzberg Kickers"
+        fillDraft()
         harness.repository.actionError = AppError.groupCreationFailed
         harness.repository.result = .success([.fixture(id: viewModel.draft.clientId, role: .member)])
 
@@ -81,7 +120,7 @@ struct CreateGroupViewModelTests {
     }
 
     @Test func aFailedLookupKeepsTheFailure() async {
-        viewModel.draft.name = "Kreuzberg Kickers"
+        fillDraft()
         harness.repository.actionError = AppError.network
         harness.repository.result = .success([])
 
@@ -92,7 +131,7 @@ struct CreateGroupViewModelTests {
     }
 
     @Test func aRefusalWithCopyIsReportedWithoutALookup() async {
-        viewModel.draft.name = "Kreuzberg Kickers"
+        fillDraft()
         harness.repository.actionError = AppError.contentRejected
 
         await viewModel.submit()
@@ -103,7 +142,7 @@ struct CreateGroupViewModelTests {
     }
 
     @Test func termsRequiredRaisesTheTermsSheet() async {
-        viewModel.draft.name = "Kreuzberg Kickers"
+        fillDraft()
         harness.repository.actionError = AppError.termsRequired
 
         await viewModel.submit()
@@ -112,7 +151,7 @@ struct CreateGroupViewModelTests {
     }
 
     @Test func cancellationStaysQuiet() async {
-        viewModel.draft.name = "Kreuzberg Kickers"
+        fillDraft()
         harness.repository.actionError = CancellationError()
 
         await viewModel.submit()

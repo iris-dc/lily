@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// One group in the Explore carousel: the mark, the name and a one-line caption, on a fixed-size glass tile so two
-/// rows of them line up.
+/// One group in the Explore carousel: the mark, the name, a one-line caption and, for a group with a place, where it
+/// plays with the distance, on a fixed-size glass tile so two rows of them line up.
 struct GroupTile: View {
     let group: SportGroup
+    var distance: String?
 
     var body: some View {
         HStack(spacing: DesignTokens.Spacing.md) {
@@ -19,6 +20,12 @@ struct GroupTile: View {
                     .font(LilyTheme.Fonts.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                if let place = group.placeCaption(distance: distance) {
+                    Text(place)
+                        .font(LilyTheme.Fonts.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
             Spacer(minLength: 0)
         }

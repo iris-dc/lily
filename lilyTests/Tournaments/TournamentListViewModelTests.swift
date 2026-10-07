@@ -23,6 +23,35 @@ struct TournamentListViewModelTests {
         #expect(explore.distanceText(for: .fixture()) != nil && mine.distanceText(for: .fixture()) == nil)
     }
 
+    /// Explore content loaded before the position was known is loaded again once it is (the backend ranks by distance),
+    /// once per coarse position and once more when the user moves; Home's list never minds the position.
+    @Test func upcomingReloadsOnceWhenThePositionArrivesOrMoves() async {
+        harness.repository.result = .success([.fixture()])
+        let location = FakeLocationService()
+        let explore = harness.makeListViewModel(scope: .upcoming, locationService: location)
+        let mine = harness.makeListViewModel(scope: .mine, locationService: location)
+
+        await explore.loadIfStale()
+        await mine.loadIfStale()
+        #expect(harness.repository.requestedPositions == [nil, nil])
+
+        location.result = Coordinate(latitude: 52.5231, longitude: 13.4049)
+        await explore.loadUserLocation()
+        await mine.loadUserLocation()
+        #expect(harness.repository.requestedScopes == [.upcoming, .mine, .upcoming])
+        #expect(harness.repository.requestedPositions.last == location.result)
+        #expect(harness.logger.messages(in: .cache).contains { $0.contains("position became known") })
+
+        await explore.loadUserLocation()
+        await explore.loadIfStale()
+        #expect(harness.repository.requestedScopes.count == 3, "the same coarse position is no reason to reload")
+
+        location.result = Coordinate(latitude: 52.60, longitude: 13.40)
+        await explore.loadUserLocation()
+        #expect(harness.repository.requestedScopes.count == 4)
+        #expect(harness.logger.messages(in: .cache).contains { $0.contains("position changed") })
+    }
+
     @Test func loadIfStaleReusesTheListUntilAChangeOrTheTTL() async {
         harness.repository.result = .success([.fixture()])
         let viewModel = harness.makeListViewModel(scope: .upcoming)
