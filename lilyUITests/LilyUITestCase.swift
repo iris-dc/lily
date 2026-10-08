@@ -85,11 +85,15 @@ class LilyUITestCase: XCTestCase {
         item.tap()
     }
 
-    /// Focuses a text field and types into it.
+    /// Focuses a text field and types into it. A field that already has keyboard focus is typed into as it is:
+    /// `XCUIElement.tap()` resolves its target through the accessibility tree, and when the keyboard rose while the
+    /// transcript was scrolled up (a reply to an early message) a row lay under the glass composer, won the hit and
+    /// pushed its event, so the composer "vanished" (2026-10-08). A coordinate touch is no answer either: a form field
+    /// under the keyboard needs `tap()`, which brings it into view.
     @MainActor
     func enter(_ text: String, into field: XCUIElement) {
         XCTAssertTrue(field.waitForExistence(timeout: 5), "missing text field")
-        field.tap()
+        if !field.hasKeyboardFocus { field.tap() }
         field.typeText(text)
     }
 
@@ -147,4 +151,9 @@ class LilyUITestCase: XCTestCase {
         screenshot.lifetime = .keepAlways
         add(screenshot)
     }
+}
+
+private extension XCUIElement {
+    /// The "Keyboard Focused" attribute the hierarchy dump prints; not surfaced as a property on iOS.
+    var hasKeyboardFocus: Bool { (value(forKey: "hasKeyboardFocus") as? Bool) ?? false }
 }
