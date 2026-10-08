@@ -74,6 +74,7 @@ struct EventsMapView: View {
                     .frame(maxWidth: DesignTokens.Layout.mapSelectedCardWidth)
             }
             .buttonStyle(.plain)
+            .lilyHoverable()
             .padding(DesignTokens.Spacing.lg)
             .padding(.bottom, bottomInset)
             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -94,5 +95,6 @@ struct EventMapPin: View {
             .frame(width: DesignTokens.Layout.mapPinSize, height: DesignTokens.Layout.mapPinSize)
             .glassEffect(LilyTheme.selectionGlass(isSelected: isSelected), in: .circle)
             .scaleEffect(isSelected ? DesignTokens.Layout.mapPinSelectedScale : 1)
+            .lilyHoverable()
     }
 }

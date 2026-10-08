@@ -19,6 +19,7 @@ struct PersonRow<Badge: View>: View {
                 content
             }
             .buttonStyle(.plain)
+            .lilyHoverable()
             .accessibilityIdentifier(identifier)
         }
     }

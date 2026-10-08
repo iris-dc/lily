@@ -10,5 +10,6 @@ struct LilyApp: App {
             AppRootView(dependencies: dependencies)
                 .tint(Color.lilyAccent)
         }
+        .commands { ShellCommands(dependencies: dependencies) }
     }
 }

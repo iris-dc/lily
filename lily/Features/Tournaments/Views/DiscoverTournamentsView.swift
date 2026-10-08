@@ -34,7 +34,7 @@ struct DiscoverTournamentsView: View {
             ProgressView()
         } else if viewModel.visibleTournaments.isEmpty {
             RefreshableScroll(action: viewModel.load) {
-                emptyState.containerRelativeFrame(.vertical)
+                emptyState.readableColumn().containerRelativeFrame(.vertical)
             }
         } else {
             RefreshableScroll(action: viewModel.load) {

@@ -8,6 +8,8 @@ import SwiftUI
 struct IntroScreenFrame<Content: View>: View {
     var fadesBottom = true
     var alignment: Alignment = .top
+    /// The phone's width; a regular width shows a wider one beside the caption.
+    var width: CGFloat = DesignTokens.Layout.introScreenWidth
     @ViewBuilder let content: () -> Content
 
     var body: some View {
@@ -24,7 +26,7 @@ struct IntroScreenFrame<Content: View>: View {
             }
             .clipShape(.rect(cornerRadius: DesignTokens.Radius.screen))
             .mask(fade)
-            .frame(width: DesignTokens.Layout.introScreenWidth)
+            .frame(width: width)
             .allowsHitTesting(false)
             .accessibilityHidden(true)
     }

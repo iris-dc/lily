@@ -7,6 +7,8 @@ struct TournamentResultsSegment: View {
     let detail: TournamentDetail
     let viewModel: TournamentDetailViewModel
     let onSelect: (TournamentMatch) -> Void
+    /// Where the bracket's columns start; see `BracketView.contentInset`.
+    var bracketInset: CGFloat = DesignTokens.Spacing.xl
 
     var body: some View {
         if detail.matches.isEmpty {
@@ -18,7 +20,7 @@ struct TournamentResultsSegment: View {
             case .results where detail.tournament.format == .roundRobin:
                 StandingsTable(detail: detail, viewModel: viewModel)
             case .results:
-                BracketView(detail: detail, viewModel: viewModel, onSelect: onSelect)
+                BracketView(detail: detail, viewModel: viewModel, onSelect: onSelect, contentInset: bracketInset)
             case .matches:
                 MatchList(detail: detail, viewModel: viewModel, onSelect: onSelect)
             case .entries:

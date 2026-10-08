@@ -37,6 +37,7 @@ struct MatchSheet: View {
             .tint(Color.lilyAccent)
         }
         .presentationDetents([.medium, .large])
+        .lilyFormSheet()
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(viewModel.isBusy)
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.

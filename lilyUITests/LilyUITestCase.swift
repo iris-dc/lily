@@ -38,10 +38,20 @@ class LilyUITestCase: XCTestCase {
         openTab(titled: "Chats")
     }
 
-    /// Tab titles double as the roots' navigation titles, so one name finds both.
+    @MainActor
+    func openExploreTab() {
+        openTab(titled: "Explore")
+    }
+
+    /// Tab titles double as the roots' navigation titles, so one name finds both. The iPhone's bar is a `tabBar`;
+    /// the iPad's top bar exposes each tab as a plain button nested in another with the same label and no `tabBar`
+    /// around them, so the fallback takes the first button with that exact label.
     @MainActor
     private func openTab(titled title: String) {
-        let tab = app.tabBars.buttons[title]
+        let inBar = app.tabBars.buttons[title]
+        let tab = inBar.waitForExistence(timeout: 3)
+            ? inBar
+            : app.buttons.matching(NSPredicate(format: "label == %@", title)).firstMatch
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
         tab.tap()
         XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5))

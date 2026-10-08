@@ -30,6 +30,7 @@ struct TeamNameSheet: View {
                     }
                 }
                 .scrollContentBackground(.hidden)
+                .readableColumn()
             }
             .navigationTitle(Copy.teamNameTitle)
             .navigationBarTitleDisplayMode(.inline)
@@ -48,6 +49,7 @@ struct TeamNameSheet: View {
             .tint(Color.lilyAccent)
         }
         .presentationDetents([.medium])
+        .lilyFormSheet()
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(viewModel.isBusy)
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.

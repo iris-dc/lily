@@ -9,6 +9,9 @@ nonisolated extension AppBranding {
         static var noRooms: String { localized("No group chats yet. Join a group to start one.") }
         static var noRoomsAction: String { localized("Explore") }
         static var guestMessage: String { localized("Sign in to see your chats, invites and game reminders.") }
+        /// The split view's detail before a conversation is chosen (regular widths).
+        static var pickConversationTitle: String { localized("Pick a conversation") }
+        static var pickConversationMessage: String { localized("Choose a chat on the left to read it here.") }
         /// What the Chats tab's badge means to assistive technology (the badge itself is not exposed).
         static func unreadChats(_ count: Int) -> String {
             localized("\(count) unread chats")

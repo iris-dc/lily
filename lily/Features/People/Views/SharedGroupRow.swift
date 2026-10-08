@@ -10,6 +10,7 @@ struct SharedGroupRow: View {
             GroupRowContent(name: group.name, visibility: group.visibility, caption: group.caption, hasUnread: false)
         }
         .buttonStyle(.plain)
+        .lilyHoverable()
         .accessibilityIdentifier(AccessibilityIdentifiers.groupRow(group.id))
     }
 }

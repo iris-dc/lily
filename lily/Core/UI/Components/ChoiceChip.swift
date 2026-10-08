@@ -17,6 +17,7 @@ struct ChoiceChip: View {
                 .tappableLabel()
         }
         .buttonStyle(.plain)
+        .lilyHoverable()
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 

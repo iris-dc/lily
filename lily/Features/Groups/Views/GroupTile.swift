@@ -5,6 +5,8 @@ import SwiftUI
 struct GroupTile: View {
     let group: SportGroup
     var distance: String?
+    /// In a wrapping grid the tile takes its cell's width; in the carousel it keeps the fixed one so the rows line up.
+    var fillsWidth = false
 
     var body: some View {
         HStack(spacing: DesignTokens.Spacing.md) {
@@ -30,7 +32,9 @@ struct GroupTile: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, DesignTokens.Spacing.md)
-        .frame(width: DesignTokens.Layout.groupTileWidth, height: DesignTokens.Layout.groupTileHeight)
+        .tileFrame(fixedWidth: DesignTokens.Layout.groupTileWidth,
+                   height: DesignTokens.Layout.groupTileHeight,
+                   fillsWidth: fillsWidth)
         .glassEffect(.regular, in: .rect(cornerRadius: DesignTokens.Radius.card))
         .contentShape(.rect)
     }

@@ -127,6 +127,7 @@ struct InboxOpenCard<Details: View>: View {
             .inboxCard()
         }
         .buttonStyle(.plain)
+        .lilyHoverable()
         .disabled(isBusy)
         .accessibilityIdentifier(AccessibilityIdentifiers.inboxItem(item.id))
     }

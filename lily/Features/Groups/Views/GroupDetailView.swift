@@ -57,6 +57,7 @@ struct GroupDetailView: View {
                     segment
                 }
                 .padding(DesignTokens.Spacing.xl)
+                .readableColumn()
             }
             .refreshable { await refresh() }
         }

@@ -76,6 +76,7 @@ struct TournamentDraftSheet<Model: TournamentDraftEditing>: View {
             }
             .tint(Color.lilyAccent)
         }
+        .lilyFormSheet()
         .presentationDragIndicator(.visible)
         // Swiping the sheet away mid-request would leave the outcome unknown to the user.
         .interactiveDismissDisabled(viewModel.isSubmitting)

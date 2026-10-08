@@ -15,6 +15,7 @@ struct GuestSignInPrompt: View {
                        actionTitle: AppBranding.signInAction) {
             isSignInPresented = true
         }
+        .readableColumn()
         .sheet(isPresented: $isSignInPresented) {
             SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
         }

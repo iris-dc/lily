@@ -3,18 +3,24 @@ import SwiftUI
 /// A group's chat room: the transcript over the aurora, the composer pinned to the bottom, the group's name and
 /// member count in the bar, an info button that leads to the group and a "more" menu whose one item clears the chat
 /// for the caller after a confirmation. A direct conversation is titled with the other person, has no member count,
-/// its info button leads to their profile and its menu reads "Delete chat". The tab bar hides while it is open.
+/// its info button leads to their profile and its menu reads "Delete chat". On a compact width the tab bar hides
+/// while it is open; on a regular width the room sits in a split view's detail beside the tabs' top bar.
 struct ChatView: View {
     @State private var viewModel: ChatViewModel
     /// The room awaiting the caller's word on a clear; `nil` while nothing is asked.
     @State private var clearing: SportGroup?
     private let dependencies: AppDependencies
+    /// What leaves the screen once the room is gone: the pop by default, or clearing the split view's selection when
+    /// the room is the detail column's root, where there is nothing to pop.
+    private let onGone: (() -> Void)?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
-    init(viewModel: ChatViewModel, dependencies: AppDependencies) {
+    init(viewModel: ChatViewModel, dependencies: AppDependencies, onGone: (() -> Void)? = nil) {
         _viewModel = State(initialValue: viewModel)
         self.dependencies = dependencies
+        self.onGone = onGone
     }
 
     private var group: SportGroup { viewModel.group }
@@ -28,7 +34,7 @@ struct ChatView: View {
         .navigationTitle(group.name)
         .navigationSubtitle(ifPresent: viewModel.subtitle)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarVisibility(.hidden, for: .tabBar)
+        .toolbarVisibility(sizeClass == .compact ? .hidden : .automatic, for: .tabBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { infoButton }
             ToolbarItem(placement: .topBarTrailing) {
@@ -45,7 +51,8 @@ struct ChatView: View {
         }
         // Out of the group, the group is gone, or the conversation was deleted: nothing left to show here.
         .onChange(of: viewModel.isGone) {
-            if viewModel.isGone { dismiss() }
+            guard viewModel.isGone else { return }
+            if let onGone { onGone() } else { dismiss() }
         }
     }
 

@@ -47,6 +47,41 @@ struct AppNavigationTests {
 
     @Test func tabsAreInBarOrder() {
         #expect(AppTab.allCases == [.home, .explore, .chat, .profile])
+        #expect(AppTab.shown == AppTab.allCases, "debug builds have chat on, so every tab is drawn")
+    }
+
+    /// On a regular width the Chats tab is a split view: a room or the inbox is selected into its detail column,
+    /// never pushed, and the detail stack is emptied first so a screen pushed over the previous room cannot hide it.
+    @Test func withSplitChatsARoomAndTheInboxAreSelectedNotPushed() {
+        let navigation = AppNavigation()
+        navigation.usesSplitChats = true
+        navigation.openInChat("a screen over the previous room")
+
+        navigation.open(chat: .fixture(id: "b"))
+        #expect(navigation.selectedTab == .chat)
+        #expect(navigation.selectedConversation == .room(id: "b"))
+        #expect(navigation.chatPath.isEmpty)
+
+        navigation.openInbox()
+        #expect(navigation.selectedConversation == .inbox && navigation.chatPath.isEmpty)
+    }
+
+    /// On a compact width nothing is selected; the inbox and the room are pushed as before.
+    @Test func withoutSplitChatsTheInboxIsPushedAndNothingIsSelected() {
+        let navigation = AppNavigation()
+
+        navigation.openInbox()
+        #expect(navigation.selectedTab == .chat && navigation.chatPath.count == 1)
+        #expect(navigation.selectedConversation == nil)
+    }
+
+    /// A shortcut's create shows Explore and parks the intent for its screen to present; Explore clears it.
+    @Test func aCreateRequestSelectsExploreAndKeepsTheIntent() {
+        let navigation = AppNavigation()
+        navigation.selectedTab = .home
+
+        navigation.requestCreate(.group)
+        #expect(navigation.selectedTab == .explore && navigation.pendingCreate == .group)
     }
 
     /// A restored user lands on their groups and games; a guest (or nobody yet) on the games the landing promised.
@@ -63,10 +98,15 @@ struct AppNavigationTests {
         navigation.open(group: .fixture(id: "a"))
         navigation.open(chat: .fixture(id: "a"))
 
+        navigation.usesSplitChats = true
+        navigation.open(chat: .fixture(id: "b"))
+        navigation.requestCreate(.game)
+
         navigation.sessionDidEnd()
 
         #expect(navigation.selectedTab == .explore)
         #expect(navigation.homePath.isEmpty && navigation.chatPath.isEmpty)
+        #expect(navigation.selectedConversation == nil && navigation.pendingCreate == nil)
     }
 
     /// Through the composition root: a sign-out must reach the navigation like every other per-user state.

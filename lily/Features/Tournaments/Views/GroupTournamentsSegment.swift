@@ -13,7 +13,10 @@ struct GroupTournamentsSegment: View {
         } else if viewModel.visibleTournaments.isEmpty {
             viewModel.loadFailed ? loadFailedState : emptyState
         } else {
-            TournamentCardList(tournaments: viewModel.visibleTournaments, distance: viewModel.distanceText, horizontalPadding: 0)
+            TournamentCardList(tournaments: viewModel.visibleTournaments,
+                               distance: viewModel.distanceText,
+                               horizontalPadding: 0,
+                               singleColumn: true)
         }
     }
 

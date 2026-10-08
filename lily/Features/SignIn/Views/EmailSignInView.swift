@@ -29,6 +29,7 @@ struct EmailSignInView: View {
                 Spacer()
             }
             .padding(DesignTokens.Spacing.xl)
+            .readableColumn()
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { focusedField = .email }

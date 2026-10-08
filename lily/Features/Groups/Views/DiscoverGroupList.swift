@@ -9,20 +9,22 @@ struct DiscoverGroupList: View {
         if viewModel.isInitialLoad {
             ProgressView()
         } else if viewModel.isDiscoverEmpty {
-            refreshableScroll { nothingFoundState.containerRelativeFrame(.vertical) }
+            refreshableScroll { nothingFoundState.readableColumn().containerRelativeFrame(.vertical) }
         } else {
             refreshableScroll { cards }
         }
     }
 
-    /// The next page is asked for when the last card shows; `canLoadMore` keeps one request in flight at a time.
+    /// The next page is asked for when the last card shows; `canLoadMore` keeps one request in flight at a time. One
+    /// column on a compact width, as many as fit on a regular one.
     private var cards: some View {
-        LazyVStack(spacing: DesignTokens.Spacing.md) {
-            ForEach(viewModel.groups) { group in
+        VStack(spacing: DesignTokens.Spacing.md) {
+            AdaptiveCardGrid(data: viewModel.groups) { group in
                 NavigationLink(value: group) {
                     GroupCard(group: group, distance: viewModel.distanceText(for: group))
                 }
                 .buttonStyle(.plain)
+                .lilyHoverable()
                 .accessibilityIdentifier(AccessibilityIdentifiers.groupRow(group.id))
                 .onAppear {
                     if group.id == viewModel.groups.last?.id, viewModel.canLoadMore {

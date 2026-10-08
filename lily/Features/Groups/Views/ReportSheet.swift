@@ -30,6 +30,7 @@ struct ReportSheet: View {
             .tint(Color.lilyAccent)
         }
         .presentationDetents([.medium, .large])
+        .lilyFormSheet()
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(viewModel.isSubmitting)
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
@@ -55,6 +56,7 @@ struct ReportSheet: View {
             }
         }
         .scrollContentBackground(.hidden)
+        .readableColumn()
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {

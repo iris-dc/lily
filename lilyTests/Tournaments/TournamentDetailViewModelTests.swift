@@ -116,7 +116,9 @@ struct TournamentDetailViewModelTests {
         #expect(harness.logs(.info).contains { $0.contains("cancelled") })
     }
 
-    @Test func openChatFetchesTheRoomAndPushesIt() async {
+    /// The room lands in Mine first, so the Chats split view (which shows only rooms Mine lists) can select it even
+    /// while Mine's index still misses a room just entered.
+    @Test func openChatFetchesTheRoomPlacesItInMineAndPushesIt() async {
         harness.repository.details["t"] = .fixture(tournament: .fixture(myEntryId: "e"))
         harness.groupRepository.result = .success([.tournamentRoomFixture()])
         let viewModel = harness.makeDetailViewModel(for: destination)
@@ -126,6 +128,7 @@ struct TournamentDetailViewModelTests {
 
         #expect(harness.groupRepository.fetchedGroupIDs == ["t"] && harness.navigation.selectedTab == .chat)
         #expect(harness.navigation.chatPath.count == 1)
+        #expect(harness.groups.groups.map(\.id) == ["t"])
     }
 
     @Test func aGuestCannotActAndSeesNoEntries() async {

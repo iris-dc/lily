@@ -7,7 +7,11 @@ enum LilyTheme {
         static func wordmark(size: CGFloat) -> Font {
             .system(size: size, weight: .semibold)
         }
-        static var headline: Font { .system(size: DesignTokens.Typography.headlineSize, weight: .bold) }
+        static var headline: Font { headline(scale: 1) }
+        /// The landing headline at a fraction of its size, for a line that fits in one only when shrunk.
+        static func headline(scale: CGFloat) -> Font {
+            .system(size: DesignTokens.Typography.headlineSize * scale, weight: .bold)
+        }
         static var screenTitle: Font { .system(.largeTitle, weight: .bold) }
         static var cardTitle: Font { .system(.title3, design: .default, weight: .semibold) }
         static var sectionTitle: Font { .system(.title2, design: .default, weight: .bold) }

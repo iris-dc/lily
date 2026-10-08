@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Builds Lily and runs unit + UI tests on an iOS simulator.
-# Used by GitHub Actions and locally: ./scripts/ci.sh [lint|build|unit|ui|all]
+# Builds Lily and runs unit + UI tests on an iPhone simulator, and the iPad UI tests on an iPad simulator.
+# Used by GitHub Actions and locally: ./scripts/ci.sh [lint|build|unit|ui|ui-ipad|all]
 set -euo pipefail
 
 SCHEME="lily"
 UNIT_TARGET="lilyTests"
 UI_TARGET="lilyUITests"
+# The iPad layouts have a UI test class of their own, run on an iPad; the rest of the UI suite stays on the iPhone.
+IPAD_UI_TESTS="lilyUITests/LilyIPadTests"
 RESULTS_DIR="${RESULTS_DIR:-build/results}"
 DERIVED_DATA="${DERIVED_DATA:-build/DerivedData}"
 STAGE="${1:-all}"
@@ -29,21 +31,48 @@ pick_simulator() {
   echo "$name"
 }
 
+pick_ipad() {
+  # First available iPad. Prefer the 13-inch Pro, the widest layout, if present.
+  local list
+  list=$(xcrun simctl list devices available | grep -E "^[[:space:]]+iPad" || true)
+  local name
+  name=$(echo "$list" | grep -m1 "iPad Pro 13-inch" | sed -E 's/^[[:space:]]+(.*) \([0-9A-F-]+\).*/\1/' || true)
+  if [[ -z "$name" ]]; then
+    name=$(echo "$list" | head -1 | sed -E 's/^[[:space:]]+(.*) \([0-9A-F-]+\).*/\1/')
+  fi
+  if [[ -z "$name" ]]; then
+    echo "No iPad simulator available" >&2
+    xcrun simctl list devices available >&2
+    exit 1
+  fi
+  echo "$name"
+}
+
 DEVICE=$(pick_simulator)
 DESTINATION="platform=iOS Simulator,name=${DEVICE}"
 echo "Xcode: $(xcodebuild -version | tr '\n' ' ')"
 echo "Destination: ${DESTINATION}"
 mkdir -p "$RESULTS_DIR"
 
+# Only the stages that run on an iPad need one, so lint, build and unit still run on a Mac without an iPad simulator.
+ipad_destination() {
+  local ipad
+  ipad=$(pick_ipad)
+  echo "iPad destination: platform=iOS Simulator,name=${ipad}" >&2
+  echo "platform=iOS Simulator,name=${ipad}"
+}
+
+# The destination is the iPhone unless XCODEBUILD_DESTINATION says otherwise (the iPad stage sets it).
 run_xcodebuild() {
   local label="$1"; shift
   local action="$1"
   local log="$RESULTS_DIR/${label}.log"
+  local destination="${XCODEBUILD_DESTINATION:-$DESTINATION}"
   rm -rf "$RESULTS_DIR/${label}.xcresult"
   echo "==> ${label}"
   set +e
   # Amplify pulls in smithy-swift, whose build plug-in xcodebuild refuses to validate without an interactive approval.
-  xcodebuild "$@" -scheme "$SCHEME" -destination "$DESTINATION" -derivedDataPath "$DERIVED_DATA" \
+  xcodebuild "$@" -scheme "$SCHEME" -destination "$destination" -derivedDataPath "$DERIVED_DATA" \
     -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$log" \
     | { grep -E "error:|/lily/.*: warning:|Test Suite .* (passed|failed)|Test Case .* (passed|failed)|Executed|Test case .* (passed|failed)|\*\* .* (SUCCEEDED|FAILED) \*\*" || true; }
   local status=${PIPESTATUS[0]}
@@ -103,15 +132,23 @@ case "$STAGE" in
     use_software_keyboard
     run_xcodebuild ui-tests test -only-testing:"$UI_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/ui-tests.xcresult"
     ;;
+  ui-ipad)
+    IPAD_DESTINATION=$(ipad_destination)
+    use_software_keyboard
+    XCODEBUILD_DESTINATION="$IPAD_DESTINATION" run_xcodebuild ui-ipad-tests test -only-testing:"$IPAD_UI_TESTS" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/ui-ipad-tests.xcresult"
+    ;;
   all)
     run_lint
     run_xcodebuild build build-for-testing
     run_xcodebuild unit-tests test-without-building -only-testing:"$UNIT_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/unit-tests.xcresult"
     use_software_keyboard
     run_xcodebuild ui-tests test-without-building -only-testing:"$UI_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/ui-tests.xcresult"
+    # The iPhone build's simulator products are arm64 like the iPad's, so the iPad stage runs them without a rebuild.
+    IPAD_DESTINATION=$(ipad_destination)
+    XCODEBUILD_DESTINATION="$IPAD_DESTINATION" run_xcodebuild ui-ipad-tests test-without-building -only-testing:"$IPAD_UI_TESTS" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/ui-ipad-tests.xcresult"
     ;;
   *)
-    echo "Usage: $0 [lint|build|unit|ui|all]" >&2
+    echo "Usage: $0 [lint|build|unit|ui|ui-ipad|all]" >&2
     exit 2
     ;;
 esac

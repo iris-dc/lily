@@ -118,6 +118,7 @@ struct MatchButton: View {
                 .frame(height: height)
         }
         .buttonStyle(.plain)
+        .lilyHoverable()
         .accessibilityIdentifier(AccessibilityIdentifiers.match(match.id))
     }
 }

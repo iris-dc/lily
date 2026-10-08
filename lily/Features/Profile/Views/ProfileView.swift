@@ -20,6 +20,7 @@ struct ProfileView: View {
                 }
                 .padding(.horizontal, DesignTokens.Layout.screenMargin)
                 .padding(.vertical, DesignTokens.Spacing.xl)
+                .readableColumn()
             }
             .navigationTitle(AppBranding.profileTitle)
         }

@@ -3,6 +3,7 @@ import UIKit
 
 struct MainTabView: View {
     let dependencies: AppDependencies
+    @Environment(\.layoutMode) private var layoutMode
 
     /// Rooms with unread messages plus the inbox when it holds something unseen: one badge for every conversation.
     private var unreadChats: Int {
@@ -40,7 +41,14 @@ struct MainTabView: View {
                 tabLabel(AppBranding.profileTitle, symbol: DesignTokens.Symbols.profile)
             }
         }
+        // iPadOS draws the tabs as a top bar on its own; the iPhone keeps its floating bar. `.sidebarAdaptable` was tried
+        // (2026-10-07) and dropped: its sidebar only repeated the four tabs and iPadOS opened it by itself in landscape,
+        // taking 280 pt from the content column.
         .tabBarMinimizeBehavior(.onScrollDown)
+        // The navigation model stays ignorant of size classes; the shell tells it which Chats layout is on screen.
+        .onChange(of: layoutMode.isRegular, initial: true) {
+            dependencies.navigation.usesSplitChats = layoutMode.isRegular
+        }
     }
 
     /// A light outline glyph over the title. `Tab(_:systemImage:)` would draw the symbol at the bar's own heavy weight

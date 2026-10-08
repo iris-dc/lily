@@ -143,9 +143,7 @@ extension View {
     /// view would answer its ideal width, next to nothing) and keeps the bubble's padding plus another sender's avatar
     /// column inside `bubbleMaxWidthFraction` on every iPhone width. The grid and the file cards share it.
     func galleryWidth(alignment: Alignment) -> some View {
-        containerRelativeFrame(.horizontal, alignment: alignment) { length, _ in
-            length * DesignTokens.Layout.galleryWidthFraction
-        }
+        transcriptFraction(DesignTokens.Layout.galleryWidthFraction, alignment: alignment)
     }
 }
 

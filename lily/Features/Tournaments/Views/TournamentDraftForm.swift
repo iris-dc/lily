@@ -25,6 +25,7 @@ struct TournamentDraftForm<Model: TournamentDraftEditing>: View {
             detailsSection
         }
         .scrollContentBackground(.hidden)
+        .readableColumn()
         .tint(Color.lilyAccent)
     }
 

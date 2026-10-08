@@ -48,6 +48,7 @@ struct MatchScheduleView: View {
                 }
             }
             .scrollContentBackground(.hidden)
+            .readableColumn()
         }
         .navigationTitle(Copy.title)
         .navigationBarTitleDisplayMode(.inline)

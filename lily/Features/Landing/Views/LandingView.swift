@@ -30,6 +30,8 @@ struct LandingView: View {
                             .padding(.trailing, DesignTokens.Spacing.lg)
                     }
                 actions
+                    // Wider than any phone's content, so compact is unchanged; on an iPad the capsules stop stretching.
+                    .readableColumn(maxWidth: DesignTokens.Layout.landingButtonMaxWidth)
                     .padding(.top, DesignTokens.Spacing.md)
                     .padding(.horizontal, DesignTokens.Spacing.xl)
                     .padding(.bottom, DesignTokens.Spacing.lg)
@@ -65,10 +67,7 @@ struct LandingHeadline: View {
             // Each line is its own Text, so the tight line gap is the stack spacing, not `lineSpacing`.
             VStack(alignment: .leading, spacing: DesignTokens.Typography.headlineLineSpacing) {
                 ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
-                    Text(line)
-                        .font(LilyTheme.Fonts.headline)
-                        .tracking(DesignTokens.Typography.headlineTracking)
-                        .foregroundStyle(index == lines.indices.last ? Color.lilyAccent : Color.lilyInk)
+                    HeadlineLine(text: line, color: index == lines.indices.last ? Color.lilyAccent : Color.lilyInk)
                 }
             }
             Text(subtitle)
@@ -76,8 +75,34 @@ struct LandingHeadline: View {
                 .foregroundStyle(.secondary)
                 .padding(.top, DesignTokens.Spacing.md)
         }
+        // The lines take the height they need: on a short page (the SE) the slide's stack proposes the caption about
+        // one line, and a wrapped line would truncate to "De vrais matchs…" instead; the miniature gives way.
+        .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// One headline line, never truncated: on one line at full size when it fits, shrunk to `headlineMinimumScale` when
+/// that is enough ("Real games near you." on the SE's 375 pt), wrapped otherwise (the French and Spanish lines are
+/// half again as wide as the English; a `lineLimit(1)` cut them to "De vrais matchs près de…" on every phone).
+private struct HeadlineLine: View {
+    let text: String
+    let color: Color
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            line(scale: 1).lineLimit(1)
+            line(scale: DesignTokens.Layout.headlineMinimumScale).lineLimit(1)
+            line(scale: 1)
+        }
+    }
+
+    private func line(scale: CGFloat) -> some View {
+        Text(text)
+            .font(LilyTheme.Fonts.headline(scale: scale))
+            .tracking(DesignTokens.Typography.headlineTracking * scale)
+            .foregroundStyle(color)
     }
 }
 

@@ -37,7 +37,8 @@ Everything for push reminders is in place except Apple's side (2026-10-02). Unti
 
 ## Requirements
 
-- Xcode 26.5 or newer (the deployment target is iOS 26.5; the project was last upgraded with Xcode 26.6), with an iOS 26.5 simulator runtime.
+- Xcode 26.5 or newer (the project was last upgraded with Xcode 26.6), with an iOS 26.5 simulator runtime; an iPad simulator too for `ci.sh ui-ipad`.
+- The deployment target is **iOS 26.0** (since 2026-10-07; 26.5 before), so every iPhone from the iPhone 11 and the iPhone SE (2020) and every iPad on iPadOS 26 can install it. The iPhone is portrait-only; the iPad rotates freely and supports Split View, Slide Over and Stage Manager, because every layout follows the window's size class (`LayoutMode`, see `CLAUDE.md`), never the device. On an iPad the tabs sit in the top bar, Explore, Home and Discover lay their cards out in as many columns as fit, details and forms keep a readable column, sheets that are forms open as centred form sheets, the landing shows its miniature beside the caption, a wide Explore keeps the map beside the content instead of behind a switch, the Chats tab is a split view (the conversations on the left, the open room or the inbox on the right), a hardware keyboard's Return sends a message (Shift+Return starts a new line), and ⌘1 to ⌘4 switch tabs, ⌘N starts a game, ⌘⇧N a group and ⌘⇧T a tournament (the iPadOS menu bar lists them).
 - No AWS credentials needed to run or test. Signing in for real needs a network and the `lily-users` pool (the ids are in `AppConfig.Cognito`); every test and preview runs on the mock.
 
 ## Run
@@ -57,8 +58,11 @@ xcodebuild -scheme lily -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 
 ```sh
 ./scripts/ci.sh unit     # unit tests (lilyTests)
-./scripts/ci.sh ui       # UI smoke tests (lilyUITests)
+./scripts/ci.sh ui       # UI smoke tests (lilyUITests) on an iPhone
+./scripts/ci.sh ui-ipad  # the iPad layout tests (lilyUITests/LilyIPadTests) on an iPad simulator
 ```
+
+`LilyIPadTests` checks the regular-width layouts (Explore's group grid, the card grid and the map pane beside it, Discover's grid, the Chats split view keeping the list beside the room through a rotation, the inbox opening in the detail column, a create sheet presented as a centred form sheet, the landing's miniature beside its caption) and skips itself on a phone, where the `ui` stage runs every class.
 
 Both pick a simulator for you, and both test stages pass `-parallel-testing-enabled NO`: simulator clones intermittently failed to launch the UI test runner, and for the unit tests a clone made the suite take minutes on a loaded CI runner where it otherwise finishes in seconds; a hand-typed `xcodebuild ... test` would run without that flag. A test stage also fails with "no tests were executed" when its log shows no test case, because `xcodebuild` exits 0 and prints a passing suite when `-only-testing` matches nothing.
 
@@ -78,7 +82,7 @@ Logs and `.xcresult` bundles land in `build/results/`.
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request to `main` on a `macos-26` runner: it selects the newest Xcode 26, installs SwiftLint with Homebrew (the runner image does not ship it), then runs `scripts/ci.sh all` as one step (lint with the string-catalog check, one build for testing, then unit and UI tests without rebuilding) and uploads the result bundles as an artifact. The runner needs Xcode 26.5 or newer, the same minimum as [Requirements](#requirements). Every `uses:` in the workflow is pinned to a commit SHA, with the release tag it was resolved from in a trailing comment; Dependabot (`.github/dependabot.yml`, `github-actions`, weekly) proposes the bumps as one grouped pull request, so a week's updates cost one CI run.
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request to `main` on a `macos-26` runner: it selects the newest Xcode 26, installs SwiftLint with Homebrew (the runner image does not ship it), then runs `scripts/ci.sh all` as one step (lint with the string-catalog check, one build for testing, then unit and UI tests without rebuilding on the iPhone, then `LilyIPadTests` on an iPad from the same build, since both simulators are arm64) and uploads the result bundles as an artifact. The runner needs Xcode 26.5 or newer, the same minimum as [Requirements](#requirements). Every `uses:` in the workflow is pinned to a commit SHA, with the release tag it was resolved from in a trailing comment; Dependabot (`.github/dependabot.yml`, `github-actions`, weekly) proposes the bumps as one grouped pull request, so a week's updates cost one CI run.
 
 To run on the mock auth service, launch with `-mock-auth`; add `-mock-auth-fail` to make every auth call fail and see the error popup, or `-mock-auth-confirm` to walk the confirmation step with the code `123456` (previews can use `AppDependencies.makeMock(authBehavior: .fail(.network))` or `.requireConfirmation(code:)`). Without any of them the app talks to the real pool.
 
@@ -168,6 +172,15 @@ The realtime API (AWS AppSync Events; the client lands in a later milestone, `Re
 - **Endpoint discovery.** `GET /api/me` names the realtime endpoint; `-realtime-endpoint <url>` overrides it for a debug build against a deployed backend, and the release constant is the fallback. Against a local Laurel none is known, so the connection stays off and chat catches up over REST only: on appear, after a send and, for the open room, on every return from the background (`RealtimeSessionController.resume()` runs that catch-up itself when no connection came up, and only after a `suspend()`: an active <-> inactive flip fetches nothing).
 - **Tournament rooms.** A tournament's room also carries `tournament_changed` and `match_updated` (see [Tournaments](#tournaments)); the controller bumps the tournament change counter on them and adopts a newer epoch, nothing else.
 - **Mock transport.** `-mock-events` wires `MockRealtimeTransport`, an in-memory bus: the mock chat echoes every send to the room's channel after 200 ms, and `-mock-chat-replies` makes Marta answer after 1.5 s and deepens every room to 300 rows.
+
+## App icon
+
+The icon is generated, not drawn by hand: `swift scripts/make-app-icon.swift /tmp/icon` renders a four-point spark in the
+brand red with one amber glint on the dark aurora at 1024 pt, in the light, dark and tinted appearances iOS asks for
+(`final-any/dark/tinted.png`), plus the same icon as three layers for Icon Composer. The shipped files live in
+`lily/Assets.xcassets/AppIcon.appiconset` as `AppIcon.png`, `AppIcon-Dark.png` and `AppIcon-Tinted.png`; they are opaque,
+as the App Store requires. Judge a change on a simulator's home screen (`xcrun simctl install`, then a screenshot), not in
+the asset catalog.
 
 ## Folder layout
 

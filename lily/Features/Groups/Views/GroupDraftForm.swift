@@ -20,6 +20,7 @@ struct GroupDraftForm: View {
             permissionsSection
         }
         .scrollContentBackground(.hidden)
+        .readableColumn()
         .tint(Color.lilyAccent)
     }
 

@@ -2,9 +2,11 @@ import SwiftUI
 
 /// The inbox conversation: day chips and system cards anchored to the bottom like a chat, "Load earlier" above the
 /// oldest item while a page before exists, and the empty state for a quiet inbox. Opening it marks everything read,
-/// and so does an item that lands while it is open. The tab bar hides while it is open, as in a room.
+/// and so does an item that lands while it is open. On a compact width the tab bar hides while it is open, as in a
+/// room; on a regular width it sits in the Chats split view's detail under the tabs' top bar.
 struct InboxView: View {
     @State private var viewModel: InboxViewModel
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private typealias Copy = AppBranding.Inbox
 
@@ -19,7 +21,7 @@ struct InboxView: View {
         }
         .navigationTitle(Copy.title)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarVisibility(.hidden, for: .tabBar)
+        .toolbarVisibility(sizeClass == .compact ? .hidden : .automatic, for: .tabBar)
         .task { await viewModel.appear() }
         .onChange(of: viewModel.newestID) { Task { await viewModel.noteNewItems() } }
     }
@@ -34,6 +36,7 @@ struct InboxView: View {
             }
             .padding(.horizontal, DesignTokens.Layout.screenMargin)
             .padding(.vertical, DesignTokens.Spacing.md)
+            .readableColumn()
         }
         .defaultScrollAnchor(.bottom)
         .refreshable { await viewModel.refresh() }

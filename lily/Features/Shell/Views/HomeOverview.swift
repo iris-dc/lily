@@ -8,6 +8,7 @@ struct HomeOverview: View {
     let events: EventListViewModel
     let tournaments: TournamentListViewModel
     let dependencies: AppDependencies
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private typealias Copy = AppBranding.Home
 
@@ -27,7 +28,7 @@ struct HomeOverview: View {
             ProgressView()
         } else if isEmpty {
             // Scrollable so the "pull to refresh" the failed state promises is possible from here.
-            refreshableScroll { (loadFailed ? loadFailedState : emptyState).containerRelativeFrame(.vertical) }
+            refreshableScroll { (loadFailed ? loadFailedState : emptyState).readableColumn().containerRelativeFrame(.vertical) }
         } else {
             refreshableScroll { sections }
         }
@@ -49,9 +50,12 @@ struct HomeOverview: View {
         .padding(.bottom, DesignTokens.Spacing.xxl)
     }
 
-    /// A row opens the group's detail, the place to manage a membership; its chat lives on the Chats tab.
+    /// A row (a tile in the regular-width grid) opens the group's detail, the place to manage a membership; its chat
+    /// lives on the Chats tab.
     @ViewBuilder private var groupsContent: some View {
-        if hasGroups {
+        if hasGroups, sizeClass == .regular {
+            GroupTileGrid(groups: groups.groups, distance: groups.distanceText)
+        } else if hasGroups {
             GroupRowList(groups: groups.groups) { dependencies.navigation.open(group: $0) }
         } else if groups.isInitialLoad {
             loading

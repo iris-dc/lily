@@ -12,6 +12,8 @@ struct TournamentDetailView: View {
     @State private var confirmation: TournamentConfirmation?
     /// The match the destination named was raised once; a reload must not raise it again.
     @State private var hasShownLinkedMatch = false
+    /// The scroll view's width, for the bracket's inset: the readable column's edge on a wide screen.
+    @State private var contentWidth: CGFloat = 0
     @Environment(\.dismiss) private var dismiss
     private let dependencies: AppDependencies
 
@@ -104,27 +106,42 @@ struct TournamentDetailView: View {
         }
     }
 
+    /// Everything sits in the readable column except a bracket, which keeps the whole width and scrolls under both
+    /// screen edges, its first column lined up with the text above it.
     private func content(_ detail: TournamentDetail) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                TournamentHeader(tournament: detail.tournament,
-                                 organizerProfile: viewModel.organizerProfile,
-                                 winnerName: viewModel.winnerName)
-                if let description = detail.tournament.description {
-                    Text(description).font(.body)
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
+                    TournamentHeader(tournament: detail.tournament,
+                                     organizerProfile: viewModel.organizerProfile,
+                                     winnerName: viewModel.winnerName)
+                    if let description = detail.tournament.description {
+                        Text(description).font(.body)
+                    }
+                    TournamentFacts(tournament: detail.tournament)
+                    if viewModel.showsEntries {
+                        sectionPicker(detail.tournament)
+                    }
                 }
-                TournamentFacts(tournament: detail.tournament)
+                .inReadableColumn()
                 if viewModel.showsEntries {
-                    sectionPicker(detail.tournament)
                     segment(detail)
                 }
                 TournamentParticipationControl(viewModel: viewModel,
                                                onCreateTeam: { presentedSheet = .teamName },
                                                onLeave: { confirmation = .leave })
+                    .inReadableColumn()
             }
-            .padding(DesignTokens.Spacing.xl)
+            .padding(.vertical, DesignTokens.Spacing.xl)
         }
+        .onGeometryChange(for: CGFloat.self, of: \.size.width) { contentWidth = $0 }
         .refreshable { await viewModel.load() }
+    }
+
+    /// The bracket's columns start where the readable column does: the detail's margin on a phone, further in on a
+    /// wide screen.
+    private var bracketInset: CGFloat {
+        max(DesignTokens.Spacing.xl, (contentWidth - DesignTokens.Layout.readableWidth) / 2 + DesignTokens.Spacing.xl)
     }
 
     private func sectionPicker(_ tournament: Tournament) -> some View {
@@ -139,11 +156,23 @@ struct TournamentDetailView: View {
         switch section {
         case .entries:
             TournamentEntriesSegment(viewModel: viewModel, detail: detail) { confirmation = .removeEntry($0) }
+                .inReadableColumn()
+        case .results where detail.tournament.format == .singleElimination && !detail.matches.isEmpty:
+            // `BracketView` undoes the margin itself and scrolls edge to edge; only its inset follows the column.
+            results(detail, bracketInset: bracketInset)
+                .padding(.horizontal, DesignTokens.Spacing.xl)
         case .results, .matches:
-            TournamentResultsSegment(section: section, detail: detail, viewModel: viewModel) {
-                presentedSheet = .match(id: $0.id)
-            }
+            results(detail, bracketInset: DesignTokens.Spacing.xl)
+                .inReadableColumn()
         }
+    }
+
+    private func results(_ detail: TournamentDetail, bracketInset: CGFloat) -> some View {
+        TournamentResultsSegment(section: section,
+                                 detail: detail,
+                                 viewModel: viewModel,
+                                 onSelect: { presentedSheet = .match(id: $0.id) },
+                                 bracketInset: bracketInset)
     }
 
     /// A system row about a match opened this screen: the Matches segment, with that match's sheet up, once.

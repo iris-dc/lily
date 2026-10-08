@@ -24,6 +24,7 @@ struct InvitePeopleSheet: View {
                     }
                     content
                 }
+                .readableColumn()
             }
             .navigationTitle(Copy.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -34,6 +35,7 @@ struct InvitePeopleSheet: View {
             .task { await viewModel.load() }
         }
         .errorPopup(errorCenter)
+        .lilyFormSheet()
         .presentationDragIndicator(.visible)
     }
 

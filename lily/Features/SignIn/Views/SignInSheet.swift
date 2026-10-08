@@ -22,12 +22,14 @@ struct SignInSheet: View {
                     Spacer()
                 }
                 .padding(DesignTokens.Spacing.xl)
+                .readableColumn()
             }
             .navigationDestination(isPresented: $viewModel.isEmailFormPresented) {
                 EmailSignInView(session: session)
             }
         }
         .presentationDetents([.medium, .large])
+        .lilyFormSheet()
         .presentationDragIndicator(.visible)
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
         .errorPopup(errorCenter)

@@ -63,9 +63,7 @@ extension View {
     /// A row of the transcript: the content may take `bubbleMaxWidthFraction` of the list and hugs its side.
     func bubbleRow(side: Alignment) -> some View {
         frame(maxWidth: .infinity, alignment: side)
-            .containerRelativeFrame(.horizontal, alignment: side) { length, _ in
-                length * DesignTokens.Layout.bubbleMaxWidthFraction
-            }
+            .transcriptFraction(DesignTokens.Layout.bubbleMaxWidthFraction, alignment: side)
             .frame(maxWidth: .infinity, alignment: side)
     }
 }

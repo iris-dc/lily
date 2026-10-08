@@ -26,6 +26,7 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
             detailsSection
         }
         .scrollContentBackground(.hidden)
+        .readableColumn()
         .tint(Color.lilyAccent)
     }
 

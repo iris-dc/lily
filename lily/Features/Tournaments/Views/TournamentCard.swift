@@ -64,16 +64,17 @@ struct TournamentCardList: View {
     let tournaments: [Tournament]
     let distance: (Tournament) -> String?
     var horizontalPadding: CGFloat = DesignTokens.Layout.screenMargin
+    /// Inside a readable column (a group's detail) the list keeps one column on every width.
+    var singleColumn = false
 
     var body: some View {
-        LazyVStack(spacing: DesignTokens.Spacing.md) {
-            ForEach(tournaments) { tournament in
-                NavigationLink(value: tournament.destination) {
-                    TournamentCard(tournament: tournament, distance: distance(tournament))
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier(AccessibilityIdentifiers.tournamentRow(tournament.id))
+        AdaptiveCardGrid(data: tournaments, singleColumn: singleColumn) { tournament in
+            NavigationLink(value: tournament.destination) {
+                TournamentCard(tournament: tournament, distance: distance(tournament))
             }
+            .buttonStyle(.plain)
+            .lilyHoverable()
+            .accessibilityIdentifier(AccessibilityIdentifiers.tournamentRow(tournament.id))
         }
         .padding(.horizontal, horizontalPadding)
     }

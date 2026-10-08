@@ -22,6 +22,7 @@ struct UserProfileView: View {
                     sharedGroups
                 }
                 .padding(.vertical, DesignTokens.Spacing.xl)
+                .readableColumn()
             }
         }
         .navigationTitle(viewModel.displayName)

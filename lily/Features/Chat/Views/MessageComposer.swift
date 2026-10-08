@@ -4,6 +4,7 @@ import SwiftUI
 /// backend takes attachments. The field grows to five lines, a counter shows once the text nears the limit, and after
 /// a 429 the button stays closed while a caption counts the cooldown down. While the draft answers a message,
 /// `ReplyPreviewBar` sits above the field and the field takes focus; while pictures are picked, `AttachmentStrip` does.
+/// On a hardware keyboard Return sends and Shift+Return starts a new line (`ReturnKeyPolicy`).
 struct MessageComposer: View {
     @Bindable var viewModel: ChatViewModel
     /// Advanced once a second while the cooldown runs, so the caption and the button follow the clock.
@@ -30,6 +31,7 @@ struct MessageComposer: View {
                             .lineLimit(DesignTokens.Layout.multilineFieldLines)
                             .lilyMultilineField()
                             .focused($isFieldFocused)
+                            .onKeyPress(keys: [.return], action: handleReturn)
                             .accessibilityIdentifier(AccessibilityIdentifiers.chatComposer)
                         sendButton
                     }
@@ -46,6 +48,19 @@ struct MessageComposer: View {
         .task(id: viewModel.cooldownUntil) { await countDown() }
         .onChange(of: viewModel.replyTarget) {
             if viewModel.replyTarget != nil { isFieldFocused = true }
+        }
+    }
+
+    /// A hardware Return: `.ignored` lets the field insert its newline; `.handled` keeps it out of the text.
+    private func handleReturn(_ press: KeyPress) -> KeyPress.Result {
+        switch ReturnKeyPolicy.action(modifiers: press.modifiers, canSend: viewModel.canSend) {
+        case .newline:
+            return .ignored
+        case .send:
+            Task { await viewModel.send() }
+            return .handled
+        case .nothing:
+            return .handled
         }
     }
 

@@ -36,6 +36,7 @@ struct EventDetailView: View {
                     participationControl
                 }
                 .padding(DesignTokens.Spacing.xl)
+                .readableColumn()
             }
         }
         .navigationBarTitleDisplayMode(.inline)

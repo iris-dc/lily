@@ -14,6 +14,8 @@ struct ChatTranscript: View {
     @State private var geometry = TranscriptScrollPolicy.Snapshot.empty
     /// The message a tapped quote led to, while its wash shows.
     @State private var highlightedMessageID: String?
+    /// The list's usable width, for the rows' fractions (`\.transcriptWidth`); `nil` before the first layout.
+    @State private var transcriptWidth: CGFloat?
     /// The picture or video open full screen.
     @State private var viewing: AttachmentSelection?
     /// The file open in QuickLook, as the preview copy the loader named.
@@ -41,6 +43,7 @@ struct ChatTranscript: View {
         }
         .defaultScrollAnchor(.bottom)
         .scrollPosition($position)
+        .measuringTranscriptWidth($transcriptWidth)
         .onScrollGeometryChange(for: TranscriptScrollPolicy.Snapshot.self, of: Self.snapshot) { previous, current in
             geometry = current
             apply(policy.geometryChanged(from: previous,

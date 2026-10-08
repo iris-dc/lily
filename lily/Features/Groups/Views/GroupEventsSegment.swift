@@ -13,7 +13,10 @@ struct GroupEventsSegment: View {
         } else if viewModel.visibleEvents.isEmpty {
             viewModel.loadFailed ? loadFailedState : emptyState
         } else {
-            EventCardList(events: viewModel.visibleEvents, distance: viewModel.distanceText, horizontalPadding: 0)
+            EventCardList(events: viewModel.visibleEvents,
+                          distance: viewModel.distanceText,
+                          horizontalPadding: 0,
+                          singleColumn: true)
         }
     }
 

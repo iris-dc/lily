@@ -23,6 +23,7 @@ struct AppRootView: View {
         // Copy is read into views as plain strings, so a new language needs the tree rebuilt, not re-rendered.
         .id(language.language)
         .environment(\.locale, language.locale)
+        .layoutModeProvider()
         .animation(.smooth(duration: DesignTokens.Duration.slow), value: rootScreen)
         .task {
             await session.restore()
