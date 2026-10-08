@@ -43,6 +43,12 @@ class LilyUITestCase: XCTestCase {
         openTab(titled: "Explore")
     }
 
+    /// Opens the Profile tab (the account, the language row and the contact row) and waits for its root.
+    @MainActor
+    func openProfileTab() {
+        openTab(titled: "Profile")
+    }
+
     /// Tab titles double as the roots' navigation titles, so one name finds both. The iPhone's bar is a `tabBar`;
     /// the iPad's top bar exposes each tab as a plain button nested in another with the same label and no `tabBar`
     /// around them, so the fallback takes the first button with that exact label.

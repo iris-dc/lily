@@ -20,7 +20,7 @@ struct ErrorMessageMapperTests {
         .tournamentsUnavailable, .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed,
         .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked,
         .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit,
-        .inviteeAlreadyEntered, .cannotInviteToTournament,
+        .inviteeAlreadyEntered, .cannotInviteToTournament, .feedbackFailed,
         .unknown,
     ]
 

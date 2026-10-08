@@ -46,6 +46,8 @@ nonisolated extension ErrorMessageMapper {
         case .termsRequired:
             ErrorMessage(title: localized("Please accept the updated terms"),
                          body: localized("Accept the terms of use to continue."))
+        case .feedbackFailed:
+            ErrorMessage(title: localized("Couldn't send your message"), body: localized("Please try again in a moment."))
         default:
             unknownMessage
         }

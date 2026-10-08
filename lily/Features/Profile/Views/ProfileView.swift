@@ -1,10 +1,11 @@
 import SwiftUI
 
 struct ProfileView: View {
-    let session: SessionController
-    let language: LanguageStore
-    let errorCenter: ErrorCenter
+    let dependencies: AppDependencies
     @State private var isSignInPresented = false
+    @State private var isFeedbackPresented = false
+
+    private var session: SessionController { dependencies.sessionController }
 
     var body: some View {
         NavigationStack {
@@ -15,7 +16,8 @@ struct ProfileView: View {
                     } else {
                         guest
                     }
-                    LanguageRow(language: language)
+                    LanguageRow(language: dependencies.language)
+                    FeedbackRow(action: openFeedback)
                     Spacer()
                 }
                 .padding(.horizontal, DesignTokens.Layout.screenMargin)
@@ -25,7 +27,19 @@ struct ProfileView: View {
             .navigationTitle(AppBranding.profileTitle)
         }
         .sheet(isPresented: $isSignInPresented) {
-            SignInSheet(session: session, errorCenter: errorCenter)
+            SignInSheet(session: session, errorCenter: dependencies.errorCenter)
+        }
+        .sheet(isPresented: $isFeedbackPresented) {
+            FeedbackSheet(viewModel: dependencies.makeFeedbackViewModel(), errorCenter: dependencies.errorCenter)
+        }
+    }
+
+    /// A guest signs in first, as for every write: the backend takes a message from an account only.
+    private func openFeedback() {
+        if session.state.user == nil {
+            isSignInPresented = true
+        } else {
+            isFeedbackPresented = true
         }
     }
 

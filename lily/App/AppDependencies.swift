@@ -13,6 +13,8 @@ final class AppDependencies {
     let identity: any IdentityProvider
     let eventRepository: any EventRepository
     let profileRepository: any ProfileRepository
+    /// Where the contact form on Profile sends its messages; see `AppDependencies+Feedback.swift`.
+    let feedbackRepository: any FeedbackRepository
     /// Where the event screens report their taps; the root view flushes it when the app goes to the background.
     let interactionRecorder: any InteractionRecorder
     let locationService: any LocationService
@@ -35,6 +37,7 @@ final class AppDependencies {
          identity: SessionIdentityProvider = SessionIdentityProvider(),
          eventRepository: any EventRepository,
          profileRepository: any ProfileRepository,
+         feedbackRepository: any FeedbackRepository,
          interactionRecorder: any InteractionRecorder,
          locationService: any LocationService,
          groupRepositories: GroupRepositories,
@@ -54,6 +57,7 @@ final class AppDependencies {
         self.identity = identity
         self.eventRepository = eventRepository
         self.profileRepository = profileRepository
+        self.feedbackRepository = feedbackRepository
         self.interactionRecorder = interactionRecorder
         self.locationService = locationService
         self.groups = GroupDependencies(repositories: groupRepositories,
@@ -104,6 +108,7 @@ final class AppDependencies {
                                identity: identity,
                                eventRepository: repositories.events,
                                profileRepository: repositories.profile,
+                               feedbackRepository: repositories.feedback,
                                interactionRecorder: repositories.interactions,
                                locationService: makeLocationService(arguments: arguments, logger: logger),
                                groupRepositories: repositories.groups,
@@ -127,6 +132,7 @@ final class AppDependencies {
                                identity: identity,
                                eventRepository: repositories.events,
                                profileRepository: repositories.profile,
+                               feedbackRepository: repositories.feedback,
                                interactionRecorder: repositories.interactions,
                                locationService: MockLocationService(),
                                groupRepositories: repositories.groups,
@@ -212,25 +218,6 @@ final class AppDependencies {
                      mockPicker: mockPicker,
                      systemPush: systemPush)
     }
-
-    /// The `-api-base-url` value when it is a URL with a scheme and a host, otherwise `AppConfig.API.baseURL`.
-    static func apiBaseURL(from arguments: [String], logger: any Logging) -> URL {
-        guard let url = url(following: AppConfig.LaunchArguments.apiBaseURL, in: arguments, logger: logger) else {
-            return AppConfig.API.baseURL
-        }
-        logger.info(.network, "API base URL overridden: \(url.absoluteString)")
-        return url
-    }
-
-    /// A value flag's URL when it parses with a scheme and a host; a malformed value is ignored with a warning.
-    static func url(following flag: String, in arguments: [String], logger: any Logging) -> URL? {
-        guard let value = AppConfig.LaunchArguments.value(following: flag, in: arguments) else { return nil }
-        guard let url = URL(string: value), url.scheme != nil, url.host() != nil else {
-            logger.warning(.network, "Ignoring \(flag): not a URL with a scheme and a host")
-            return nil
-        }
-        return url
-    }
 }
 
 /// Who signs the user in, and who hands the API client the token to send: Cognito for both, or the mock and nobody.
@@ -244,6 +231,7 @@ private struct Auth {
 private struct Repositories {
     let events: any EventRepository
     let profile: any ProfileRepository
+    let feedback: any FeedbackRepository
     let interactions: any InteractionRecorder
     let groups: GroupRepositories
     let devices: any DeviceRepository
@@ -257,6 +245,7 @@ private struct Repositories {
         let client = URLSessionAPIClient(baseURL: baseURL, identity: identity, tokenProvider: tokenProvider, logger: logger)
         return Repositories(events: RemoteEventRepository(client: client),
                             profile: RemoteProfileRepository(client: client),
+                            feedback: RemoteFeedbackRepository(client: client),
                             interactions: RemoteInteractionRecorder(client: client, identity: identity, logger: logger),
                             groups: .remote(client: client,
                                             realtimeEndpoint: realtimeEndpoint,
@@ -274,6 +263,7 @@ private struct Repositories {
                      systemPush: Bool = false) -> Repositories {
         Repositories(events: MockEventRepository(identity: identity, logger: logger),
                      profile: MockProfileRepository(logger: logger),
+                     feedback: MockFeedbackRepository(logger: logger),
                      interactions: NoOpInteractionRecorder(),
                      groups: .mock(identity: identity, logger: logger, autoReplies: autoReplies, mockPicker: mockPicker),
                      devices: MockDeviceRepository(identity: identity, logger: logger),

@@ -134,6 +134,8 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case inviteeAlreadyEntered
     /// Only entrants and the organiser invite into a tournament (`FORBIDDEN` on an invite).
     case cannotInviteToTournament
+    /// A message to us (the contact form) failed for a reason without a code of its own; Send stays available.
+    case feedbackFailed
     case unknown
 
     /// Normalises any thrown error into an `AppError`.
