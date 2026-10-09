@@ -73,9 +73,13 @@ UI tests in `lilyUITests/` (`LilySmokeTests` for landing, Explore, map, filters,
 Run everything the way CI does:
 
 ```sh
-./scripts/ci.sh          # lint, build for testing, unit tests, UI tests (the one step CI runs)
-./scripts/ci.sh lint     # or: build | unit | ui
+./scripts/ci.sh          # lint, build for testing, unit tests, UI tests on the iPhone, LilyIPadTests on an iPad
+./scripts/ci.sh lint     # or: build | unit | ui | ui-ipad
+./scripts/ci.sh build-and-unit   # what CI's first job runs: lint, build for testing, unit tests
+./scripts/ci.sh ui-shard 2       # one of CI's parallel UI jobs (1..3, or ipad) from that build, without rebuilding
 ```
+
+The UI classes are grouped into shards of similar running time in `UI_SHARDS` in `scripts/ci.sh`; `ci.sh lint` fails when a class under `lilyUITests/` is in no shard (or in two) or the workflow's `shard:` matrix does not list every shard, so a new test class has to be placed before CI goes green.
 
 Linting uses [SwiftLint](https://github.com/realm/SwiftLint) (`brew install swiftlint`) with the rules in `.swiftlint.yml`; CI runs it in strict mode, so every warning fails the build.
 
@@ -83,7 +87,7 @@ Logs and `.xcresult` bundles land in `build/results/`.
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request to `main` on a `macos-26` runner: it selects the newest Xcode 26, installs SwiftLint with Homebrew (the runner image does not ship it), then runs `scripts/ci.sh all` as one step (lint with the string-catalog check, one build for testing, then unit and UI tests without rebuilding on the iPhone, then `LilyIPadTests` on an iPad from the same build, since both simulators are arm64) and uploads the result bundles as an artifact. The runner needs Xcode 26.5 or newer, the same minimum as [Requirements](#requirements). Every `uses:` in the workflow is pinned to a commit SHA, with the release tag it was resolved from in a trailing comment; Dependabot (`.github/dependabot.yml`, `github-actions`, weekly) proposes the bumps as one grouped pull request, so a week's updates cost one CI run.
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request to `main` on `macos-26` runners in two stages. The `build-and-unit` job selects the newest Xcode 26, installs SwiftLint with Homebrew (the runner image does not ship it), runs `scripts/ci.sh build-and-unit` (lint with the string-catalog and shard checks, one build for testing, the unit tests without rebuilding) and archives the simulator products and the `.xctestrun` as a tar (`ci.sh archive-products`; a tar because `upload-artifact` stores every file as 644 and the apps would not launch). Then a matrix of `ui-tests` jobs, one per shard (`1`, `2`, `3` on the iPhone, `ipad` for `LilyIPadTests` on an iPad; both simulators are arm64, so one build serves all), restores the archive (`ci.sh restore-products`) and runs `scripts/ci.sh ui-shard <shard>` through `xcodebuild test-without-building -xctestrun`, which needs neither the project nor a package resolution. Run as one job the suite had outgrown the 45-minute job limit; each job keeps that limit, and the result bundles of every job are uploaded as artifacts (`test-results-build`, `test-results-ui-<shard>`). The runner needs Xcode 26.5 or newer, the same minimum as [Requirements](#requirements). Every `uses:` in the workflow is pinned to a commit SHA, with the release tag it was resolved from in a trailing comment; Dependabot (`.github/dependabot.yml`, `github-actions`, weekly) proposes the bumps as one grouped pull request, so a week's updates cost one CI run.
 
 To run on the mock auth service, launch with `-mock-auth`; add `-mock-auth-fail` to make every auth call fail and see the error popup, or `-mock-auth-confirm` to walk the confirmation step with the code `123456` (previews can use `AppDependencies.makeMock(authBehavior: .fail(.network))` or `.requireConfirmation(code:)`). Without any of them the app talks to the real pool.
 

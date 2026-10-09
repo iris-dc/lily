@@ -10,9 +10,14 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# One build, then the UI suite in parallel shards: run end to end on one macOS runner the suite outgrew the 45-minute
+# job limit (lint, build, unit and 22 minutes of UI tests on a developer Mac, longer on a runner). The build job lints,
+# builds for testing once, runs the unit tests and archives the simulator products; each UI job restores them and
+# runs its shard through the .xctestrun without rebuilding (scripts/ci.sh ui-shard). Lint fails when a UI test class
+# is in no shard or the matrix below misses a shard, so neither can slip past CI.
 jobs:
-  build-and-test:
-    name: Build, unit tests, UI tests
+  build-and-unit:
+    name: Lint, build for testing, unit tests
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -28,16 +33,68 @@ jobs:
       - name: Install SwiftLint
         run: brew install swiftlint
 
-      # One stage, the same one agents run locally: lint, build for testing once, then run both test bundles
-      # without rebuilding. Separate unit and ui steps each rebuilt the test bundles.
-      - name: Lint, build for testing, unit and UI tests
-        run: ./scripts/ci.sh all
+      - name: Lint, build for testing, unit tests
+        run: ./scripts/ci.sh build-and-unit
+
+      - name: Archive the build products for the UI shards
+        run: ./scripts/ci.sh archive-products
+
+      - name: Upload build products
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-products
+          path: build/products.tgz
+          retention-days: 1
+          compression-level: 0
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-results
+          name: test-results-build
+          path: |
+            build/results/*.xcresult
+            build/results/*.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+  ui-tests:
+    name: UI tests (${{ matrix.shard }})
+    needs: build-and-unit
+    runs-on: macos-26
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # 1..N are the iPhone shards of UI_SHARDS in scripts/ci.sh; ipad is LilyIPadTests on an iPad simulator.
+        shard: [1, 2, 3, ipad]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select newest Xcode 26
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Download build products
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: build-products
+          path: build
+
+      - name: Restore the build products
+        run: ./scripts/ci.sh restore-products
+
+      - name: UI tests
+        run: ./scripts/ci.sh ui-shard ${{ matrix.shard }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results-ui-${{ matrix.shard }}
           path: |
             build/results/*.xcresult
             build/results/*.log
