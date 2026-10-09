@@ -3,11 +3,14 @@ import CoreGraphics
 import CoreText
 import Foundation
 
-// Renders iskra's app icon at 1024x1024 with CoreGraphics (no dependencies): a spark glyph in the brand red on the dark
-// aurora with one amber glint. The shipped files are `final-any/dark/tinted.png`, copied into
+// Renders iskra's app icon at 1024x1024 with CoreGraphics (no dependencies): a lowercase "i" set in SF Pro Rounded Black
+// in cream on the dark field (ink black with a maroon drift from the top left), its dot a ball with red seams; the
+// letter of the name, the ball for the sport. Chosen on 2026-10-09 from a grid of nine typefaces by four colourways on
+// the dark field (the user's pick: the rounded face, cream on cream with red seams), after a glowing spark and a flat
+// spark (2026-10-08) were rejected. The shipped files are `final-any/dark/tinted.png`, copied into
 // `lily/Assets.xcassets/AppIcon.appiconset` as `AppIcon.png`, `AppIcon-Dark.png`, `AppIcon-Tinted.png` (opaque, as the
-// App Store requires); `final-layer-*.png` are the same icon as three layers for Icon Composer. The other outputs are
-// the candidates judged on 2026-10-08 (A spark, B the "i" with a spark dot, C an ember) and a home-screen-size strip.
+// App Store requires); `final-layer-*.png` are the same icon as two layers for Icon Composer; `preview-strip.png` shows
+// the three appearances at home-screen sizes. The typeface is read from the Mac at render time; the PNGs ship.
 // Usage: swift scripts/make-app-icon.swift <output directory>
 
 let size: CGFloat = 1024
@@ -19,22 +22,20 @@ func rgb(_ hex: UInt32, _ alpha: CGFloat = 1) -> CGColor {
             blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
 }
 
-// Brand colours (dark variants of the colorsets).
-let accent: UInt32 = 0xB72734, maroon: UInt32 = 0x5E0C26, raspberry: UInt32 = 0xB31B3F, amber: UInt32 = 0xC98A12, amberLight: UInt32 = 0xF2B544
-let inkBlack: UInt32 = 0x0E0407
+// Brand colours (dark variants of the colorsets) and the cream the letter is set in.
+let accent: UInt32 = 0xB72734, inkBlack: UInt32 = 0x0E0407, cream: UInt32 = 0xFFF4EE
+let fieldMaroon: UInt32 = 0x3A0617, fieldMid: UInt32 = 0x1E040D
+let tintedSeam: UInt32 = 0x8A8A8A
 
-func makeContext(opaque: Bool = false) -> CGContext {
-    let space = CGColorSpace(name: CGColorSpace.sRGB)!
+func makeContext(width: CGFloat = size, height: CGFloat = size, opaque: Bool = false) -> CGContext {
     let alpha: CGImageAlphaInfo = opaque ? .noneSkipLast : .premultipliedLast
-    return CGContext(data: nil, width: Int(size), height: Int(size), bitsPerComponent: 8, bytesPerRow: 0,
-                     space: space, bitmapInfo: alpha.rawValue)!
+    return CGContext(data: nil, width: Int(width), height: Int(height), bitsPerComponent: 8, bytesPerRow: 0,
+                     space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: alpha.rawValue)!
 }
 
 func write(_ context: CGContext, _ name: String) {
-    let image = context.makeImage()!
-    let rep = NSBitmapImageRep(cgImage: image)
-    let data = rep.representation(using: .png, properties: [:])!
-    try! data.write(to: URL(fileURLWithPath: "\(outDir)/\(name).png"))
+    let rep = NSBitmapImageRep(cgImage: context.makeImage()!)
+    try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "\(outDir)/\(name).png"))
     print("wrote \(name).png")
 }
 
@@ -44,172 +45,124 @@ func gradient(_ colors: [CGColor], _ locations: [CGFloat]) -> CGGradient {
 
 enum Appearance: String { case any, dark, tinted }
 
-/// The aurora: a diagonal maroon-to-black field with a raspberry glow top-left and a faint amber breath bottom-right.
+/// The geometry of the icon, shared by the appearances and the layers.
+enum Letter {
+    /// The stem is the dotless "ı", so the dot can be drawn as a ball; its height on the canvas, and where it sits.
+    static let stemHeight: CGFloat = 500
+    static let stemCenter = CGPoint(x: 512, y: 350)
+    /// The ball's radius follows the stem's width, kept within bounds; the gap is the space between stem and ball.
+    static let ballRadiusRange: ClosedRange<CGFloat> = 118...160
+    static let ballRadiusPerStemWidth: CGFloat = 0.72
+    static let gap: CGFloat = 56
+    static let seamWidthPerRadius: CGFloat = 0.17
+    static let shadowOffset = CGSize(width: 0, height: -18), shadowBlur: CGFloat = 50
+}
+
+/// SF Pro Rounded at the given weight, as CoreText sees it (the system font with the rounded design).
+func roundedSystemFont(weight: NSFont.Weight, size pt: CGFloat) -> CTFont {
+    let descriptor = NSFont.systemFont(ofSize: pt, weight: weight).fontDescriptor
+    return NSFont(descriptor: descriptor.withDesign(.rounded) ?? descriptor, size: pt)! as CTFont
+}
+
+/// The outline of one character in `font`, at the origin.
+func glyphPath(_ character: Character, _ font: CTFont) -> CGPath {
+    let chars = Array(String(character).utf16)
+    var glyphs = [CGGlyph](repeating: 0, count: chars.count)
+    CTFontGetGlyphsForCharacters(font, chars, &glyphs, chars.count)
+    var identity = CGAffineTransform.identity
+    return CTFontCreatePathForGlyph(font, glyphs[0], &identity)!
+}
+
+/// `path` scaled and moved so its bounding box is centred on `center` with the given height.
+func fit(_ path: CGPath, height: CGFloat, center: CGPoint) -> CGPath {
+    let box = path.boundingBox
+    let scale = height / box.height
+    var t = CGAffineTransform(translationX: center.x - box.midX * scale, y: center.y - box.midY * scale).scaledBy(x: scale, y: scale)
+    return path.copy(using: &t)!
+}
+
+/// The stem on the canvas, and the ball's centre and radius derived from it.
+let stemPath = fit(glyphPath("ı", roundedSystemFont(weight: .black, size: 800)), height: Letter.stemHeight, center: Letter.stemCenter)
+let ballRadius = min(max(stemPath.boundingBox.width * Letter.ballRadiusPerStemWidth, Letter.ballRadiusRange.lowerBound),
+                     Letter.ballRadiusRange.upperBound)
+let ballCenter = CGPoint(x: stemPath.boundingBox.midX, y: stemPath.boundingBox.maxY + Letter.gap + ballRadius)
+
+/// The field: ink black with a maroon drift from the top left; the dark appearance drifts less; tinted is plain black.
 func drawBackground(_ c: CGContext, appearance: Appearance) {
     let rect = CGRect(x: 0, y: 0, width: size, height: size)
-    switch appearance {
-    case .tinted:
-        c.setFillColor(rgb(0x000000)); c.fill(rect)
-    case .any, .dark:
-        let top: UInt32 = appearance == .dark ? 0x3A0617 : maroon
-        c.drawLinearGradient(gradient([rgb(top), rgb(0x2A0510), rgb(inkBlack)], [0, 0.45, 1]),
-                             start: CGPoint(x: 0, y: size), end: CGPoint(x: size, y: 0), options: [])
-        c.drawRadialGradient(gradient([rgb(raspberry, appearance == .dark ? 0.45 : 0.6), rgb(raspberry, 0)], [0, 1]),
-                             startCenter: CGPoint(x: 230, y: 820), startRadius: 0,
-                             endCenter: CGPoint(x: 230, y: 820), endRadius: 720, options: [])
-        c.drawRadialGradient(gradient([rgb(amber, 0.16), rgb(amber, 0)], [0, 1]),
-                             startCenter: CGPoint(x: 900, y: 120), startRadius: 0,
-                             endCenter: CGPoint(x: 900, y: 120), endRadius: 520, options: [])
-    }
+    c.setFillColor(rgb(appearance == .tinted ? 0x000000 : inkBlack)); c.fill(rect)
+    guard appearance != .tinted else { return }
+    let top: UInt32 = appearance == .dark ? 0x2A0511 : fieldMaroon
+    c.drawLinearGradient(gradient([rgb(top), rgb(fieldMid), rgb(inkBlack)], [0, 0.55, 1]),
+                         start: CGPoint(x: 0, y: size), end: CGPoint(x: size, y: 0),
+                         options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
 }
 
-/// A four-point spark: arms of the given lengths, sides pulled towards the centre so the arms taper to points.
-func sparkPath(center: CGPoint, top: CGFloat, right: CGFloat, bottom: CGFloat, left: CGFloat, pinch: CGFloat) -> CGPath {
-    let p = CGMutablePath()
-    let t = CGPoint(x: center.x, y: center.y + top), r = CGPoint(x: center.x + right, y: center.y)
-    let b = CGPoint(x: center.x, y: center.y - bottom), l = CGPoint(x: center.x - left, y: center.y)
-    p.move(to: t)
-    p.addQuadCurve(to: r, control: CGPoint(x: center.x + pinch, y: center.y + pinch))
-    p.addQuadCurve(to: b, control: CGPoint(x: center.x + pinch, y: center.y - pinch))
-    p.addQuadCurve(to: l, control: CGPoint(x: center.x - pinch, y: center.y - pinch))
-    p.addQuadCurve(to: t, control: CGPoint(x: center.x - pinch, y: center.y + pinch))
-    p.closeSubpath()
-    return p
-}
-
-func fillGlyph(_ c: CGContext, path: CGPath, appearance: Appearance, glow: Bool) {
+/// A ball: a disc with two seam curves, the tennis-ball reading that stands for any sport.
+func drawBall(_ c: CGContext, center p: CGPoint, radius r: CGFloat, fill: CGColor, seam: CGColor) {
     c.saveGState()
-    if glow && appearance != .tinted {
-        c.setShadow(offset: .zero, blur: 70, color: rgb(raspberry, 0.75))
-        c.addPath(path); c.setFillColor(rgb(accent)); c.fillPath()
-        c.setShadow(offset: .zero, blur: 0, color: nil)
-    }
-    c.addPath(path); c.clip()
-    let box = path.boundingBox
-    let colors: [CGColor] = appearance == .tinted
-        ? [rgb(0xFFFFFF), rgb(0xBDBDBD)]
-        : [rgb(0xE24B55), rgb(accent), rgb(0x8F1526)]
-    let locations: [CGFloat] = appearance == .tinted ? [0, 1] : [0, 0.55, 1]
-    c.drawLinearGradient(gradient(colors, locations),
-                         start: CGPoint(x: box.midX, y: box.maxY), end: CGPoint(x: box.midX, y: box.minY), options: [])
-    if appearance != .tinted {
-        // A soft specular at the upper left of the glyph, the way glass catches the aurora.
-        c.drawRadialGradient(gradient([rgb(0xFFFFFF, 0.28), rgb(0xFFFFFF, 0)], [0, 1]),
-                             startCenter: CGPoint(x: box.midX - box.width * 0.18, y: box.maxY - box.height * 0.22),
-                             startRadius: 0, endCenter: CGPoint(x: box.midX - box.width * 0.18, y: box.maxY - box.height * 0.22),
-                             endRadius: box.width * 0.55, options: [])
-    }
+    c.setFillColor(fill)
+    c.fillEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: 2 * r, height: 2 * r))
+    c.addEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: 2 * r, height: 2 * r)); c.clip()
+    c.setStrokeColor(seam); c.setLineWidth(r * Letter.seamWidthPerRadius); c.setLineCap(.round)
+    let first = CGMutablePath()
+    first.move(to: CGPoint(x: p.x - r * 1.05, y: p.y + r * 0.35))
+    first.addQuadCurve(to: CGPoint(x: p.x - r * 0.35, y: p.y - r * 1.05), control: CGPoint(x: p.x + r * 0.15, y: p.y + r * 0.05))
+    let second = CGMutablePath()
+    second.move(to: CGPoint(x: p.x + r * 1.05, y: p.y - r * 0.35))
+    second.addQuadCurve(to: CGPoint(x: p.x + r * 0.35, y: p.y + r * 1.05), control: CGPoint(x: p.x - r * 0.15, y: p.y - r * 0.05))
+    c.addPath(first); c.strokePath(); c.addPath(second); c.strokePath()
     c.restoreGState()
 }
 
-/// The amber glint: a small symmetrical spark with a white core, the one touch of the secondary colour.
-func drawGlint(_ c: CGContext, at center: CGPoint, arm: CGFloat, appearance: Appearance) {
-    let path = sparkPath(center: center, top: arm, right: arm, bottom: arm, left: arm, pinch: arm * 0.16)
+/// The letter: the stem and the ball, each lifted by a soft shadow; white on black with grey seams when tinted.
+func drawLetter(_ c: CGContext, appearance: Appearance) {
+    let ink = rgb(appearance == .tinted ? 0xFFFFFF : cream)
+    let seam = rgb(appearance == .tinted ? tintedSeam : accent)
     c.saveGState()
-    if appearance != .tinted { c.setShadow(offset: .zero, blur: arm * 0.6, color: rgb(amberLight, 0.9)) }
-    c.addPath(path); c.setFillColor(appearance == .tinted ? rgb(0xFFFFFF) : rgb(amberLight)); c.fillPath()
-    c.setShadow(offset: .zero, blur: 0, color: nil)
-    let core = sparkPath(center: center, top: arm * 0.45, right: arm * 0.45, bottom: arm * 0.45, left: arm * 0.45, pinch: arm * 0.08)
-    c.addPath(core); c.setFillColor(rgb(0xFFFFFF, 0.95)); c.fillPath()
+    if appearance != .tinted { c.setShadow(offset: Letter.shadowOffset, blur: Letter.shadowBlur, color: rgb(0x000000, 0.5)) }
+    c.addPath(stemPath); c.setFillColor(ink); c.fillPath()
+    c.restoreGState()
+    c.saveGState()
+    if appearance != .tinted { c.setShadow(offset: Letter.shadowOffset, blur: Letter.shadowBlur, color: rgb(0x000000, 0.5)) }
+    drawBall(c, center: ballCenter, radius: ballRadius, fill: ink, seam: seam)
     c.restoreGState()
 }
 
-// Variant A: the spark, its top arm reaching higher, as a spark rising.
-func drawA(_ appearance: Appearance) {
-    let c = makeContext()
-    drawBackground(c, appearance: appearance)
-    let path = sparkPath(center: CGPoint(x: 500, y: 492), top: 360, right: 235, bottom: 275, left: 235, pinch: 46)
-    fillGlyph(c, path: path, appearance: appearance, glow: true)
-    drawGlint(c, at: CGPoint(x: 756, y: 744), arm: 62, appearance: appearance)
-    write(c, "A-\(appearance.rawValue)")
-}
-
-// Variant B: the wordmark's "i", a bold rounded stem with the spark as its dot.
-func drawB(_ appearance: Appearance) {
-    let c = makeContext()
-    drawBackground(c, appearance: appearance)
-    let stem = CGPath(roundedRect: CGRect(x: 512 - 92, y: 190, width: 184, height: 440), cornerWidth: 92, cornerHeight: 92, transform: nil)
-    fillGlyph(c, path: stem, appearance: appearance, glow: true)
-    let dot = sparkPath(center: CGPoint(x: 512, y: 760), top: 120, right: 120, bottom: 120, left: 120, pinch: 22)
-    c.saveGState()
-    if appearance != .tinted { c.setShadow(offset: .zero, blur: 60, color: rgb(amberLight, 0.9)) }
-    c.addPath(dot); c.setFillColor(appearance == .tinted ? rgb(0xFFFFFF) : rgb(amberLight)); c.fillPath()
-    c.restoreGState()
-    write(c, "B-\(appearance.rawValue)")
-}
-
-// Variant C: an ember with a tail sweeping in from the lower left, a spark in flight.
-func drawC(_ appearance: Appearance) {
-    let c = makeContext()
-    drawBackground(c, appearance: appearance)
-    let p = CGMutablePath()
-    let head = CGPoint(x: 600, y: 600), r: CGFloat = 170
-    p.addArc(center: head, radius: r, startAngle: .pi * 0.75, endAngle: .pi * 1.75 + .pi, clockwise: false)
-    // The tail: from the head's lower-left tangents to a point far down-left, bowed outward.
-    let tail = CGPoint(x: 150, y: 150)
-    p.move(to: CGPoint(x: head.x - r * cos(.pi * 0.25), y: head.y + r * sin(.pi * 0.25)))
-    p.addQuadCurve(to: tail, control: CGPoint(x: 220, y: 470))
-    p.addQuadCurve(to: CGPoint(x: head.x + r * cos(.pi * 0.25), y: head.y - r * sin(.pi * 0.25)), control: CGPoint(x: 470, y: 220))
-    p.closeSubpath()
-    fillGlyph(c, path: p, appearance: appearance, glow: true)
-    drawGlint(c, at: CGPoint(x: 790, y: 790), arm: 58, appearance: appearance)
-    write(c, "C-\(appearance.rawValue)")
-}
-
-for appearance in [Appearance.any, .dark, .tinted] {
-    drawA(appearance); drawB(appearance); drawC(appearance)
-}
-
-// Layers of A for Icon Composer: the background alone, the spark alone, the glint alone (transparent).
-do {
-    let c = makeContext(); drawBackground(c, appearance: .any); write(c, "layer-background")
-    let s = makeContext()
-    fillGlyph(s, path: sparkPath(center: CGPoint(x: 500, y: 492), top: 360, right: 235, bottom: 275, left: 235, pinch: 46), appearance: .any, glow: false)
-    write(s, "layer-spark")
-    let g = makeContext(); drawGlint(g, at: CGPoint(x: 756, y: 744), arm: 62, appearance: .any); write(g, "layer-glint")
-}
-
-// Refinements of A: a fuller body (larger pinch) and an optional tilt, plus a strip at home-screen size to judge.
-func drawARefined(_ appearance: Appearance, pinch: CGFloat, tilt: CGFloat, name: String, opaque: Bool = false) -> CGContext {
+func drawIcon(_ appearance: Appearance, opaque: Bool) -> CGContext {
     let c = makeContext(opaque: opaque)
     drawBackground(c, appearance: appearance)
-    let center = CGPoint(x: 500, y: 492)
-    var transform = CGAffineTransform(translationX: center.x, y: center.y).rotated(by: tilt).translatedBy(x: -center.x, y: -center.y)
-    let base = sparkPath(center: center, top: 350, right: 240, bottom: 280, left: 240, pinch: pinch)
-    let path = base.copy(using: &transform)!
-    fillGlyph(c, path: path, appearance: appearance, glow: true)
-    drawGlint(c, at: CGPoint(x: 760, y: 740), arm: 62, appearance: appearance)
-    write(c, name)
+    drawLetter(c, appearance: appearance)
     return c
 }
 
-var strip: [CGImage] = []
-for (index, variant) in [(46, 0.0), (68, 0.0), (68, -0.14), (84, -0.10)].enumerated() {
-    let c = drawARefined(.any, pinch: CGFloat(variant.0), tilt: CGFloat(variant.1), name: "A\(index + 1)-any")
-    strip.append(c.makeImage()!)
+// The final set, opaque, one per appearance.
+var finals: [CGImage] = []
+for appearance in [Appearance.any, .dark, .tinted] {
+    let c = drawIcon(appearance, opaque: true)
+    write(c, "final-\(appearance.rawValue)")
+    finals.append(c.makeImage()!)
 }
-// Four icons at 180 px with iOS corner radius on a dark field, as a home screen would show them.
-let preview = CGContext(data: nil, width: 4 * 260, height: 300, bitsPerComponent: 8, bytesPerRow: 0,
-                        space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-preview.setFillColor(rgb(0x1C1C1E)); preview.fill(CGRect(x: 0, y: 0, width: 4 * 260, height: 300))
-for (i, image) in strip.enumerated() {
-    let rect = CGRect(x: 40 + CGFloat(i) * 260, y: 60, width: 180, height: 180)
-    preview.saveGState()
-    preview.addPath(CGPath(roundedRect: rect, cornerWidth: 40, cornerHeight: 40, transform: nil)); preview.clip()
-    preview.interpolationQuality = .high
-    preview.draw(image, in: rect)
-    preview.restoreGState()
+
+// Layers for Icon Composer: the background alone and the letter alone (transparent).
+do {
+    let b = makeContext(); drawBackground(b, appearance: .any); write(b, "final-layer-background")
+    let l = makeContext(); drawLetter(l, appearance: .any); write(l, "final-layer-letter")
+}
+
+// The three appearances at 180 px (3x) and 60 px with the iOS corner radius, as a home screen would show them.
+let preview = makeContext(width: 3 * 260, height: 420)
+preview.setFillColor(rgb(0x1C1C1E)); preview.fill(CGRect(x: 0, y: 0, width: 3 * 260, height: 420))
+for (index, image) in finals.enumerated() {
+    let big = CGRect(x: 40 + CGFloat(index) * 260, y: 180, width: 180, height: 180)
+    let small = CGRect(x: 100 + CGFloat(index) * 260, y: 60, width: 60, height: 60)
+    for rect in [big, small] {
+        preview.saveGState()
+        preview.addPath(CGPath(roundedRect: rect, cornerWidth: rect.width * 0.2237, cornerHeight: rect.width * 0.2237, transform: nil))
+        preview.clip()
+        preview.interpolationQuality = .high
+        preview.draw(image, in: rect)
+        preview.restoreGState()
+    }
 }
 write(preview, "preview-strip")
-
-// The final set: the fuller upright spark in every appearance, plus its layers for Icon Composer.
-for appearance in [Appearance.any, .dark, .tinted] {
-    _ = drawARefined(appearance, pinch: 68, tilt: 0, name: "final-\(appearance.rawValue)", opaque: true)
-}
-do {
-    let s = makeContext()
-    fillGlyph(s, path: sparkPath(center: CGPoint(x: 500, y: 492), top: 350, right: 240, bottom: 280, left: 240, pinch: 68), appearance: .any, glow: false)
-    write(s, "final-layer-spark")
-    let g = makeContext(); drawGlint(g, at: CGPoint(x: 760, y: 740), arm: 62, appearance: .any); write(g, "final-layer-glint")
-    let b = makeContext(); drawBackground(b, appearance: .any); write(b, "final-layer-background")
-}

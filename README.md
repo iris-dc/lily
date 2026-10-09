@@ -185,9 +185,12 @@ The realtime API (AWS AppSync Events; the client lands in a later milestone, `Re
 
 ## App icon
 
-The icon is generated, not drawn by hand: `swift scripts/make-app-icon.swift /tmp/icon` renders a four-point spark in the
-brand red with one amber glint on the dark aurora at 1024 pt, in the light, dark and tinted appearances iOS asks for
-(`final-any/dark/tinted.png`), plus the same icon as three layers for Icon Composer. The shipped files live in
+The icon is generated, not drawn by hand: `swift scripts/make-app-icon.swift /tmp/icon` renders a lowercase "i" set in
+SF Pro Rounded Black in cream on the dark field (ink black with a maroon drift from the top left), its dot a ball with red
+seams, the letter of the name and the ball for the sport, at 1024 pt in the light, dark and tinted appearances iOS asks for
+(`final-any/dark/tinted.png`), plus the same icon as two layers for Icon Composer and a strip of the three at home-screen
+sizes (`preview-strip.png`). The typeface is read from the Mac at render time; only the PNGs ship. It was chosen on
+2026-10-09 from a grid of typefaces and colourways, after two spark icons were rejected. The shipped files live in
 `lily/Assets.xcassets/AppIcon.appiconset` as `AppIcon.png`, `AppIcon-Dark.png` and `AppIcon-Tinted.png`; they are opaque,
 as the App Store requires. Judge a change on a simulator's home screen (`xcrun simctl install`, then a screenshot), not in
 the asset catalog.
