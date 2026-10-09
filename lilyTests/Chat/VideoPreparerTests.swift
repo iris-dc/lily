@@ -29,7 +29,7 @@ struct VideoPreparerTests {
     }
 
     @Test func aClipIsExportedWithAThumbnailAndItsHints() async throws {
-        let draft = try await makePreparer().prepareVideo(at: TestFixtureFiles.tinyVideo, id: "v1")
+        let draft = try await makePreparer().prepareVideo(at: TestFixtureFiles.tinyVideo, id: "v1", caps: .group)
 
         #expect(draft.id == "v1" && draft.kind == .video && draft.contentType == "video/mp4" && draft.state == .preparing)
         #expect(draft.fileURL.lastPathComponent == "v1.mp4" && draft.fileURL.path().hasPrefix(directory.path()))
@@ -54,18 +54,18 @@ struct VideoPreparerTests {
         var limits = VideoPreparer.Limits()
         limits.maxDurationSeconds = 1
 
-        await #expect(throws: AppError.attachmentTooLarge) {
-            try await makePreparer(limits: limits).prepareVideo(at: TestFixtureFiles.tinyVideo, id: "v2")
+        await #expect(throws: AppError.attachmentTooLarge(caps: .group)) {
+            try await makePreparer(limits: limits).prepareVideo(at: TestFixtureFiles.tinyVideo, id: "v2", caps: .group)
         }
         #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "v2.mp4").path()))
     }
 
-    @Test func anExportOverTheByteCapIsDeletedAndRefused() async {
-        var limits = VideoPreparer.Limits()
-        limits.maxBytes = 10
+    /// The cap is the room's, so a conversation's smaller one refuses what a group's would take.
+    @Test func anExportOverTheRoomsByteCapIsDeletedAndRefused() async {
+        let caps = AttachmentCaps(imageMaxBytes: 10, videoMaxBytes: 10, fileMaxBytes: 10)
 
-        await #expect(throws: AppError.attachmentTooLarge) {
-            try await makePreparer(limits: limits).prepareVideo(at: TestFixtureFiles.tinyVideo, id: "v3")
+        await #expect(throws: AppError.attachmentTooLarge(caps: caps)) {
+            try await makePreparer().prepareVideo(at: TestFixtureFiles.tinyVideo, id: "v3", caps: caps)
         }
         #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "v3.mp4").path()))
     }
@@ -86,7 +86,9 @@ struct VideoPreparerTests {
         let text = directory.appending(path: "notes.txt")
         try Data("not a video".utf8).write(to: text)
 
-        await #expect(throws: AppError.attachmentTypeNotAllowed) { try await makePreparer().prepareVideo(at: text, id: "v4") }
+        await #expect(throws: AppError.attachmentTypeNotAllowed) {
+            try await makePreparer().prepareVideo(at: text, id: "v4", caps: .group)
+        }
     }
 }
 

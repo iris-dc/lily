@@ -133,7 +133,7 @@ struct RemoteChatRepositoryTests {
         ("NOT_A_MEMBER", .notAMember), ("GROUP_NOT_FOUND", .groupNotFound), ("CONTENT_REJECTED", .contentRejected),
         ("TERMS_REQUIRED", .termsRequired), ("MESSAGE_NOT_FOUND", .messageNotFound), ("TRY_AGAIN", .tryAgain),
         ("VALIDATION_FAILED", .messageSendFailed), ("REPLY_TARGET_NOT_FOUND", .replyTargetNotFound),
-        ("ATTACHMENT_NOT_FOUND", .attachmentNotFound), ("ATTACHMENT_TOO_LARGE", .attachmentTooLarge),
+        ("ATTACHMENT_NOT_FOUND", .attachmentNotFound), ("ATTACHMENT_TOO_LARGE", .attachmentTooLarge(caps: .group)),
         ("ATTACHMENT_TYPE_NOT_ALLOWED", .attachmentTypeNotAllowed), ("ATTACHMENTS_DISABLED", .attachmentsDisabled),
     ]
 

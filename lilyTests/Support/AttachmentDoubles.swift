@@ -52,28 +52,33 @@ final class FakeMediaPreparer: MediaPreparer {
     private(set) var preparedIDs: [String] = []
     private(set) var preparedVideoURLs: [URL] = []
     private(set) var preparedFileURLs: [URL] = []
+    /// The room's caps each prepare was given, in order.
+    private(set) var preparedCaps: [AttachmentCaps] = []
 
     /// Like the real preparer's detached work, a prepare cancelled while held still delivers its files, so the model's
     /// handling of a late answer for a removed slot can be tested.
-    func prepareImage(_ data: Data, id: String) async throws -> AttachmentDraft {
+    func prepareImage(_ data: Data, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
         preparedIDs.append(id)
+        preparedCaps.append(caps)
         await hold.wait()
         if let error { throw error }
         return try AttachmentDraft.prepared(id: id, data: data)
     }
 
-    func prepareVideo(at url: URL, id: String) async throws -> AttachmentDraft {
+    func prepareVideo(at url: URL, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
         preparedIDs.append(id)
         preparedVideoURLs.append(url)
+        preparedCaps.append(caps)
         await hold.wait()
         try Task.checkCancellation()
         if let error { throw error }
         return .fixture(id: id, kind: .video, fileURL: url, state: .preparing)
     }
 
-    func prepareFile(at url: URL, id: String) async throws -> AttachmentDraft {
+    func prepareFile(at url: URL, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
         preparedIDs.append(id)
         preparedFileURLs.append(url)
+        preparedCaps.append(caps)
         await hold.wait()
         try Task.checkCancellation()
         if let error { throw error }

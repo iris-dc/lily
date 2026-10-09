@@ -121,13 +121,14 @@ struct AttachmentComposerModelTests {
     /// A picture the preparer refuses is a verdict: the slot goes and the popup says why.
     @Test func aRefusedPictureIsDroppedWithThePopup() async throws {
         let model = makeModel()
-        harness.preparer.error = AppError.attachmentTooLarge
+        harness.preparer.error = AppError.attachmentTooLarge(caps: .group)
 
         let slot = try #require(model.add(imageData: photo))
         await settle(until: { model.isEmpty })
 
-        #expect(harness.errorCenter.current?.error == .attachmentTooLarge && harness.chat.uploadRequests.isEmpty)
-        #expect(harness.chatLogs(.warning).contains("Attachment \(slot.id) could not be prepared: attachmentTooLarge"))
+        #expect(harness.errorCenter.current?.error == .attachmentTooLarge(caps: .group) && harness.chat.uploadRequests.isEmpty)
+        let warning = "Attachment \(slot.id) could not be prepared: attachmentTooLarge"
+        #expect(harness.chatLogs(.warning).contains { $0.hasPrefix(warning) })
     }
 
     @Test func atMostTwoUploadsRunAtOnce() async {

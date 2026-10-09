@@ -18,44 +18,46 @@ struct UploadPolicyTests {
     /// Laurel's `@Positive sizeBytes` is a `400 VALIDATION_FAILED`, which reaches the app as the ticket's fallback.
     @Test func anEmptyObjectIsRefusedLikeTheBackendsValidation() {
         #expect(throws: AppError.attachmentUploadFailed) {
-            try UploadPolicy.check(request(kind: .file, contentType: "application/pdf", sizeBytes: 0))
+            try UploadPolicy.check(request(kind: .file, contentType: "application/pdf", sizeBytes: 0), caps: .group)
         }
     }
 
     @Test func eachKindHasItsCap() throws {
-        #expect(UploadPolicy.maxBytes(for: .image) == 10 * 1024 * 1024)
-        #expect(UploadPolicy.maxBytes(for: .video) == 50 * 1024 * 1024)
-        #expect(UploadPolicy.maxBytes(for: .file) == 25 * 1024 * 1024)
-        try UploadPolicy.check(request(kind: .video, contentType: "video/mp4", sizeBytes: 50 * 1024 * 1024))
-        #expect(throws: AppError.attachmentTooLarge) {
-            try UploadPolicy.check(request(kind: .video, contentType: "video/mp4", sizeBytes: 50 * 1024 * 1024 + 1))
+        #expect(AttachmentCaps.group.maxBytes(for: .image) == 10 * 1024 * 1024)
+        #expect(AttachmentCaps.group.maxBytes(for: .video) == 50 * 1024 * 1024)
+        #expect(AttachmentCaps.group.maxBytes(for: .file) == 25 * 1024 * 1024)
+        try UploadPolicy.check(request(kind: .video, contentType: "video/mp4", sizeBytes: 50 * 1024 * 1024), caps: .group)
+        #expect(throws: AppError.attachmentTooLarge(caps: .group)) {
+            try UploadPolicy.check(request(kind: .video, contentType: "video/mp4", sizeBytes: 50 * 1024 * 1024 + 1), caps: .group)
         }
-        #expect(throws: AppError.attachmentTooLarge) {
-            try UploadPolicy.check(request(kind: .file, contentType: "application/pdf", sizeBytes: 25 * 1024 * 1024 + 1))
+        #expect(throws: AppError.attachmentTooLarge(caps: .group)) {
+            try UploadPolicy.check(request(kind: .file, contentType: "application/pdf", sizeBytes: 25 * 1024 * 1024 + 1),
+                                   caps: .group)
         }
     }
 
     @Test func imagesAndVideosAreOnTheirListsFilesAreAnything() throws {
-        try UploadPolicy.check(request(kind: .image, contentType: "image/png", sizeBytes: 1))
-        try UploadPolicy.check(request(kind: .video, contentType: "video/quicktime", sizeBytes: 1))
-        try UploadPolicy.check(request(kind: .file, contentType: "application/x-anything", sizeBytes: 1))
+        try UploadPolicy.check(request(kind: .image, contentType: "image/png", sizeBytes: 1), caps: .group)
+        try UploadPolicy.check(request(kind: .video, contentType: "video/quicktime", sizeBytes: 1), caps: .group)
+        try UploadPolicy.check(request(kind: .file, contentType: "application/x-anything", sizeBytes: 1), caps: .group)
         #expect(throws: AppError.attachmentTypeNotAllowed) {
-            try UploadPolicy.check(request(kind: .video, contentType: "video/webm", sizeBytes: 1))
+            try UploadPolicy.check(request(kind: .video, contentType: "video/webm", sizeBytes: 1), caps: .group)
         }
         #expect(throws: AppError.attachmentTypeNotAllowed) {
-            try UploadPolicy.check(request(kind: .image, contentType: "image/tiff", sizeBytes: 1))
+            try UploadPolicy.check(request(kind: .image, contentType: "image/tiff", sizeBytes: 1), caps: .group)
         }
     }
 
     @Test func aThumbnailIsCappedAndNeverOnAFile() throws {
         let small = UploadRequestPayload.Thumbnail(contentType: "image/jpeg", sizeBytes: 100)
-        try UploadPolicy.check(request(kind: .video, contentType: "video/mp4", sizeBytes: 1, thumbnail: small))
+        try UploadPolicy.check(request(kind: .video, contentType: "video/mp4", sizeBytes: 1, thumbnail: small), caps: .group)
         #expect(throws: AppError.attachmentUploadFailed) {
-            try UploadPolicy.check(request(kind: .file, contentType: "application/pdf", sizeBytes: 1, thumbnail: small))
+            try UploadPolicy.check(request(kind: .file, contentType: "application/pdf", sizeBytes: 1, thumbnail: small),
+                                   caps: .group)
         }
         let big = UploadRequestPayload.Thumbnail(contentType: "image/jpeg", sizeBytes: 200 * 1024 + 1)
-        #expect(throws: AppError.attachmentTooLarge) {
-            try UploadPolicy.check(request(kind: .image, contentType: "image/jpeg", sizeBytes: 1, thumbnail: big))
+        #expect(throws: AppError.attachmentTooLarge(caps: .group)) {
+            try UploadPolicy.check(request(kind: .image, contentType: "image/jpeg", sizeBytes: 1, thumbnail: big), caps: .group)
         }
     }
 }

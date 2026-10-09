@@ -157,6 +157,22 @@ extension MockChatRepositoryTests {
         #expect(link.thumbnailUrl == nil && link.url == storedFile.url)
     }
 
+    /// A conversation's ticket is judged against the smaller caps, a group's against the full ones, as Laurel does
+    /// by the room's kind: a 6 MB file passes in Kreuzberg Kickers and is refused in the conversation with Marta.
+    @Test func aConversationsTicketTakesTheDirectCaps() async throws {
+        let repository = makeRepository()
+        let sixMegabytes = UploadRequestPayload(clientAttachmentId: "f",
+                                                kind: .file,
+                                                contentType: "application/pdf",
+                                                sizeBytes: 6 * 1024 * 1024,
+                                                fileName: "season.pdf")
+
+        _ = try await repository.requestUpload(groupID: kickers, sixMegabytes)
+        await #expect(throws: AppError.attachmentTooLarge(caps: .direct)) {
+            try await repository.requestUpload(groupID: MockGroupFixtures.martaConversationID, sixMegabytes)
+        }
+    }
+
     /// The mock ticket refuses what the backend's policy refuses: a thumbnail on a file, a video over its cap or off
     /// the type list.
     @Test func theMockTicketAppliesTheBackendsPolicy() async throws {
@@ -176,7 +192,9 @@ extension MockChatRepositoryTests {
                                              kind: .video,
                                              contentType: "video/mp4",
                                              sizeBytes: 60 * 1024 * 1024)
-        await #expect(throws: AppError.attachmentTooLarge) { try await repository.requestUpload(groupID: kickers, hugeVideo) }
+        await #expect(throws: AppError.attachmentTooLarge(caps: .group)) {
+            try await repository.requestUpload(groupID: kickers, hugeVideo)
+        }
 
         let webm = UploadRequestPayload(clientAttachmentId: "w", kind: .video, contentType: "video/webm", sizeBytes: 10)
         await #expect(throws: AppError.attachmentTypeNotAllowed) { try await repository.requestUpload(groupID: kickers, webm) }

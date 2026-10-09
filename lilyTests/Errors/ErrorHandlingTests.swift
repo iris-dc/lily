@@ -13,7 +13,8 @@ struct ErrorMessageMapperTests {
         .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed, .contentRejected,
         .inviteExpired, .inviteUnavailable, .inboxUnavailable, .inviteActionFailed, .inviteNotPending, .alreadyMember,
         .cannotInvite, .chatUnavailable, .messageSendFailed, .messageNotFound, .replyTargetNotFound,
-        .attachmentNotFound, .attachmentTooLarge, .attachmentTypeNotAllowed, .attachmentsDisabled, .attachmentUploadFailed,
+        .attachmentNotFound, .attachmentTooLarge(caps: .group), .attachmentTypeNotAllowed, .attachmentsDisabled,
+        .attachmentUploadFailed,
         .attachmentUnavailable,
         .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired,
         .profileUnavailable, .conversationFailed, .conversationLimit,
@@ -105,9 +106,13 @@ struct ErrorMessageMapperTests {
     /// for all three kinds.
     @Test func attachmentErrorsHaveTheirOwnTitles() {
         #expect(ErrorMessageMapper.message(for: .attachmentNotFound).title == "Attachment missing")
-        #expect(ErrorMessageMapper.message(for: .attachmentTooLarge).title == "That's too big")
-        let caps = ErrorMessageMapper.message(for: .attachmentTooLarge).body
+        #expect(ErrorMessageMapper.message(for: .attachmentTooLarge(caps: .group)).title == "That's too big")
+        let caps = ErrorMessageMapper.message(for: .attachmentTooLarge(caps: .group)).body
         #expect(caps.contains("10 MB") && caps.contains("50 MB") && caps.contains("3 minutes") && caps.contains("25 MB"))
+        let direct = ErrorMessageMapper.message(for: .attachmentTooLarge(caps: .direct)).body
+        #expect(direct.contains("10 MB") && direct.contains("20 MB") && direct.contains("5 MB"),
+                "a conversation names its own caps")
+        #expect(!direct.contains("50 MB") && !direct.contains("25 MB"))
         #expect(ErrorMessageMapper.message(for: .attachmentTypeNotAllowed).title == "That can't be sent")
         #expect(ErrorMessageMapper.message(for: .attachmentsDisabled).title == "Attachments are off")
         #expect(ErrorMessageMapper.message(for: .attachmentUploadFailed).title == "Couldn't upload the attachment")
@@ -225,7 +230,7 @@ struct BackendErrorCodeTests {
             "INBOX_ITEM_NOT_FOUND": .inviteNotPending, "ALREADY_MEMBER": .alreadyMember, "CANNOT_INVITE": .cannotInvite,
             "BLOCK_LIMIT": .blockLimitReached, "CONVERSATION_LIMIT": .conversationLimit,
             "REPLY_TARGET_NOT_FOUND": .replyTargetNotFound, "ATTACHMENT_NOT_FOUND": .attachmentNotFound,
-            "ATTACHMENT_TOO_LARGE": .attachmentTooLarge, "ATTACHMENT_TYPE_NOT_ALLOWED": .attachmentTypeNotAllowed,
+            "ATTACHMENT_TOO_LARGE": .attachmentTooLarge(caps: .group), "ATTACHMENT_TYPE_NOT_ALLOWED": .attachmentTypeNotAllowed,
             "ATTACHMENTS_DISABLED": .attachmentsDisabled, "TOURNAMENT_NOT_FOUND": .tournamentNotFound,
             "TOURNAMENT_ID_TAKEN": .tournamentCreationFailed, "TOURNAMENT_ID_REUSED": .tournamentCreationFailed,
             "TOURNAMENT_LIMIT": .tournamentLimit, "NOT_ORGANIZER": .notOrganizer, "TOURNAMENT_LOCKED": .tournamentLocked,

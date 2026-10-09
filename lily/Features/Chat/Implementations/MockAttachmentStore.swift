@@ -27,8 +27,12 @@ nonisolated final class MockAttachmentStore: Sendable {
     init() {}
 
     /// A ticket for `request`, remembered against the caller and the group; refused as the backend would refuse it.
-    func issueTicket(groupID: String, _ request: UploadRequestPayload, uploader: String, now: Date) throws -> UploadTicket {
-        try UploadPolicy.check(request)
+    func issueTicket(groupID: String,
+                     _ request: UploadRequestPayload,
+                     uploader: String,
+                     now: Date,
+                     caps: AttachmentCaps) throws -> UploadTicket {
+        try UploadPolicy.check(request, caps: caps)
         let id = state.withLock { state in
             state.sequence += 1
             let id = MockChatFixtures.messageID(groupID: AppConfig.Chat.Attachments.mockURLHost, index: state.sequence)

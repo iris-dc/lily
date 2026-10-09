@@ -10,7 +10,6 @@ import Foundation
 final class VideoPreparer {
     /// Plain data, free of the actor, so the detached export task and a test's default argument can build one.
     nonisolated struct Limits: Sendable {
-        var maxBytes = AppConfig.Chat.Attachments.videoMaxBytes
         var maxDurationSeconds = AppConfig.Chat.Attachments.videoMaxDurationSeconds
         var exportPreset = AppConfig.Chat.Attachments.videoExportPreset
         var thumbnailTime = AppConfig.Chat.Attachments.videoThumbnailTime
@@ -27,11 +26,11 @@ final class VideoPreparer {
         self.logger = logger
     }
 
-    func prepareVideo(at url: URL, id: String) async throws -> AttachmentDraft {
+    func prepareVideo(at url: URL, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
         let limits = self.limits
         let directory = self.directory
         let draft = try await Task.detached(priority: .userInitiated) {
-            try await VideoEncoding.prepare(at: url, id: id, limits: limits, in: directory)
+            try await VideoEncoding.prepare(at: url, id: id, limits: limits, caps: caps, in: directory)
         }.value
         logger.debug(.chat, "Attachment \(id) prepared: \(draft.sizeBytes) B, \(draft.durationSeconds ?? 0) s video")
         return draft
@@ -43,16 +42,17 @@ nonisolated enum VideoEncoding {
     static func prepare(at url: URL,
                         id: String,
                         limits: VideoPreparer.Limits,
+                        caps: AttachmentCaps,
                         in directory: URL) async throws -> AttachmentDraft {
         let asset = AVURLAsset(url: url)
         let seconds = try await duration(of: asset)
-        guard seconds <= limits.maxDurationSeconds else { throw AppError.attachmentTooLarge }
+        guard seconds <= limits.maxDurationSeconds else { throw AppError.attachmentTooLarge(caps: caps) }
         let fileURL = directory.appending(path: "\(id).\(AppConfig.Chat.Attachments.videoFileExtension)")
         try await export(asset, to: fileURL, preset: limits.exportPreset)
         let sizeBytes = try fileSize(of: fileURL)
-        guard sizeBytes <= limits.maxBytes else {
+        guard sizeBytes <= caps.videoMaxBytes else {
             try? FileManager.default.removeItem(at: fileURL)
-            throw AppError.attachmentTooLarge
+            throw AppError.attachmentTooLarge(caps: caps)
         }
         let exported = AVURLAsset(url: fileURL)
         let size = try await displaySize(of: exported)

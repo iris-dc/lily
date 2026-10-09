@@ -5,7 +5,11 @@ import Foundation
 extension MockChatRepository {
     func requestUpload(groupID: String, _ request: UploadRequestPayload) async throws -> UploadTicket {
         let (group, _) = try await room(groupID)
-        let ticket = try attachments.issueTicket(groupID: group.id, request, uploader: identity.currentUserID ?? "", now: now())
+        let ticket = try attachments.issueTicket(groupID: group.id,
+                                                 request,
+                                                 uploader: identity.currentUserID ?? "",
+                                                 now: now(),
+                                                 caps: .caps(for: group))
         logger.debug(.chat, "Mock upload ticket \(ticket.attachmentId) issued in group \(groupID)")
         return ticket
     }

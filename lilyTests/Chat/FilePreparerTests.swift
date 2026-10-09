@@ -16,8 +16,8 @@ struct FilePreparerTests {
         try FileManager.default.createDirectory(at: picked, withIntermediateDirectories: true)
     }
 
-    private func makePreparer(limits: FilePreparer.Limits = FilePreparer.Limits()) -> FilePreparer {
-        FilePreparer(limits: limits, directory: directory, logger: logger)
+    private func makePreparer() -> FilePreparer {
+        FilePreparer(directory: directory, logger: logger)
     }
 
     private func file(named name: String, bytes: Int = 64) throws -> URL {
@@ -29,7 +29,7 @@ struct FilePreparerTests {
     @Test func aFileIsCopiedTypedAndNamed() async throws {
         let notes = try file(named: "notes.txt")
 
-        let draft = try await makePreparer().prepareFile(at: notes, id: "f1")
+        let draft = try await makePreparer().prepareFile(at: notes, id: "f1", caps: .group)
 
         #expect(draft.id == "f1" && draft.kind == .file && draft.contentType == "text/plain" && draft.state == .preparing)
         #expect(draft.fileName == "notes.txt" && draft.sizeBytes == 64 && draft.thumbnailURL == nil)
@@ -43,11 +43,11 @@ struct FilePreparerTests {
 
     @Test func anUnknownTypeIsAnOctetStreamAndKeepsNoExtension() async throws {
         let odd = try file(named: "export.xyz123")
-        let draft = try await makePreparer().prepareFile(at: odd, id: "f2")
+        let draft = try await makePreparer().prepareFile(at: odd, id: "f2", caps: .group)
         #expect(draft.contentType == "application/octet-stream" && draft.fileURL.lastPathComponent == "f2.xyz123")
 
         let bare = try file(named: "README")
-        let bareDraft = try await makePreparer().prepareFile(at: bare, id: "f3")
+        let bareDraft = try await makePreparer().prepareFile(at: bare, id: "f3", caps: .group)
         #expect(bareDraft.fileURL.lastPathComponent == "f3" && bareDraft.fileName == "README")
         #expect(!bareDraft.contentType.isEmpty, "the system types an extension-less file as it likes")
 
@@ -61,7 +61,7 @@ struct FilePreparerTests {
     @Test func aNameAtTheLimitIsKeptWholeAndALongerOneIsCut() async throws {
         let limit = AppConfig.Chat.Attachments.fileNameMaxLength
         let name = String(repeating: "a", count: limit - 4) + ".pdf"
-        let draft = try await makePreparer().prepareFile(at: try file(named: name), id: "f4")
+        let draft = try await makePreparer().prepareFile(at: try file(named: name), id: "f4", caps: .group)
 
         #expect(draft.fileName == name && draft.fileName?.wireLength == limit && draft.contentType == "application/pdf")
         let longer = AttachmentDraft(clientAttachmentID: "f4",
@@ -73,14 +73,15 @@ struct FilePreparerTests {
         #expect(longer.fileName?.wireLength == limit)
     }
 
-    @Test func aFileOverTheCapIsRefusedBeforeTheCopy() async throws {
-        var limits = FilePreparer.Limits()
-        limits.maxBytes = 10
+    /// The cap is the room's: a conversation's 5 MB would refuse what a group's 25 MB takes.
+    @Test func aFileOverTheRoomsCapIsRefusedBeforeTheCopy() async throws {
+        let caps = AttachmentCaps(imageMaxBytes: 10, videoMaxBytes: 10, fileMaxBytes: 10)
         let big = try file(named: "big.bin", bytes: 11)
 
-        await #expect(throws: AppError.attachmentTooLarge) {
-            try await makePreparer(limits: limits).prepareFile(at: big, id: "f5")
+        await #expect(throws: AppError.attachmentTooLarge(caps: caps)) {
+            try await makePreparer().prepareFile(at: big, id: "f5", caps: caps)
         }
+        #expect(AttachmentCaps.direct.fileMaxBytes < AttachmentCaps.group.fileMaxBytes)
         #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "f5.bin").path()))
     }
 
@@ -88,14 +89,18 @@ struct FilePreparerTests {
     @Test func anEmptyFileIsRefused() async throws {
         let empty = try file(named: "empty.txt", bytes: 0)
 
-        await #expect(throws: AppError.attachmentTypeNotAllowed) { try await makePreparer().prepareFile(at: empty, id: "f8") }
+        await #expect(throws: AppError.attachmentTypeNotAllowed) {
+            try await makePreparer().prepareFile(at: empty, id: "f8", caps: .group)
+        }
         #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "f8.txt").path()))
     }
 
     @Test func aFolderAndAMissingFileAreRefused() async throws {
-        await #expect(throws: AppError.attachmentTypeNotAllowed) { try await makePreparer().prepareFile(at: picked, id: "f6") }
+        await #expect(throws: AppError.attachmentTypeNotAllowed) {
+            try await makePreparer().prepareFile(at: picked, id: "f6", caps: .group)
+        }
         await #expect(throws: AppError.attachmentUnavailable) {
-            try await makePreparer().prepareFile(at: picked.appending(path: "gone.txt"), id: "f7")
+            try await makePreparer().prepareFile(at: picked.appending(path: "gone.txt"), id: "f7", caps: .group)
         }
     }
 }

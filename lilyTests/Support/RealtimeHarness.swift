@@ -126,6 +126,7 @@ final class RealtimeHarness {
     func makeAttachmentComposer(for group: SportGroup,
                                 maxPerMessage: Int = AppConfig.Chat.Attachments.maxPerMessage) -> AttachmentComposerModel {
         AttachmentComposerModel(groupID: group.id,
+                                caps: .caps(for: group),
                                 repository: chat,
                                 uploader: uploader,
                                 preparer: preparer,

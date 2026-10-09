@@ -20,15 +20,15 @@ final class DeviceMediaPreparer: MediaPreparer {
         self.files = files
     }
 
-    func prepareImage(_ data: Data, id: String) async throws -> AttachmentDraft {
-        try await images.prepareImage(data, id: id)
+    func prepareImage(_ data: Data, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
+        try await images.prepareImage(data, id: id, caps: caps)
     }
 
-    func prepareVideo(at url: URL, id: String) async throws -> AttachmentDraft {
-        try await videos.prepareVideo(at: url, id: id)
+    func prepareVideo(at url: URL, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
+        try await videos.prepareVideo(at: url, id: id, caps: caps)
     }
 
-    func prepareFile(at url: URL, id: String) async throws -> AttachmentDraft {
-        try await files.prepareFile(at: url, id: id)
+    func prepareFile(at url: URL, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
+        try await files.prepareFile(at: url, id: id, caps: caps)
     }
 }

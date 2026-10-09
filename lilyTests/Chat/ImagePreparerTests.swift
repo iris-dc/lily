@@ -41,7 +41,7 @@ struct ImagePreparerTests {
         let scale = format.scale
         let data = png(CGSize(width: 4000 / scale, height: 3000 / scale))
 
-        let draft = try await makePreparer().prepareImage(data, id: "p1")
+        let draft = try await makePreparer().prepareImage(data, id: "p1", caps: .group)
 
         #expect(draft.id == "p1" && draft.kind == .image && draft.contentType == "image/jpeg" && draft.state == .preparing)
         #expect(draft.width == 2048 && draft.height == 1536)
@@ -61,23 +61,26 @@ struct ImagePreparerTests {
     /// A picture already within the longest side keeps its size.
     @Test func aSmallPictureIsNotUpscaled() async throws {
         let scale = UIGraphicsImageRendererFormat.default().scale
-        let draft = try await makePreparer().prepareImage(png(CGSize(width: 300 / scale, height: 200 / scale)), id: "p2")
+        let small = png(CGSize(width: 300 / scale, height: 200 / scale))
+        let draft = try await makePreparer().prepareImage(small, id: "p2", caps: .group)
         #expect(draft.width == 300 && draft.height == 200)
     }
 
-    @Test func aPictureOverTheByteCapIsRefused() async {
-        var limits = ImagePreparer.Limits()
-        limits.maxBytes = 10
+    /// The cap is the room's, so the refusal names the room's caps for the popup.
+    @Test func aPictureOverTheRoomsByteCapIsRefused() async {
+        let caps = AttachmentCaps(imageMaxBytes: 10, videoMaxBytes: 10, fileMaxBytes: 10)
         let scale = UIGraphicsImageRendererFormat.default().scale
         let data = png(CGSize(width: 800 / scale, height: 600 / scale))
 
-        await #expect(throws: AppError.attachmentTooLarge) { try await makePreparer(limits: limits).prepareImage(data, id: "p3") }
+        await #expect(throws: AppError.attachmentTooLarge(caps: caps)) {
+            try await makePreparer().prepareImage(data, id: "p3", caps: caps)
+        }
         #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "p3.jpg").path()))
     }
 
     @Test func bytesThatAreNoPictureAreRefused() async {
         await #expect(throws: AppError.attachmentTypeNotAllowed) {
-            try await makePreparer().prepareImage(Data("not an image".utf8), id: "p4")
+            try await makePreparer().prepareImage(Data("not an image".utf8), id: "p4", caps: .group)
         }
     }
 
@@ -88,7 +91,7 @@ struct ImagePreparerTests {
         let scale = UIGraphicsImageRendererFormat.default().scale
 
         let data = png(CGSize(width: 800 / scale, height: 600 / scale))
-        let draft = try await makePreparer(limits: limits).prepareImage(data, id: "p5")
+        let draft = try await makePreparer(limits: limits).prepareImage(data, id: "p5", caps: .group)
 
         #expect(draft.thumbnailURL == nil && draft.thumbnailSizeBytes == nil && draft.uploadRequest.thumbnail == nil)
         #expect(!draft.ref(attachmentID: "x").hasThumbnail)

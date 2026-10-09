@@ -86,15 +86,34 @@ struct AttachmentComposerModelKindTests {
         #expect(harness.chatLogs(.warning).contains { $0.hasPrefix("The files importer failed") })
     }
 
+    /// A conversation's composer hands the preparers the smaller caps, a group's the full ones, so a 6 MB file is
+    /// refused on the device in a conversation and taken in a group; a backend refusal for size is restated with the
+    /// room's caps before it reaches the popup, since the code names no room.
+    @Test func aConversationPreparesAgainstTheDirectCapsAndNamesThemInThePopup() async throws {
+        let conversation = harness.makeAttachmentComposer(for: .fixture(id: "dm", role: .member, kind: .direct))
+        let group = makeModel()
+
+        _ = try #require(conversation.add(fileAt: document))
+        _ = try #require(group.add(videoAt: clip))
+        await settle(until: { !conversation.isBusy && !group.isBusy })
+        #expect(harness.preparer.preparedCaps == [.direct, .group])
+
+        harness.chat.uploadError = AppError.attachmentTooLarge(caps: .group)
+        _ = try #require(conversation.add(fileAt: document))
+        await settle(until: { conversation.drafts.contains { $0.state == AttachmentDraft.State.failed } })
+        #expect(harness.errorCenter.current?.error == .attachmentTooLarge(caps: .direct))
+    }
+
     /// A refused video or file is a verdict like a refused picture: the slot goes and the popup says why.
     @Test func aRefusedVideoIsDroppedWithThePopup() async throws {
         let model = makeModel()
-        harness.preparer.error = AppError.attachmentTooLarge
+        harness.preparer.error = AppError.attachmentTooLarge(caps: .group)
 
         let slot = try #require(model.add(videoAt: clip))
         await settle(until: { model.isEmpty })
 
-        #expect(harness.errorCenter.current?.error == .attachmentTooLarge && harness.chat.uploadRequests.isEmpty)
-        #expect(harness.chatLogs(.warning).contains("Attachment \(slot.id) could not be prepared: attachmentTooLarge"))
+        #expect(harness.errorCenter.current?.error == .attachmentTooLarge(caps: .group) && harness.chat.uploadRequests.isEmpty)
+        let warning = "Attachment \(slot.id) could not be prepared: attachmentTooLarge"
+        #expect(harness.chatLogs(.warning).contains { $0.hasPrefix(warning) })
     }
 }

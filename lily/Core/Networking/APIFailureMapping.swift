@@ -134,7 +134,8 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         switch self {
         case .replyTargetNotFound: .replyTargetNotFound
         case .attachmentNotFound: .attachmentNotFound
-        case .attachmentTooLarge: .attachmentTooLarge
+        // The code does not say which room; the composer restates the error with the room's caps before the popup.
+        case .attachmentTooLarge: .attachmentTooLarge(caps: .group)
         case .attachmentTypeNotAllowed: .attachmentTypeNotAllowed
         case .attachmentsDisabled: .attachmentsDisabled
         default: nil

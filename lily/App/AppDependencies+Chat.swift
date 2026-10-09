@@ -73,6 +73,7 @@ extension AppDependencies {
     /// The pictures picked for one room's composer; its uploads go through the room's repository and the shared uploader.
     func makeAttachmentComposer(for group: SportGroup) -> AttachmentComposerModel {
         AttachmentComposerModel(groupID: group.id,
+                                caps: .caps(for: group),
                                 repository: chatRepository,
                                 uploader: groups.attachments.uploader,
                                 preparer: groups.attachments.preparer,

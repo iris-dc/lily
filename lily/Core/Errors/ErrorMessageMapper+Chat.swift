@@ -25,8 +25,8 @@ nonisolated extension ErrorMessageMapper {
         case .attachmentNotFound:
             ErrorMessage(title: localized("Attachment missing"),
                          body: localized("The upload didn't finish. Remove it and add it again."))
-        case .attachmentTooLarge:
-            ErrorMessage(title: localized("That's too big"), body: attachmentCapsBody)
+        case .attachmentTooLarge(let caps):
+            ErrorMessage(title: localized("That's too big"), body: attachmentCapsBody(caps))
         case .attachmentTypeNotAllowed:
             ErrorMessage(title: localized("That can't be sent"), body: localized("Try a photo, a video or another file."))
         case .attachmentsDisabled:
@@ -41,13 +41,13 @@ nonisolated extension ErrorMessageMapper {
         }
     }
 
-    /// The caps as the config holds them, so the copy never disagrees with what is refused.
-    private static var attachmentCapsBody: String {
+    /// The room's caps as the config holds them, so the copy never disagrees with what is refused.
+    private static func attachmentCapsBody(_ caps: AttachmentCaps) -> String {
         let mebibyte = 1024 * 1024
-        let pictures = AppConfig.Chat.Attachments.imageMaxBytes / mebibyte
-        let videos = AppConfig.Chat.Attachments.videoMaxBytes / mebibyte
+        let pictures = caps.imageMaxBytes / mebibyte
+        let videos = caps.videoMaxBytes / mebibyte
         let minutes = Int(AppConfig.Chat.Attachments.videoMaxDurationSeconds) / 60
-        let files = AppConfig.Chat.Attachments.fileMaxBytes / mebibyte
+        let files = caps.fileMaxBytes / mebibyte
         return localized("""
             Pictures can be up to \(pictures) MB, videos up to \(videos) MB and \(minutes) minutes, \
             files up to \(files) MB.

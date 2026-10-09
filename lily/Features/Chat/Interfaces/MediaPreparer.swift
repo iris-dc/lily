@@ -5,18 +5,19 @@ import Foundation
 /// 720p into an MP4 with a thumbnail frame; any other file copied in under its own name and type.
 protocol MediaPreparer {
     /// The picked bytes of an image into a draft keyed by `id` (the draft's client id, chosen before the work starts
-    /// so the strip can show the slot meanwhile). A picture over the cap after re-encoding is `.attachmentTooLarge`,
-    /// bytes that are no image `.attachmentTypeNotAllowed`.
-    func prepareImage(_ data: Data, id: String) async throws -> AttachmentDraft
+    /// so the strip can show the slot meanwhile). A picture over `caps.imageMaxBytes` after re-encoding is
+    /// `.attachmentTooLarge`, bytes that are no image `.attachmentTypeNotAllowed`. `caps` are the room's.
+    func prepareImage(_ data: Data, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft
 
     /// A video file (the picker's copy, or a recording) into a draft keyed by `id`. Longer than
-    /// `videoMaxDurationSeconds` or, once exported, over `videoMaxBytes` is `.attachmentTooLarge`; a file without a
-    /// video track `.attachmentTypeNotAllowed`.
-    func prepareVideo(at url: URL, id: String) async throws -> AttachmentDraft
+    /// `videoMaxDurationSeconds` or, once exported, over `caps.videoMaxBytes` is `.attachmentTooLarge`; a file without
+    /// a video track `.attachmentTypeNotAllowed`.
+    func prepareVideo(at url: URL, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft
 
     /// Any file into a draft keyed by `id`: copied in (read under its security scope), typed from what the system
-    /// knows about it, named after itself. Over `fileMaxBytes` is `.attachmentTooLarge`, a folder `.attachmentTypeNotAllowed`.
-    func prepareFile(at url: URL, id: String) async throws -> AttachmentDraft
+    /// knows about it, named after itself. Over `caps.fileMaxBytes` is `.attachmentTooLarge`, a folder
+    /// `.attachmentTypeNotAllowed`.
+    func prepareFile(at url: URL, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft
 
     /// What "Photo library" hands over without a system picker, or `nil` to open the picker. Only the mock preparer
     /// (`-mock-attachment-picker`) has a photo to offer, because XCUITest cannot drive the out-of-process picker.

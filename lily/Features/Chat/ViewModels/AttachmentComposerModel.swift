@@ -11,6 +11,8 @@ import Observation
 final class AttachmentComposerModel {
     private(set) var drafts: [AttachmentDraft] = []
     let groupID: String
+    /// The room's byte caps (smaller in a conversation): what the preparers refuse against and the popup names.
+    let caps: AttachmentCaps
     /// Internal, not private, so the picking extension reaches them.
     let preparer: any MediaPreparer
     let logger: any Logging
@@ -25,6 +27,7 @@ final class AttachmentComposerModel {
     private var uploadWaiters: [CheckedContinuation<Void, Never>] = []
 
     init(groupID: String,
+         caps: AttachmentCaps,
          repository: any ChatRepository,
          uploader: any AttachmentUploader,
          preparer: any MediaPreparer,
@@ -34,6 +37,7 @@ final class AttachmentComposerModel {
          maxPerMessage: Int = AppConfig.Chat.Attachments.maxPerMessage,
          maxConcurrentUploads: Int = AppConfig.Chat.Attachments.maxConcurrentUploads) {
         self.groupID = groupID
+        self.caps = caps
         self.repository = repository
         self.uploader = uploader
         self.preparer = preparer
@@ -131,10 +135,16 @@ final class AttachmentComposerModel {
 
     private func prepare(_ source: MediaSource, id: String) async throws -> AttachmentDraft {
         switch source {
-        case .image(let data): try await preparer.prepareImage(data, id: id)
-        case .video(let url): try await preparer.prepareVideo(at: url, id: id)
-        case .file(let url): try await preparer.prepareFile(at: url, id: id)
+        case .image(let data): try await preparer.prepareImage(data, id: id, caps: caps)
+        case .video(let url): try await preparer.prepareVideo(at: url, id: id, caps: caps)
+        case .file(let url): try await preparer.prepareFile(at: url, id: id, caps: caps)
         }
+    }
+
+    /// A backend refusal for size names no room; the popup should name this room's caps.
+    private func inThisRoom(_ error: any Error) -> any Error {
+        if case .attachmentTooLarge = error as? AppError { return AppError.attachmentTooLarge(caps: caps) }
+        return error
     }
 
     /// A ticket, then the PUTs, under the concurrency cap; a slot given up while waiting is left alone.
@@ -153,7 +163,7 @@ final class AttachmentComposerModel {
             guard !AppError.isCancellation(error) else { return }
             setState(of: draft.id, to: .failed)
             logger.error(.chat, "Attachment \(draft.id) upload failed in group \(groupID): \(error)")
-            reporter.report(error)
+            reporter.report(inThisRoom(error))
         }
     }
 

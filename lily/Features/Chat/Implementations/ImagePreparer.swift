@@ -9,7 +9,6 @@ import UniformTypeIdentifiers
 final class ImagePreparer {
     /// Plain data, free of the actor, so the detached encoding task and a test's default argument can build one.
     nonisolated struct Limits: Sendable {
-        var maxBytes = AppConfig.Chat.Attachments.imageMaxBytes
         var maxDimension = AppConfig.Chat.Attachments.imageMaxDimension
         var jpegQuality = AppConfig.Chat.Attachments.imageJPEGQuality
         var thumbnailMaxDimension = AppConfig.Chat.Attachments.thumbnailMaxDimension
@@ -27,11 +26,11 @@ final class ImagePreparer {
         self.logger = logger
     }
 
-    func prepareImage(_ data: Data, id: String) async throws -> AttachmentDraft {
+    func prepareImage(_ data: Data, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
         let limits = self.limits
         let directory = self.directory
         let draft = try await Task.detached(priority: .userInitiated) {
-            try ImageEncoding.prepare(data, id: id, limits: limits, in: directory)
+            try ImageEncoding.prepare(data, id: id, limits: limits, caps: caps, in: directory)
         }.value
         logger.debug(.chat, "Attachment \(id) prepared: \(draft.sizeBytes) B, \(draft.width ?? 0)x\(draft.height ?? 0)")
         return draft
@@ -40,13 +39,17 @@ final class ImagePreparer {
 
 /// The CPU work of `ImagePreparer`, free of any actor so it runs on a detached task.
 nonisolated enum ImageEncoding {
-    static func prepare(_ data: Data, id: String, limits: ImagePreparer.Limits, in directory: URL) throws -> AttachmentDraft {
+    static func prepare(_ data: Data,
+                        id: String,
+                        limits: ImagePreparer.Limits,
+                        caps: AttachmentCaps,
+                        in directory: URL) throws -> AttachmentDraft {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil), CGImageSourceGetCount(source) > 0 else {
             throw AppError.attachmentTypeNotAllowed
         }
         let image = try downsample(source, maxDimension: limits.maxDimension)
         let jpeg = try jpegData(image, quality: limits.jpegQuality)
-        guard jpeg.count <= limits.maxBytes else { throw AppError.attachmentTooLarge }
+        guard jpeg.count <= caps.imageMaxBytes else { throw AppError.attachmentTooLarge(caps: caps) }
         let fileURL = try write(jpeg, id: id, suffix: "", in: directory)
         let thumbnail = try writeThumbnail(try downsample(source, maxDimension: limits.thumbnailMaxDimension),
                                            id: id,

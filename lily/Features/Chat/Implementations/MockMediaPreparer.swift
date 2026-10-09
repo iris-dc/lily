@@ -17,16 +17,16 @@ final class MockMediaPreparer: MediaPreparer {
         self.logger = logger
     }
 
-    func prepareImage(_ data: Data, id: String) async throws -> AttachmentDraft {
-        try await real.prepareImage(data, id: id)
+    func prepareImage(_ data: Data, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
+        try await real.prepareImage(data, id: id, caps: caps)
     }
 
-    func prepareVideo(at url: URL, id: String) async throws -> AttachmentDraft {
-        try await real.prepareVideo(at: url, id: id)
+    func prepareVideo(at url: URL, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
+        try await real.prepareVideo(at: url, id: id, caps: caps)
     }
 
-    func prepareFile(at url: URL, id: String) async throws -> AttachmentDraft {
-        try await real.prepareFile(at: url, id: id)
+    func prepareFile(at url: URL, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
+        try await real.prepareFile(at: url, id: id, caps: caps)
     }
 
     func photoWithoutPicker() -> Data? {

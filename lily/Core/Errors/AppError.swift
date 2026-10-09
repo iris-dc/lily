@@ -77,8 +77,9 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case replyTargetNotFound
     /// A send named an attachment the bucket does not hold, or one another user uploaded (`ATTACHMENT_NOT_FOUND`).
     case attachmentNotFound
-    /// The picture is over its cap after the device re-encoded it, or the backend measured it so (`ATTACHMENT_TOO_LARGE`).
-    case attachmentTooLarge
+    /// The attachment is over its cap after the device prepared it, or the backend measured it so (`ATTACHMENT_TOO_LARGE`).
+    /// `caps` are the room's (`AttachmentCaps`), so the popup names the numbers that apply there.
+    case attachmentTooLarge(caps: AttachmentCaps)
     /// Not a picture the app can send, or a type the backend refuses (`ATTACHMENT_TYPE_NOT_ALLOWED`).
     case attachmentTypeNotAllowed
     /// The backend runs without a bucket (`ATTACHMENTS_DISABLED`); `GET /api/me` says so too and the button hides.
