@@ -61,7 +61,7 @@ struct CreateEventPayloadTests {
         #expect(location["coordinate"] as? [String: Double] == ["latitude": centre.latitude, "longitude": centre.longitude])
         let price = try #require(json["price"] as? [String: Any])
         #expect(price["amount"] as? Double == 7.5)
-        #expect(price["currencyCode"] as? String == AppConfig.Events.marketCurrencyCode)
+        #expect(price["currencyCode"] as? String == EventDraft.testCurrencyCode)
     }
 
     /// The backend reads an absent field as unset; a `null` would be a validation failure, a blank a stored blank.
@@ -141,14 +141,15 @@ struct CreateEventPayloadTests {
         }
     }
 
-    @Test func thePriceCarriesTheMarketCurrencyUnlessToldOtherwise() throws {
-        var draft = EventDraft.fixture(now: Self.now)
-        draft.price = 5
+    /// The draft's currency is the user's at the time the form opened; the payload sends exactly that one.
+    @Test func thePriceCarriesTheDraftsCurrency() throws {
+        var euros = EventDraft.fixture(now: Self.now)
+        euros.price = 5
+        var dollars = EventDraft.fixture(now: Self.now, currencyCode: "USD")
+        dollars.price = 5
 
-        let market = try #require(CreateEventPayload(draft: draft))
-        let dollars = try #require(CreateEventPayload(draft: draft, currencyCode: "USD"))
-
-        #expect(market.price == Price(amount: 5, currencyCode: AppConfig.Events.marketCurrencyCode))
-        #expect(dollars.price?.currencyCode == "USD")
+        #expect(try #require(CreateEventPayload(draft: euros)).price == Price(amount: 5, currencyCode: "EUR"))
+        #expect(try #require(CreateEventPayload(draft: dollars)).price == Price(amount: 5, currencyCode: "USD"))
+        #expect(try #require(UpdateEventPayload(draft: dollars)).price?.currencyCode == "USD")
     }
 }

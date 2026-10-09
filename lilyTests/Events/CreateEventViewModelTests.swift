@@ -24,6 +24,18 @@ struct CreateEventViewModelTests {
         #expect(!harness.viewModel.canSubmit)
     }
 
+    /// The form's price is typed in the user's currency as it was when the sheet opened; the created game carries it.
+    @Test func aNewDraftIsPricedInTheUsersCurrency() async {
+        let harness = CreateEventHarness(currencyCode: "PLN")
+        harness.completeDraft()
+        harness.viewModel.draft.price = 40
+
+        await harness.viewModel.submit()
+
+        #expect(harness.viewModel.draft.currencyCode == "PLN")
+        #expect(harness.created.first?.price == Price(amount: 40, currencyCode: "PLN"))
+    }
+
     @Test func prepareTakesTheSpotFromTheLocationService() async {
         let harness = CreateEventHarness(locationService: MockLocationService(coordinate: AppConfig.Location.mockCenter))
 

@@ -22,6 +22,8 @@ final class AppDependencies {
     let eventFilterStore: any EventFilterStore
     /// The language the copy is in and the user's choice behind it; the root view re-renders from it.
     let language: LanguageStore
+    /// The currency prices are typed in and the price cap is judged in; see `AppDependencies+Currency.swift`.
+    let currency: CurrencyStore
     let eventChanges = ChangeTracker()
     /// Groups, chat, inbox and moderation collaborators; see `AppDependencies+Groups.swift`.
     let groups: GroupDependencies
@@ -44,12 +46,14 @@ final class AppDependencies {
          pushRegistrar: any PushRegistrar,
          deviceRepository: any DeviceRepository,
          language: LanguageStore? = nil,
+         currency: CurrencyStore? = nil,
          eventFilterStore: any EventFilterStore = NoOpEventFilterStore(),
          defaults: UserDefaults = .standard) {
         self.logger = logger
         self.eventFilterStore = eventFilterStore
         let language = language ?? LanguageStore(store: UserDefaultsLanguagePreferenceStore(defaults: defaults), logger: logger)
         self.language = language
+        self.currency = currency ?? CurrencyStore(store: UserDefaultsCurrencyPreferenceStore(defaults: defaults), logger: logger)
         self.errorCenter = ErrorCenter(logger: logger)
         self.sessionStore = sessionStore
         self.authService = authService
@@ -115,6 +119,7 @@ final class AppDependencies {
                                pushRegistrar: repositories.pushRegistrar,
                                deviceRepository: repositories.devices,
                                language: language,
+                               currency: makeCurrencyStore(arguments: arguments, defaults: defaults, logger: logger),
                                eventFilterStore: makeEventFilterStore(arguments: arguments, defaults: defaults, logger: logger),
                                defaults: defaults)
     }

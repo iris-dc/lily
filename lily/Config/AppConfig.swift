@@ -50,8 +50,6 @@ nonisolated enum AppConfig {
         static let defaultFilterRadiusMeters: Double = 10_000
         /// Length of the date range the filter proposes when dates are switched on.
         static let defaultFilterDateSpanDays = 7
-        /// Currency of every event until the backend carries one per event; fixtures and the price filter use it.
-        static let marketCurrencyCode = "EUR"
         /// A tab that reappears reuses events loaded more recently than this; pull-to-refresh always reloads.
         static let listStaleAfter: TimeInterval = 60
         /// A failed load is not retried by a reappearing tab before this has passed, so switching tabs while the

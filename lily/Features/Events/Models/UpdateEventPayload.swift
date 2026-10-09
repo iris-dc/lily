@@ -17,7 +17,7 @@ nonisolated struct UpdateEventPayload: Encodable, Equatable, Sendable {
     let price: Price?
 
     /// `nil` when the draft has no coordinate; a draft made from an event always has one.
-    init?(draft: EventDraft, currencyCode: String = AppConfig.Events.marketCurrencyCode) {
+    init?(draft: EventDraft) {
         guard let coordinate = draft.coordinate else { return nil }
         title = draft.trimmedTitle
         type = draft.type
@@ -28,6 +28,6 @@ nonisolated struct UpdateEventPayload: Encodable, Equatable, Sendable {
         description = draft.trimmedDescription
         lookingFor = draft.trimmedLookingFor
         skillLevel = draft.skillLevel
-        price = draft.price(currencyCode: currencyCode)
+        price = draft.eventPrice
     }
 }

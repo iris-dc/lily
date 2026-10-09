@@ -6,8 +6,14 @@ struct EventFilterTests {
     private let events = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize)
     private let center = AppConfig.Location.mockCenter
 
+    private static let euro = "EUR"
+
     private func matching(_ filter: EventFilter, from origin: Coordinate? = nil) -> [SportEvent] {
-        events.filter { filter.matches($0, from: origin) }
+        events.filter { filter.matches($0, from: origin, currencyCode: Self.euro) }
+    }
+
+    private func matches(_ filter: EventFilter, _ event: SportEvent, currencyCode: String = euro) -> Bool {
+        filter.matches(event, from: nil, currencyCode: currencyCode)
     }
 
     @Test func defaultFilterLimitsDistanceOnlyAndCountsAsInactive() {
@@ -77,13 +83,31 @@ struct EventFilterTests {
         let cheap = SportEvent.fixture(price: Price(amount: 5, currencyCode: "EUR"))
         let dear = SportEvent.fixture(price: Price(amount: 12, currencyCode: "EUR"))
         var filter = EventFilter()
-        #expect(filter.matches(dear, from: nil))
+        #expect(matches(filter, dear))
 
         filter.maxPrice = 0
-        #expect(filter.matches(free, from: nil) && !filter.matches(cheap, from: nil))
+        #expect(matches(filter, free) && !matches(filter, cheap))
 
         filter.maxPrice = 5
-        #expect(filter.matches(free, from: nil) && filter.matches(cheap, from: nil) && !filter.matches(dear, from: nil))
+        #expect(matches(filter, free) && matches(filter, cheap) && !matches(filter, dear))
+    }
+
+    /// The cap is in the user's currency and nothing is converted: a game priced in another currency is left out while
+    /// a cap is set, a free one or a zero-priced one passes whatever its currency says, and no cap shows everything.
+    @Test func maxPriceJudgesOnlyGamesPricedInTheUsersCurrency() {
+        let zloty = SportEvent.fixture(id: "pln", price: Price(amount: 20, currencyCode: "PLN"))
+        let euro = SportEvent.fixture(id: "eur", price: Price(amount: 5, currencyCode: "EUR"))
+        let freeInDollars = SportEvent.fixture(id: "usd", price: Price(amount: 0, currencyCode: "USD"))
+        var filter = EventFilter()
+        #expect(matches(filter, zloty, currencyCode: "EUR"))
+
+        filter.maxPrice = 30
+        #expect(matches(filter, zloty, currencyCode: "PLN") && !matches(filter, euro, currencyCode: "PLN"))
+        #expect(matches(filter, euro, currencyCode: "EUR") && !matches(filter, zloty, currencyCode: "EUR"))
+        #expect(matches(filter, freeInDollars, currencyCode: "PLN"))
+
+        filter.maxPrice = 0
+        #expect(matches(filter, freeInDollars, currencyCode: "PLN") && !matches(filter, zloty, currencyCode: "PLN"))
     }
 
     @Test func levelAndOpenSpotsCriteria() {

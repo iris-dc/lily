@@ -266,7 +266,7 @@ nonisolated enum MockEventFixtures {
                 description: template.description,
                 lookingFor: template.lookingFor,
                 skillLevel: template.skillLevel,
-                price: template.priceAmount.map { Price(amount: $0, currencyCode: AppConfig.Events.marketCurrencyCode) },
+                price: template.priceAmount.map { Price(amount: $0, currencyCode: AppConfig.Currency.defaultCode) },
                 group: template.group
             )
         }

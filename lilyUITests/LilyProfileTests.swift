@@ -1,8 +1,41 @@
 import XCTest
 
 /// The contact form on Profile: a guest is sent to sign in first, a user picks what the message is about, writes it
-/// and is thanked; the mock accepts the send, so no backend is needed.
+/// and is thanked; the mock accepts the send, so no backend is needed. And the currency row: a pick changes the
+/// currency the create form's price and the filter's cap are typed in.
 final class LilyProfileTests: LilyUITestCase {
+    /// The symbol the en_US simulator shows for złoty is the code itself; a Polish device shows "zł".
+    private static let zlotySymbols: Set<String> = ["PLN", "zł"]
+
+    @MainActor
+    func testPickingACurrencyOnProfileChangesThePriceFieldsSymbol() {
+        tapSignInWithApple()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+        openProfileTab()
+
+        let picker = app.buttons["profile-currency"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5))
+        XCTAssertTrue(picker.label.contains("System"), "the row starts by following the region: \(picker.label)")
+        picker.tap()
+        let zloty = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'PLN'")).firstMatch
+        XCTAssertTrue(zloty.waitForExistence(timeout: 5), "the menu names each currency by code and name")
+        zloty.tap()
+        XCTAssertTrue(app.buttons["profile-currency"].label.contains("PLN"), "the picker reads its title and the choice")
+
+        openExploreTab()
+        tapCreateButton()
+        // The price row is the form's last; a Form row off screen is not in the accessibility tree yet.
+        let symbol = app.descendants(matching: .any)["create-price-currency"]
+        scrollUntilHittable(symbol)
+        XCTAssertTrue(Self.zlotySymbols.contains(symbol.label), "the price field is in złoty now: \(symbol.label)")
+        app.buttons["create-cancel"].tap()
+
+        app.buttons["events-filter"].tap()
+        let capSymbol = app.staticTexts["filter-price-currency"]
+        XCTAssertTrue(capSymbol.waitForExistence(timeout: 5))
+        XCTAssertTrue(Self.zlotySymbols.contains(capSymbol.label), "the price cap too: \(capSymbol.label)")
+    }
+
     @MainActor
     func testSendingFeedbackFromProfileThanksTheUser() {
         relaunchAsGuest()

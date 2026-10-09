@@ -36,6 +36,7 @@ final class CreateEventViewModel {
          errorCenter: ErrorCenter,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
+         currencyCode: String,
          pushOptIn: any PushOptIn = NoPushOptIn(),
          lockedGroup: EventGroupRef? = nil,
          onCreated: @escaping @MainActor (SportEvent) -> Void) {
@@ -49,7 +50,7 @@ final class CreateEventViewModel {
         self.pushOptIn = pushOptIn
         self.lockedGroup = lockedGroup
         self.onCreated = onCreated
-        self.draft = EventDraft(startsAt: Self.defaultStart(now: now()))
+        self.draft = EventDraft(startsAt: Self.defaultStart(now: now()), currencyCode: currencyCode)
         self.draft.group = lockedGroup
     }
 

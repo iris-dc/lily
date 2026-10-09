@@ -6,6 +6,9 @@ extension EventListViewModel {
     /// Events were loaded but the filter hides all of them, so the screen offers to clear it instead of saying "nothing yet".
     var isEverythingFilteredOut: Bool { !events.isEmpty && visibleEvents.isEmpty }
 
+    /// The currency the panel's price cap is in: the user's, so its symbol follows the Profile choice.
+    var priceCurrencyCode: String { currencyCode() }
+
     func toggleType(_ type: EventType) {
         updateFilter { $0.toggle(type) }
     }

@@ -91,14 +91,17 @@ struct EventDraftTests {
     /// One place turns a draft's amount into a `Price`: free (nothing or zero) is no price at all.
     @Test func thePriceIsAbsentForAFreeGameAndCarriesTheCurrencyOtherwise() {
         var draft = Self.makeValidDraft()
-        #expect(draft.price() == nil)
+        #expect(draft.eventPrice == nil)
 
         draft.price = 0
-        #expect(draft.price() == nil)
+        #expect(draft.eventPrice == nil)
 
         draft.price = 5
-        #expect(draft.price() == Price(amount: 5, currencyCode: AppConfig.Events.marketCurrencyCode))
-        #expect(draft.price(currencyCode: "USD") == Price(amount: 5, currencyCode: "USD"))
+        #expect(draft.eventPrice == Price(amount: 5, currencyCode: EventDraft.testCurrencyCode))
+
+        var dollars = EventDraft(startsAt: Self.now, currencyCode: "USD")
+        dollars.price = 5
+        #expect(dollars.eventPrice == Price(amount: 5, currencyCode: "USD"), "the price is in the draft's currency")
     }
 
     /// What the mock repository and the test fake answer for a create: the draft as a stored event, hosted and joined
@@ -121,7 +124,7 @@ struct EventDraftTests {
         #expect(event.participates && event.participantCount == 1)
         #expect(Participation(event: event, userID: "u-1") == .hosting)
         #expect(event.description == "Two halves" && event.lookingFor == nil && event.skillLevel == .advanced)
-        #expect(event.price == draft.price())
+        #expect(event.price == draft.eventPrice)
         #expect(event.group == nil)
     }
 

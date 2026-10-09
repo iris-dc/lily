@@ -30,7 +30,9 @@ final class CreateEventHarness {
 
     var created: [SportEvent] { createdEvents.events }
 
-    init(locationService: (any LocationService)? = nil, lockedGroup: EventGroupRef? = nil) {
+    init(locationService: (any LocationService)? = nil,
+         lockedGroup: EventGroupRef? = nil,
+         currencyCode: String = EventDraft.testCurrencyCode) {
         errorCenter = ErrorCenter(logger: logger)
         identity.currentUserID = repository.hostUserID
         groups = MyGroupsStore(repository: groupRepository,
@@ -45,6 +47,7 @@ final class CreateEventHarness {
                                          errorCenter: errorCenter,
                                          logger: logger,
                                          now: { Self.now },
+                                         currencyCode: currencyCode,
                                          lockedGroup: lockedGroup,
                                          onCreated: createdEvents.record)
     }

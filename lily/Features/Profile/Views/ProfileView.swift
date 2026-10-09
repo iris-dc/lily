@@ -17,6 +17,7 @@ struct ProfileView: View {
                         guest
                     }
                     LanguageRow(language: dependencies.language)
+                    CurrencyRow(currency: dependencies.currency)
                     FeedbackRow(action: openFeedback)
                     Spacer()
                 }

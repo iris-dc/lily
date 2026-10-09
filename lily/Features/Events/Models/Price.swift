@@ -26,6 +26,12 @@ nonisolated struct Price: Hashable, Codable, Sendable {
         return formatter.currencySymbol ?? currencyCode
     }
 
+    /// The name the user's locale gives a currency code ("Polish Zloty" for PLN), for the Profile menu; the code when
+    /// the locale has none.
+    static func name(for currencyCode: String, locale: Locale = AppLocale.locale) -> String {
+        locale.localizedString(forCurrencyCode: currencyCode) ?? currencyCode
+    }
+
     /// How an amount is shown in and read from an input field (the price cap, the price of a new game): the user's
     /// locale, at most two decimals.
     static let inputFormat = Decimal.FormatStyle.number.precision(.fractionLength(0...2))

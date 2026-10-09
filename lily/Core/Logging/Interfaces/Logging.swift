@@ -2,7 +2,7 @@ import Foundation
 
 nonisolated enum LogCategory: String, CaseIterable, Sendable {
     case auth, events, groups, chat, inbox, network, cache, ui, location, statistics, push, localization, tournaments,
-         feedback
+         feedback, currency
 }
 
 nonisolated enum LogLevel: Sendable {

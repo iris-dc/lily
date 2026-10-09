@@ -29,7 +29,37 @@ struct EditEventViewModelTests {
                                        logger: logger,
                                        tryAgainDelay: .zero,
                                        now: { Self.now },
+                                       currencyCode: EventDraft.testCurrencyCode,
                                        onChange: changed.record)
+    }
+
+    /// A price added to a game that had none is in the user's currency; a priced game keeps the currency it was
+    /// created in, whatever the user's is now, and an untouched draft still counts as unchanged.
+    @Test func aNewPriceTakesTheUsersCurrencyAndAnExistingOneKeepsItsOwn() {
+        let polish = EditEventViewModel(event: event,
+                                        repository: repository,
+                                        errorCenter: errorCenter,
+                                        logger: logger,
+                                        tryAgainDelay: .zero,
+                                        now: { Self.now },
+                                        currencyCode: "PLN",
+                                        onChange: changed.record)
+        #expect(!polish.hasChanges)
+        polish.draft.price = 40
+        #expect(polish.hasChanges && polish.draft.eventPrice == Price(amount: 40, currencyCode: "PLN"))
+
+        let priced = SportEvent.fixture(id: "p", hostUserId: "host", price: Price(amount: 5, currencyCode: "EUR"))
+        let euro = EditEventViewModel(event: priced,
+                                      repository: repository,
+                                      errorCenter: errorCenter,
+                                      logger: logger,
+                                      tryAgainDelay: .zero,
+                                      now: { Self.now },
+                                      currencyCode: "PLN",
+                                      onChange: changed.record)
+        #expect(!euro.hasChanges && euro.draft.currencyCode == "EUR")
+        euro.draft.price = 7
+        #expect(euro.draft.eventPrice == Price(amount: 7, currencyCode: "EUR"))
     }
 
     @Test func startsFromTheEventWithNothingToSave() {
@@ -52,6 +82,7 @@ struct EditEventViewModelTests {
                                            errorCenter: errorCenter,
                                            logger: logger,
                                            now: { Self.now },
+                                           currencyCode: EventDraft.testCurrencyCode,
                                            onChange: changed.record)
 
         #expect(viewModel.showsGroupRow && viewModel.lockedGroup == kickers)

@@ -168,9 +168,9 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
                 .frame(width: DesignTokens.Layout.filterPriceFieldWidth)
                 .accessibilityIdentifier(AccessibilityIdentifiers.createPrice)
                 .accessibilityLabel(Copy.price)
-            Text(Price.symbol(for: AppConfig.Events.marketCurrencyCode))
+            Text(Price.symbol(for: viewModel.draft.currencyCode))
                 .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
+                .accessibilityIdentifier(AccessibilityIdentifiers.createPriceCurrency)
         }
         .onChange(of: priceText) {
             viewModel.draft.price = Price.parseAmount(priceText)

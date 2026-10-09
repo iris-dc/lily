@@ -59,7 +59,7 @@ struct MockEventRepositoryCreateTests {
         #expect(created.description == "Two halves")
         #expect(created.lookingFor == "One keeper")
         #expect(created.skillLevel == .advanced)
-        #expect(created.price == Price(amount: Decimal(string: "7.5")!, currencyCode: AppConfig.Events.marketCurrencyCode))
+        #expect(created.price == Price(amount: Decimal(string: "7.5")!, currencyCode: EventDraft.testCurrencyCode))
     }
 
     @Test func aFreeGameHasNoPriceAndBlankDetailsStayAbsent() async throws {

@@ -24,19 +24,24 @@ nonisolated struct EventDraft: Equatable, Sendable {
     var skillLevel: SkillLevel?
     /// Per person; `nil` or zero means free.
     var price: Decimal?
+    /// The currency `price` is typed in: the user's preferred one for a new game, the game's own for an edit.
+    let currencyCode: String
     /// The group to host the game in; `nil` for a game of its own. The ref, not a bare id, so the stored event can
     /// show its badge without a second lookup.
     var group: EventGroupRef?
 
-    init(startsAt: Date, clientId: String = UUID().uuidString.lowercased()) {
+    init(startsAt: Date, currencyCode: String, clientId: String = UUID().uuidString.lowercased()) {
         self.clientId = clientId
         self.startsAt = startsAt
+        self.currencyCode = currencyCode
     }
 
     /// The event as a draft, for the host's edit: `clientId` is the event's id, and `updating(with:)` on the event or
-    /// `UpdateEventPayload` turn the draft back into the event. Blank details read back as empty text.
-    init(editing event: SportEvent) {
+    /// `UpdateEventPayload` turn the draft back into the event. Blank details read back as empty text. A priced game
+    /// keeps its currency; a free one takes `currencyCode` (the user's) should the host add a price.
+    init(editing event: SportEvent, currencyCode: String) {
         clientId = event.id
+        self.currencyCode = event.price?.currencyCode ?? currencyCode
         title = event.title
         type = event.type
         startsAt = event.startsAt
@@ -147,8 +152,9 @@ nonisolated struct EventDraft: Equatable, Sendable {
         issues(now: now, rules: rules).isEmpty
     }
 
-    /// The price the game carries on the wire and on its event: `nil` for a free game.
-    func price(currencyCode: String = AppConfig.Events.marketCurrencyCode) -> Price? {
+    /// The price the game carries on the wire and on its event, in the draft's currency: `nil` for a free game. Not
+    /// `price`, which is the typed amount.
+    var eventPrice: Price? {
         guard !isFree, let price else { return nil }
         return Price(amount: price, currencyCode: currencyCode)
     }
@@ -170,7 +176,7 @@ nonisolated struct EventDraft: Equatable, Sendable {
                    description: trimmedDescription,
                    lookingFor: trimmedLookingFor,
                    skillLevel: skillLevel,
-                   price: price(),
+                   price: eventPrice,
                    group: group)
     }
 

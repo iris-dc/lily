@@ -26,6 +26,14 @@ struct EventDetailsTests {
         #expect(event.priceText == "Free")
     }
 
+    /// The Profile menu names each currency in the user's locale; a code the locale cannot name shows as itself.
+    @Test func currenciesAreNamedInTheUsersLocale() {
+        #expect(Price.name(for: "PLN", locale: us) == "Polish Zloty")
+        #expect(Price.name(for: euro, locale: Locale(identifier: "pl_PL")) == "euro")
+        #expect(Price.name(for: "XXX", locale: us) == "Unknown Currency" || Price.name(for: "XXX", locale: us) == "XXX")
+        #expect(Price.symbol(for: "PLN", locale: Locale(identifier: "pl_PL")) == "zł")
+    }
+
     @Test func wholeAmountsDropTheMinorUnits() {
         let price = Price(amount: 5, currencyCode: euro)
         #expect(!price.isFree)

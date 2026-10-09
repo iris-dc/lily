@@ -41,6 +41,15 @@ struct EventDraftEditingTests {
         #expect(draft.issues(now: Self.now, rules: .editing(participantCount: event.participantCount)).isEmpty)
     }
 
+    /// A priced game is edited in its own currency, not the user's; a free one takes the user's for a price to come.
+    @Test func theDraftKeepsThePricedGamesCurrencyAndTakesTheUsersForAFreeOne() {
+        let priced = EventDraft(editing: Self.makeEvent(), currencyCode: "PLN")
+        #expect(priced.currencyCode == "EUR")
+
+        let free = EventDraft(editing: .fixture(), currencyCode: "PLN")
+        #expect(free.currencyCode == "PLN" && free.eventPrice == nil)
+    }
+
     /// The draft round-trips: an untouched draft rebuilds the event as it is, so "has changes" is a plain comparison.
     @Test func anUntouchedDraftRebuildsTheSameEvent() {
         let event = Self.makeEvent()

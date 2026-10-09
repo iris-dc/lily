@@ -152,7 +152,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
                    description: draft.trimmedDescription,
                    lookingFor: draft.trimmedLookingFor,
                    skillLevel: draft.skillLevel,
-                   price: draft.price(),
+                   price: draft.eventPrice,
                    group: group)
     }
 

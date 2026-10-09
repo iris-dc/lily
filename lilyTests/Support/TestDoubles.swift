@@ -147,6 +147,7 @@ func makeEventListViewModel(scope: EventScope = .upcoming,
                             recorder: SpyInteractionRecorder? = nil,
                             logger: SpyLogger? = nil,
                             now: @escaping () -> Date = { .now },
+                            currencyCode: @escaping () -> String = { EventDraft.testCurrencyCode },
                             initialFilter: EventFilter = EventFilter(),
                             filterStore: (any EventFilterStore)? = nil) -> EventListViewModel {
     EventListViewModel(scope: scope,
@@ -158,6 +159,7 @@ func makeEventListViewModel(scope: EventScope = .upcoming,
                        recorder: recorder ?? SpyInteractionRecorder(),
                        logger: logger ?? SpyLogger(),
                        now: now,
+                       currencyCode: currencyCode,
                        initialFilter: initialFilter,
                        filterStore: filterStore ?? NoOpEventFilterStore())
 }

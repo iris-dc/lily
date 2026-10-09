@@ -120,6 +120,30 @@ struct EventListFilteringTests {
         #expect(!viewModel.isEverythingFilteredOut)
     }
 
+    /// The cap is judged in the user's currency, read on every pass: a Polish user's "under 30" keeps the 20 zł game
+    /// and leaves the euro one out, and switching the currency on Profile changes the visible games without a reload.
+    @Test func thePriceCapIsJudgedInTheUsersCurrencyAsItIsNow() async {
+        let repository = FakeEventRepository()
+        repository.result = .success([
+            SportEvent.fixture(id: "pln", price: Price(amount: 20, currencyCode: "PLN")),
+            SportEvent.fixture(id: "eur", price: Price(amount: 5, currencyCode: "EUR")),
+            SportEvent.fixture(id: "free"),
+        ])
+        var currency = "PLN"
+        let viewModel = makeEventListViewModel(repository: repository,
+                                               currencyCode: { currency },
+                                               initialFilter: .everything)
+        await viewModel.load()
+        #expect(viewModel.priceCurrencyCode == "PLN")
+
+        viewModel.updateFilter { $0.maxPrice = 30 }
+        #expect(viewModel.visibleEvents.map(\.id) == ["pln", "free"])
+
+        currency = "EUR"
+        #expect(viewModel.priceCurrencyCode == "EUR")
+        #expect(viewModel.visibleEvents.map(\.id) == ["eur", "free"])
+    }
+
     /// One panel session is one `filter_applied`, and only when it changed something; undoing a change inside the
     /// session leaves nothing to report.
     @Test func closingThePanelRecordsTheFilterOnlyWhenItChanged() {

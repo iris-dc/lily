@@ -17,6 +17,8 @@ final class EventListViewModel {
     let recorder: any InteractionRecorder
     let logger: any Logging
     let now: () -> Date
+    /// The user's currency (`CurrencyStore.currencyCode`): what the price cap is typed and judged in.
+    let currencyCode: () -> String
 
     private let scope: EventScope
     private let repository: any EventRepository
@@ -43,9 +45,11 @@ final class EventListViewModel {
          recorder: any InteractionRecorder,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
+         currencyCode: @escaping () -> String,
          initialFilter: EventFilter = EventFilter(),
          filterStore: any EventFilterStore = NoOpEventFilterStore()) {
         self.filter = initialFilter
+        self.currencyCode = currencyCode
         self.scope = scope
         self.repository = repository
         self.identity = identity
@@ -64,8 +68,12 @@ final class EventListViewModel {
     /// True from a failed load until the next successful one, so the screen can say so instead of "nothing yet".
     var loadFailed: Bool { freshness.loadFailed }
 
-    /// Distance is judged from the user's position; while that is unknown the distance criterion is skipped.
-    var visibleEvents: [SportEvent] { events.filter { filter.matches($0, from: userLocation) } }
+    /// Distance is judged from the user's position; while that is unknown the distance criterion is skipped. The price
+    /// cap is judged in the user's currency, read on every pass so a change on Profile applies at once.
+    var visibleEvents: [SportEvent] {
+        let currency = currencyCode()
+        return events.filter { filter.matches($0, from: userLocation, currencyCode: currency) }
+    }
 
     /// The one way views change the filter, so every change is logged, kept for the next launch and the filter stays
     /// `private(set)`.

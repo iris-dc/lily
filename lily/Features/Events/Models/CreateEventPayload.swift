@@ -34,7 +34,7 @@ nonisolated struct CreateEventPayload: Encodable, Equatable, Sendable {
     let groupId: String?
 
     /// `nil` when the draft has no coordinate yet; callers validate the draft first.
-    init?(draft: EventDraft, currencyCode: String = AppConfig.Events.marketCurrencyCode) {
+    init?(draft: EventDraft) {
         guard let coordinate = draft.coordinate else { return nil }
         clientEventId = draft.clientId
         title = draft.trimmedTitle
@@ -46,7 +46,7 @@ nonisolated struct CreateEventPayload: Encodable, Equatable, Sendable {
         description = draft.trimmedDescription
         lookingFor = draft.trimmedLookingFor
         skillLevel = draft.skillLevel
-        price = draft.price(currencyCode: currencyCode)
+        price = draft.eventPrice
         groupId = draft.group?.id
     }
 }

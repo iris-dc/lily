@@ -7,7 +7,8 @@ nonisolated struct EventFilter: Hashable, Sendable {
     var types: Set<EventType> = []
     /// Radius around the reference point; `nil` means anywhere.
     var maxDistanceMeters: Double? = AppConfig.Events.defaultFilterRadiusMeters
-    /// Per-person price cap in the market currency; `nil` means any price, zero means free games only.
+    /// Per-person price cap in the user's currency (the one `matches(_:from:currencyCode:)` is given); `nil` means any
+    /// price, zero means free games only.
     var maxPrice: Decimal?
     /// `nil` means any level. Games that welcome any level (no `skillLevel` of their own) match every choice.
     var skillLevel: SkillLevel?
@@ -23,9 +24,10 @@ nonisolated struct EventFilter: Hashable, Sendable {
     func includes(_ type: EventType) -> Bool { types.contains(type) }
 
     /// `origin` is the reference point for the distance criterion. Without one (location denied or not yet known)
-    /// distance cannot be judged, so that criterion is skipped rather than hiding every event.
-    func matches(_ event: SportEvent, from origin: Coordinate?) -> Bool {
-        matchesType(event) && matchesDistance(event, from: origin) && matchesPrice(event)
+    /// distance cannot be judged, so that criterion is skipped rather than hiding every event. `currencyCode` is the
+    /// currency the price cap is in: the user's.
+    func matches(_ event: SportEvent, from origin: Coordinate?, currencyCode: String) -> Bool {
+        matchesType(event) && matchesDistance(event, from: origin) && matchesPrice(event, currencyCode: currencyCode)
             && matchesLevel(event) && matchesDate(event) && (!openSpotsOnly || !event.isFull)
     }
 
@@ -45,10 +47,12 @@ nonisolated struct EventFilter: Hashable, Sendable {
         return event.location.coordinate.distance(to: origin) <= maxDistanceMeters
     }
 
-    /// Amounts are compared without currency conversion: one currency per market for now.
-    private func matchesPrice(_ event: SportEvent) -> Bool {
+    /// A free game always passes a cap; a priced one passes only in the cap's currency and at or under it. Nothing is
+    /// converted, so a game priced in another currency stays out while a cap is set rather than being misjudged.
+    private func matchesPrice(_ event: SportEvent, currencyCode: String) -> Bool {
         guard let maxPrice else { return true }
-        return (event.price?.amount ?? 0) <= maxPrice
+        guard let price = event.price, !price.isFree else { return true }
+        return price.currencyCode == currencyCode && price.amount <= maxPrice
     }
 
     private func matchesLevel(_ event: SportEvent) -> Bool {

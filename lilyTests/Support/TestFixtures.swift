@@ -58,8 +58,11 @@ extension EventDraft {
     /// real draft's, so the bodies the contract tests assert are ones the backend accepts.
     static func fixture(now: Date = .now,
                         clientId: String = "3f2504e0-4f89-11d3-9a0c-0305e82c3301",
-                        coordinate: Coordinate? = AppConfig.Location.mockCenter) -> EventDraft {
-        var draft = EventDraft(startsAt: now.addingTimeInterval(AppConfig.Events.Creation.defaultStartOffset), clientId: clientId)
+                        coordinate: Coordinate? = AppConfig.Location.mockCenter,
+                        currencyCode: String = testCurrencyCode) -> EventDraft {
+        var draft = EventDraft(startsAt: now.addingTimeInterval(AppConfig.Events.Creation.defaultStartOffset),
+                               currencyCode: currencyCode,
+                               clientId: clientId)
         draft.title = "Thursday five-a-side"
         draft.locationName = "Test Park"
         draft.coordinate = coordinate

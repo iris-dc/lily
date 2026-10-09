@@ -103,10 +103,10 @@ struct EventFilterPanel: View {
                 .frame(width: DesignTokens.Layout.filterPriceFieldWidth)
                 .accessibilityIdentifier(AccessibilityIdentifiers.filterMaxPrice)
                 .accessibilityLabel(Copy.maxPrice)
-            Text(Price.symbol(for: AppConfig.Events.marketCurrencyCode))
+            Text(Price.symbol(for: viewModel.priceCurrencyCode))
                 .foregroundStyle(.secondary)
                 .fixedSize()
-                .accessibilityHidden(true)
+                .accessibilityIdentifier(AccessibilityIdentifiers.filterPriceCurrency)
         }
         .padding(.horizontal, DesignTokens.Spacing.md)
         .padding(.vertical, DesignTokens.Layout.chipVerticalPadding)

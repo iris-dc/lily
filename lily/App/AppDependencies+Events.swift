@@ -14,6 +14,7 @@ extension AppDependencies {
                            errorCenter: errorCenter,
                            recorder: interactionRecorder,
                            logger: logger,
+                           currencyCode: { [currency] in currency.currencyCode },
                            initialFilter: scope == .upcoming ? eventFilterStore.load() ?? EventFilter() : .everything,
                            filterStore: scope == .upcoming ? eventFilterStore : NoOpEventFilterStore())
     }
@@ -46,6 +47,7 @@ extension AppDependencies {
                            repository: eventRepository,
                            errorCenter: errorCenter,
                            logger: logger,
+                           currencyCode: currency.currencyCode,
                            onChange: onChange)
     }
 
@@ -59,6 +61,7 @@ extension AppDependencies {
                              groups: myGroups,
                              errorCenter: errorCenter,
                              logger: logger,
+                             currencyCode: currency.currencyCode,
                              pushOptIn: pushCoordinator,
                              lockedGroup: lockedGroup,
                              onCreated: onCreated)
