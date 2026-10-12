@@ -17,7 +17,8 @@ struct EventFactsCard: View {
                 if !event.isFree {
                     Label(AppBranding.Events.perPerson(event.priceText), systemImage: DesignTokens.Symbols.price)
                 }
-                if let level = event.skillLevel {
+                // A level this build cannot name is left out like none: the row would read "Any level level".
+                if let level = event.skillLevel?.ifKnown {
                     Label(AppBranding.Events.level(level.displayName), systemImage: DesignTokens.Symbols.level)
                 }
                 CapacityBar(event: event)

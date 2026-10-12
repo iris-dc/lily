@@ -36,4 +36,13 @@ struct TournamentOpenerTests {
         #expect(logger.messages(in: .tournaments, at: .warning)
                 == ["Tournament t1 behind a notification is unavailable: tournamentNotFound"])
     }
+
+    @Test func aCancelledOpenReportsNothing() async {
+        tournaments.thrownError = CancellationError()
+
+        let opened = await opener.open(tournamentID: "t1", matchID: nil, from: "a notification")
+
+        #expect(!opened && navigation.chatPath.isEmpty && errorCenter.current == nil)
+        #expect(logger.messages(in: .tournaments, at: .warning).isEmpty)
+    }
 }

@@ -13,6 +13,8 @@ final class FakeGroupRepository: GroupRepository {
     var actionError: (any Error)?
     /// Thrown by the next writes, one each, before `actionError` is consulted: a `.tryAgain` that a repeat gets past.
     var transientErrors: [AppError] = []
+    /// Thrown by `bans(id:)` alone, so a roster that loaded while its banned list failed can be scripted.
+    var bansError: (any Error)?
     /// While true, list and write requests record the call and then suspend until `releaseRequests()`.
     var holdsRequests: Bool {
         get { hold.isEnabled }
@@ -112,6 +114,7 @@ final class FakeGroupRepository: GroupRepository {
 
     func bans(id: String) async throws -> [GroupMember] {
         try throwIfScripted()
+        if let bansError { throw bansError }
         return members.filter { $0.role == .banned }
     }
 

@@ -1,16 +1,61 @@
 import Foundation
 
-/// What kind of activity an event is. `other` covers anything the list does not name yet. Multi-word types carry the
-/// backend's snake_case wire name (Laurel lower-cases its constant names), so `tableTennis` travels as `table_tennis`.
-nonisolated enum EventType: String, CaseIterable, Codable, Sendable {
-    case football, basketball, tennis, padel, running, volleyball, cycling, climbing, yoga
-    case swimming
-    case tableTennis = "table_tennis"
-    case badminton
-    case martialArts = "martial_arts"
-    case fitness, skiing, hiking, travel, esports
-    case boardGames = "board_games"
+/// What kind of activity an event, group or tournament is. `other` covers anything the list does not name yet.
+/// Multi-word types travel in the backend's snake_case (Laurel lower-cases its constant names), so `tableTennis` is
+/// `table_tennis` on the wire. A type this build does not know keeps its name: it draws as Other, is never offered in
+/// a chip or picker and goes back out as it came, so an event, group, tournament, profile or invite from a newer
+/// backend still decodes instead of failing the whole payload.
+nonisolated enum EventType: WireNamedKind {
+    case football, basketball, tennis, padel, running, volleyball, cycling, climbing, yoga, swimming
+    case tableTennis, badminton, martialArts, fitness, skiing, hiking, travel, esports, boardGames
     case other
+    /// A type this build does not know, kept by name.
+    case unknown(String)
+
+    /// The types this build offers in chips and pickers, Other last; a type a newer backend sends is never among them.
+    static let known: [EventType] = [
+        .football, .basketball, .tennis, .padel, .running, .volleyball, .cycling, .climbing, .yoga, .swimming,
+        .tableTennis, .badminton, .martialArts, .fitness, .skiing, .hiking, .travel, .esports, .boardGames, .other,
+    ]
+
+    private static let byWireName: [String: EventType] = Dictionary(uniqueKeysWithValues: known.map { ($0.wireName, $0) })
+
+    init(wireName: String) {
+        self = Self.byWireName[wireName] ?? .unknown(wireName)
+    }
+
+    /// The name on the wire, the lower-cased constant name of the backend's EventType (table_tennis, martial_arts,
+    /// board_games for the multi-word ones); an unknown type's is the one it came with.
+    var wireName: String {
+        switch self {
+        case .football: "football"
+        case .basketball: "basketball"
+        case .tennis: "tennis"
+        case .padel: "padel"
+        case .running: "running"
+        case .volleyball: "volleyball"
+        case .cycling: "cycling"
+        case .climbing: "climbing"
+        case .yoga: "yoga"
+        case .swimming: "swimming"
+        case .tableTennis: "table_tennis"
+        case .badminton: "badminton"
+        case .martialArts: "martial_arts"
+        case .fitness: "fitness"
+        case .skiing: "skiing"
+        case .hiking: "hiking"
+        case .travel: "travel"
+        case .esports: "esports"
+        case .boardGames: "board_games"
+        case .other: "other"
+        case .unknown(let name): name
+        }
+    }
+
+    var isUnknown: Bool {
+        if case .unknown = self { return true }
+        return false
+    }
 
     var displayName: String {
         switch self {
@@ -33,7 +78,7 @@ nonisolated enum EventType: String, CaseIterable, Codable, Sendable {
         case .travel: localized("Travel")
         case .esports: localized("Esports")
         case .boardGames: localized("Board games")
-        case .other: localized("Other")
+        case .other, .unknown: localized("Other")
         }
     }
 
@@ -58,7 +103,7 @@ nonisolated enum EventType: String, CaseIterable, Codable, Sendable {
         case .travel: "airplane"
         case .esports: "gamecontroller"
         case .boardGames: "dice"
-        case .other: "figure.mixed.cardio"
+        case .other, .unknown: "figure.mixed.cardio"
         }
     }
 }

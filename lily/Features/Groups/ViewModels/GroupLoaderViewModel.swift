@@ -1,7 +1,9 @@
 import Foundation
 import Observation
 
-/// Fetches the group behind a reference (an event's "Hosted in" badge) before the detail can show it.
+/// Fetches the group behind a reference (an event's "Hosted in" badge) before the detail can show it. `loadIfNeeded()`
+/// is the view's entry and fetches once; `load()` is the failed screen's Try again, and a group already loaded stays on
+/// screen while it runs and when it fails.
 @Observable
 final class GroupLoaderViewModel {
     enum State: Equatable {
@@ -27,8 +29,15 @@ final class GroupLoaderViewModel {
         self.logger = logger
     }
 
+    /// The view's task: fetches once. A return from a pushed screen finds the group loaded and asks for nothing; a
+    /// cancelled first attempt left `.loading` and is made again.
+    func loadIfNeeded() async {
+        guard state == .loading else { return }
+        await load()
+    }
+
     func load() async {
-        state = .loading
+        if !hasLoadedGroup { state = .loading }
         do {
             state = .loaded(try await repository.group(id: ref.id))
         } catch AppError.groupNotFound {
@@ -37,8 +46,13 @@ final class GroupLoaderViewModel {
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logger.error(.groups, "Loading group \(ref.id) failed: \(error)")
-            state = .failed
+            if !hasLoadedGroup { state = .failed }
             errorCenter.report(error)
         }
+    }
+
+    private var hasLoadedGroup: Bool {
+        if case .loaded = state { return true }
+        return false
     }
 }

@@ -41,6 +41,6 @@ nonisolated enum AccessibilityIdentifiers {
 
     /// One chip per event type in the filter panel, e.g. `filter-type-football`.
     static func filterType(_ type: EventType) -> String {
-        "filter-type-\(type.rawValue)"
+        "filter-type-\(type.wireName)"
     }
 }

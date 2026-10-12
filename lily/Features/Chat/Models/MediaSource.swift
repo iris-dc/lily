@@ -21,4 +21,12 @@ nonisolated enum MediaSource: Hashable, Sendable {
         if case .file(let url) = self { return url.lastPathComponent }
         return nil
     }
+
+    /// The file the composer owns and removes once the preparer is done with it: a video is always a copy made for the
+    /// composer (the picker's import copy, the mock's fixture written to tmp); a file is the importer's security-scoped
+    /// URL and never ours; a picture is bytes.
+    var ownedFile: URL? {
+        if case .video(let url) = self { return url }
+        return nil
+    }
 }

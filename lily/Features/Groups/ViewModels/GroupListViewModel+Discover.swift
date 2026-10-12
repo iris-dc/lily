@@ -99,6 +99,6 @@ extension GroupListViewModel {
     private func recordSearch(resultCount: Int) {
         let hasQuery = effectiveQuery != nil
         recorder.record(.groupSearchPerformed(hasQuery: hasQuery, resultCount: resultCount, at: now()))
-        logger.info(.groups, "Discover loaded \(resultCount) groups (query: \(hasQuery), type: \(typeFilter?.rawValue ?? "any"))")
+        logger.info(.groups, "Discover loaded \(resultCount) groups (query: \(hasQuery), type: \(typeFilter?.wireName ?? "any"))")
     }
 }

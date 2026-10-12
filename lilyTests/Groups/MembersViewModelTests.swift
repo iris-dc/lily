@@ -20,14 +20,7 @@ struct MembersViewModelTests {
     }
 
     private func makeViewModel(group: SportGroup) -> MembersViewModel {
-        harness.repository.result = .success([group])
-        return MembersViewModel(group: group,
-                                repository: harness.repository,
-                                identity: harness.identity,
-                                reporter: harness.reporter,
-                                logger: harness.logger,
-                                tryAgainDelay: .zero,
-                                onChange: harness.sink.record)
+        harness.makeMembersViewModel(group: group)
     }
 
     /// The two people of a conversation see each other on its roster and can do nothing to one another there.
@@ -72,15 +65,7 @@ struct MembersViewModelTests {
     }
 
     @Test func outsidersOfAPrivateGroupLoadNothing() async {
-        let group = SportGroup.fixture(id: "g", visibility: .private, memberCount: 3)
-        harness.repository.result = .success([group])
-        let viewModel = MembersViewModel(group: group,
-                                         repository: harness.repository,
-                                         identity: harness.identity,
-                                         reporter: harness.reporter,
-                                         logger: harness.logger,
-                                         tryAgainDelay: .zero,
-                                         onChange: harness.sink.record)
+        let viewModel = makeViewModel(group: .fixture(id: "g", visibility: .private, memberCount: 3))
 
         await viewModel.load()
 
@@ -132,9 +117,11 @@ struct MembersViewModelTests {
         #expect(harness.logs(.info).contains("Remove lost a race in group g; retrying once"))
     }
 
+    /// The backend answers the banned member, not the group, so the group is read back for its count and epoch.
     @Test func banMovesTheRowToTheBannedList() async {
         let viewModel = makeViewModel(role: .owner)
         await viewModel.load()
+        harness.repository.result = .success([.fixture(id: "g", memberCount: 2, channelEpoch: 2, role: .owner)])
 
         await viewModel.perform(.ban, on: member)
 
@@ -142,7 +129,7 @@ struct MembersViewModelTests {
         #expect(viewModel.bans.map(\.userId) == ["u-3", "u-9"])
         #expect(harness.repository.roleChanges == [FakeGroupRepository.RoleChange(id: "g", userID: "u-3", role: .banned)])
         #expect(viewModel.group.memberCount == 2 && viewModel.group.channelEpoch == 2)
-        #expect(harness.changed.count == 1)
+        #expect(harness.repository.fetchedGroupIDs == ["g"] && harness.changed.count == 1)
     }
 
     @Test func roleChangesUpdateTheRowInPlace() async {

@@ -10,8 +10,6 @@ struct TournamentDetailView: View {
     @State private var section: TournamentDetailSection = .entries
     @State private var presentedSheet: DetailSheet?
     @State private var confirmation: TournamentConfirmation?
-    /// The match the destination named was raised once; a reload must not raise it again.
-    @State private var hasShownLinkedMatch = false
     /// The scroll view's width, for the bracket's inset: the readable column's edge on a wide screen.
     @State private var contentWidth: CGFloat = 0
     @Environment(\.dismiss) private var dismiss
@@ -54,7 +52,7 @@ struct TournamentDetailView: View {
         .navigationTitle(viewModel.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if viewModel.showsMenu {
+            if viewModel.permissions.showsMenu {
                 ToolbarItem(placement: .topBarTrailing) {
                     TournamentMenu(viewModel: viewModel,
                                    onOpenChat: { Task { await viewModel.openChat() } },
@@ -70,7 +68,14 @@ struct TournamentDetailView: View {
         // acknowledged by the view model and costs no second request.
         .task(id: dependencies.tournamentChanges.version) {
             await viewModel.loadIfNeeded()
-            showLinkedMatchIfNeeded()
+        }
+        // The view model decides once per screen which match a system row or a reminder named, so Try again after an
+        // offline first load still raises it, and the sheet never pops up at a later version bump.
+        .onChange(of: viewModel.linkedMatchToShow, initial: true) { _, matchID in
+            guard let matchID else { return }
+            section = .matches
+            presentedSheet = .match(id: matchID)
+            viewModel.consumeLinkedMatch()
         }
         // Deleted while on screen: there is nothing left to show here (a first load's 404 keeps its empty state).
         .onChange(of: viewModel.isGone) {
@@ -113,18 +118,18 @@ struct TournamentDetailView: View {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     TournamentHeader(tournament: detail.tournament,
-                                     organizerProfile: viewModel.organizerProfile,
+                                     organizerProfile: viewModel.permissions.organizerProfile,
                                      winnerName: viewModel.winnerName)
                     if let description = detail.tournament.description {
                         Text(description).font(.body)
                     }
                     TournamentFacts(tournament: detail.tournament)
-                    if viewModel.showsEntries {
+                    if viewModel.permissions.showsEntries {
                         sectionPicker(detail.tournament)
                     }
                 }
                 .inReadableColumn()
-                if viewModel.showsEntries {
+                if viewModel.permissions.showsEntries {
                     segment(detail)
                 }
                 TournamentParticipationControl(viewModel: viewModel,
@@ -173,15 +178,6 @@ struct TournamentDetailView: View {
                                  viewModel: viewModel,
                                  onSelect: { presentedSheet = .match(id: $0.id) },
                                  bracketInset: bracketInset)
-    }
-
-    /// A system row about a match opened this screen: the Matches segment, with that match's sheet up, once.
-    private func showLinkedMatchIfNeeded() {
-        guard !hasShownLinkedMatch, let matchID = viewModel.destination.matchID,
-              viewModel.detail?.match(id: matchID) != nil else { return }
-        hasShownLinkedMatch = true
-        section = .matches
-        presentedSheet = .match(id: matchID)
     }
 
     private var confirmationTitle: String {

@@ -4,7 +4,7 @@ import Testing
 
 @MainActor
 struct CognitoAuthServiceTests {
-    @MainActor private struct Harness {
+    @MainActor struct Harness {
         let client = FakeCognitoClient()
         let store = InMemorySessionStore()
         let logger = SpyLogger()
@@ -189,14 +189,15 @@ struct CognitoAuthServiceTests {
         #expect(harness.client.resendEmails == [credentials.email])
     }
 
-    @Test func signOutClearsTheCacheBeforeAskingThePool() async throws {
+    /// The cached user is gone either way; the marker stays so the next launch finishes what the pool refused.
+    @Test func aRefusedPoolSignOutLeavesThePendingMarkerAndNoCache() async throws {
         let harness = Harness()
         harness.store.stored = .signedIn(TestFixtures.session)
         harness.client.signOutError = .network
 
         await #expect(throws: AppError.network) { try await harness.service.signOut() }
 
-        #expect(harness.store.stored == nil)
+        #expect(harness.store.stored == .signingOut)
         #expect(harness.client.signOutCount == 1)
     }
 

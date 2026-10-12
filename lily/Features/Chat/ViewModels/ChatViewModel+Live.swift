@@ -19,8 +19,7 @@ extension ChatViewModel {
         switch envelope {
         case .message(let message):
             if let clientMessageID = message.clientMessageId, message.isSent(by: identity.currentUserID) {
-                seedAttachmentCache(for: clientMessageID, with: message)
-                pending.removeAll { $0.clientMessageID == clientMessageID }
+                await confirmPending(clientMessageID: clientMessageID, with: message)
             }
             // A game or a tournament's progress announced here changed elsewhere; the lists behind this screen must reload.
             links.recordChange(for: message.kind)

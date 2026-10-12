@@ -22,6 +22,26 @@ struct AttachmentCodingTests {
         #expect(sent.message == message && sent.channelEpoch == 3)
     }
 
+    /// An attachment of a kind a newer backend sends keeps its name and leaves the message decoding with every other
+    /// field intact; it is no media, so it is a card under the bubble and reads as a file in a quote; and it goes back
+    /// out as it came, never rewritten to a kind this build knows.
+    @Test func anUnknownAttachmentKindKeepsTheMessageDecodingAndDrawsAsAFile() throws {
+        let message = try ContractSamples.decode(ChatMessage.self, from: audioKinded(ContractSamples.imageMessage))
+
+        #expect(message.id == "01ARYZ6S41TSV4RRFFQ69G5FAV" && message.kind == .text && message.attachments.count == 1)
+        let attachment = try #require(message.attachments.first)
+        #expect(attachment.kind == .unknown("audio") && attachment.kind.isUnknown && !attachment.kind.isMedia)
+        #expect(attachment.id == "01ARYZ6S41TSV4RRFFQ69G5FB0" && attachment.sizeBytes == 812_345)
+        #expect(GalleryLayout.partition(message.attachments.map(\.kind)) == GalleryLayout.Partition(media: [], files: [0]),
+                "a card under the bubble, never a tile")
+        #expect(ReplyQuote(quoting: message, senderName: "Marta").placeholder == "File")
+        let json = try #require(String(bytes: try APIJSONCoding.makeEncoder().encode(message), encoding: .utf8))
+        #expect(json.contains(#""kind":"audio""#) && !json.contains(#""kind":"file""#))
+        #expect(try ContractSamples.decode(ChatMessage.self, from: json) == message)
+        let sent = try ContractSamples.decode(SentMessage.self, from: audioKinded(ContractSamples.imageSentMessage))
+        #expect(sent.message == message && sent.channelEpoch == 3)
+    }
+
     /// Every sample from before attachments decodes as a message without any.
     @Test func aMessageWithoutAttachmentsDecodesAsNone() throws {
         for sample in [ContractSamples.message, ContractSamples.systemMessage, ContractSamples.deletedMessage,
@@ -119,6 +139,13 @@ struct AttachmentCodingTests {
     /// Variants are told apart by the cache's file suffix.
     @Test func variantsHaveDistinctFileSuffixes() {
         #expect(AttachmentVariant.full.fileSuffix.isEmpty && AttachmentVariant.thumbnail.fileSuffix == ".thumb")
+    }
+
+    /// The sample with its picture's kind replaced by one this build does not know; the message's own kind stays `text`.
+    private func audioKinded(_ sample: String) throws -> String {
+        let replaced = sample.replacingOccurrences(of: #""kind":"image""#, with: #""kind":"audio""#)
+        try #require(replaced != sample)
+        return replaced
     }
 
     private func json(of payload: some Encodable) throws -> [String: Any]? {

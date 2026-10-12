@@ -151,7 +151,7 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
     private var levelPicker: some View {
         Picker(Copy.level, selection: $viewModel.draft.skillLevel) {
             Text(Copy.anyLevel).tag(SkillLevel?.none)
-            ForEach(SkillLevel.allCases, id: \.self) { level in
+            ForEach(SkillLevel.known, id: \.self) { level in
                 Text(level.displayName).tag(SkillLevel?.some(level))
             }
         }

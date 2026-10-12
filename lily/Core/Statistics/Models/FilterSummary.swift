@@ -11,7 +11,7 @@ nonisolated struct FilterSummary: Encodable, Equatable, Sendable {
     let openSpotsOnly: Bool
 
     init(_ filter: EventFilter) {
-        types = filter.types.map(\.rawValue).sorted()
+        types = filter.types.map(\.wireName).sorted()
         maxDistanceMeters = filter.maxDistanceMeters
         hasMaxPrice = filter.maxPrice != nil
         skillLevel = filter.skillLevel

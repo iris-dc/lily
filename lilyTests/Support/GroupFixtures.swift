@@ -99,11 +99,13 @@ extension Account {
     static func fixture(termsVersion: Int = 1,
                         acceptedTermsVersion: Int? = 1,
                         isOperator: Bool = false,
+                        realtimeEndpoint: URL? = nil,
                         attachmentsEnabled: Bool = false) -> Account {
         Account(userId: TestFixtures.user.id,
                 isOperator: isOperator,
                 termsVersion: termsVersion,
                 acceptedTermsVersion: acceptedTermsVersion,
+                realtimeEndpoint: realtimeEndpoint,
                 attachmentsEnabled: attachmentsEnabled)
     }
 }

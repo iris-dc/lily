@@ -51,9 +51,14 @@ struct LocalImage: View {
     }
 }
 
-/// Reads and decodes a picture file where it will not stall the main actor.
-enum ImageFile {
+/// Reads and decodes a picture file on a detached task, so neither the read (`UIImage(contentsOfFile:)`) nor the
+/// decode stalls the main actor. `nil` for a missing file or one that is no picture.
+nonisolated enum ImageFile {
     static func load(_ url: URL) async -> UIImage? {
+        await Task.detached(priority: .userInitiated) { await decoded(url) }.value
+    }
+
+    private static func decoded(_ url: URL) async -> UIImage? {
         guard let image = UIImage(contentsOfFile: url.path()) else { return nil }
         return await image.byPreparingForDisplay() ?? image
     }

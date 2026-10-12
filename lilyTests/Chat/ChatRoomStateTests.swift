@@ -18,6 +18,7 @@ struct ChatRoomStateTests {
         #expect(room.messages.map(\.id) == ["m1", "m2", "m3"])
         #expect(room.displayMaxID == "m3" && room.oldestID == "m1")
         #expect(room.contains(clientMessageID: "c-2") && !room.contains(clientMessageID: "c-9"))
+        #expect(room.message(clientMessageID: "c-2")?.id == "m2" && room.message(clientMessageID: "c-9") == nil)
     }
 
     /// The watermark is the REST anchor: a live message never moves it, so a lost publish behind it is still fetched.

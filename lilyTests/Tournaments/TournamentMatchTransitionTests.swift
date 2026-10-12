@@ -55,6 +55,19 @@ struct TournamentMatchTransitionTests {
         #expect(walkover.confirmedBy == "org" && walkover.confirmedAt == noon)
     }
 
+    /// A time set on a reported match leaves the report where it is (Laurel's `MatchWrites.openStatus`): only an open
+    /// match takes `pending` or `scheduled` from its time.
+    @Test func schedulingAReportedMatchKeepsTheReport() {
+        let timed = match.reporting(3, 1, by: "u1", at: noon).scheduling(MatchSchedule(scheduledAt: noon))
+        #expect(timed.status == .reported && timed.scheduledAt == noon)
+        #expect(timed.scoreA == 3 && timed.scoreB == 1 && timed.reportedBy == "u1")
+    }
+
+    @Test func schedulingADecidedMatchKeepsItsResult() {
+        let timed = match.recording(3, 1, by: "org", at: noon).scheduling(MatchSchedule(scheduledAt: noon))
+        #expect(timed.status == .confirmed && timed.winnerEntryId == "e1" && timed.scheduledAt == noon)
+    }
+
     /// A knockout match always needs a winner; a round robin follows `allowsDraws`.
     @Test func aKnockoutNeverPermitsDraws() {
         #expect(!Tournament.fixture(format: .singleElimination, allowsDraws: true).permitsDraws)

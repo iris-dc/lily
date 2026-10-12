@@ -27,8 +27,7 @@ struct GroupRow: View {
     }
 
     private var caption: String {
-        let isActiveToday = Calendar.current.isDate(group.lastActivityAt, inSameDayAs: now)
-        return group.caption(suffix: isActiveToday ? AppBranding.Groups.activeTodayCaption : nil)
+        group.caption(suffix: group.isActive(on: now) ? AppBranding.Groups.activeTodayCaption : nil)
     }
 }
 

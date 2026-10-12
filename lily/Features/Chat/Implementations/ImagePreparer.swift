@@ -4,8 +4,10 @@ import UniformTypeIdentifiers
 
 /// Pictures for upload: `CGImageSource` downsamples to `imageMaxDimension` without decoding the full bitmap (a 48 MP
 /// HEIC never lands in memory whole), the result is written as a JPEG at `imageJPEGQuality` (so every picture leaves
-/// the device as `image/jpeg`, whatever the camera shot), and a `thumbnailMaxDimension` thumbnail goes with it. The
-/// work runs off the main actor; only the draft comes back. One of the three workers behind `DeviceMediaPreparer`.
+/// the device as `image/jpeg`, whatever the camera shot), and a `thumbnailMaxDimension` thumbnail goes with it when one
+/// can be made: the API takes a draft without one, so a thumbnail that fails never refuses the picture. The work runs
+/// off the main actor and dies with the caller (`DetachedWork`); only the draft comes back. One of the three workers
+/// behind `DeviceMediaPreparer`.
 final class ImagePreparer {
     /// Plain data, free of the actor, so the detached encoding task and a test's default argument can build one.
     nonisolated struct Limits: Sendable {
@@ -29,10 +31,11 @@ final class ImagePreparer {
     func prepareImage(_ data: Data, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
         let limits = self.limits
         let directory = self.directory
-        let draft = try await Task.detached(priority: .userInitiated) {
+        let draft = try await DetachedWork.run {
             try ImageEncoding.prepare(data, id: id, limits: limits, caps: caps, in: directory)
-        }.value
-        logger.debug(.chat, "Attachment \(id) prepared: \(draft.sizeBytes) B, \(draft.width ?? 0)x\(draft.height ?? 0)")
+        }
+        let note = ImageEncoding.thumbnailNote(for: draft)
+        logger.debug(.chat, "Attachment \(id) prepared: \(draft.sizeBytes) B, \(draft.width ?? 0)x\(draft.height ?? 0)\(note)")
         return draft
     }
 }
@@ -44,17 +47,16 @@ nonisolated enum ImageEncoding {
                         limits: ImagePreparer.Limits,
                         caps: AttachmentCaps,
                         in directory: URL) throws -> AttachmentDraft {
+        try Task.checkCancellation()
         guard let source = CGImageSourceCreateWithData(data as CFData, nil), CGImageSourceGetCount(source) > 0 else {
             throw AppError.attachmentTypeNotAllowed
         }
         let image = try downsample(source, maxDimension: limits.maxDimension)
         let jpeg = try jpegData(image, quality: limits.jpegQuality)
-        guard jpeg.count <= caps.imageMaxBytes else { throw AppError.attachmentTooLarge(caps: caps) }
+        try Task.checkCancellation()
+        try caps.require(sizeBytes: jpeg.count, for: .image)
         let fileURL = try write(jpeg, id: id, suffix: "", in: directory)
-        let thumbnail = try writeThumbnail(try downsample(source, maxDimension: limits.thumbnailMaxDimension),
-                                           id: id,
-                                           limits: limits,
-                                           in: directory)
+        let thumbnail = thumbnail(of: source, id: id, limits: limits, in: directory)
         return AttachmentDraft(clientAttachmentID: id,
                                kind: .image,
                                fileURL: fileURL,
@@ -75,6 +77,23 @@ nonisolated enum ImageEncoding {
                                in directory: URL) throws -> (url: URL, sizeBytes: Int)? {
         guard let data = try thumbnailData(image, limits: limits) else { return nil }
         return (try write(data, id: id, suffix: AppConfig.Chat.Attachments.thumbnailFileSuffix, in: directory), data.count)
+    }
+
+    /// The tail of a preparer's "prepared" debug line: a draft that goes without a thumbnail says so.
+    static func thumbnailNote(for draft: AttachmentDraft) -> String {
+        draft.thumbnailURL == nil ? ", no thumbnail" : ""
+    }
+
+    /// The picture's thumbnail, or none: nothing that runs after the main file is written may refuse the picture, so a
+    /// frame that cannot be made or written leaves the draft without one and the transcript renders the full object.
+    private static func thumbnail(of source: CGImageSource,
+                                  id: String,
+                                  limits: ImagePreparer.Limits,
+                                  in directory: URL) -> (url: URL, sizeBytes: Int)? {
+        try? writeThumbnail(try downsample(source, maxDimension: limits.thumbnailMaxDimension),
+                            id: id,
+                            limits: limits,
+                            in: directory)
     }
 
     private static func thumbnailData(_ image: CGImage, limits: ImagePreparer.Limits) throws -> Data? {

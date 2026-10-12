@@ -12,24 +12,28 @@ struct EmailSignInView: View {
         _viewModel = State(initialValue: EmailSignInViewModel(session: session))
     }
 
+    /// A scroll view, not a fixed column: at accessibility type sizes the form with the keyboard up outgrows the sheet,
+    /// and a fixed `VStack` was compressed instead (the title rode up under the back button, both header lines truncated).
     var body: some View {
         ContentScreen {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                ScreenTitle(text: viewModel.mode.title, subtitle: viewModel.subtitle)
-                if viewModel.mode == .confirm {
-                    codeField
-                } else {
-                    credentialFields
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
+                    ScreenTitle(text: viewModel.mode.title, subtitle: viewModel.subtitle)
+                    if viewModel.mode == .confirm {
+                        codeField
+                    } else {
+                        credentialFields
+                    }
+                    submitButton
+                    if viewModel.mode == .confirm {
+                        resendButton
+                    }
+                    modeToggle
                 }
-                submitButton
-                if viewModel.mode == .confirm {
-                    resendButton
-                }
-                modeToggle
-                Spacer()
+                .padding(DesignTokens.Spacing.xl)
+                .readableColumn()
             }
-            .padding(DesignTokens.Spacing.xl)
-            .readableColumn()
+            .scrollBounceBehavior(.basedOnSize)
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { focusedField = .email }

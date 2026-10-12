@@ -84,8 +84,13 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
         channelEpoch = epoch
     }
 
+    /// The stored message a send from this device produced, found by the client id its bubble carried.
+    func message(clientMessageID: String) -> ChatMessage? {
+        messages.first { $0.clientMessageId == clientMessageID }
+    }
+
     func contains(clientMessageID: String) -> Bool {
-        messages.contains { $0.clientMessageId == clientMessageID }
+        message(clientMessageID: clientMessageID) != nil
     }
 
     func contains(id: String) -> Bool {

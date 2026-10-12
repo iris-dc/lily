@@ -217,11 +217,14 @@ final class AppDependencies {
         if mockPicker { logger.info(.chat, "Launch argument requested the mock attachment picker") }
         let systemPush = arguments.contains(AppConfig.LaunchArguments.systemPush)
         if systemPush { logger.info(.push, "Launch argument kept the system push registrar") }
+        let termsPending = arguments.contains(AppConfig.LaunchArguments.mockTermsPending)
+        if termsPending { logger.info(.groups, "Launch argument made the mock owe the terms") }
         return .mock(identity: identity,
                      logger: logger,
                      autoReplies: autoReplies,
                      mockPicker: mockPicker,
-                     systemPush: systemPush)
+                     systemPush: systemPush,
+                     termsPending: termsPending)
     }
 }
 
@@ -265,12 +268,17 @@ private struct Repositories {
                      logger: any Logging,
                      autoReplies: Bool = false,
                      mockPicker: Bool = false,
-                     systemPush: Bool = false) -> Repositories {
+                     systemPush: Bool = false,
+                     termsPending: Bool = false) -> Repositories {
         Repositories(events: MockEventRepository(identity: identity, logger: logger),
                      profile: MockProfileRepository(logger: logger),
                      feedback: MockFeedbackRepository(logger: logger),
                      interactions: NoOpInteractionRecorder(),
-                     groups: .mock(identity: identity, logger: logger, autoReplies: autoReplies, mockPicker: mockPicker),
+                     groups: .mock(identity: identity,
+                                   logger: logger,
+                                   autoReplies: autoReplies,
+                                   mockPicker: mockPicker,
+                                   termsPending: termsPending),
                      devices: MockDeviceRepository(identity: identity, logger: logger),
                      pushRegistrar: systemPush ? SystemPushRegistrar(logger: logger) : MockPushRegistrar(logger: logger))
     }

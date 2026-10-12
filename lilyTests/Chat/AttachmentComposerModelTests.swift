@@ -2,8 +2,10 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The pictures of a message on their way: preparing, uploading under the concurrency cap, uploaded; removal, the cap,
-/// a failed upload and its retry, a refused picture, and the cache seeded with what was sent.
+/// The pictures of a message on their way: preparing, uploading under the concurrency cap, uploaded; removal (of an
+/// item in flight, and of one still parked for a slot), the cap, a failed upload and its retry, the cache seeded with
+/// what was sent, and the composer's end, which stops the uploads quietly and takes the strip's files with it. A
+/// refused item of any kind is in `AttachmentComposerModelKindTests`.
 @MainActor
 struct AttachmentComposerModelTests {
     private let harness = RealtimeHarness()
@@ -118,19 +120,6 @@ struct AttachmentComposerModelTests {
         #expect(harness.chat.uploadRequests.count == 2 && harness.uploader.uploads.count == 2)
     }
 
-    /// A picture the preparer refuses is a verdict: the slot goes and the popup says why.
-    @Test func aRefusedPictureIsDroppedWithThePopup() async throws {
-        let model = makeModel()
-        harness.preparer.error = AppError.attachmentTooLarge(caps: .group)
-
-        let slot = try #require(model.add(imageData: photo))
-        await settle(until: { model.isEmpty })
-
-        #expect(harness.errorCenter.current?.error == .attachmentTooLarge(caps: .group) && harness.chat.uploadRequests.isEmpty)
-        let warning = "Attachment \(slot.id) could not be prepared: attachmentTooLarge"
-        #expect(harness.chatLogs(.warning).contains { $0.hasPrefix(warning) })
-    }
-
     @Test func atMostTwoUploadsRunAtOnce() async {
         let model = makeModel()
         harness.uploader.holdsRequests = true
@@ -145,6 +134,65 @@ struct AttachmentComposerModelTests {
         #expect(harness.uploader.uploads.count == 3 && model.refs.count == 3)
     }
 
+    /// The third picture is parked for a slot; removing it hands the slot on (or frees it) rather than keeping it, or
+    /// every later upload would run one at a time.
+    @Test func removingADraftWaitingForASlotHandsTheSlotOn() async {
+        let model = makeModel()
+        harness.uploader.holdsRequests = true
+        for _ in 0..<3 { model.add(imageData: photo) }
+        await settle(until: { harness.uploader.inFlight == 2 })
+
+        model.remove(model.drafts[2])
+        harness.uploader.releaseRequests()
+        await settle(until: { !model.isBusy })
+        #expect(harness.chat.uploadRequests.count == 2 && harness.uploader.uploads.count == 2 && model.refs.count == 2)
+
+        harness.uploader.holdsRequests = true
+        for _ in 0..<2 { model.add(imageData: photo) }
+        await settle(until: { harness.uploader.inFlight == 2 })
+        #expect(model.slots.active == 2, "both start: a leaked slot would start one, a lost hand-over none")
+        harness.uploader.releaseRequests()
+        await settle(until: { !model.isBusy })
+    }
+
+    /// A room left mid-upload: the composer goes, the PUT ends quietly (no popup and no log for a screen that is gone)
+    /// and the strip's files go with it.
+    @Test func deallocatingTheComposerCancelsItsUploads() async throws {
+        harness.uploader.holdsRequests = true
+        var model: AttachmentComposerModel? = makeModel()
+        let slot = try #require(model?.add(imageData: photo))
+        await settle(until: { harness.uploader.inFlight == 1 })
+        let files = try #require(model?.drafts.first?.localFiles)
+        #expect(files.allSatisfy { FileManager.default.fileExists(atPath: $0.path()) })
+
+        model = nil
+        harness.uploader.error = AppError.attachmentUploadFailed
+        harness.uploader.releaseRequests()
+        await harness.yield()
+
+        #expect(harness.errorCenter.current == nil, "an orphan reports on no screen")
+        #expect(!harness.chatLogs(.error).contains { $0.hasPrefix("Attachment \(slot.id) upload failed") })
+        #expect(!harness.chatLogs(.info).contains { $0.hasPrefix("Attachment \(slot.id) uploaded") })
+        #expect(files.allSatisfy { !FileManager.default.fileExists(atPath: $0.path()) }, "the files went with the owner")
+    }
+
+    /// The picture parked for a slot never asks for a ticket once its composer is gone.
+    @Test func deallocatingTheComposerDropsItsQueuedUploadToo() async {
+        harness.uploader.holdsRequests = true
+        var model: AttachmentComposerModel? = makeModel()
+        for _ in 0..<3 { _ = model?.add(imageData: photo) }
+        await settle(until: { harness.uploader.inFlight == 2 })
+        #expect(harness.chat.uploadRequests.count == 2)
+
+        model = nil
+        harness.uploader.releaseRequests()
+        await harness.yield()
+
+        #expect(harness.chat.uploadRequests.count == 2 && harness.uploader.uploads.count == 2,
+                "the waiter never asked for a ticket")
+        #expect(harness.errorCenter.current == nil)
+    }
+
     @Test func seedCacheKeepsTheSentFilesUnderTheStoredIds() async throws {
         let model = makeModel()
         model.add(imageData: photo)
@@ -152,7 +200,7 @@ struct AttachmentComposerModelTests {
         let sent = model.drafts
         let stored = lily.Attachment.fixture(id: "att-1")
 
-        model.seedCache(sent, with: [stored, .fixture(id: "someone-elses")])
+        await model.seedCache(sent, with: [stored, .fixture(id: "someone-elses")])
 
         let thumbnail = try #require(sent[0].thumbnailURL)
         #expect(harness.attachmentCache.copied == [
@@ -160,6 +208,29 @@ struct AttachmentComposerModelTests {
             FakeAttachmentCache.Copy(id: "att-1", variant: .thumbnail, source: thumbnail),
         ])
         #expect(harness.attachmentCache.fileURL(for: "att-1", variant: .full) != nil)
+    }
+
+    /// The answer and the live echo settle the same message; whichever is second copies nothing and deletes nothing
+    /// the first may still be copying.
+    @Test func seedingTheSameStoredIdsTwiceCopiesEachFileOnce() async throws {
+        let model = makeModel()
+        model.add(imageData: photo)
+        await settle(until: { !model.isBusy })
+        let sent = model.drafts
+        let stored = [lily.Attachment.fixture(id: "att-1")]
+
+        let answer = Task { await model.seedCache(sent, with: stored) }
+        let echo = Task { await model.seedCache(sent, with: stored) }
+        await answer.value
+        await echo.value
+
+        let thumbnail = try #require(sent[0].thumbnailURL)
+        #expect(harness.attachmentCache.copied == [
+            FakeAttachmentCache.Copy(id: "att-1", variant: .full, source: sent[0].fileURL),
+            FakeAttachmentCache.Copy(id: "att-1", variant: .thumbnail, source: thumbnail),
+        ])
+        #expect(harness.logger.messages(in: .chat, at: .warning).isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: sent[0].fileURL.path()), "the sent files went once")
     }
 
     @Test func resetAndThePickerStandInFollowTheConfiguration() async {

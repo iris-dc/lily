@@ -23,11 +23,18 @@ nonisolated struct AttachmentCaps: Hashable, Sendable {
         group.isDirect ? .direct : .group
     }
 
+    /// The cap for a kind; a kind this build does not know is capped like a file.
     func maxBytes(for kind: AttachmentKind) -> Int {
         switch kind {
         case .image: imageMaxBytes
         case .video: videoMaxBytes
-        case .file: fileMaxBytes
+        case .file, .unknown: fileMaxBytes
         }
+    }
+
+    /// The one over-cap verdict: `sizeBytes` within the kind's cap, else `.attachmentTooLarge` carrying these caps, so
+    /// the popup names the numbers of the room the item was meant for.
+    func require(sizeBytes: Int, for kind: AttachmentKind) throws {
+        guard sizeBytes <= maxBytes(for: kind) else { throw AppError.attachmentTooLarge(caps: self) }
     }
 }

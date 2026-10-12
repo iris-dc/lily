@@ -38,6 +38,23 @@ struct ChatViewModelClearTests {
         #expect(viewModel.rows.count == 2, "a line written after the clear lands in the emptied room")
     }
 
+    /// A picture that never left goes with the room it was meant for: nothing of the unsent bubble stays in tmp.
+    @Test func clearingTakesTheUnsentBubblesFilesWithIt() async throws {
+        let (harness, viewModel) = await makeOpenChat(for: group)
+        viewModel.draft.text = "hello"
+        viewModel.attachments.add(imageData: Data(repeating: 1, count: 300))
+        await settle(until: { viewModel.canSend })
+        let files = try #require(viewModel.attachments.drafts.first).localFiles
+        harness.chat.sendErrors = [AppError.contentRejected]
+        await viewModel.send()
+        #expect(viewModel.pending.count == 2 && files.allSatisfy { FileManager.default.fileExists(atPath: $0.path()) })
+
+        await viewModel.clearHistory()
+
+        #expect(viewModel.pending.isEmpty)
+        #expect(files.allSatisfy { !FileManager.default.fileExists(atPath: $0.path()) }, "the files went with the bubble")
+    }
+
     @Test func deletingAConversationLeavesTheScreen() async {
         let (harness, viewModel) = await makeOpenChat(for: conversation)
         harness.chat.clearAnswersHidden = true

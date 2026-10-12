@@ -2,10 +2,12 @@ import Foundation
 import ImageIO
 import Testing
 import UIKit
+import UniformTypeIdentifiers
 @testable import lily
 
-/// Pictures through the preparer: a big PNG comes out as a JPEG within the longest side, with a thumbnail, both as
-/// files; one over the byte cap is refused, as are bytes that are no picture.
+/// Pictures through the preparer: a big PNG comes out as a JPEG within the longest side, upright whatever its EXIF tag
+/// says, with a thumbnail that fits its cap, both as files; one over the byte cap is refused, as are bytes that are no
+/// picture; a thumbnail that cannot be made never refuses the picture.
 @MainActor
 struct ImagePreparerTests {
     private let logger = SpyLogger()
@@ -22,10 +24,28 @@ struct ImagePreparerTests {
     /// A PNG of `size` with a gradient, so the JPEG is not trivially small.
     private func png(_ size: CGSize) -> Data {
         UIGraphicsImageRenderer(size: size, format: UIGraphicsImageRendererFormat.default()).pngData { context in
-            let colors = [UIColor.systemRed.cgColor, UIColor.systemBlue.cgColor] as CFArray
-            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: nil)!
-            context.cgContext.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: size.width, y: size.height), options: [])
+            drawGradient(in: context.cgContext, to: size)
         }
+    }
+
+    /// A JPEG of `size` carrying an EXIF orientation, as a camera writes one: the pixels stay as rendered and the tag
+    /// says how to turn them.
+    private func jpeg(_ size: CGSize, orientation: Int) throws -> Data {
+        let image = UIGraphicsImageRenderer(size: size, format: UIGraphicsImageRendererFormat.default()).image { context in
+            drawGradient(in: context.cgContext, to: size)
+        }
+        let cgImage = try #require(image.cgImage)
+        let data = NSMutableData()
+        let destination = try #require(CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil))
+        CGImageDestinationAddImage(destination, cgImage, [kCGImagePropertyOrientation: orientation] as CFDictionary)
+        #expect(CGImageDestinationFinalize(destination))
+        return data as Data
+    }
+
+    private func drawGradient(in context: CGContext, to size: CGSize) {
+        let colors = [UIColor.systemRed.cgColor, UIColor.systemBlue.cgColor] as CFArray
+        let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: nil)!
+        context.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: size.width, y: size.height), options: [])
     }
 
     private func dimensions(of url: URL) throws -> (width: Int, height: Int) {
@@ -34,6 +54,11 @@ struct ImagePreparerTests {
         let width = try #require(properties[kCGImagePropertyPixelWidth] as? Int)
         let height = try #require(properties[kCGImagePropertyPixelHeight] as? Int)
         return (width, height)
+    }
+
+    /// The "prepared" debug line for `id`, if one was logged.
+    private func preparedLine(for id: String) -> String? {
+        logger.messages(in: .chat, at: .debug).first { $0.hasPrefix("Attachment \(id) prepared:") }
     }
 
     @Test func aLargePNGBecomesAJPEGWithinTheLongestSide() async throws {
@@ -66,6 +91,20 @@ struct ImagePreparerTests {
         #expect(draft.width == 300 && draft.height == 200)
     }
 
+    /// A camera stores a portrait shot as landscape pixels plus an orientation tag; the picture leaves upright with the
+    /// tag applied, so whoever ignores EXIF (a browser, the backend's thumbnail) still sees it the right way up.
+    @Test func anEXIFRotatedPictureComesOutUpright() async throws {
+        let scale = UIGraphicsImageRendererFormat.default().scale
+        let data = try jpeg(CGSize(width: 600 / scale, height: 400 / scale), orientation: 6)
+
+        let draft = try await makePreparer().prepareImage(data, id: "p9", caps: .group)
+
+        #expect(draft.width == 400 && draft.height == 600)
+        #expect(try dimensions(of: draft.fileURL) == (400, 600))
+        let thumbnail = try dimensions(of: try #require(draft.thumbnailURL))
+        #expect(thumbnail.width < thumbnail.height, "the thumbnail is turned with the picture")
+    }
+
     /// The cap is the room's, so the refusal names the room's caps for the popup.
     @Test func aPictureOverTheRoomsByteCapIsRefused() async {
         let caps = AttachmentCaps(imageMaxBytes: 10, videoMaxBytes: 10, fileMaxBytes: 10)
@@ -95,5 +134,38 @@ struct ImagePreparerTests {
 
         #expect(draft.thumbnailURL == nil && draft.thumbnailSizeBytes == nil && draft.uploadRequest.thumbnail == nil)
         #expect(!draft.ref(attachmentID: "x").hasThumbnail)
+    }
+
+    /// A thumbnail over its cap at the picture's quality is encoded again at the fallback quality and goes along when
+    /// that fits; only one that fits neither is left out.
+    @Test func aThumbnailOverTheCapIsReencodedAtTheFallbackQuality() async throws {
+        let scale = UIGraphicsImageRendererFormat.default().scale
+        let data = png(CGSize(width: 1600 / scale, height: 1200 / scale))
+        let atPictureQuality = try await makePreparer().prepareImage(data, id: "p7", caps: .group)
+        let size = try #require(atPictureQuality.thumbnailSizeBytes)
+        var limits = ImagePreparer.Limits()
+        limits.thumbnailMaxBytes = size - 1
+
+        let draft = try await makePreparer(limits: limits).prepareImage(data, id: "p8", caps: .group)
+
+        #expect(draft.thumbnailURL != nil)
+        let reencoded = try #require(draft.thumbnailSizeBytes)
+        #expect(reencoded < size, "the fallback quality brings it under the cap")
+    }
+
+    /// The API takes a draft without a thumbnail, so a thumbnail that cannot be written (here a directory sits on its
+    /// path) leaves the picture to go alone rather than refusing it; the debug line says what is missing.
+    @Test func aFailedThumbnailStillSendsThePicture() async throws {
+        let squatter = directory.appending(path: "p6.thumb.jpg")
+        try FileManager.default.createDirectory(at: squatter, withIntermediateDirectories: true)
+        let scale = UIGraphicsImageRendererFormat.default().scale
+        let data = png(CGSize(width: 800 / scale, height: 600 / scale))
+
+        let draft = try await makePreparer().prepareImage(data, id: "p6", caps: .group)
+
+        #expect(draft.thumbnailURL == nil && draft.thumbnailSizeBytes == nil && draft.uploadRequest.thumbnail == nil)
+        #expect(!draft.ref(attachmentID: "x").hasThumbnail)
+        #expect(FileManager.default.fileExists(atPath: draft.fileURL.path()) && draft.sizeBytes > 0)
+        #expect(preparedLine(for: "p6")?.hasSuffix("no thumbnail") == true)
     }
 }

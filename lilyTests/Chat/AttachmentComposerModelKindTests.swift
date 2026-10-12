@@ -2,15 +2,19 @@ import Foundation
 import Testing
 @testable import lily
 
+private let clip = URL(fileURLWithPath: "/tmp/picked-clip.mov")
+private let document = URL(fileURLWithPath: "/tmp/Documents/training-plan.pdf")
+/// One source of each kind, for the refusal that is a verdict whatever the kind.
+private let refusableSources: [MediaSource] = [.image(Data(repeating: 7, count: 1000)), .video(clip), .file(document)]
+
 /// The composer with videos and files: each entry opens a slot of its kind and routes to its preparer, a file's slot
-/// already shows its name, the importer's pick is cut to the free slots, and the mock fixtures stand in for the
-/// pickers.
+/// already shows its name, the importer's pick is cut to the free slots, the mock fixtures stand in for the pickers, a
+/// refusal of any kind drops the slot with the popup, and of the sources only a picked movie's copy is the composer's
+/// to remove.
 @MainActor
 struct AttachmentComposerModelKindTests {
     private let harness = RealtimeHarness()
     private let group = SportGroup.fixture(id: "g", role: .member)
-    private let clip = URL(fileURLWithPath: "/tmp/picked-clip.mov")
-    private let document = URL(fileURLWithPath: "/tmp/Documents/training-plan.pdf")
 
     private func makeModel(maxPerMessage: Int = AppConfig.Chat.Attachments.maxPerMessage) -> AttachmentComposerModel {
         harness.makeAttachmentComposer(for: group, maxPerMessage: maxPerMessage)
@@ -104,16 +108,47 @@ struct AttachmentComposerModelKindTests {
         #expect(harness.errorCenter.current?.error == .attachmentTooLarge(caps: .direct))
     }
 
-    /// A refused video or file is a verdict like a refused picture: the slot goes and the popup says why.
-    @Test func aRefusedVideoIsDroppedWithThePopup() async throws {
+    /// A refused item is a verdict whatever its kind: the slot goes, nothing asks for a ticket and the popup says why.
+    @Test(arguments: refusableSources)
+    func aRefusedItemIsDroppedWithThePopup(_ source: MediaSource) async throws {
         let model = makeModel()
         harness.preparer.error = AppError.attachmentTooLarge(caps: .group)
 
-        let slot = try #require(model.add(videoAt: clip))
+        let slot = try #require(model.add(source))
         await settle(until: { model.isEmpty })
 
         #expect(harness.errorCenter.current?.error == .attachmentTooLarge(caps: .group) && harness.chat.uploadRequests.isEmpty)
         let warning = "Attachment \(slot.id) could not be prepared: attachmentTooLarge"
         #expect(harness.chatLogs(.warning).contains { $0.hasPrefix(warning) })
+    }
+
+    /// The picker's movie copy is the composer's: it goes once the preparer is done with it, while the prepared file
+    /// stays for the upload.
+    @Test func aPickedMovieCopyIsRemovedAfterThePrepare() async throws {
+        let model = makeModel()
+        let copy = FileManager.default.temporaryDirectory.appending(path: "picked-\(UUID().uuidString).mov")
+        try Data("clip".utf8).write(to: copy)
+
+        model.add(videoAt: copy)
+        await settle(until: { !model.isBusy })
+
+        #expect(!FileManager.default.fileExists(atPath: copy.path()), "the picker's copy is the composer's")
+        let draft = try #require(model.drafts.first)
+        #expect(FileManager.default.fileExists(atPath: draft.fileURL.path()), "the prepared file stays for the upload")
+        model.remove(draft)
+    }
+
+    /// A file source is the importer's security-scoped URL: the composer copies from it and never removes it.
+    @Test func theImportersFileIsNeverRemoved() async throws {
+        let model = makeModel()
+        let notes = FileManager.default.temporaryDirectory.appending(path: "notes-\(UUID().uuidString).txt")
+        try Data("notes".utf8).write(to: notes)
+        defer { try? FileManager.default.removeItem(at: notes) }
+
+        model.add(fileAt: notes)
+        await settle(until: { !model.isBusy })
+
+        #expect(FileManager.default.fileExists(atPath: notes.path()), "the importer's file is left alone")
+        for draft in model.drafts { model.remove(draft) }
     }
 }

@@ -6,7 +6,7 @@ import Testing
 
 /// Videos through the preparer, over the two-second `tiny.mp4` fixture: exported as an MP4 within the cap with a
 /// thumbnail frame and the hints; refused when longer than allowed, when the export is over the byte cap, and when
-/// the file is no video at all.
+/// the file is no video at all; a thumbnail that cannot be made never refuses the clip.
 @MainActor
 struct VideoPreparerTests {
     private let logger = SpyLogger()
@@ -26,6 +26,11 @@ struct VideoPreparerTests {
         let width = try #require(properties[kCGImagePropertyPixelWidth] as? Int)
         let height = try #require(properties[kCGImagePropertyPixelHeight] as? Int)
         return (width, height)
+    }
+
+    /// The "prepared" debug line for `id`, if one was logged.
+    private func preparedLine(for id: String) -> String? {
+        logger.messages(in: .chat, at: .debug).first { $0.hasPrefix("Attachment \(id) prepared:") }
     }
 
     @Test func aClipIsExportedWithAThumbnailAndItsHints() async throws {
@@ -68,6 +73,32 @@ struct VideoPreparerTests {
             try await makePreparer().prepareVideo(at: TestFixtureFiles.tinyVideo, id: "v3", caps: caps)
         }
         #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "v3.mp4").path()))
+    }
+
+    /// The API takes a draft without a thumbnail, so a thumbnail that cannot be written (here a directory sits on its
+    /// path) leaves the clip to go alone rather than refusing it; the debug line says what is missing.
+    @Test func aFailedThumbnailStillSendsTheClip() async throws {
+        let squatter = directory.appending(path: "v6.thumb.jpg")
+        try FileManager.default.createDirectory(at: squatter, withIntermediateDirectories: true)
+
+        let draft = try await makePreparer().prepareVideo(at: TestFixtureFiles.tinyVideo, id: "v6", caps: .group)
+
+        #expect(draft.thumbnailURL == nil && draft.thumbnailSizeBytes == nil && draft.uploadRequest.thumbnail == nil)
+        #expect(FileManager.default.fileExists(atPath: directory.appending(path: "v6.mp4").path()))
+        #expect(draft.durationSeconds == 2)
+        #expect(preparedLine(for: "v6")?.hasSuffix("no thumbnail") == true)
+    }
+
+    /// A composer slot removed while its clip is being prepared takes the export down with it: the work dies with the
+    /// caller as a cancellation, not a verdict, and leaves no file behind.
+    @Test func removingAVideoMidPrepareCancelsTheExport() async {
+        let preparer = makePreparer()
+        let task = Task { try await preparer.prepareVideo(at: TestFixtureFiles.tinyVideo, id: "v9", caps: .group) }
+
+        task.cancel()
+
+        await #expect(throws: CancellationError.self) { try await task.value }
+        #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "v9.mp4").path()))
     }
 
     /// The backend takes the duration as a positive integer: a clip under half a second is still one second, never zero.

@@ -3,9 +3,9 @@ import Testing
 
 @MainActor
 struct EmailSignInViewModelTests {
-    private let credentials = EmailCredentials(email: "jane@example.com", password: "long-enough")
+    let credentials = EmailCredentials(email: "jane@example.com", password: "long-enough")
 
-    private func makeViewModel(_ harness: SessionHarness) -> EmailSignInViewModel {
+    func makeViewModel(_ harness: SessionHarness) -> EmailSignInViewModel {
         let viewModel = EmailSignInViewModel(session: harness.controller)
         viewModel.email = credentials.email
         viewModel.password = credentials.password

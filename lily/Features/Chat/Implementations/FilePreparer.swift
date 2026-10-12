@@ -5,7 +5,8 @@ import UniformTypeIdentifiers
 /// and may be gone once its sheet is), typed from what the system knows about it (`application/octet-stream` when it
 /// knows nothing) and named after itself (`AttachmentDraft` cuts the name to the backend's limit). Over the room's
 /// `caps.fileMaxBytes` is refused before the copy; a folder or a package is refused as no file. One of the three
-/// workers behind `DeviceMediaPreparer`. An empty file is refused too: the ticket needs a positive size.
+/// workers behind `DeviceMediaPreparer`; the copy dies with the caller (`DetachedWork`). An empty file is refused too:
+/// the ticket needs a positive size.
 final class FilePreparer {
     private let directory: URL
     private let logger: any Logging
@@ -17,9 +18,9 @@ final class FilePreparer {
 
     func prepareFile(at url: URL, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
         let directory = self.directory
-        let draft = try await Task.detached(priority: .userInitiated) {
+        let draft = try await DetachedWork.run {
             try FileCopying.prepare(at: url, id: id, caps: caps, in: directory)
-        }.value
+        }
         logger.debug(.chat, "Attachment \(id) prepared: \(draft.sizeBytes) B file of type \(draft.contentType)")
         return draft
     }
@@ -28,6 +29,7 @@ final class FilePreparer {
 /// The copy work of `FilePreparer`, free of any actor so it runs on a detached task.
 nonisolated enum FileCopying {
     static func prepare(at url: URL, id: String, caps: AttachmentCaps, in directory: URL) throws -> AttachmentDraft {
+        try Task.checkCancellation()
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         let values = try readable(url)
@@ -35,8 +37,9 @@ nonisolated enum FileCopying {
         let sizeBytes = values.fileSize ?? 0
         // The ticket needs a positive size; an empty file would earn a 400 that no retry could change.
         guard sizeBytes > 0 else { throw AppError.attachmentTypeNotAllowed }
-        guard sizeBytes <= caps.fileMaxBytes else { throw AppError.attachmentTooLarge(caps: caps) }
+        try caps.require(sizeBytes: sizeBytes, for: .file)
         let fileURL = directory.appending(path: url.pathExtension.isEmpty ? id : "\(id).\(url.pathExtension)")
+        try Task.checkCancellation()
         try copy(url, to: fileURL)
         return AttachmentDraft(clientAttachmentID: id,
                                kind: .file,

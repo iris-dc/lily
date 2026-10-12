@@ -19,7 +19,7 @@ struct TournamentEntriesSegment: View {
             ForEach(detail.registeredEntries.sorted { $0.seed < $1.seed }) { entry in
                 EntryRow(entry: entry, viewModel: viewModel, teamSize: detail.tournament.teamSize)
                     .contextMenu {
-                        if viewModel.canRemoveEntries {
+                        if viewModel.permissions.canRemoveEntries {
                             Button(Copy.removeEntry, systemImage: DesignTokens.Symbols.delete, role: .destructive) {
                                 onRemove(entry)
                             }

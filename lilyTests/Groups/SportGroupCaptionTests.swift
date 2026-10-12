@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import lily
 
@@ -34,5 +35,20 @@ struct SportGroupCaptionTests {
         let conversation = SportGroup.conversationFixture()
         #expect(conversation.caption() == "Direct message")
         #expect(conversation.caption(suffix: "Active today") == "Direct message · Active today")
+    }
+
+    /// "Active today" follows the calendar day of the last message, or of the creation for a silent group.
+    @Test func activeTodayFollowsTheCalendarDay() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let midnight = calendar.startOfDay(for: now)
+        let earlierToday = midnight.addingTimeInterval(30 * 60)
+        let lateYesterday = midnight.addingTimeInterval(-60)
+
+        #expect(SportGroup.fixture(lastMessageAt: earlierToday).isActive(on: now, calendar: calendar))
+        #expect(!SportGroup.fixture(lastMessageAt: lateYesterday).isActive(on: now, calendar: calendar))
+        #expect(SportGroup.fixture(lastMessageAt: nil, createdAt: earlierToday).isActive(on: now, calendar: calendar))
+        #expect(!SportGroup.fixture(lastMessageAt: nil, createdAt: lateYesterday).isActive(on: now, calendar: calendar))
     }
 }

@@ -3,7 +3,8 @@ import Foundation
 /// PUTs attachment files to their presigned targets over a session of its own: longer timeouts than the API client's
 /// and `waitsForConnectivity`, since a picture is bigger than any JSON body. Foreground only: an upload the app is
 /// backgrounded through fails, and Retry asks for a new ticket. A 2xx is the only success; the bucket's XML error
-/// body is never read, so no signed URL ever reaches a log.
+/// body is never read, so no signed URL ever reaches a log. The ring's share is `UploadProgress`'s: the file and its
+/// thumbnail as one total.
 final class URLSessionAttachmentUploader: AttachmentUploader {
     private let session: URLSession
     private let logger: any Logging
@@ -23,18 +24,14 @@ final class URLSessionAttachmentUploader: AttachmentUploader {
 
     func upload(_ draft: AttachmentDraft,
                 with ticket: UploadTicket,
-                progress: @escaping @MainActor (Double) -> Void) async throws {
-        let total = Double(draft.sizeBytes + (draft.thumbnailSizeBytes ?? 0))
-        let report: @Sendable (Int64) -> Void = { sent in
-            let share = total > 0 ? min(Double(sent) / total, 1) : 1
-            Task { @MainActor in progress(share) }
-        }
-        try await put(draft.fileURL, to: ticket.upload, id: draft.id, onBytesSent: report)
+                progress report: @escaping @MainActor (Double) -> Void) async throws {
+        let progress = UploadProgress(fileBytes: draft.sizeBytes, thumbnailBytes: draft.thumbnailSizeBytes ?? 0)
+        let relay: @Sendable (Double) -> Void = { share in Task { @MainActor in report(share) } }
+        try await put(draft.fileURL, to: ticket.upload, id: draft.id) { relay(progress.share(fileSent: $0)) }
         if let thumbnail = ticket.thumbnailUpload, let thumbnailURL = draft.thumbnailURL {
-            let fileBytes = Int64(draft.sizeBytes)
-            try await put(thumbnailURL, to: thumbnail, id: draft.id) { report(fileBytes + $0) }
+            try await put(thumbnailURL, to: thumbnail, id: draft.id) { relay(progress.share(thumbnailSent: $0)) }
         }
-        progress(1)
+        report(1)
     }
 
     private func put(_ fileURL: URL,

@@ -59,12 +59,14 @@ struct LocationPickerView: View {
         }
     }
 
-    /// Every settle after the first moves the spot under the pin. The first one is skipped while the draft has no spot:
-    /// it is the map arriving, so leaving without a drag keeps the spot unset instead of storing wherever it opened.
+    /// A settle is stored only when `PickerSettlePolicy` calls it the user's choice: without a spot the first settle is the
+    /// map arriving and is skipped; with one, only a settle that moved the pin at least the tolerance counts, so opening
+    /// the picker on a chosen spot never rewrites it by the centimetres the arrival nudges and never turns Save on.
     private func settle(under proxy: MapProxy, fallback: CLLocationCoordinate2D) {
         defer { hasSettledOnce = true }
-        guard hasSettledOnce || coordinate != nil else { return }
-        coordinate = spotUnderPin(proxy, fallback: fallback)
+        let spot = spotUnderPin(proxy, fallback: fallback)
+        guard PickerSettlePolicy.isAChoice(spot, current: coordinate, isFirstSettle: !hasSettledOnce) else { return }
+        coordinate = spot
     }
 
     /// The pin is centred on the map's frame; MapKit's own camera centre can sit elsewhere when it insets for bars, so

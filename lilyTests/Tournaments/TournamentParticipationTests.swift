@@ -66,11 +66,4 @@ struct TournamentParticipationTests {
         #expect(TournamentRole(tournament: .fixture(), userID: "someone") == .outsider)
         #expect(TournamentRole.organizer.isOrganizer && TournamentRole.guest.isGuest && !TournamentRole.outsider.isOrganizer)
     }
-
-    @Test func joiningATeamIsOfferedWhileTheCallerMayStillEnter() {
-        #expect(TournamentParticipation.createTeam.offersJoiningATeam)
-        for other in [TournamentParticipation.hidden, .join, .leave, .entered, .registrationClosed, .full] {
-            #expect(!other.offersJoiningATeam)
-        }
-    }
 }

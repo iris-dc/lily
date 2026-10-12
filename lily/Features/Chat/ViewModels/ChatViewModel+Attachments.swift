@@ -1,8 +1,8 @@
 import Foundation
 
-/// Pictures in the composer. The drafts live in the owned `AttachmentComposerModel`; the message draft takes them
-/// at the moment of the send (`outgoingDraft`), and the stored message's files seed the cache under the ids the
-/// backend gave them, so a picture just sent never downloads.
+/// Attachments in the composer and on the bubbles. The drafts live in the owned `AttachmentComposerModel`; the message
+/// draft takes them at the moment of the send (`outgoingDraft`), and the stored message that replaces the bubble seeds
+/// the cache with the bubble's files under the ids the backend gave them, so a picture just sent never downloads.
 extension ChatViewModel {
     /// Whether the backend takes attachments (`GET /api/me`); the attach button hides otherwise.
     var attachmentsEnabled: Bool { me.attachmentsEnabled }
@@ -14,11 +14,14 @@ extension ChatViewModel {
         return draft
     }
 
-    /// The stored message replaced the bubble of `clientMessageID` (the answer or the live echo, whichever came
-    /// first): its local files go into the cache under the stored ids.
-    func seedAttachmentCache(for clientMessageID: String, with message: ChatMessage) {
-        guard message.hasAttachments,
-              let sent = pending.first(where: { $0.clientMessageID == clientMessageID }) else { return }
-        attachments.seedCache(sent.attachments, with: message.attachments)
+    /// The stored message replaced the bubble of `clientMessageID`, from the answer, the live echo or a catch-up,
+    /// whichever came first: the bubble's local files go into the cache under the stored ids, then the bubble goes.
+    /// The order is the point, because the drafts' files are known only through the bubble; `seedCache` claims each id
+    /// before its first await, so a second settle of the same message copies and deletes nothing.
+    func confirmPending(clientMessageID: String, with message: ChatMessage) async {
+        if message.hasAttachments, let sent = pending.first(where: { $0.clientMessageID == clientMessageID }) {
+            await attachments.seedCache(sent.attachments, with: message.attachments)
+        }
+        pending.removeAll { $0.clientMessageID == clientMessageID }
     }
 }

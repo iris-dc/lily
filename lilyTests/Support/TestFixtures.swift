@@ -20,6 +20,7 @@ extension SportEvent {
     /// A minimal event at the demo centre; every optional detail absent unless given, so tests state only what they test.
     static func fixture(id: String = "e",
                         title: String = "t",
+                        type: EventType = .tennis,
                         capacity: Int? = 4,
                         allowsExtraParticipants: Bool = false,
                         participants: Int = 1,
@@ -34,7 +35,7 @@ extension SportEvent {
         SportEvent(
             id: id,
             title: title,
-            type: .tennis,
+            type: type,
             startsAt: startsAt,
             location: EventLocation(name: "l", coordinate: AppConfig.Location.mockCenter),
             capacity: capacity,

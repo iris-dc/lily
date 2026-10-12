@@ -109,11 +109,12 @@ final class MyGroupsStore: SessionObserver {
         }
     }
 
-    /// A group the caller just joined or created, placed where a reload would put it. The backend's Mine index is
-    /// eventually consistent, so a reload right after a join might still miss it; this is what shows it at once.
+    /// A group the caller just joined or created, placed where a reload would put it under `SportGroup.mineOrder`. The
+    /// backend's Mine index is eventually consistent, so a reload right after a join might still miss it; this is what
+    /// shows it at once.
     func add(_ group: SportGroup) {
         groups.removeAll { $0.id == group.id }
-        groups.insert(group, at: groups.firstIndex { $0.lastActivityAt < group.lastActivityAt } ?? groups.endIndex)
+        groups.insert(group, at: groups.firstIndex { SportGroup.mineOrder(group, $0) } ?? groups.endIndex)
         recordChange("Group \(group.id) added to Mine")
     }
 

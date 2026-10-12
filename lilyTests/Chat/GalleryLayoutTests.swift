@@ -3,7 +3,8 @@ import Testing
 @testable import lily
 
 /// How many tiles a gallery draws and how: one alone, two side by side, three with the last spanning the row, four as
-/// a grid, more than four behind a "+N"; and which attachments are tiles at all (pictures and videos) against cards (files).
+/// a grid, more than four behind a "+N"; and which attachments are tiles at all (pictures and videos) against cards (files,
+/// and any kind this build does not know).
 struct GalleryLayoutTests {
     @Test func oneIsSingleAndTwoShareARow() {
         let one = GalleryLayout(count: 1)
@@ -37,5 +38,14 @@ struct GalleryLayoutTests {
         #expect(filesOnly.media.isEmpty && filesOnly.files == [0, 1])
         #expect(GalleryLayout.partition([]) == GalleryLayout.Partition(media: [], files: []))
         #expect(AttachmentKind.image.isMedia && AttachmentKind.video.isMedia && !AttachmentKind.file.isMedia)
+    }
+
+    /// A kind this build does not know is a card under the bubble like a file, never a tile of the grid.
+    @Test func anUnknownKindIsACardNotATile() {
+        let mixed = GalleryLayout.partition([.image, .unknown("audio"), .video])
+
+        #expect(mixed == GalleryLayout.Partition(media: [0, 2], files: [1]))
+        #expect(GalleryLayout.partition([.unknown("audio")]) == GalleryLayout.Partition(media: [], files: [0]))
+        #expect(!AttachmentKind.unknown("audio").isMedia)
     }
 }

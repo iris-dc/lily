@@ -55,18 +55,50 @@ class LilyUITestCase: XCTestCase {
     @MainActor
     private func openTab(titled title: String) {
         let inBar = app.tabBars.buttons[title]
-        let tab = inBar.waitForExistence(timeout: 3)
-            ? inBar
-            : app.buttons.matching(NSPredicate(format: "label == %@", title)).firstMatch
+        var isInBar = inBar.waitForExistence(timeout: 3)
+        if !isInBar, expandMinimisedTabBar() {
+            isInBar = inBar.waitForExistence(timeout: 3)
+        }
+        let tab = isInBar ? inBar : app.buttons.matching(NSPredicate(format: "label == %@", title)).firstMatch
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
         tab.tap()
         XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5))
     }
 
-    /// The first element whose label contains `text`; for texts that a control folds into its own label.
+    /// A screen scrolled down has minimised the tab bar (iOS 26 `tabBarMinimizeBehavior`): the bar keeps only the
+    /// selected tab, a pill whose value reads "Collapsed", and the other tabs' buttons leave the hierarchy. A scroll
+    /// back up restores the bar only while the content is taller than the screen (a detail that shrank after a write
+    /// fits a tall simulator and stays put), so the pill is tapped instead, which expands the bar either way. Asked
+    /// only once the wanted tab was not found: right after a sign-in the appearing bar reports a pill for a moment
+    /// and a tap on it misses. Answers whether a pill was there.
+    @MainActor
+    private func expandMinimisedTabBar() -> Bool {
+        let pill = app.tabBars.buttons.matching(NSPredicate(format: "value == %@", "Collapsed")).firstMatch
+        guard pill.exists else { return false }
+        pill.tap()
+        XCTAssertTrue(pill.waitForNonExistence(timeout: 5), "a tap on the minimised tab bar expands it")
+        return true
+    }
 
+    /// The first element whose label contains `text`; for texts that a control folds into its own label.
     func labelled(_ text: String) -> XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+    }
+
+    /// Drags the content up until `element` is in the accessibility tree, for a `Form` row below the fold while a field
+    /// has the keyboard: an off-screen row is not in the tree at all, and `swipeUp()` starts 100 pt under the window's
+    /// centre, which on a 6.1-inch phone is the keyboard's predictive bar, where a swipe scrolls nothing. The drag runs
+    /// through the upper half instead, and a `Form` dismisses the keyboard on the scroll.
+    @MainActor
+    func dragUpUntilExists(_ element: XCUIElement, maxDrags: Int = 4) {
+        var drags = 0
+        while !element.waitForExistence(timeout: 1) && drags < maxDrags {
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15))
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45))
+                .press(forDuration: 0.05, thenDragTo: end, withVelocity: .default, thenHoldForDuration: 0.1)
+            drags += 1
+        }
+        XCTAssertTrue(element.exists, "element never scrolled into the accessibility tree")
     }
 
     /// Swipes up until `element` exists and is hittable, for content further down a list; fails after `maxSwipes`.

@@ -5,10 +5,10 @@ import Testing
 /// The mock's behaviour the UI tests and previews lean on: the fixtures of plan 8.5 and the backend's refusals.
 @MainActor
 struct MockGroupRepositoryTests {
-    private let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
-    private let logger = SpyLogger()
+    let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
+    let logger = SpyLogger()
 
-    private func makeRepository() -> MockGroupRepository {
+    func makeRepository() -> MockGroupRepository {
         MockGroupRepository(identity: identity, logger: logger)
     }
 

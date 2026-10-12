@@ -3,13 +3,26 @@ import UniformTypeIdentifiers
 
 /// The full object of an attachment as a named file, for QuickLook and the player: through the loader like any
 /// download, then given a name and an extension back under the temporary directory, because the cache keeps bytes under
-/// the attachment id alone and both QuickLook and `AVPlayer` decide what they are looking at from the name.
+/// the attachment id alone and both QuickLook and `AVPlayer` decide what they are looking at from the name. The named
+/// copy is made off the main actor (its fallback writes up to 25 MB), and a copy the file system refuses is logged here,
+/// the one place the id and the error meet; the cards and the player stay silent by design.
 extension AttachmentLoader {
     /// A file named after the attachment (its sender's name for it, else the id with the content type's extension)
-    /// holding the full object, downloaded first when the cache has no copy, with `progress` along the way.
+    /// holding the full object, downloaded first when the cache has no copy, with `progress` along the way. A copy the
+    /// file system refuses is `.attachmentUnavailable`; the download itself stays cached.
     func previewFile(for attachment: Attachment, in message: ChatMessage, progress: ProgressHandler? = nil) async throws -> URL {
         let cached = try await file(for: attachment, variant: .full, in: message, progress: progress)
-        return try PreviewFiles.named(PreviewFiles.name(for: attachment), for: attachment.id, linking: cached)
+        let name = PreviewFiles.name(for: attachment)
+        let id = attachment.id
+        let directory = previewDirectory
+        do {
+            return try await Task.detached(priority: .userInitiated) {
+                try PreviewFiles.named(name, for: id, linking: cached, in: directory)
+            }.value
+        } catch {
+            logger.error(.chat, "Preview copy failed for attachment \(id): \(error)")
+            throw AppError.attachmentUnavailable
+        }
     }
 }
 
@@ -39,7 +52,11 @@ nonisolated enum PreviewFiles {
         return component
     }
 
-    static func named(_ name: String, for id: String, linking source: URL) throws -> URL {
+    /// `<directory>/<id>/<name>` linked to `source`, replacing a copy already there.
+    static func named(_ name: String,
+                      for id: String,
+                      linking source: URL,
+                      in directory: URL = PreviewFiles.directory) throws -> URL {
         let folder = directory.appending(path: id)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let url = folder.appending(path: name)
@@ -55,5 +72,11 @@ nonisolated enum PreviewFiles {
     /// The preview's folder, once QuickLook is done with it.
     static func remove(_ url: URL) {
         try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+    }
+
+    /// Every preview copy, at the end of a session: the disk cache's sign-out hook sweeps them with the cache, because
+    /// a hard link keeps a cleared object's bytes alive until the link goes too. No directory is nothing to remove.
+    static func removeAll(in directory: URL = PreviewFiles.directory) throws {
+        try FileManager.default.removeItemIfPresent(at: directory)
     }
 }

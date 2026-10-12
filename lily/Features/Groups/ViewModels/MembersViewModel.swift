@@ -17,6 +17,18 @@ final class MembersViewModel {
             case .ban: AppBranding.Groups.banMember
             }
         }
+
+        /// Removing and banning take a person out of the group and are confirmed first; promotions act at once.
+        var isDestructive: Bool { self == .remove || self == .ban }
+
+        /// The question asked before a destructive action; nil for the ones that act at once.
+        func confirmationTitle(memberName: String) -> String? {
+            switch self {
+            case .remove: AppBranding.Groups.removeConfirmation(memberName: memberName)
+            case .ban: AppBranding.Groups.banConfirmation(memberName: memberName)
+            case .makeAdmin, .removeAdmin: nil
+            }
+        }
     }
 
     private(set) var group: SportGroup
@@ -55,6 +67,12 @@ final class MembersViewModel {
 
     func isSelf(_ member: GroupMember) -> Bool {
         member.userId == identity.currentUserID
+    }
+
+    /// The detail's group changed under the roster (a rename, a count, the caller's role): the menus follow it.
+    func update(group: SportGroup) {
+        guard group.id == self.group.id else { return }
+        self.group = group
     }
 
     /// The actions the caller may take on `member`; empty for the caller's own row, for rows above their reach and
@@ -108,18 +126,21 @@ final class MembersViewModel {
     private func remove(_ member: GroupMember) async {
         await act("Remove") {
             let updated = try await repository.remove(id: group.id, userID: member.userId)
-            dropRow(member, updated: updated)
+            dropRow(member)
+            adopt(updated)
             logger.info(.groups, "Member \(member.userId) removed from group \(group.id)")
         }
     }
 
-    /// A ban is a role change to `banned`: the row moves from the roster to the banned list.
+    /// A ban is a role change to `banned`: the row moves from the roster to the banned list. The backend answers the
+    /// member, not the group, so the group is read back for its new count and epoch.
     private func ban(_ member: GroupMember) async {
         await act("Ban") {
             let banned = try await repository.setRole(id: group.id, userID: member.userId, .banned)
-            dropRow(member, updated: nil)
+            dropRow(member)
             bans.insert(banned, at: 0)
             logger.info(.groups, "Member \(member.userId) banned in group \(group.id)")
+            await refreshGroup(after: "ban")
         }
     }
 
@@ -156,13 +177,24 @@ final class MembersViewModel {
         members[index] = changed
     }
 
-    /// Takes the row off the roster and, when the backend answered the group, shows its new member count.
-    private func dropRow(_ member: GroupMember, updated: SportGroup?) {
+    private func dropRow(_ member: GroupMember) {
         members.removeAll { $0.userId == member.userId }
-        let group = updated ?? self.group.updatingMembership(self.group.membership,
-                                                             memberCount: self.group.memberCount - 1,
-                                                             channelEpoch: self.group.channelEpoch + 1)
-        self.group = group
-        onChange(group)
+    }
+
+    /// The group as the backend now has it replaces the roster's copy and reaches the detail, which writes it to Mine.
+    private func adopt(_ fresh: SportGroup) {
+        group = fresh
+        onChange(fresh)
+    }
+
+    /// Reads the group back after a write that answered the member alone. A failed read is a warning, never a popup:
+    /// the write landed and the row moved; the count catches up on the next Mine reload.
+    private func refreshGroup(after name: String) async {
+        do {
+            adopt(try await repository.group(id: group.id))
+        } catch {
+            guard !AppError.isCancellation(error) else { return }
+            logger.warning(.groups, "Could not refresh group \(group.id) after the \(name): \(error)")
+        }
     }
 }

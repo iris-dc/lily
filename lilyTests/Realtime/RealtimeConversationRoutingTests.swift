@@ -22,6 +22,7 @@ struct RealtimeConversationRoutingTests {
         #expect(harness.controller.subscribedRooms == ["g1": 1] && harness.groups.fetchedGroupIDs.isEmpty)
         #expect(harness.chatLogs(.warning).isEmpty && harness.chatLogs(.error).isEmpty && harness.errorCenter.current == nil)
         #expect(harness.store.groups.map(\.id) == ["g1"], "Mine shows the room once it reloads")
+        #expect(harness.chatLogs(.info).contains("Membership joined for group dm"))
 
         harness.groups.result = .success([.conversationFixture(id: "dm"), .fixture(id: "g1", role: .member)])
         await harness.store.reload()

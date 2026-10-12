@@ -8,13 +8,9 @@ struct RealtimeSessionControllerRoutingTests {
     private let me = TestFixtures.user.id
     private let userChannel = RealtimeChannel.user(sub: TestFixtures.user.id)
 
-    private func mine(_ count: Int) -> [SportGroup] {
-        (1...count).map { .fixture(id: "g\($0)", role: .member) }
-    }
-
     @Test func roomsAreTheOpenOnePlusTheMostActiveOfMine() async {
         let harness = RealtimeHarness()
-        harness.groups.result = .success(mine(12))
+        harness.groups.result = .success(RealtimeHarness.mine(12))
         await harness.connect()
 
         let limit = AppConfig.Realtime.maxRoomSubscriptions
@@ -205,6 +201,9 @@ struct RealtimeSessionControllerRoutingTests {
 
         #expect(harness.store.groups.map(\.id) == ["g2"] && harness.cache.room(for: "g1") == nil)
         #expect(harness.controller.subscribedRooms == ["g2": 1])
+        #expect(harness.chatLogs(.info).contains("Membership role_changed for group g2"))
+        #expect(!harness.chatLogs(.info).contains { $0.hasPrefix("Membership removed") },
+                "an ended membership logs its drop instead")
     }
 
     @Test func groupDeletedAndGroupUpdatedReachMine() async {

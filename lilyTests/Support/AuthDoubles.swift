@@ -14,6 +14,8 @@ final class FakeCognitoClient: CognitoClient {
     var confirmError: CognitoClientError?
     var resendError: CognitoClientError?
     var signOutError: CognitoClientError?
+    /// Runs inside `signOut()` before it answers, so a test can act while the pool is being asked.
+    var onSignOut: @MainActor () -> Void = {}
     private(set) var signIns: [EmailCredentials] = []
     private(set) var signUps: [EmailCredentials] = []
     private(set) var languageCodes: [String] = []
@@ -59,10 +61,12 @@ final class FakeCognitoClient: CognitoClient {
         if let resendError { throw resendError }
     }
 
+    /// A refused sign-out keeps the credentials, as Amplify's `.failed` (a failed keychain delete) does.
     func signOut() async throws {
         signOutCount += 1
-        signedIn = false
+        onSignOut()
         if let signOutError { throw signOutError }
+        signedIn = false
     }
 }
 

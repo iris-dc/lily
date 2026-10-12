@@ -2,7 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The backend's ticket checks as the mock applies them: the cap per kind, the type lists, no thumbnail on a file.
+/// The backend's ticket checks as the mock applies them: the cap per kind, the type lists, no thumbnail on a file, and no
+/// ticket at all for a kind this build does not know.
 struct UploadPolicyTests {
     private func request(kind: AttachmentKind,
                          contentType: String,
@@ -49,7 +50,7 @@ struct UploadPolicyTests {
     }
 
     @Test func aThumbnailIsCappedAndNeverOnAFile() throws {
-        let small = UploadRequestPayload.Thumbnail(contentType: "image/jpeg", sizeBytes: 100)
+        let small = Self.smallThumbnail
         try UploadPolicy.check(request(kind: .video, contentType: "video/mp4", sizeBytes: 1, thumbnail: small), caps: .group)
         #expect(throws: AppError.attachmentUploadFailed) {
             try UploadPolicy.check(request(kind: .file, contentType: "application/pdf", sizeBytes: 1, thumbnail: small),
@@ -60,4 +61,27 @@ struct UploadPolicyTests {
             try UploadPolicy.check(request(kind: .image, contentType: "image/jpeg", sizeBytes: 1, thumbnail: big), caps: .group)
         }
     }
+
+    /// The device never asks for a ticket of a kind it does not know; were one asked, no content type is allowed for it.
+    @Test func anUnknownKindIsRefusedAsATypeNotAllowed() {
+        #expect(!UploadPolicy.allows("audio/m4a", for: .unknown("audio")))
+        #expect(!UploadPolicy.allows("application/octet-stream", for: .unknown("audio")), "not even a file's anything")
+        #expect(throws: AppError.attachmentTypeNotAllowed) {
+            try UploadPolicy.check(request(kind: .unknown("audio"), contentType: "audio/m4a", sizeBytes: 100), caps: .group)
+        }
+    }
+
+    /// The thumbnail check runs before the type check, as in the backend, so a thumbnail on a kind this build does not
+    /// know is refused the way one on a file is.
+    @Test func aThumbnailOnAnUnknownKindIsRefusedLikeOnAFile() {
+        #expect(throws: AppError.attachmentUploadFailed) {
+            try UploadPolicy.check(request(kind: .unknown("audio"),
+                                           contentType: "audio/m4a",
+                                           sizeBytes: 100,
+                                           thumbnail: Self.smallThumbnail),
+                                   caps: .group)
+        }
+    }
+
+    private static let smallThumbnail = UploadRequestPayload.Thumbnail(contentType: "image/jpeg", sizeBytes: 100)
 }

@@ -1,17 +1,10 @@
 import Foundation
 
 /// The start and the results, from the detail. Every write answers the whole detail, which replaces the one on screen
-/// and reaches the lists behind through `onChange`; who may do what with a match is `MatchActions`, decided from the
-/// loaded detail and the caller, so the sheet and the cells never guess.
+/// and reaches the lists behind through `onChange`. Whether Start is offered and enabled is `TournamentPermissions`;
+/// who may do what with a match is `MatchActions`, decided from the loaded detail and the caller, so the menu, the
+/// sheet and the cells never guess.
 extension TournamentDetailViewModel {
-    /// Start is offered to the organiser while registration is open, and enabled once enough entries are in.
-    var showsStart: Bool { role.isOrganizer && tournament?.status == .registration }
-    var canStart: Bool { tournament?.canStart ?? false }
-    /// Why Start is disabled, for the menu item's subtitle; `nil` while it is enabled.
-    var startBlockedReason: String? {
-        guard let tournament, showsStart, !tournament.canStart else { return nil }
-        return AppBranding.Tournaments.startNeeds(tournament.format.minimumEntriesToStart, teamSize: tournament.teamSize)
-    }
     /// The bracket or the standings and the matches draw once the tournament started.
     var hasMatches: Bool { !(detail?.matches.isEmpty ?? true) }
 

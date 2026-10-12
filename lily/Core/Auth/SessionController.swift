@@ -53,18 +53,18 @@ final class SessionController {
     /// Provider sign-in. Returns `true` on success; failures are reported through the shared error popup.
     @discardableResult
     func signIn(with provider: AuthProvider) async -> Bool {
-        await authenticating(provider.kind) { await performSignIn(with: provider) } == .signedIn
+        await authenticating(provider.kind, busy: .failed) { await performSignIn(with: provider) } == .signedIn
     }
 
     /// Email sign-in; `.confirmationRequired` (the account never entered its code) shows no popup, the form takes over.
     func signIn(withEmail credentials: EmailCredentials) async -> EmailAuthResult {
-        await authenticating(.email) { await performSignIn(with: .email(credentials)) }
+        await authenticating(.email, busy: .failed) { await performSignIn(with: .email(credentials)) }
     }
 
     /// Holds the authentication slot for the whole sign-up, so a provider tap cannot interleave with it.
     @discardableResult
     func signUp(email: String, password: String) async -> EmailAuthResult {
-        await authenticating(.email) {
+        await authenticating(.email, busy: .failed) {
             do {
                 switch try await authService.signUp(email: email, password: password) {
                 case .signedUp:
@@ -80,18 +80,26 @@ final class SessionController {
         }
     }
 
-    /// Confirms the emailed code, then signs in with the password the form kept.
+    /// Confirms the emailed code, then signs in with the password the form kept. `.confirmedButSignInFailed` when the
+    /// pool accepted the code and only that sign-in did not land (it reports itself, so one popup): the form returns to
+    /// sign-in instead of offering a second confirm, which Cognito refuses as "not authorized".
     @discardableResult
-    func confirmSignUp(email: String, code: String, password: String) async -> Bool {
-        await authenticating(.email) {
+    func confirmSignUp(email: String, code: String, password: String) async -> ConfirmOutcome {
+        await authenticating(.email, busy: .failed) {
             do {
                 try await authService.confirmSignUp(email: email, code: code)
                 logger.info(.auth, "Email confirmed")
             } catch {
-                return report(error, during: "Confirmation")
+                report(error, during: "Confirmation")
+                return .failed
             }
-            return await performSignIn(with: .email(EmailCredentials(email: email, password: password)))
-        } == .signedIn
+            let signIn = await performSignIn(with: .email(EmailCredentials(email: email, password: password)))
+            guard signIn == .signedIn else {
+                logger.info(.auth, "Email confirmed, the sign-in after it did not land: the form returns to sign-in")
+                return .confirmedButSignInFailed
+            }
+            return .signedIn
+        }
     }
 
     @discardableResult
@@ -152,11 +160,13 @@ final class SessionController {
         observers.forEach { $0.observer?.sessionDidEnd() }
     }
 
-    /// Runs `attempt` holding the single in-flight authentication slot; `.failed` without a popup when another holds it.
-    private func authenticating(_ kind: AuthProvider.Kind, _ attempt: () async -> EmailAuthResult) async -> EmailAuthResult {
+    /// Runs `attempt` holding the single in-flight authentication slot; `busy` without a popup when another holds it.
+    private func authenticating<Outcome>(_ kind: AuthProvider.Kind,
+                                         busy: Outcome,
+                                         _ attempt: () async -> Outcome) async -> Outcome {
         guard authenticatingProvider == nil else {
             logger.debug(.auth, "Ignored authentication via \(kind.rawValue): another attempt is in progress")
-            return .failed
+            return busy
         }
         authenticatingProvider = kind
         defer { authenticatingProvider = nil }

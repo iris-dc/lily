@@ -10,10 +10,7 @@ struct TournamentDetailEntriesTests {
     private let destination = TournamentDestination(id: "t", name: "Tuesday Table Tennis")
 
     private func loaded(_ tournament: Tournament, entries: [TournamentEntry] = [.fixture()]) async -> TournamentDetailViewModel {
-        harness.repository.details["t"] = .fixture(tournament: tournament, entries: entries)
-        let viewModel = harness.makeDetailViewModel(for: destination)
-        await viewModel.load()
-        return viewModel
+        await harness.loadedDetailViewModel(tournament, entries: entries, for: destination)
     }
 
     @Test func joiningAnIndividualTournamentRefetchesAndOffersTheReminder() async {
@@ -63,6 +60,27 @@ struct TournamentDetailEntriesTests {
         #expect(!viewModel.canJoin(full))
     }
 
+    /// Joining a team adds no entry, so a tournament whose entries are all in still offers a seat on a team that has one.
+    @Test func joinTeamStaysOfferedWhileATeamHasASeat() async {
+        let half = TournamentEntry.fixture(id: "half", members: [EntryMember(userId: "a", displayName: "A")])
+        let viewModel = await loaded(.fixture(teamSize: 2, maxEntries: 1, entryCount: 1), entries: [half])
+        #expect(viewModel.participation == .full, "the primary control reads Full")
+        #expect(viewModel.canJoin(half))
+    }
+
+    @Test func joinTeamIsNotOfferedOnceTheCallerIsInOrRegistrationClosed() async {
+        let half = TournamentEntry.fixture(id: "half", members: [EntryMember(userId: "a", displayName: "A")])
+        let entered = await loaded(.fixture(teamSize: 2, entryCount: 1, myEntryId: "other"), entries: [half])
+        #expect(!entered.canJoin(half))
+
+        let started = await loaded(.fixture(status: .inProgress, teamSize: 2, entryCount: 1), entries: [half])
+        #expect(!started.canJoin(half))
+
+        harness.identity.currentUserID = nil
+        let guest = await loaded(.fixture(teamSize: 2, entryCount: 1), entries: [half])
+        #expect(!guest.canJoin(half))
+    }
+
     @Test func leavingSendsTheCallersEntryAndRefetches() async {
         let mine = TournamentEntry.fixture(id: "mine", captainUserId: TestFixtures.user.id)
         let viewModel = await loaded(.fixture(entryCount: 1, myEntryId: "mine"), entries: [mine])
@@ -107,26 +125,18 @@ struct TournamentDetailEntriesTests {
         #expect(harness.groupRepository.requestedScopes.isEmpty, "the organiser's own rooms are unchanged")
     }
 
-    @Test func aRefusalReachesThePopupAndAnUnknownOutcomeIsNotSecondGuessed() async {
+    /// A refusal is an expected product state: the popup explains it, the log stays at warning, nothing is fetched again.
+    @Test func refusalsLogAtWarning() async {
         harness.repository.actionError = AppError.tournamentFull
         let viewModel = await loaded(.fixture())
 
         await viewModel.join()
 
         #expect(harness.presentedError == .tournamentFull && viewModel.participation == .join)
-        #expect(harness.logs(.error).contains { $0.contains("Join failed") })
+        #expect(harness.logs(.warning).contains { $0.contains("Join failed") })
+        #expect(harness.logs(.error).isEmpty)
+        #expect(harness.repository.fetchedIDs.count == 1, "a refusal refetches nothing")
         #expect(harness.groupRepository.requestedScopes.isEmpty, "a refused entry moves no room")
-    }
-
-    @Test func aFailedRefetchAfterAWriteKeepsTheScreenQuiet() async {
-        let viewModel = await loaded(.fixture(entryCount: 1))
-        harness.repository.detailError = AppError.network
-
-        await viewModel.join()
-
-        #expect(harness.repository.joins.count == 1 && harness.presentedError == nil)
-        #expect(harness.logs(.warning).contains { $0.contains("Could not refresh") })
-        #expect(harness.groupRepository.requestedScopes == [.mine], "the entry landed, so the room did too")
     }
 
     @Test func oneActionAtATime() async {
@@ -146,15 +156,5 @@ struct TournamentDetailEntriesTests {
         await first.value
 
         #expect(harness.repository.joins.count == 1)
-    }
-}
-
-/// Counts how often a view model offered the reminder permission.
-@MainActor
-final class SpyPushOptIn: PushOptIn {
-    private(set) var offerCount = 0
-
-    func offerReminders() async {
-        offerCount += 1
     }
 }

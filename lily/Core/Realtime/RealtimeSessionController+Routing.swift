@@ -10,6 +10,7 @@ extension RealtimeSessionController {
         let desired = desiredRooms()
         for (groupID, epoch) in subscribedRooms where desired[groupID] == nil {
             unsubscribe(groupID: groupID, epoch: epoch)
+            logger.debug(.chat, "Unsubscribed from \(RealtimeChannel.room(groupID: groupID, epoch: epoch).path)")
         }
         // A room whose jittered resubscribe is pending keeps its old subscription until that task runs.
         for (groupID, epoch) in desired
@@ -23,35 +24,40 @@ extension RealtimeSessionController {
 
     func subscribe(to channel: RealtimeChannel) {
         let stream = transport.subscribe(to: channel)
-        let generation = connectionGeneration
-        subscriptions[channel] = Task { [weak self] in
+        let id = UUID()
+        subscriptions[channel] = Subscription(id: id, task: Task { [weak self] in
             do {
                 for try await envelope in stream {
                     guard let self else { return }
                     route(envelope, from: channel)
                 }
-                await self?.streamEnded(channel, error: nil, generation: generation)
+                await self?.streamEnded(channel, id: id, error: nil)
             } catch {
-                await self?.streamEnded(channel, error: error, generation: generation)
+                await self?.streamEnded(channel, id: id, error: error)
             }
-        }
+        })
     }
 
     private func unsubscribe(groupID: String, epoch: Int) {
         let channel = RealtimeChannel.room(groupID: groupID, epoch: epoch)
-        subscriptions[channel]?.cancel()
+        subscriptions[channel]?.task.cancel()
         subscriptions[channel] = nil
         if subscribedRooms[groupID] == epoch { subscribedRooms[groupID] = nil }
     }
 
-    /// A stream that ended on its own (not cancelled by us) either was refused or lost its connection.
-    private func streamEnded(_ channel: RealtimeChannel, error: (any Error)?, generation: Int) async {
-        guard generation == connectionGeneration, subscriptions[channel] != nil else { return }
+    /// A stream that ended on its own (not cancelled by us) either was refused or lost its connection. Only the stream
+    /// still held for the channel counts: a cancelled predecessor on the same channel ends under its own id, and
+    /// `close()` empties the map before any later connection subscribes.
+    private func streamEnded(_ channel: RealtimeChannel, id: UUID, error: (any Error)?) async {
+        guard subscriptions[channel]?.id == id else { return }
         subscriptions[channel] = nil
         if case .room(let groupID, let epoch) = channel, subscribedRooms[groupID] == epoch {
             subscribedRooms[groupID] = nil
         }
         guard (error as? RealtimeTransportError) == .subscribeRefused else {
+            // Only the first stream to end logs: the close clears every other subscription before it can.
+            let cause = error.map { String(describing: $0) } ?? "finished"
+            logger.warning(.chat, "Stream ended on \(channel.path): \(cause)")
             await close(reason: "connection lost")
             scheduleReconnect(reason: "connection lost")
             return
@@ -168,6 +174,7 @@ extension RealtimeSessionController {
         if change.endsMembership {
             removeGroupLocally(change.groupId, reason: "membership \(change.change.rawValue)")
         } else {
+            logger.info(.chat, "Membership \(change.change.rawValue) for group \(change.groupId)")
             noteEpoch(change.channelEpoch, for: change.groupId)
             groupChanges.recordChange()
             reconcileSubscriptions()

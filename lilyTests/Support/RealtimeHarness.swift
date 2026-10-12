@@ -93,6 +93,11 @@ final class RealtimeHarness {
         await controller.setDesired(active: true, user: TestFixtures.user)
     }
 
+    /// Mine as `count` member groups g1...gN, the shape every realtime suite seeds the store with.
+    static func mine(_ count: Int) -> [SportGroup] {
+        (1...count).map { .fixture(id: "g\($0)", role: .member) }
+    }
+
     func chatLogs(_ level: LogLevel? = nil) -> [String] {
         logger.messages(in: .chat, at: level)
     }

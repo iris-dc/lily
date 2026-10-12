@@ -92,4 +92,20 @@ struct MatchActionsTests {
         #expect(!MatchActions(detail: detail(status: .registration, organizer: me, myEntryId: nil), match: match(), userID: me)
             .canSchedule)
     }
+
+    /// A dispute reopens the match (`pending`, or `scheduled` when it has a time) with the report dropped, so the
+    /// open-match offers return: a side reports afresh, the organiser records, gives a walkover or sets the time.
+    @Test func aReopenedDisputedMatchMayBeReportedAgain() {
+        let reopened = match().reporting(3, 1, by: "u-2", at: .now).disputing()
+        #expect(reopened.isOpenDispute && reopened.status == .pending)
+        let timed = match().scheduling(MatchSchedule(scheduledAt: .now)).reporting(3, 1, by: "u-2", at: .now).disputing()
+        #expect(timed.isOpenDispute && timed.status == .scheduled)
+
+        for disputed in [reopened, timed] {
+            let side = MatchActions(detail: detail(), match: disputed, userID: me)
+            #expect(side.canReport && !side.canConfirm && !side.canDispute && !side.awaitsOtherSide, "\(disputed.status)")
+            let organiser = MatchActions(detail: detail(organizer: me, myEntryId: nil), match: disputed, userID: me)
+            #expect(organiser.canRecord && organiser.canWalkover && organiser.canSchedule && !organiser.canConfirm)
+        }
+    }
 }

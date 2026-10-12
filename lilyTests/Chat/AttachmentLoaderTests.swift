@@ -12,9 +12,21 @@ struct AttachmentLoaderTests {
     private let logger = SpyLogger()
     private let clock = DateClock()
     private let message = ChatMessage.fixture(id: "m1", groupID: "g1")
+    /// A preview folder per test, never the process-wide one: the disk cache sweeps that one on every sign-out, and
+    /// the suites that sign a composition root out run alongside this one.
+    private let previewDirectory = FileManager.default.temporaryDirectory
+        .appending(path: "loader-previews-\(UUID().uuidString)")
 
     private func makeLoader(_ backend: StubBackend) -> AttachmentLoader {
-        AttachmentLoader(repository: chat, cache: cache, session: backend.makeSession(), logger: logger) { [clock] in clock.now }
+        AttachmentLoader(repository: chat,
+                         cache: cache,
+                         session: backend.makeSession(),
+                         logger: logger,
+                         previewDirectory: previewDirectory) { [clock] in clock.now }
+    }
+
+    private func removePreviews() {
+        try? FileManager.default.removeItem(at: previewDirectory)
     }
 
     private func attachment(on backend: StubBackend, expiresIn seconds: TimeInterval = 3600) -> lily.Attachment {
@@ -28,6 +40,18 @@ struct AttachmentLoaderTests {
         AttachmentLink(url: backend.baseURL.appending(path: "/chat/g1/a1-fresh"),
                        thumbnailUrl: backend.baseURL.appending(path: "/chat/g1/a1-fresh/thumb"),
                        urlExpiresAt: clock.now.addingTimeInterval(3600))
+    }
+
+    /// The stored PDF fixture with a link into `backend`, good for an hour.
+    private func document(id: String, on backend: StubBackend) -> lily.Attachment {
+        let named = lily.Attachment.fileFixture(id: id)
+        return lily.Attachment(id: named.id,
+                               kind: named.kind,
+                               contentType: named.contentType,
+                               sizeBytes: named.sizeBytes,
+                               fileName: named.fileName,
+                               url: backend.baseURL.appending(path: "/chat/g1/\(id)"),
+                               urlExpiresAt: clock.now.addingTimeInterval(3600))
     }
 
     @Test func aFreshLinkDownloadsOnceAndThenHitsTheCache() async throws {
@@ -143,23 +167,84 @@ struct AttachmentLoaderTests {
     @Test func aPreviewFileIsNamedAfterTheAttachment() async throws {
         let backend = StubBackend(json: "%PDF-1.4 fake")
         let loader = makeLoader(backend)
-        let named = lily.Attachment.fileFixture(id: "doc-1")
-        let fixedLinks = lily.Attachment(id: named.id,
-                                         kind: named.kind,
-                                         contentType: named.contentType,
-                                         sizeBytes: named.sizeBytes,
-                                         fileName: named.fileName,
-                                         url: backend.baseURL.appending(path: "/chat/g1/doc-1"),
-                                         urlExpiresAt: clock.now.addingTimeInterval(3600))
+        defer { removePreviews() }
 
-        let preview = try await loader.previewFile(for: fixedLinks, in: message)
+        let preview = try await loader.previewFile(for: document(id: "doc-1", on: backend), in: message)
 
         #expect(preview.lastPathComponent == "training-plan.pdf")
         #expect(preview.deletingLastPathComponent().lastPathComponent == "doc-1")
-        #expect(preview.path().hasPrefix(PreviewFiles.directory.path()))
+        #expect(preview.path().hasPrefix(previewDirectory.path()))
         #expect(try Data(contentsOf: preview) == Data("%PDF-1.4 fake".utf8))
         PreviewFiles.remove(preview)
         #expect(!FileManager.default.fileExists(atPath: preview.deletingLastPathComponent().path()))
+    }
+
+    /// A picture stored without a thumbnail has one object: the gallery's thumbnail request and the viewer's full
+    /// request download it once and share the one cached file, kept under the full variant.
+    @Test func aPictureWithoutAThumbnailIsDownloadedOnce() async throws {
+        let backend = StubBackend(json: "full-bytes")
+        let loader = makeLoader(backend)
+        let picture = lily.Attachment.fixture(id: "a1",
+                                              url: backend.baseURL.appending(path: "/chat/g1/a1"),
+                                              thumbnailUrl: nil,
+                                              expiresAt: clock.now.addingTimeInterval(3600))
+
+        let thumbnail = try await loader.file(for: picture, variant: .thumbnail, in: message)
+        let full = try await loader.file(for: picture, variant: .full, in: message)
+
+        #expect(thumbnail == full)
+        #expect(backend.requests.map { $0.url?.path() } == ["/chat/g1/a1"], "one object, downloaded once")
+        #expect(cache.fileURL(for: "a1", variant: .full) != nil && cache.fileURL(for: "a1", variant: .thumbnail) == nil)
+    }
+
+    /// A cache that cannot keep the bytes (the disk is full) fails the download as unavailable and says so once, with
+    /// the id and never the link.
+    @Test func aFailedCacheStoreIsLoggedAndTheDownloadFails() async throws {
+        let backend = StubBackend(json: "thumb-bytes")
+        let loader = makeLoader(backend)
+        cache.storeError = CocoaError(.fileWriteOutOfSpace)
+
+        await #expect(throws: AppError.attachmentUnavailable) {
+            try await loader.file(for: attachment(on: backend), variant: .thumbnail, in: message)
+        }
+
+        let errors = logger.messages(in: .chat, at: .error)
+        let host = try #require(backend.baseURL.host())
+        #expect(errors.count == 1 && errors[0].contains("a1") && !errors[0].contains(host))
+        #expect(cache.fileURL(for: "a1", variant: .thumbnail) == nil)
+    }
+
+    /// A preview copy the file system refuses (here a file where the attachment's folder should be) is unavailable and
+    /// logged with the id; the download itself landed in the cache, so a retry costs no second download.
+    @Test func aFailedPreviewCopyIsLoggedAndSurfacesAsUnavailable() async throws {
+        let backend = StubBackend(json: "%PDF-1.4 fake")
+        let loader = makeLoader(backend)
+        try FileManager.default.createDirectory(at: previewDirectory, withIntermediateDirectories: true)
+        try Data("in the way".utf8).write(to: previewDirectory.appending(path: "blocked-1"))
+        defer { removePreviews() }
+
+        await #expect(throws: AppError.attachmentUnavailable) {
+            try await loader.previewFile(for: document(id: "blocked-1", on: backend), in: message)
+        }
+
+        let errors = logger.messages(in: .chat, at: .error)
+        #expect(errors.count == 1 && errors[0].contains("blocked-1"))
+        #expect(backend.requests.count == 1 && cache.fileURL(for: "blocked-1", variant: .full) != nil)
+    }
+
+    /// Every preview copy goes at the end of a session, and a second sweep over nothing is no error.
+    @Test func removeAllDropsEveryPreviewCopy() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "previews-\(UUID().uuidString)")
+        for id in ["p1", "p2"] {
+            let folder = directory.appending(path: id)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try Data("bytes".utf8).write(to: folder.appending(path: "\(id).pdf"))
+        }
+
+        try PreviewFiles.removeAll(in: directory)
+
+        #expect(!FileManager.default.fileExists(atPath: directory.path()))
+        #expect(throws: Never.self) { try PreviewFiles.removeAll(in: directory) }
     }
 
     /// A video from the camera roll has no name of its own: the content type gives the preview its extension, which is

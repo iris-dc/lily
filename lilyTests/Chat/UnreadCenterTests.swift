@@ -44,6 +44,19 @@ struct UnreadCenterTests {
         #expect(center.unreadGroupIDs.isEmpty, "the dropped live mark does not return")
     }
 
+    /// A room reopened on a shorter transcript reports an older newest row; the mark stands, so the next Mine load
+    /// cannot bring a dot back for messages already seen.
+    @Test func aShorterTranscriptNeverMovesTheReadMarkBack() {
+        center.markRead(groupID: "a", upTo: "m5")
+        center.markRead(groupID: "a", upTo: "m3")
+
+        center.apply(groups: [.fixture(id: "a", lastMessageId: "m4", role: .member, hasUnread: true)])
+        #expect(!center.hasUnread(groupID: "a") && center.unreadGroupIDs.isEmpty)
+
+        center.apply(groups: [.fixture(id: "a", lastMessageId: "m6", role: .member, hasUnread: true)])
+        #expect(center.hasUnread(groupID: "a"), "a message newer than the mark still lights the room")
+    }
+
     @Test func liveMarksAndReadsMoveTheDot() {
         center.markUnread(groupID: "a", messageID: "m1")
         center.markUnread(groupID: "a", messageID: "m2")

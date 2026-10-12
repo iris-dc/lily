@@ -30,7 +30,7 @@ final class MockGroupRepository: GroupRepository {
         switch scope {
         case .mine:
             let mine = live.filter { $0.isMember && !hiddenConversationIDs.contains($0.id) }
-            return Page(items: mine.sorted(by: Self.mostRecentlyActiveFirst))
+            return Page(items: mine.sorted(by: SportGroup.mineOrder))
         case .discover(let query, let type):
             // Like the backend: only communities are discoverable; rooms are reached through their tournament or person.
             let matching = live.filter { $0.isCommunity && $0.isPublic && $0.matches(query: query, type: type) }
@@ -213,10 +213,6 @@ final class MockGroupRepository: GroupRepository {
             rosters[groupID]?[index] = member
         }
         return member
-    }
-
-    private static func mostRecentlyActiveFirst(_ lhs: SportGroup, _ rhs: SportGroup) -> Bool {
-        lhs.lastActivityAt != rhs.lastActivityAt ? lhs.lastActivityAt > rhs.lastActivityAt : lhs.name < rhs.name
     }
 
     /// Owner first, then admins, then by join time, as the backend orders a roster.

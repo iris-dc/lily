@@ -16,11 +16,7 @@ struct MembersList: View {
         var id: String { "\(action)-\(member.userId)" }
 
         var title: String {
-            switch action {
-            case .remove: Copy.removeConfirmation(memberName: member.displayName)
-            case .ban: Copy.banConfirmation(memberName: member.displayName)
-            case .makeAdmin, .removeAdmin: action.title
-            }
+            action.confirmationTitle(memberName: member.displayName) ?? action.title
         }
     }
 
@@ -29,10 +25,7 @@ struct MembersList: View {
             if viewModel.isLoading && viewModel.members.isEmpty {
                 ProgressView().frame(maxWidth: .infinity)
             }
-            ForEach(viewModel.members) { member in
-                MemberRow(member: member, isSelf: viewModel.isSelf(member))
-                    .contextMenu { actions(for: member) }
-            }
+            ForEach(viewModel.members) { row(for: $0) }
             if viewModel.showsBans, !viewModel.bans.isEmpty {
                 banned
             }
@@ -68,9 +61,21 @@ struct MembersList: View {
         }
     }
 
+    /// A row the caller can do nothing to (their own, a plain member's view, an outsider's) gets no menu, so a long
+    /// press lifts nothing.
+    @ViewBuilder private func row(for member: GroupMember) -> some View {
+        let row = MemberRow(member: member, isSelf: viewModel.isSelf(member))
+        let actions = viewModel.actions(for: member)
+        if actions.isEmpty {
+            row
+        } else {
+            row.contextMenu { menuItems(actions, on: member) }
+        }
+    }
+
     @ViewBuilder
-    private func actions(for member: GroupMember) -> some View {
-        ForEach(viewModel.actions(for: member), id: \.self) { action in
+    private func menuItems(_ actions: [MembersViewModel.MemberAction], on member: GroupMember) -> some View {
+        ForEach(actions, id: \.self) { action in
             Button(role: action.isDestructive ? .destructive : nil) {
                 if action.isDestructive {
                     pending = PendingMemberAction(action: action, member: member)
@@ -85,12 +90,5 @@ struct MembersList: View {
 
     private var isConfirming: Binding<Bool> {
         Binding(get: { pending != nil }, set: { if !$0 { pending = nil } })
-    }
-}
-
-private extension MembersViewModel.MemberAction {
-    /// Removing and banning take a person out of the group and are confirmed first.
-    var isDestructive: Bool {
-        self == .remove || self == .ban
     }
 }

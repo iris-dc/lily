@@ -13,14 +13,19 @@ extension ChatViewModel {
         await perform(draft)
     }
 
+    /// Sends the bubble's draft again under the same client id. The bubble is found by that id, so a copy taken before
+    /// the bubble changed (a quote dropped meanwhile) still names it, and what goes out is the bubble's current draft.
     func retry(_ message: PendingMessage) async {
-        guard !isCoolingDown, let index = pending.firstIndex(of: message) else { return }
-        pending[index].state = .sending
-        await perform(message.draft)
+        guard !isCoolingDown,
+              let current = pending.first(where: { $0.clientMessageID == message.clientMessageID }) else { return }
+        updatePending(current.clientMessageID) { $0.state = .sending }
+        await perform(current.draft)
     }
 
+    /// Drops the bubble for good: its files leave the device with it (a failed bubble keeps them for Retry until then).
     func discard(_ message: PendingMessage) {
         pending.removeAll { $0.id == message.id }
+        message.deleteLocalFiles()
     }
 
     func delete(_ message: ChatMessage) async {
@@ -33,12 +38,18 @@ extension ChatViewModel {
         }
     }
 
+    /// Changes the bubble of `clientMessageID` in place; a bubble already replaced or discarded is left alone.
+    func updatePending(_ clientMessageID: String, _ change: (inout PendingMessage) -> Void) {
+        guard let index = pending.firstIndex(where: { $0.clientMessageID == clientMessageID }) else { return }
+        change(&pending[index])
+    }
+
     private func perform(_ draft: MessageDraft) async {
         do {
             let sent = try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: logRetry) {
                 try await repository.send(groupID: group.id, draft)
             }
-            settle(draft.clientMessageID, with: sent.message)
+            await settle(draft.clientMessageID, with: sent.message)
             logger.info(.chat, "Message sent \(sent.message.id) in group \(group.id)")
             noteRead()
             await adoptEpoch(sent.channelEpoch)
@@ -47,11 +58,13 @@ extension ChatViewModel {
         }
     }
 
-    /// The stored message replaces the bubble; the live echo arriving first has already done so.
-    private func settle(_ clientMessageID: String, with message: ChatMessage) {
+    /// The stored message replaces the bubble; the live echo arriving first has already done so. The bubble is
+    /// confirmed (its files seeded) before the stored message goes in: its thumbnail request must find the pictures in
+    /// the cache, or it downloads what was just sent. `mutateRoom` re-reads the room after the await, so a room
+    /// dropped meanwhile is not re-created.
+    private func settle(_ clientMessageID: String, with message: ChatMessage) async {
+        await confirmPending(clientMessageID: clientMessageID, with: message)
         mutateRoom { $0.insert(message) }
-        seedAttachmentCache(for: clientMessageID, with: message)
-        pending.removeAll { $0.clientMessageID == clientMessageID }
     }
 
     private func handleSendFailure(_ error: any Error, clientMessageID: String) async {
@@ -75,7 +88,8 @@ extension ChatViewModel {
         report(error, during: "Send")
     }
 
-    /// The backend commits before it answers: after a lost answer the catch-up may already show the message.
+    /// The backend commits before it answers: after a lost answer the catch-up may already show the message, which
+    /// then replaces the bubble like an answer would.
     private func landed(_ clientMessageID: String) async -> Bool {
         logger.warning(.chat, "Send outcome unknown for \(clientMessageID) in group \(group.id); catching up")
         do {
@@ -83,8 +97,8 @@ extension ChatViewModel {
         } catch {
             logger.warning(.chat, "Catch-up after an unknown send outcome failed in group \(group.id): \(error)")
         }
-        guard room.contains(clientMessageID: clientMessageID) else { return false }
-        pending.removeAll { $0.clientMessageID == clientMessageID }
+        guard let message = room.message(clientMessageID: clientMessageID) else { return false }
+        await confirmPending(clientMessageID: clientMessageID, with: message)
         return true
     }
 
@@ -93,8 +107,6 @@ extension ChatViewModel {
     }
 
     private func markFailed(_ clientMessageID: String) {
-        if let index = pending.firstIndex(where: { $0.clientMessageID == clientMessageID }) {
-            pending[index].state = .failed
-        }
+        updatePending(clientMessageID) { $0.state = .failed }
     }
 }

@@ -43,8 +43,7 @@ extension ChatViewModel {
     /// A reply refused because its original is gone keeps its bubble, failed, as a plain message: Retry sends it
     /// without the quote.
     func dropReply(from clientMessageID: String) {
-        guard let index = pending.firstIndex(where: { $0.clientMessageID == clientMessageID }) else { return }
-        pending[index] = pending[index].droppingReply()
+        updatePending(clientMessageID) { $0 = $0.droppingReply() }
     }
 
     private func liesBeforeHistory(_ id: String) -> Bool {

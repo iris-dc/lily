@@ -10,7 +10,8 @@ nonisolated struct EventFilter: Hashable, Sendable {
     /// Per-person price cap in the user's currency (the one `matches(_:from:currencyCode:)` is given); `nil` means any
     /// price, zero means free games only.
     var maxPrice: Decimal?
-    /// `nil` means any level. Games that welcome any level (no `skillLevel` of their own) match every choice.
+    /// `nil` means any level. Games that welcome any level (no `skillLevel`, or one this build does not know) match
+    /// every choice.
     var skillLevel: SkillLevel?
     /// Days the game must start on; `nil` means any time.
     var dateWindow: DateWindow?
@@ -55,9 +56,10 @@ nonisolated struct EventFilter: Hashable, Sendable {
         return price.currencyCode == currencyCode && price.amount <= maxPrice
     }
 
+    /// A game that welcomes any level, by stating none or one this build does not know, passes every choice.
     private func matchesLevel(_ event: SportEvent) -> Bool {
-        guard let skillLevel else { return true }
-        return event.skillLevel == nil || event.skillLevel == skillLevel
+        guard let skillLevel, let eventLevel = event.skillLevel?.ifKnown else { return true }
+        return eventLevel == skillLevel
     }
 
     private func matchesDate(_ event: SportEvent) -> Bool {

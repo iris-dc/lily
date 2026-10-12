@@ -1,8 +1,9 @@
 import Foundation
 
 /// A picture, a video or a file on its way into a message: its files on the device, the hints the backend stores, and
-/// where it stands. The id is chosen once on the device; the ticket's `attachmentId` is what the send names. While
-/// preparing, `fileURL` is where the prepared file will be written.
+/// where it stands. The id is chosen once on the device; the ticket's `attachmentId` is what the send names. A
+/// preparing slot is a placeholder under the id with no file behind it: its `fileURL` is a stand-in until the preparer
+/// answers a draft with the real files (`<id>.jpg` and `<id>.thumb.jpg`, `<id>.mp4`, `<id>.<ext>`).
 nonisolated struct AttachmentDraft: Identifiable, Hashable, Sendable {
     enum State: Hashable, Sendable {
         /// Being downsampled and re-encoded; nothing to show yet.
@@ -97,6 +98,12 @@ nonisolated struct AttachmentDraft: Identifiable, Hashable, Sendable {
 
     /// Every file on the device that belongs to the draft.
     var localFiles: [URL] { [fileURL] + (thumbnailURL.map { [$0] } ?? []) }
+
+    /// Removes the draft's files from the device (a removed slot, a discarded bubble, an owner gone); a file already
+    /// gone is nothing.
+    func deleteLocalFiles() {
+        localFiles.forEach { try? FileManager.default.removeItem(at: $0) }
+    }
 
     var aspectRatio: CGFloat? {
         guard let width, let height, width > 0, height > 0 else { return nil }

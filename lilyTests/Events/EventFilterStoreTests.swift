@@ -59,9 +59,21 @@ struct EventFilterStoreTests {
         #expect(logger.messages(in: .cache, at: .info) == ["Stored event filter cleared"])
     }
 
-    /// A value a later build cannot read (a dropped type, a hand-edited plist) is a warning and the defaults, never a crash.
+    /// A filter kept by a newer build may name a type or a level this one does not know; the panel could neither show
+    /// nor clear such a criterion, so it is left out and the rest of the filter comes back, without a warning.
+    @Test func aStoredTypeOrLevelThisBuildDoesNotKnowIsLeftOut() throws {
+        let stored = #"{"types":["quidditch","tennis"],"skillLevel":"pro","openSpotsOnly":true}"#
+        defaults.set(Data(stored.utf8), forKey: AppConfig.Storage.Keys.eventFilter)
+
+        let filter = try #require(store.load())
+        #expect(filter.types == [.tennis])
+        #expect(filter.skillLevel == nil && filter.openSpotsOnly)
+        #expect(logger.messages(in: .cache, at: .warning).isEmpty)
+    }
+
+    /// A value a later build cannot read (a hand-edited plist, a stray shape) is a warning and the defaults, never a crash.
     @Test func anUnreadableValueReadsAsNoneWithAWarning() {
-        defaults.set(Data("{\"types\":[\"quidditch\"]}".utf8), forKey: AppConfig.Storage.Keys.eventFilter)
+        defaults.set(Data("not json".utf8), forKey: AppConfig.Storage.Keys.eventFilter)
 
         #expect(store.load() == nil)
         #expect(logger.messages(in: .cache, at: .warning).count == 1)

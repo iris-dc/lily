@@ -57,7 +57,7 @@ struct AttachmentDraftTile: View {
             thumbnail.overlay {
                 if !isPreparing { PlayBadge(size: Layout.stripPlayBadgeSize) }
             }
-        case .file:
+        case .file, .unknown:
             FileCard(info: FileCardInfo(fileName: draft.fileName, contentType: draft.contentType, sizeBytes: draft.sizeBytes),
                      own: false,
                      isPreparing: isPreparing)

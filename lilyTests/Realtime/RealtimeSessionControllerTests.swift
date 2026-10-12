@@ -24,6 +24,7 @@ struct RealtimeSessionControllerTests {
         harness.endpoint.url = URL(string: "https://realtime.test/event")
         await harness.controller.resume()
         #expect(harness.controller.state == .connected && harness.transport.connectCount == 1)
+        #expect(harness.transport.connectedEndpoints == [URL(string: "https://realtime.test/event")])
         #expect(harness.transport.subscribedChannels == [userChannel])
         #expect(harness.chatLogs(.info).contains("Chat connection opened"))
         #expect(harness.groups.requestedScopes == [.mine], "the resume protocol reloads Mine once")
@@ -34,6 +35,7 @@ struct RealtimeSessionControllerTests {
         let harness = RealtimeHarness(tokens: FakeAuthTokenProvider(token: nil))
         await harness.connect()
         #expect(harness.transport.connectCount == 0 && harness.controller.state == .disconnected)
+        #expect(harness.sleep.held.isEmpty, "a first connect's missing token arms no timer")
     }
 
     @Test func suspendClosesAndResumeReopensWithAFreshMineLoad() async {

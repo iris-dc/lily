@@ -74,6 +74,13 @@ final class EmailSignInViewModel {
         mode = mode.toggled
     }
 
+    /// The pool accepted the code, so a second Confirm would be refused, and the sign-in after it has shown its own
+    /// failure where it had one. Email and password stay, so one tap on Sign in finishes what the confirmation started.
+    private func returnToSignIn() {
+        code = ""
+        mode = .signIn
+    }
+
     /// Signs in, signs up or confirms with the form's fields. Ignored while the form is invalid or a call is running;
     /// the keyboard's return key can reach this even though the button is disabled.
     func submit() {
@@ -114,7 +121,8 @@ final class EmailSignInViewModel {
         case .signUp:
             enterConfirmationIfNeeded(await session.signUp(email: credentials.email, password: credentials.password))
         case .confirm:
-            await session.confirmSignUp(email: credentials.email, code: code, password: credentials.password)
+            let outcome = await session.confirmSignUp(email: credentials.email, code: code, password: credentials.password)
+            if outcome == .confirmedButSignInFailed { returnToSignIn() }
         }
     }
 

@@ -7,9 +7,9 @@ import Foundation
 nonisolated enum UploadPolicy {
     static func check(_ request: UploadRequestPayload, caps: AttachmentCaps) throws {
         guard request.sizeBytes > 0 else { throw AppError.attachmentUploadFailed }
-        guard request.sizeBytes <= caps.maxBytes(for: request.kind) else { throw AppError.attachmentTooLarge(caps: caps) }
+        try caps.require(sizeBytes: request.sizeBytes, for: request.kind)
         if let thumbnail = request.thumbnail {
-            guard request.kind != .file else { throw AppError.attachmentUploadFailed }
+            guard request.kind.isMedia else { throw AppError.attachmentUploadFailed }
             guard thumbnail.sizeBytes <= AppConfig.Chat.Attachments.thumbnailMaxBytes else {
                 throw AppError.attachmentTooLarge(caps: caps)
             }
@@ -17,12 +17,14 @@ nonisolated enum UploadPolicy {
         guard allows(request.contentType, for: request.kind) else { throw AppError.attachmentTypeNotAllowed }
     }
 
-    /// Images and videos are on their lists; a file may be anything.
+    /// Images and videos are on their lists; a file may be anything. The device never asks for a ticket of a kind it
+    /// does not know, and the backend would refuse one.
     static func allows(_ contentType: String, for kind: AttachmentKind) -> Bool {
         switch kind {
         case .image: AppConfig.Chat.Attachments.imageContentTypes.contains(contentType)
         case .video: AppConfig.Chat.Attachments.videoContentTypes.contains(contentType)
         case .file: true
+        case .unknown: false
         }
     }
 }

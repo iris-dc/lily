@@ -28,6 +28,26 @@ struct MockMeAndModerationRepositoryTests {
         #expect(try await repository.acceptTerms(version: 3) == TermsAcceptance(acceptedTermsVersion: 3, acceptedTermsAt: now))
     }
 
+    /// `-mock-terms-pending` makes the mock owe the terms until the first acceptance of the run; without it they are
+    /// accepted from the start.
+    @Test func aPendingMockOwesTheTermsUntilAccepted() async throws {
+        let repository = MockMeRepository(identity: identity, logger: logger, termsPending: true)
+
+        let owed = try await repository.me()
+        #expect(owed.acceptedTermsVersion == nil && !owed.termsAccepted && repository.owesTerms)
+        #expect(owed.termsVersion == AppConfig.Moderation.mockTermsVersion, "the current version is still named")
+
+        _ = try await repository.acceptTerms(version: AppConfig.Moderation.mockTermsVersion)
+
+        let accepted = try await repository.me()
+        #expect(accepted.termsAccepted && !repository.owesTerms)
+        #expect(logger.messages(in: .groups, at: .info) == ["Mock terms v\(AppConfig.Moderation.mockTermsVersion) accepted"])
+
+        let settled = MockMeRepository(identity: identity, logger: logger)
+        let fresh = try await settled.me()
+        #expect(fresh.termsAccepted && !settled.owesTerms, "without the flag the terms are accepted from the start")
+    }
+
     @Test func blocksAreKeptAndCapped() async throws {
         let repository = MockModerationRepository(logger: logger)
 

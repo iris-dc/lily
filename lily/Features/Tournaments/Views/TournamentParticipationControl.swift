@@ -87,34 +87,35 @@ struct TournamentMenu: View {
     private typealias Copy = AppBranding.Tournaments
 
     var body: some View {
+        let permissions = viewModel.permissions
         Menu {
-            if viewModel.canOpenChat {
+            if permissions.canOpenChat {
                 Button(AppBranding.Groups.openChat, systemImage: DesignTokens.Symbols.chat, action: onOpenChat)
                     .accessibilityIdentifier(AccessibilityIdentifiers.tournamentOpenChat)
             }
-            if viewModel.canInvite {
+            if permissions.canInvite {
                 Button(AppBranding.Groups.invite, systemImage: DesignTokens.Symbols.invite, action: onInvite)
                     .accessibilityIdentifier(AccessibilityIdentifiers.tournamentInvite)
             }
-            if viewModel.showsStart {
+            if permissions.showsStart {
                 Button(action: onStart) {
                     Label(Copy.start, systemImage: DesignTokens.Symbols.play)
-                    if let reason = viewModel.startBlockedReason {
+                    if let reason = permissions.startBlockedReason {
                         Text(reason)
                     }
                 }
-                .disabled(!viewModel.canStart)
+                .disabled(!permissions.canStart)
                 .accessibilityIdentifier(AccessibilityIdentifiers.tournamentStart)
             }
-            if viewModel.canEdit {
+            if permissions.canEdit {
                 Button(AppBranding.Groups.edit, systemImage: DesignTokens.Symbols.edit, action: onEdit)
                     .accessibilityIdentifier(AccessibilityIdentifiers.tournamentEdit)
             }
-            if viewModel.canCancel {
+            if permissions.canCancel {
                 Button(Copy.cancel, systemImage: DesignTokens.Symbols.dismiss, role: .destructive, action: onCancel)
                     .accessibilityIdentifier(AccessibilityIdentifiers.tournamentCancel)
             }
-            if viewModel.canReport {
+            if permissions.canReport {
                 Button(Copy.report, systemImage: DesignTokens.Symbols.report, action: onReport)
                     .accessibilityIdentifier(AccessibilityIdentifiers.tournamentReport)
             }

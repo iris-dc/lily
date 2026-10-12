@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// A group: header, the actions the caller has, and the Events | Members segments (Members for members, and for every
-/// signed-in caller of a public group). The view model decides what the caller may do; this draws it and hosts the
+/// A group: header, the actions the caller has, and the Events | Tournaments | Members segments the caller's access
+/// allows (`GroupDetailSection.available`). The view model decides what the caller may do; this draws it and hosts the
 /// sheets and confirmations. Never shown for a direct conversation: `GroupDestinations` shows the person instead.
 struct GroupDetailView: View {
     @State private var viewModel: GroupDetailViewModel
@@ -10,7 +10,8 @@ struct GroupDetailView: View {
     @State private var events: EventListViewModel
     /// The group's tournaments; one created from here lands in it the same way.
     @State private var tournaments: TournamentListViewModel
-    /// Built for whoever may see the roster and rebuilt when the caller's role changes, since its menus follow the role.
+    /// Built for whoever may see the roster and rebuilt when the caller's access changes (a role, a sign-in), since
+    /// its menus follow it; a change to the group itself reaches it through `update(group:)`.
     @State private var members: MembersViewModel?
     @State private var presentedSheet: DetailSheet?
     @State private var confirmation: Confirmation?
@@ -32,6 +33,12 @@ struct GroupDetailView: View {
         var id: Self { self }
     }
 
+    /// Where Mine stands: a reload bumps `loads`, a sibling's write `changes`; either moves the detail's refresh.
+    private struct StoreKey: Hashable {
+        let changes: Int
+        let loads: Int
+    }
+
     init(viewModel: GroupDetailViewModel, dependencies: AppDependencies) {
         _viewModel = State(initialValue: viewModel)
         _events = State(initialValue: dependencies.makeEventListViewModel(scope: .group(id: viewModel.group.id)))
@@ -40,6 +47,8 @@ struct GroupDetailView: View {
     }
 
     private var group: SportGroup { viewModel.group }
+    /// What the picker offers this caller; one segment alone needs no picker.
+    private var sections: [GroupDetailSection] { GroupDetailSection.available(for: viewModel.access, in: group) }
 
     var body: some View {
         ContentScreen {
@@ -51,7 +60,7 @@ struct GroupDetailView: View {
                                    onInvite: { presentedSheet = .invite },
                                    onCreateEvent: { presentedSheet = .createEvent },
                                    onSignIn: { presentedSheet = .signIn })
-                    if viewModel.access.canSeeMembers(in: group) {
+                    if sections.count > 1 {
                         sectionPicker
                     }
                     segment
@@ -70,6 +79,10 @@ struct GroupDetailView: View {
         .task { viewModel.recordViewed() }
         // Re-runs when a game changes anywhere (a join on Explore, a create here), so the segment stays current.
         .task(id: dependencies.eventChanges.version) { await events.loadIfStale() }
+        // A Mine reload or a sibling's write under the open detail: the header and the actions follow the fresh group.
+        .task(id: StoreKey(changes: dependencies.groupChanges.version, loads: dependencies.myGroups.loadVersion)) {
+            viewModel.refreshFromStore()
+        }
         .task(id: dependencies.tournamentChanges.version) {
             if AppConfig.FeatureFlags.tournaments { await tournaments.loadIfStale() }
         }
@@ -77,7 +90,12 @@ struct GroupDetailView: View {
             await events.loadUserLocation()
             if AppConfig.FeatureFlags.tournaments { await tournaments.loadUserLocation() }
         }
-        .onChange(of: group.role, initial: true) { rebuildMembers() }
+        .onChange(of: viewModel.access, initial: true) { rebuildMembers() }
+        .onChange(of: viewModel.group) { _, group in members?.update(group: group) }
+        // A segment that disappears (a sign-out while on Members) must not leave the picker without a selection.
+        .onChange(of: sections) { _, sections in
+            if !sections.contains(section) { section = .events }
+        }
         // Deleted, or out of a private group: there is nothing left to show here.
         .onChange(of: viewModel.isGone) {
             if viewModel.isGone { dismiss() }
@@ -110,17 +128,18 @@ struct GroupDetailView: View {
 
     private var sectionPicker: some View {
         Picker(Copy.title, selection: $section) {
-            ForEach(GroupDetailSection.available, id: \.self) { Text($0.title).tag($0) }
+            ForEach(sections, id: \.self) { Text($0.title).tag($0) }
         }
         .pickerStyle(.segmented)
         .accessibilityIdentifier(AccessibilityIdentifiers.groupSection)
     }
 
-    /// Events for everyone who can see the group; the roster only for those allowed it, whatever the picker says.
+    /// Events for everyone who can see the group; the tournaments and the roster only for those offered them, whatever
+    /// the picker says.
     @ViewBuilder private var segment: some View {
         if section == .members, let members {
             MembersList(viewModel: members)
-        } else if section == .tournaments, AppConfig.FeatureFlags.tournaments {
+        } else if section == .tournaments, sections.contains(.tournaments) {
             GroupTournamentsSegment(viewModel: tournaments)
         } else {
             GroupEventsSegment(viewModel: events)
@@ -162,7 +181,7 @@ struct GroupDetailView: View {
     }
 
     private func rebuildMembers() {
-        members = viewModel.access.canSeeMembers(in: group)
+        members = viewModel.showsRoster
             ? dependencies.makeMembersViewModel(for: group, onChange: viewModel.accept)
             : nil
     }
@@ -171,7 +190,7 @@ struct GroupDetailView: View {
     private func refresh() async {
         if section == .members, let members {
             await members.load()
-        } else if section == .tournaments {
+        } else if section == .tournaments, sections.contains(.tournaments) {
             await tournaments.load()
         } else {
             await events.load()
@@ -183,8 +202,7 @@ struct GroupDetailView: View {
     let dependencies = AppDependencies.makeMock()
     NavigationStack {
         GroupDetailView(viewModel: dependencies.makeGroupDetailViewModel(for: MockGroupFixtures.make(now: .now)[0],
-                                                                         context: .standalone,
-                                                                         onChange: { _ in }),
+                                                                         context: .standalone),
                         dependencies: dependencies)
     }
 }

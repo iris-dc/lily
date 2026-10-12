@@ -3,7 +3,8 @@ import Observation
 
 /// Owns the tournament shown on the detail screen: fetched by id (a card, a tile, a chat's info button or a room row
 /// name only the id), kept on a failed reload, and changed through the entry actions in the `+Entries` file and the
-/// start and the results in the `+Matches` file.
+/// start and the results in the `+Matches` file. Who sees the menu, its items, the entries segment and the organiser's
+/// profile is `TournamentPermissions`, decided from the loaded tournament and the caller.
 @Observable
 final class TournamentDetailViewModel {
     enum State: Equatable {
@@ -39,6 +40,13 @@ final class TournamentDetailViewModel {
     private let changes: ChangeTracker
     private var acknowledgedVersion: Int?
     private var hasRecordedView = false
+    /// Bumped by every load and every accepted answer, so an older load's answer is dropped, its failure too: a
+    /// pull-to-refresh runs outside the keyed task and `perform` does not wait for it, so a Confirm or Join answering
+    /// while a slow refresh is out would otherwise be overwritten by the older page.
+    private var loadGeneration = 0
+    /// The match the destination named, once the first loaded detail holds it; the view presents it and consumes it.
+    private(set) var linkedMatchToShow: String?
+    private var hasDecidedLinkedMatch = false
 
     init(destination: TournamentDestination,
          repository: any TournamentRepository,
@@ -83,33 +91,20 @@ final class TournamentDetailViewModel {
     var participation: TournamentParticipation {
         tournament.map { TournamentParticipation(tournament: $0, userID: identity.currentUserID, now: now()) } ?? .hidden
     }
-    /// The organiser edits and cancels while the tournament runs; nothing once it is over.
-    var canEdit: Bool { role.isOrganizer && !(tournament?.status.isOver ?? true) }
-    var canCancel: Bool { canEdit }
-    /// The organiser drops entries while registration is open.
-    var canRemoveEntries: Bool { role.isOrganizer && tournament?.status == .registration }
-    /// Members of the room chat: the organiser and every player in.
-    var canOpenChat: Bool { AppConfig.FeatureFlags.chat && (role.isOrganizer || (tournament?.hasEntered ?? false)) }
-    /// Entrants and the organiser invite while registration is open, as the backend allows.
-    var canInvite: Bool {
-        guard let tournament, role.isOrganizer || tournament.hasEntered else { return false }
-        return tournament.isRegistrationOpen(now: now())
+    /// Who may do what on this detail, from the loaded tournament and the caller; `.none` until the detail answers.
+    var permissions: TournamentPermissions {
+        tournament.map {
+            TournamentPermissions(tournament: $0,
+                                  userID: identity.currentUserID,
+                                  now: now(),
+                                  chatEnabled: AppConfig.FeatureFlags.chat)
+        } ?? .none
     }
-    /// Anyone signed in may report a tournament that is not their own.
-    var canReport: Bool { tournament != nil && identity.currentUserID != nil && !role.isOrganizer }
     var reportTarget: ReportTarget { .tournament(id: destination.id) }
-    var showsMenu: Bool { canOpenChat || canEdit || canCancel || canInvite || canReport }
     /// The winning entry's name once the tournament is completed; `nil` before and when the entry is unknown.
     var winnerName: String? {
         guard let detail, detail.tournament.status == .completed else { return nil }
         return detail.tournament.winnerEntryId.flatMap(detail.entry(id:))?.name
-    }
-    /// Entries are members-level information, like a roster: shown to signed-in callers only.
-    var showsEntries: Bool { identity.currentUserID != nil }
-    /// The organiser's profile, when the caller may open it: signed in, and not the organiser themselves.
-    var organizerProfile: UserProfileDestination? {
-        guard let tournament, identity.currentUserID != nil, !role.isOrganizer else { return nil }
-        return UserProfileDestination(userId: tournament.organizerUserId, displayName: tournament.organizerName)
     }
 
     func isSelf(_ userID: String) -> Bool {
@@ -127,28 +122,49 @@ final class TournamentDetailViewModel {
         await load()
     }
 
-    /// Fetches the detail; a loaded detail stays on screen while the view's task re-runs it and when that reload fails,
-    /// so coming back from a pushed profile never blanks the screen.
-    func load() async {
+    /// Fetches the detail. The view's task, its pull-to-refresh and Try again report a failure (the popup; `.failed`
+    /// only while nothing was loaded yet, so coming back from a pushed profile never blanks the screen). The refetch
+    /// after an entry write passes `reportingFailures: false`: the fresh detail goes on to the lists through `accept`,
+    /// and a failure leaves a change recorded for the view's task to reload on, because the write landed and the screen
+    /// must not keep showing the stale control. A 404 marks the tournament gone either way. An answer older than a
+    /// write accepted meanwhile is dropped, and so is its failure: no popup over a fresher detail.
+    func load(reportingFailures: Bool = true) async {
         if detail == nil { state = .loading }
+        loadGeneration += 1
+        let generation = loadGeneration
         do {
-            let detail = try await repository.tournament(id: destination.id)
-            state = .loaded(detail)
-            recordViewed(detail.tournament)
+            let fresh = try await repository.tournament(id: destination.id)
+            guard generation == loadGeneration else { return }
+            if reportingFailures { state = .loaded(fresh) } else { accept(fresh) }
+            decideLinkedMatch(in: fresh)
+            recordViewed(fresh.tournament)
         } catch AppError.tournamentNotFound {
+            guard generation == loadGeneration else { return }
             logger.info(.tournaments, "Tournament \(destination.id) is not available to the caller")
             markGone()
         } catch {
-            guard !AppError.isCancellation(error) else { return }
-            logger.error(.tournaments, "Loading tournament \(destination.id) failed: \(error)")
-            if detail == nil { state = .failed }
-            reporter.report(error)
+            guard !AppError.isCancellation(error), generation == loadGeneration else { return }
+            if reportingFailures { reportLoadFailure(error) } else { noteRefreshFailure(error) }
         }
+    }
+
+    private func reportLoadFailure(_ error: any Error) {
+        logger.error(.tournaments, "Loading tournament \(destination.id) failed: \(error)")
+        if detail == nil { state = .failed }
+        reporter.report(error)
+    }
+
+    /// The popup stays with the write that did land. The change is recorded without being acknowledged, so the view's
+    /// keyed task runs `loadIfNeeded` again and asks, and the lists behind reload too.
+    private func noteRefreshFailure(_ error: any Error) {
+        logger.warning(.tournaments, "Could not refresh tournament \(destination.id) after a write: \(error)")
+        changes.recordChange()
     }
 
     /// Takes the detail as the edit sheet or an action answered it: shown here and handed on to the lists behind, whose
     /// change the tracker records; that version is this screen's own and needs no reload.
     func accept(_ detail: TournamentDetail) {
+        loadGeneration += 1
         state = .loaded(detail)
         onChange(detail.tournament)
         acknowledgedVersion = changes.version
@@ -158,6 +174,7 @@ final class TournamentDetailViewModel {
     /// it means the tournament was deleted meanwhile: the screen dismisses, its room leaves Mine and the lists behind
     /// are told to reload; that version is this screen's own.
     private func markGone() {
+        loadGeneration += 1
         let wasLoaded = detail != nil
         state = .notFound
         guard wasLoaded else { return }
@@ -165,6 +182,19 @@ final class TournamentDetailViewModel {
         myGroups.remove(id: destination.id)
         changes.recordChange()
         acknowledgedVersion = changes.version
+    }
+
+    /// The first successful load decides, whether it came from the keyed task, Try again or a pull; a reload or an own
+    /// `accept` never raises the match again.
+    private func decideLinkedMatch(in detail: TournamentDetail) {
+        guard !hasDecidedLinkedMatch else { return }
+        hasDecidedLinkedMatch = true
+        if let id = destination.matchID, detail.match(id: id) != nil { linkedMatchToShow = id }
+    }
+
+    /// The view took the linked match to its sheet.
+    func consumeLinkedMatch() {
+        linkedMatchToShow = nil
     }
 
     /// One view per screen instance, however often the view's task restarts.
@@ -207,7 +237,7 @@ final class TournamentDetailViewModel {
             return true
         } catch {
             guard !AppError.isCancellation(error) else { return false }
-            logger.error(.tournaments, "\(action) failed for tournament \(destination.id): \(error)")
+            logFailure(action, error)
             reporter.report(error)
             return false
         }
@@ -215,5 +245,31 @@ final class TournamentDetailViewModel {
 
     private func logRetry(_ action: String) {
         logger.info(.tournaments, "\(action) lost a race for tournament \(destination.id); retrying once")
+    }
+
+    /// A refusal is an expected product state (the detail was stale) and stays a warning; anything else is an error.
+    private func logFailure(_ action: String, _ error: any Error) {
+        let message = "\(action) failed for tournament \(destination.id): \(error)"
+        if (error as? AppError)?.isTournamentRefusal == true {
+            logger.warning(.tournaments, message)
+        } else {
+            logger.error(.tournaments, message)
+        }
+    }
+}
+
+private extension AppError {
+    /// The 403, 404 and 409 answers a stale detail earns (registration closed meanwhile, the entry gone, a match not
+    /// ready): expected product states, not failures, like `EventDetailViewModel`'s `isParticipationConflict` and
+    /// `GroupDetailViewModel`'s `isGroupConflict`.
+    var isTournamentRefusal: Bool {
+        switch self {
+        case .tournamentNotFound, .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound,
+             .notOrganizer, .tournamentLocked, .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound,
+             .drawNotAllowed, .tournamentLimit, .tryAgain, .termsRequired:
+            true
+        default:
+            false
+        }
     }
 }

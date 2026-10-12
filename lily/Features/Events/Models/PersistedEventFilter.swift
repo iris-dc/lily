@@ -12,19 +12,20 @@ nonisolated struct PersistedEventFilter: Codable, Equatable, Sendable {
     let openSpotsOnly: Bool
 
     init(_ filter: EventFilter) {
-        types = filter.types.sorted { $0.rawValue < $1.rawValue }
+        types = filter.types.sorted { $0.wireName < $1.wireName }
         maxDistanceMeters = filter.maxDistanceMeters
         maxPrice = filter.maxPrice
         skillLevel = filter.skillLevel
         openSpotsOnly = filter.openSpotsOnly
     }
 
-    /// The filter as the list applies it; no date window.
+    /// The filter as the list applies it; no date window. A type or level this build does not know (a filter kept by
+    /// a newer build) is left out: the panel could neither show it nor clear it.
     var filter: EventFilter {
-        EventFilter(types: Set(types),
+        EventFilter(types: Set(types.filter { !$0.isUnknown }),
                     maxDistanceMeters: maxDistanceMeters,
                     maxPrice: maxPrice,
-                    skillLevel: skillLevel,
+                    skillLevel: skillLevel?.ifKnown,
                     dateWindow: nil,
                     openSpotsOnly: openSpotsOnly)
     }

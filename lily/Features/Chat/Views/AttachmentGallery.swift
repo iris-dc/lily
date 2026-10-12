@@ -38,7 +38,7 @@ struct AttachmentGallery: View {
             ImageAttachmentView(attachment: attachment, message: message, loader: loader) { onTap(attachment) }
         case .video:
             VideoAttachmentView(attachment: attachment, message: message, loader: loader) { onTap(attachment) }
-        case .file:
+        case .file, .unknown:
             EmptyView()
         }
     }

@@ -9,6 +9,8 @@ nonisolated extension AppConfig {
         /// What the mock `GET /api/me` answers as the current and accepted terms version.
         static let mockTermsVersion = 1
         static let supportEmail = "support@iskra.red"
+        /// What the sheet's Support link opens.
+        static let supportURL = URL(string: "mailto:" + supportEmail)!
         static let termsURL = URL(string: "https://api.iskra.red/terms")!
         static let privacyURL = URL(string: "https://api.iskra.red/privacy")!
     }
@@ -35,4 +37,10 @@ nonisolated extension AppConfig.API.Paths {
 
 nonisolated extension AppConfig.API.Query {
     static let status = "status"
+}
+
+nonisolated extension AppConfig.LaunchArguments {
+    /// Makes the mock `GET /api/me` answer no accepted terms version until `PUT /api/me/terms`, so the terms sheet and
+    /// its acceptance can be walked without a backend; the UI tests pass it with `-mock-events`.
+    static let mockTermsPending = "-mock-terms-pending"
 }

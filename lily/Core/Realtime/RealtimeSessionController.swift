@@ -19,6 +19,13 @@ final class RealtimeSessionController: SessionObserver {
         let continuation: AsyncStream<RealtimeEnvelope>.Continuation
     }
 
+    /// A live stream; the id tells a stream's own end from the end of a cancelled predecessor on the same channel (a
+    /// same-channel unsubscribe and resubscribe in one turn).
+    struct Subscription {
+        let id: UUID
+        let task: Task<Void, Never>
+    }
+
     var isActive = false
     var user: AuthUser?
     /// Mine, most recently active first; the subscription set is cut from it.
@@ -30,11 +37,13 @@ final class RealtimeSessionController: SessionObserver {
     var connectionTask: Task<Bool, Never>?
     var renewalTask: Task<Void, Never>?
     var reconnectTask: Task<Void, Never>?
-    var subscriptions: [RealtimeChannel: Task<Void, Never>] = [:]
+    var subscriptions: [RealtimeChannel: Subscription] = [:]
     var pendingResubscribes: [String: Task<Void, Never>] = [:]
     var consumers: [UUID: Consumer] = [:]
     var lastExpiry: Date?
     var backoffAttempt = 0
+    /// Forced refreshes that answered no token since a connect last had one; `maxReconnectsWithoutToken` bounds it.
+    var reconnectsWithoutToken = 0
     var reportedExpiredSession = false
 
     let transport: any RealtimeTransport
@@ -145,11 +154,13 @@ final class RealtimeSessionController: SessionObserver {
         reconcileSubscriptions()
     }
 
-    /// Makes sure the room is subscribed at `room.epoch` (or a newer one already known), waiting out a jittered
-    /// resubscribe if one is pending, so a caller can catch up afterwards knowing nothing falls in between.
+    /// Makes sure the room is subscribed at `room.epoch` (or a newer one already known), waiting out every jittered
+    /// resubscribe pending for it, so a caller can catch up afterwards knowing nothing falls in between. Every one,
+    /// including a resubscribe that replaced the one the caller started waiting on: a second `member_left` with a newer
+    /// epoch cancels and re-arms the timer, and the first waiter must not return with the old epoch subscribed.
     func ensureSubscribed(_ room: RoomSubscription) async {
         noteEpoch(room.epoch, for: room.groupID)
-        if let pending = pendingResubscribes[room.groupID] {
+        while let pending = pendingResubscribes[room.groupID] {
             await pending.value
         }
         reconcileSubscriptions()
@@ -197,6 +208,7 @@ final class RealtimeSessionController: SessionObserver {
         knownEpochs = [:]
         lastExpiry = nil
         backoffAttempt = 0
+        reconnectsWithoutToken = 0
         reportedExpiredSession = false
     }
 

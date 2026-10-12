@@ -59,7 +59,4 @@ nonisolated enum TournamentParticipation: Equatable, Sendable {
             self = tournament.isTeam ? .createTeam : .join
         }
     }
-
-    /// Whether "Join team" shows on an open team's row: the caller may enter and the team has room.
-    var offersJoiningATeam: Bool { self == .createTeam }
 }

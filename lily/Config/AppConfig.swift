@@ -92,6 +92,9 @@ nonisolated enum AppConfig {
         static let fixtureSpreadDegrees = 0.03
         /// Side of the area the location picker shows when it opens, in metres: a neighbourhood, so one drag lands the pin.
         static let pickerRegionMeters: Double = 1_500
+        /// A settle of the picker's map closer than this to the spot already chosen is the map arriving, not a move: the
+        /// arrival nudges the pin by centimetres, one point of drag at the picker's span is about four metres.
+        static let pickerMinimumMoveMeters: Double = 1
         /// Waiting longer than this for a GPS fix falls back to a map centred on the events.
         static let fixTimeout: Duration = .seconds(8)
         /// A fix is reused for this long, so screens re-appearing and sibling tabs share one CoreLocation stream.

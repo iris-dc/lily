@@ -36,8 +36,9 @@ final class FakeAttachmentUploader: AttachmentUploader {
 }
 
 /// Prepares by writing the picked bytes to a file of their own (and a small thumbnail next to it), so the drafts it
-/// answers have real files to copy and read; a video or a file is answered as a draft over the URL given, without a
-/// copy. `error` refuses everything; `photo`, `video` and `file` are what the mock picker hands over.
+/// answers have real files to copy and read; a video or a file is answered over a copy of its own in tmp (`<id>.mp4`
+/// with a thumbnail, `<id>.<ext>`), as the real preparers do, because the composer removes a picked movie once the
+/// preparer is done with it. `error` refuses everything; `photo`, `video` and `file` are what the mock picker hands over.
 @MainActor
 final class FakeMediaPreparer: MediaPreparer {
     var error: (any Error)?
@@ -72,7 +73,9 @@ final class FakeMediaPreparer: MediaPreparer {
         await hold.wait()
         try Task.checkCancellation()
         if let error { throw error }
-        return .fixture(id: id, kind: .video, fileURL: url, state: .preparing)
+        let draft = AttachmentDraft.fixture(id: id, kind: .video, fileURL: try Self.copy(url, to: "\(id).mp4"), state: .preparing)
+        if let thumbnailURL = draft.thumbnailURL { try Data("thumb".utf8).write(to: thumbnailURL) }
+        return draft
     }
 
     func prepareFile(at url: URL, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
@@ -82,7 +85,16 @@ final class FakeMediaPreparer: MediaPreparer {
         await hold.wait()
         try Task.checkCancellation()
         if let error { throw error }
-        return .fixture(id: id, kind: .file, fileURL: url, fileName: url.lastPathComponent, state: .preparing)
+        let own = try Self.copy(url, to: url.pathExtension.isEmpty ? id : "\(id).\(url.pathExtension)")
+        return .fixture(id: id, kind: .file, fileURL: own, fileName: url.lastPathComponent, state: .preparing)
+    }
+
+    /// The source's bytes (a few stand-in bytes when no file is behind the URL) written under `name` in tmp: the file
+    /// of the draft's own that the real preparers leave.
+    private static func copy(_ url: URL, to name: String) throws -> URL {
+        let own = FileManager.default.temporaryDirectory.appending(path: name)
+        try ((try? Data(contentsOf: url)) ?? Data("clip".utf8)).write(to: own)
+        return own
     }
 
     func photoWithoutPicker() -> Data? { photo }
@@ -97,7 +109,8 @@ final class FakeMediaPreparer: MediaPreparer {
 }
 
 /// An attachment cache in memory: downloaded bytes go to a temporary file, copies are recorded and answered as the
-/// source itself (nothing is copied), and evictions are counted.
+/// source itself (nothing is copied), evictions are counted, and a `storeError` is what both stores refuse with (a
+/// full disk), before anything is written or recorded.
 @MainActor
 final class FakeAttachmentCache: AttachmentCache {
     struct Copy: Equatable {
@@ -106,6 +119,7 @@ final class FakeAttachmentCache: AttachmentCache {
         let source: URL
     }
 
+    var storeError: (any Error)?
     private var files: [String: URL] = [:]
     private(set) var copied: [Copy] = []
     private(set) var evictCount = 0
@@ -116,7 +130,8 @@ final class FakeAttachmentCache: AttachmentCache {
     }
 
     @discardableResult
-    func store(_ data: Data, for id: String, variant: AttachmentVariant) throws -> URL {
+    func store(_ data: Data, for id: String, variant: AttachmentVariant) async throws -> URL {
+        if let storeError { throw storeError }
         let url = FileManager.default.temporaryDirectory.appending(path: "fake-cache-\(UUID().uuidString)")
         try data.write(to: url)
         files[id + variant.fileSuffix] = url
@@ -124,17 +139,18 @@ final class FakeAttachmentCache: AttachmentCache {
     }
 
     @discardableResult
-    func store(copying fileURL: URL, for id: String, variant: AttachmentVariant) throws -> URL {
+    func store(copying fileURL: URL, for id: String, variant: AttachmentVariant) async throws -> URL {
+        if let storeError { throw storeError }
         copied.append(Copy(id: id, variant: variant, source: fileURL))
         files[id + variant.fileSuffix] = fileURL
         return fileURL
     }
 
-    func evict() {
+    func evict() async {
         evictCount += 1
     }
 
-    func clear() {
+    func clear() async {
         clearCount += 1
         files = [:]
     }
@@ -142,8 +158,9 @@ final class FakeAttachmentCache: AttachmentCache {
 
 extension AttachmentDraft {
     /// A draft without files on disk, for the model tests; `state` says where it stands. A picture by default; a video
-    /// carries a thumbnail and a duration, a file its name and no thumbnail. With a `fileURL` the thumbnail sits next
-    /// to it as `<name>.thumb.jpg`, so a test that writes both can.
+    /// carries a thumbnail and a duration, a file its name and no thumbnail, and anything that is no picture or video
+    /// takes the file shape. With a `fileURL` the thumbnail sits next to it as `<name>.thumb.jpg`, so a test that
+    /// writes both can.
     static func fixture(id: String = "d1",
                         kind: AttachmentKind = .image,
                         fileURL: URL? = nil,
@@ -151,19 +168,7 @@ extension AttachmentDraft {
                         state: State = .uploaded(.fixture())) -> AttachmentDraft {
         let thumbnailURL = fileURL.map { $0.deletingPathExtension().appendingPathExtension("thumb.jpg") }
             ?? URL(fileURLWithPath: "/tmp/\(id).thumb.jpg")
-        return switch kind {
-        case .image:
-            AttachmentDraft(clientAttachmentID: id,
-                            kind: .image,
-                            fileURL: fileURL ?? URL(fileURLWithPath: "/tmp/\(id).jpg"),
-                            thumbnailURL: thumbnailURL,
-                            contentType: "image/jpeg",
-                            sizeBytes: 812_345,
-                            thumbnailSizeBytes: 41_230,
-                            width: 2048,
-                            height: 1536,
-                            state: state)
-        case .video:
+        return if kind == .video {
             AttachmentDraft(clientAttachmentID: id,
                             kind: .video,
                             fileURL: fileURL ?? URL(fileURLWithPath: "/tmp/\(id).mp4"),
@@ -175,7 +180,18 @@ extension AttachmentDraft {
                             height: 720,
                             durationSeconds: 12,
                             state: state)
-        case .file:
+        } else if kind.isMedia {
+            AttachmentDraft(clientAttachmentID: id,
+                            kind: .image,
+                            fileURL: fileURL ?? URL(fileURLWithPath: "/tmp/\(id).jpg"),
+                            thumbnailURL: thumbnailURL,
+                            contentType: "image/jpeg",
+                            sizeBytes: 812_345,
+                            thumbnailSizeBytes: 41_230,
+                            width: 2048,
+                            height: 1536,
+                            state: state)
+        } else {
             AttachmentDraft(clientAttachmentID: id,
                             kind: .file,
                             fileURL: fileURL ?? URL(fileURLWithPath: "/tmp/\(id).pdf"),

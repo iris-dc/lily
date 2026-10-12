@@ -7,8 +7,13 @@ protocol RealtimeTransport {
     /// Throws `RealtimeTransportError.unauthorized` when the token is refused and `.unavailable` when this transport
     /// never connects; anything else is a transient failure worth a backoff. Must honour cancellation (throw
     /// `CancellationError` promptly): `close()` cancels a connect in flight and every later connect waits for it.
+    /// The implementation reads the `AuthTokenProvider`'s token afresh here and on every subscribe; the controller
+    /// refreshes it before each reconnect's connect, and the awaits are sequential, so the read here sees the fresh
+    /// one. A handshake that completes after the cancellation is tolerated: the controller disconnects what it opened.
     func connect(endpoint: URL) async throws
     func subscribe(to channel: RealtimeChannel) -> AsyncThrowingStream<RealtimeEnvelope, any Error>
-    /// Ends every subscription and closes the connection.
+    /// Ends every subscription and closes the connection. Idempotent and safe at any time: during an in-flight
+    /// `connect` (then it must close what the handshake still opens, or make that connect throw) and again afterwards;
+    /// the controller calls it twice for one socket when a `close()` lands mid-handshake.
     func disconnect() async
 }

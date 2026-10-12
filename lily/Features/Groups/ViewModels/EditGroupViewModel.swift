@@ -1,7 +1,8 @@
 import Foundation
 import Observation
 
-/// The settings of an existing group as a draft; saved once, then handed to Mine and the detail behind the sheet.
+/// The settings of an existing group as a draft; saved once, then handed to the detail behind the sheet, which
+/// writes Mine.
 @Observable
 final class EditGroupViewModel {
     var draft: GroupDraft
@@ -11,21 +12,18 @@ final class EditGroupViewModel {
 
     private let original: SportGroup
     private let repository: any GroupRepository
-    private let store: MyGroupsStore
     private let reporter: GroupErrorReporter
     private let logger: any Logging
     private let onChange: @MainActor (SportGroup) -> Void
 
     init(group: SportGroup,
          repository: any GroupRepository,
-         store: MyGroupsStore,
          reporter: GroupErrorReporter,
          logger: any Logging,
          onChange: @escaping @MainActor (SportGroup) -> Void) {
         self.original = group
         self.draft = GroupDraft(editing: group)
         self.repository = repository
-        self.store = store
         self.reporter = reporter
         self.logger = logger
         self.onChange = onChange
@@ -52,7 +50,6 @@ final class EditGroupViewModel {
         do {
             let group = try await repository.update(id: original.id, draft)
             updatedGroup = group
-            store.replace(group)
             onChange(group)
             logger.info(.groups, "Group \(group.id) updated")
         } catch {

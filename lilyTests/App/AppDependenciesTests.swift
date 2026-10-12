@@ -130,10 +130,10 @@ struct AppDependenciesTests {
         let controller = dependencies.sessionController
 
         #expect(await controller.signUp(email: "a@b.co", password: "long-enough") == .confirmationRequired)
-        #expect(await controller.confirmSignUp(email: "a@b.co", code: "000000", password: "long-enough") == false)
+        #expect(await controller.confirmSignUp(email: "a@b.co", code: "000000", password: "long-enough") == .failed)
         #expect(dependencies.errorCenter.current?.error == .invalidConfirmationCode)
         let code = AppConfig.Auth.mockConfirmationCode
-        #expect(await controller.confirmSignUp(email: "a@b.co", code: code, password: "long-enough"))
+        #expect(await controller.confirmSignUp(email: "a@b.co", code: code, password: "long-enough") == .signedIn)
         #expect(controller.state.user != nil)
     }
 

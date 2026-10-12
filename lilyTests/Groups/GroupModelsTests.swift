@@ -52,6 +52,23 @@ struct GroupModelsTests {
         #expect(group.kind == .group && group.counterpart == nil, "a payload without kind is a community")
     }
 
+    /// Mine's order: the newest message first, silent groups by their creation, a tie by name; strict, so a group never
+    /// precedes itself.
+    @Test func mineOrderPutsTheLatestActivityFirstAndTiesByName() {
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        let busy = SportGroup.fixture(id: "busy", name: "Zebra", lastMessageAt: base + 60, createdAt: base - 1000)
+        let silentNewer = SportGroup.fixture(id: "silent-newer", name: "Yak", createdAt: base - 10)
+        let silentOlder = SportGroup.fixture(id: "silent-older", name: "Aardvark", createdAt: base - 500)
+        let twin = SportGroup.fixture(id: "twin", name: "Xerus", createdAt: base - 10)
+
+        let ordered = [silentOlder, twin, silentNewer, busy].sorted(by: SportGroup.mineOrder).map(\.id)
+        #expect(ordered == ["busy", "twin", "silent-newer", "silent-older"])
+        #expect(!SportGroup.mineOrder(silentNewer, busy), "a silent group never beats a newer message, whatever its name")
+        #expect(SportGroup.mineOrder(silentNewer, silentOlder) && !SportGroup.mineOrder(silentOlder, silentNewer),
+                "creation, not the earlier name, orders silent groups")
+        #expect(!SportGroup.mineOrder(twin, twin), "strict: a group never precedes itself")
+    }
+
     /// A direct conversation is a `Group` with `kind` and the other person; both survive a round trip and every copy.
     @Test func aConversationDecodesItsKindAndCounterpartAndRoundTrips() throws {
         let conversation = try ContractSamples.decode(SportGroup.self, from: ContractSamples.conversation)

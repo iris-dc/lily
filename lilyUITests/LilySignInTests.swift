@@ -61,4 +61,38 @@ final class LilySignInTests: LilyUITestCase {
 
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10), "a confirmed sign-up must sign the user in")
     }
+
+    /// With `-mock-terms-pending` the mock account owes the current terms, so the sheet comes up as soon as the
+    /// account loaded after the sign-in; it cannot be swiped away, and "I agree" (or "Sign out") is the only way on.
+    /// The first gated write, a chat message, then goes through.
+    @MainActor
+    func testANewAccountAcceptsTheTermsBeforeItsFirstWrite() {
+        relaunch(appending: "-mock-terms-pending")
+        tapSignInWithApple()
+
+        let accept = app.buttons["terms-accept"]
+        XCTAssertTrue(accept.waitForExistence(timeout: 10), "a new account is asked for the terms once its account loaded")
+        XCTAssertTrue(app.staticTexts["Before you join in"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["terms-sign-out"].waitForExistence(timeout: 5),
+                      "the only way out without agreeing is signing out")
+        attachScreenshot(named: "terms-sheet")
+
+        app.swipeDown()
+        waitUntilHittableAndStill(accept)
+        XCTAssertTrue(accept.isHittable, "the sheet cannot be swiped away")
+
+        accept.tap()
+        XCTAssertTrue(accept.waitForNonExistence(timeout: 10), "the recorded acceptance closes the sheet")
+
+        openChatsTab()
+        let kickers = app.buttons["group-row-mock-group-kickers"]
+        XCTAssertTrue(kickers.waitForExistence(timeout: 10))
+        kickers.tap()
+        XCTAssertTrue(app.navigationBars["Kreuzberg Kickers"].waitForExistence(timeout: 10), "a Chats row opens the room")
+
+        let text = "See you at seven"
+        enter(text, into: app.descendants(matching: .any)["chat-composer"])
+        app.buttons["chat-send"].tap()
+        XCTAssertTrue(app.staticTexts[text].waitForExistence(timeout: 10), "the write goes through once the terms are accepted")
+    }
 }

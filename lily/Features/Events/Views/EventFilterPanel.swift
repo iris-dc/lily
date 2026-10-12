@@ -130,7 +130,7 @@ struct EventFilterPanel: View {
             Spacer()
             Picker(Copy.level, selection: binding(\.skillLevel)) {
                 Text(Copy.anyLevel).tag(SkillLevel?.none)
-                ForEach(SkillLevel.allCases, id: \.self) { level in
+                ForEach(SkillLevel.known, id: \.self) { level in
                     Text(level.displayName).tag(SkillLevel?.some(level))
                 }
             }

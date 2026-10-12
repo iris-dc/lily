@@ -1,6 +1,7 @@
 import Foundation
 
-/// Identifiers of the Groups, chat and moderation screens; mirrored by hand in `lilyUITests` like the rest.
+/// Identifiers of the Groups and chat screens; mirrored by hand in `lilyUITests` like the rest. The terms and report
+/// sheets have theirs in `AccessibilityIdentifiers+Moderation.swift`.
 nonisolated extension AccessibilityIdentifiers {
     /// The Discover screen's type dropdown; the Explore carousel and its "See all".
     static let groupsTypeFilter = "groups-type-filter"
@@ -36,8 +37,6 @@ nonisolated extension AccessibilityIdentifiers {
     static let createGroupSubmit = "create-group-submit"
     static let createGroupCancel = "create-group-cancel"
     static let createGroup = "create-group"
-    /// The terms sheet; the report sheet's identifiers are in `AccessibilityIdentifiers+Moderation.swift`.
-    static let termsAccept = "terms-accept"
 
     static func groupRow(_ id: String) -> String {
         "group-row-\(id)"

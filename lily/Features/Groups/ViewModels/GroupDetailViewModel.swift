@@ -2,7 +2,8 @@ import Foundation
 import Observation
 
 /// Owns the group shown on the detail screen and the join, leave and delete actions on it. The server's answer
-/// replaces the group here, in Mine through `MyGroupsStore`, and in the list behind through `onChange`.
+/// replaces the group here and in Mine through `MyGroupsStore`, whose write bumps `groupChanges`, which the lists
+/// behind reload on.
 @Observable
 final class GroupDetailViewModel {
     private(set) var group: SportGroup
@@ -19,8 +20,10 @@ final class GroupDetailViewModel {
     private let logger: any Logging
     private let tryAgainDelay: Duration
     private let now: () -> Date
-    private let onChange: @MainActor (SportGroup) -> Void
     private var hasRecordedView = false
+    /// Where Mine stood (loads answered, changes written) when the detail last looked, so a store that has not moved
+    /// since never replaces the group here.
+    private var storeMark: (loads: Int, changes: Int)
 
     /// What the user asked for; an unknown outcome is settled by whether a fresh group shows it.
     private enum Intent {
@@ -44,8 +47,7 @@ final class GroupDetailViewModel {
          recorder: any InteractionRecorder,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
-         now: @escaping () -> Date = { .now },
-         onChange: @escaping @MainActor (SportGroup) -> Void) {
+         now: @escaping () -> Date = { .now }) {
         self.group = group
         self.context = context
         self.repository = repository
@@ -56,11 +58,16 @@ final class GroupDetailViewModel {
         self.logger = logger
         self.tryAgainDelay = tryAgainDelay
         self.now = now
-        self.onChange = onChange
+        storeMark = (store.loadVersion, store.changesVersion)
     }
 
     var access: GroupAccess {
         GroupAccess(group: group, userID: identity.currentUserID)
+    }
+
+    /// Members, and every signed-in caller of a public group; guests never.
+    var showsRoster: Bool {
+        access.canSeeMembers(in: group)
     }
 
     /// Members get "Open chat", except from the chat itself (the path would cycle) and while chat is switched off.
@@ -88,9 +95,20 @@ final class GroupDetailViewModel {
     }
 
     /// The group as a sibling screen just changed it (the roster removing a member, the edit sheet saving): shown
-    /// here and handed on exactly like the detail's own writes.
+    /// here and written to Mine exactly like the detail's own writes.
     func accept(_ updated: SportGroup) {
         apply(updated)
+    }
+
+    /// Mine moved since the detail last looked (a reload, a live update, a sibling's write): the group as Mine now has it
+    /// replaces the copy here. A group Mine does not hold (a non-member's public group) keeps its copy, and a group pushed
+    /// fresher than Mine's copy is not replaced on appearance, because the store has not moved since.
+    func refreshFromStore() {
+        let mark = (loads: store.loadVersion, changes: store.changesVersion)
+        guard mark != storeMark, !isGone else { return }
+        storeMark = mark
+        guard let stored = store.groups.first(where: { $0.id == group.id }) else { return }
+        group = stored
     }
 
     /// One change at a time; `TRY_AGAIN` is repeated once. A refusal is shown after the group on screen was brought
@@ -162,7 +180,6 @@ final class GroupDetailViewModel {
 
     private func apply(_ updated: SportGroup) {
         group = updated
-        onChange(updated)
         if updated.isMember, !updated.isDeleted {
             store.add(updated)
         } else if store.groups.contains(where: { $0.id == updated.id }) {

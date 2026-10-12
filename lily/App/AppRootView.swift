@@ -1,13 +1,20 @@
 import SwiftUI
 
-/// Switches between launch, welcome and the main shell based on session state, and runs the per-user sync (account,
-/// realtime connection, groups, inbox) whenever the scene phase or the user changes.
+/// Switches between launch, welcome and the main shell based on session state, runs the per-user sync (account,
+/// realtime connection, groups, inbox) whenever the scene phase or the user changes, and presents the terms sheet
+/// while a signed-in caller owes the current terms.
 struct AppRootView: View {
     let dependencies: AppDependencies
+    @State private var terms: TermsViewModel
     @Environment(\.scenePhase) private var scenePhase
 
     private var session: SessionController { dependencies.sessionController }
     private var language: LanguageStore { dependencies.language }
+
+    init(dependencies: AppDependencies) {
+        self.dependencies = dependencies
+        _terms = State(initialValue: dependencies.makeTermsViewModel())
+    }
 
     var body: some View {
         Group {
@@ -40,6 +47,16 @@ struct AppRootView: View {
         .onChange(of: dependencies.myGroups.groups) { dependencies.myGroupsDidChange() }
         .onChange(of: dependencies.myGroups.loadVersion) { dependencies.myGroupsDidLoad() }
         .errorPopup(dependencies.errorCenter)
+        .sheet(isPresented: termsPresented) {
+            TermsSheet(viewModel: terms, errorCenter: dependencies.errorCenter)
+        }
+    }
+
+    /// Read-only, because the sheet cannot be dismissed: `isPresented` follows `MeStore.needsTerms` for a signed-in
+    /// caller, so the sheet comes up once the account loaded owing the terms or a write answered `TERMS_REQUIRED`, and
+    /// goes once the acceptance is recorded or the session ends.
+    private var termsPresented: Binding<Bool> {
+        Binding(get: { terms.isPresented }, set: { _ in })
     }
 
     /// Which root is on screen; a change crossfades, so launch -> landing is as soft as landing -> shell.

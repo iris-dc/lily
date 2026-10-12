@@ -44,9 +44,9 @@ private struct GroupDestinations: ViewModifier {
         } else if group.isTournamentRoom {
             tournamentDetail(for: TournamentDestination(id: group.id, name: group.name))
         } else {
-            // Home shows the caller's groups from the store and Discover searches again after a change, so nothing
-            // listens here.
-            GroupDetailView(viewModel: dependencies.makeGroupDetailViewModel(for: group, context: context) { _ in },
+            // Home draws Mine from the store and Discover searches again on `groupChanges`, so the detail hands
+            // nothing back.
+            GroupDetailView(viewModel: dependencies.makeGroupDetailViewModel(for: group, context: context),
                             dependencies: dependencies)
         }
     }

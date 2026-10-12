@@ -69,40 +69,6 @@ struct MeStoreTests {
         #expect(store.account != nil && repository.meCallCount == 2)
     }
 
-    @Test func outdatedTermsAreOwedUntilAccepted() async {
-        repository.meResult = .success(.fixture(termsVersion: 2, acceptedTermsVersion: 1))
-        let store = makeStore()
-        await store.loadIfNeeded()
-        #expect(store.needsTerms)
-
-        #expect(await store.acceptTerms())
-
-        #expect(repository.acceptedVersions == [2] && !store.needsTerms)
-        #expect(logger.messages(in: .groups, at: .info).contains("Terms accepted (version 2)"))
-    }
-
-    @Test func aRefusedWriteRaisesTheTermsAgain() async {
-        let store = makeStore()
-        await store.loadIfNeeded()
-        #expect(!store.needsTerms)
-
-        store.noteTermsRequired()
-        #expect(store.needsTerms)
-
-        #expect(await store.acceptTerms())
-        #expect(!store.needsTerms)
-    }
-
-    @Test func aFailedAcceptanceReachesThePopup() async {
-        repository.acceptError = .network
-        let store = makeStore()
-        await store.loadIfNeeded()
-
-        #expect(await store.acceptTerms() == false)
-        #expect(errorCenter.current?.error == .network)
-        #expect(await makeStore().acceptTerms() == false, "nothing to accept before the account is known")
-    }
-
     @Test func signOutClearsTheAccount() async {
         let store = makeStore()
         await store.loadIfNeeded()

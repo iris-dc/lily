@@ -21,9 +21,10 @@ struct TournamentDetailViewModelTests {
         let interaction = harness.recorder.interactions.first
         #expect(interaction?.tournamentId == "t" && interaction?.tournamentFormat == .roundRobin)
         #expect(interaction?.eventType == .tableTennis)
-        #expect(viewModel.organizerProfile?.userId == "seed-marta" && viewModel.showsEntries)
-        #expect(!viewModel.canEdit && !viewModel.canInvite && viewModel.canReport, "an outsider may report")
-        #expect(viewModel.showsMenu)
+        let permissions = viewModel.permissions
+        #expect(permissions.organizerProfile?.userId == "seed-marta" && permissions.showsEntries)
+        #expect(!permissions.canEdit && !permissions.canInvite && permissions.canReport, "an outsider may report")
+        #expect(permissions.showsMenu)
         #expect(viewModel.reportTarget == .tournament(id: "t") && viewModel.winnerName == nil)
     }
 
@@ -107,11 +108,13 @@ struct TournamentDetailViewModelTests {
         harness.repository.details["t"] = .fixture(tournament: .fixture(organizerUserId: TestFixtures.user.id))
         let viewModel = harness.makeDetailViewModel(for: destination)
         await viewModel.load()
-        #expect(viewModel.role == .organizer && viewModel.canEdit && viewModel.canCancel && viewModel.canRemoveEntries)
-        #expect(viewModel.canOpenChat && viewModel.showsMenu && viewModel.organizerProfile == nil)
+        let permissions = viewModel.permissions
+        #expect(viewModel.role == .organizer && permissions.canEdit && permissions.canCancel && permissions.canRemoveEntries)
+        #expect(permissions.canOpenChat && permissions.showsMenu && permissions.organizerProfile == nil)
 
         await viewModel.cancel()
-        #expect(viewModel.tournament?.status == .cancelled && !viewModel.canEdit && !viewModel.canCancel)
+        let afterCancel = viewModel.permissions
+        #expect(viewModel.tournament?.status == .cancelled && !afterCancel.canEdit && !afterCancel.canCancel)
         #expect(harness.sink.tournaments.last?.status == .cancelled && harness.repository.cancelledIDs == ["t"])
         #expect(harness.logs(.info).contains { $0.contains("cancelled") })
     }
@@ -136,10 +139,10 @@ struct TournamentDetailViewModelTests {
         harness.repository.details["t"] = .fixture()
         let viewModel = harness.makeDetailViewModel(for: destination)
         await viewModel.load()
-        #expect(viewModel.role == .guest && viewModel.participation == .hidden && !viewModel.showsEntries)
+        #expect(viewModel.role == .guest && viewModel.participation == .hidden && !viewModel.permissions.showsEntries)
 
         await viewModel.join()
-        #expect(harness.repository.joins.isEmpty && viewModel.organizerProfile == nil)
+        #expect(harness.repository.joins.isEmpty && viewModel.permissions.organizerProfile == nil)
     }
 
     @Test func aTermsRefusalRaisesTheTermsSheet() async {

@@ -29,6 +29,12 @@ struct UserDefaultsSessionStoreTests {
         #expect(store.load() == .guest)
     }
 
+    @Test func roundTripsThePendingSignOutMarker() {
+        let store = makeStore()
+        store.save(.signingOut)
+        #expect(store.load() == .signingOut)
+    }
+
     @Test func clearRemovesValue() {
         let store = makeStore()
         store.save(.guest)

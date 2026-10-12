@@ -4,9 +4,19 @@ import Foundation
 nonisolated enum GroupDetailSection: Hashable, CaseIterable, Sendable {
     case events, tournaments, members
 
-    /// The segments the picker offers; tournaments only while the feature is switched on.
-    static var available: [GroupDetailSection] {
-        allCases.filter { $0 != .tournaments || AppConfig.FeatureFlags.tournaments }
+    /// The segments the picker offers `access`: events for everyone who can see the group, tournaments while the
+    /// feature is on and the group is public or the caller is in it (a private group's list answers 404 to an outsider),
+    /// the roster for whoever may see it.
+    static func available(for access: GroupAccess,
+                          in group: SportGroup,
+                          tournamentsEnabled: Bool = AppConfig.FeatureFlags.tournaments) -> [GroupDetailSection] {
+        allCases.filter { section in
+            switch section {
+            case .events: true
+            case .tournaments: tournamentsEnabled && (group.isPublic || access.isMember)
+            case .members: access.canSeeMembers(in: group)
+            }
+        }
     }
 
     var title: String {

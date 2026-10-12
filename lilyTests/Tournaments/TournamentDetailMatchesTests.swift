@@ -18,10 +18,7 @@ struct TournamentDetailMatchesTests {
     }
 
     private func loaded(_ tournament: Tournament, entries: [TournamentEntry]) async -> TournamentDetailViewModel {
-        harness.repository.details["t"] = .fixture(tournament: tournament, entries: entries)
-        let viewModel = harness.makeDetailViewModel(for: destination)
-        await viewModel.load()
-        return viewModel
+        await harness.loadedDetailViewModel(tournament, entries: entries, for: destination)
     }
 
     private var cup: Tournament {
@@ -42,15 +39,17 @@ struct TournamentDetailMatchesTests {
                                      entryCount: 1,
                                      organizerUserId: TestFixtures.user.id)
         let few = await loaded(one, entries: [teams[0]])
-        #expect(few.showsStart && !few.canStart && few.startBlockedReason == "Needs at least 2 teams")
+        #expect(few.permissions.showsStart && !few.permissions.canStart)
+        #expect(few.permissions.startBlockedReason == "Needs at least 2 teams")
         let soloFew = await loaded(.fixture(id: "t", format: .roundRobin, entryCount: 2, organizerUserId: TestFixtures.user.id),
                                    entries: Array(teams.prefix(2)))
-        #expect(soloFew.startBlockedReason == "Needs at least 3 players")
+        #expect(soloFew.permissions.startBlockedReason == "Needs at least 3 players")
 
         let ready = await loaded(cup, entries: teams)
-        #expect(ready.showsStart && ready.canStart && ready.startBlockedReason == nil && !ready.hasMatches)
+        #expect(ready.permissions.showsStart && ready.permissions.canStart && !ready.hasMatches)
+        #expect(ready.permissions.startBlockedReason == nil)
         let player = await loaded(.fixture(id: "t", entryCount: 4, myEntryId: "e1"), entries: teams)
-        #expect(!player.showsStart && player.startBlockedReason == nil)
+        #expect(!player.permissions.showsStart && !player.permissions.canStart && player.permissions.startBlockedReason == nil)
     }
 
     @Test func startDrawsTheMatchesShowsThemAndHandsTheTournamentOn() async {
@@ -58,7 +57,7 @@ struct TournamentDetailMatchesTests {
 
         await viewModel.start()
 
-        #expect(viewModel.tournament?.status == .inProgress && viewModel.hasMatches && !viewModel.showsStart)
+        #expect(viewModel.tournament?.status == .inProgress && viewModel.hasMatches && !viewModel.permissions.showsStart)
         #expect(viewModel.detail?.matches.count == 3 && harness.repository.startedIDs == ["t"])
         #expect(harness.sink.tournaments.last?.status == .inProgress)
         #expect(harness.logs(.info).contains { $0.contains("started with 3 matches") })
@@ -90,7 +89,9 @@ struct TournamentDetailMatchesTests {
         #expect(harness.sink.tournaments.count == 4, "the start and every result reached the lists")
     }
 
-    @Test func aSideReportsThenTheOtherSideConfirmsOrDisputes() async throws {
+    /// Report, dispute, re-report and confirm reach the repository and each answer replaces the detail; who may do what
+    /// is owned by `MatchActionsTests` and `MockTournamentRepositoryRulesTests`, so one caller walks every route.
+    @Test func everyResultRouteReachesTheRepositoryAndItsAnswerReplacesTheDetail() async throws {
         let players = (1...3).map { seed in
             TournamentEntry.fixture(id: "p\(seed)", name: "P\(seed)", captainUserId: Self.captain(seed), seed: seed)
         }
@@ -110,7 +111,6 @@ struct TournamentDetailMatchesTests {
         #expect(reported.status == .reported && viewModel.actions(for: reported).awaitsOtherSide)
         #expect(harness.logs(.info).contains { $0.contains("result reported") })
 
-        // The other side's view of the same match: confirm and dispute go to the repository and come back as the detail.
         #expect(await viewModel.dispute(reported))
         #expect(viewModel.detail?.match(id: mine.id)?.isDisputed == true && harness.repository.disputedMatchIDs == [mine.id])
         let reportedAgain = await viewModel.report(mine, scoreA: 3, scoreB: 1)
@@ -128,7 +128,7 @@ struct TournamentDetailMatchesTests {
         #expect(await viewModel.report(semi, scoreA: 1, scoreB: 0) == false)
 
         #expect(viewModel.detail?.match(id: "r01p001")?.status == .pending && harness.presentedError == .matchNotReady)
-        #expect(harness.logs(.error).contains { $0.contains("Report result failed") })
+        #expect(harness.logs(.warning).contains { $0.contains("Report result failed") } && harness.logs(.error).isEmpty)
         harness.identity.currentUserID = nil
         #expect(await viewModel.confirm(semi) == false, "a guest never writes")
     }

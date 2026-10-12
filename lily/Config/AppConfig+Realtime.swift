@@ -11,6 +11,10 @@ nonisolated extension AppConfig {
         static let maxConnectionAge: TimeInterval = 21_600
         static let reconnectBackoffSeconds: [TimeInterval] = [1, 2, 4, 8, 16, 30]
         static let reconnectJitter = 0.2
+        /// A forced token refresh that answers nil (`CognitoAuthService.token` swallows every error, a lost network
+        /// included) is retried this many times along `reconnectBackoffSeconds` (its six entries, then the last twice:
+        /// about two minutes) before the connection waits for the next foreground.
+        static let maxReconnectsWithoutToken = 8
         /// Rooms kept subscribed besides the open one: the most recently active groups.
         static let maxRoomSubscriptions = 10
         /// An epoch change makes every member resubscribe; each waits this much per member, capped, so they do not herd.

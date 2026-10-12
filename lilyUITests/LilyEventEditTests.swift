@@ -4,27 +4,15 @@ import XCTest
 /// reaches the detail and the list behind it. Identifiers mirror `AccessibilityIdentifiers`.
 final class LilyEventEditTests: LilyUITestCase {
     /// Creates a game (the mock location fills the spot), opens it from Home, renames it through Edit and finds the new
-    /// title on the detail and on Home. Nothing scrolls before the tab tap: a scrolled list minimises the tab bar.
+    /// title on the detail and on Home.
     @MainActor
     func testHostEditsTheirGameFromTheDetail() {
-        tapSignInWithApple()
-        tapCreateButton()
-        XCTAssertTrue(app.navigationBars["New game"].waitForExistence(timeout: 5))
-        enter("Thursday five-a-side", into: app.textFields["create-title"])
-        enter("Test Park", into: app.textFields["create-location-name"])
+        startCreating("Thursday five-a-side")
         app.buttons["create-submit"].tap()
         XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
 
-        app.tabBars.buttons["Home"].tap()
-        let card = app.staticTexts["Thursday five-a-side"]
-        if !card.waitForExistence(timeout: 10) { app.swipeUp() }
-        XCTAssertTrue(card.waitForExistence(timeout: 5), "the hosted game must be listed under Home")
-        card.tap()
-
-        let edit = app.buttons["event-edit"]
-        XCTAssertTrue(edit.waitForExistence(timeout: 5), "the host must see Edit")
-        edit.tap()
-        XCTAssertTrue(app.navigationBars["Edit game"].waitForExistence(timeout: 5))
+        openFromHome("Thursday five-a-side")
+        openEditSheet()
         let save = app.buttons["create-submit"]
         XCTAssertTrue(save.waitForExistence(timeout: 5))
         XCTAssertFalse(save.isEnabled, "nothing to save until something changed")
@@ -39,6 +27,37 @@ final class LilyEventEditTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Friday five-a-side"].waitForExistence(timeout: 5), "the list behind must show it too")
         XCTAssertFalse(app.staticTexts["Thursday five-a-side"].exists, "the old title must be gone")
+    }
+
+    /// Opening the map on the game's own spot is no change: the arrival settles nudge the pin by centimetres and must
+    /// not turn Save on; a drag must, and the row must read the new spot.
+    @MainActor
+    func testOpeningTheMapOnAnEditedGameTurnsSaveOnOnlyAfterADrag() {
+        startCreating("Map check")
+        app.buttons["create-submit"].tap()
+        XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        openFromHome("Map check")
+        openEditSheet()
+        let save = app.buttons["create-submit"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5))
+        XCTAssertFalse(save.isEnabled, "nothing to save until something changed")
+
+        let row = app.descendants(matching: .any)["create-pick-on-map"].firstMatch
+        scrollUntilHittable(row)
+        let before = spotText(of: row)
+        openSpotPicker(from: row)
+        leaveSpotPicker()
+        XCTAssertFalse(save.isEnabled, "opening the map on the spot is no change")
+        XCTAssertEqual(spotText(of: row), before, "the spot must read as before")
+
+        let map = openSpotPicker(from: row)
+        let target = map.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4))
+        map.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+            .press(forDuration: 0.2, thenDragTo: target, withVelocity: .default, thenHoldForDuration: 0.3)
+        waitUntilHittableAndStill(map)
+        leaveSpotPicker()
+        XCTAssertTrue(save.wait(for: \.isEnabled, toEqual: true, timeout: 5), "a dragged spot is something to save")
+        XCTAssertNotEqual(spotText(of: row), before, "the row must show the new spot")
     }
 
     /// "At least" turns the stepper's count into the number needed, and the created game counts towards it instead of
@@ -72,14 +91,17 @@ final class LilyEventEditTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["1 joined"].waitForExistence(timeout: 5), "the count stands alone")
     }
 
-    /// Signs in, opens the create sheet and fills the two required texts; the spot comes from the mock location.
+    /// Signs in, opens the create sheet and fills the two required texts; the spot comes from the mock location. The
+    /// place row is dragged into the tree first: the event-type chips push it below the fold on a 6.1-inch phone.
     @MainActor
     private func startCreating(_ title: String) {
         tapSignInWithApple()
         tapCreateButton()
         XCTAssertTrue(app.navigationBars["New game"].waitForExistence(timeout: 5))
         enter(title, into: app.textFields["create-title"])
-        enter("Canal Path", into: app.textFields["create-location-name"])
+        let locationName = app.textFields["create-location-name"]
+        dragUpUntilExists(locationName)
+        enter("Canal Path", into: locationName)
     }
 
     /// Taps a segment of the Players picker, scrolling it into view first; a segmented picker's segments are buttons.
@@ -111,6 +133,39 @@ final class LilyEventEditTests: LilyUITestCase {
 
         XCTAssertTrue(app.buttons["Join"].waitForExistence(timeout: 5), "the detail must be open")
         XCTAssertFalse(app.buttons["event-edit"].exists, "only the host edits")
+    }
+
+    /// Taps Edit on the open detail and waits for the sheet; the host alone sees the button.
+    @MainActor
+    private func openEditSheet() {
+        let edit = app.buttons["event-edit"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 5), "the host must see Edit")
+        edit.tap()
+        XCTAssertTrue(app.navigationBars["Edit game"].waitForExistence(timeout: 5))
+    }
+
+    /// Pushes the location picker from the form's map row and returns its map once it is still.
+    @MainActor
+    @discardableResult
+    private func openSpotPicker(from row: XCUIElement) -> XCUIElement {
+        row.tap()
+        let map = app.maps.firstMatch
+        XCTAssertTrue(map.waitForExistence(timeout: 5), "the picker must open")
+        waitUntilHittableAndStill(map)
+        return map
+    }
+
+    /// Leaves the picker through Done and waits for the form; Done and Back keep the same spot.
+    @MainActor
+    private func leaveSpotPicker() {
+        app.buttons["create-map-done"].tap()
+        XCTAssertTrue(app.navigationBars["Edit game"].waitForExistence(timeout: 5))
+    }
+
+    /// What the map row reads, label and value together, so the coordinate counts wherever the link exposes it.
+    @MainActor
+    private func spotText(of row: XCUIElement) -> String {
+        "\(row.label)|\(row.value as? String ?? "")"
     }
 
     /// Puts the cursor at the end of the field's text, deletes it and types the replacement; the only way to replace a

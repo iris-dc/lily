@@ -121,6 +121,16 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     var hasUnread: Bool { membership?.hasUnread ?? false }
     /// The moment the group was last active, for the Mine order; a silent group counts from its creation.
     var lastActivityAt: Date { lastMessageAt ?? createdAt }
+    /// Mine's order, the contract with the backend's `MINE_ORDER`: the most recently active first (`lastActivityAt`,
+    /// a silent group counting from its creation), ties by name. Every Mine insertion and the mock go through it.
+    static func mineOrder(_ lhs: SportGroup, _ rhs: SportGroup) -> Bool {
+        lhs.lastActivityAt != rhs.lastActivityAt ? lhs.lastActivityAt > rhs.lastActivityAt : lhs.name < rhs.name
+    }
+    /// Whether the group was active on the calendar day of `day` (a message, or its creation for a silent group): the
+    /// row's "Active today".
+    func isActive(on day: Date, calendar: Calendar = .current) -> Bool {
+        calendar.isDate(lastActivityAt, inSameDayAs: day)
+    }
 
     /// Meters from `origin` to the group's place; `nil` while the user's position is unknown or the group has none.
     func distance(from origin: Coordinate?) -> Measurement<UnitLength>? {

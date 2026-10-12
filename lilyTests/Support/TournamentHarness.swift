@@ -92,6 +92,17 @@ final class TournamentHarness {
                                          })
     }
 
+    /// A detail view model with its tournament loaded: the fixture detail is stored under the destination's id first.
+    func loadedDetailViewModel(_ tournament: Tournament,
+                               entries: [TournamentEntry] = [.fixture()],
+                               for destination: TournamentDestination,
+                               pushOptIn: (any PushOptIn)? = nil) async -> TournamentDetailViewModel {
+        repository.details[destination.id] = .fixture(tournament: tournament, entries: entries)
+        let viewModel = makeDetailViewModel(for: destination, pushOptIn: pushOptIn)
+        await viewModel.load()
+        return viewModel
+    }
+
     func makeCreateViewModel(locationService: (any LocationService)? = nil,
                              lockedGroup: EventGroupRef? = nil) -> CreateTournamentViewModel {
         CreateTournamentViewModel(repository: repository,
@@ -119,5 +130,18 @@ final class TournamentHarness {
     func loadGroups(_ groups: [SportGroup]) async {
         groupRepository.result = .success(groups)
         await self.groups.reload()
+    }
+}
+
+/// Counts how often a view model offered the reminder permission. `onOffer` runs first, so a test can read the view
+/// model's state at the moment of the offer.
+@MainActor
+final class SpyPushOptIn: PushOptIn {
+    var onOffer: () -> Void = {}
+    private(set) var offerCount = 0
+
+    func offerReminders() async {
+        onOffer()
+        offerCount += 1
     }
 }

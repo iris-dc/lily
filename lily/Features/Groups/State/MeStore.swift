@@ -3,13 +3,17 @@ import Observation
 
 /// The caller's `GET /api/me`, loaded once per signed-in session: whether the terms are owed, whether they operate,
 /// and where live chat connects. A failed load is logged and not shown: a write the terms gate refuses reaches the
-/// popup on its own and re-raises the sheet through `noteTermsRequired()`.
+/// popup on its own and re-raises the sheet through `noteTermsRequired()`. An acceptance re-reads the account first,
+/// so the version it sends is the current one (Laurel answers 400 for a stale one).
 @Observable
 final class MeStore: SessionObserver {
     private(set) var account: Account?
-    /// Set when a write answered `TERMS_REQUIRED` (a race, or a version bump since the load); cleared by acceptance.
+    /// Set when a write answered `TERMS_REQUIRED` (a race, or a version bump since the load); cleared by acceptance
+    /// and by a load that shows the terms accepted.
     private(set) var termsOutdated = false
     private var loadedUserID: String?
+    /// Why the last load failed, kept for an acceptance whose reload left no account; cleared by a load that landed.
+    private var loadFailure: AppError?
     private let load = SingleFlight()
 
     private let repository: any MeRepository
@@ -58,6 +62,8 @@ final class MeStore: SessionObserver {
             guard identity.isStillCaller(userID, orDrop: "Account answer", logger: logger) else { return }
             account = loaded
             loadedUserID = userID
+            loadFailure = nil
+            if loaded.termsAccepted { termsOutdated = false }
             logger.info(.groups, "Account loaded; terms accepted: \(loaded.termsAccepted)")
         } catch {
             guard !AppError.isCancellation(error) else {
@@ -65,24 +71,39 @@ final class MeStore: SessionObserver {
                 return
             }
             guard identity.isStillCaller(userID, orDrop: "Account answer", logger: logger) else { return }
+            loadFailure = AppError.wrapping(error)
             logger.warning(.groups, "Loading the account failed: \(error)")
         }
     }
 
-    /// Accepts the version the backend named. `false` when it could not be recorded; the popup says why.
+    /// Re-reads the account (joining a load in flight) and accepts the version it names now, so a version bumped
+    /// since the screen was opened is accepted rather than refused as stale. `false` when nothing was recorded; the
+    /// popup says why, unless the caller signed out meanwhile or left mid-request.
     func acceptTerms() async -> Bool {
-        guard let account else { return false }
+        await reload()
+        guard let account else {
+            reportUnreadableAccount()
+            return false
+        }
         do {
             let acceptance = try await repository.acceptTerms(version: account.termsVersion)
             self.account = account.acceptingTerms(acceptance)
             termsOutdated = false
-            logger.info(.groups, "Terms accepted (version \(acceptance.acceptedTermsVersion))")
+            logger.info(.groups, "Terms v\(acceptance.acceptedTermsVersion) accepted")
             return true
         } catch {
+            guard !AppError.isCancellation(error) else { return false }
             logger.error(.groups, "Accepting the terms failed: \(error)")
             errorCenter.report(error)
             return false
         }
+    }
+
+    /// No account after a reload is a failed read, which the popup shows, or a sign-out meanwhile, which is quiet.
+    private func reportUnreadableAccount() {
+        guard let loadFailure else { return }
+        logger.error(.groups, "Accepting the terms failed: the account could not be read: \(loadFailure)")
+        errorCenter.report(loadFailure)
     }
 
     func noteTermsRequired() {
@@ -96,6 +117,7 @@ final class MeStore: SessionObserver {
     private func clear() {
         account = nil
         loadedUserID = nil
+        loadFailure = nil
         termsOutdated = false
     }
 }

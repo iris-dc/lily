@@ -19,7 +19,7 @@ struct GroupLoaderView: View {
             case .loading:
                 ContentScreen { ProgressView() }
             case .loaded(let group):
-                GroupDetailView(viewModel: dependencies.makeGroupDetailViewModel(for: group, context: .standalone) { _ in },
+                GroupDetailView(viewModel: dependencies.makeGroupDetailViewModel(for: group, context: .standalone),
                                 dependencies: dependencies)
             case .notFound:
                 ContentScreen {
@@ -39,7 +39,7 @@ struct GroupLoaderView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .task { await viewModel.load() }
+        .task { await viewModel.loadIfNeeded() }
     }
 }
 

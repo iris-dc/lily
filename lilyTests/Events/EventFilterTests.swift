@@ -37,7 +37,7 @@ struct EventFilterTests {
         filter.toggle(.padel)
         #expect(filter.isActive)
         #expect(filter.includes(.tennis) && filter.includes(.padel) && !filter.includes(.football))
-        #expect(matching(filter).map(\.type).sorted { $0.rawValue < $1.rawValue } == [.padel, .tennis])
+        #expect(matching(filter).map(\.type).sorted { $0.wireName < $1.wireName } == [.padel, .tennis])
     }
 
     @Test func yogaAndOtherAreFilterableTypes() {
@@ -51,12 +51,20 @@ struct EventFilterTests {
         #expect(EventType.other.displayName == "Other")
     }
 
-    /// The create forms and both filter panels draw `EventType.allCases`; a type is never hidden because no loaded game
-    /// has it (Tennis vanished from the Explore panel that way).
-    @Test func everyTypeIsOfferedEverywhereAndOtherComesLast() {
-        #expect(EventType.allCases.last == .other)
-        #expect(EventType.allCases.contains(.tennis) && EventType.allCases.contains(.yoga))
-        #expect(EventTypeChips(isSelected: { _ in false }, onSelect: { _ in }).types == EventType.allCases)
+    /// A type this build does not know draws as Other, but for the filter it is nobody's choice: no selection is no
+    /// criterion, and any selection, Other's included, leaves such a game out.
+    @Test func aFilterNeverMatchesAnUnknownType() {
+        let golf = SportEvent.fixture(type: .unknown("golf"))
+        var filter = EventFilter()
+        #expect(matches(filter, golf), "no type selected is no criterion")
+
+        filter.toggle(.tennis)
+        #expect(!matches(filter, golf))
+
+        filter.toggle(.tennis)
+        filter.toggle(.other)
+        #expect(!matches(filter, golf), "an unknown type draws as Other but is not Other for the filter")
+        #expect(!filter.includes(.unknown("golf")))
     }
 
     @Test func togglingTwiceRemovesTheType() {
@@ -125,6 +133,20 @@ struct EventFilterTests {
         #expect(matching(filter).contains { $0.playerLimit == .minimum && $0.hasPlayersNeeded },
                 "a game that allows extras has open spots past the number it needs")
         #expect(matching(filter).contains { $0.playerLimit == .unlimited }, "a game without a limit always has spots")
+    }
+
+    /// A level this build does not know is treated like no level: the game welcomes anyone as far as the filter can
+    /// tell, so it passes every choice, while a known level still has to match the chosen one.
+    @Test func anUnknownLevelMatchesEveryChoiceLikeNoLevel() {
+        var filter = EventFilter()
+        filter.skillLevel = .advanced
+        #expect(matches(filter, .fixture(skillLevel: .unknown("pro"))))
+        #expect(matches(filter, .fixture(skillLevel: nil)))
+        #expect(matches(filter, .fixture(skillLevel: .advanced)))
+        #expect(!matches(filter, .fixture(skillLevel: .beginner)))
+
+        filter.skillLevel = nil
+        #expect(matches(filter, .fixture(skillLevel: .beginner)), "no choice is no criterion")
     }
 
     @Test func dateWindowKeepsOnlyGamesStartingInsideIt() {

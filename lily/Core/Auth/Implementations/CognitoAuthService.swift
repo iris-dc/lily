@@ -21,12 +21,11 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
 
     func restoreSession() async throws -> AuthSession? {
         guard try await mapped({ try await client.isSignedIn() }) else {
-            if case .signedIn = store.load() {
-                logger.info(.auth, "Dropping cached session: Cognito has none")
-                store.clear()
-            }
+            dropStoreLeftWithoutAPoolSession()
             return nil
         }
+        if await endsLeftoverPoolSession() { return nil }
+        guard await refreshTokenIsAlive() else { return nil }
         if case .signedIn(let session) = store.load() { return session }
         return try await loadAndCacheSession()
     }
@@ -60,9 +59,16 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
         try await mapped { try await client.resendCode(email: email, languageCode: languageCode()) }
     }
 
+    /// The marker is cleared only once the client returned, and only while it is still there: a guest choice or a new
+    /// sign-in stored meanwhile stands.
     func signOut() async throws {
-        store.clear()
+        store.save(.signingOut)
         try await mapped { try await client.signOut() }
+        clearPendingSignOut()
+    }
+
+    private func clearPendingSignOut() {
+        if store.load() == .signingOut { store.clear() }
     }
 
     /// Never throws: a request without a token is answered 401 by the backend, which is the one place that decides.
@@ -83,6 +89,55 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
         }
     }
 
+    /// The store next to no pool session: a cached user is stale, a pending sign-out is complete, a guest choice stands.
+    private func dropStoreLeftWithoutAPoolSession() {
+        switch store.load() {
+        case .signedIn:
+            logger.info(.auth, "Dropping cached session: Cognito has none")
+            store.clear()
+        case .signingOut:
+            logger.info(.auth, "Sign-out already complete at the pool, marker cleared")
+            store.clear()
+        case .guest, nil:
+            break
+        }
+    }
+
+    /// A sign-out marker or a guest choice stored next to a pool session means a sign-out never reached Amplify's
+    /// keychain (or, for a guest, a sign-in was killed between the pool's acceptance and the user read): the pool
+    /// session is ended here and the stored choice stands, so a guest signs in again rather than waking up signed in.
+    private func endsLeftoverPoolSession() async -> Bool {
+        switch store.load() {
+        case .signingOut:
+            logger.info(.auth, "Finishing a sign-out interrupted before the pool was told")
+            if await signOutOfPool(after: "an interrupted sign-out") { clearPendingSignOut() }
+            return true
+        case .guest:
+            logger.info(.auth, "Ending a pool session left behind a guest choice")
+            await signOutOfPool(after: "a guest choice")
+            return true
+        case .signedIn, nil:
+            return false
+        }
+    }
+
+    /// Amplify keeps `isSignedIn` true after the refresh token expired; only a token request tells. Any other failure
+    /// (offline) keeps the session: the backend's 401 is the one place that decides then.
+    private func refreshTokenIsAlive() async -> Bool {
+        do {
+            _ = try await mapped { try await client.accessToken() }
+            return true
+        } catch AppError.sessionExpired {
+            logger.warning(.auth, "Dropping cached session: the refresh token expired")
+            if case .signedIn = store.load() { store.clear() }
+            await signOutOfPool(after: "an expired refresh token")
+            return false
+        } catch {
+            logger.info(.auth, "Could not check the session's token, keeping it: \(error)")
+            return true
+        }
+    }
+
     /// Amplify has a session when this runs. When the user cannot be read, that session is signed out again before the
     /// error goes up, so the pool and the app never disagree about who is signed in.
     private func loadAndCacheSession() async throws -> AuthSession {
@@ -96,8 +151,21 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
             return session
         } catch {
             logger.warning(.auth, "Could not load the signed-in user, signing out of the pool again: \(error)")
-            try? await client.signOut()
+            await signOutOfPool(after: "a failed user load")
             throw error
+        }
+    }
+
+    /// The compensating sign-out: the pool and the app must agree on who is signed in. Its own failure is logged
+    /// because it is the one line that explains a later launch's silent sign-in. Answers whether the client returned.
+    @discardableResult
+    private func signOutOfPool(after step: String) async -> Bool {
+        do {
+            try await mapped { try await client.signOut() }
+            return true
+        } catch {
+            logger.warning(.auth, "Pool sign-out after \(step) failed too: \(error)")
+            return false
         }
     }
 

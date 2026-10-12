@@ -4,7 +4,6 @@ import Testing
 
 @MainActor
 struct GroupDetailViewModelTests {
-    nonisolated private static let now = Date(timeIntervalSince1970: 1_800_000_000)
     /// Refusals a join can meet without the group vanishing: expected product states, logged as warnings.
     nonisolated private static let joinRefusals: [AppError] = [
         .groupFull, .bannedFromGroup, .membershipLimitReached, .insufficientRole,
@@ -14,24 +13,8 @@ struct GroupDetailViewModelTests {
 
     private let harness = GroupHarness()
 
-    /// The repository stores `group`, so writes and refetches answer from it until a test changes `result`.
-    private func makeViewModel(_ group: SportGroup, context: GroupDetailContext = .standalone) -> GroupDetailViewModel {
-        harness.repository.result = .success([group])
-        return GroupDetailViewModel(group: group,
-                                    context: context,
-                                    repository: harness.repository,
-                                    identity: harness.identity,
-                                    store: harness.store,
-                                    reporter: harness.reporter,
-                                    recorder: harness.recorder,
-                                    logger: harness.logger,
-                                    tryAgainDelay: .zero,
-                                    now: { Self.now },
-                                    onChange: harness.sink.record)
-    }
-
     @Test func accessFollowsTheCallerLive() {
-        let viewModel = makeViewModel(.fixture(id: "g"))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g"))
         #expect(viewModel.access == .canJoin)
 
         harness.identity.currentUserID = nil
@@ -39,13 +22,13 @@ struct GroupDetailViewModelTests {
     }
 
     @Test func openChatShowsForMembersOnlyFromOutsideTheChat() {
-        #expect(makeViewModel(.fixture(id: "g", role: .member)).showsOpenChat)
-        #expect(!makeViewModel(.fixture(id: "g", role: .member), context: .fromChat).showsOpenChat)
-        #expect(!makeViewModel(.fixture(id: "g")).showsOpenChat)
+        #expect(harness.makeGroupDetailViewModel(.fixture(id: "g", role: .member)).showsOpenChat)
+        #expect(!harness.makeGroupDetailViewModel(.fixture(id: "g", role: .member), context: .fromChat).showsOpenChat)
+        #expect(!harness.makeGroupDetailViewModel(.fixture(id: "g")).showsOpenChat)
     }
 
     @Test func recordViewedReportsTheGroupOncePerInstance() {
-        let viewModel = makeViewModel(.fixture(id: "g", visibility: .private, role: .member))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g", visibility: .private, role: .member))
 
         viewModel.recordViewed()
         viewModel.recordViewed()
@@ -56,27 +39,27 @@ struct GroupDetailViewModelTests {
     }
 
     /// The roster's removals and the edit sheet's saves come back through `accept` and travel like the detail's own writes.
-    @Test func acceptingASiblingsChangeReplacesTheGroupHereInMineAndBehind() {
+    @Test func acceptingASiblingsChangeReplacesTheGroupHereAndInMine() {
         let group = SportGroup.fixture(id: "g", memberCount: 5, role: .owner)
         harness.store.add(group)
-        let viewModel = makeViewModel(group)
+        let viewModel = harness.makeGroupDetailViewModel(group)
+        let before = harness.changes.version
 
         viewModel.accept(.fixture(id: "g", name: "Renamed", memberCount: 4, role: .owner))
 
         #expect(viewModel.group.name == "Renamed" && viewModel.group.memberCount == 4)
         #expect(harness.store.groups.map(\.name) == ["Renamed"])
-        #expect(harness.changed.map(\.memberCount) == [4])
+        #expect(harness.changes.version == before + 1, "the lists behind reload on the store's change")
         #expect(!viewModel.isGone)
     }
 
-    @Test func joinPutsTheGroupIntoMineAndHandsItOn() async {
-        let viewModel = makeViewModel(.fixture(id: "g", memberCount: 5))
+    @Test func joinPutsTheGroupIntoMine() async {
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g", memberCount: 5))
 
         await viewModel.join()
 
         #expect(viewModel.group.isMember && viewModel.group.memberCount == 6)
         #expect(harness.store.groups.map(\.id) == ["g"])
-        #expect(harness.changed.map(\.memberCount) == [6])
         #expect(harness.logs(.info).contains("Joined group g (public)"))
         #expect(harness.changes.version == 1 && !viewModel.isGone)
     }
@@ -84,19 +67,20 @@ struct GroupDetailViewModelTests {
     @Test func leaveTakesTheGroupOutOfMine() async {
         let group = SportGroup.fixture(id: "g", role: .member)
         harness.store.add(group)
-        let viewModel = makeViewModel(group)
+        let viewModel = harness.makeGroupDetailViewModel(group)
+        let before = harness.changes.version
 
         await viewModel.leave()
 
         #expect(!viewModel.group.isMember && harness.store.groups.isEmpty)
-        #expect(harness.changed.count == 1)
+        #expect(harness.changes.version == before + 1, "the lists behind reload on the store's change")
         #expect(harness.logs(.info).contains("Left group g"))
     }
 
     @Test func deleteMarksTheGroupGone() async {
         let group = SportGroup.fixture(id: "g", role: .owner)
         harness.store.add(group)
-        let viewModel = makeViewModel(group)
+        let viewModel = harness.makeGroupDetailViewModel(group)
 
         await viewModel.delete()
 
@@ -107,7 +91,7 @@ struct GroupDetailViewModelTests {
 
     /// The view sends a guest to sign in; the view model never lets a guest's tap become a request.
     @Test func aGuestNeverWrites() async {
-        let viewModel = makeViewModel(.fixture(id: "g"))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g"))
         harness.identity.currentUserID = nil
 
         await viewModel.join()
@@ -116,7 +100,7 @@ struct GroupDetailViewModelTests {
     }
 
     @Test func tryAgainIsRepeatedOnce() async {
-        let viewModel = makeViewModel(.fixture(id: "g"))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g"))
         harness.repository.transientErrors = [.tryAgain]
 
         await viewModel.join()
@@ -127,7 +111,7 @@ struct GroupDetailViewModelTests {
     }
 
     @Test func aSecondTryAgainIsARefusal() async {
-        let viewModel = makeViewModel(.fixture(id: "g"))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g"))
         harness.repository.transientErrors = [.tryAgain, .tryAgain]
 
         await viewModel.join()
@@ -140,7 +124,7 @@ struct GroupDetailViewModelTests {
 
     /// The popup and the numbers must agree, so the group is refreshed before the refusal is shown; never skipped.
     @Test(arguments: joinRefusals) func aRefusalRefreshesTheGroupAndShowsThePopup(_ error: AppError) async {
-        let viewModel = makeViewModel(.fixture(id: "g", memberCount: 5))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g", memberCount: 5))
         harness.repository.actionError = error
         harness.repository.result = .success([.fixture(id: "g", memberCount: 7)])
 
@@ -148,7 +132,6 @@ struct GroupDetailViewModelTests {
 
         #expect(viewModel.group.memberCount == 7)
         #expect(harness.presentedError == error)
-        #expect(harness.changed.map(\.memberCount) == [7])
         #expect(harness.store.groups.isEmpty, "a group the caller is not in never enters Mine")
         #expect(harness.logs(.warning).count == 1 && harness.logs(.error).isEmpty)
     }
@@ -156,7 +139,7 @@ struct GroupDetailViewModelTests {
     @Test func aGroupThatVanishedIsGoneAndTheRefusalShown() async {
         let group = SportGroup.fixture(id: "g", role: .member)
         harness.store.add(group)
-        let viewModel = makeViewModel(group)
+        let viewModel = harness.makeGroupDetailViewModel(group)
         harness.repository.actionError = AppError.groupNotFound
         harness.repository.result = .success([])
 
@@ -167,7 +150,7 @@ struct GroupDetailViewModelTests {
     }
 
     @Test(arguments: unknownOutcomes) func anUnknownOutcomeThatLandedIsNotReported(_ error: AppError) async {
-        let viewModel = makeViewModel(.fixture(id: "g", memberCount: 5))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g", memberCount: 5))
         harness.repository.actionError = error
         harness.repository.result = .success([.fixture(id: "g", memberCount: 6, role: .member)])
 
@@ -180,7 +163,7 @@ struct GroupDetailViewModelTests {
     }
 
     @Test func anUnknownOutcomeThatDidNotLandIsReported() async {
-        let viewModel = makeViewModel(.fixture(id: "g"))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g"))
         harness.repository.actionError = AppError.network
 
         await viewModel.join()
@@ -191,7 +174,7 @@ struct GroupDetailViewModelTests {
     }
 
     @Test func aRefetchThatFailsKeepsThePopup() async {
-        let viewModel = makeViewModel(.fixture(id: "g"))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g"))
         harness.repository.actionError = AppError.network
         harness.repository.thrownError = AppError.groupsUnavailable
 
@@ -205,7 +188,7 @@ struct GroupDetailViewModelTests {
     @Test func notAMemberOnALeaveMeansItLanded() async {
         let group = SportGroup.fixture(id: "g", role: .member)
         harness.store.add(group)
-        let viewModel = makeViewModel(group)
+        let viewModel = harness.makeGroupDetailViewModel(group)
         harness.repository.actionError = AppError.notAMember
         harness.repository.result = .success([.fixture(id: "g")])
 
@@ -219,7 +202,7 @@ struct GroupDetailViewModelTests {
     @Test func leavingAPrivateGroupThatAnswersNotFoundOnRefetchIsGone() async {
         let group = SportGroup.fixture(id: "g", visibility: .private, role: .member)
         harness.store.add(group)
-        let viewModel = makeViewModel(group)
+        let viewModel = harness.makeGroupDetailViewModel(group)
         harness.repository.actionError = AppError.network
         harness.repository.result = .success([])
 
@@ -230,7 +213,7 @@ struct GroupDetailViewModelTests {
     }
 
     @Test func aSecondTapWhileBusyIsDropped() async {
-        let viewModel = makeViewModel(.fixture(id: "g"))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g"))
         harness.repository.holdsRequests = true
         let first = Task { await viewModel.join() }
         await settle(until: { harness.repository.joinedGroupIDs.count == 1 })
@@ -244,7 +227,7 @@ struct GroupDetailViewModelTests {
     }
 
     @Test func cancellationStaysQuiet() async {
-        let viewModel = makeViewModel(.fixture(id: "g"))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g"))
         harness.repository.actionError = CancellationError()
 
         await viewModel.join()
@@ -253,7 +236,7 @@ struct GroupDetailViewModelTests {
     }
 
     @Test func termsRequiredRaisesTheTermsSheetWithoutARefetch() async {
-        let viewModel = makeViewModel(.fixture(id: "g"))
+        let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g"))
         harness.repository.actionError = AppError.termsRequired
 
         await viewModel.join()

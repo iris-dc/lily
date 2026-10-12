@@ -3,9 +3,10 @@ import XCTest
 /// Tournaments against the mock repositories: creating one from Explore's "+" and finding it on Home, entering the
 /// team tournament the caller organises by naming a team, the tournament room on Chats whose info button opens the
 /// tournament, a group's Tournaments segment, the organiser's start and the bracket it draws, a player confirming and
-/// reporting results, Noor's tournament invite in the inbox, and the organiser's schedule for a match. Identifiers
-/// mirror `AccessibilityIdentifiers(+Tournaments, +Inbox)`; the mock ids mirror `MockTournamentFixtures` and
-/// `MockInboxFixtures`. Helpers in `LilyTournamentTests+Helpers.swift`.
+/// reporting results, Noor's tournament invite in the inbox, the match reminder there that opens its match's sheet on
+/// the tournament, and the organiser's schedule for a match. Identifiers mirror `AccessibilityIdentifiers(+Tournaments,
+/// +Inbox)`; the mock ids mirror `MockTournamentFixtures` and `MockInboxFixtures`. Helpers in
+/// `LilyTournamentTests+Helpers.swift`.
 final class LilyTournamentTests: LilyUITestCase {
     let kickersCupRow = "tournament-row-mock-tournament-kickers-cup"
     let tableTennisRow = "tournament-row-mock-tournament-table-tennis"
@@ -16,6 +17,9 @@ final class LilyTournamentTests: LilyUITestCase {
     let jonasStanding = "standing-01J9ENTRYTT00000000000001"
     /// Noor's invite into the Padel Open, the oldest mock inbox item.
     let tournamentInviteID = "01J8MOCKNB0000000000000001"
+    /// The reminder for the caller's round-three table-tennis match against Dev (`MockInboxFixtures.matchReminderID`,
+    /// index 3).
+    let matchReminderID = "01J8MOCKNB0000000000000003"
 
     /// "New tournament" on Explore's "+" opens the form; a name and a place complete it (the spot comes from the mock
     /// location); the organiser lands on the new tournament's detail on Home, and Home lists it under "Your tournaments".
@@ -149,6 +153,28 @@ final class LilyTournamentTests: LilyUITestCase {
         XCTAssertFalse(app.buttons["inbox-accept-\(tournamentInviteID)"].exists, "an answered invite offers no Accept")
     }
 
+    /// The match reminder in the inbox opens Tuesday Table Tennis on its Matches segment with the named match's sheet
+    /// up: the view model decides the linked match on the first successful load, so the sheet comes with the detail,
+    /// once; Done leaves the detail on Matches.
+    @MainActor
+    func testMatchReminderInTheInboxOpensTheMatchSheet() {
+        tapSignInWithApple()
+        openInbox()
+        let reminder = app.buttons["inbox-item-\(matchReminderID)"]
+        XCTAssertTrue(reminder.waitForExistence(timeout: 10), "the inbox lists the match reminder")
+        XCTAssertTrue(labelled("vs Dev").waitForExistence(timeout: 5), "the card names the opponent")
+        reminder.tap()
+        let sheetBar = app.navigationBars["Match"]
+        XCTAssertTrue(sheetBar.waitForExistence(timeout: 10), "the linked match's sheet is up")
+        XCTAssertTrue(app.buttons["match-report"].waitForExistence(timeout: 5),
+                      "the caller's scheduled match takes a result")
+        app.buttons["Done"].tap()
+        XCTAssertTrue(app.navigationBars["Tuesday Table Tennis"].waitForExistence(timeout: 5),
+                      "the detail is the reminder's tournament")
+        XCTAssertTrue(app.segmentedControls["tournament-section"].buttons["Matches"].isSelected,
+                      "the detail opened on Matches")
+    }
+
     /// Entering and leaving move the tournament's room on Chats at once: the accept of Noor's invite lists the Padel
     /// Open's room, and Leave from the detail takes it off again without waiting for Mine's next stale load.
     @MainActor
@@ -169,8 +195,7 @@ final class LilyTournamentTests: LilyUITestCase {
         app.sheets.firstMatch.buttons["Leave tournament"].tap()
         XCTAssertTrue(app.buttons["tournament-join"].waitForExistence(timeout: 10), "the caller is out")
 
-        // The scroll down to Leave minimised the tab bar (iOS 26 `tabBarMinimizeBehavior`); a scroll back up restores it.
-        app.swipeDown()
+        // The scroll down to Leave minimised the tab bar; `openChatsTab()` expands it again before it looks for the tab.
         openChatsTab()
         XCTAssertTrue(room.waitForNonExistence(timeout: 10), "the room left Chats with the entry")
     }

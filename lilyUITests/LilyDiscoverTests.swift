@@ -38,8 +38,8 @@ final class LilyDiscoverTests: LilyUITestCase {
         enter(name, into: app.textFields["create-group-name"])
         let submit = app.buttons["create-group-submit"]
         XCTAssertFalse(submit.isEnabled, "a public group without a place cannot be created")
-        XCTAssertTrue(app.staticTexts["Name the place where the group plays"].waitForExistence(timeout: 5),
-                      "the footer names what is missing once the name is typed (a CI runner needed the wait, 2026-10-09)")
+        // The Where section sits under the type chips, below the fold; a Form row off screen is not in the tree.
+        scrollUntilHittable(app.staticTexts["Name the place where the group plays"])
 
         let place = "Görli Clubhouse"
         enter(place, into: app.textFields["create-group-location-name"])

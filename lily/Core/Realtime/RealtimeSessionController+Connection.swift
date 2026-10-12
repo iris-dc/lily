@@ -34,9 +34,10 @@ extension RealtimeSessionController {
         let token = await token(fresh: fresh)
         guard !isSuperseded(generation) else { return wantsConnection }
         if tokenProvider != nil, token == nil {
-            logger.warning(.chat, "No access token for the realtime connection; staying disconnected")
+            noteMissingToken(fresh: fresh)
             return false
         }
+        reconnectsWithoutToken = 0
         state = .connecting
         guard await open(endpoint, generation: generation) else { return false }
         guard !isSuperseded(generation), isActive else {
@@ -47,6 +48,11 @@ extension RealtimeSessionController {
             return wantsConnection
         }
         state = .connected
+        // A backoff timer armed by an earlier failure is stale once a connect landed (an .active <-> .inactive flip
+        // re-runs resume() while one is pending) and would later tear this healthy socket down. The timer running
+        // this very connect nils its own slot before calling reconnect, so it is never the one cancelled here.
+        reconnectTask?.cancel()
+        reconnectTask = nil
         logger.info(.chat, "Chat connection opened")
         scheduleRenewal(for: token, fresh: fresh)
         subscribe(to: .user(sub: user.id))
@@ -93,6 +99,21 @@ extension RealtimeSessionController {
     private func token(fresh: Bool) async -> String? {
         guard let tokenProvider else { return nil }
         return fresh ? await tokenProvider.freshAccessToken() : await tokenProvider.accessToken()
+    }
+
+    /// A forced refresh that answers no token is most often a network still down: the connection backs off along the
+    /// table instead of staying dead until the next scene change, bounded by `maxReconnectsWithoutToken`. A first
+    /// connect's missing token is the session's problem and arms nothing.
+    private func noteMissingToken(fresh: Bool) {
+        logger.warning(.chat, "No access token for the realtime connection; staying disconnected")
+        guard fresh else { return }
+        reconnectsWithoutToken += 1
+        let bound = AppConfig.Realtime.maxReconnectsWithoutToken
+        guard reconnectsWithoutToken <= bound else {
+            logger.warning(.chat, "No access token after \(bound) reconnects; waiting for the next foreground")
+            return
+        }
+        scheduleReconnect(reason: "no token")
     }
 
     /// Renews at `exp - reconnectBeforeExpiry` or at `maxConnectionAge`, whichever is first. A refreshed token whose
@@ -148,7 +169,7 @@ extension RealtimeSessionController {
         renewalTask = nil
         reconnectTask?.cancel()
         reconnectTask = nil
-        subscriptions.values.forEach { $0.cancel() }
+        subscriptions.values.forEach { $0.task.cancel() }
         subscriptions = [:]
         pendingResubscribes.values.forEach { $0.cancel() }
         pendingResubscribes = [:]
@@ -177,9 +198,10 @@ extension RealtimeSessionController {
     }
 
     /// The resume protocol did not run because there is no connection to run it after: the open chat's room still
-    /// catches up, quietly, and the epoch its page answered is remembered for the next connect.
+    /// catches up, quietly, and the epoch its page answered is remembered for the next connect. A suspend that landed
+    /// during the resume protocol leaves nobody to show the page, so a backgrounded app fetches nothing here.
     func catchUpOpenRoomWithoutConnection() async {
-        guard state != .connected, let openRoom else { return }
+        guard isActive, state != .connected, let openRoom else { return }
         logger.info(.chat, "No connection; catching up the open room \(openRoom.groupID) over REST")
         await catchUp.catchUpRooms([openRoom.groupID], maxConcurrent: 1)
         if let epoch = cache.room(for: openRoom.groupID)?.channelEpoch { noteEpoch(epoch, for: openRoom.groupID) }

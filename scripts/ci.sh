@@ -16,7 +16,7 @@ IPAD_UI_TESTS="$UI_TARGET/$IPAD_UI_TEST_CLASS"
 UI_SHARDS=(
   "LilyTournamentTests LilyPeopleTests LilyLanguageTests"
   "LilyChatTests LilySmokeTests LilyDiscoverTests"
-  "LilyGroupsTests LilyEventEditTests LilySignInTests LilyProfileTests"
+  "LilyGroupsTests LilyEventEditTests LilySignInTests LilyProfileTests LilyRosterTests"
 )
 RESULTS_DIR="${RESULTS_DIR:-build/results}"
 DERIVED_DATA="${DERIVED_DATA:-build/DerivedData}"

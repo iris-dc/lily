@@ -53,6 +53,30 @@ struct UserProfileViewModelTests {
         #expect(harness.logs(.error).count == 1)
     }
 
+    /// Try again after a failure: the spinner replaces the failed state while the request runs (a profile already on
+    /// screen would stay instead), and the profile follows; the first failure's popup and log line stand alone.
+    @Test func aRetryAfterAFailedProfileLoadShowsTheSpinnerThenTheProfile() async {
+        users.profileResult = .failure(.profileUnavailable)
+        let viewModel = makeViewModel()
+        await viewModel.load()
+        #expect(viewModel.state == .failed)
+
+        users.profileResult = .success(.fixture())
+        users.holdsRequests = true
+        let retry = Task { await viewModel.load() }
+        await settle(until: { users.requestedProfileIDs.count == 2 })
+        #expect(viewModel.state == .loading, "a retry shows the spinner, not the stale failure")
+
+        users.releaseRequests()
+        await retry.value
+
+        #expect(viewModel.state == .loaded(.fixture()))
+        #expect(users.requestedProfileIDs == ["u-2", "u-2"])
+        #expect(harness.logs(.error).count == 1, "the first failure alone was logged")
+        #expect(harness.presentedError == .profileUnavailable, "the first failure's popup; the retry raised none")
+        #expect(harness.logs(.info).filter { $0 == "Profile u-2 opened" }.count == 1)
+    }
+
     @Test func selfHidesTheMessageButtonAndNeverStartsAConversation() async {
         let viewModel = makeViewModel(destination: .fixture(userId: TestFixtures.user.id, displayName: "Test Person"))
 

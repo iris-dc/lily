@@ -100,7 +100,7 @@ private extension GroupScope {
                 items.append(URLQueryItem(name: keys.query, value: query))
             }
             if let type {
-                items.append(URLQueryItem(name: keys.type, value: type.rawValue))
+                items.append(URLQueryItem(name: keys.type, value: type.wireName))
             }
             items.append(URLQueryItem(name: keys.limit, value: String(AppConfig.Groups.discoverPageSize)))
             return items

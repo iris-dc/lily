@@ -13,7 +13,7 @@ extension MockChatRepositoryTests {
                         _ repository: MockChatRepository,
                         store: MockAttachmentStore) async throws -> AttachmentDraft {
         let directory = FileManager.default.temporaryDirectory
-        let id = "\(kind.rawValue)-\(UUID().uuidString)"
+        let id = "\(kind.wireName)-\(UUID().uuidString)"
         let fileURL = directory.appending(path: "\(id).bin")
         try Data(repeating: 5, count: 48).write(to: fileURL)
         let draft = AttachmentDraft.fixture(id: id, kind: kind, fileURL: fileURL, state: .preparing)

@@ -4,19 +4,19 @@ import Testing
 
 @MainActor
 struct MyGroupsStoreTests {
-    nonisolated private static let start = Date(timeIntervalSince1970: 1_700_000_000)
+    nonisolated static let start = Date(timeIntervalSince1970: 1_700_000_000)
 
-    private let repository = FakeGroupRepository()
-    private let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
-    private let changes = ChangeTracker()
-    private let logger = SpyLogger()
-    private let errorCenter: ErrorCenter
+    let repository = FakeGroupRepository()
+    let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
+    let changes = ChangeTracker()
+    let logger = SpyLogger()
+    let errorCenter: ErrorCenter
 
     init() {
         errorCenter = ErrorCenter(logger: logger)
     }
 
-    private func makeStore(now: @escaping () -> Date = { start }) -> MyGroupsStore {
+    func makeStore(now: @escaping () -> Date = { start }) -> MyGroupsStore {
         MyGroupsStore(repository: repository,
                       identity: identity,
                       changes: changes,
@@ -26,7 +26,7 @@ struct MyGroupsStoreTests {
     }
 
     /// Two groups in Mine order: the more recently active first.
-    private var mine: [SportGroup] {
+    var mine: [SportGroup] {
         [.fixture(id: "a", lastMessageAt: Self.start, role: .member),
          .fixture(id: "b", createdAt: Self.start.addingTimeInterval(-100), role: .admin)]
     }

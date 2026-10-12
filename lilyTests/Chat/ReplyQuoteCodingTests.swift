@@ -53,9 +53,6 @@ struct ReplyQuoteCodingTests {
     }
 
     @Test func placeholdersNameTheMediaKind() {
-        func quote(_ kind: AttachmentKind?) -> ReplyQuote {
-            ReplyQuote(messageId: "m", senderUserId: "u", senderName: "M", attachmentKind: kind)
-        }
         #expect(quote(.image).placeholder == "Photo" && quote(.video).placeholder == "Video")
         #expect(quote(.file).placeholder == "File")
         #expect(quote(nil).placeholder == nil && quote(nil).displayText.isEmpty)
@@ -65,8 +62,19 @@ struct ReplyQuoteCodingTests {
     }
 
     @Test func attachmentKindsUseTheWireNames() {
-        #expect(AttachmentKind(rawValue: "image") == .image && AttachmentKind(rawValue: "video") == .video)
-        #expect(AttachmentKind.file.rawValue == "file" && AttachmentKind(rawValue: "gif") == nil)
+        #expect(AttachmentKind.image.wireName == "image" && AttachmentKind.video.wireName == "video")
+        #expect(AttachmentKind.file.wireName == "file")
+        #expect(AttachmentKind(wireName: "image") == .image && AttachmentKind(wireName: "video") == .video)
+        #expect(AttachmentKind(wireName: "file") == .file)
+        #expect(!AttachmentKind.image.isUnknown && !AttachmentKind.video.isUnknown && !AttachmentKind.file.isUnknown)
+    }
+
+    /// A kind this build does not know is kept by name, is no media, and a quote naming it reads as a file.
+    @Test func anUnknownAttachmentKindIsKeptByNameAndQuotedAsAFile() {
+        let gif = AttachmentKind(wireName: "gif")
+
+        #expect(gif == .unknown("gif") && gif.wireName == "gif" && gif.isUnknown && !gif.isMedia)
+        #expect(quote(gif).placeholder == "File" && quote(gif).displayText == "File")
     }
 
     /// `replyToMessageId` is omitted on a plain message, as the contract wants absent optionals, and named on a reply.
@@ -76,6 +84,10 @@ struct ReplyQuoteCodingTests {
 
         #expect(plain?.keys.sorted() == ["clientMessageId", "text"])
         #expect(reply?["replyToMessageId"] as? String == "m1")
+    }
+
+    private func quote(_ kind: AttachmentKind?) -> ReplyQuote {
+        ReplyQuote(messageId: "m", senderUserId: "u", senderName: "M", attachmentKind: kind)
     }
 
     private func keys(of payload: SendMessagePayload) throws -> [String: Any]? {

@@ -95,6 +95,35 @@ final class GroupHarness {
                        tryAgainDelay: .zero)
     }
 
+    /// The repository stores `group`, so writes and refetches answer from it until a test changes `result`.
+    func makeGroupDetailViewModel(_ group: SportGroup,
+                                  context: GroupDetailContext = .standalone,
+                                  now: Date = Date(timeIntervalSince1970: 1_800_000_000)) -> GroupDetailViewModel {
+        repository.result = .success([group])
+        return GroupDetailViewModel(group: group,
+                                    context: context,
+                                    repository: repository,
+                                    identity: identity,
+                                    store: store,
+                                    reporter: reporter,
+                                    recorder: recorder,
+                                    logger: logger,
+                                    tryAgainDelay: .zero,
+                                    now: { now })
+    }
+
+    /// The roster of `group`, stored in the repository like the detail's; what it hands on lands in `changed`.
+    func makeMembersViewModel(group: SportGroup) -> MembersViewModel {
+        repository.result = .success([group])
+        return MembersViewModel(group: group,
+                                repository: repository,
+                                identity: identity,
+                                reporter: reporter,
+                                logger: logger,
+                                tryAgainDelay: .zero,
+                                onChange: sink.record)
+    }
+
     func makeInvitePeopleViewModel(for group: SportGroup) -> InvitePeopleViewModel {
         makeInvitePeopleViewModel(for: .group(id: group.id))
     }

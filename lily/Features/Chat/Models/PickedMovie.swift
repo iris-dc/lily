@@ -3,7 +3,8 @@ import Foundation
 import UniformTypeIdentifiers
 
 /// A video from the Photos picker as a file of the app's own: the picker's file is only good for the import closure,
-/// so it is copied into the temporary directory there and the copy is what the preparer exports from.
+/// so it is copied into the temporary directory there and the copy is what the preparer exports from. The copy is the
+/// composer's (`MediaSource.ownedFile`), removed once the preparer is done with it.
 nonisolated struct PickedMovie: Transferable {
     let url: URL
 

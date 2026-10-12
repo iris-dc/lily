@@ -42,15 +42,32 @@ struct SessionControllerConfirmationTests {
         #expect(harness.errorCenter.current?.error == .invalidCredentials)
     }
 
+    /// The sign-in after an accepted sign-up reports its own failure once: one popup and one error line, both the sign-in's.
+    @Test func aSignInFailureAfterSignUpIsReportedOnce() async {
+        let harness = SessionHarness()
+        let credentials = TestFixtures.credentials
+        harness.auth.signUpOutcome = .signedUp
+        harness.auth.signInResult = .failure(.network)
+
+        let result = await harness.controller.signUp(email: credentials.email, password: credentials.password)
+
+        #expect(result == .failed)
+        #expect(harness.errorCenter.current?.error == .network)
+        #expect(harness.logger.messages(in: .auth, at: .error).count == 1, "the sign-in's line alone")
+        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.authenticatingProvider == nil)
+        #expect(harness.auth.signInProviders == [.email(credentials)])
+    }
+
     @Test func confirmSignUpConfirmsThenSignsInWithTheKeptPassword() async {
         let harness = SessionHarness()
         let credentials = TestFixtures.credentials
 
-        let signedIn = await harness.controller.confirmSignUp(email: credentials.email,
-                                                              code: "123456",
-                                                              password: credentials.password)
+        let outcome = await harness.controller.confirmSignUp(email: credentials.email,
+                                                             code: "123456",
+                                                             password: credentials.password)
 
-        #expect(signedIn)
+        #expect(outcome == .signedIn)
         #expect(harness.auth.confirmations == [FakeAuthService.ConfirmationRequest(email: credentials.email, code: "123456")])
         #expect(harness.auth.signInProviders == [.email(credentials)])
         #expect(harness.controller.state == .signedIn(TestFixtures.user))
@@ -58,15 +75,50 @@ struct SessionControllerConfirmationTests {
         #expect(harness.logger.messages(in: .auth).contains { $0.contains("Email confirmed") })
     }
 
+    /// The pool accepted the code, so a second confirm would be refused as "not authorized"; only the sign-in after it
+    /// failed, which showed its own popup, and the answer sends the form back to sign-in.
+    @Test func confirmSucceedsButTheSignInAfterItAnswersConfirmedButSignInFailed() async {
+        let harness = SessionHarness()
+        let credentials = TestFixtures.credentials
+        harness.auth.signInResult = .failure(.network)
+
+        let outcome = await harness.controller.confirmSignUp(email: credentials.email,
+                                                             code: "123456",
+                                                             password: credentials.password)
+
+        #expect(outcome == .confirmedButSignInFailed)
+        #expect(harness.auth.confirmations == [FakeAuthService.ConfirmationRequest(email: credentials.email, code: "123456")])
+        #expect(harness.auth.signInProviders == [.email(credentials)])
+        #expect(harness.errorCenter.current?.error == .network)
+        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.authenticatingProvider == nil)
+        #expect(harness.logger.messages(in: .auth, at: .info).contains { $0.contains("returns to sign-in") })
+    }
+
+    /// A sign-in still asking for the code right after a confirm did not land either: the form returns to sign-in,
+    /// and a sign-in made there enters the code step on its own. No popup, as for any "confirmation required".
+    @Test func aSignInStillAskingForTheCodeAfterAConfirmAnswersConfirmedButSignInFailed() async {
+        let harness = SessionHarness()
+        harness.auth.signInResult = .failure(.emailNotConfirmed)
+
+        let outcome = await harness.controller.confirmSignUp(email: "a@b.co", code: "123456", password: "long-enough")
+
+        #expect(outcome == .confirmedButSignInFailed)
+        #expect(harness.errorCenter.current == nil)
+        #expect(harness.controller.state == .loading)
+    }
+
+    /// A refused code is `.failed`, never `.confirmedButSignInFailed`: the form keeps the code step, no sign-in is tried.
     @Test func confirmSignUpFailureReportsAndDoesNotSignIn() async {
         let harness = SessionHarness()
         harness.auth.confirmError = .invalidConfirmationCode
 
-        let signedIn = await harness.controller.confirmSignUp(email: "a@b.co", code: "000000", password: "long-enough")
+        let outcome = await harness.controller.confirmSignUp(email: "a@b.co", code: "000000", password: "long-enough")
 
-        #expect(!signedIn)
+        #expect(outcome == .failed)
         #expect(harness.auth.signInProviders.isEmpty)
         #expect(harness.controller.state == .loading)
+        #expect(harness.controller.authenticatingProvider == nil)
         #expect(harness.errorCenter.current?.error == .invalidConfirmationCode)
     }
 
