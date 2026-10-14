@@ -6,13 +6,15 @@ import UIKit
 @MainActor
 struct CurrencyStoreTests {
     @MainActor private final class Harness {
-        let store = UserDefaultsCurrencyPreferenceStore(defaults: makeTestDefaults())
+        let store = UserDefaultsChoiceStore<CurrencyPreference>(defaults: makeTestDefaults(), logger: SpyLogger())
         let logger = SpyLogger()
         var systemChoice: String? = "EUR"
 
         func makeStore() -> CurrencyStore {
             CurrencyStore(store: store, systemChoice: { [weak self] in self?.systemChoice }, logger: logger)
         }
+
+        var infoLines: [String] { logger.messages(in: .currency, at: .info) }
     }
 
     @Test func startsFromTheStoredChoice() {
@@ -22,7 +24,9 @@ struct CurrencyStoreTests {
         let store = harness.makeStore()
 
         #expect(store.preference == .fixed("PLN") && store.currencyCode == "PLN")
-        #expect(harness.logger.messages(in: .currency) == ["Currency PLN (chosen)"])
+        let lines = harness.infoLines
+        #expect(lines.count == 1)
+        #expect(lines.last?.contains("PLN") == true && lines.last?.contains("chosen") == true)
     }
 
     @Test func withoutAChoiceItFollowsTheRegion() {
@@ -32,7 +36,9 @@ struct CurrencyStoreTests {
         let store = harness.makeStore()
 
         #expect(store.preference == .system && store.currencyCode == "USD" && store.systemCurrencyCode == "USD")
-        #expect(harness.logger.messages(in: .currency) == ["Currency USD (system)"])
+        let lines = harness.infoLines
+        #expect(lines.count == 1)
+        #expect(lines.last?.contains("USD") == true && lines.last?.contains("system") == true)
     }
 
     @Test func aRegionWithoutACurrencyFallsBackToTheDefault() {
@@ -52,12 +58,16 @@ struct CurrencyStoreTests {
         store.select(.fixed("GBP"))
 
         #expect(store.currencyCode == "GBP" && harness.store.load() == .fixed("GBP"))
-        #expect(harness.logger.messages(in: .currency).last == "Currency changed to GBP (chosen)")
+        let afterChoice = harness.infoLines
+        #expect(afterChoice.count == 2)
+        #expect(afterChoice.last?.contains("GBP") == true && afterChoice.last?.contains("chosen") == true)
 
         store.select(.system)
 
         #expect(store.currencyCode == "EUR" && harness.store.load() == .system)
-        #expect(harness.logger.messages(in: .currency).last == "Currency changed to EUR (system)")
+        let afterSystem = harness.infoLines
+        #expect(afterSystem.count == 3)
+        #expect(afterSystem.last?.contains("EUR") == true && afterSystem.last?.contains("system") == true)
     }
 
     @Test func selectingTheCurrentChoiceDoesNothing() {
@@ -66,7 +76,7 @@ struct CurrencyStoreTests {
 
         store.select(.system)
 
-        #expect(harness.logger.messages(in: .currency).count == 1)
+        #expect(harness.infoLines.count == 1)
     }
 
     @Test func theRegionIsReadOnEveryAsk() {
@@ -76,13 +86,6 @@ struct CurrencyStoreTests {
         harness.systemChoice = "CHF"
 
         #expect(store.currencyCode == "CHF", "a region change needs no relaunch")
-    }
-
-    @Test func theDefaultSystemChoiceIsTheLocalesCurrency() {
-        let store = CurrencyStore(store: UserDefaultsCurrencyPreferenceStore(defaults: makeTestDefaults()),
-                                  logger: SpyLogger())
-
-        #expect(store.systemCurrencyCode == (AppLocale.locale.currency?.identifier ?? AppConfig.Currency.defaultCode))
     }
 
     @Test func theRowsSymbolsExist() {

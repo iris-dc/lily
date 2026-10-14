@@ -2,9 +2,10 @@ import SwiftUI
 
 /// The signed-in Home content: a "Your groups" section of rows and a "Your games" section of cards, one scroll with
 /// pull-to-refresh over both, and one state for the whole screen while nothing has loaded yet or nothing is there.
-/// With groups switched off only the cards remain, without a heading of their own.
+/// What shows is `HomeOverviewState`, resolved from a snapshot of each list. With groups switched off only the cards
+/// remain, without a heading of their own.
 struct HomeOverview: View {
-    let groups: GroupListViewModel
+    let groups: MyGroupsStore
     let events: EventListViewModel
     let tournaments: TournamentListViewModel
     let dependencies: AppDependencies
@@ -13,37 +14,44 @@ struct HomeOverview: View {
     private typealias Copy = AppBranding.Home
 
     private var showsGroups: Bool { AppConfig.FeatureFlags.groups }
-    private var hasGroups: Bool { showsGroups && !groups.groups.isEmpty }
-    private var hasGames: Bool { !events.visibleEvents.isEmpty }
-    /// The section shows only while the caller organises or plays in something, or its load failed; most callers have none.
-    private var showsTournaments: Bool {
-        AppConfig.FeatureFlags.tournaments && (!tournaments.visibleTournaments.isEmpty || tournaments.loadFailed)
+
+    /// One snapshot per list; a list behind a flag that is off is left out, so the screen never waits for it.
+    private var state: HomeOverviewState {
+        .resolve(events: HomeListSnapshot(isEmpty: events.visibleEvents.isEmpty,
+                                          hasAnswered: events.hasLoaded || events.loadFailed,
+                                          loadFailed: events.loadFailed),
+                 groups: showsGroups ? HomeListSnapshot(isEmpty: groups.communities.isEmpty,
+                                                        hasAnswered: groups.hasLoaded || groups.loadFailed,
+                                                        loadFailed: groups.loadFailed) : nil,
+                 tournaments: AppConfig.FeatureFlags.tournaments
+                     ? HomeListSnapshot(isEmpty: tournaments.visibleTournaments.isEmpty,
+                                        hasAnswered: !tournaments.isInitialLoad,
+                                        loadFailed: tournaments.loadFailed)
+                     : nil)
     }
-    private var isEmpty: Bool { !hasGroups && !hasGames && !showsTournaments }
-    private var isLoadingSomething: Bool { events.isInitialLoad || (showsGroups && groups.isInitialLoad) }
-    private var loadFailed: Bool { events.loadFailed || (showsGroups && groups.loadFailed) }
 
     var body: some View {
-        if isEmpty, isLoadingSomething {
+        switch state {
+        case .loading:
             ProgressView()
-        } else if isEmpty {
+        case .empty(let loadFailed):
             // Scrollable so the "pull to refresh" the failed state promises is possible from here.
             refreshableScroll { (loadFailed ? loadFailedState : emptyState).readableColumn().containerRelativeFrame(.vertical) }
-        } else {
-            refreshableScroll { sections }
+        case .sections(let groupsState, let tournamentsState, let gamesState):
+            refreshableScroll { sections(groups: groupsState, tournaments: tournamentsState, games: gamesState) }
         }
     }
 
-    private var sections: some View {
+    private func sections(groups: HomeSectionState?, tournaments: HomeSectionState?, games: HomeSectionState) -> some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-            if showsGroups {
-                section(Copy.groupsSection) { groupsContent }
-                if showsTournaments {
-                    section(AppBranding.Tournaments.mineSection) { tournamentsContent }
+            if let groups {
+                section(Copy.groupsSection) { groupsContent(groups) }
+                if let tournaments {
+                    section(AppBranding.Tournaments.mineSection) { tournamentsContent(tournaments) }
                 }
-                section(Copy.gamesSection) { gamesContent }
+                section(Copy.gamesSection) { gamesContent(games) }
             } else {
-                gamesContent
+                gamesContent(games)
             }
         }
         .padding(.vertical, DesignTokens.Spacing.md)
@@ -52,34 +60,45 @@ struct HomeOverview: View {
 
     /// A row (a tile in the regular-width grid) opens the group's detail, the place to manage a membership; its chat
     /// lives on the Chats tab.
-    @ViewBuilder private var groupsContent: some View {
-        if hasGroups, sizeClass == .regular {
-            GroupTileGrid(groups: groups.groups, distance: groups.distanceText)
-        } else if hasGroups {
-            GroupRowList(groups: groups.groups) { dependencies.navigation.open(group: $0) }
-        } else if groups.isInitialLoad {
+    @ViewBuilder private func groupsContent(_ state: HomeSectionState) -> some View {
+        switch state {
+        case .content where sizeClass == .regular:
+            GroupTileGrid(groups: groups.communities, distance: groupDistance)
+        case .content:
+            GroupRowList(groups: groups.communities) { dependencies.navigation.open(group: $0) }
+        case .loading:
             loading
-        } else {
-            note(groups.loadFailed ? Copy.groupsLoadFailed : Copy.noGroups)
+        case .failed:
+            note(Copy.groupsLoadFailed)
+        case .empty:
+            note(Copy.noGroups)
         }
     }
 
+    /// The tiles take the position the games section loads (`HomeView.loadIfStale` asks for it); Mine holds none.
+    private func groupDistance(_ group: SportGroup) -> String? {
+        group.distance(from: events.userLocation)?.roadText()
+    }
+
     /// A card opens the tournament's detail, where entries are made and the organiser runs it.
-    @ViewBuilder private var tournamentsContent: some View {
-        if tournaments.loadFailed, tournaments.visibleTournaments.isEmpty {
+    @ViewBuilder private func tournamentsContent(_ state: HomeSectionState) -> some View {
+        if state == .failed {
             note(AppBranding.Tournaments.mineLoadFailed)
         } else {
             TournamentCardList(tournaments: tournaments.visibleTournaments, distance: tournaments.distanceText)
         }
     }
 
-    @ViewBuilder private var gamesContent: some View {
-        if hasGames {
+    @ViewBuilder private func gamesContent(_ state: HomeSectionState) -> some View {
+        switch state {
+        case .content:
             EventCardList(events: events.visibleEvents, distance: events.distanceText)
-        } else if events.isInitialLoad {
+        case .loading:
             loading
-        } else {
-            note(events.loadFailed ? Copy.gamesLoadFailed : Copy.noGames)
+        case .failed:
+            note(Copy.gamesLoadFailed)
+        case .empty:
+            note(Copy.noGames)
         }
     }
 
@@ -120,11 +139,12 @@ struct HomeOverview: View {
 
     /// Pull-to-refresh reloads both sections.
     private func refreshableScroll(@ViewBuilder _ content: @escaping () -> some View) -> some View {
-        RefreshableScroll(action: {
-            if showsGroups { await groups.refresh() }
-            if AppConfig.FeatureFlags.tournaments { await tournaments.load() }
-            await events.load()
-        }, content: content)
+        ScrollView { content() }
+            .refreshable {
+                if showsGroups { await groups.reload() }
+                if AppConfig.FeatureFlags.tournaments { await tournaments.load() }
+                await events.load()
+            }
     }
 }
 
@@ -132,7 +152,7 @@ struct HomeOverview: View {
     let dependencies = AppDependencies.makeMock()
     NavigationStack {
         ContentScreen {
-            HomeOverview(groups: dependencies.makeGroupListViewModel(scope: .mine),
+            HomeOverview(groups: dependencies.myGroups,
                          events: dependencies.makeEventListViewModel(scope: .joined),
                          tournaments: dependencies.makeTournamentListViewModel(scope: .mine),
                          dependencies: dependencies)

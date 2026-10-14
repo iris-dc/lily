@@ -50,6 +50,7 @@ extension TournamentEntry {
                         captainUserId: String = "seed-marta",
                         members: [EntryMember]? = nil,
                         seed: Int = 1,
+                        status: EntryStatus = .registered,
                         createdAt: Date = Date(timeIntervalSince1970: 1_700_000_100)) -> TournamentEntry {
         TournamentEntry(id: id,
                         tournamentId: tournamentId,
@@ -57,11 +58,15 @@ extension TournamentEntry {
                         captainUserId: captainUserId,
                         members: members ?? [EntryMember(userId: captainUserId, displayName: name)],
                         seed: seed,
+                        status: status,
                         createdAt: createdAt)
     }
 }
 
 extension TournamentDetail {
+    /// The caller's entry by `myEntryId`, for the contract and mock tests that read it; nothing in the app does.
+    var myEntry: TournamentEntry? { tournament.myEntryId.flatMap(entry(id:)) }
+
     static func fixture(tournament: Tournament = .fixture(),
                         entries: [TournamentEntry] = [.fixture()],
                         matches: [TournamentMatch] = [],
@@ -83,6 +88,27 @@ extension TournamentDraft {
         draft.locationName = "Görlitzer Park pitch"
         draft.coordinate = coordinate
         return draft
+    }
+}
+
+extension MockTournamentRepository {
+    /// A three-player round robin the caller organises without playing, draws allowed, ready to start, stored under
+    /// `id` as the mock holds it (the caller as `callerMarker`); the entries are `league-e1` to `league-e3`.
+    func seedLeague(id: String) {
+        let players = ["Marta", "Jonas", "Dev"].enumerated().map { index, name in
+            TournamentEntry.fixture(id: "league-e\(index + 1)",
+                                    tournamentId: id,
+                                    name: name,
+                                    captainUserId: MockGroupFixtures.memberID(for: name),
+                                    seed: index + 1)
+        }
+        let league = Tournament.fixture(id: id,
+                                        name: "Thursday League",
+                                        format: .roundRobin,
+                                        entryCount: players.count,
+                                        allowsDraws: true,
+                                        organizerUserId: MockTournamentFixtures.callerMarker)
+        details[id] = .fixture(tournament: league, entries: players)
     }
 }
 

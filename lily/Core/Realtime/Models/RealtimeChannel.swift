@@ -12,9 +12,4 @@ nonisolated enum RealtimeChannel: Hashable, Sendable {
         case .user(let sub): "\(AppConfig.Realtime.usersNamespace)/\(sub)"
         }
     }
-
-    var groupID: String? {
-        if case .room(let groupID, _) = self { return groupID }
-        return nil
-    }
 }

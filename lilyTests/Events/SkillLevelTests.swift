@@ -25,7 +25,7 @@ struct SkillLevelTests {
     @Test func anUnknownLevelDecodesByNameReadsAsAnyLevelAndEncodesAsItCame() throws {
         let decoded = try JSONDecoder().decode([SkillLevel].self, from: Data(#"["pro"]"#.utf8))
         #expect(decoded == [Self.pro] && decoded[0].isUnknown && decoded[0].wireName == "pro")
-        #expect(decoded[0].displayName == AppBranding.Events.Filter.anyLevel)
+        #expect(decoded[0].displayName == AppBranding.Events.anyLevel)
         #expect(decoded[0].ifKnown == nil && SkillLevel.advanced.ifKnown == .advanced, "an unknown level counts as none")
         #expect(String(bytes: try JSONEncoder().encode(decoded), encoding: .utf8) == #"["pro"]"#)
     }

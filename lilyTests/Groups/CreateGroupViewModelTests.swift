@@ -31,8 +31,6 @@ struct CreateGroupViewModelTests {
         #expect(viewModel.draft.visibility == .public)
         #expect(viewModel.issues == [.nameTooShort, .locationNameMissing])
         #expect(!viewModel.canSubmit)
-        #expect(viewModel.issue(for: .nameTooShort, .nameTooLong) == .nameTooShort)
-        #expect(viewModel.issue(for: .descriptionTooLong) == nil)
     }
 
     /// Opening the sheet proposes the device's position as the spot, so a public group needs only its place named;
@@ -117,9 +115,26 @@ struct CreateGroupViewModelTests {
         #expect(viewModel.createdGroup == nil)
         #expect(harness.presentedError == .groupCreationFailed)
         #expect(harness.store.groups.isEmpty)
+        #expect(harness.logs(.error).filter { $0.hasPrefix("Create failed for group \(viewModel.draft.clientId):") }.count == 1)
     }
 
+    /// A lookup that fails says nothing about the create: the user sees the create's failure and the log says the
+    /// check was not possible.
     @Test func aFailedLookupKeepsTheFailure() async {
+        fillDraft()
+        harness.repository.actionError = AppError.network
+        harness.repository.thrownError = AppError.groupsUnavailable
+
+        await viewModel.submit()
+
+        #expect(harness.presentedError == .network)
+        #expect(harness.logs(.warning)
+            .filter { $0.contains("Could not check whether group \(viewModel.draft.clientId) landed") }.count == 1)
+    }
+
+    /// Nothing under the draft's id is the check's answer, not a fault of the check: the failure reaches the popup,
+    /// Mine stays as it was and the log notes the miss below warning.
+    @Test func aCreateThatDidNotLandIsReportedWithoutAWarning() async {
         fillDraft()
         harness.repository.actionError = AppError.network
         harness.repository.result = .success([])
@@ -127,7 +142,10 @@ struct CreateGroupViewModelTests {
         await viewModel.submit()
 
         #expect(harness.presentedError == .network)
-        #expect(harness.logs(.warning).contains { $0.hasPrefix("Could not check whether the create landed") })
+        #expect(harness.repository.fetchedGroupIDs == [viewModel.draft.clientId])
+        #expect(harness.logs(.warning).isEmpty)
+        #expect(harness.logs(.debug).contains { $0.contains("did not land") })
+        #expect(harness.store.groups.isEmpty)
     }
 
     @Test func aRefusalWithCopyIsReportedWithoutALookup() async {

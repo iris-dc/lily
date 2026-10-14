@@ -4,19 +4,11 @@ import SwiftUI
 /// details. Under each group the first thing still wrong with it, so a disabled Create or Save button is never a mystery.
 struct EventDraftForm<Model: EventDraftEditing>: View {
     @Bindable var viewModel: Model
-    /// The price field edits text and parses on every change (like the filter's cap), so Create never races a pending
-    /// commit of the decimal pad, which has no return key. Seeded from the draft, so an edit shows the game's price.
-    @State private var priceText: String
     @FocusState private var focusedField: Field?
 
     private enum Field { case title, locationName }
 
     private typealias Copy = AppBranding.Events.Create
-
-    init(viewModel: Model) {
-        self.viewModel = viewModel
-        _priceText = State(initialValue: viewModel.draft.price.map { $0.formatted(Price.inputFormat) } ?? "")
-    }
 
     var body: some View {
         Form {
@@ -47,7 +39,7 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
             Text(Copy.gameSection)
         } footer: {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-                issueText(viewModel.issue(for: .titleMissing, .titleTooLong, .startsAtTooSoon))
+                viewModel.issue(for: .titleMissing, .titleTooLong, .startsAtTooSoon).map { Text(Copy.message(for: $0)) }
                 if viewModel.explainsNoEligibleGroups {
                     Text(Copy.noEligibleGroups)
                 }
@@ -57,10 +49,7 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
 
     /// Single choice in the filter panel's chip look; one type is always selected.
     private var typeChips: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-            Text(Copy.eventType)
-                .font(LilyTheme.Fonts.caption)
-                .foregroundStyle(.secondary)
+        CaptionedControl(Copy.eventType) {
             EventTypeChips(isSelected: { $0 == viewModel.draft.type }, onSelect: { type in
                 if let type { viewModel.draft.type = type }
             })
@@ -89,17 +78,17 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
 
     private var whereSection: some View {
         Section {
-            TextField(Copy.locationNamePlaceholder, text: $viewModel.draft.locationName)
-                .textInputAutocapitalization(.words)
-                .focused($focusedField, equals: .locationName)
-                .submitLabel(.done)
-                .accessibilityIdentifier(AccessibilityIdentifiers.createLocationName)
-            PlacePickerRow(coordinate: $viewModel.draft.coordinate)
-                .accessibilityIdentifier(AccessibilityIdentifiers.createPickOnMap)
+            PlaceFields(name: $viewModel.draft.locationName,
+                        coordinate: $viewModel.draft.coordinate,
+                        nameIdentifier: AccessibilityIdentifiers.createLocationName,
+                        pickerIdentifier: AccessibilityIdentifiers.createPickOnMap,
+                        focus: $focusedField,
+                        equals: .locationName)
         } header: {
             Text(Copy.whereSection)
         } footer: {
-            issueText(viewModel.issue(for: .locationNameMissing, .locationNameTooLong, .coordinateMissing))
+            viewModel.issue(for: .locationNameMissing, .locationNameTooLong, .coordinateMissing)
+                .map { Text(Copy.message(for: $0)) }
         }
     }
 
@@ -127,7 +116,7 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
                 if let hint = Copy.hint(for: viewModel.draft.playerLimit) {
                     Text(hint)
                 }
-                issueText(viewModel.issue(for: .capacityOutOfRange, .capacityBelowParticipants))
+                viewModel.issue(for: .capacityOutOfRange, .capacityBelowParticipants).map { Text(Copy.message(for: $0)) }
             }
         }
     }
@@ -139,48 +128,32 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
                 .lineLimit(DesignTokens.Layout.multilineFieldLines)
             TextField(Copy.lookingForPlaceholder, text: $viewModel.draft.lookingFor)
                 .textInputAutocapitalization(.sentences)
-            levelPicker
+            SkillLevelPicker(selection: $viewModel.draft.skillLevel)
             priceRow
         } header: {
             Text(Copy.detailsSection)
         } footer: {
-            issueText(viewModel.issue(for: .descriptionTooLong, .lookingForTooLong, .priceOutOfRange))
+            viewModel.issue(for: .descriptionTooLong, .lookingForTooLong, .priceUnreadable, .priceOutOfRange)
+                .map { Text(Copy.message(for: $0)) }
         }
     }
 
-    private var levelPicker: some View {
-        Picker(Copy.level, selection: $viewModel.draft.skillLevel) {
-            Text(Copy.anyLevel).tag(SkillLevel?.none)
-            ForEach(SkillLevel.known, id: \.self) { level in
-                Text(level.displayName).tag(SkillLevel?.some(level))
-            }
-        }
-    }
-
-    /// Empty or zero means free. The text is the source while typing; the draft is parsed from it on every change.
+    /// Empty or zero means free. The draft holds the text and reads it as an amount on every change, so Create never
+    /// races a pending commit of the decimal pad, which has no return key, and an edit opens with the game's price as
+    /// the draft seeded it.
     private var priceRow: some View {
         HStack(spacing: DesignTokens.Spacing.xs) {
             Text(Copy.price)
             Spacer()
-            TextField(Copy.pricePlaceholder, text: $priceText)
+            TextField(Copy.pricePlaceholder, text: $viewModel.draft.priceText)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
-                .frame(width: DesignTokens.Layout.filterPriceFieldWidth)
+                .frame(width: DesignTokens.Layout.priceFieldWidth)
                 .accessibilityIdentifier(AccessibilityIdentifiers.createPrice)
                 .accessibilityLabel(Copy.price)
             Text(Price.symbol(for: viewModel.draft.currencyCode))
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier(AccessibilityIdentifiers.createPriceCurrency)
-        }
-        .onChange(of: priceText) {
-            viewModel.draft.price = Price.parseAmount(priceText)
-        }
-    }
-
-    @ViewBuilder
-    private func issueText(_ issue: EventDraft.Issue?) -> some View {
-        if let issue {
-            Text(Copy.message(for: issue))
         }
     }
 }

@@ -1,12 +1,10 @@
 import SwiftUI
 
 /// The Chats root on a compact width: the conversations (`ConversationList`), each tap pushing the inbox or a room on
-/// this stack, with the clear or delete confirmation the rows ask for. A guest is asked to sign in instead, and
-/// nothing is requested for them; the loads run again for whoever signs in from here.
+/// this stack; the rows ask for a clear or delete themselves. A guest is asked to sign in instead, and nothing is
+/// requested for them; the loads run again for whoever signs in from here.
 struct ChatsView: View {
     let dependencies: AppDependencies
-    /// The room awaiting the caller's word on a clear; `nil` while nothing is asked.
-    @State private var clearing: SportGroup?
 
     private typealias Copy = AppBranding.Chats
 
@@ -23,15 +21,11 @@ struct ChatsView: View {
                 ConversationList(dependencies: dependencies,
                                  selection: nil,
                                  onOpenInbox: { dependencies.navigation.openInbox() },
-                                 onOpenRoom: { dependencies.navigation.open(chat: $0) },
-                                 onClear: { clearing = $0 })
+                                 onOpenRoom: { dependencies.navigation.open(chat: $0) })
             }
         }
         .navigationTitle(AppBranding.chatsTitle)
         .conversationDestinations(dependencies: dependencies)
-        .chatClearConfirmation(for: $clearing) { group in
-            Task { await dependencies.makeChatHistoryClearer().clear(group) }
-        }
         .conversationLoads(dependencies: dependencies)
     }
 }

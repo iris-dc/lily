@@ -92,6 +92,21 @@ struct AppNavigationTests {
         #expect(AppNavigation.startTab(for: .loading) == .explore)
     }
 
+    /// What a notification or the inbox opens lands on the Chats stack, and on Home while chat is switched off.
+    @Test func openFromNotificationFollowsTheChatFlag() {
+        let navigation = AppNavigation()
+
+        navigation.openFromNotification("x")
+
+        if AppConfig.FeatureFlags.chat {
+            #expect(navigation.selectedTab == .chat)
+            #expect(navigation.chatPath.count == 1 && navigation.homePath.isEmpty)
+        } else {
+            #expect(navigation.selectedTab == .home)
+            #expect(navigation.homePath.count == 1 && navigation.chatPath.isEmpty)
+        }
+    }
+
     /// The pushed screens were the previous user's; the next one starts where a guest does.
     @Test func signOutResetsTheTabAndBothStacks() {
         let navigation = AppNavigation()

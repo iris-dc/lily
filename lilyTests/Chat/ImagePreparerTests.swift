@@ -48,14 +48,6 @@ struct ImagePreparerTests {
         context.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: size.width, y: size.height), options: [])
     }
 
-    private func dimensions(of url: URL) throws -> (width: Int, height: Int) {
-        let source = try #require(CGImageSourceCreateWithURL(url as CFURL, nil))
-        let properties = try #require(CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any])
-        let width = try #require(properties[kCGImagePropertyPixelWidth] as? Int)
-        let height = try #require(properties[kCGImagePropertyPixelHeight] as? Int)
-        return (width, height)
-    }
-
     /// The "prepared" debug line for `id`, if one was logged.
     private func preparedLine(for id: String) -> String? {
         logger.messages(in: .chat, at: .debug).first { $0.hasPrefix("Attachment \(id) prepared:") }
@@ -70,12 +62,12 @@ struct ImagePreparerTests {
 
         #expect(draft.id == "p1" && draft.kind == .image && draft.contentType == "image/jpeg" && draft.state == .preparing)
         #expect(draft.width == 2048 && draft.height == 1536)
-        #expect(try dimensions(of: draft.fileURL) == (2048, 1536))
+        #expect(try ImageFiles.dimensions(of: draft.fileURL) == (2048, 1536))
         let written = try Data(contentsOf: draft.fileURL)
         #expect(draft.sizeBytes == written.count && draft.sizeBytes > 0)
         #expect(draft.fileURL.lastPathComponent == "p1.jpg" && draft.fileURL.path().hasPrefix(directory.path()))
         let thumbnail = try #require(draft.thumbnailURL)
-        let thumbnailSize = try dimensions(of: thumbnail)
+        let thumbnailSize = try ImageFiles.dimensions(of: thumbnail)
         #expect(thumbnailSize.width == 512 && thumbnailSize.height == 384)
         let thumbnailBytes = try Data(contentsOf: thumbnail)
         #expect(draft.thumbnailSizeBytes == thumbnailBytes.count)
@@ -100,8 +92,8 @@ struct ImagePreparerTests {
         let draft = try await makePreparer().prepareImage(data, id: "p9", caps: .group)
 
         #expect(draft.width == 400 && draft.height == 600)
-        #expect(try dimensions(of: draft.fileURL) == (400, 600))
-        let thumbnail = try dimensions(of: try #require(draft.thumbnailURL))
+        #expect(try ImageFiles.dimensions(of: draft.fileURL) == (400, 600))
+        let thumbnail = try ImageFiles.dimensions(of: try #require(draft.thumbnailURL))
         #expect(thumbnail.width < thumbnail.height, "the thumbnail is turned with the picture")
     }
 

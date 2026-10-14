@@ -1,8 +1,8 @@
 import Foundation
 
 nonisolated extension DesignTokens.Symbols {
-    /// The currency row on Profile.
-    static let currency = "banknote"
+    /// The currency row on Profile: the price glyph.
+    static let currency = DesignTokens.Symbols.price
     /// The up-and-down chevrons a menu picker's button carries; drawn by hand where the button's text is not the item's.
     static let menuChevron = "chevron.up.chevron.down"
 }

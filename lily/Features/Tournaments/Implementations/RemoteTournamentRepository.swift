@@ -95,15 +95,19 @@ private extension RemoteTournamentRepository {
     /// A group's tournaments have a resource of their own; the other scopes are a query on `/api/tournaments`, with the
     /// position only on Explore, where the backend records it for the statistics.
     static func listRequest(for scope: TournamentScope, near position: Coordinate?) -> APIRequest<Page<Tournament>> {
-        let scopeKey = AppConfig.API.Query.scope
         switch scope {
         case .group(let id):
-            return .get(AppConfig.API.Paths.groupTournaments(id: id))
+            .get(AppConfig.API.Paths.groupTournaments(id: id))
         case .upcoming:
-            let query = [URLQueryItem(name: scopeKey, value: "upcoming")] + (position?.queryItems ?? [])
-            return .get(AppConfig.API.Paths.tournaments, query: query)
+            .get(AppConfig.API.Paths.tournaments, query: scopeItems(for: scope) + (position?.queryItems ?? []))
         case .mine:
-            return .get(AppConfig.API.Paths.tournaments, query: [URLQueryItem(name: scopeKey, value: "mine")])
+            .get(AppConfig.API.Paths.tournaments, query: scopeItems(for: scope))
         }
+    }
+
+    /// The `scope` item, or none for a scope that is a resource of its own.
+    private static func scopeItems(for scope: TournamentScope) -> [URLQueryItem] {
+        guard let name = scope.wireName else { return [] }
+        return [URLQueryItem(name: AppConfig.API.Query.scope, value: name)]
     }
 }

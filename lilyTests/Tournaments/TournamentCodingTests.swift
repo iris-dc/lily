@@ -153,6 +153,14 @@ struct TournamentCodingTests {
         #expect(tournament.cancelling(at: .now).status == .cancelled)
         #expect(tournament.entriesDescription == "2 of 8 players")
         #expect(Tournament.fixture(teamSize: 5, maxEntries: 8, entryCount: 4).entriesDescription == "4 of 8 teams of 5")
+        let resolved = tournament.replacingOrganizer("seed-marta", with: "me", myEntryId: "e1")
+        #expect(resolved.organizerUserId == "me" && resolved.myEntryId == "e1")
+        #expect(resolved.name == tournament.name && resolved.entryCount == tournament.entryCount)
+        #expect(tournament.replacingOrganizer("seed-marta", with: nil, myEntryId: nil).organizerUserId == "seed-marta")
+        let entry = TournamentEntry.fixture(captainUserId: "m")
+        let mine = entry.replacingUser("m", with: "me")
+        #expect(mine.captainUserId == "me" && mine.members.map(\.userId) == ["me"])
+        #expect(entry.replacingUser("other", with: "me") == entry)
     }
 
     /// Entries open while in registration and, with a deadline, before it; the count fills towards the cap.

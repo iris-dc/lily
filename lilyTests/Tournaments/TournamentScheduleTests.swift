@@ -13,8 +13,6 @@ struct TournamentScheduleTests {
         let matches: [TournamentSchedule.Pairing]
     }
 
-    private final class BundleToken {}
-
     private static let fixtureNames = ["single-elimination-2", "single-elimination-5", "single-elimination-8",
                                        "round-robin-4", "round-robin-5"]
 
@@ -64,11 +62,19 @@ struct TournamentScheduleTests {
         #expect(TournamentSchedule.matchID(round: 12, position: 100) == "r12p100")
     }
 
-    /// The fixtures reach the test bundle through the synchronized group; `tiny.mp4` taught that the folder flattens.
+    /// The backend refuses a start before drawing, so one seed or none draws nothing in either format; the two-seed
+    /// final is the `single-elimination-2` fixture.
+    @Test func fewerThanTwoSeedsDrawNothing() {
+        #expect(TournamentSchedule.pairings(format: .singleElimination, seeds: []).isEmpty)
+        #expect(TournamentSchedule.pairings(format: .singleElimination, seeds: ["a"]).isEmpty)
+        #expect(TournamentSchedule.pairings(format: .roundRobin, seeds: []).isEmpty)
+        #expect(TournamentSchedule.pairings(format: .roundRobin, seeds: ["a"]).isEmpty)
+    }
+
+    /// The fixtures reach the test bundle through the synchronized group, which flattens the folder; `TestFixtureFiles`
+    /// looks at the root first.
     private static func fixture(named name: String) throws -> Fixture {
-        let bundle = Bundle(for: BundleToken.self)
-        let url = try #require(bundle.url(forResource: name, withExtension: "json")
-                                   ?? bundle.url(forResource: name, withExtension: "json", subdirectory: "pairings"),
+        let url = try #require(TestFixtureFiles.url(forResource: name, withExtension: "json", subdirectory: "pairings"),
                                "fixture \(name).json missing from the test bundle")
         return try JSONDecoder().decode(Fixture.self, from: Data(contentsOf: url))
     }

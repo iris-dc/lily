@@ -105,10 +105,8 @@ nonisolated struct AttachmentDraft: Identifiable, Hashable, Sendable {
         localFiles.forEach { try? FileManager.default.removeItem(at: $0) }
     }
 
-    var aspectRatio: CGFloat? {
-        guard let width, let height, width > 0, height > 0 else { return nil }
-        return CGFloat(width) / CGFloat(height)
-    }
+    /// The same rule as the stored attachment's, for the unsent bubble to size a single picture.
+    var aspectRatio: CGFloat? { AspectRatio.of(width: width, height: height) }
 
     /// What the upload ticket is asked for.
     var uploadRequest: UploadRequestPayload {
@@ -145,3 +143,5 @@ nonisolated struct AttachmentDraft: Identifiable, Hashable, Sendable {
         return copy
     }
 }
+
+extension AttachmentDraft: GalleryItem {}

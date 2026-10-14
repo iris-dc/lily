@@ -38,6 +38,20 @@ struct FilmGrainTests {
             != FilmGrain.frameIndex(at: now + 1.5 / rate, frameCount: count, frameRate: rate))
     }
 
+    /// The wall clock comes in as `timeIntervalSinceReferenceDate`, so a device clock set before 2001 is negative, and
+    /// the guard in `frameIndex` is what keeps the overlay's tile subscript in range.
+    @Test func aNegativeTimeStaysInRange() {
+        let count = 12, rate = 24.0
+        #expect(FilmGrain.frameIndex(at: -0.01, frameCount: count, frameRate: rate) == 11)
+        // Without the guard `Int(-2.4)` is -2, which `min` lets through.
+        #expect(FilmGrain.frameIndex(at: -0.1, frameCount: count, frameRate: rate) == 9)
+        #expect(FilmGrain.frameIndex(at: -0.5, frameCount: count, frameRate: rate)
+            == FilmGrain.frameIndex(at: 0, frameCount: count, frameRate: rate))
+        let beforeTheReferenceDate: TimeInterval = -800_000_000.3
+        let index = FilmGrain.frameIndex(at: beforeTheReferenceDate, frameCount: count, frameRate: rate)
+        #expect((0..<count).contains(index))
+    }
+
     @Test func buildsAGrayscaleImage() {
         let image = FilmGrain.makeImage(size: size, seed: seed)
         #expect(image?.width == size)

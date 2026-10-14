@@ -95,6 +95,30 @@ struct GroupAccessTests {
         #expect(!access.canRemove(.member) && !access.canBan(.member))
     }
 
+    /// Whoever may read the group may report it, the owner excepted, like a tournament's organiser.
+    @Test func membersAndAdminsMayReportTheGroupTheOwnerMayNot() {
+        let privateGroup = SportGroup.fixture(visibility: .private)
+        #expect(GroupAccess.member(.member).canReport(in: privateGroup))
+        #expect(GroupAccess.member(.admin).canReport(in: privateGroup))
+        #expect(!GroupAccess.member(.owner).canReport(in: privateGroup))
+    }
+
+    /// A signed-in outsider reads a public group and so may report it; a private group is closed to them.
+    @Test func aSignedInOutsiderMayReportAPublicGroupOnly() {
+        let publicGroup = SportGroup.fixture()
+        let privateGroup = SportGroup.fixture(visibility: .private)
+        for outsider in [GroupAccess.canJoin, .full] {
+            #expect(outsider.canReport(in: publicGroup))
+        }
+        #expect(!GroupAccess.inviteOnly.canReport(in: privateGroup))
+        #expect(!GroupAccess.full.canReport(in: privateGroup))
+    }
+
+    @Test func aGuestMayNotReport() {
+        #expect(!GroupAccess.guest.canReport(in: .fixture()))
+        #expect(!GroupAccess.guest.canReport(in: .fixture(visibility: .private)))
+    }
+
     @Test func membersChatSeeTheRosterAndLeave() {
         let member = GroupAccess.member(.member)
         #expect(member.isMember && member.canChat && member.canSeeMembers(in: .fixture(visibility: .private)) && member.canLeave)

@@ -37,13 +37,6 @@ final class LilySmokeTests: LilyUITestCase {
     }
 
     @MainActor
-    func testExploreCanSwitchToMap() {
-        relaunchAsGuest()
-        showMap()
-        attachScreenshot(named: "explore-map")
-    }
-
-    @MainActor
     func testMapSelectedCardStaysAboveTheTabBar() {
         relaunchAsGuest()
         showMap()
@@ -87,11 +80,7 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["2 of 4 joined"].exists, "the capacity must show the server's count")
 
         app.navigationBars.buttons.firstMatch.tap()
-        app.tabBars.buttons["Home"].tap()
-        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "the joined game must be listed under Home")
-
-        app.staticTexts[title].tap()
+        openFromHome(title)
         let leave = app.buttons["Leave"]
         XCTAssertTrue(leave.waitForExistence(timeout: 5))
         leave.tap()
@@ -186,17 +175,11 @@ final class LilySmokeTests: LilyUITestCase {
 
         let submit = app.buttons["create-submit"]
         XCTAssertTrue(submit.waitForExistence(timeout: 5))
-        XCTAssertTrue(submit.isEnabled, "title, place and the mock position complete the draft")
+        assertBecomesEnabled(submit, "title, place and the mock position complete the draft")
         submit.tap()
         XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
 
-        app.tabBars.buttons["Home"].tap()
-        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
-        let card = app.staticTexts[title]
-        if !card.waitForExistence(timeout: 10) { app.swipeUp() }
-        XCTAssertTrue(card.waitForExistence(timeout: 5), "the hosted game must be listed under Home")
-
-        card.tap()
+        openFromHome(title)
         XCTAssertTrue(app.staticTexts["You host this game"].waitForExistence(timeout: 5), "the host must see the hosting notice")
     }
 }

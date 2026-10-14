@@ -33,29 +33,21 @@ extension MockGroupRepository {
     /// The caller entered the tournament: a member of its room, unless they own it already.
     func admitToRoom(id: String) {
         guard let group = find(id), !group.isMember else { return }
-        let membership = GroupMembership(role: .member, joinedAt: now(), lastReadMessageId: group.lastMessageId)
-        replaceRoom(group.updatingMembership(membership, memberCount: group.memberCount + 1))
+        store(group.updatingMembership(membershipOnJoin(of: group), memberCount: group.memberCount + 1))
         logger.info(.groups, "Joined room \(id) (tournament entry)")
     }
 
     /// A player left the tournament: the caller (`nil`) loses their membership unless they organise it; another
-    /// player leaves the roster. The room rotates its epoch like any departure.
+    /// player leaves the roster. The room's epoch follows the tournament's through the `syncRoom` every departure
+    /// ends with, so nothing rotates here.
     func leaveRoom(id: String, userID: String?) {
         guard let group = find(id) else { return }
         if let userID {
             rosters[id]?.removeAll { $0.userId == userID }
-            replaceRoom(group.updatingMembership(group.membership,
-                                                 memberCount: group.memberCount - 1,
-                                                 channelEpoch: group.channelEpoch + 1))
+            store(group.updatingMembership(group.membership, memberCount: group.memberCount - 1))
         } else if group.role != .owner, group.isMember {
-            replaceRoom(group.updatingMembership(nil, memberCount: group.memberCount - 1, channelEpoch: group.channelEpoch + 1))
+            store(group.updatingMembership(nil, memberCount: group.memberCount - 1))
             logger.info(.groups, "Left room \(id) (tournament entry)")
-        }
-    }
-
-    private func replaceRoom(_ room: SportGroup) {
-        if let index = groups.firstIndex(where: { $0.id == room.id }) {
-            groups[index] = room
         }
     }
 }

@@ -2,7 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// When `loadIfStale()` reuses what a list already has, when it reloads, and how long it waits after a failure.
+/// When `loadIfStale()` reuses what a list already has, when it reloads, and how long it waits after a failure. The
+/// position's part, Explore content loaded for another place than the user's, is in `EventListPositionStalenessTests`.
 @MainActor
 struct EventListStalenessTests {
     @Test func loadIfStaleReusesEventsUntilTheyExpire() async {
@@ -15,7 +16,7 @@ struct EventListStalenessTests {
         await viewModel.loadIfStale()
         #expect(repository.requestedScopes.count == 1)
 
-        clock = clock.addingTimeInterval(AppConfig.Events.listStaleAfter)
+        clock = clock.addingTimeInterval(AppConfig.Lists.staleAfter)
         await viewModel.loadIfStale()
         #expect(repository.requestedScopes.count == 2)
     }
@@ -30,7 +31,7 @@ struct EventListStalenessTests {
         await viewModel.loadIfStale()
         #expect(logger.messages(in: .cache).contains { $0.contains("never loaded") })
 
-        clock = clock.addingTimeInterval(AppConfig.Events.listStaleAfter)
+        clock = clock.addingTimeInterval(AppConfig.Lists.staleAfter)
         await viewModel.loadIfStale()
         #expect(logger.messages(in: .cache).contains { $0.contains("older than TTL") })
     }
@@ -70,131 +71,6 @@ struct EventListStalenessTests {
         #expect(repository.requestedScopes.count == 2)
     }
 
-    /// Explore loaded before the position was known is in plain time order; once known, one reload lets the backend
-    /// order by distance. One: the second load carries the position, so the content is not stale for it again.
-    @Test func exploreReloadsOnceWhenThePositionBecomesKnown() async {
-        let repository = FakeEventRepository()
-        let service = FakeLocationService()
-        let logger = SpyLogger()
-        let viewModel = makeEventListViewModel(repository: repository, locationService: service, logger: logger)
-        await viewModel.loadIfStale()
-        #expect(repository.requestedPositions == [nil])
-
-        service.result = AppConfig.Location.mockCenter
-        await viewModel.loadUserLocation()
-        #expect(repository.requestedPositions == [nil, AppConfig.Location.mockCenter])
-        #expect(logger.messages(in: .cache).contains { $0.contains("position became known") })
-
-        await viewModel.loadIfStale()
-        #expect(repository.requestedScopes.count == 2)
-    }
-
-    @Test func noReloadWhenTheFirstLoadAlreadyHadThePosition() async {
-        let repository = FakeEventRepository()
-        let service = FakeLocationService()
-        service.result = AppConfig.Location.mockCenter
-        let viewModel = makeEventListViewModel(repository: repository, locationService: service)
-
-        await viewModel.loadUserLocation()
-        await viewModel.loadIfStale()
-        await viewModel.loadIfStale()
-
-        #expect(repository.requestedPositions == [AppConfig.Location.mockCenter])
-    }
-
-    /// The position arrived while the first request was out, so that answer is in time order: asked again at once.
-    @Test func aPositionArrivingMidLoadEarnsOneReload() async {
-        let repository = FakeEventRepository()
-        repository.holdsRequests = true
-        let service = FakeLocationService()
-        service.result = AppConfig.Location.mockCenter
-        let viewModel = makeEventListViewModel(repository: repository, locationService: service)
-
-        let load = Task { await viewModel.loadIfStale() }
-        await settle(until: { viewModel.isLoading })
-        await viewModel.loadUserLocation()
-        #expect(repository.requestedScopes.count == 1, "nothing extra while the request is out")
-        repository.releaseRequests()
-        await load.value
-
-        #expect(repository.requestedPositions == [nil, AppConfig.Location.mockCenter])
-        #expect(!viewModel.isLoading)
-    }
-
-    /// Explore was loaded for where the user was; after a day elsewhere the backend's order, the distances and the
-    /// radius are for the old place, so the content is stale for the new position and reloads once.
-    @Test func exploreReloadsOnceWhenTheUserMoved() async {
-        let repository = FakeEventRepository()
-        let service = FakeLocationService()
-        service.result = AppConfig.Location.mockCenter
-        let logger = SpyLogger()
-        let viewModel = makeEventListViewModel(repository: repository, locationService: service, logger: logger)
-        await viewModel.loadUserLocation()
-        await viewModel.loadIfStale()
-        #expect(repository.requestedPositions == [AppConfig.Location.mockCenter])
-
-        service.result = TestFixtures.elsewhere
-        await viewModel.refreshUserLocation()
-        #expect(repository.requestedPositions == [AppConfig.Location.mockCenter, TestFixtures.elsewhere])
-        #expect(logger.messages(in: .cache).contains { $0.contains("position changed") })
-
-        await viewModel.loadIfStale()
-        #expect(repository.requestedScopes.count == 2)
-    }
-
-    /// Positions are compared as the backend receives them (`positionPrecision`, about a kilometre), so GPS drift
-    /// between two fixes never reloads.
-    @Test func aMoveWithinTheRoundingIsNotAMove() async {
-        let repository = FakeEventRepository()
-        let service = FakeLocationService()
-        service.result = AppConfig.Location.mockCenter
-        let viewModel = makeEventListViewModel(repository: repository, locationService: service)
-        await viewModel.loadUserLocation()
-        await viewModel.loadIfStale()
-
-        service.result = Coordinate(latitude: AppConfig.Location.mockCenter.latitude + 0.001,
-                                    longitude: AppConfig.Location.mockCenter.longitude)
-        await viewModel.refreshUserLocation()
-        await viewModel.loadIfStale()
-
-        #expect(repository.requestedPositions == [AppConfig.Location.mockCenter])
-    }
-
-    /// The user moved while the request was out, so that answer is for the old place: asked again at once.
-    @Test func aMoveMidLoadEarnsOneReload() async {
-        let repository = FakeEventRepository()
-        let service = FakeLocationService()
-        service.result = AppConfig.Location.mockCenter
-        let viewModel = makeEventListViewModel(repository: repository, locationService: service)
-        await viewModel.loadUserLocation()
-        repository.holdsRequests = true
-
-        let load = Task { await viewModel.loadIfStale() }
-        await settle(until: { viewModel.isLoading })
-        service.result = TestFixtures.elsewhere
-        await viewModel.loadUserLocation()
-        #expect(repository.requestedScopes.count == 1, "nothing extra while the request is out")
-        repository.releaseRequests()
-        await load.value
-
-        #expect(repository.requestedPositions == [AppConfig.Location.mockCenter, TestFixtures.elsewhere])
-        #expect(!viewModel.isLoading)
-    }
-
-    /// Home is the caller's own games in start order; a position changes nothing there.
-    @Test func joinedNeverReloadsForAPosition() async {
-        let repository = FakeEventRepository()
-        let service = FakeLocationService()
-        let viewModel = makeEventListViewModel(scope: .joined, repository: repository, locationService: service)
-        await viewModel.loadIfStale()
-
-        service.result = AppConfig.Location.mockCenter
-        await viewModel.loadUserLocation()
-        await viewModel.loadIfStale()
-
-        #expect(repository.requestedPositions == [nil])
-    }
-
     @Test func loadIfStaleRetriesAFailureOnlyAfterTheCooldown() async {
         let repository = FakeEventRepository()
         repository.result = .failure(.network)
@@ -208,7 +84,7 @@ struct EventListStalenessTests {
         #expect(repository.requestedScopes.count == 1)
         #expect(viewModel.loadFailed)
 
-        clock = clock.addingTimeInterval(AppConfig.Events.retryAfterFailure)
+        clock = clock.addingTimeInterval(AppConfig.Lists.retryAfterFailure)
         await viewModel.loadIfStale()
         #expect(repository.requestedScopes.count == 2)
         #expect(viewModel.events.count == 1)

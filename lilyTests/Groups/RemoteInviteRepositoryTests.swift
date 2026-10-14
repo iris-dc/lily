@@ -4,12 +4,10 @@ import Testing
 
 @MainActor
 struct RemoteInviteRepositoryTests {
-    /// `nonisolated`: `@Test(arguments:)` reads it off the main actor.
+    /// One known code and the route's fallback: the shared mapping is proved once, in `SendFailingWithTests` and
+    /// `BackendErrorCodeTests.everyCodeMapsToItsCase`. `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
-        ("NOT_A_MEMBER", .notAMember), ("FORBIDDEN", .insufficientRole), ("GROUP_NOT_FOUND", .groupNotFound),
-        ("USER_NOT_FOUND", .userNotFound), ("ALREADY_MEMBER", .alreadyMember), ("CANNOT_INVITE", .cannotInvite),
-        ("TERMS_REQUIRED", .termsRequired), ("RATE_LIMITED", .rateLimited(retryAfter: nil)), ("TRY_AGAIN", .tryAgain),
-        ("VALIDATION_FAILED", .inviteUnavailable),
+        ("ALREADY_MEMBER", .alreadyMember), ("VALIDATION_FAILED", .inviteUnavailable),
     ]
     private static let otherFailures: [APIError] = [
         .http(status: 500, body: nil), .http(status: 403, body: nil), .decodingFailed, .notHTTPResponse,
@@ -72,19 +70,5 @@ struct RemoteInviteRepositoryTests {
             await #expect(throws: AppError.inviteUnavailable) { try await repository.candidates(groupID: "g1") }
             await #expect(throws: AppError.inviteUnavailable) { try await repository.invite(groupID: "g1", userID: "u-2") }
         }
-    }
-
-    @Test func statusOnlyFailuresAndTransportKeepTheSharedMapping() async {
-        client.error = APIError.http(status: 401, body: nil)
-        await #expect(throws: AppError.sessionExpired) { try await repository.candidates(groupID: "g1") }
-
-        client.error = APIError.http(status: 429, body: nil)
-        await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.invite(groupID: "g1", userID: "u-2") }
-
-        client.error = URLError(.notConnectedToInternet)
-        await #expect(throws: AppError.network) { try await repository.invite(groupID: "g1", userID: "u-2") }
-
-        client.error = URLError(.cancelled)
-        await #expect(throws: URLError(.cancelled)) { try await repository.candidates(groupID: "g1") }
     }
 }

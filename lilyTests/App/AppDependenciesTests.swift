@@ -42,11 +42,11 @@ struct AppDependenciesTests {
         #expect(failing.sessionController.state.user == nil)
     }
 
-    /// The shell binds to one navigation object and the events code to one tracker; a second instance would split them.
+    /// The events code and the groups code each bind to one tracker, and the stores are the ones the groups built; a
+    /// second instance would split them.
     @Test func groupCollaboratorsAreSharedInstances() {
         let dependencies = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
 
-        #expect(dependencies.navigation === dependencies.groups.navigation)
         #expect(dependencies.groupChanges === dependencies.groups.groupChanges)
         #expect(dependencies.groupChanges !== dependencies.eventChanges)
         #expect(dependencies.myGroups === dependencies.groups.myGroups)
@@ -68,11 +68,7 @@ struct AppDependenciesTests {
 
     /// The stores hold a user's data for the app's lifetime, so a sign-out must reach them.
     @Test func groupStoresClearOnSignOut() async {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeTestDefaults())
-        await dependencies.sessionController.signIn(with: .apple)
+        let dependencies = await makeSignedInMockDependencies()
         await dependencies.myGroups.reload()
         await dependencies.me.loadIfNeeded()
         #expect(dependencies.myGroups.groups.count == 6 && dependencies.me.isOperator)
@@ -84,11 +80,7 @@ struct AppDependenciesTests {
 
     /// Two simulators can act as two people: the flag replaces the id of every mock sign-in and names the user after it.
     @Test func mockUserIDLaunchArgumentOverridesEveryMockSignIn() async {
-        let arguments = [AppConfig.LaunchArguments.resetSession, AppConfig.LaunchArguments.mockAuth,
-                         AppConfig.LaunchArguments.mockEvents, AppConfig.LaunchArguments.mockUserID, "jane.doe"]
-        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeTestDefaults())
-
-        await dependencies.sessionController.signIn(with: .apple)
+        let dependencies = await makeSignedInMockDependencies(extraArguments: [AppConfig.LaunchArguments.mockUserID, "jane.doe"])
         let expected = AuthUser(id: "jane.doe", displayName: "Jane Doe", email: "jane.doe@example.com")
         #expect(dependencies.sessionController.state.user == expected)
         await dependencies.sessionController.signOut()
@@ -99,11 +91,7 @@ struct AppDependenciesTests {
 
     /// Without the flag the defaults stay, as `LilySignInTests` asserts on "Apple Tester".
     @Test func mockSignInsKeepTheirDefaultUsersWithoutTheFlag() async {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeTestDefaults())
-        await dependencies.sessionController.signIn(with: .apple)
+        let dependencies = await makeSignedInMockDependencies()
         #expect(dependencies.sessionController.state.user == MockUsers.user(for: .apple))
     }
 
@@ -124,9 +112,7 @@ struct AppDependenciesTests {
     }
 
     @Test func mockAuthConfirmLaunchArgumentAsksForTheMockCode() async {
-        let arguments = [AppConfig.LaunchArguments.resetSession, AppConfig.LaunchArguments.mockAuth,
-                         AppConfig.LaunchArguments.mockAuthConfirm, AppConfig.LaunchArguments.mockEvents]
-        let dependencies = AppDependencies.makeDefault(arguments: arguments, defaults: makeTestDefaults())
+        let dependencies = makeMockDependencies(extraArguments: [AppConfig.LaunchArguments.mockAuthConfirm])
         let controller = dependencies.sessionController
 
         #expect(await controller.signUp(email: "a@b.co", password: "long-enough") == .confirmationRequired)
@@ -211,10 +197,7 @@ struct AppDependenciesTests {
 
     /// The API client and the event screens ask `identity`; it must follow the session without extra wiring.
     @Test func identityFollowsTheSession() async {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeTestDefaults())
+        let dependencies = makeMockDependencies()
         #expect(dependencies.identity.currentUserID == nil)
 
         await dependencies.sessionController.signIn(with: .apple)

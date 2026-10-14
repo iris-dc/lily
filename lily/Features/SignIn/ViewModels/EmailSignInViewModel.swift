@@ -25,7 +25,7 @@ nonisolated enum EmailAuthMode: Hashable, Sendable {
     var toggleLabel: String {
         switch self {
         case .signIn: AppBranding.signUpPrompt
-        case .signUp: "\(AppBranding.signInPrompt) \(AppBranding.signInAction)"
+        case .signUp: AppBranding.signInPrompt
         case .confirm: AppBranding.backToSignInAction
         }
     }
@@ -107,7 +107,7 @@ final class EmailSignInViewModel {
         submitTask = nil
     }
 
-    private var trimmedEmail: String { email.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var trimmedEmail: String { email.trimmed }
 
     private var isCodeComplete: Bool {
         code.count == AppConfig.Cognito.confirmationCodeLength && code.allSatisfy(\.isNumber)

@@ -3,8 +3,9 @@ import Foundation
 
 /// Scriptable `TournamentRepository`: lists answer from `result`, the detail from `details`, writes change the stored
 /// detail the way the backend would (the results in `FakeTournamentRepository+Matches.swift`), and every call is recorded.
+/// While `holdsRequests`, list, detail and create requests record the call and then suspend until `releaseRequests()`.
 @MainActor
-final class FakeTournamentRepository: TournamentRepository {
+final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
     var result: Result<[Tournament], AppError> = .success([])
     /// The details `tournament(id:)` answers, by id; a miss is `.tournamentNotFound`.
     var details: [String: TournamentDetail] = [:]
@@ -16,13 +17,8 @@ final class FakeTournamentRepository: TournamentRepository {
     var transientErrors: [AppError] = []
     /// Thrown by `tournament(id:)` when set (a refetch that fails).
     var detailError: (any Error)?
-    /// While true, list and detail requests record the call and then suspend until `releaseRequests()`.
-    var holdsRequests: Bool {
-        get { hold.isEnabled }
-        set { hold.isEnabled = newValue }
-    }
+    let hold = RequestHold()
     var organizerUserID = "host"
-    private let hold = RequestHold()
     private var entrySequence = 10
     private(set) var requestedScopes: [TournamentScope] = []
     private(set) var requestedPositions: [Coordinate?] = []
@@ -57,14 +53,14 @@ final class FakeTournamentRepository: TournamentRepository {
     func tournaments(in scope: TournamentScope, near position: Coordinate?) async throws -> [Tournament] {
         requestedScopes.append(scope)
         requestedPositions.append(position)
-        await hold.wait()
+        try await hold.waitOrThrow()
         if let thrownError { throw thrownError }
         return try result.get()
     }
 
     func tournament(id: String) async throws -> TournamentDetail {
         fetchedIDs.append(id)
-        await hold.wait()
+        try await hold.waitOrThrow()
         if let thrownError { throw thrownError }
         if let detailError { throw detailError }
         guard let detail = details[id] else { throw AppError.tournamentNotFound }
@@ -73,7 +69,7 @@ final class FakeTournamentRepository: TournamentRepository {
 
     func create(_ draft: TournamentDraft) async throws -> TournamentDetail {
         createdDrafts.append(draft)
-        await hold.wait()
+        try await hold.waitOrThrow()
         try throwIfScripted()
         let tournament = draft.makeTournament(organizerUserId: organizerUserID,
                                               organizerName: TestFixtures.user.displayName,
@@ -134,29 +130,24 @@ final class FakeTournamentRepository: TournamentRepository {
         return remaining
     }
 
+    /// The organiser drops an entry; `myEntryId` goes only when the removed entry held the caller, as the backend's does.
     func removeEntry(id: String, entryID: String) async throws {
         removedEntries.append((id, entryID))
         try throwIfScripted()
         let detail = try stored(id)
         let entries = detail.entries.filter { $0.id != entryID }
+        let myEntryId = detail.tournament.myEntryId == entryID ? nil : detail.tournament.myEntryId
         store(detail.replacing(entries: entries)
-            .replacing(tournament: detail.tournament.updatingEntries(count: entries.count, myEntryId: nil, at: .now)))
+            .replacing(tournament: detail.tournament.updatingEntries(count: entries.count, myEntryId: myEntryId, at: .now)))
     }
 
-    /// Draws the matches like the backend, through the shared pairings.
+    /// Refuses a start under the format's minimum like the backend (`canStart`), and draws through the model.
     func start(id: String) async throws -> TournamentDetail {
         startedIDs.append(id)
         try throwIfScripted()
         let detail = try stored(id)
-        let seeds = detail.registeredEntries.sorted { $0.seed < $1.seed }.map(\.id)
-        let matches = TournamentSchedule.pairings(format: detail.tournament.format, seeds: seeds).map {
-            TournamentMatch(pairing: $0, tournamentId: id)
-        }
-        let standings = detail.tournament.format == .roundRobin
-            ? RoundRobinStandings.compute(entries: detail.registeredEntries, matches: matches)
-            : []
-        let started = detail.replacing(tournament: detail.tournament.starting(at: .now))
-        return store(started.replacing(matches: matches, standings: standings))
+        guard detail.tournament.canStart else { throw AppError.notEnoughEntries }
+        return store(detail.starting(at: .now))
     }
 
     /// Answers the match alone, as the backend does; the stored detail follows so a refetch agrees.
@@ -175,11 +166,6 @@ final class FakeTournamentRepository: TournamentRepository {
         try throwIfScripted()
         let detail = try stored(id)
         return store(detail.replacing(tournament: detail.tournament.cancelling(at: .now)))
-    }
-
-    /// Lets every held request through and stops holding new ones.
-    func releaseRequests() {
-        hold.release()
     }
 
     private var callerMember: EntryMember {

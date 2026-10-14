@@ -16,7 +16,7 @@ struct TournamentEntriesSegment: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
-            ForEach(detail.registeredEntries.sorted { $0.seed < $1.seed }) { entry in
+            ForEach(detail.registeredEntries) { entry in
                 EntryRow(entry: entry, viewModel: viewModel, teamSize: detail.tournament.teamSize)
                     .contextMenu {
                         if viewModel.permissions.canRemoveEntries {
@@ -90,20 +90,8 @@ struct EntryRow: View {
     }
 
     private var joinButton: some View {
-        Button {
-            Task { await viewModel.joinTeam(entry) }
-        } label: {
-            HStack(spacing: DesignTokens.Spacing.sm) {
-                Text(Copy.joinTeam)
-                if viewModel.isBusy {
-                    ProgressView()
-                        .controlSize(.regular)
-                        .accessibilityHidden(true)
-                }
-            }
-        }
-        .lilyGlassButton(sizing: .fitted, controlSize: .regular, labelColor: .lilyInk)
-        .disabled(viewModel.isBusy)
-        .accessibilityIdentifier(AccessibilityIdentifiers.tournamentJoinTeam(entry.id))
+        BusyButton(Copy.joinTeam, isBusy: viewModel.isBusy) { await viewModel.joinTeam(entry) }
+            .lilyGlassButton(sizing: .fitted, controlSize: .regular, labelColor: .lilyInk)
+            .accessibilityIdentifier(AccessibilityIdentifiers.tournamentJoinTeam(entry.id))
     }
 }

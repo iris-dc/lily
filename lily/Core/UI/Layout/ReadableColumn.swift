@@ -13,7 +13,7 @@ extension View {
     /// A detail screen's content inside its margin and the readable column, for the pieces a screen lays out one by
     /// one when something else (a bracket) must keep the whole width.
     func inReadableColumn() -> some View {
-        padding(.horizontal, DesignTokens.Spacing.xl)
+        padding(.horizontal, DesignTokens.Layout.detailMargin)
             .readableColumn()
     }
 }

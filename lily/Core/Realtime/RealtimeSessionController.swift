@@ -13,9 +13,9 @@ final class RealtimeSessionController: SessionObserver {
     var subscribedRooms: [String: Int] = [:]
     var openRoom: RoomSubscription?
 
-    /// Someone reading `envelopes(for:)` or `userEnvelopes()`; `groupID` is `nil` for the user channel.
+    /// Someone reading `envelopes(for:)` for one room.
     struct Consumer {
-        let groupID: String?
+        let groupID: String
         let continuation: AsyncStream<RealtimeEnvelope>.Continuation
     }
 
@@ -41,7 +41,8 @@ final class RealtimeSessionController: SessionObserver {
     var pendingResubscribes: [String: Task<Void, Never>] = [:]
     var consumers: [UUID: Consumer] = [:]
     var lastExpiry: Date?
-    var backoffAttempt = 0
+    /// Where along the reconnect table the next wait falls; a good token starts it over.
+    var backoff = Backoff()
     /// Forced refreshes that answered no token since a connect last had one; `maxReconnectsWithoutToken` bounds it.
     var reconnectsWithoutToken = 0
     var reportedExpiredSession = false
@@ -166,18 +167,9 @@ final class RealtimeSessionController: SessionObserver {
         reconcileSubscriptions()
     }
 
-    func subscribedEpoch(for groupID: String) -> Int? {
-        subscribedRooms[groupID]
-    }
-
     /// Everything that arrives for one room; ends when the caller stops reading.
     func envelopes(for groupID: String) -> AsyncStream<RealtimeEnvelope> {
         makeConsumerStream(groupID: groupID)
-    }
-
-    /// Everything that arrives on `users/<sub>`.
-    func userEnvelopes() -> AsyncStream<RealtimeEnvelope> {
-        makeConsumerStream(groupID: nil)
     }
 
     func sessionDidEnd() {
@@ -207,12 +199,12 @@ final class RealtimeSessionController: SessionObserver {
     private func resetSessionState() {
         knownEpochs = [:]
         lastExpiry = nil
-        backoffAttempt = 0
+        backoff.reset()
         reconnectsWithoutToken = 0
         reportedExpiredSession = false
     }
 
-    private func makeConsumerStream(groupID: String?) -> AsyncStream<RealtimeEnvelope> {
+    private func makeConsumerStream(groupID: String) -> AsyncStream<RealtimeEnvelope> {
         let id = UUID()
         let (stream, continuation) = AsyncStream<RealtimeEnvelope>.makeStream()
         consumers[id] = Consumer(groupID: groupID, continuation: continuation)

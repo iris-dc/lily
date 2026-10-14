@@ -4,7 +4,10 @@ import Foundation
 /// after `AppConfig.Chat.mockEchoDelay`, and, when asked (`-mock-chat-replies`), rooms of `mockLongRoomMessages`
 /// rows and a fixture member who answers after `mockAutoReplyDelay`. A clear moves the caller's floor past every
 /// stored row (`floors`), and hides a conversation from Mine until any new line, the caller's included, brings it back.
-/// Attachments live in `MockAttachmentStore` (`MockChatRepository+Attachments.swift`).
+/// Every id minted here (a send, a reply, a floor) is `MockChatFixtures.sentMessageID` in its room's own id space, so
+/// it sorts after the room's fixture rows and after every earlier one of the run, as the backend's ULIDs do; pages,
+/// floors and the stores compare ids as strings within a room. Attachments live in `MockAttachmentStore`
+/// (`MockChatRepository+Attachments.swift`).
 final class MockChatRepository: ChatRepository {
     /// Stored state is internal, not private, so `MockChatRepository+Attachments.swift` can reach it.
     var rooms: [String: [ChatMessage]] = [:]
@@ -76,7 +79,7 @@ final class MockChatRepository: ChatRepository {
         }
         let payload = draft.payload
         guard payload.text != nil || payload.attachments != nil else { throw AppError.messageSendFailed }
-        let message = ChatMessage(id: nextID(),
+        let message = ChatMessage(id: nextID(in: groupID),
                                   groupId: groupID,
                                   senderUserId: callerID,
                                   senderName: AppBranding.Groups.Create.mockOwnerName,
@@ -85,8 +88,7 @@ final class MockChatRepository: ChatRepository {
                                   sentAt: now(),
                                   replyTo: try replyQuote(for: draft, in: groupID, messages),
                                   attachments: try storedAttachments(payload.attachments ?? [], in: groupID, by: callerID))
-        store(message, in: group)
-        publish(.message(message), to: group, after: AppConfig.Chat.mockEchoDelay)
+        post(message, in: group, echoAfter: AppConfig.Chat.mockEchoDelay)
         if autoReplies { scheduleReply(in: group) }
         return SentMessage(message: message, channelEpoch: group.channelEpoch)
     }
@@ -111,11 +113,15 @@ final class MockChatRepository: ChatRepository {
     }
 
     /// Like the backend: the caller's floor moves to now, so every row stored so far drops out of their pages while
-    /// everyone else keeps it; a conversation also leaves Mine until a new line (either side's) brings it back.
+    /// everyone else keeps it, and parks the caller's read marker at the floor (the backend reads unread against the
+    /// later of the marker and the floor), so the room reads as read on the next Mine load, a clear from the Chats
+    /// row's menu on a room never opened included; a conversation also leaves Mine until a new line (either side's)
+    /// brings it back.
     func clearHistory(groupID: String) async throws -> ClearedHistory {
         let (group, _) = try await room(groupID)
-        let floor = nextID()
+        let floor = nextID(in: groupID)
         floors[groupID] = floor
+        _ = try groups.markRead(id: groupID, messageID: floor)
         if group.isDirect { groups.hideConversation(id: groupID) }
         logger.info(.chat, "Mock chat history cleared for group \(groupID)")
         return ClearedHistory(historyFloor: floor, hidden: group.isDirect, channelEpoch: group.channelEpoch)
@@ -153,16 +159,18 @@ final class MockChatRepository: ChatRepository {
         return (group, messages.filter { $0.id > floor })
     }
 
-    /// A new line in the room; a hidden conversation is back in Mine with it, as the backend's floor rule implies.
-    private func store(_ message: ChatMessage, in group: SportGroup) {
+    /// A new line in the room, echoed over the bus after `delay` as the backend publishes after its commit; a hidden
+    /// conversation is back in Mine with it, as the backend's floor rule implies.
+    private func post(_ message: ChatMessage, in group: SportGroup, echoAfter delay: Duration) {
         rooms[group.id, default: []].append(message)
         if group.isDirect { groups.unhideConversation(id: group.id) }
+        publish(.message(message), to: group, after: delay)
     }
 
-    /// Sorts after every fixture id and after every earlier send.
-    private func nextID() -> String {
+    /// Per room: after every fixture row of the room and after every earlier send, reply or floor of this run.
+    private func nextID(in groupID: String) -> String {
         sequence += 1
-        return MockChatFixtures.messageID(groupID: "send", index: Int(now().timeIntervalSince1970 * 1000) * 1000 + sequence)
+        return MockChatFixtures.sentMessageID(groupID: groupID, sequence: sequence)
     }
 
     private func scheduleReply(in group: SportGroup) {
@@ -172,14 +180,13 @@ final class MockChatRepository: ChatRepository {
         let delay = AppConfig.Chat.mockAutoReplyDelay
         Task { [weak self, sleep] in
             guard (try? await sleep(delay)) != nil, let self else { return }
-            let message = ChatMessage(id: nextID(),
+            let message = ChatMessage(id: nextID(in: group.id),
                                       groupId: group.id,
                                       senderUserId: MockGroupFixtures.memberID(for: sender),
                                       senderName: sender,
                                       text: reply,
                                       sentAt: now())
-            store(message, in: group)
-            publish(.message(message), to: group, after: .zero)
+            post(message, in: group, echoAfter: .zero)
         }
     }
 

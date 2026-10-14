@@ -9,23 +9,13 @@ struct InviteCandidateRow: View {
     let onInvite: () -> Void
 
     private typealias Copy = AppBranding.Groups.Invite
+    private typealias Layout = DesignTokens.Layout
 
     var body: some View {
-        HStack(spacing: DesignTokens.Spacing.md) {
-            AvatarCircle(initials: candidate.displayName.initials, size: DesignTokens.Layout.avatarMedium)
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-                Text(candidate.displayName)
-                    .font(.body.weight(.semibold))
-                    .lineLimit(1)
-                Text(candidate.caption)
-                    .font(LilyTheme.Fonts.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            Spacer(minLength: DesignTokens.Spacing.sm)
-            inviteButton
-        }
-        .padding(.vertical, DesignTokens.Spacing.md)
+        ConversationRow(caption: candidate.caption,
+                        avatar: AvatarCircle(initials: candidate.displayName.initials, size: Layout.avatarMedium),
+                        title: { Text(candidate.displayName) },
+                        trailing: { inviteButton })
         // A container first: an identifier on a bare stack is stamped on every element inside it, the button's included.
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AccessibilityIdentifiers.inviteCandidate(candidate.userId))
@@ -33,14 +23,7 @@ struct InviteCandidateRow: View {
 
     private var inviteButton: some View {
         Button(action: onInvite) {
-            HStack(spacing: DesignTokens.Spacing.sm) {
-                Text(candidate.isInvited ? Copy.sent : Copy.send)
-                if isSending {
-                    ProgressView()
-                        .controlSize(.small)
-                        .accessibilityHidden(true)
-                }
-            }
+            BusyLabel(candidate.isInvited ? Copy.sent : Copy.send, isBusy: isSending, spinnerSize: .small)
         }
         .lilyGlassButton(sizing: .fitted, controlSize: .regular, labelColor: .lilyInk)
         .disabled(candidate.isInvited || isSending)

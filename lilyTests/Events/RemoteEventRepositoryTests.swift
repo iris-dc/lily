@@ -4,18 +4,10 @@ import Testing
 
 @MainActor
 struct RemoteEventRepositoryTests {
-    /// `nonisolated`: `@Test(arguments:)` reads it off the main actor.
+    /// One known code and the route's fallback: the shared mapping is proved once, in `SendFailingWithTests` and
+    /// `BackendErrorCodeTests.everyCodeMapsToItsCase`. `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
-        ("EVENT_FULL", .eventFull),
-        ("ALREADY_JOINED", .alreadyJoined),
-        ("NOT_A_PARTICIPANT", .notAParticipant),
-        ("HOST_CANNOT_LEAVE", .hostCannotLeave),
-        ("NOT_HOST", .notHost),
-        ("CAPACITY_TOO_LOW", .capacityTooLow),
-        ("TRY_AGAIN", .tryAgain),
-        ("RATE_LIMITED", .rateLimited(retryAfter: nil)),
-        ("EVENT_NOT_FOUND", .eventNotFound),
-        ("VALIDATION_FAILED", .participationFailed),
+        ("EVENT_FULL", .eventFull), ("VALIDATION_FAILED", .participationFailed),
     ]
     /// Failures without a backend code of their own; what they become depends on what was being asked.
     private static let otherFailures: [APIError] = [
@@ -191,16 +183,12 @@ struct RemoteEventRepositoryTests {
         }
     }
 
-    /// A create that lost a race keeps its own copy: repeating it with the same client id is safe.
-    @Test func createTryAgainAndTransportFailuresKeepTheirOwnErrors() async {
+    /// A create that lost a race keeps its own copy and retry hint (repeating it with the same client id is safe);
+    /// the create's fallback must not swallow it.
+    @Test func createKeepsTryAgainOutOfTheCreationFallback() async {
         client.error = APIError.http(status: 409, body: APIErrorBody(code: "TRY_AGAIN", message: "m"))
+
         await #expect(throws: AppError.tryAgain) { try await repository.create(.fixture()) }
-
-        client.error = URLError(.notConnectedToInternet)
-        await #expect(throws: AppError.network) { try await repository.create(.fixture()) }
-
-        client.error = URLError(.cancelled)
-        await #expect(throws: URLError(.cancelled)) { try await repository.create(.fixture()) }
     }
 
     @Test(arguments: codeCases)
@@ -227,39 +215,6 @@ struct RemoteEventRepositoryTests {
             await #expect(throws: AppError.participationFailed) { try await repository.leave(eventId: "evt_01J") }
         }
     }
-
-    /// A 401 is about the token, not about what was asked, so it keeps its own copy on reads, writes and creates alike.
-    @Test func unauthorizedBecomesSessionExpiredWhateverWasAsked() async {
-        client.error = APIError.http(status: 401, body: nil)
-
-        await #expect(throws: AppError.sessionExpired) { try await repository.events(in: .joined, near: nil) }
-        await #expect(throws: AppError.sessionExpired) { try await repository.join(eventId: "evt_01J") }
-        await #expect(throws: AppError.sessionExpired) { try await repository.create(.fixture()) }
-    }
-
-    /// A 429 is about the caller's pace, not about what was asked; the body may be missing, so the status decides.
-    @Test func rateLimitedStatusBecomesRateLimitedWhateverWasAsked() async {
-        client.error = APIError.http(status: 429, body: nil)
-
-        await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.events(in: .upcoming, near: nil) }
-        await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.join(eventId: "evt_01J") }
-        await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.create(.fixture()) }
-    }
-
-    @Test func transportFailuresBecomeNetwork() async {
-        client.error = URLError(.notConnectedToInternet)
-
-        await #expect(throws: AppError.network) { try await repository.events(in: .upcoming, near: nil) }
-    }
-
-    /// The list view model keeps quiet on cancellation, so the repository must not turn it into a failure.
-    @Test func cancellationPassesThroughUntouched() async {
-        client.error = URLError(.cancelled)
-        await #expect(throws: URLError(.cancelled)) { try await repository.events(in: .upcoming, near: nil) }
-
-        client.error = CancellationError()
-        await #expect(throws: CancellationError.self) { try await repository.leave(eventId: "evt_01J") }
-    }
 }
 
 @MainActor
@@ -278,17 +233,11 @@ struct RemoteProfileRepositoryTests {
     }
 
     /// The caller logs what it catches, so it must be a clean `AppError`, never an `APIError` carrying the backend's
-    /// message body; cancellation passes through for the caller's `isCancellation` check.
-    @Test func failuresBecomeAppErrors() async {
+    /// message body.
+    @Test func unnamedFailuresFallBackToUnknown() async {
         let repository = RemoteProfileRepository(client: client)
-
         client.error = APIError.http(status: 400, body: APIErrorBody(code: "VALIDATION_FAILED", message: "empty"))
+
         await #expect(throws: AppError.unknown) { try await repository.syncDisplayName("") }
-
-        client.error = URLError(.notConnectedToInternet)
-        await #expect(throws: AppError.network) { try await repository.syncDisplayName("Apple Tester") }
-
-        client.error = URLError(.cancelled)
-        await #expect(throws: URLError(.cancelled)) { try await repository.syncDisplayName("Apple Tester") }
     }
 }

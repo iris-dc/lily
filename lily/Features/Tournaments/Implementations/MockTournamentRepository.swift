@@ -126,8 +126,14 @@ final class MockTournamentRepository: TournamentRepository {
         return resolved(detail).tournament
     }
 
-    /// The detail for a write only the organiser may make.
+    /// The backend's 401 on every write; reads stay anonymous.
+    func requireCaller() throws {
+        guard identity.currentUserID != nil else { throw AppError.sessionExpired }
+    }
+
+    /// The detail for a write only the organiser may make; a guest is refused first.
     func organized(_ id: String) throws -> TournamentDetail {
+        try requireCaller()
         let detail = try readable(id)
         guard detail.tournament.organizerUserId == MockTournamentFixtures.callerMarker else { throw AppError.notOrganizer }
         return detail
@@ -181,52 +187,7 @@ final class MockTournamentRepository: TournamentRepository {
     }
 }
 
-extension TournamentEntry {
-    /// The entry with `marker` read as `userID` (the caller of the moment) wherever a fixture names them.
-    func replacingUser(_ marker: String, with userID: String?) -> TournamentEntry {
-        guard let userID, contains(userID: marker) || captainUserId == marker else { return self }
-        return TournamentEntry(id: id,
-                               tournamentId: tournamentId,
-                               name: name,
-                               captainUserId: captainUserId == marker ? userID : captainUserId,
-                               members: members.map {
-                                   $0.userId == marker ? EntryMember(userId: userID, displayName: $0.displayName) : $0
-                               },
-                               seed: seed,
-                               status: status,
-                               createdAt: createdAt)
-    }
-}
-
 private extension Tournament {
     /// When a finished tournament last moved: its completion, else its last edit, else its creation.
     var lastChange: Date { completedAt ?? updatedAt ?? createdAt }
-
-    /// The tournament with `marker` read as the caller's id in the organiser's seat, and the caller's entry set.
-    func replacingOrganizer(_ marker: String, with userID: String?, myEntryId: String?) -> Tournament {
-        Tournament(id: id,
-                   name: name,
-                   description: description,
-                   type: type,
-                   format: format,
-                   status: status,
-                   visibility: visibility,
-                   teamSize: teamSize,
-                   maxEntries: maxEntries,
-                   entryCount: entryCount,
-                   allowsDraws: allowsDraws,
-                   startsAt: startsAt,
-                   registrationClosesAt: registrationClosesAt,
-                   location: location,
-                   organizerUserId: organizerUserId == marker ? (userID ?? marker) : organizerUserId,
-                   organizerName: organizerName,
-                   group: group,
-                   channelEpoch: channelEpoch,
-                   myEntryId: myEntryId,
-                   winnerEntryId: winnerEntryId,
-                   startedAt: startedAt,
-                   completedAt: completedAt,
-                   createdAt: createdAt,
-                   updatedAt: updatedAt)
-    }
 }

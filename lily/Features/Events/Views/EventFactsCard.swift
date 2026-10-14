@@ -9,7 +9,7 @@ struct EventFactsCard: View {
         GlassCard {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
                 Label {
-                    Text(event.startsAt, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
+                    Text(event.startsAt, format: LilyTheme.DateStyles.dateTime)
                 } icon: {
                     Image(systemName: DesignTokens.Symbols.time)
                 }

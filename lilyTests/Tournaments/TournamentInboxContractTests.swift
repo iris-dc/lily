@@ -130,16 +130,17 @@ struct TournamentInboxContractTests {
         #expect(InboxItem.matchReminder().caption == "Match reminder · Tuesday Table Tennis")
     }
 
-    /// The match reminder names the day, the clock time and the distance like the game reminder does.
-    @Test func theMatchReminderNamesTheDayTheTimeAndTheDistance() throws {
+    /// The match reminder's line is the shared time caption the game reminder draws, judged against the given `now`.
+    @Test func theMatchReminderCaptionIsTheSharedTimeCaption() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
         calendar.locale = Locale(identifier: "en_GB")
-        let now = Date.now
-        let noonToday = calendar.startOfDay(for: now).addingTimeInterval(12 * 3_600)
-        let reminder = try #require(InboxItem.matchReminder(scheduledAt: noonToday).matchReminder)
+        let now = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 11))!
+        let startsAt = now.addingTimeInterval(3_600)
+        let reminder = try #require(InboxItem.matchReminder(scheduledAt: startsAt).matchReminder)
 
-        let distance = noonToday.formatted(.relative(presentation: .named))
-        #expect(reminder.startsAtCaption(now: now, calendar: calendar) == "Today, 12:00 · \(distance)")
+        let caption = reminder.startsAtCaption(now: now, calendar: calendar)
+        #expect(caption == InboxTimeCaption.text(for: startsAt, now: now, calendar: calendar))
+        #expect(caption == "Today, 12:00 · in 1 hour")
     }
 }

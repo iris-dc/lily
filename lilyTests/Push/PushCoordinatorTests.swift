@@ -22,7 +22,7 @@ struct PushCoordinatorTests {
         #expect(harness.devices.registrations == [expectedPayload])
         #expect(harness.coordinator.registered?.token == harness.registrar.token)
         #expect(harness.coordinator.registered?.userID == TestFixtures.user.id)
-        #expect(harness.logs(.info) == ["Device registered for push (\(PushEnvironment.current.rawValue), en)"])
+        #expect(harness.logs(.info).count == 1 && harness.logged("registered for push", at: .info) == 1)
         #expect(harness.makeCoordinator().registered == harness.coordinator.registered, "a relaunch reads the same registration")
     }
 
@@ -40,7 +40,7 @@ struct PushCoordinatorTests {
 
     @Test func syncRepeatsForANewTokenAnotherUserAnotherLanguageOrAStaleRegistration() async {
         await harness.coordinator.sync()
-        harness.registrar.token = "ef".repeated(32)
+        harness.registrar.token = String(repeating: "ef", count: 32)
         await harness.coordinator.sync()
         harness.identity.currentUserID = "someone-else"
         await harness.coordinator.sync()
@@ -62,7 +62,7 @@ struct PushCoordinatorTests {
 
         #expect(harness.registrar.requestCount == 1)
         #expect(harness.devices.registrations == [expectedPayload])
-        #expect(harness.logs(.info).first == "Notification permission granted")
+        #expect(harness.logged("permission granted", at: .info) == 1)
     }
 
     @Test func offerRemindersRespectsARefusalAndSkipsGuests() async {
@@ -71,7 +71,7 @@ struct PushCoordinatorTests {
         await harness.coordinator.offerReminders()
         await harness.coordinator.offerReminders()
         #expect(harness.registrar.requestCount == 1 && harness.devices.registrations.isEmpty)
-        #expect(harness.logs(.info) == ["Notification permission declined"])
+        #expect(harness.logs(.info).count == 1 && harness.logged("permission declined", at: .info) == 1)
 
         harness.registrar.status = .notDetermined
         harness.identity.currentUserID = nil
@@ -108,7 +108,7 @@ struct PushCoordinatorTests {
         #expect(harness.devices.unregisteredTokens == [harness.registrar.token])
         #expect(harness.coordinator.registered == nil)
         #expect(harness.defaults.data(forKey: AppConfig.Push.lastRegistrationKey) == nil)
-        #expect(harness.logs(.info).last == "Device unregistered for push")
+        #expect(harness.logged("unregistered for push", at: .info) == 1)
     }
 
     @Test func signingOutWithoutARegistrationSendsNothingAndAFailedRemovalIsAWarning() async {
@@ -119,21 +119,24 @@ struct PushCoordinatorTests {
         harness.devices.unregisterError = .network
         await harness.coordinator.sessionWillEnd()
 
-        #expect(harness.logs(.warning) == ["Device unregistration failed: network"])
+        #expect(harness.logs(.warning).count == 1 && harness.logged("unregistration failed", at: .warning) == 1)
         #expect(harness.coordinator.registered == nil)
     }
 
     /// A sign-out never waits on the network for long: the row expires on its own and the next registration elsewhere
     /// takes the token away.
     @Test func aSignOutGivesUpOnASlowUnregisterAndStillClears() async {
-        let coordinator = harness.makeCoordinator(unregisterTimeout: .milliseconds(20))
+        let coordinator = harness.makeCoordinator()
         await coordinator.sync()
         harness.devices.holdsRequests = true
 
-        await coordinator.sessionWillEnd()
+        let signOut = Task { await coordinator.sessionWillEnd() }
+        await settle(until: { harness.sleep.held == [AppConfig.Push.unregisterTimeout] })
+        harness.sleep.release()
+        await signOut.value
 
         #expect(harness.devices.unregisteredTokens == [harness.registrar.token])
-        #expect(harness.logs(.warning) == ["Device unregistration failed: timedOut"])
+        #expect(harness.logged("timedOut", at: .warning) == 1)
         #expect(coordinator.registered == nil)
         harness.devices.releaseRequests()
     }
@@ -146,7 +149,7 @@ struct PushCoordinatorTests {
 
         #expect(harness.events.fetchedEventIDs == ["e1"])
         #expect(harness.navigation.selectedTab == .chat && harness.coordinator.pendingTap == nil)
-        #expect(harness.logs(.info) == ["Notification tapped for event e1"])
+        #expect(harness.logged("tapped for event e1", at: .info) == 1)
     }
 
     /// A match reminder's tap fetches the tournament (for its name) and opens its detail with the match named.
@@ -158,7 +161,7 @@ struct PushCoordinatorTests {
 
         #expect(harness.tournaments.fetchedIDs == ["t1"] && harness.events.fetchedEventIDs.isEmpty)
         #expect(harness.navigation.selectedTab == .chat && harness.coordinator.pendingTap == nil)
-        #expect(harness.logs(.info) == ["Notification tapped for match r01p002 of tournament t1"])
+        #expect(harness.logged("tapped for match r01p002 of tournament t1", at: .info) == 1)
     }
 
     @Test func aTapBeforeTheSessionIsRestoredWaitsForIt() async {
@@ -203,11 +206,5 @@ private final class FakeDeviceRepositoryThatSignsOut: DeviceRepository {
 
     func unregister(token: String) async throws -> DeviceRemoval {
         DeviceRemoval(token: token, removed: false)
-    }
-}
-
-private extension String {
-    func repeated(_ count: Int) -> String {
-        String(repeating: self, count: count)
     }
 }

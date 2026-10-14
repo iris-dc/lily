@@ -12,17 +12,9 @@ struct InboxViewModelTournamentTests {
     private let invite = InboxItem.tournamentInvite(id: "i1", tournamentID: "t1", tournamentName: "Padel Open")
     private let reminder = InboxItem.matchReminder(id: "i0", tournamentID: "t2", matchID: "r03p002")
 
-    private func openInbox(_ items: [InboxItem]) async -> InboxViewModel {
-        harness.inboxRepository.pages = [.fixture(items)]
-        harness.inboxRepository.items = items
-        let viewModel = harness.makeInboxViewModel()
-        await viewModel.appear()
-        return viewModel
-    }
-
     @Test func acceptingAnIndividualInviteOpensTheDetailEnteredAndReloadsTheLists() async {
         harness.inboxRepository.acceptedTournament = .fixture(id: "t1", name: "Padel Open", myEntryId: "e9")
-        let viewModel = await openInbox([invite])
+        let viewModel = await harness.openInbox([invite])
 
         await viewModel.accept(invite)
 
@@ -39,7 +31,7 @@ struct InboxViewModelTournamentTests {
     @Test func acceptingATeamInviteOpensTheDetailWithoutAnEntry() async {
         harness.inboxRepository.acceptedTournament = .fixture(id: "t1", name: "Kickers Cup", teamSize: 5)
         let team = InboxItem.tournamentInvite(id: "i1", tournamentID: "t1", tournamentName: "Kickers Cup", teamSize: 5)
-        let viewModel = await openInbox([team])
+        let viewModel = await harness.openInbox([team])
 
         await viewModel.accept(team)
 
@@ -51,7 +43,7 @@ struct InboxViewModelTournamentTests {
 
     /// The entry refusals on an accept are shown and leave the item as it is; a verdict on the invite reloads.
     @Test func refusalsAreShownAndAVerdictReloads() async {
-        let viewModel = await openInbox([invite])
+        let viewModel = await harness.openInbox([invite])
         harness.inboxRepository.acceptError = AppError.registrationClosed
 
         await viewModel.accept(invite)
@@ -66,7 +58,7 @@ struct InboxViewModelTournamentTests {
     }
 
     @Test func decliningATournamentInviteMarksItDeclined() async {
-        let viewModel = await openInbox([invite])
+        let viewModel = await harness.openInbox([invite])
 
         await viewModel.decline(invite)
 
@@ -76,7 +68,7 @@ struct InboxViewModelTournamentTests {
 
     /// The reminder card pushes the destination it carries; nothing is fetched here, the detail does that.
     @Test func openTournamentPushesTheMatchOnTheChatsStackWithoutAFetch() async {
-        let viewModel = await openInbox([reminder, invite])
+        let viewModel = await harness.openInbox([reminder, invite])
 
         viewModel.openTournament(for: reminder)
         viewModel.openTournament(for: invite)

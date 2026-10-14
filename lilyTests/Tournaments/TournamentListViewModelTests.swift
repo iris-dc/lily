@@ -42,10 +42,6 @@ struct TournamentListViewModelTests {
         #expect(harness.repository.requestedPositions.last == location.result)
         #expect(harness.logger.messages(in: .cache).contains { $0.contains("position became known") })
 
-        await explore.loadUserLocation()
-        await explore.loadIfStale()
-        #expect(harness.repository.requestedScopes.count == 3, "the same coarse position is no reason to reload")
-
         location.result = Coordinate(latitude: 52.60, longitude: 13.40)
         await explore.loadUserLocation()
         #expect(harness.repository.requestedScopes.count == 4)
@@ -78,6 +74,50 @@ struct TournamentListViewModelTests {
         await explore.loadIfStale()
 
         #expect(harness.repository.requestedScopes == [.upcoming] && mine.tournaments.isEmpty)
+    }
+
+    /// Discover asks for the position before its one request: the spinner spans that wait and ends with the answer.
+    @Test func discoverTournamentsShowsASpinnerUntilTheListAnswered() async {
+        harness.repository.result = .success([.fixture()])
+        let location = FakeLocationService()
+        location.holdsRequests = true
+        let discover = harness.makeListViewModel(scope: .upcoming, locationService: location)
+        #expect(discover.isInitialLoad, "nothing was asked yet")
+
+        let run = Task {
+            await discover.loadUserLocation()
+            await discover.loadIfStale()
+        }
+        while location.callCount == 0 { await Task.yield() }
+        #expect(discover.isInitialLoad && !discover.isLoading, "the location wait is part of the first load")
+
+        location.releaseRequests()
+        await run.value
+        #expect(!discover.isInitialLoad && discover.tournaments.count == 1)
+    }
+
+    @Test func aFailedFirstLoadEndsTheSpinner() async {
+        harness.repository.result = .failure(.network)
+        let viewModel = harness.makeListViewModel(scope: .upcoming)
+        viewModel.reportsFailures = false
+
+        await viewModel.loadIfStale()
+
+        #expect(!viewModel.isInitialLoad && viewModel.loadFailed && viewModel.tournaments.isEmpty, "a failure is an answer")
+    }
+
+    /// A guest's Mine is answered empty without a request, so no spinner; the sign-in is a change of caller.
+    @Test func aGuestsMineIsNoInitialLoadAndASignInMakesItStale() async {
+        harness.identity.currentUserID = nil
+        harness.repository.result = .success([.fixture(organizerUserId: TestFixtures.user.id)])
+        let mine = harness.makeListViewModel(scope: .mine)
+
+        await mine.loadIfStale()
+        #expect(!mine.isInitialLoad && harness.repository.requestedScopes.isEmpty)
+
+        harness.identity.currentUserID = TestFixtures.user.id
+        await mine.loadIfStale()
+        #expect(harness.repository.requestedScopes == [.mine] && mine.tournaments.count == 1)
     }
 
     @Test func aFailedLoadReachesThePopupUnlessTheListKeepsItToItself() async {

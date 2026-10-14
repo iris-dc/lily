@@ -48,13 +48,10 @@ nonisolated struct GroupDraft: Equatable, Sendable {
         case coordinateMissing
     }
 
-    var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
-    var trimmedLocationName: String { locationName.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var trimmedName: String { name.trimmed }
+    var trimmedLocationName: String { locationName.trimmed }
     /// `nil` when nothing was written, so the payload omits the field.
-    var trimmedDescription: String? {
-        let trimmed = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
+    var trimmedDescription: String? { description.nonBlankTrimmed }
 
     /// Everything that keeps the draft from being sent; empty means it can go.
     var issues: [Issue] {

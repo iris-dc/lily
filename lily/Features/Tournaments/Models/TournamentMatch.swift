@@ -85,6 +85,16 @@ nonisolated struct TournamentMatch: Identifiable, Hashable, Codable, Sendable {
     var isOpenDispute: Bool { isDisputed && status.isOpen }
     /// Whether a result may be taken: both sides known, not decided, the tournament's state being the caller's check.
     var isReadyForResult: Bool { hasBothSides && (status.isOpen || status == .reported) }
+    /// A time or a place was set.
+    var hasSchedule: Bool { scheduledAt != nil || location != nil }
+
+    /// What one side reads off this match; only a side of a decided match is judged, anyone else reads `undecided`.
+    /// A decided match without a winner is a draw, as Laurel's `MatchSides.winnerOf` answers null for a level score.
+    func outcome(for entryID: String?) -> MatchOutcome {
+        guard let entryID, contains(entryID: entryID), isDecided else { return .undecided }
+        guard let winnerEntryId else { return .drew }
+        return winnerEntryId == entryID ? .won : .lost
+    }
 
     func contains(entryID: String?) -> Bool {
         entryID != nil && (entryAId == entryID || entryBId == entryID)
@@ -189,6 +199,11 @@ nonisolated struct TournamentMatch: Identifiable, Hashable, Codable, Sendable {
     }
 }
 
+/// What one side reads off a match: it won, it lost, the match was a confirmed draw, or nothing is decided yet.
+nonisolated enum MatchOutcome: Hashable, Sendable {
+    case won, lost, drew, undecided
+}
+
 /// A match's time and place, as `PUT .../schedule` takes them; both absent clears the schedule.
 nonisolated struct MatchSchedule: Hashable, Codable, Sendable {
     let scheduledAt: Date?
@@ -199,15 +214,18 @@ nonisolated struct MatchSchedule: Hashable, Codable, Sendable {
         self.location = location
     }
 
+    /// Both absent, which `PUT .../schedule` reads as clearing the schedule.
+    var isEmpty: Bool { scheduledAt == nil && location == nil }
+
     /// Where the organiser's schedule form opens: the match's own time and place when set, else the tournament's start
-    /// (or the next full hour of the calendar's zone, when the start has passed) at the tournament's venue.
+    /// (or the first full hour at or after `now` in the calendar's zone, when the start has passed) at the tournament's
+    /// venue.
     static func proposal(for match: TournamentMatch,
                          in tournament: Tournament,
                          now: Date,
                          calendar: Calendar = .autoupdatingCurrent) -> MatchSchedule {
-        let nextHour = calendar.nextDate(after: now, matching: DateComponents(minute: 0, second: 0), matchingPolicy: .nextTime)
-        return MatchSchedule(scheduledAt: match.scheduledAt ?? max(tournament.startsAt, nextHour ?? now),
-                             location: match.location ?? tournament.location)
+        MatchSchedule(scheduledAt: match.scheduledAt ?? max(tournament.startsAt, calendar.nextFullHour(after: now)),
+                      location: match.location ?? tournament.location)
     }
 }
 

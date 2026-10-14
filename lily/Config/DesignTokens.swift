@@ -26,6 +26,9 @@ nonisolated enum DesignTokens {
         /// Horizontal inset of screen content, equal to the leading margin of a large navigation title on iPhone,
         /// so text laid directly on a screen lines up with its title.
         static let screenMargin: CGFloat = Spacing.lg
+        /// Margin of the content details (event, group, tournament) around their column; the bracket undoes it to
+        /// scroll edge to edge, so its negation reads this and never a bare spacing.
+        static let detailMargin: CGFloat = Spacing.xl
         /// Minimum height of a glass text field: the height of a `.large` system button, so a field and the submit
         /// button under it read as one set. Buttons themselves take their size from `controlSize`, not from here.
         static let fieldHeight: CGFloat = 50
@@ -41,8 +44,8 @@ nonisolated enum DesignTokens {
         static let popupMaxWidth: CGFloat = 520
         /// Width of the filter panel dropped down from the Explore toolbar.
         static let filterPanelWidth: CGFloat = 340
-        /// Width of the price input in the filter panel.
-        static let filterPriceFieldWidth: CGFloat = 96
+        /// Width of a typed price field: the filter panel's cap and the form's price.
+        static let priceFieldWidth: CGFloat = 96
         static let mapPinSize: CGFloat = 40
         /// Growth of a map pin when selected.
         static let mapPinSelectedScale: CGFloat = 1.15
@@ -50,9 +53,6 @@ nonisolated enum DesignTokens {
         /// The map opens this much wider than the filter's diameter, so a pin at the radius sits inside the edge and
         /// clear of the floating controls.
         static let mapRegionPadding: Double = 1.3
-        /// Share of the screen a spinner or empty state takes under a header, so it reads as the screen's state while the
-        /// header stays in view.
-        static let stateSlotHeightFraction: CGFloat = 0.75
         /// Room the floating create button takes at the bottom-trailing corner (its glass circle plus its margin),
         /// so the map's selected card is lifted above it instead of sliding under it.
         static let floatingButtonFootprint: CGFloat = 80

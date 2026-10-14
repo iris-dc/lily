@@ -44,13 +44,14 @@ struct TournamentDraftForm<Model: TournamentDraftEditing>: View {
         } header: {
             Text(Copy.tournamentSection)
         } footer: {
-            issueText(viewModel.issue(for: .nameTooShort, .nameTooLong))
+            viewModel.issue(for: .nameTooShort, .nameTooLong)
+                .map { Text(Copy.message(for: $0, format: viewModel.draft.format)) }
         }
     }
 
     /// Single choice in the filter panel's chip look; one type is always selected.
     private var typeChips: some View {
-        captioned(Copy.eventType) {
+        CaptionedControl(Copy.eventType) {
             EventTypeChips(isSelected: { $0 == viewModel.draft.type }, onSelect: { type in
                 if let type { viewModel.draft.type = type }
             })
@@ -59,16 +60,18 @@ struct TournamentDraftForm<Model: TournamentDraftEditing>: View {
 
     /// Changing the format pulls the entries back under its cap.
     private var formatPicker: some View {
-        captioned(Copy.format) {
-            Picker(Copy.format, selection: $viewModel.draft.format) {
+        CaptionedControl(Copy.format) {
+            Picker(Copy.format, selection: formatSelection) {
                 ForEach(TournamentFormat.allCases, id: \.self) { Text($0.displayName).tag($0) }
             }
             .pickerStyle(.segmented)
             .accessibilityIdentifier(AccessibilityIdentifiers.tournamentFormat)
-            .onChange(of: viewModel.draft.format) {
-                viewModel.draft.maxEntries = min(viewModel.draft.maxEntries, viewModel.entriesRange.upperBound)
-            }
         }
+    }
+
+    /// The draft owns the clamp, so the picker writes the format through `select(format:)`.
+    private var formatSelection: Binding<TournamentFormat> {
+        Binding(get: { viewModel.draft.format }, set: { viewModel.draft.select(format: $0) })
     }
 
     /// Team size (fixed once created), the entries cap (fixed after the start) and whether a match may end level.
@@ -85,7 +88,7 @@ struct TournamentDraftForm<Model: TournamentDraftEditing>: View {
             }
             .disabled(viewModel.isLocked)
             .accessibilityIdentifier(AccessibilityIdentifiers.tournamentMaxEntries)
-            captioned(Copy.draws) {
+            CaptionedControl(Copy.draws) {
                 Picker(Copy.draws, selection: allowsDraws) {
                     Text(Copy.drawsAllowed).tag(true)
                     Text(Copy.drawsNotAllowed).tag(false)
@@ -97,31 +100,14 @@ struct TournamentDraftForm<Model: TournamentDraftEditing>: View {
         } header: {
             Text(Copy.entries)
         } footer: {
-            issueText(viewModel.issue(for: .teamSizeOutOfRange, .maxEntriesOutOfRange, .maxEntriesBelowEntries))
+            viewModel.issue(for: .teamSizeOutOfRange, .maxEntriesOutOfRange, .maxEntriesBelowEntries)
+                .map { Text(Copy.message(for: $0, format: viewModel.draft.format)) }
         }
     }
 
     /// The draft follows the type's default until the organiser picks; the picker shows the resolved choice.
     private var allowsDraws: Binding<Bool> {
         Binding(get: { viewModel.draft.resolvedAllowsDraws }, set: { viewModel.draft.allowsDraws = $0 })
-    }
-
-    @ViewBuilder
-    func issueText(_ issue: TournamentDraft.Issue?) -> some View {
-        if let issue {
-            Text(Copy.message(for: issue, format: viewModel.draft.format))
-        }
-    }
-
-    /// A segmented picker in a `Form` draws no label of its own, so the caption above names the control, as the type
-    /// chips' does ("Allowed | Not allowed" alone said nothing about draws).
-    func captioned(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-            Text(title)
-                .font(LilyTheme.Fonts.caption)
-                .foregroundStyle(.secondary)
-            content()
-        }
     }
 }
 

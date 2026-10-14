@@ -5,9 +5,17 @@ import Foundation
 nonisolated enum AppBranding {
     static let name = "iskra"
 
+    /// One-word actions shared across features; a feature's own copy aliases them, so each is one key in the
+    /// catalog whatever the sheet or panel.
+    static var done: String { localized("Done") }
+    static var remove: String { localized("Remove") }
+
     /// Copy shared by every event surface, so a preview card and a capacity bar can never disagree.
     enum Events {
         static var full: String { localized("Full") }
+        /// The level row of the form and the filter panel, and what an unknown level reads as.
+        static var levelLabel: String { localized("Level") }
+        static var anyLevel: String { localized("Any level") }
 
         /// Filter panel on Explore, dropped down from the toolbar button.
         enum Filter {
@@ -20,16 +28,16 @@ nonisolated enum AppBranding {
             /// Shown while the user's position is unknown: still pending, timed out or denied.
             static var locationUnavailable: String { localized("Distance needs your location") }
             static var maxPrice: String { localized("Max price") }
-            static var anyPrice: String { localized("Any") }
+            /// The price field's placeholder; its own key because `anywhere` agrees with distance and this with price in
+            /// the gendered languages.
+            static var anyPrice: String { localized("Any (price)") }
             static var freeOnly: String { localized("Free only") }
-            static var level: String { localized("Level") }
-            static var anyLevel: String { localized("Any level") }
             static var dates: String { localized("Specific dates") }
             static var from: String { localized("From") }
             static var until: String { localized("Until") }
             static var openSpotsOnly: String { localized("Open spots only") }
             static var reset: String { localized("Reset") }
-            static var done: String { localized("Done") }
+            static var done: String { AppBranding.done }
             static var emptyTitle: String { localized("Nothing matches") }
             static var emptyMessage: String { localized("Try fewer filters, or show all events.") }
             static var showAll: String { localized("Show all events") }
@@ -58,11 +66,11 @@ nonisolated enum AppBranding {
             static var menu: String { localized("Create") }
             static var title: String { localized("New game") }
             static var submit: String { localized("Create game") }
-            static var cancel: String { localized("Cancel") }
+            static var cancel: String { Forms.cancel }
             static var gameSection: String { localized("Game") }
             static var titleField: String { localized("Title") }
             static var titlePlaceholder: String { localized("Sunset 5-a-side") }
-            static var eventType: String { localized("Event type") }
+            static var eventType: String { Filter.eventType }
             static var startsAt: String { localized("When") }
             static var whereSection: String { localized("Where") }
             static var locationNamePlaceholder: String { localized("Place name") }
@@ -74,17 +82,15 @@ nonisolated enum AppBranding {
             static let coordinateFormat = "%.4f, %.4f"
             static var mapTitle: String { localized("Where is it?") }
             static var mapHint: String { localized("Move the map until the pin sits on the spot.") }
-            static var mapDone: String { localized("Done") }
+            static var mapDone: String { AppBranding.done }
             static var playersSection: String { localized("Players") }
             static var detailsSection: String { localized("Details (optional)") }
             static var descriptionPlaceholder: String { localized("What to expect") }
             static var lookingForPlaceholder: String { localized("Who are you looking for?") }
-            static var level: String { localized("Level") }
-            static var anyLevel: String { localized("Any level") }
             static var price: String { localized("Price per person") }
-            static var pricePlaceholder: String { localized("Free") }
+            static var pricePlaceholder: String { Events.free }
             /// The mock repository has no profile to read the host's name from; the backend stamps the real one.
-            static var mockHostName: String { localized("You") }
+            static var mockHostName: String { Groups.youSuffix }
 
             /// Stepper label: `count` is the capacity, the host included.
             static func capacity(_ count: Int) -> String {
@@ -123,6 +129,7 @@ nonisolated enum AppBranding {
                 case .capacityOutOfRange:
                     localized("Between \(limits.capacityRange.lowerBound) and \(limits.capacityRange.upperBound) players")
                 case .capacityBelowParticipants: localized("Keep at least as many spots as players who joined")
+                case .priceUnreadable: localized("Enter the price as a number")
                 case .priceOutOfRange: localized("Enter a price with at most two decimals")
                 default: ""
                 }
@@ -154,9 +161,9 @@ nonisolated enum AppBranding {
         }
     }
 
-    /// The landing's slides are `AppBranding.Intro`; these are the two buttons under them.
+    /// The landing's slides are `AppBranding.Intro`; under them the primary button and the glass "Sign in"
+    /// (`signInAction`, which is also the email form's submit).
     static var landingPrimaryAction: String { localized("Find a game near you") }
-    static var signInPrompt: String { localized("Already have an account?") }
     static var signInAction: String { localized("Sign in") }
 
     static var guestProfileTitle: String { localized("You're browsing as a guest") }
@@ -182,6 +189,9 @@ nonisolated enum AppBranding {
     static var signUpSheetTitle: String { localized("Create your account") }
     static var signUpAction: String { localized("Sign up") }
     static var signUpPrompt: String { localized("New here? Create an account") }
+    /// The toggle under the sign-up form, one sentence so each language orders it its own way; `signUpPrompt` is its
+    /// counterpart under the sign-in form.
+    static var signInPrompt: String { localized("Already have an account? Sign in") }
 
     /// `minimumLength` is the minimum password length from `AppConfig.Auth`.
     static func passwordHint(minimumLength: Int) -> String {
@@ -215,7 +225,7 @@ nonisolated enum AppBranding {
         static var noGames: String { localized("Games you join or host will appear here.") }
         static var emptyTitle: String { localized("Nothing here yet") }
         static var emptyMessage: String { localized("Games you join or host and groups you belong to appear here.") }
-        static var exploreAction: String { localized("Explore") }
+        static var exploreAction: String { AppBranding.exploreTitle }
         static var loadFailedTitle: String { localized("Couldn't load your groups and games") }
         static var guestMessage: String { localized("Sign in to see your groups and the games you join or host.") }
         static var groupsLoadFailed: String { localized("Couldn't load your groups. Pull down to try again.") }

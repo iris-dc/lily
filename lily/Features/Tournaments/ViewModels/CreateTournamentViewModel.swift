@@ -16,14 +16,13 @@ final class CreateTournamentViewModel {
     let lockedGroup: EventGroupRef?
 
     private let repository: any TournamentRepository
-    private let identity: any IdentityProvider
     private let locationService: any LocationService
     private let groups: MyGroupsStore
-    private let reporter: GroupErrorReporter
     private let logger: any Logging
     private let now: () -> Date
     private let pushOptIn: any PushOptIn
     private let onCreated: @MainActor (TournamentDetail) -> Void
+    private let flow: CreateFlow<TournamentDetail>
 
     init(repository: any TournamentRepository,
          identity: any IdentityProvider,
@@ -32,20 +31,27 @@ final class CreateTournamentViewModel {
          reporter: GroupErrorReporter,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
+         calendar: Calendar = .current,
          pushOptIn: any PushOptIn = NoPushOptIn(),
          lockedGroup: EventGroupRef? = nil,
          onCreated: @escaping @MainActor (TournamentDetail) -> Void) {
         self.repository = repository
-        self.identity = identity
         self.locationService = locationService
         self.groups = groups
-        self.reporter = reporter
         self.logger = logger
         self.now = now
         self.pushOptIn = pushOptIn
         self.lockedGroup = lockedGroup
         self.onCreated = onCreated
-        self.draft = TournamentDraft(startsAt: Self.defaultStart(now: now()))
+        flow = CreateFlow(noun: "tournament",
+                          category: .tournaments,
+                          logger: logger,
+                          report: { reporter.report($0) },
+                          leavesOutcomeUnknown: { $0 == .network || $0 == .tournamentCreationFailed },
+                          notFound: .tournamentNotFound,
+                          lookup: { try await repository.tournament(id: $0) },
+                          isOurs: { $0.tournament.isOrganized(by: identity.currentUserID) })
+        self.draft = TournamentDraft(startsAt: Self.defaultStart(now: now(), calendar: calendar))
         self.draft.group = lockedGroup
     }
 
@@ -53,9 +59,11 @@ final class CreateTournamentViewModel {
     var canSubmit: Bool { !isSubmitting && issues.isEmpty }
     var isDone: Bool { created != nil }
     var earliestStart: Date { TournamentDraft.earliestStart(now: now()) }
+    func proposedDeadline() -> Date { TournamentDraft.proposedDeadline(before: draft.startsAt, now: now()) }
     var entriesRange: ClosedRange<Int> { TournamentDraft.Rules.creation.entriesRange(for: draft.format) }
     /// A new tournament's format, team size and visibility are the organiser's to choose.
     var isLocked: Bool { false }
+    var allowsStructureChanges: Bool { true }
     var showsGroupRow: Bool { lockedGroup != nil || belongsToGroups }
     var explainsNoEligibleGroups: Bool { lockedGroup == nil && belongsToGroups && eligibleGroups.isEmpty }
 
@@ -71,26 +79,16 @@ final class CreateTournamentViewModel {
     }
 
     /// Sends the draft. A call while one is in flight is dropped; a dismissed sheet stays quiet; a failure goes to the
-    /// popup unless the backend turns out to have the tournament already (`stored(despite:)`).
+    /// popup unless the backend turns out to have the tournament already (`CreateFlow`: the same `clientId` travels
+    /// with every attempt, so the lookup after a lost answer finds what the backend stored).
     func submit() async {
         guard canSubmit else { return }
         isSubmitting = true
         defer { isSubmitting = false }
-        do {
-            let detail = try await repository.create(draft)
-            await accept(detail)
-            let shape = detail.tournament.entriesDescription
-            logger.info(.tournaments, "Tournament created \(detail.id) (\(shape))\(groupSuffix(detail))")
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            logger.error(.tournaments, "Create failed: \(error)")
-            if let landed = await stored(despite: error) {
-                logger.info(.tournaments, "Create landed for tournament \(landed.id) despite \(error)")
-                await accept(landed)
-            } else {
-                reporter.report(error)
-            }
-        }
+        let created = await flow.submit(clientID: draft.clientId,
+                                        describing: { "(\($0.tournament.entriesDescription))\(groupSuffix($0))" },
+                                        send: { try await repository.create(draft) })
+        if let created { await accept(created) }
     }
 
     private func accept(_ detail: TournamentDetail) async {
@@ -99,25 +97,14 @@ final class CreateTournamentViewModel {
         await pushOptIn.offerReminders()
     }
 
-    /// A `.network` or `.tournamentCreationFailed` leaves the outcome unknown: the backend commits before it answers.
-    /// The tournament is ours when it exists under the draft's id and the caller organises it.
-    private func stored(despite error: any Error) async -> TournamentDetail? {
-        guard let appError = error as? AppError, appError == .network || appError == .tournamentCreationFailed else { return nil }
-        guard let stored = try? await repository.tournament(id: draft.clientId) else {
-            logger.warning(.tournaments, "Could not check whether the create landed after \(appError)")
-            return nil
-        }
-        return stored.tournament.isOrganized(by: identity.currentUserID) ? stored : nil
-    }
-
     private func groupSuffix(_ detail: TournamentDetail) -> String {
         detail.tournament.group.map { " in group \($0.id)" } ?? ""
     }
 
     /// `AppConfig.Tournaments.defaultStartOffset` ahead, rounded up to the next full hour.
-    private static func defaultStart(now: Date) -> Date {
-        let target = now.addingTimeInterval(AppConfig.Tournaments.defaultStartOffset)
-        guard let hour = Calendar.current.dateInterval(of: .hour, for: target) else { return target }
-        return hour.start == target ? target : hour.end
+    private static func defaultStart(now: Date, calendar: Calendar) -> Date {
+        calendar.nextFullHour(after: now.addingTimeInterval(AppConfig.Tournaments.defaultStartOffset))
     }
 }
+
+extension CreateTournamentViewModel: TournamentDraftEditing {}

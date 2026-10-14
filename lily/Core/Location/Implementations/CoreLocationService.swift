@@ -22,6 +22,9 @@ final class CoreLocationService: LocationService {
             }
             logger.info(.location, "Location fix acquired")
             return coordinate
+        } catch where AppError.isCancellation(error) {
+            logger.debug(.location, "Location request cancelled")
+            return nil
         } catch {
             logger.warning(.location, "Location unavailable: \(error)")
             return nil

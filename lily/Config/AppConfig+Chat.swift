@@ -21,7 +21,6 @@ nonisolated extension AppConfig {
         static let readMarkFlushInterval: TimeInterval = 60
         static let mockEchoDelay: Duration = .milliseconds(200)
         static let mockAutoReplyDelay: Duration = .seconds(1.5)
-        static let maxLinksPerMessage = 1
         /// How long the composer stays closed after a 429 that named no `Retry-After`.
         static let rateLimitCooldownFallback: TimeInterval = 10
         /// Rows of the mock chat: this many text messages per joined group, plus one system row.

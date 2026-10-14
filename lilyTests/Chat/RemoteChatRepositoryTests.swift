@@ -129,12 +129,10 @@ struct RemoteChatRepositoryTests {
         #expect(page.nextBefore == nil && page.nextAfter == nil && page.hasMore && page.items.count == 1)
     }
 
+    /// One known code and the route's fallback: the shared mapping is proved once, in `SendFailingWithTests` and
+    /// `BackendErrorCodeTests.everyCodeMapsToItsCase`. `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
-        ("NOT_A_MEMBER", .notAMember), ("GROUP_NOT_FOUND", .groupNotFound), ("CONTENT_REJECTED", .contentRejected),
-        ("TERMS_REQUIRED", .termsRequired), ("MESSAGE_NOT_FOUND", .messageNotFound), ("TRY_AGAIN", .tryAgain),
-        ("VALIDATION_FAILED", .messageSendFailed), ("REPLY_TARGET_NOT_FOUND", .replyTargetNotFound),
-        ("ATTACHMENT_NOT_FOUND", .attachmentNotFound), ("ATTACHMENT_TOO_LARGE", .attachmentTooLarge(caps: .group)),
-        ("ATTACHMENT_TYPE_NOT_ALLOWED", .attachmentTypeNotAllowed), ("ATTACHMENTS_DISABLED", .attachmentsDisabled),
+        ("MESSAGE_NOT_FOUND", .messageNotFound), ("VALIDATION_FAILED", .messageSendFailed),
     ]
 
     @Test(arguments: codeCases)
@@ -143,17 +141,13 @@ struct RemoteChatRepositoryTests {
         await #expect(throws: expected) { try await repository.send(groupID: "g1", MessageDraft()) }
     }
 
-    /// A 429 carries how long to wait; the composer's cooldown reads it.
-    @Test func rateLimitCarriesRetryAfter() async {
-        client.error = APIError.http(status: 429, body: APIErrorBody(code: "RATE_LIMITED", message: "m"), retryAfter: 7)
-        await #expect(throws: AppError.rateLimited(retryAfter: 7)) { try await repository.send(groupID: "g1", MessageDraft()) }
-    }
-
     @Test func unnamedFailuresFallBackPerRoute() async {
         for error in [APIError.http(status: 500, body: nil), .decodingFailed] {
             client.error = error
             await #expect(throws: AppError.chatUnavailable) { try await repository.newest(groupID: "g1") }
             await #expect(throws: AppError.chatUnavailable) { try await repository.newer(groupID: "g1", after: "m1") }
+            await #expect(throws: AppError.chatUnavailable) { try await repository.older(groupID: "g1", before: "m1") }
+            await #expect(throws: AppError.chatUnavailable) { try await repository.delete(groupID: "g1", messageID: "m1") }
             await #expect(throws: AppError.messageSendFailed) { try await repository.send(groupID: "g1", MessageDraft()) }
             await #expect(throws: AppError.chatUnavailable) { try await repository.markRead(groupID: "g1", messageID: "m1") }
             await #expect(throws: AppError.chatUnavailable) { try await repository.clearHistory(groupID: "g1") }
@@ -164,7 +158,5 @@ struct RemoteChatRepositoryTests {
                 try await repository.refreshAttachment(groupID: "g1", messageID: "m1", attachmentID: "a1")
             }
         }
-        client.error = URLError(.notConnectedToInternet)
-        await #expect(throws: AppError.network) { try await repository.send(groupID: "g1", MessageDraft()) }
     }
 }

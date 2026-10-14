@@ -3,31 +3,11 @@ import Testing
 @testable import lily
 
 struct ErrorMessageMapperTests {
-    private static let allErrors: [AppError] = [
-        .authCancelled, .authFailed(provider: .apple), .providerUnavailable(provider: .apple), .invalidCredentials,
-        .emailTaken, .emailNotConfirmed, .invalidConfirmationCode, .tooManyAttempts,
-        .sessionExpired, .rateLimited(retryAfter: nil), .network, .eventsUnavailable, .eventNotFound, .eventFull,
-        .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain, .participationFailed, .eventCreationFailed,
-        .notHost, .capacityTooLow, .eventUpdateFailed,
-        .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned, .ownerCannotLeave,
-        .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed, .contentRejected,
-        .inviteExpired, .inviteUnavailable, .inboxUnavailable, .inviteActionFailed, .inviteNotPending, .alreadyMember,
-        .cannotInvite, .chatUnavailable, .messageSendFailed, .messageNotFound, .replyTargetNotFound,
-        .attachmentNotFound, .attachmentTooLarge(caps: .group), .attachmentTypeNotAllowed, .attachmentsDisabled,
-        .attachmentUploadFailed,
-        .attachmentUnavailable,
-        .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired,
-        .profileUnavailable, .conversationFailed, .conversationLimit,
-        .tournamentsUnavailable, .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed,
-        .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked,
-        .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit,
-        .inviteeAlreadyEntered, .cannotInviteToTournament, .feedbackFailed,
-        .unknown,
-    ]
-
-    /// The event branch of the mapper ends in a generic default, so a case missing from it would read
-    /// "Something went wrong" and still pass a non-empty check; only `.unknown` may carry that copy.
-    @Test(arguments: allErrors)
+    /// The list lives in `AppErrorCases.all`, hand-kept with an exhaustive switch as the reminder to extend it; every
+    /// backend code is checked from `BackendErrorCode.allCases` in `BackendErrorCodeTests`. The event branch of the
+    /// mapper ends in a generic default, so a case missing from it would read "Something went wrong" and still pass a
+    /// non-empty check; only `.unknown` may carry that copy.
+    @Test(arguments: AppErrorCases.all)
     func everyErrorHasCopy(error: AppError) {
         let message = ErrorMessageMapper.message(for: error)
         #expect(!message.title.isEmpty)
@@ -173,6 +153,17 @@ struct ErrorCenterTests {
         #expect(logger.messages(in: .ui).count == 1)
     }
 
+    /// The fault is logged where it happened, at its own level; the popup leaves an info line only.
+    @Test func presentingAnErrorIsAnInfoLineNotAnErrorLine() {
+        let logger = SpyLogger()
+        let center = ErrorCenter(logger: logger)
+
+        center.report(AppError.network)
+
+        #expect(logger.count(in: .ui, at: .info, mentioning: "network") == 1)
+        #expect(logger.messages(in: .ui, at: .error).isEmpty)
+    }
+
     @Test func repeatedReportsGetFreshIdentity() {
         let center = ErrorCenter(logger: SpyLogger())
         center.report(AppError.network)
@@ -209,21 +200,60 @@ struct ErrorCenterTests {
         center.endPresenting(sheet)
         #expect(center.isTopPresenter(root))
     }
-}
 
-/// Every code the backend can answer with has a case with copy of its own; the fallback is the caller's, never `.unknown`.
-struct BackendErrorCodeTests {
-    @Test(arguments: BackendErrorCode.allCases)
-    func everyCodeMapsToACaseWithCopy(code: BackendErrorCode) {
-        #expect(code.appError != .unknown, "\(code.rawValue) fell through")
+    /// A `URLError` or any other foreign error is wrapped into its `AppError` before it is shown and logged.
+    @Test func aForeignErrorIsMappedBeforePresentation() {
+        let logger = SpyLogger()
+        let center = ErrorCenter(logger: logger)
+
+        center.report(URLError(.timedOut) as any Error)
+
+        #expect(center.current?.error == .network)
+        #expect(logger.count(in: .ui, at: .info) == 1)
+        #expect(logger.hasLine(in: .ui, at: .info, mentioning: "network"))
     }
 
-    @Test func groupCodesMapToTheirCases() {
+    /// A mount that comes back (a root reappearing over the sheet it was under) moves to the top once, so the list never
+    /// holds it twice and ending it leaves the others as they were: the invariant `beginPresenting` ends before it appends.
+    @Test func aPresenterThatComesBackMovesToTheTopOnce() {
+        let center = ErrorCenter(logger: SpyLogger())
+        let root = UUID()
+        let sheet = UUID()
+
+        center.beginPresenting(root)
+        center.beginPresenting(sheet)
+        center.beginPresenting(root)
+
+        #expect(center.presenters == [sheet, root])
+        #expect(center.isTopPresenter(root))
+
+        center.endPresenting(root)
+        #expect(center.presenters == [sheet])
+    }
+}
+
+/// Every code the backend can answer with has a case of its own that reads copy of its own, never the generic one; the
+/// fallback is the caller's, never `.unknown`. A case that lands in a leaf switch's `default:` fails here even when
+/// `AppErrorCases.all` does not list it.
+struct BackendErrorCodeTests {
+    @Test(arguments: BackendErrorCode.allCases)
+    func everyCodeHasItsOwnCopy(code: BackendErrorCode) {
+        #expect(code.appError != .unknown, "\(code.rawValue) fell through")
+        #expect(ErrorMessageMapper.message(for: code.appError) != ErrorMessageMapper.unknownMessage,
+                "\(code.rawValue) reads the generic copy")
+    }
+
+    /// The one code -> case table: every raw value the backend can answer and the `AppError` it becomes. The remote
+    /// repository suites prove only their route's fallback on the strength of it.
+    @Test func everyCodeMapsToItsCase() {
         let expected: [String: AppError] = [
+            "EVENT_NOT_FOUND": .eventNotFound, "EVENT_FULL": .eventFull, "ALREADY_JOINED": .alreadyJoined,
+            "NOT_A_PARTICIPANT": .notAParticipant, "HOST_CANNOT_LEAVE": .hostCannotLeave, "NOT_HOST": .notHost,
+            "CAPACITY_TOO_LOW": .capacityTooLow, "TRY_AGAIN": .tryAgain, "RATE_LIMITED": .rateLimited(retryAfter: nil),
             "CONTENT_REJECTED": .contentRejected, "FORBIDDEN": .insufficientRole, "NOT_A_MEMBER": .notAMember,
             "BANNED": .bannedFromGroup, "ACCOUNT_SUSPENDED": .accountSuspended, "TERMS_REQUIRED": .termsRequired,
             "GROUP_NOT_FOUND": .groupNotFound, "MESSAGE_NOT_FOUND": .messageNotFound,
-            "REPORT_NOT_FOUND": .reportFailed, "USER_NOT_FOUND": .userNotFound, "GROUP_ID_TAKEN": .groupCreationFailed,
+            "USER_NOT_FOUND": .userNotFound, "GROUP_ID_TAKEN": .groupCreationFailed,
             "GROUP_ID_REUSED": .groupCreationFailed, "GROUP_FULL": .groupFull, "OWNER_CANNOT_LEAVE": .ownerCannotLeave,
             "MEMBER_BANNED": .memberBanned, "MEMBERSHIP_LIMIT": .membershipLimitReached,
             "INVITE_EXPIRED": .inviteExpired, "INVITE_NOT_PENDING": .inviteNotPending,
@@ -242,7 +272,18 @@ struct BackendErrorCodeTests {
         for (raw, error) in expected {
             #expect(BackendErrorCode(rawValue: raw)?.appError == error, "\(raw)")
         }
+        #expect(Set(expected.keys) == Set(BackendErrorCode.allCases.map(\.rawValue)),
+                "every code the backend can answer is in this table")
         #expect(APIError.http(status: 403, body: APIErrorBody(code: "TERMS_REQUIRED", message: "m")).appError(fallback: .unknown)
                 == .termsRequired)
+    }
+
+    /// `REPORT_NOT_FOUND` answers the operator's per-report routes, which the app never calls, so the enum has no case
+    /// for it: like any code the app does not know, it falls to the fallback of the route it arrived on.
+    @Test func aCodeTheAppNoLongerKnowsFallsToTheRoutesFallback() {
+        #expect(BackendErrorCode(rawValue: "REPORT_NOT_FOUND") == nil)
+        let failure = APIError.http(status: 404, body: APIErrorBody(code: "REPORT_NOT_FOUND", message: "No such report"))
+        #expect(failure.appError(fallback: .reportFailed) == .reportFailed)
+        #expect(failure.appError(fallback: .groupNotFound) == .groupNotFound)
     }
 }

@@ -40,6 +40,35 @@ struct InvitePeopleViewModelTests {
         #expect(harness.logs(.error).count == 1)
     }
 
+    /// One load at a time: a second call while the first is out returns at once and asks for nothing.
+    @Test func aSecondLoadWhileOneIsOutIsDropped() async {
+        harness.invites.holdsRequests = true
+        let viewModel = harness.makeInvitePeopleViewModel(for: group)
+
+        let first = Task { await viewModel.load() }
+        await settle(until: { viewModel.isLoading })
+        await viewModel.load()
+        harness.invites.releaseRequests()
+        await first.value
+
+        #expect(harness.invites.candidateRequests == ["g"] && !viewModel.isLoading)
+    }
+
+    /// A sheet dismissed mid-load is no failure: nothing is shown or logged and the sheet is left as it was.
+    @Test func aCancelledLoadStaysQuiet() async {
+        harness.invites.holdsRequests = true
+        let viewModel = harness.makeInvitePeopleViewModel(for: group)
+
+        let load = Task { await viewModel.load() }
+        await settle(until: { viewModel.isLoading })
+        load.cancel()
+        harness.invites.releaseRequests()
+        await load.value
+
+        #expect(harness.presentedError == nil && harness.logs().isEmpty)
+        #expect(viewModel.content == .loading && !viewModel.isLoading)
+    }
+
     @Test func theQueryNarrowsByNameWhateverTheCaseAndKeepsEveryoneWhenBlank() async {
         let viewModel = await openSheet([marta, ayse, noor])
 
@@ -60,7 +89,7 @@ struct InvitePeopleViewModelTests {
 
         #expect(harness.invites.sentInvites == [FakeInviteRepository.SentInviteRequest(groupID: "g", userID: "u-2")])
         #expect(viewModel.candidates.map(\.isInvited) == [true, false] && !viewModel.isSending(marta))
-        #expect(harness.logs(.info).contains("Invite sent to u-2 for group g") && harness.presentedError == nil)
+        #expect(harness.logs(.info).mentioning("sent", "u-2", "group g").count == 1 && harness.presentedError == nil)
     }
 
     @Test func anInvitedRowAndAStrangerSendNothing() async {
@@ -93,7 +122,7 @@ struct InvitePeopleViewModelTests {
 
         await viewModel.invite(marta)
         #expect(harness.invites.sentInvites.count == 2 && viewModel.candidates[0].isInvited && harness.presentedError == nil)
-        #expect(harness.logs(.info).contains("Invite to u-2 for group g lost a race; retrying once"))
+        #expect(harness.logs(.info).mentioning("u-2", "lost a race").count == 1)
 
         harness.invites.transientInviteErrors = [.tryAgain, .tryAgain]
         await viewModel.invite(ayse)
@@ -108,7 +137,8 @@ struct InvitePeopleViewModelTests {
         await viewModel.invite(marta)
 
         #expect(harness.presentedError == .alreadyMember && viewModel.candidates.first?.isInvited == false)
-        #expect(harness.logs(.error) == ["Invite to u-2 for group g failed: alreadyMember"])
+        #expect(harness.logs(.error).count == 1)
+        #expect(harness.logs(.error).mentioning("u-2", "\(AppError.alreadyMember)").count == 1)
     }
 
     @Test func aTermsRefusalRaisesTheTermsSheet() async {
@@ -138,12 +168,13 @@ struct InvitePeopleViewModelTests {
         await viewModel.invite(marta)
         #expect(harness.invites.sentInvites == [FakeInviteRepository.SentInviteRequest(groupID: "t1", userID: "u-2")])
         #expect(viewModel.candidates[0].isInvited)
-        #expect(harness.tournamentLogs(.info).contains("Invite sent to u-2 for tournament t1"))
+        #expect(harness.tournamentLogs(.info).mentioning("sent", "u-2", "tournament t1").count == 1)
         #expect(harness.logs().isEmpty, "tournament work is not logged under the groups")
 
         harness.invites.inviteResult = .failure(.inviteeAlreadyEntered)
         await viewModel.invite(ayse)
         #expect(harness.presentedError == .inviteeAlreadyEntered && !viewModel.candidates[1].isInvited)
-        #expect(harness.tournamentLogs(.error) == ["Invite to u-3 for tournament t1 failed: inviteeAlreadyEntered"])
+        #expect(harness.tournamentLogs(.error).count == 1)
+        #expect(harness.tournamentLogs(.error).mentioning("u-3", "\(AppError.inviteeAlreadyEntered)").count == 1)
     }
 }

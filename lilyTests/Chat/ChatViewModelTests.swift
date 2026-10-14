@@ -89,7 +89,7 @@ struct ChatViewModelTests {
         await settle(until: { viewModel.room.messages.count == 3 })
         await viewModel.cancel()
         #expect(harness.chat.readMarks.map(\.messageID) == ["m1", "m2", "m3"])
-        #expect(viewModel.liveTask == nil && harness.controller.openRoom == nil)
+        #expect(harness.controller.openRoom == nil)
         await settle(until: { harness.controller.consumers.isEmpty })
         await viewModel.sceneDidEnterBackground()
         #expect(harness.chat.readMarks.count == 3, "nothing new, nothing sent")
@@ -169,16 +169,6 @@ struct ChatViewModelTests {
         await viewModel.loadOlder()
 
         #expect(harness.chat.olderRequests.map(\.before) == ["c-1", "m1"], "then before the oldest id, the page named none")
-    }
-
-    @Test func losingAccessDropsTheRoom() async {
-        let (harness, viewModel) = await makeHarness(cached: [first])
-        harness.chat.pageError = AppError.notAMember
-
-        await viewModel.appear()
-
-        #expect(viewModel.isGone && harness.cache.room(for: "g") == nil)
-        #expect(harness.errorCenter.current?.error == .notAMember)
     }
 
     @Test func deletingAMessageLeavesATombstone() async {

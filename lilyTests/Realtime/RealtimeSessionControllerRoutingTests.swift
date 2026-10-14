@@ -26,7 +26,6 @@ struct RealtimeSessionControllerRoutingTests {
         #expect(harness.controller.subscribedRooms == ["g3": 2])
         await harness.yield()
         #expect(Set(harness.transport.subscribedChannels) == [userChannel, .room(groupID: "g3", epoch: 2)])
-        #expect(harness.chatLogs(.info).contains("Subscribed to rooms/g3/2"))
     }
 
     @Test func subscribesBeforeItCatchesUp() async {
@@ -55,7 +54,7 @@ struct RealtimeSessionControllerRoutingTests {
 
         #expect(harness.chat.newerRequests.map { "\($0.groupID)/\($0.after)" } == ["a/m1"])
         #expect(harness.chat.newestGroupIDs.isEmpty)
-        #expect(harness.logger.messages(in: .cache).contains("Catch-up skipped for group b (nothing new)"))
+        #expect(harness.logger.hasLine(in: .cache, mentioning: "skipped", "group b"))
     }
 
     /// A catch-up page answering a newer epoch than the room subscribed at means a `member_left` was missed while
@@ -71,7 +70,7 @@ struct RealtimeSessionControllerRoutingTests {
         await harness.connect()
 
         #expect(harness.controller.subscribedRooms["g1"] == 2)
-        #expect(harness.chatLogs(.info).contains("Epoch changed for group g1: 1 -> 2"))
+        #expect(harness.chatLogs(.info).mentioning("g1", "1 -> 2").count == 1)
         #expect(harness.chat.newerRequests.map(\.after) == ["m1", "m5"], "the second pass starts where the first left off")
         await harness.yield()
         #expect(Set(harness.transport.subscribedChannels) == [userChannel, .room(groupID: "g1", epoch: 2)])
@@ -88,10 +87,11 @@ struct RealtimeSessionControllerRoutingTests {
         await settle(until: { harness.sleep.held.contains(.seconds(1.0)) })
 
         #expect(harness.controller.subscribedRooms["g1"] == 1 && harness.groups.fetchedGroupIDs.isEmpty)
+        #expect(harness.chatLogs(.debug).mentioning("g1", "epoch 2", "1.0s").count == 1)
         harness.sleep.release { $0 == .seconds(1.0) }
         await settle(until: { harness.controller.subscribedRooms["g1"] == 2 })
         #expect(harness.cache.room(for: "g1")?.channelEpoch == 2)
-        #expect(harness.chatLogs(.info).contains("Epoch changed for group g1: 1 -> 2"))
+        #expect(harness.chatLogs(.info).mentioning("g1", "1 -> 2").count == 1)
         await harness.yield()
         #expect(!harness.transport.subscribedChannels.contains(.room(groupID: "g1", epoch: 1)))
     }
@@ -160,11 +160,15 @@ struct RealtimeSessionControllerRoutingTests {
         harness.groups.result = .success([.fixture(id: "g1", role: .member)])
         harness.cache.store(.fixture(groupID: "g1"), for: "g1")
         await harness.connect()
+        let sink = harness.sink(for: "g1")
 
         harness.transport.post(.message(.fixture(id: "x1", groupID: "other")), to: .room(groupID: "g1", epoch: 1))
-        await settle(until: { harness.chatLogs(.warning).contains { $0.contains("another group") } })
+        harness.transport.post(.message(.fixture(id: "m1", groupID: "g1")), to: .room(groupID: "g1", epoch: 1))
+        await settle(until: { sink.received.count == 1 })
 
-        #expect(harness.cache.room(for: "g1")?.messages.isEmpty == true)
+        #expect(sink.messageIDs == ["m1"], "the open chat never sees another group's envelope")
+        #expect(harness.cache.room(for: "g1")?.messages.map(\.id) == ["m1"])
+        #expect(harness.chatLogs(.warning).mentioning("other", "rooms/g1/1").count == 1)
     }
 
     @Test func beingRemovedDropsTheGroupEverywhere() async {
@@ -201,9 +205,9 @@ struct RealtimeSessionControllerRoutingTests {
 
         #expect(harness.store.groups.map(\.id) == ["g2"] && harness.cache.room(for: "g1") == nil)
         #expect(harness.controller.subscribedRooms == ["g2": 1])
-        #expect(harness.chatLogs(.info).contains("Membership role_changed for group g2"))
-        #expect(!harness.chatLogs(.info).contains { $0.hasPrefix("Membership removed") },
-                "an ended membership logs its drop instead")
+        #expect(harness.chatLogs(.info).mentioning("role_changed", "g2").count == 1)
+        let g1Removal = harness.chatLogs(.info).mentioning("g1", "removed")
+        #expect(g1Removal.count == 1 && g1Removal.mentioning("dropped").count == 1, "an ended membership logs its drop instead")
     }
 
     @Test func groupDeletedAndGroupUpdatedReachMine() async {

@@ -8,7 +8,7 @@ struct EventDetailEditTests {
     private let repository = FakeEventRepository()
     private let identity = FakeIdentityProvider(currentUserID: "host")
     private let logger = SpyLogger()
-    private let changed = CreatedEvents()
+    private let changed = Recorded<SportEvent>()
 
     private func makeViewModel(for event: SportEvent) -> EventDetailViewModel {
         EventDetailViewModel(event: event,
@@ -39,6 +39,6 @@ struct EventDetailEditTests {
         viewModel.accept(edited)
 
         #expect(viewModel.event.title == "New")
-        #expect(changed.events == [edited])
+        #expect(changed.values == [edited])
     }
 }

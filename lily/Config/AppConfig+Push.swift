@@ -16,6 +16,9 @@ nonisolated extension AppConfig {
         static let lastRegistrationKey = "push.lastRegistration"
         /// The token the mock registrar answers: 64 hex characters, like a real one.
         static let mockToken = String(repeating: "ab", count: 32)
+        /// Stands in for the token in the device route's log line: a device identifier is not a credential, but it is
+        /// persisted in a warning when an unregister fails.
+        static let redactedToken = "<token>"
 
         /// Keys of the notification payload, as Laurel's `ReminderPush` and `MatchReminderPush` write them beside `aps`.
         enum Payload {

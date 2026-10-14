@@ -1,4 +1,3 @@
-import Foundation
 import SwiftUI
 import Testing
 @testable import lily
@@ -35,6 +34,7 @@ struct EventOpenerTests {
 
         #expect(!opened && navigation.chatPath.isEmpty)
         #expect(errorCenter.current?.error == .eventNotFound)
-        #expect(logger.messages(in: .events, at: .warning) == ["Event e1 behind a notification is unavailable: eventNotFound"])
+        #expect(logger.count(in: .events, at: .warning) == 1)
+        #expect(logger.hasLine(in: .events, at: .warning, mentioning: "e1", "a notification", "\(AppError.eventNotFound)"))
     }
 }

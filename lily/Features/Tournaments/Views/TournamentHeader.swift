@@ -18,10 +18,13 @@ struct TournamentHeader: View {
                 Label(tournament.format.displayName, systemImage: DesignTokens.Symbols.format).lilyChip(.regular)
                 TournamentStatusChip(status: tournament.status)
             }
-            titleBlock
+            OwnerTitleBlock(title: tournament.name,
+                            subtitle: Copy.organizedBy(name: tournament.organizerName),
+                            destination: organizerProfile,
+                            identifier: AccessibilityIdentifiers.tournamentOrganizer)
             outcome
             if let group = tournament.group {
-                groupLine(group)
+                HostedInLine(group: group)
             }
         }
     }
@@ -39,69 +42,24 @@ struct TournamentHeader: View {
                 .foregroundStyle(.secondary)
         }
     }
-
-    /// The title with "Organised by <name>" under it, a link to the organiser's profile when the caller may open it.
-    private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-            ScreenTitle(text: tournament.name)
-            if let organizerProfile {
-                NavigationLink(value: organizerProfile) {
-                    HStack(spacing: DesignTokens.Spacing.xs) {
-                        ScreenSubtitle(text: Copy.organizedBy(name: tournament.organizerName))
-                        Image(systemName: DesignTokens.Symbols.chevron)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier(AccessibilityIdentifiers.tournamentOrganizer)
-            } else {
-                ScreenSubtitle(text: Copy.organizedBy(name: tournament.organizerName))
-            }
-        }
-    }
-
-    /// "Hosted in <group>": a link to the group when it is public and live, its name alone otherwise.
-    private func groupLine(_ group: EventGroupRef) -> some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-            if group.isLinkable {
-                NavigationLink(value: group) {
-                    Label(AppBranding.Groups.hostedIn(groupName: group.name), systemImage: DesignTokens.Symbols.groups)
-                        .foregroundStyle(Color.lilyAccent)
-                }
-                .buttonStyle(.plain)
-            } else {
-                Label(AppBranding.Groups.hostedIn(groupName: group.name), systemImage: DesignTokens.Symbols.groups)
-                    .foregroundStyle(.secondary)
-            }
-            if group.isPrivate {
-                Text(AppBranding.Groups.membersOnly)
-                    .font(LilyTheme.Fonts.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .font(.subheadline)
-    }
 }
 
 /// When it starts, when entries close, where, and how many entries are in.
 struct TournamentFacts: View {
     let tournament: Tournament
 
-    private static let dateStyle = Date.FormatStyle(date: .abbreviated, time: .shortened)
-
     var body: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
                 Label {
-                    Text(tournament.startsAt, format: Self.dateStyle)
+                    Text(tournament.startsAt, format: LilyTheme.DateStyles.dateTime)
                 } icon: {
                     Image(systemName: DesignTokens.Symbols.time)
                 }
                 if let closes = tournament.registrationClosesAt, tournament.status == .registration {
                     Label {
                         Text(AppBranding.Groups.caption([AppBranding.Tournaments.registrationCloses,
-                                                         closes.formatted(Self.dateStyle)]))
+                                                         closes.formatted(LilyTheme.DateStyles.dateTime)]))
                     } icon: {
                         Image(systemName: DesignTokens.Symbols.registrationCloses)
                     }

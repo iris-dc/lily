@@ -18,14 +18,14 @@ nonisolated struct MatchScheduleDraft: Equatable, Sendable {
         earliest = min(now, proposed)
     }
 
-    var trimmedLocationName: String { locationName.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var trimmedLocationName: String { locationName.trimmed }
     /// The place name within the backend's limit; everything else is always sendable.
     var isValid: Bool { trimmedLocationName.wireLength <= AppConfig.Events.Creation.locationNameMaxLength }
 
     /// The place, when named: the typed name at the picked spot, else at `venue`; `nil` without a name or a spot.
     func location(venue: Coordinate?) -> EventLocation? {
-        guard !trimmedLocationName.isEmpty, let coordinate = coordinate ?? venue else { return nil }
-        return EventLocation(name: trimmedLocationName, coordinate: coordinate)
+        guard let name = locationName.nonBlankTrimmed, let coordinate = coordinate ?? venue else { return nil }
+        return EventLocation(name: name, coordinate: coordinate)
     }
 
     func schedule(venue: Coordinate?) -> MatchSchedule {

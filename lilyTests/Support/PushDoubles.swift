@@ -8,7 +8,7 @@ final class FakePushRegistrar: PushRegistrar {
     var status: PushAuthorization = .authorized
     /// What the prompt answers; granting also moves `status`.
     var grants = true
-    var token = "cd".repeated(32)
+    var token = String(repeating: "cd", count: 32)
     var tokenError: PushRegistrationError?
     private(set) var requestCount = 0
     private(set) var tokenRequestCount = 0
@@ -30,46 +30,28 @@ final class FakePushRegistrar: PushRegistrar {
     }
 }
 
-/// Records registrations and removals; fails them on demand, or holds a removal until the test lets it go.
+/// Records registrations and removals and fails them on demand. While `holdsRequests`, `register` and `unregister`
+/// record the call and then suspend until `releaseRequests()`.
 @MainActor
-final class FakeDeviceRepository: DeviceRepository {
+final class FakeDeviceRepository: DeviceRepository, HoldsRequests {
     var registerError: AppError?
     var unregisterError: AppError?
-    /// While true, `unregister` records the call and then suspends until `releaseRequests()`.
-    var holdsRequests: Bool {
-        get { hold.isEnabled }
-        set { hold.isEnabled = newValue }
-    }
-    private let hold = RequestHold()
+    let hold = RequestHold()
     private(set) var registrations: [DeviceRegistrationPayload] = []
     private(set) var unregisteredTokens: [String] = []
 
     func register(_ payload: DeviceRegistrationPayload) async throws -> DeviceRegistration {
         if let registerError { throw registerError }
         registrations.append(payload)
+        try await hold.waitOrThrow()
         return DeviceRegistration(token: payload.token.lowercased(), environment: payload.environment, registeredAt: .now)
     }
 
     func unregister(token: String) async throws -> DeviceRemoval {
         if let unregisterError { throw unregisterError }
         unregisteredTokens.append(token)
-        await hold.wait()
-        try Task.checkCancellation()
+        try await hold.waitOrThrow()
         return DeviceRemoval(token: token, removed: true)
-    }
-
-    func releaseRequests() {
-        hold.release()
-    }
-}
-
-/// The test's clock, a box so the coordinator's `now` closure captures it and not the harness.
-@MainActor
-final class DateBox {
-    var now: Date
-
-    init(_ now: Date) {
-        self.now = now
     }
 }
 
@@ -84,10 +66,12 @@ final class PushHarness {
     let tournaments = FakeTournamentRepository()
     let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
     let navigation = AppNavigation()
-    let relay = PushEventRelay()
+    /// The pause every coordinator and relay built here waits on, held and released by the test.
+    let sleep: HeldSleep
+    let relay: PushEventRelay
     let defaults = makeTestDefaults()
     let logger = SpyLogger()
-    let clock = DateBox(PushHarness.now)
+    let clock = DateClock(PushHarness.now)
     /// What the coordinator registers as the device's language; a test changes it to see a registration repeated.
     var languageCode = "en"
     let errorCenter: ErrorCenter
@@ -95,15 +79,21 @@ final class PushHarness {
     private(set) lazy var coordinator: PushCoordinator = makeCoordinator()
 
     init() {
+        let sleep = HeldSleep()
+        self.sleep = sleep
+        relay = PushEventRelay { try await sleep.sleep(for: $0) }
         errorCenter = ErrorCenter(logger: logger)
         _ = coordinator
     }
 
-    /// Another coordinator over the same defaults, as a relaunch would build; a relay, repository or sign-out timeout
-    /// of its own on request.
-    func makeCoordinator(relay: PushEventRelay? = nil,
-                         devices: (any DeviceRepository)? = nil,
-                         unregisterTimeout: Duration = AppConfig.Push.unregisterTimeout) -> PushCoordinator {
+    /// `sleep` as the seam the coordinator and the relay take.
+    var pause: Sleep {
+        { [sleep] in try await sleep.sleep(for: $0) }
+    }
+
+    /// Another coordinator over the same defaults, as a relaunch would build; a relay or repository of its own on
+    /// request.
+    func makeCoordinator(relay: PushEventRelay? = nil, devices: (any DeviceRepository)? = nil) -> PushCoordinator {
         PushCoordinator(registrar: registrar,
                         devices: devices ?? self.devices,
                         identity: identity,
@@ -113,7 +103,7 @@ final class PushHarness {
                         defaults: defaults,
                         appVersion: AppVersion(marketing: "1.0", build: "42"),
                         languageCode: { [weak self] in self?.languageCode ?? "en" },
-                        unregisterTimeout: unregisterTimeout,
+                        sleep: pause,
                         logger: logger,
                         now: { [clock] in clock.now })
     }
@@ -135,10 +125,22 @@ final class PushHarness {
     func logs(_ level: LogLevel? = nil) -> [String] {
         logger.messages(in: .push, at: level)
     }
+
+    /// How many lines at `level` under `.push` contain `fragment`; one per key event is the rule.
+    func logged(_ fragment: String, at level: LogLevel) -> Int {
+        logs(level).filter { $0.contains(fragment) }.count
+    }
 }
 
-private extension String {
-    func repeated(_ count: Int) -> String {
-        String(repeating: self, count: count)
+/// Counts how often a view model offered the reminder permission. `onOffer` runs first, so a test can read the view
+/// model's state at the moment of the offer.
+@MainActor
+final class SpyPushOptIn: PushOptIn {
+    var onOffer: () -> Void = {}
+    private(set) var offerCount = 0
+
+    func offerReminders() async {
+        onOffer()
+        offerCount += 1
     }
 }

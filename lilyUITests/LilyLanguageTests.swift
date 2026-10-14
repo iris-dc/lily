@@ -6,8 +6,7 @@ final class LilyLanguageTests: LilyUITestCase {
     @MainActor
     func testPickingALanguageOnProfileRelabelsTheAppAtOnce() {
         relaunchAsGuest()
-        app.tabBars.buttons["Profile"].tap()
-        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
+        openProfileTab()
 
         let picker = app.buttons["profile-language"]
         XCTAssertTrue(picker.waitForExistence(timeout: 5))

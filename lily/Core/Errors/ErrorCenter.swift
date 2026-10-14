@@ -21,8 +21,10 @@ final class ErrorCenter {
         self.logger = logger
     }
 
+    /// Every presented error leaves an info line under `.ui`: the fault itself is logged where it happened, at its own
+    /// level, so this line records only what the user was shown.
     func report(_ error: AppError) {
-        logger.error(.ui, "Presenting error: \(error)")
+        logger.info(.ui, "Presenting error: \(error)")
         current = PresentedError(id: UUID(), error: error, message: ErrorMessageMapper.message(for: error))
     }
 

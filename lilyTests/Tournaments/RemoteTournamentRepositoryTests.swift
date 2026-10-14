@@ -4,15 +4,10 @@ import Testing
 
 @MainActor
 struct RemoteTournamentRepositoryTests {
+    /// One known code and the route's fallback: the shared mapping is proved once, in `SendFailingWithTests` and
+    /// `BackendErrorCodeTests.everyCodeMapsToItsCase`. `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
-        ("TOURNAMENT_NOT_FOUND", .tournamentNotFound), ("TOURNAMENT_ID_TAKEN", .tournamentCreationFailed),
-        ("TOURNAMENT_ID_REUSED", .tournamentCreationFailed), ("TOURNAMENT_LIMIT", .tournamentLimit),
-        ("NOT_ORGANIZER", .notOrganizer), ("TOURNAMENT_LOCKED", .tournamentLocked), ("REGISTRATION_CLOSED", .registrationClosed),
-        ("TOURNAMENT_FULL", .tournamentFull), ("ALREADY_ENTERED", .alreadyEntered), ("TEAM_FULL", .teamFull),
-        ("ENTRY_NOT_FOUND", .entryNotFound), ("NOT_ENOUGH_ENTRIES", .notEnoughEntries), ("NOT_IN_MATCH", .notInMatch),
-        ("MATCH_NOT_READY", .matchNotReady), ("DRAW_NOT_ALLOWED", .drawNotAllowed), ("CAPACITY_TOO_LOW", .capacityTooLow),
-        ("MEMBERSHIP_LIMIT", .membershipLimitReached), ("GROUP_NOT_FOUND", .groupNotFound), ("FORBIDDEN", .insufficientRole),
-        ("TRY_AGAIN", .tryAgain), ("TERMS_REQUIRED", .termsRequired), ("VALIDATION_FAILED", .tournamentActionFailed),
+        ("TOURNAMENT_NOT_FOUND", .tournamentNotFound), ("VALIDATION_FAILED", .tournamentActionFailed),
     ]
 
     private let client = FakeAPIClient()
@@ -116,8 +111,6 @@ struct RemoteTournamentRepositoryTests {
         await #expect(throws: AppError.tournamentCreationFailed) { try await repository.create(.fixture()) }
         await #expect(throws: AppError.tournamentUpdateFailed) { try await repository.update(id: "t", .fixture()) }
         await #expect(throws: AppError.tournamentActionFailed) { try await repository.start(id: "t") }
-        client.error = URLError(.notConnectedToInternet)
-        await #expect(throws: AppError.network) { try await repository.cancel(id: "t") }
     }
 
     /// A draft without a spot never reaches the wire.

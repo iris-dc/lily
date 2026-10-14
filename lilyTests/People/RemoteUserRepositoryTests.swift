@@ -70,11 +70,11 @@ struct RemoteUserRepositoryTests {
         #expect(!conversation.membersCanCreateEvents && !conversation.membersCanInvite)
     }
 
+    /// One known code and the route's fallback: the shared mapping is proved once, in `SendFailingWithTests` and
+    /// `BackendErrorCodeTests.everyCodeMapsToItsCase`; the profile route answers a 404 with a code of its own.
     @Test func backendCodesMapToAppErrors() async {
         let cases: [(code: String, expected: AppError)] = [
-            ("USER_NOT_FOUND", .userNotFound), ("CONVERSATION_LIMIT", .conversationLimit), ("TRY_AGAIN", .tryAgain),
-            ("TERMS_REQUIRED", .termsRequired), ("ACCOUNT_SUSPENDED", .accountSuspended),
-            ("VALIDATION_FAILED", .conversationFailed),
+            ("CONVERSATION_LIMIT", .conversationLimit), ("VALIDATION_FAILED", .conversationFailed),
         ]
         for (code, expected) in cases {
             client.error = APIError.http(status: 409, body: APIErrorBody(code: code, message: "m"))
@@ -90,19 +90,5 @@ struct RemoteUserRepositoryTests {
             await #expect(throws: AppError.profileUnavailable) { try await repository.profile(userID: "seed-marta") }
             await #expect(throws: AppError.conversationFailed) { try await repository.startConversation(with: "seed-marta") }
         }
-    }
-
-    @Test func statusOnlyFailuresAndTransportKeepTheSharedMapping() async {
-        client.error = APIError.http(status: 401, body: nil)
-        await #expect(throws: AppError.sessionExpired) { try await repository.profile(userID: "seed-marta") }
-
-        client.error = APIError.http(status: 429, body: nil)
-        await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.startConversation(with: "u-2") }
-
-        client.error = URLError(.notConnectedToInternet)
-        await #expect(throws: AppError.network) { try await repository.profile(userID: "seed-marta") }
-
-        client.error = URLError(.cancelled)
-        await #expect(throws: URLError(.cancelled)) { try await repository.startConversation(with: "seed-marta") }
     }
 }

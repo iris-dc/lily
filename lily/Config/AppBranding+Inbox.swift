@@ -7,7 +7,7 @@ nonisolated extension AppBranding {
     /// The Chats tab: the inbox row, the caller's rooms and the states around them.
     enum Chats {
         static var noRooms: String { localized("No group chats yet. Join a group to start one.") }
-        static var noRoomsAction: String { localized("Explore") }
+        static var noRoomsAction: String { AppBranding.exploreTitle }
         static var guestMessage: String { localized("Sign in to see your chats, invites and game reminders.") }
         /// The split view's detail before a conversation is chosen (regular widths).
         static var pickConversationTitle: String { localized("Pick a conversation") }
@@ -33,7 +33,7 @@ nonisolated extension AppBranding {
         /// VoiceOver names of the reminder cards' chevrons.
         static var openGame: String { localized("Open game") }
         static var openTournament: String { localized("Open tournament") }
-        static var emptyTitle: String { localized("Nothing here yet") }
+        static var emptyTitle: String { Home.emptyTitle }
         static var emptyMessage: String { localized("Invites and reminders for your games show up here.") }
         static var loadFailedTitle: String { localized("Couldn't load your notifications") }
         static var loadEarlier: String { localized("Load earlier") }

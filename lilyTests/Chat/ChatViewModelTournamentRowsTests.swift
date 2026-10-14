@@ -77,6 +77,33 @@ struct ChatViewModelTournamentRowsTests {
         #expect(harness.chatLogs(.warning).contains { $0.hasPrefix("Tournament t behind a system row") })
     }
 
+    @Test func aGoneTournamentIsLookedUpOnce() async {
+        let (harness, viewModel) = await makeChat()
+
+        await viewModel.loadLinkedContent(for: started)
+        await viewModel.loadLinkedContent(for: started)
+
+        #expect(harness.tournaments.fetchedIDs == ["t"])
+        #expect(harness.chatLogs(.warning).filter { $0.hasPrefix("Tournament t behind a system row") }.count == 1)
+        #expect(viewModel.systemText(for: started) == "The tournament started")
+        #expect(viewModel.systemRows.linked.unavailableTournamentIDs == ["t"])
+        #expect(await viewModel.destination(for: started)
+            == .tournament(TournamentDestination(id: "t", name: "Tuesday Table Tennis")))
+        #expect(harness.tournaments.fetchedIDs == ["t"], "the tap needs no fetch: the room is the tournament")
+    }
+
+    @Test func aTransientlyUnavailableTournamentIsLookedUpAgain() async {
+        let (harness, viewModel) = await makeChat()
+        harness.tournaments.detailError = AppError.network
+
+        await viewModel.loadLinkedContent(for: started)
+        await viewModel.loadLinkedContent(for: started)
+
+        #expect(harness.tournaments.fetchedIDs == ["t", "t"])
+        #expect(harness.chatLogs(.warning).filter { $0.hasPrefix("Tournament t behind a system row") }.count == 2)
+        #expect(viewModel.systemRows.linked.unavailableTournamentIDs.isEmpty)
+    }
+
     @Test func aLiveTournamentNoteBumpsTheTournamentChangesAndNothingElse() async {
         let (harness, viewModel) = await makeChat()
         await viewModel.appear()

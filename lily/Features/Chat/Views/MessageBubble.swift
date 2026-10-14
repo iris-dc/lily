@@ -4,9 +4,11 @@ import SwiftUI
 /// leading, with the sender's avatar and current name on the first bubble of a run (both open `profile`, the sender's,
 /// as the view model frames it for this room) and the time under the last. A reply shows the quoted original above
 /// its text; tapping the quote asks `onTapQuote` to find it. Pictures and videos show as a gallery above the words (or
-/// as the bubble itself when there are no words) and files as cards under it; tapping a tile asks `onTapAttachment` to
-/// open it, tapping a card downloads the file and asks `onOpenFile` to preview it. Plain fills, never glass: a chat
-/// scrolls dozens of these at once. The row is an accessibility container, so what is inside keeps its own identifier.
+/// as the bubble itself when there are no words and no quote, `BubbleFill`) and files as cards under it; tapping a tile
+/// asks `onTapAttachment` to open its `AttachmentSelection` (the tapped picture, or the first hidden one from the "+N"
+/// tile), tapping a card downloads the file and asks `onOpenFile` to preview it. Plain fills,
+/// never glass: a chat scrolls dozens of these at once. The row is an accessibility container, so what is inside keeps
+/// its own identifier.
 struct MessageBubble: View {
     let row: MessageRow
     let profile: UserProfileDestination
@@ -14,7 +16,7 @@ struct MessageBubble: View {
     /// Whether this device knows the quoted original is gone (`ChatViewModel.quoteIsDeleted`).
     var isQuoteDeleted = false
     var onTapQuote: (ReplyQuote) -> Void = { _ in }
-    var onTapAttachment: (Attachment) -> Void = { _ in }
+    var onTapAttachment: (AttachmentSelection) -> Void = { _ in }
     var onOpenFile: (URL) -> Void = { _ in }
 
     var body: some View {
@@ -40,8 +42,7 @@ struct MessageBubble: View {
             profileLink {
                 AvatarCircle(initials: row.senderName.initials,
                              size: DesignTokens.Layout.avatarSmall,
-                             tint: .lilySecondary,
-                             tintOpacity: DesignTokens.Opacity.secondaryGlassTint)
+                             tint: .secondary)
             }
             .accessibilityHidden(true)
         } else {
@@ -76,8 +77,7 @@ struct MessageBubble: View {
                           quote: row.message.replyTo,
                           isQuoteDeleted: isQuoteDeleted,
                           own: row.isOwn,
-                          hasMedia: row.message.hasAttachments,
-                          mediaStandsAlone: row.message.attachments.allSatisfy(\.kind.isMedia),
+                          attachmentKinds: row.message.attachments.map(\.kind),
                           onTapQuote: onTapQuote) {
                 AttachmentGallery(message: row.message,
                                   loader: loader,
@@ -95,7 +95,9 @@ struct MessageBubble: View {
             .foregroundStyle(.secondary)
     }
 
-    /// The client id keeps a bubble's identity across the optimistic -> stored swap; other senders' have only the server id.
+    /// Keyed by the client id when the message carries one: the caller's always (stable across the optimistic ->
+    /// stored swap) and, from the backend, every member's, since Laurel sends clientMessageId on every member message;
+    /// the mock's other senders have none and fall back to the server id.
     private var identifier: String {
         row.message.clientMessageId.map(AccessibilityIdentifiers.message(clientID:))
             ?? AccessibilityIdentifiers.message(id: row.message.id)

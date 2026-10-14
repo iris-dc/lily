@@ -65,11 +65,17 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
         channelEpoch = page.channelEpoch
     }
 
-    /// A page before the oldest message held; never moves the watermark.
-    mutating func applyOlder(_ page: MessagePage) {
+    /// The page asked for at `anchor` (`olderPageAnchor` when the request went out); never moves the watermark.
+    /// Refused, changing nothing, when the anchor moved meanwhile: the room was compacted (the trim dropped the oldest
+    /// rows and forgot the cursor) or cleared, and prepending the page below rows that are gone would leave a hole
+    /// nothing refills, since catch-up only moves forward. Answers whether the page was taken.
+    @discardableResult
+    mutating func applyOlder(_ page: MessagePage, before anchor: String) -> Bool {
+        guard olderPageAnchor == anchor else { return false }
         insert(contentsOf: page.items)
         noteOlder(from: page)
         channelEpoch = page.channelEpoch
+        return true
     }
 
     /// A catch-up page after the watermark, which moves to the page's continuation cursor when it names one (so a page
@@ -78,6 +84,20 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
         insert(contentsOf: page.items)
         advanceWatermark(to: page.nextAfter ?? page.items.last?.id)
         channelEpoch = page.channelEpoch
+    }
+
+    /// The caller's history floor moved to `floor`: everything at or below it is gone from their pages and nothing older
+    /// exists for them, the room counts as loaded, and the watermark sits at the floor so the next catch-up asks
+    /// `newer(after: floor)` (which the backend answers from the floor) and a quiet room is not caught up at all. A line
+    /// that landed above the floor while the request was out stays.
+    mutating func applyCleared(floor: String, epoch: Int) {
+        messages.removeAll { $0.id <= floor }
+        tombstonedIDs = tombstonedIDs.filter { $0 > floor }
+        hasOlder = false
+        olderCursor = nil
+        hasHistory = true
+        advanceWatermark(to: floor)
+        channelEpoch = epoch
     }
 
     mutating func noteEpoch(_ epoch: Int) {

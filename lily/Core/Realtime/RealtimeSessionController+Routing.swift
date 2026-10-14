@@ -2,7 +2,7 @@ import Foundation
 
 /// Subscriptions and what arrives on them: the room cache and the unread set are updated here, epochs are followed
 /// (a `member_left` is trusted and resubscribed with jitter; the group is refetched only when a subscribe is refused),
-/// and every envelope is handed to the listeners of its room or of the user channel.
+/// and every room envelope is handed to the listeners of its room; the user channel feeds the stores alone.
 extension RealtimeSessionController {
     /// Brings the live subscriptions in line with `desiredRooms()`; a no-op while not connected.
     func reconcileSubscriptions() {
@@ -83,8 +83,7 @@ extension RealtimeSessionController {
                 logger.warning(.chat, "Subscribe refused for group \(groupID) at the current epoch \(refusedEpoch); not retrying")
                 return
             }
-            logger.info(.chat, "Epoch changed for group \(groupID): \(refusedEpoch) -> \(group.channelEpoch)")
-            noteEpoch(group.channelEpoch, for: groupID)
+            moveEpoch(of: groupID, to: group.channelEpoch)
             reconcileSubscriptions()
             // The room was unsubscribed between the refusal and now; the server alone has what was published meanwhile.
             await catchUp.catchUpMovedRooms([group], openRoomID: openRoom?.groupID, maxConcurrent: 1)
@@ -99,10 +98,9 @@ extension RealtimeSessionController {
         switch channel {
         case .user:
             applyUserEvent(envelope)
-            deliver(envelope, to: nil)
         case .room(let groupID, let epoch):
             guard envelope.groupID == nil || envelope.groupID == groupID else {
-                logger.warning(.chat, "Dropped an envelope for another group on \(channel.path)")
+                logger.warning(.chat, "Dropped an envelope of another group (\(envelope.groupID ?? "?")) on \(channel.path)")
                 return
             }
             applyRoomEvent(envelope, groupID: groupID, subscribedEpoch: epoch)
@@ -117,18 +115,18 @@ extension RealtimeSessionController {
         case .messageDeleted(_, let id):
             cache.update(groupID: groupID) { $0.markDeleted(id: id) }
         case .memberLeft(_, let userID, let epoch, let memberCount):
-            applyMemberLeft(userID: userID, groupID: groupID, epoch: epoch, from: subscribedEpoch, memberCount: memberCount)
+            applyMemberLeft(userID: userID, groupID: groupID, epoch: epoch, memberCount: memberCount)
         case .groupDeleted:
             removeGroupLocally(groupID, reason: "group deleted")
         case .groupUpdated(let group):
             store.apply(group)
-            adoptEpoch(envelope.channelEpoch, for: groupID, from: subscribedEpoch)
+            adoptEpoch(envelope.channelEpoch, for: groupID)
         case .memberJoined:
-            adoptEpoch(envelope.channelEpoch, for: groupID, from: subscribedEpoch)
+            adoptEpoch(envelope.channelEpoch, for: groupID)
         case .tournamentChanged, .matchUpdated:
             // The tournament screens refetch the detail; a change's epoch is the room's new one.
             tournamentChanges.recordChange()
-            adoptEpoch(envelope.channelEpoch, for: groupID, from: subscribedEpoch)
+            adoptEpoch(envelope.channelEpoch, for: groupID)
         case .membershipChanged, .inboxItem:
             // Both belong to the user channel; on a room they say nothing about the room.
             let channel = RealtimeChannel.room(groupID: groupID, epoch: subscribedEpoch)
@@ -140,11 +138,11 @@ extension RealtimeSessionController {
     }
 
     /// The caller's own departure drops the room; anyone else's moves the epoch, which is followed with jitter.
-    private func applyMemberLeft(userID: String, groupID: String, epoch: Int, from subscribedEpoch: Int, memberCount: Int) {
+    private func applyMemberLeft(userID: String, groupID: String, epoch: Int, memberCount: Int) {
         if userID == identity.currentUserID {
             removeGroupLocally(groupID, reason: "removed from group")
         } else {
-            resubscribeJittered(groupID, to: epoch, from: subscribedEpoch, memberCount: memberCount)
+            resubscribeJittered(groupID, to: epoch, memberCount: memberCount)
         }
     }
 
@@ -181,24 +179,36 @@ extension RealtimeSessionController {
         }
     }
 
-    /// The epoch a response or an event carries, when it is newer than the one subscribed: resubscribe at once.
-    private func adoptEpoch(_ epoch: Int?, for groupID: String, from subscribedEpoch: Int) {
-        guard let epoch, epoch > subscribedEpoch else { return }
-        logger.info(.chat, "Epoch changed for group \(groupID): \(subscribedEpoch) -> \(epoch)")
+    /// The epoch a response or an event carries, when it is newer than anything known: resubscribe at once.
+    private func adoptEpoch(_ epoch: Int?, for groupID: String) {
+        if moveEpoch(of: groupID, to: epoch) { reconcileSubscriptions() }
+    }
+
+    /// The newest epoch learned for a room from any source (an event, a page, a refetched group, the open chat's
+    /// send): noted for the cached room when newer than its own, and for the controller when newer than anything
+    /// known, which is logged once. Answers whether the controller's knowledge moved; callers resubscribe
+    /// themselves (`reconcileSubscriptions()`), because the jittered one waits first.
+    @discardableResult
+    func moveEpoch(of groupID: String, to epoch: Int?) -> Bool {
+        guard let epoch else { return false }
+        if let cached = cache.room(for: groupID)?.channelEpoch, epoch > cached {
+            cache.update(groupID: groupID) { $0.noteEpoch(epoch) }
+        }
+        let known = knownEpochs[groupID] ?? 0
+        guard epoch > known else { return false }
+        logger.info(.chat, "Epoch changed for group \(groupID): \(known) -> \(epoch)")
         noteEpoch(epoch, for: groupID)
-        cache.update(groupID: groupID) { $0.noteEpoch(epoch) }
-        reconcileSubscriptions()
+        return true
     }
 
     /// `member_left` is trusted (a wrong epoch is refused by the backend anyway), and the resubscribe is spread over
     /// `min(memberCount x resubscribeJitterPerMember, resubscribeJitterMax)` so a large room does not herd.
-    private func resubscribeJittered(_ groupID: String, to epoch: Int, from subscribedEpoch: Int, memberCount: Int) {
-        guard epoch > subscribedEpoch, epoch > (knownEpochs[groupID] ?? 0) else { return }
-        logger.info(.chat, "Epoch changed for group \(groupID): \(subscribedEpoch) -> \(epoch)")
-        noteEpoch(epoch, for: groupID)
-        cache.update(groupID: groupID) { $0.noteEpoch(epoch) }
+    private func resubscribeJittered(_ groupID: String, to epoch: Int, memberCount: Int) {
+        guard moveEpoch(of: groupID, to: epoch) else { return }
         let timing = AppConfig.Realtime.self
         let delay = random(0...min(Double(memberCount) * timing.resubscribeJitterPerMember, timing.resubscribeJitterMax))
+        // One decimal, not Int(delay): a sub-second jitter would print as 0.
+        logger.debug(.chat, "Resubscribing to group \(groupID) at epoch \(epoch) in \(String(format: "%.1f", delay))s")
         pendingResubscribes[groupID]?.cancel()
         pendingResubscribes[groupID] = Task { [weak self, sleep] in
             guard (try? await sleep(.seconds(delay))) != nil, let self else { return }
@@ -208,8 +218,9 @@ extension RealtimeSessionController {
     }
 
     /// The caller is out of the group, whichever way: Mine (which records the change for every other screen), the
-    /// room cache, the unread dot and the subscription go.
-    private func removeGroupLocally(_ groupID: String, reason: String) {
+    /// room cache, the unread dot and the subscription go. The chat calls it for a page or write the backend refused
+    /// (`NOT_A_MEMBER`, `GROUP_NOT_FOUND`) and the clearer for a conversation it hid.
+    func removeGroupLocally(_ groupID: String, reason: String) {
         store.remove(id: groupID)
         cache.drop(groupID: groupID, reason: reason)
         unread.markRead(groupID: groupID)
@@ -222,7 +233,7 @@ extension RealtimeSessionController {
         logger.info(.chat, "Group \(groupID) dropped (\(reason))")
     }
 
-    private func deliver(_ envelope: RealtimeEnvelope, to groupID: String?) {
+    private func deliver(_ envelope: RealtimeEnvelope, to groupID: String) {
         consumers.values.filter { $0.groupID == groupID }.forEach { $0.continuation.yield(envelope) }
     }
 }

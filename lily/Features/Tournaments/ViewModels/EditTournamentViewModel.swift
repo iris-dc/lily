@@ -13,11 +13,10 @@ final class EditTournamentViewModel {
     private let original: Tournament
     private let rules: TournamentDraft.Rules
     private let repository: any TournamentRepository
-    private let reporter: GroupErrorReporter
     private let logger: any Logging
-    private let tryAgainDelay: Duration
     private let now: () -> Date
     private let onChange: @MainActor (TournamentDetail) -> Void
+    private let gate: WriteGate
 
     init(tournament: Tournament,
          repository: any TournamentRepository,
@@ -30,11 +29,10 @@ final class EditTournamentViewModel {
         self.draft = TournamentDraft(editing: tournament)
         self.rules = .editing(entryCount: tournament.entryCount, isLocked: tournament.status != .registration)
         self.repository = repository
-        self.reporter = reporter
         self.logger = logger
-        self.tryAgainDelay = tryAgainDelay
         self.now = now
         self.onChange = onChange
+        gate = WriteGate(category: .tournaments, logger: logger, tryAgainDelay: tryAgainDelay, report: { reporter.report($0) })
     }
 
     var issues: [TournamentDraft.Issue] { draft.issues(now: now(), rules: rules) }
@@ -42,38 +40,29 @@ final class EditTournamentViewModel {
     var canSubmit: Bool { !isSubmitting && hasChanges && issues.isEmpty }
     var isDone: Bool { updated != nil }
     var earliestStart: Date { TournamentDraft.earliestStart(now: now(), rules: rules) }
+    func proposedDeadline() -> Date { TournamentDraft.proposedDeadline(before: draft.startsAt, now: now()) }
     var entriesRange: ClosedRange<Int> { rules.entriesRange(for: draft.format) }
     /// After the start the schedule, the draws and the entries are fixed, and the rules stop judging the schedule.
     var isLocked: Bool { !rules.judgesSchedule }
+    /// The structure is fixed once the tournament exists.
+    var allowsStructureChanges: Bool { false }
     /// The group cannot change; the row shows it read-only, or not at all for a standalone tournament.
     var lockedGroup: EventGroupRef? { original.group }
     var showsGroupRow: Bool { lockedGroup != nil }
-    var eligibleGroups: [EventGroupRef] { [] }
-    var explainsNoEligibleGroups: Bool { false }
 
-    /// The draft is the tournament already; nothing to fetch before the form shows.
-    func prepare() async {}
-
-    /// Saves the draft; a `TRY_AGAIN` is repeated once; a failure goes to the popup.
+    /// Saves the draft; a call while one is in flight is dropped. The gate repeats a `TRY_AGAIN` once, keeps a
+    /// dismissed sheet quiet and sends a failure to the popup.
     func submit() async {
         guard canSubmit else { return }
         isSubmitting = true
         defer { isSubmitting = false }
-        do {
-            let detail = try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: logRetry) {
-                try await repository.update(id: original.id, draft)
-            }
+        await gate.run("Update of tournament \(original.id)") {
+            let detail = try await repository.update(id: original.id, draft)
             updated = detail
             onChange(detail)
             logger.info(.tournaments, "Tournament \(detail.id) updated (\(detail.tournament.entriesDescription))")
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            logger.error(.tournaments, "Update failed for tournament \(original.id): \(error)")
-            reporter.report(error)
         }
     }
-
-    private func logRetry() {
-        logger.info(.tournaments, "Update lost a race for tournament \(original.id); retrying once")
-    }
 }
+
+extension EditTournamentViewModel: TournamentDraftEditing {}

@@ -15,6 +15,8 @@ nonisolated struct APIRequest<Response: Decodable>: Sendable {
     var queryItems: [URLQueryItem] = []
     /// Encoded as the JSON body when present.
     var body: (any Encodable & Sendable)?
+    /// The path as the log shows it, when the real one carries a value that must not be logged (the device token).
+    var logPath: String?
 
     static func get(_ path: String, query: [URLQueryItem] = []) -> APIRequest {
         APIRequest(method: .get, path: path, queryItems: query)
@@ -29,7 +31,7 @@ nonisolated struct APIRequest<Response: Decodable>: Sendable {
         APIRequest(method: .put, path: path, body: body)
     }
 
-    static func delete(_ path: String) -> APIRequest {
-        APIRequest(method: .delete, path: path)
+    static func delete(_ path: String, logPath: String? = nil) -> APIRequest {
+        APIRequest(method: .delete, path: path, logPath: logPath)
     }
 }

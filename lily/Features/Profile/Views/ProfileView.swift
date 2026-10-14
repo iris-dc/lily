@@ -37,10 +37,11 @@ struct ProfileView: View {
 
     /// A guest signs in first, as for every write: the backend takes a message from an account only.
     private func openFeedback() {
-        if session.state.user == nil {
-            isSignInPresented = true
-        } else {
+        if session.state.isSignedIn {
             isFeedbackPresented = true
+        } else {
+            dependencies.logger.info(.auth, "Guest asked to send feedback from Profile; showing sign-in")
+            isSignInPresented = true
         }
     }
 

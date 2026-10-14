@@ -1,17 +1,11 @@
 import Foundation
 
-/// The tournaments feature's collaborators, held as one value so `AppDependencies` gains a single stored property: the
-/// repository, and the change counter every tournament list reloads on (`GroupDependencies` owns it, so the realtime
-/// controller bumps the same one).
-struct TournamentDependencies {
-    let repository: any TournamentRepository
-    /// Counts tournament changes made anywhere, as `eventChanges` does for events.
-    let tournamentChanges: ChangeTracker
-}
-
+/// The tournament screens' view models, over the tournament repository that came in with the group repositories and
+/// the change counter `GroupDependencies` owns (the realtime controller bumps the same one, so every tournament list,
+/// segment and detail reloads on a change made anywhere).
 extension AppDependencies {
-    var tournamentRepository: any TournamentRepository { tournaments.repository }
-    var tournamentChanges: ChangeTracker { tournaments.tournamentChanges }
+    var tournamentRepository: any TournamentRepository { groups.repositories.tournaments }
+    var tournamentChanges: ChangeTracker { groups.tournamentChanges }
 
     func makeTournamentListViewModel(scope: TournamentScope) -> TournamentListViewModel {
         TournamentListViewModel(scope: scope,

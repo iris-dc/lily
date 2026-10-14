@@ -1,18 +1,17 @@
 import SwiftUI
 
 /// What a bubble holds on its fill: the quoted original above, the attachments between, the words below, each only
-/// when there is one, stacked by `QuoteStack` so a short message still hugs its words. A message that is its pictures
-/// and videos alone has no fill and no padding: the picture is the bubble, in the bubble's own corner radius; a file
-/// card keeps the fill, since it is a card and not a picture. Plain fills, never glass: a chat scrolls dozens of these
-/// at once.
+/// when there is one, stacked by `QuoteStack` so a short message still hugs its words. `BubbleFill.standsAlone` decides
+/// from the attachments' kinds, the words and the quote whether the attachments are the bubble themselves (pictures and
+/// videos alone: no fill, no padding, the bubble's own corner radius) or sit on the fill, as a file card does. The
+/// stored and the unsent bubble both draw through it. Plain fills, never glass: a chat scrolls dozens of these at once.
 struct BubbleContent<Media: View>: View {
     let text: String
     let quote: ReplyQuote?
     let isQuoteDeleted: Bool
     let own: Bool
-    let hasMedia: Bool
-    /// Whether the attachments alone may be the bubble (pictures and videos only; a file card needs the fill).
-    var mediaStandsAlone = true
+    /// The kinds of the message's attachments in their order; `media` draws them all, tiles and cards alike.
+    let attachmentKinds: [AttachmentKind]
     let onTapQuote: (ReplyQuote) -> Void
     @ViewBuilder let media: () -> Media
 
@@ -26,7 +25,7 @@ struct BubbleContent<Media: View>: View {
                     QuoteBlock(quote: quote, isDeleted: isQuoteDeleted, own: own)
                         .onTapGesture { onTapQuote(quote) }
                 }
-                if hasMedia {
+                if hasAttachments {
                     media()
                         .clipShape(.rect(cornerRadius: DesignTokens.Radius.quote))
                 }
@@ -38,13 +37,22 @@ struct BubbleContent<Media: View>: View {
         }
     }
 
-    private var isMediaOnly: Bool { hasMedia && mediaStandsAlone && quote == nil && text.isEmpty }
+    private var hasAttachments: Bool { !attachmentKinds.isEmpty }
+
+    private var isMediaOnly: Bool {
+        BubbleFill.standsAlone(kinds: attachmentKinds, hasText: !text.isEmpty, hasQuote: quote != nil)
+    }
 }
 
 extension BubbleContent where Media == EmptyView {
     /// Words and a quote only.
     init(text: String, quote: ReplyQuote?, isQuoteDeleted: Bool, own: Bool, onTapQuote: @escaping (ReplyQuote) -> Void) {
-        self.init(text: text, quote: quote, isQuoteDeleted: isQuoteDeleted, own: own, hasMedia: false, onTapQuote: onTapQuote) {
+        self.init(text: text,
+                  quote: quote,
+                  isQuoteDeleted: isQuoteDeleted,
+                  own: own,
+                  attachmentKinds: [],
+                  onTapQuote: onTapQuote) {
             EmptyView()
         }
     }

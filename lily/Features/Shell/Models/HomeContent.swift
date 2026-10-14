@@ -7,6 +7,6 @@ nonisolated enum HomeContent: Equatable, Sendable {
     case overview
 
     init(for state: SessionState) {
-        self = state.user == nil ? .signInPrompt : .overview
+        self = state.isSignedIn ? .overview : .signInPrompt
     }
 }

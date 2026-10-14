@@ -85,8 +85,7 @@ extension ContractSamples {
     "excerpt":"Anyone up for a game this week?","kind":"text"}}
     """
     static let messagePage = """
-    {"items":[\(message),\(systemMessage)],"hasMore":true,"channelEpoch":3,"nextBefore":"01J8ZK7Q9X2M4N6P8R0T2V4W6Y",\
-    "nextAfter":null}
+    {"items":[\(message),\(systemMessage)],"hasMore":true,"channelEpoch":3,"nextBefore":"01J8ZK7Q9X2M4N6P8R0T2V4W6Y"}
     """
     /// A page from a backend that does not name continuation cursors yet.
     static let messagePageWithoutCursors = #"{"items":[\#(message)],"hasMore":true,"channelEpoch":3}"#

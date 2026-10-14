@@ -23,7 +23,6 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case termsRequired = "TERMS_REQUIRED"
     case groupNotFound = "GROUP_NOT_FOUND"
     case messageNotFound = "MESSAGE_NOT_FOUND"
-    case reportNotFound = "REPORT_NOT_FOUND"
     case userNotFound = "USER_NOT_FOUND"
     /// Another user owns the client id; like `GROUP_ID_REUSED` it becomes the generic creation failure, and the
     /// refetch by client id that follows every unknown create outcome finds the group that did land.
@@ -71,13 +70,9 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case matchNotReady = "MATCH_NOT_READY"
     case drawNotAllowed = "DRAW_NOT_ALLOWED"
 
-    /// Every code maps to a case with copy; the domains are split so no switch grows past the complexity limit.
+    /// Every code's own `AppError`. The switch is exhaustive, so a code added above without a mapping fails to compile;
+    /// SwiftLint's `cyclomatic_complexity` and `function_body_length` judge functions, not accessors.
     var appError: AppError {
-        eventError ?? groupError ?? inviteError ?? moderationError ?? chatError ?? peopleError ?? tournamentError
-            ?? entryError ?? matchError ?? .unknown
-    }
-
-    private var eventError: AppError? {
         switch self {
         case .eventNotFound: .eventNotFound
         case .eventFull: .eventFull
@@ -88,98 +83,47 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .capacityTooLow: .capacityTooLow
         case .tryAgain: .tryAgain
         case .rateLimited: .rateLimited(retryAfter: nil)
-        default: nil
-        }
-    }
-
-    private var groupError: AppError? {
-        switch self {
-        case .groupNotFound: .groupNotFound
-        case .groupFull: .groupFull
+        case .contentRejected: .contentRejected
+        case .forbidden: .insufficientRole
         case .notAMember: .notAMember
         case .banned: .bannedFromGroup
-        case .memberBanned: .memberBanned
-        case .ownerCannotLeave: .ownerCannotLeave
-        case .forbidden: .insufficientRole
-        case .membershipLimit: .membershipLimitReached
+        case .accountSuspended: .accountSuspended
+        case .termsRequired: .termsRequired
+        case .groupNotFound: .groupNotFound
+        case .messageNotFound: .messageNotFound
+        case .userNotFound: .userNotFound
         case .groupIdTaken, .groupIdReused: .groupCreationFailed
-        default: nil
-        }
-    }
-
-    private var inviteError: AppError? {
-        switch self {
+        case .groupFull: .groupFull
+        case .ownerCannotLeave: .ownerCannotLeave
+        case .memberBanned: .memberBanned
+        case .membershipLimit: .membershipLimitReached
         case .inviteExpired: .inviteExpired
         case .inviteNotPending, .inboxItemNotFound: .inviteNotPending
         case .alreadyMember: .alreadyMember
         case .cannotInvite: .cannotInvite
-        default: nil
-        }
-    }
-
-    private var moderationError: AppError? {
-        switch self {
-        case .contentRejected: .contentRejected
-        case .messageNotFound: .messageNotFound
-        case .reportNotFound: .reportFailed
-        case .userNotFound: .userNotFound
         case .blockLimit: .blockLimitReached
-        case .accountSuspended: .accountSuspended
-        case .termsRequired: .termsRequired
-        default: nil
-        }
-    }
-
-    private var chatError: AppError? {
-        switch self {
+        case .conversationLimit: .conversationLimit
         case .replyTargetNotFound: .replyTargetNotFound
         case .attachmentNotFound: .attachmentNotFound
         // The code does not say which room; the composer restates the error with the room's caps before the popup.
         case .attachmentTooLarge: .attachmentTooLarge(caps: .group)
         case .attachmentTypeNotAllowed: .attachmentTypeNotAllowed
         case .attachmentsDisabled: .attachmentsDisabled
-        default: nil
-        }
-    }
-
-    private var peopleError: AppError? {
-        switch self {
-        case .conversationLimit: .conversationLimit
-        default: nil
-        }
-    }
-
-    /// The tournament itself; entering it is `entryError` and its matches `matchError`, so no switch passes nine cases.
-    private var tournamentError: AppError? {
-        switch self {
         case .tournamentNotFound: .tournamentNotFound
         case .tournamentIdTaken, .tournamentIdReused: .tournamentCreationFailed
         case .tournamentLimit: .tournamentLimit
         case .notOrganizer: .notOrganizer
         case .tournamentLocked: .tournamentLocked
-        case .notEnoughEntries: .notEnoughEntries
-        default: nil
-        }
-    }
-
-    private var entryError: AppError? {
-        switch self {
         case .registrationClosed: .registrationClosed
         case .tournamentFull: .tournamentFull
         case .alreadyEntered: .alreadyEntered
         case .teamFull: .teamFull
         case .entryNotFound: .entryNotFound
-        default: nil
-        }
-    }
-
-    private var matchError: AppError? {
-        switch self {
+        case .notEnoughEntries: .notEnoughEntries
         case .matchNotFound: .matchNotFound
         case .notInMatch: .notInMatch
         case .matchNotReady: .matchNotReady
         case .drawNotAllowed: .drawNotAllowed
-        default: nil
         }
     }
 }

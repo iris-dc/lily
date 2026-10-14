@@ -97,6 +97,20 @@ struct EventDetailParticipantsTests {
         #expect(logger.messages(in: .events, at: .warning).contains { $0.contains("Loading participants of event e failed") })
     }
 
+    /// A load cut short by the view's task going away is nobody's failure: no popup, no warning, the list kept.
+    @Test func aCancelledParticipantsLoadReportsNothingAndKeepsTheLastList() async {
+        repository.participantsResult = .success([host])
+        let viewModel = makeViewModel()
+        await viewModel.loadParticipants()
+        repository.thrownError = CancellationError()
+
+        await viewModel.loadParticipants()
+
+        #expect(viewModel.participants == [host])
+        #expect(errorCenter.current == nil && !viewModel.isLoadingParticipants)
+        #expect(!logger.messages(in: .events, at: .warning).contains { $0.contains("Loading participants") })
+    }
+
     /// The host's profile opens for a signed-in caller who is not the host and when the host is known at all.
     @Test func theHostLineLinksToTheHostForOtherSignedInCallersOnly() {
         let viewModel = makeViewModel()

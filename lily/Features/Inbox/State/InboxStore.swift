@@ -2,9 +2,10 @@ import Foundation
 import Observation
 
 /// The caller's inbox (the pinned conversation on the Chats tab), kept for the app's lifetime because the tab badge
-/// and the Chats row need it before the screen was ever opened. Follows `MyGroupsStore`: the lists' staleness rules
-/// through `ContentFreshness`, one request at a time through `SingleFlight`, answers for a previous caller dropped,
-/// everything cleared on sign-out. Items are ascending by id (server ULIDs), so the newest is the last.
+/// and the Chats row need it before the screen was ever opened. Loads its newest page through `StoreLoader` like
+/// `MyGroupsStore` (the lists' staleness rules, one request at a time, answers for a previous caller dropped), judged
+/// against one fixed version because no sibling screen changes the inbox; everything is cleared on sign-out. Items are
+/// ascending by id (server ULIDs), so the newest is the last.
 @Observable
 final class InboxStore: SessionObserver {
     private(set) var items: [InboxItem] = []
@@ -13,19 +14,14 @@ final class InboxStore: SessionObserver {
     private(set) var isLoadingOlder = false
     /// The newest item the caller has seen, as the backend holds it or as `markRead()` just moved it.
     private(set) var lastReadID: String?
-    private let load = SingleFlight()
-    private var freshness = ContentFreshness(staleAfter: AppConfig.Inbox.listStaleAfter,
-                                             retryAfterFailure: AppConfig.Inbox.retryAfterFailure)
+    private let loader: StoreLoader
     /// The id to page before for the earlier page, when the last page named one.
     private var olderCursor: String?
-    /// No sibling screen changes the inbox, so its freshness is judged against one fixed version.
-    private static let contentVersion = 0
 
     private let repository: any InboxRepository
     private let identity: any IdentityProvider
     private let errorCenter: ErrorCenter
     private let logger: any Logging
-    private let now: () -> Date
 
     init(repository: any InboxRepository,
          identity: any IdentityProvider,
@@ -36,72 +32,68 @@ final class InboxStore: SessionObserver {
         self.identity = identity
         self.errorCenter = errorCenter
         self.logger = logger
-        self.now = now
+        loader = StoreLoader(noun: "the inbox",
+                             category: .inbox,
+                             identity: identity,
+                             errorCenter: errorCenter,
+                             logger: logger,
+                             now: now,
+                             version: { 0 })
     }
 
     /// True from a failed load until the next successful one.
-    var loadFailed: Bool { freshness.loadFailed }
-    var isLoading: Bool { load.isRunning }
+    var loadFailed: Bool { loader.loadFailed }
+    var isLoading: Bool { loader.isLoading }
+    /// A page answered since the last sign-in; the screen shows its spinner until then, whether or not its task has
+    /// started the load.
+    var hasLoaded: Bool { loader.hasLoaded }
     /// The newest item, whatever its kind.
     var newest: InboxItem? { items.last }
     /// The newest item this build can draw, for the Chats row's caption.
     var newestVisible: InboxItem? { items.last(where: \.isVisible) }
-    /// Whether the newest item is newer than the read marker; drives the row's dot and the tab badge.
-    var hasUnread: Bool { newest.map { $0.id > (lastReadID ?? "") } ?? false }
+    /// Whether the newest item this build can draw is newer than the read marker; drives the row's dot and the tab
+    /// badge. An item of a kind this build does not know lights nothing, because the screen (`InboxTimeline.rows`)
+    /// would show nothing new for it; `markRead()` still sends `newest.id`, hidden or not.
+    var hasUnread: Bool { newestVisible.map { $0.id > (lastReadID ?? "") } ?? false }
 
-    /// Loads once per `AppConfig.Inbox.listStaleAfter`, or sooner when the caller changed; after a failed load it
-    /// waits `AppConfig.Inbox.retryAfterFailure`. A guest has no inbox: it is cleared without a request.
+    /// Loads once per `AppConfig.Lists.staleAfter`, or sooner when the caller changed; after a failed load it
+    /// waits `AppConfig.Lists.retryAfterFailure`. A guest has no inbox: it is cleared without a request.
     func loadIfStale() async {
-        guard let userID = identity.currentUserID else {
+        guard identity.currentUserID != nil else {
             clear()
             return
         }
-        guard !freshness.isWaitingToRetry(now: now(), version: Self.contentVersion, userID: userID) else {
-            logger.debug(.cache, "Inbox failed to load recently; not retrying yet")
-            return
-        }
-        guard let reason = freshness.stalenessReason(now: now(), version: Self.contentVersion, userID: userID) else {
-            logger.debug(.cache, "Inbox is fresh; skipping reload")
-            return
-        }
-        logger.debug(.cache, "Inbox is stale (\(reason)); reloading")
-        await reload()
+        await loader.loadIfStale(fetch: fetchNewestPage, apply: applyNewestPage)
     }
 
-    /// Always asks the backend (pull-to-refresh). A call made while one is in flight joins it; an answer that arrives
-    /// after the caller signed out or changed is dropped.
+    /// Always asks the backend (pull-to-refresh). A call made while one is in flight for the same user joins it; one
+    /// for another user (a sign-out and sign-in while the previous user's request is still out) waits it out and then
+    /// loads for them; an answer that arrives after the caller signed out or changed is dropped.
     func reload() async {
-        guard let userID = identity.currentUserID else {
+        guard identity.currentUserID != nil else {
             clear()
             return
         }
-        await load.run { [self] in await performLoad(for: userID) }
+        await loader.reload(fetch: fetchNewestPage, apply: applyNewestPage)
+    }
+
+    private func fetchNewestPage() async throws -> InboxPage {
+        try await repository.page(before: nil, limit: AppConfig.Inbox.pageSize)
     }
 
     /// The newest page replaces what is held: the inbox is small, and older pages come back on demand.
-    private func performLoad(for userID: String) async {
-        do {
-            let page = try await repository.page(before: nil, limit: AppConfig.Inbox.pageSize)
-            guard identity.isStillCaller(userID, orDrop: "Inbox answer", logger: logger) else { return }
-            items = page.items
-            hasOlder = page.hasMore
-            olderCursor = page.nextBefore
-            lastReadID = Self.newer(lastReadID, page.lastReadId)
-            freshness.recordSuccess(at: now(), version: Self.contentVersion, userID: userID)
-            logger.info(.inbox, "Loaded \(items.count) inbox items")
-        } catch {
-            guard !AppError.isCancellation(error) else {
-                logger.debug(.inbox, "Loading the inbox cancelled")
-                return
-            }
-            guard identity.isStillCaller(userID, orDrop: "Inbox answer", logger: logger) else { return }
-            freshness.recordFailure(at: now(), version: Self.contentVersion, userID: userID)
-            logger.error(.inbox, "Loading the inbox failed: \(error)")
-            errorCenter.report(error)
-        }
+    private func applyNewestPage(_ page: InboxPage) {
+        items = page.items
+        hasOlder = page.hasMore
+        olderCursor = page.nextBefore
+        lastReadID = Self.newer(lastReadID, page.lastReadId)
+        logger.info(.inbox, "Loaded \(items.count) inbox items")
     }
 
     /// The page before the oldest item held; answers whether items not held before arrived. Failures reach the popup.
+    /// A reload landing while the page was out (pull-to-refresh, the Chats row, the shell's sync) replaced the items
+    /// wholesale, so a page before the old anchor would leave a hole and point the cursor past it: it is dropped, and
+    /// Load earlier asks again before the new anchor.
     @discardableResult
     func loadOlder() async -> Bool {
         guard hasOlder, !isLoadingOlder, let userID = identity.currentUserID else { return false }
@@ -111,6 +103,10 @@ final class InboxStore: SessionObserver {
         do {
             let page = try await repository.page(before: anchor, limit: AppConfig.Inbox.pageSize)
             guard identity.isStillCaller(userID, orDrop: "Inbox page", logger: logger) else { return false }
+            guard (olderCursor ?? items.first?.id) == anchor else {
+                logger.debug(.inbox, "Earlier inbox page dropped: the newest page moved meanwhile")
+                return false
+            }
             let held = Set(items.map(\.id))
             let fresh = page.items.filter { !held.contains($0.id) }
             items = (fresh + items).sorted { $0.id < $1.id }
@@ -169,7 +165,7 @@ final class InboxStore: SessionObserver {
         hasOlder = false
         olderCursor = nil
         lastReadID = nil
-        freshness.reset()
+        loader.reset()
     }
 
     /// The later of two ids in ULID order; `nil` only when both are.

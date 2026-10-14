@@ -2,7 +2,7 @@ import Foundation
 
 nonisolated extension AppConfig {
     /// Tournaments: the limits mirrored from the backend's `TournamentsProperties` and `CreateTournamentRequest`, so a
-    /// draft that passes here never earns a 400, and the lists' staleness rules.
+    /// draft that passes here never earns a 400.
     enum Tournaments {
         static let nameLength = 3...60
         static let descriptionMaxLength = 1000
@@ -14,10 +14,8 @@ nonisolated extension AppConfig {
         static let maxEntriesRoundRobin = 12
         static let minEntriesSingleElimination = 2
         static let minEntriesRoundRobin = 3
-        /// Rooms of kind `tournament` a user may be in, and open tournaments one may organise.
-        static let maxPerUser = 20
+        /// Open tournaments one may organise; the backend's cap.
         static let maxOrganizedOpen = 10
-        static let upcomingLimit = 50
         static let scoreRange = 0...999
         static let defaultMaxEntries = 8
         static let defaultTeamSize = 1
@@ -25,10 +23,6 @@ nonisolated extension AppConfig {
         static let defaultStartOffset: TimeInterval = 7 * 24 * 60 * 60
         /// Where the deadline lands when the organiser switches one on: a day before the start.
         static let defaultDeadlineLead: TimeInterval = 24 * 60 * 60
-        /// The app's own margin for a start (the backend requires only the future); an edit has none.
-        static let minimumLeadTime = Events.Creation.minimumLeadTime
-        static let listStaleAfter: TimeInterval = 60
-        static let retryAfterFailure: TimeInterval = 10
 
         /// The most entries a format takes: a start writes every match in one transaction, hence the caps.
         static func maxEntries(for format: TournamentFormat) -> Int {

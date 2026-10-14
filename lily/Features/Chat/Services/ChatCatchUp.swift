@@ -26,10 +26,12 @@ final class ChatCatchUp {
         return apply(to: groupID) { $0.applyNewest(page) }
     }
 
-    /// Everything after the room's watermark, at most `AppConfig.Chat.maxCatchUpPages` pages; a room without a
-    /// watermark yet takes the newest page instead. `nil` when the room is not cached (or was dropped meanwhile):
-    /// there is nothing to catch up. Every page is merged into the room as the cache holds it at that moment, never
-    /// into a copy taken before the request, so nothing that landed while the page was in flight is lost.
+    /// Everything after the room's watermark, at most `AppConfig.Chat.maxCatchUpPages` pages: stopping at the limit
+    /// with more pending is logged, and the watermark has advanced, so the next catch-up continues from there. A room
+    /// without a watermark yet takes the newest page instead. `nil` when the room is not cached (or was dropped
+    /// meanwhile): there is nothing to catch up. Every page is merged into the room as the cache holds it at that
+    /// moment, never into a copy taken before the request, so nothing that landed while the page was in flight is
+    /// lost.
     @discardableResult
     func catchUp(groupID: String) async throws -> ChatRoomState? {
         guard let room = cache.room(for: groupID) else { return nil }
@@ -42,6 +44,8 @@ final class ChatCatchUp {
             guard page.hasMore, let next = updated.restWatermark, next != watermark else { return updated }
             watermark = next
         }
+        logger.info(.chat,
+                    "Catch-up for group \(groupID) stopped after \(AppConfig.Chat.maxCatchUpPages) pages with more pending")
         return cache.room(for: groupID)
     }
 

@@ -50,13 +50,15 @@ private extension RemoteEventRepository {
         case .group(let id):
             .get(AppConfig.API.Paths.groupEvents(id: id))
         case .upcoming:
-            .get(AppConfig.API.Paths.events, query: [scopeItem("upcoming")] + (position?.queryItems ?? []))
+            .get(AppConfig.API.Paths.events, query: scopeItems(for: scope) + (position?.queryItems ?? []))
         case .joined:
-            .get(AppConfig.API.Paths.events, query: [scopeItem("joined")])
+            .get(AppConfig.API.Paths.events, query: scopeItems(for: scope))
         }
     }
 
-    private static func scopeItem(_ value: String) -> URLQueryItem {
-        URLQueryItem(name: AppConfig.API.Query.scope, value: value)
+    /// The `scope` item, or none for a scope that is a resource of its own.
+    private static func scopeItems(for scope: EventScope) -> [URLQueryItem] {
+        guard let name = scope.wireName else { return [] }
+        return [URLQueryItem(name: AppConfig.API.Query.scope, value: name)]
     }
 }

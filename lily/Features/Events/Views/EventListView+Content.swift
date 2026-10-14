@@ -28,23 +28,32 @@ extension EventListView {
         }
     }
 
-    /// Explore alone presents the create sheets, so only the creatable list takes the intent.
+    /// Explore owns the create sheets, so this is where a shortcut's intent is taken; `CreateIntentPolicy` decides.
     func consumePendingCreate() {
-        guard creatable, let intent = dependencies.navigation.pendingCreate else { return }
-        dependencies.navigation.pendingCreate = nil
-        // ⌘N inside the create form (or any sheet of this screen) must not replace it and lose what was typed.
-        guard presentedSheet == nil else { return }
-        presentForUser(ExploreSheet(intent))
+        let navigation = dependencies.navigation
+        let decision = CreateIntentPolicy.decide(intent: navigation.pendingCreate,
+                                                 presentedSheet: presentedSheet,
+                                                 isSignedIn: dependencies.sessionController.state.isSignedIn)
+        guard decision.consumes else { return }
+        navigation.pendingCreate = nil
+        if let sheet = decision.present {
+            present(sheet)
+        } else {
+            dependencies.logger.debug(.ui, "Create shortcut dropped: a sheet is already up")
+        }
     }
 
-    /// Only a signed-in user can host or found; a guest is offered sign-in, and comes back to the menu afterwards.
-    func presentForUser(_ sheet: ExploreSheet) {
-        if dependencies.sessionController.state.user != nil {
-            presentedSheet = sheet
-        } else {
+    /// The "+" menu's request: the form for a signed-in user, sign-in for a guest.
+    func presentForUser(_ requested: ExploreSheet) {
+        present(CreateIntentPolicy.sheet(for: requested, isSignedIn: dependencies.sessionController.state.isSignedIn))
+    }
+
+    /// `.signIn` is only ever the guest's substitute, so presenting it is the moment the guest's ask is logged.
+    private func present(_ sheet: ExploreSheet) {
+        if sheet == .signIn {
             dependencies.logger.info(.auth, "Guest asked to create from Explore; showing sign-in")
-            presentedSheet = .signIn
         }
+        presentedSheet = sheet
     }
 
     var presentationPicker: some View {
@@ -63,23 +72,29 @@ extension EventListView {
     @ViewBuilder
     var content: some View {
         if showsMapAlone {
-            EventsMapView(viewModel: viewModel, bottomInset: creatable ? DesignTokens.Layout.floatingButtonFootprint : 0)
+            EventsMapView(viewModel: viewModel, bottomInset: DesignTokens.Layout.floatingButtonFootprint)
         } else {
             listContent
         }
     }
 
+    /// Each state inside its own `refreshableScroll`, so a state change starts the scroll afresh as it always did.
     @ViewBuilder
     var listContent: some View {
-        if viewModel.isInitialLoad {
-            refreshableScroll { stateSlot { ProgressView() } }
-        } else if viewModel.events.isEmpty {
-            refreshableScroll { stateSlot { viewModel.loadFailed ? loadFailedState : emptyState } }
-        } else if viewModel.isEverythingFilteredOut {
-            refreshableScroll { stateSlot { filteredOutState } }
-        } else {
-            refreshableScroll { eventList }
+        switch screenState {
+        case .loading: refreshableScroll { stateSlot { ProgressView() } }
+        case .failed: refreshableScroll { stateSlot { loadFailedState } }
+        case .empty: refreshableScroll { stateSlot { emptyState } }
+        case .filteredOut: refreshableScroll { stateSlot { filteredOutState } }
+        case .list: refreshableScroll { eventList }
         }
+    }
+
+    var screenState: EventListScreenState {
+        .resolve(isInitialLoad: viewModel.isInitialLoad,
+                 loadFailed: viewModel.loadFailed,
+                 hasEvents: !viewModel.events.isEmpty,
+                 isEverythingFilteredOut: viewModel.isEverythingFilteredOut)
     }
 
     var eventList: some View {
@@ -90,7 +105,7 @@ extension EventListView {
             EventCardList(events: viewModel.visibleEvents, distance: viewModel.distanceText)
         }
         // With the create button floating over the corner, the last card scrolls clear of it.
-        .padding(.bottom, creatable ? DesignTokens.Layout.floatingButtonFootprint : DesignTokens.Spacing.xxl)
+        .padding(.bottom, DesignTokens.Layout.floatingButtonFootprint)
     }
 
     /// The defaults alone (10 km) can hide every event while nothing is "active", so the way out widens to everything.
@@ -108,24 +123,40 @@ extension EventListView {
                        message: AppBranding.Events.loadFailedMessage)
     }
 
-    /// A spinner or an empty state centred in most of the screen, so it reads as the screen's state while the
-    /// header above stays in view (a full-height frame would push it below the fold).
+    var emptyState: EmptyStateView {
+        EmptyStateView(symbolName: DesignTokens.Symbols.explore,
+                       title: AppBranding.exploreEmptyTitle,
+                       message: AppBranding.exploreEmptyMessage)
+    }
+
+    /// A spinner or an empty state centred in what the screen leaves under the header, so it reads as the screen's
+    /// state with the header in view and clear of the tab bar at rest (a fixed share of the screen ran under the bar
+    /// once the header grew a second carousel, 2026-10-14). The clear colour is the floor: a state taller than the
+    /// room left (a tall header on a short phone) keeps its own height and scrolls into view.
     func stateSlot(@ViewBuilder _ state: () -> some View) -> some View {
-        state()
-            .readableColumn()
-            .containerRelativeFrame(.vertical) { length, _ in length * DesignTokens.Layout.stateSlotHeightFraction }
+        ZStack {
+            Color.clear.containerRelativeFrame(.vertical) { length, _ in max(0, length - headerFootprint) }
+            state().readableColumn()
+        }
+    }
+
+    /// The header's height plus the stack's spacing under it; nothing while the header shows nothing.
+    private var headerFootprint: CGFloat {
+        headerHeight > 0 ? headerHeight + DesignTokens.Spacing.xl : 0
     }
 
     /// The header above whatever the list shows; pull-to-refresh reloads both.
     func refreshableScroll(@ViewBuilder _ content: @escaping () -> some View) -> some View {
-        RefreshableScroll {
-            await refreshHeader()
-            await viewModel.load()
-        } content: {
+        ScrollView {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                 header()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
                 content()
             }
+        }
+        .refreshable {
+            await refreshHeader()
+            await viewModel.load()
         }
     }
 }

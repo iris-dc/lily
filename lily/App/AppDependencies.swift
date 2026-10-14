@@ -29,8 +29,9 @@ final class AppDependencies {
     let groups: GroupDependencies
     /// The device registration and the game behind a tapped reminder; see `AppDependencies+Push.swift`.
     let push: PushDependencies
-    /// The tournament repository and change counter; see `AppDependencies+Tournaments.swift`.
-    let tournaments: TournamentDependencies
+    /// Shell-wide navigation, read by every feature; a session observer, so the next user never lands on the previous
+    /// one's screens.
+    let navigation = AppNavigation()
 
     init(logger: any Logging,
          sessionStore: any SessionStore,
@@ -40,7 +41,7 @@ final class AppDependencies {
          eventRepository: any EventRepository,
          profileRepository: any ProfileRepository,
          feedbackRepository: any FeedbackRepository,
-         interactionRecorder: any InteractionRecorder,
+         interactionRecorder: any InteractionRecorder & SessionObserver,
          locationService: any LocationService,
          groupRepositories: GroupRepositories,
          pushRegistrar: any PushRegistrar,
@@ -51,9 +52,10 @@ final class AppDependencies {
          defaults: UserDefaults = .standard) {
         self.logger = logger
         self.eventFilterStore = eventFilterStore
-        let language = language ?? LanguageStore(store: UserDefaultsLanguagePreferenceStore(defaults: defaults), logger: logger)
+        // The stored choices as they are: launch arguments are `makeDefault`'s to read.
+        let language = language ?? Self.makeLanguageStore(arguments: [], startsFresh: false, defaults: defaults, logger: logger)
         self.language = language
-        self.currency = currency ?? CurrencyStore(store: UserDefaultsCurrencyPreferenceStore(defaults: defaults), logger: logger)
+        self.currency = currency ?? Self.makeCurrencyStore(startsFresh: false, defaults: defaults, logger: logger)
         self.errorCenter = ErrorCenter(logger: logger)
         self.sessionStore = sessionStore
         self.authService = authService
@@ -74,31 +76,41 @@ final class AppDependencies {
                                      events: eventRepository,
                                      tournaments: groupRepositories.tournaments,
                                      identity: identity,
+                                     navigation: navigation,
                                      groups: groups,
                                      defaults: defaults,
                                      languageCode: { language.language.code },
                                      logger: logger)
-        self.tournaments = TournamentDependencies(repository: groupRepositories.tournaments,
-                                                  tournamentChanges: groups.tournamentChanges)
         self.sessionController = SessionController(authService: authService,
                                                    sessionStore: sessionStore,
                                                    profileRepository: profileRepository,
                                                    errorCenter: errorCenter,
                                                    logger: logger)
-        // The repositories were built around `identity` before the controller existed; close the loop.
+        // The repositories were built around `identity` before the controller existed; close the loop. The recorder
+        // flushes before the session ends, the rest clear after it.
         identity.session = sessionController
-        groups.sessionObservers.forEach(sessionController.addObserver)
-        sessionController.addObserver(push.coordinator)
+        (groups.sessionObservers + [navigation, push.coordinator, interactionRecorder]).forEach(sessionController.addObserver)
     }
 
     /// Production wiring: Cognito through Amplify, whose access token the API client sends, unless a launch argument
     /// asks for the mock. Launch arguments are read in debug builds only (`AppConfig.LaunchArguments.isHonored`); a
-    /// release build ignores them, so nobody can start it as a guest or on mock data from the outside.
+    /// release build ignores them, so nobody can start it as a guest or on mock data from the outside. `-reset-session`
+    /// is decided here once (`startsFresh`) and handed to the store factories, so the fresh start is logged once. `apply`
+    /// moves the process-wide `AppLocale`; the tests pass a spy so it stays untouched.
     static func makeDefault(arguments: [String] = AppConfig.LaunchArguments.isHonored ? CommandLine.arguments : [],
-                            defaults: UserDefaults = .standard) -> AppDependencies {
+                            defaults: UserDefaults = .standard,
+                            apply: @escaping (AppLocale.Context) -> Void = AppLocale.set) -> AppDependencies {
         let logger = OSLogLogger()
-        let language = makeLanguageStore(arguments: arguments, defaults: defaults, logger: logger)
-        let store = makeSessionStore(arguments: arguments, defaults: defaults, logger: logger)
+        let startsFresh = arguments.contains(AppConfig.LaunchArguments.resetSession)
+        if startsFresh {
+            logger.info(.auth, "Launch argument requested a fresh start: stored session, language, currency and filter cleared")
+        }
+        let language = makeLanguageStore(arguments: arguments,
+                                         startsFresh: startsFresh,
+                                         defaults: defaults,
+                                         logger: logger,
+                                         apply: apply)
+        let store = makeSessionStore(arguments: arguments, startsFresh: startsFresh, defaults: defaults, logger: logger)
         let identity = SessionIdentityProvider()
         let auth = makeAuthService(arguments: arguments, store: store, language: language, logger: logger)
         let repositories = makeRepositories(arguments: arguments,
@@ -119,8 +131,10 @@ final class AppDependencies {
                                pushRegistrar: repositories.pushRegistrar,
                                deviceRepository: repositories.devices,
                                language: language,
-                               currency: makeCurrencyStore(arguments: arguments, defaults: defaults, logger: logger),
-                               eventFilterStore: makeEventFilterStore(arguments: arguments, defaults: defaults, logger: logger),
+                               currency: makeCurrencyStore(startsFresh: startsFresh, defaults: defaults, logger: logger),
+                               eventFilterStore: makeEventFilterStore(startsFresh: startsFresh,
+                                                                      defaults: defaults,
+                                                                      logger: logger),
                                defaults: defaults)
     }
 
@@ -144,22 +158,6 @@ final class AppDependencies {
                                pushRegistrar: repositories.pushRegistrar,
                                deviceRepository: repositories.devices,
                                defaults: defaults)
-    }
-
-    /// Applies the session launch arguments (`-reset-session`, `-start-as-guest`) to the persisted choice.
-    private static func makeSessionStore(arguments: [String],
-                                         defaults: UserDefaults,
-                                         logger: any Logging) -> UserDefaultsSessionStore {
-        let store = UserDefaultsSessionStore(defaults: defaults, logger: logger)
-        if arguments.contains(AppConfig.LaunchArguments.resetSession) {
-            logger.info(.auth, "Launch argument requested a session reset")
-            store.clear()
-        }
-        if arguments.contains(AppConfig.LaunchArguments.startAsGuest) {
-            logger.info(.auth, "Launch argument requested guest mode")
-            store.save(.guest)
-        }
-        return store
     }
 
     /// The Cognito service doubles as the token provider; the mock has no token to offer. `-mock-user-id` is read
@@ -219,12 +217,15 @@ final class AppDependencies {
         if systemPush { logger.info(.push, "Launch argument kept the system push registrar") }
         let termsPending = arguments.contains(AppConfig.LaunchArguments.mockTermsPending)
         if termsPending { logger.info(.groups, "Launch argument made the mock owe the terms") }
+        let eventsFailFirst = arguments.contains(AppConfig.LaunchArguments.mockEventsFail)
+        if eventsFailFirst { logger.info(.events, "Launch argument made the first mock events load fail") }
         return .mock(identity: identity,
                      logger: logger,
                      autoReplies: autoReplies,
                      mockPicker: mockPicker,
                      systemPush: systemPush,
-                     termsPending: termsPending)
+                     termsPending: termsPending,
+                     eventsFailFirst: eventsFailFirst)
     }
 }
 
@@ -240,7 +241,7 @@ private struct Repositories {
     let events: any EventRepository
     let profile: any ProfileRepository
     let feedback: any FeedbackRepository
-    let interactions: any InteractionRecorder
+    let interactions: any InteractionRecorder & SessionObserver
     let groups: GroupRepositories
     let devices: any DeviceRepository
     let pushRegistrar: any PushRegistrar
@@ -264,13 +265,15 @@ private struct Repositories {
     }
 
     /// `systemPush` keeps the real permission prompt and token (`-system-push`); the registry stays in memory.
+    /// `eventsFailFirst` makes the events mock refuse its first list load (`-mock-events-fail`).
     static func mock(identity: any IdentityProvider,
                      logger: any Logging,
                      autoReplies: Bool = false,
                      mockPicker: Bool = false,
                      systemPush: Bool = false,
-                     termsPending: Bool = false) -> Repositories {
-        Repositories(events: MockEventRepository(identity: identity, logger: logger),
+                     termsPending: Bool = false,
+                     eventsFailFirst: Bool = false) -> Repositories {
+        Repositories(events: MockEventRepository(identity: identity, logger: logger, failsFirstLoad: eventsFailFirst),
                      profile: MockProfileRepository(logger: logger),
                      feedback: MockFeedbackRepository(logger: logger),
                      interactions: NoOpInteractionRecorder(),

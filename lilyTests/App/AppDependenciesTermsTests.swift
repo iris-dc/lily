@@ -26,11 +26,7 @@ struct AppDependenciesTermsTests {
     /// terms and the sheet is asked for, and the acceptance (the store's reload, the mock's PUT, the account replaced)
     /// takes it down again.
     @Test func thePendingMockRaisesTheTermsSheetAfterSignInUntilAccepted() async {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents,
-                                                                   AppConfig.LaunchArguments.mockTermsPending],
-                                                       defaults: makeTestDefaults())
+        let dependencies = makeMockDependencies(extraArguments: [AppConfig.LaunchArguments.mockTermsPending])
         let terms = dependencies.makeTermsViewModel()
         #expect(!terms.isPresented, "a guest is never asked")
 

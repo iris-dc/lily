@@ -16,11 +16,7 @@ struct AppDependenciesFeedbackTests {
 
     /// The sheet opens with the account's email and the language of the moment; the mock accepts the send.
     @Test func theFormStartsFromTheAccountAndTheLanguageAndTheMockAccepts() async throws {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeTestDefaults())
-        await dependencies.sessionController.signIn(with: .apple)
+        let dependencies = await makeSignedInMockDependencies()
         let email = try #require(dependencies.sessionController.state.user?.email)
 
         let viewModel = dependencies.makeFeedbackViewModel()

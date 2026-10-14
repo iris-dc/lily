@@ -1,10 +1,10 @@
 import XCTest
 
-/// The group detail's roster and leave against the mock repositories: the owner's row actions (a promotion at once, a
-/// removal after confirming), a plain member's rows without actions, a leave that takes the group off Home and Chats
-/// without a refresh, and a guest's Tournaments segment on a public group. The caller is a plain member of Kreuzberg
-/// Kickers and the owner of Sunday Padel Crew (Tom admin, Ines and Luca members, Priya banned, 6 members); ids mirror
-/// `MockGroupFixtures`, identifiers `AccessibilityIdentifiers(+Groups)`.
+/// The group detail's roster, leave and report against the mock repositories: the owner's row actions (a promotion at
+/// once, a removal after confirming), a plain member's rows without actions, a leave that takes the group off Home and
+/// Chats without a refresh, a guest's Tournaments segment on a public group, and a member's report of the group. The
+/// caller is a plain member of Kreuzberg Kickers and the owner of Sunday Padel Crew (Tom admin, Ines and Luca members,
+/// Priya banned, 6 members); ids mirror `MockGroupFixtures`, identifiers `AccessibilityIdentifiers(+Groups|Moderation)`.
 final class LilyRosterTests: LilyUITestCase {
     private let kickersRow = "group-row-mock-group-kickers"
     private let padelRow = "group-row-mock-group-padel"
@@ -15,7 +15,7 @@ final class LilyRosterTests: LilyUITestCase {
     @MainActor
     func testLeavingAGroupFromTheDetailRemovesItFromHome() {
         tapSignInWithApple()
-        openGroupFromHome(kickersRow)
+        openFromHome(app.buttons[kickersRow])
         let more = app.buttons["group-more"]
         XCTAssertTrue(more.waitForExistence(timeout: 10))
         more.tap()
@@ -35,7 +35,7 @@ final class LilyRosterTests: LilyUITestCase {
     @MainActor
     func testAnOwnerPromotesAMemberFromTheRosterMenu() {
         tapSignInWithApple()
-        openGroupFromHome(padelRow)
+        openFromHome(app.buttons[padelRow])
         openMembers()
         let makeAdmin = app.buttons["Make admin"]
         openMenu(on: app.buttons["member-row-mock-user-ines"], until: makeAdmin)
@@ -50,7 +50,7 @@ final class LilyRosterTests: LilyUITestCase {
     @MainActor
     func testAnOwnerRemovesAMemberAfterConfirming() {
         tapSignInWithApple()
-        openGroupFromHome(padelRow)
+        openFromHome(app.buttons[padelRow])
         XCTAssertTrue(labelled("6 members").waitForExistence(timeout: 10), "the header counts the roster before the removal")
         openMembers()
         let luca = app.buttons["member-row-mock-user-luca"]
@@ -69,7 +69,7 @@ final class LilyRosterTests: LilyUITestCase {
     @MainActor
     func testAPlainMemberGetsNoActionsOnTheRoster() {
         tapSignInWithApple()
-        openGroupFromHome(kickersRow)
+        openFromHome(app.buttons[kickersRow])
         openMembers()
         let dev = app.buttons["member-row-mock-user-dev"]
         scrollUntilHittable(dev)
@@ -102,16 +102,32 @@ final class LilyRosterTests: LilyUITestCase {
         XCTAssertTrue(app.buttons[kickersCupRow].waitForExistence(timeout: 10), "the segment lists the Kickers Cup")
     }
 
-    // MARK: - Helpers
-
-    /// Opens a group's detail from its row on Home.
+    /// A member's menu offers Report group; Send waits for a reason, the sheet thanks the caller and Done returns to the detail.
     @MainActor
-    private func openGroupFromHome(_ row: String) {
-        openHomeTab()
-        let group = app.buttons[row]
-        XCTAssertTrue(group.waitForExistence(timeout: 10))
-        group.tap()
+    func testReportingAGroupThanksTheUser() {
+        tapSignInWithApple()
+        openFromHome(app.buttons[kickersRow])
+        let more = app.buttons["group-more"]
+        XCTAssertTrue(more.waitForExistence(timeout: 10))
+        more.tap()
+        let report = app.buttons["group-report"]
+        XCTAssertTrue(report.waitForExistence(timeout: 5), "a member may report the group")
+        report.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["report-comment"].waitForExistence(timeout: 10), "the report sheet opened")
+
+        let submit = app.buttons["report-submit"]
+        XCTAssertTrue(submit.waitForExistence(timeout: 5))
+        XCTAssertFalse(submit.isEnabled, "Send waits for a reason")
+        labelled("Spam").tap()
+        assertBecomesEnabled(submit, "a picked reason enables Send")
+        submit.tap()
+
+        XCTAssertTrue(labelled("Thanks, we'll look into it").waitForExistence(timeout: 10), "the sheet thanks the caller")
+        app.buttons["report-done"].tap()
+        XCTAssertTrue(more.waitForExistence(timeout: 5), "Done returns to the detail")
     }
+
+    // MARK: - Helpers
 
     /// Picks the Members segment of the open detail.
     @MainActor

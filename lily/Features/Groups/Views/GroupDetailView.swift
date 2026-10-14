@@ -14,23 +14,16 @@ struct GroupDetailView: View {
     /// its menus follow it; a change to the group itself reaches it through `update(group:)`.
     @State private var members: MembersViewModel?
     @State private var presentedSheet: DetailSheet?
-    @State private var confirmation: Confirmation?
+    @State private var confirmation: GroupConfirmation?
     private let dependencies: AppDependencies
     @Environment(\.dismiss) private var dismiss
 
     private typealias Copy = AppBranding.Groups
 
     private enum DetailSheet: String, Identifiable {
-        case invite, edit, createEvent, createTournament, signIn
+        case invite, edit, createEvent, createTournament, signIn, report
 
         var id: String { rawValue }
-    }
-
-    /// A destructive action waiting for the caller's word.
-    private enum Confirmation: Hashable, Identifiable {
-        case leave, delete
-
-        var id: Self { self }
     }
 
     /// Where Mine stands: a reload bumps `loads`, a sibling's write `changes`; either moves the detail's refresh.
@@ -54,7 +47,7 @@ struct GroupDetailView: View {
         ContentScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                    GroupHeader(group: group, distance: group.distance(from: events.userLocation)?.roadText)
+                    GroupHeader(group: group, distance: group.distance(from: events.userLocation)?.roadText())
                     GroupActionRow(viewModel: viewModel,
                                    onOpenChat: { dependencies.navigation.open(chat: group) },
                                    onInvite: { presentedSheet = .invite },
@@ -65,14 +58,14 @@ struct GroupDetailView: View {
                     }
                     segment
                 }
-                .padding(DesignTokens.Spacing.xl)
+                .padding(DesignTokens.Layout.detailMargin)
                 .readableColumn()
             }
             .refreshable { await refresh() }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if viewModel.access.canChat {
+            if viewModel.showsMenu {
                 ToolbarItem(placement: .topBarTrailing) { menu }
             }
         }
@@ -119,11 +112,14 @@ struct GroupDetailView: View {
                 }, errorCenter: dependencies.errorCenter)
             case .signIn:
                 SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
+            case .report:
+                ReportSheet(viewModel: dependencies.makeReportViewModel(for: viewModel.reportTarget, title: Copy.reportGroup),
+                            errorCenter: dependencies.errorCenter)
             }
         }
-        .confirmationDialog(confirmationTitle, isPresented: isConfirming, titleVisibility: .visible, presenting: confirmation) {
-            confirmationButton(for: $0)
-        }
+        .confirmationDialog(item: $confirmation,
+                            title: { $0.title(groupName: group.name) },
+                            actions: { confirmationButton(for: $0) })
     }
 
     private var sectionPicker: some View {
@@ -138,7 +134,7 @@ struct GroupDetailView: View {
     /// the picker says.
     @ViewBuilder private var segment: some View {
         if section == .members, let members {
-            MembersList(viewModel: members)
+            MembersList(viewModel: members) { confirmation = $0 }
         } else if section == .tournaments, sections.contains(.tournaments) {
             GroupTournamentsSegment(viewModel: tournaments)
         } else {
@@ -152,31 +148,26 @@ struct GroupDetailView: View {
                         onCreateTournament: { presentedSheet = .createTournament },
                         onEdit: { presentedSheet = .edit },
                         onLeave: { confirmation = .leave },
+                        onReport: { presentedSheet = .report },
                         onDelete: { confirmation = .delete })
     }
 
-    private var confirmationTitle: String {
-        switch confirmation {
-        case .leave: Copy.leaveConfirmation(groupName: group.name)
-        case .delete: Copy.deleteConfirmation(groupName: group.name)
-        case nil: ""
+    private func confirmationButton(for confirmation: GroupConfirmation) -> some View {
+        Button(role: .destructive) {
+            Task { await run(confirmation) }
+        } label: {
+            Text(confirmation.buttonTitle)
         }
     }
 
-    private var isConfirming: Binding<Bool> {
-        Binding(get: { confirmation != nil }, set: { if !$0 { confirmation = nil } })
-    }
-
-    private func confirmationButton(for confirmation: Confirmation) -> some View {
-        Button(role: .destructive) {
-            Task {
-                switch confirmation {
-                case .leave: await viewModel.leave()
-                case .delete: await viewModel.delete()
-                }
-            }
-        } label: {
-            Text(confirmation == .leave ? Copy.leave : Copy.delete)
+    /// The roster's actions go through the one `MembersViewModel` the Members segment draws, so a confirmed removal
+    /// moves the row there.
+    private func run(_ confirmation: GroupConfirmation) async {
+        switch confirmation {
+        case .leave: await viewModel.leave()
+        case .delete: await viewModel.delete()
+        case .remove(let member): await members?.perform(.remove, on: member)
+        case .ban(let member): await members?.perform(.ban, on: member)
         }
     }
 

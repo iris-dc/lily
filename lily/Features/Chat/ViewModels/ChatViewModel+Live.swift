@@ -22,7 +22,7 @@ extension ChatViewModel {
                 await confirmPending(clientMessageID: clientMessageID, with: message)
             }
             // A game or a tournament's progress announced here changed elsewhere; the lists behind this screen must reload.
-            links.recordChange(for: message.kind)
+            systemRows.recordChange(for: message.kind)
             noteRead()
         case .memberJoined(_, _, let memberCount, let epoch):
             group = group.updatingMembership(group.membership, memberCount: memberCount, channelEpoch: epoch)

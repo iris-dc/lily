@@ -21,7 +21,7 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
     /// Entries close here when set, at the start otherwise.
     private(set) var registrationClosesAt: Date?
     private(set) var location: EventLocation
-    let organizerUserId: String
+    private(set) var organizerUserId: String
     let organizerName: String
     let group: EventGroupRef?
     /// The room's epoch; the chat channel is `rooms/<id>/<channelEpoch>`.
@@ -92,6 +92,8 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
     /// Explore lists public tournaments in registration; a private one is found on Home and under its group.
     var isListed: Bool { isPublic && status == .registration }
     var fillRatio: Double { min(1, Double(entryCount) / Double(max(maxEntries, 1))) }
+    /// Amber warns that the field is nearly full: three quarters in with a place still free.
+    var isNearlyFull: Bool { !isFull && fillRatio >= AppConfig.Events.nearlyFullRatio }
     var canStart: Bool { status == .registration && entryCount >= format.minimumEntriesToStart }
     /// Whether a match may end level: a knockout match always needs a winner, whatever `allowsDraws` says (the backend
     /// refuses a draw there); a round robin follows the setting.
@@ -115,7 +117,7 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
 
     /// Meters from `origin`, or `nil` when the user's position is unknown.
     func distance(from origin: Coordinate?) -> Measurement<UnitLength>? {
-        origin.map { Measurement(value: location.coordinate.distance(to: $0), unit: .meters) }
+        location.distance(from: origin)
     }
 
     /// After an entry joined or left: the count and the caller's own entry as the backend now sees them.
@@ -128,6 +130,15 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
         return copy
     }
 
+    /// The mock stores the caller as a marker: the organiser's seat read as the caller of the moment where the marker
+    /// holds it, and the caller's entry set. A `nil` caller keeps the marker, as the mock's answer to a guest does.
+    func replacingOrganizer(_ marker: String, with userID: String?, myEntryId: String?) -> Tournament {
+        var copy = self
+        if organizerUserId == marker, let userID { copy.organizerUserId = userID }
+        copy.myEntryId = myEntryId
+        return copy
+    }
+
     /// The organiser's edit: every field the draft may change; the backend keeps the rest.
     func updating(with draft: TournamentDraft, at date: Date) -> Tournament {
         var copy = self
@@ -135,7 +146,7 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
         copy.description = draft.trimmedDescription
         copy.startsAt = draft.startsAt
         copy.registrationClosesAt = draft.registrationClosesAt
-        copy.location = EventLocation(name: draft.trimmedLocationName, coordinate: draft.coordinate ?? location.coordinate)
+        copy.location = draft.place.location(at: draft.coordinate ?? location.coordinate)
         copy.allowsDraws = draft.resolvedAllowsDraws
         copy.maxEntries = draft.maxEntries
         copy.updatedAt = date
@@ -175,6 +186,15 @@ nonisolated enum TournamentScope: Hashable, Sendable {
     case mine
     /// A group's tournaments, by start; its Tournaments segment.
     case group(id: String)
+
+    /// The `scope` query value; `nil` for a group's tournaments, a resource of their own (`Paths.groupTournaments`).
+    var wireName: String? {
+        switch self {
+        case .upcoming: "upcoming"
+        case .mine: "mine"
+        case .group: nil
+        }
+    }
 }
 
 /// A tournament's detail, pushed from a card, a tile, a chat's info button or a room row. The name shows until the

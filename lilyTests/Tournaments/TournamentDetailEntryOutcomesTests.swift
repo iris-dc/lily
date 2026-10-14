@@ -83,7 +83,7 @@ struct TournamentDetailEntryOutcomesTests {
 
         #expect(harness.repository.joins.count == 1 && harness.repository.fetchedIDs.count == 1, "no refetch")
         #expect(harness.presentedError == .network)
-        #expect(harness.logs(.error).contains { $0.contains("Join failed") }, "not a refusal")
+        #expect(harness.logs(.error).contains { $0.contains("Join for tournament \(destination.id) failed") }, "not a refusal")
         #expect(harness.changes.version == version && harness.groupRepository.requestedScopes.isEmpty)
         #expect(spy.offerCount == 0)
     }

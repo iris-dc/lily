@@ -10,6 +10,7 @@ import XCTest
 final class LilyTournamentTests: LilyUITestCase {
     let kickersCupRow = "tournament-row-mock-tournament-kickers-cup"
     let tableTennisRow = "tournament-row-mock-tournament-table-tennis"
+    let padelOpenRow = "tournament-row-mock-tournament-padel-open"
     let tableTennisRoom = "group-row-mock-tournament-table-tennis"
     let padelOpenRoom = "group-row-mock-tournament-padel-open"
     let kickersGroupRow = "group-row-mock-group-kickers"
@@ -34,7 +35,7 @@ final class LilyTournamentTests: LilyUITestCase {
         enter("Canal Path", into: app.textFields["tournament-location-name"])
         let submit = app.buttons["tournament-submit"]
         XCTAssertTrue(submit.waitForExistence(timeout: 5))
-        XCTAssertTrue(submit.isEnabled, "a name and a place complete the draft")
+        assertBecomesEnabled(submit, "a name and a place complete the draft")
         submit.tap()
 
         XCTAssertTrue(app.navigationBars["New tournament"].waitForNonExistence(timeout: 10), "the sheet must close once created")
@@ -147,7 +148,7 @@ final class LilyTournamentTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Organised by Noor"].exists)
 
         // The Chats stack still shows the inbox (which hides the tab bar), so the tab alone brings it back.
-        app.tabBars.buttons["Chats"].tap()
+        selectTab("Chats")
         XCTAssertTrue(app.navigationBars["iskra"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["You joined"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["inbox-accept-\(tournamentInviteID)"].exists, "an answered invite offers no Accept")
@@ -181,13 +182,13 @@ final class LilyTournamentTests: LilyUITestCase {
     func testLeavingATournamentFromTheDetailRemovesItsRoomFromChats() {
         tapSignInWithApple()
         acceptPadelOpenInvite()
-        app.tabBars.buttons["Chats"].tap()
+        selectTab("Chats")
         XCTAssertTrue(app.navigationBars["iskra"].waitForExistence(timeout: 5))
         app.navigationBars.buttons.firstMatch.tap()
         let room = app.buttons[padelOpenRoom]
         XCTAssertTrue(room.waitForExistence(timeout: 10), "the accept put the room on Chats")
 
-        app.tabBars.buttons["Home"].tap()
+        selectTab("Home")
         XCTAssertTrue(app.navigationBars["Padel Open"].waitForExistence(timeout: 5), "the detail is still up on Home")
         let leave = app.buttons["tournament-leave"]
         scrollUntilHittable(leave)
@@ -205,9 +206,7 @@ final class LilyTournamentTests: LilyUITestCase {
     @MainActor
     func testTournamentRoomIsListedOnChatsAndOpensTheDetailFromTheInfoButton() {
         tapSignInWithApple()
-        openChatsTab()
-        let room = app.buttons[tableTennisRoom]
-        XCTAssertTrue(room.waitForExistence(timeout: 10))
+        let room = chatsRow(tableTennisRoom)
         XCTAssertTrue(room.label.contains("Tournament"), "a room row is captioned Tournament: \(room.label)")
         room.tap()
 
@@ -240,5 +239,21 @@ final class LilyTournamentTests: LilyUITestCase {
         XCTAssertTrue(card.label.contains("Kickers Cup") && card.label.contains("4 of 8 teams"), "the card: \(card.label)")
         card.tap()
         XCTAssertTrue(app.staticTexts["Hosted in Kreuzberg Kickers"].waitForExistence(timeout: 10))
+    }
+
+    /// The carousel's "See all" pushes Discover, which lists every public tournament open for entries: the Kickers Cup,
+    /// but neither Tuesday Table Tennis, which is in progress, nor the private Padel Open.
+    @MainActor
+    func testSeeAllOpensDiscoverTournamentsWithEveryPublicTournament() {
+        relaunchAsGuest()
+        let seeAll = app.buttons["tournaments-see-all"]
+        XCTAssertTrue(seeAll.waitForExistence(timeout: 10), "the carousel shows once the list answered")
+        scrollUntilHittable(seeAll)
+        seeAll.tap()
+        XCTAssertTrue(app.navigationBars["Discover tournaments"].waitForExistence(timeout: 5))
+
+        XCTAssertTrue(app.buttons[kickersCupRow].waitForExistence(timeout: 10), "a public tournament in registration")
+        XCTAssertFalse(app.buttons[tableTennisRow].exists, "a tournament in progress is off Discover")
+        XCTAssertFalse(app.buttons[padelOpenRow].exists, "a private tournament is off Discover")
     }
 }

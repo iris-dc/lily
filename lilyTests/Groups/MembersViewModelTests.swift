@@ -43,6 +43,7 @@ struct MembersViewModelTests {
         #expect(viewModel.members.map(\.userId) == ["u-1", "u-2", "u-3"])
         #expect(viewModel.bans.map(\.userId) == ["u-9"])
         #expect(viewModel.showsBans && !viewModel.isLoading)
+        #expect(harness.repository.rosterRequests == ["g"] && harness.repository.bansRequests == ["g"])
     }
 
     @Test func membersLoadTheRosterOnly() async {
@@ -103,7 +104,7 @@ struct MembersViewModelTests {
         #expect(viewModel.members.map(\.userId) == ["u-1", "u-2"])
         #expect(harness.repository.removals.map(\.userID) == ["u-3"])
         #expect(viewModel.group.memberCount == 2 && harness.changed.map(\.memberCount) == [2])
-        #expect(harness.logs(.info).contains("Member u-3 removed from group g"))
+        #expect(harness.logs(.info).mentioning("u-3", "removed", "group g").count == 1)
     }
 
     @Test func tryAgainIsRepeatedOnce() async {
@@ -114,7 +115,7 @@ struct MembersViewModelTests {
         await viewModel.perform(.remove, on: member)
 
         #expect(viewModel.members.map(\.userId) == ["u-1", "u-2"] && harness.presentedError == nil)
-        #expect(harness.logs(.info).contains("Remove lost a race in group g; retrying once"))
+        #expect(harness.logs(.info).mentioning("Remove", "group g", "retrying once").count == 1)
     }
 
     /// The backend answers the banned member, not the group, so the group is read back for its count and epoch.
@@ -152,7 +153,8 @@ struct MembersViewModelTests {
 
         #expect(viewModel.bans.isEmpty)
         #expect(harness.repository.unbans.map(\.userID) == ["u-9"])
-        #expect(harness.logs(.info).contains("Member u-9 unbanned in group g"))
+        #expect(harness.repository.bansRequests == ["g"], "the row leaves the list locally, without a second read")
+        #expect(harness.logs(.info).mentioning("u-9", "unbanned").count == 1)
     }
 
     @Test func anActionOutsideTheCallersReachIsIgnored() async {

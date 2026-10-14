@@ -23,16 +23,16 @@ struct UploadPolicyTests {
         }
     }
 
-    @Test func eachKindHasItsCap() throws {
-        #expect(AttachmentCaps.group.maxBytes(for: .image) == 10 * 1024 * 1024)
-        #expect(AttachmentCaps.group.maxBytes(for: .video) == 50 * 1024 * 1024)
-        #expect(AttachmentCaps.group.maxBytes(for: .file) == 25 * 1024 * 1024)
-        try UploadPolicy.check(request(kind: .video, contentType: "video/mp4", sizeBytes: 50 * 1024 * 1024), caps: .group)
+    /// The boundary of the cap per kind, read from `AttachmentCaps`, whose own tests pin the numbers.
+    @Test func aRequestAtTheCapPassesAndOneByteOverIsRefused() throws {
+        let videoCap = AttachmentCaps.group.maxBytes(for: .video)
+        let fileCap = AttachmentCaps.group.maxBytes(for: .file)
+        try UploadPolicy.check(request(kind: .video, contentType: "video/mp4", sizeBytes: videoCap), caps: .group)
         #expect(throws: AppError.attachmentTooLarge(caps: .group)) {
-            try UploadPolicy.check(request(kind: .video, contentType: "video/mp4", sizeBytes: 50 * 1024 * 1024 + 1), caps: .group)
+            try UploadPolicy.check(request(kind: .video, contentType: "video/mp4", sizeBytes: videoCap + 1), caps: .group)
         }
         #expect(throws: AppError.attachmentTooLarge(caps: .group)) {
-            try UploadPolicy.check(request(kind: .file, contentType: "application/pdf", sizeBytes: 25 * 1024 * 1024 + 1),
+            try UploadPolicy.check(request(kind: .file, contentType: "application/pdf", sizeBytes: fileCap + 1),
                                    caps: .group)
         }
     }

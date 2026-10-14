@@ -27,7 +27,7 @@ extension EventListViewModel {
 
     /// Distance from the user, formatted for the current locale, or `nil` while location is unknown.
     func distanceText(for event: SportEvent) -> String? {
-        event.distance(from: userLocation)?.roadText
+        event.distance(from: userLocation)?.roadText()
     }
 
     /// Remembers what the panel opened on, so closing it reports one `filter_applied` only when something changed.

@@ -12,7 +12,7 @@ extension TournamentDraftForm {
         Section {
             DatePicker(AppBranding.Tournaments.startsAt, selection: $viewModel.draft.startsAt, in: viewModel.earliestStart...)
                 .disabled(viewModel.isLocked)
-            captioned(Copy.registration) {
+            CaptionedControl(Copy.registration) {
                 Picker(Copy.registration, selection: deadline) {
                     Text(Copy.deadlineAtStart).tag(Deadline.atStart)
                     Text(Copy.deadlineEarlier).tag(Deadline.earlier)
@@ -28,7 +28,8 @@ extension TournamentDraftForm {
         } header: {
             Text(Copy.startsAt)
         } footer: {
-            issueText(viewModel.issue(for: .startsAtTooSoon, .registrationClosesAfterStart))
+            viewModel.issue(for: .startsAtTooSoon, .registrationClosesAfterStart)
+                .map { Text(Copy.message(for: $0, format: viewModel.draft.format)) }
         }
     }
 
@@ -37,9 +38,7 @@ extension TournamentDraftForm {
         Binding {
             viewModel.draft.registrationClosesAt == nil ? .atStart : .earlier
         } set: { choice in
-            viewModel.draft.registrationClosesAt = choice == .atStart
-                ? nil
-                : TournamentDraft.proposedDeadline(before: viewModel.draft.startsAt, now: .now)
+            viewModel.draft.registrationClosesAt = choice == .atStart ? nil : viewModel.proposedDeadline()
         }
     }
 
@@ -50,17 +49,17 @@ extension TournamentDraftForm {
 
     var whereSection: some View {
         Section {
-            TextField(AppBranding.Events.Create.locationNamePlaceholder, text: $viewModel.draft.locationName)
-                .textInputAutocapitalization(.words)
-                .focused($focusedField, equals: .locationName)
-                .submitLabel(.done)
-                .accessibilityIdentifier(AccessibilityIdentifiers.tournamentLocationName)
-            PlacePickerRow(coordinate: $viewModel.draft.coordinate)
-                .accessibilityIdentifier(AccessibilityIdentifiers.createPickOnMap)
+            PlaceFields(name: $viewModel.draft.locationName,
+                        coordinate: $viewModel.draft.coordinate,
+                        nameIdentifier: AccessibilityIdentifiers.tournamentLocationName,
+                        pickerIdentifier: AccessibilityIdentifiers.createPickOnMap,
+                        focus: $focusedField,
+                        equals: .locationName)
         } header: {
             Text(Copy.whereSection)
         } footer: {
-            issueText(viewModel.issue(for: .locationNameMissing, .locationNameTooLong, .coordinateMissing))
+            viewModel.issue(for: .locationNameMissing, .locationNameTooLong, .coordinateMissing)
+                .map { Text(Copy.message(for: $0, format: viewModel.draft.format)) }
         }
     }
 
@@ -118,7 +117,7 @@ extension TournamentDraftForm {
         } header: {
             Text(Copy.detailsSection)
         } footer: {
-            issueText(viewModel.issue(for: .descriptionTooLong))
+            viewModel.issue(for: .descriptionTooLong).map { Text(Copy.message(for: $0, format: viewModel.draft.format)) }
         }
     }
 }

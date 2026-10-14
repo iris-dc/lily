@@ -65,12 +65,16 @@ struct MembersViewModelGroupTests {
 
     @Test func removeAndBanAskFirstRoleChangesDoNot() {
         typealias Action = MembersViewModel.MemberAction
+        let target = GroupMember.fixture(userId: "u-9")
 
         #expect(Action.allCases.filter(\.isDestructive) == [.remove, .ban])
         for action in Action.allCases {
-            let title = action.confirmationTitle(memberName: "Marta")
-            #expect((title != nil) == action.isDestructive, "\(action)")
-            #expect(title?.contains("Marta") ?? !action.isDestructive, "\(action)")
+            let confirmation = action.confirmation(for: target)
+            #expect((confirmation != nil) == action.isDestructive, "\(action)")
+            let title = confirmation?.title(groupName: "Kickers")
+            #expect(title?.contains(target.displayName) ?? !action.isDestructive, "\(action)")
         }
+        #expect(Action.remove.confirmation(for: target) == .remove(target))
+        #expect(Action.ban.confirmation(for: target) == .ban(target))
     }
 }

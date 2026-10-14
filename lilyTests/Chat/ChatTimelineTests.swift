@@ -112,4 +112,13 @@ struct ChatTimelineTests {
         let rows = rows([message("m1", after: 0)])
         #expect(rows.map(\.id) == ["day-1799971200", "m1"], "the day's id is its UTC midnight")
     }
+
+    /// The follow rule reads whose a row is: the caller's unsent and sent messages are theirs, a chip or a note nobody's.
+    @Test func rowsKnowWhoseTheyAre() {
+        let unsent = PendingMessage(draft: MessageDraft(clientMessageID: "c-1"), sentAt: Self.noon)
+        let rows = rows([message("m1", after: 0), message("m2", from: "u-1", name: "Me", after: 10),
+                         message("m3", after: 20, kind: .eventCreated)], pending: [unsent])
+
+        #expect(rows.map(\.isOwn) == [false, false, true, false, true], "the day, Marta's, mine, the note, my unsent one")
+    }
 }

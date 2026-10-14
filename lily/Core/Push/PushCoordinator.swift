@@ -8,7 +8,8 @@ final class PushCoordinator: SessionObserver, PushOptIn {
     private(set) var registered: LastDeviceRegistration?
     /// A notification tapped before the session was restored; opened once a user is known.
     private(set) var pendingTap: PushTap?
-    private var isRegistering = false
+    /// A registration in flight; a `sync()` made meanwhile joins it, and a sign-out waits for it before it unregisters.
+    private var registration: Task<Void, Never>?
 
     private let registrar: any PushRegistrar
     private let devices: any DeviceRepository
@@ -21,6 +22,8 @@ final class PushCoordinator: SessionObserver, PushOptIn {
     /// The language the app shows, read at each registration so the backend's reminder follows a change.
     private let languageCode: () -> String
     private let unregisterTimeout: Duration
+    /// The pause the sign-out's deadline waits on; held in tests.
+    private let sleep: Sleep
     private let logger: any Logging
     private let now: () -> Date
 
@@ -34,6 +37,7 @@ final class PushCoordinator: SessionObserver, PushOptIn {
          appVersion: AppVersion = .current(),
          languageCode: @escaping () -> String,
          unregisterTimeout: Duration = AppConfig.Push.unregisterTimeout,
+         sleep: @escaping Sleep = systemSleep,
          logger: any Logging,
          now: @escaping () -> Date = { .now }) {
         self.registrar = registrar
@@ -46,6 +50,7 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         self.appVersion = appVersion
         self.languageCode = languageCode
         self.unregisterTimeout = unregisterTimeout
+        self.sleep = sleep
         self.logger = logger
         self.now = now
         registered = Self.loadRegistration(from: defaults)
@@ -90,18 +95,30 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         }
     }
 
-    /// The Bearer is still sent here, so the backend stops pushing to this device before the session is gone; a
-    /// sign-out waits for it `unregisterTimeout` at most, since the row expires on its own and the backend takes the
-    /// token from this account the moment another one registers it.
+    /// The Bearer is still sent here, so the backend stops pushing to this device before the session is gone. A
+    /// registration in flight is awaited first, since its PUT would otherwise leave this device registered to an
+    /// account that is gone; a sign-out waits `unregisterTimeout` at most for the whole, since the row expires on its
+    /// own and the backend takes the token from this account the moment another one registers it.
     func sessionWillEnd() async {
-        guard let registered else { return }
+        guard registered != nil || registration != nil else { return }
+        let tokenBefore = registered?.token
         do {
-            try await Self.within(unregisterTimeout) { [devices] in _ = try await devices.unregister(token: registered.token) }
-            logger.info(.push, "Device unregistered for push")
+            try await Deadline.within(unregisterTimeout, sleep: sleep, orThrow: PushRegistrationError.timedOut) { [self] in
+                // Awaited, never cancelled: a cancelled PUT may have landed, and nothing here would know its token.
+                await registration?.value
+                try await unregister(tokens: [tokenBefore, registered?.token].compactMap { $0 })
+            }
         } catch {
             logger.warning(.push, "Device unregistration failed: \(error)")
         }
         store(nil)
+    }
+
+    /// Every token this device may hold on the backend: the one known before the sign-out and, when a registration
+    /// landed meanwhile, the one it stored (two when the token rotated). Nothing is sent and nothing logged for none.
+    private func unregister(tokens: [String]) async throws {
+        for token in Set(tokens) { _ = try await devices.unregister(token: token) }
+        if !tokens.isEmpty { logger.info(.push, "Device unregistered for push") }
     }
 
     func sessionDidEnd() {
@@ -110,9 +127,14 @@ final class PushCoordinator: SessionObserver, PushOptIn {
     }
 
     private func register(for userID: String) async {
-        guard !isRegistering else { return }
-        isRegistering = true
-        defer { isRegistering = false }
+        if let registration { return await registration.value }
+        let task = Task { await performRegistration(for: userID) }
+        registration = task
+        await task.value
+        registration = nil
+    }
+
+    private func performRegistration(for userID: String) async {
         do {
             let token = try await registrar.deviceToken()
             let locale = languageCode()
@@ -134,43 +156,6 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logger.warning(.push, "Device registration failed: \(error)")
-        }
-    }
-
-    /// Runs `work` and gives up after `timeout` with `PushRegistrationError.timedOut`. The work is cancelled but not
-    /// waited for (a task group would wait), so a request that ignores cancellation cannot hold the sign-out either.
-    private static func within(_ timeout: Duration, _ work: @escaping () async throws -> Void) async throws {
-        let worker = Task { try await work() }
-        let first = FirstOutcome()
-        let timer = Task {
-            try? await Task.sleep(for: timeout)
-            first.settle(.failure(PushRegistrationError.timedOut))
-            worker.cancel()
-        }
-        Task {
-            first.settle(await worker.result)
-            timer.cancel()
-        }
-        try await first.outcome.get()
-    }
-
-    /// The first of two results wins; the second is dropped.
-    private final class FirstOutcome {
-        private var continuation: CheckedContinuation<Result<Void, any Error>, Never>?
-        private var settled: Result<Void, any Error>?
-
-        var outcome: Result<Void, any Error> {
-            get async {
-                if let settled { return settled }
-                return await withCheckedContinuation { continuation = $0 }
-            }
-        }
-
-        func settle(_ result: Result<Void, any Error>) {
-            guard settled == nil else { return }
-            settled = result
-            continuation?.resume(returning: result)
-            continuation = nil
         }
     }
 

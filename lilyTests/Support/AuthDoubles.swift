@@ -74,23 +74,16 @@ final class FakeCognitoClient: CognitoClient {
 /// per request, and fall back to `token` once the script is used up, so a reconnect can be handed a chosen `exp`.
 /// `holdsRequests` parks every request until `releaseRequests()`, so a test can act while a token is being fetched.
 @MainActor
-final class FakeAuthTokenProvider: AuthTokenProvider {
+final class FakeAuthTokenProvider: AuthTokenProvider, HoldsRequests {
     var token: String?
     var freshTokens: [String?] = []
-    var holdsRequests: Bool {
-        get { hold.isEnabled }
-        set { hold.isEnabled = newValue }
-    }
-    private let hold = RequestHold()
+    let hold = RequestHold()
     private(set) var requestCount = 0
     private(set) var freshRequestCount = 0
 
     init(token: String? = nil) {
         self.token = token
     }
-
-    /// A request held right now.
-    var isHolding: Bool { hold.isHolding }
 
     func accessToken() async -> String? {
         requestCount += 1
@@ -103,10 +96,6 @@ final class FakeAuthTokenProvider: AuthTokenProvider {
         await hold.wait()
         guard !freshTokens.isEmpty else { return token }
         return freshTokens.removeFirst()
-    }
-
-    func releaseRequests() {
-        hold.release()
     }
 }
 

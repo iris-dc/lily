@@ -70,4 +70,29 @@ struct CoreLocationServiceTests {
         #expect(source.wasTerminated)
         #expect(!locationLog(containing: "acquired"))
     }
+
+    /// The caller left (a tab switch cancels the view's task): a cancelled request is nothing to warn about.
+    @Test func aCancelledFixIsADebugLine() async {
+        let service = makeService(FakeLocationUpdateSource(), timeout: .seconds(30))
+        let request = Task { await service.currentLocation() }
+
+        request.cancel()
+
+        #expect(await request.value == nil)
+        #expect(logger.messages(in: .location, at: .warning).isEmpty)
+        #expect(logger.messages(in: .location, at: .debug).contains { $0.contains("cancelled") })
+    }
+
+    /// A stream that ends on its own without a fix is a missing fix, not a failure; the clean end decides, long
+    /// before the timeout would.
+    @Test func aStreamThatEndsWithoutAFixAnswersNilWithoutAWarning() async {
+        let source = FakeLocationUpdateSource(finishes: true)
+
+        #expect(await makeService(source).currentLocation() == nil)
+
+        #expect(source.wasTerminated)
+        #expect(locationLog(containing: "No location fix"))
+        #expect(logger.messages(in: .location, at: .warning).isEmpty)
+        #expect(!locationLog(containing: "acquired"))
+    }
 }

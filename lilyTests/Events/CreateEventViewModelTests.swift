@@ -83,6 +83,24 @@ struct CreateEventViewModelTests {
         #expect(!harness.viewModel.canSubmit)
     }
 
+    /// "5..5" reads in no locale, so the case holds whatever locale the test host runs in.
+    @Test func anUnreadablePriceHoldsCreateUntilItReadsAgain() {
+        let harness = CreateEventHarness()
+        harness.completeDraft()
+
+        harness.viewModel.draft.priceText = "5..5"
+        #expect(!harness.viewModel.canSubmit)
+        #expect(harness.viewModel.issues == [.priceUnreadable])
+
+        harness.viewModel.draft.priceText = "5"
+        #expect(harness.viewModel.canSubmit)
+        #expect(harness.viewModel.draft.price == 5)
+
+        harness.viewModel.draft.priceText = ""
+        #expect(harness.viewModel.canSubmit)
+        #expect(harness.viewModel.draft.isFree)
+    }
+
     @Test func submitCreatesTheEventAndHandsItOn() async throws {
         let harness = CreateEventHarness()
         harness.completeDraft()
@@ -127,7 +145,8 @@ struct CreateEventViewModelTests {
         #expect(harness.created.isEmpty)
         #expect(harness.repository.fetchedEventIDs == [harness.viewModel.draft.clientId])
         #expect(harness.errorCenter.current?.error == error)
-        #expect(harness.logger.messages(in: .events, at: .error).contains { $0.contains("Create failed") })
+        let failedLines = harness.logger.messages(in: .events, at: .error)
+        #expect(failedLines.filter { $0.hasPrefix("Create failed for event \(harness.viewModel.draft.clientId):") }.count == 1)
         #expect(!harness.viewModel.isSubmitting)
         #expect(harness.viewModel.canSubmit)
     }
@@ -174,15 +193,32 @@ struct CreateEventViewModelTests {
     @Test func aFailureStaysWhenTheLookupFailsToo() async {
         let harness = CreateEventHarness()
         harness.completeDraft()
+        let clientId = harness.viewModel.draft.clientId
         harness.repository.createError = AppError.eventCreationFailed
         harness.repository.thrownError = AppError.eventsUnavailable
 
         await harness.viewModel.submit()
 
         #expect(harness.viewModel.createdEvent == nil)
-        #expect(harness.repository.fetchedEventIDs == [harness.viewModel.draft.clientId])
+        #expect(harness.repository.fetchedEventIDs == [clientId])
         #expect(harness.errorCenter.current?.error == .eventCreationFailed)
-        #expect(harness.logger.messages(in: .events, at: .warning).contains { $0.contains("Could not check") })
+        let checkLines = harness.logger.messages(in: .events, at: .warning)
+        #expect(checkLines.filter { $0.contains("Could not check whether event \(clientId) landed") }.count == 1)
+    }
+
+    /// Nothing under the draft's id is the check's answer, not a fault of the check: the popup shows the create's
+    /// failure and the log notes the miss below warning.
+    @Test func aCreateThatDidNotLandIsReportedWithoutAWarning() async {
+        let harness = CreateEventHarness()
+        harness.completeDraft()
+        harness.repository.createError = AppError.network
+
+        await harness.viewModel.submit()
+
+        #expect(harness.repository.fetchedEventIDs == [harness.viewModel.draft.clientId])
+        #expect(harness.errorCenter.current?.error == .network)
+        #expect(harness.logger.messages(in: .events, at: .warning).isEmpty)
+        #expect(harness.logger.messages(in: .events, at: .debug).contains { $0.contains("did not land") })
     }
 
     /// The id is chosen once per draft: a retry sends the same one, so the backend answers the game it may already

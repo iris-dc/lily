@@ -1,18 +1,13 @@
 import SwiftUI
 
-/// The Explore screen: a list, switchable to a map, narrowable through a filter panel dropped down from the toolbar,
-/// with a floating button that creates a game and a header (the groups carousel) above the list. On a wide window
+/// The Explore screen: the upcoming games as a list, switchable to a map, narrowed through the filter panel dropped
+/// down from the toolbar, with the "+" menu floating over the content (a signed-in user gets the game, group or
+/// tournament form, a guest the sign-in sheet) and a header (the carousels) above the list. On a wide window
 /// (`LayoutMode.wide`) the map is not a mode but a pane: the content column on the left, the map always on the right,
 /// and the picker gone (`EventListLayout`).
 struct EventListView<Header: View>: View {
-    let title: String
-    let emptyState: EmptyStateView
     /// Heading over the cards, for a screen whose header (the groups carousel) would otherwise make them read as its.
     let listTitle: String?
-    let showsMap: Bool
-    let filterable: Bool
-    /// Floats the "+" menu over the content. A signed-in user gets the game or group form, a guest the sign-in sheet.
-    let creatable: Bool
     let dependencies: AppDependencies
     let header: () -> Header
     /// Pull-to-refresh reloads the header's content too (the carousel), before the events.
@@ -20,48 +15,24 @@ struct EventListView<Header: View>: View {
     @State var presentation: EventsPresentation = .list
     @State var viewModel: EventListViewModel
     @State var presentedSheet: ExploreSheet?
-
-    enum ExploreSheet: String, Identifiable {
-        case createGame, createGroup, createTournament, signIn
-
-        var id: String { rawValue }
-
-        /// The sheet a keyboard shortcut's intent asks for.
-        init(_ intent: CreateIntent) {
-            switch intent {
-            case .game: self = .createGame
-            case .group: self = .createGroup
-            case .tournament: self = .createTournament
-            }
-        }
-    }
+    /// The header's measured height: a spinner or empty state is centred in what the screen leaves under it.
+    @State var headerHeight: CGFloat = 0
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.layoutMode) private var layoutMode
 
-    private var layout: EventListLayout { .resolve(mode: layoutMode, showsMap: showsMap) }
+    private var layout: EventListLayout { .resolve(mode: layoutMode) }
     /// Whether the map is the whole content right now: the switchable layout with the picker on "Map".
-    var showsMapAlone: Bool { layout == .switchable && showsMap && presentation == .map }
+    var showsMapAlone: Bool { layout == .switchable && presentation == .map }
 
-    init(title: String,
-         emptyState: EmptyStateView,
-         listTitle: String? = nil,
-         showsMap: Bool = false,
-         filterable: Bool = false,
-         creatable: Bool = false,
-         scope: EventScope,
+    init(listTitle: String?,
          dependencies: AppDependencies,
-         refreshHeader: @escaping () async -> Void = {},
+         refreshHeader: @escaping () async -> Void,
          @ViewBuilder header: @escaping () -> Header) {
-        self.title = title
-        self.emptyState = emptyState
         self.listTitle = listTitle
-        self.showsMap = showsMap
-        self.filterable = filterable
-        self.creatable = creatable
         self.dependencies = dependencies
         self.header = header
         self.refreshHeader = refreshHeader
-        _viewModel = State(initialValue: dependencies.makeEventListViewModel(scope: scope))
+        _viewModel = State(initialValue: dependencies.makeEventListViewModel(scope: .upcoming))
     }
 
     var body: some View {
@@ -69,7 +40,7 @@ struct EventListView<Header: View>: View {
             ContentScreen {
                 screen
             }
-            .navigationTitle(title)
+            .navigationTitle(AppBranding.exploreTitle)
             .navigationBarTitleDisplayMode(showsMapAlone ? .inline : .large)
             .navigationDestination(for: SportEvent.self) { event in
                 // A join or leave on the detail comes back through `replace`, so this list is right on return.
@@ -79,10 +50,8 @@ struct EventListView<Header: View>: View {
             // An event's "Hosted in" link and the carousel push groups here, so every stack knows the group screens.
             .groupDestinations(dependencies: dependencies)
             .toolbar {
-                if filterable {
-                    ToolbarItem(placement: .topBarTrailing) { EventFilterButton(viewModel: viewModel) }
-                }
-                if showsMap, layout == .switchable {
+                ToolbarItem(placement: .topBarTrailing) { EventFilterButton(viewModel: viewModel) }
+                if layout == .switchable {
                     // iOS 26 gives every toolbar item its own glass; the segmented picker already draws one.
                     ToolbarItem(placement: .topBarTrailing) { presentationPicker }
                         .sharedBackgroundVisibility(.hidden)
@@ -111,10 +80,10 @@ struct EventListView<Header: View>: View {
     private var screen: some View {
         switch layout {
         case .switchable:
-            creatable(content)
+            withCreateButton(content)
         case .sideBySide:
             HStack(spacing: 0) {
-                creatable(listContent)
+                withCreateButton(listContent)
                     .containerRelativeFrame(.horizontal) { length, _ in length * DesignTokens.Layout.exploreContentFraction }
                 mapPane
             }
@@ -122,20 +91,15 @@ struct EventListView<Header: View>: View {
     }
 
     /// The button floats inside the safe area, so it sits above the floating tab bar rather than under it.
-    @ViewBuilder
-    private func creatable(_ content: some View) -> some View {
-        if creatable {
-            ZStack(alignment: .bottomTrailing) {
-                content
-                CreateMenuButton(onCreateGame: { presentForUser(.createGame) },
-                                 onCreateGroup: { presentForUser(.createGroup) },
-                                 onCreateTournament: { presentForUser(.createTournament) })
-                    .padding(DesignTokens.Spacing.lg)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
+    private func withCreateButton(_ content: some View) -> some View {
+        ZStack(alignment: .bottomTrailing) {
             content
+            CreateMenuButton(onCreateGame: { presentForUser(.createGame) },
+                             onCreateGroup: { presentForUser(.createGroup) },
+                             onCreateTournament: { presentForUser(.createTournament) })
+                .padding(DesignTokens.Spacing.lg)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     /// The map beside the content column: always there, nothing floating over it, its selected card at its own bottom.

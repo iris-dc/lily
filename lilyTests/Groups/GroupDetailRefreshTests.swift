@@ -82,6 +82,28 @@ struct GroupDetailRefreshTests {
         #expect(harness.makeGroupDetailViewModel(.fixture(id: "g", visibility: .private, role: .member)).showsRoster)
     }
 
+    /// A member's "Report group" files a report on this group; the owner keeps the menu for its other items but no Report.
+    @Test func reportGroupOpensTheSheetForTheGroup() {
+        let memberDetail = harness.makeGroupDetailViewModel(.fixture(id: "g", role: .member))
+        #expect(memberDetail.canReport && memberDetail.showsMenu)
+        #expect(memberDetail.reportTarget == .group(id: "g"))
+        #expect(memberDetail.reportTarget.groupID == "g" && memberDetail.reportTarget.kind == .group)
+
+        let ownerDetail = harness.makeGroupDetailViewModel(.fixture(id: "g", role: .owner))
+        #expect(!ownerDetail.canReport && ownerDetail.showsMenu)
+    }
+
+    /// A signed-in reader of a public group has no chat and gets the menu for "Report group" alone; an outsider of a
+    /// private group gets none, and neither does a guest.
+    @Test func theMenuShowsForSignedInReadersOfAPublicGroupAndNeverForGuests() {
+        let publicDetail = harness.makeGroupDetailViewModel(.fixture(id: "g"))
+        #expect(!publicDetail.access.canChat && publicDetail.canReport && publicDetail.showsMenu)
+        #expect(!harness.makeGroupDetailViewModel(.fixture(id: "g", visibility: .private)).showsMenu)
+
+        harness.identity.currentUserID = nil
+        #expect(!publicDetail.canReport && !publicDetail.showsMenu)
+    }
+
     /// The backend commits a delete before it answers: a 404 on the refetch means it landed, so nothing is reported.
     @Test func aDeleteWithAnUnknownOutcomeIsRefetched() async {
         let group = SportGroup.fixture(id: "g", role: .owner)

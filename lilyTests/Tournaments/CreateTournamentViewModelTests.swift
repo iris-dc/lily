@@ -93,6 +93,8 @@ struct CreateTournamentViewModelTests {
         await viewModel.submit()
 
         #expect(!viewModel.isDone && harness.presentedError == .tournamentLimit && harness.repository.fetchedIDs.isEmpty)
+        #expect(harness.logs(.error)
+            .filter { $0.hasPrefix("Create failed for tournament \(viewModel.draft.clientId):") }.count == 1)
     }
 
     @Test func anotherOrganisersTournamentUnderTheIdIsNotOurs() async {
@@ -105,6 +107,94 @@ struct CreateTournamentViewModelTests {
         await viewModel.submit()
 
         #expect(!viewModel.isDone && harness.presentedError == .network)
+    }
+
+    /// Nothing under the client id is the check's answer: the create did not land, the popup shows the create's own
+    /// failure, and the lookup leaves a debug line, never a warning.
+    @Test func aCreateThatDidNotLandIsReportedWithoutAWarning() async {
+        harness.repository.actionError = AppError.network
+        let viewModel = harness.makeCreateViewModel()
+        completeDraft(viewModel)
+
+        await viewModel.submit()
+
+        #expect(!viewModel.isDone && harness.presentedError == .network)
+        #expect(harness.repository.fetchedIDs == [viewModel.draft.clientId])
+        #expect(harness.logs(.warning).isEmpty)
+        #expect(harness.logs(.debug).contains { $0.contains("did not land") })
+    }
+
+    /// A lookup that fails for another reason settles nothing: the create's failure stands and a warning says so.
+    @Test func aFailedLookupKeepsTheFailureWithAWarning() async {
+        harness.repository.actionError = AppError.network
+        harness.repository.detailError = AppError.tournamentsUnavailable
+        let viewModel = harness.makeCreateViewModel()
+        completeDraft(viewModel)
+
+        await viewModel.submit()
+
+        #expect(!viewModel.isDone && harness.presentedError == .network)
+        #expect(harness.logs(.warning)
+            .filter { $0.contains("Could not check whether tournament \(viewModel.draft.clientId) landed") }.count == 1)
+    }
+
+    /// The reminder prompt follows the create: once, after the sheet is done and the tournament was handed on.
+    @Test func aTournamentCreateOffersRemindersOnceAfterTheTournamentWasHandedOn() async {
+        let spy = SpyPushOptIn()
+        let viewModel = harness.makeCreateViewModel(pushOptIn: spy)
+        completeDraft(viewModel)
+        var handedOnAtOffer = false
+        spy.onOffer = { handedOnAtOffer = viewModel.isDone && !harness.sink.details.isEmpty }
+
+        await viewModel.submit()
+
+        #expect(spy.offerCount == 1)
+        #expect(handedOnAtOffer)
+    }
+
+    /// A create that landed although its answer was lost earns the prompt like a direct answer.
+    @Test func aTournamentCreateThatLandedDespiteAFailureOffersRemindersOnce() async {
+        harness.repository.actionError = AppError.network
+        let spy = SpyPushOptIn()
+        let viewModel = harness.makeCreateViewModel(pushOptIn: spy)
+        completeDraft(viewModel)
+        let stored = Tournament.fixture(id: viewModel.draft.clientId, organizerUserId: TestFixtures.user.id)
+        harness.repository.details[viewModel.draft.clientId] = .fixture(tournament: stored)
+
+        await viewModel.submit()
+
+        #expect(viewModel.isDone)
+        #expect(spy.offerCount == 1)
+    }
+
+    /// Nothing landed, so the popup is what the user sees and there is nothing to be reminded of.
+    @Test func aFailedTournamentCreateNeverOffersReminders() async {
+        harness.repository.actionError = AppError.tournamentLimit
+        let spy = SpyPushOptIn()
+        let viewModel = harness.makeCreateViewModel(pushOptIn: spy)
+        completeDraft(viewModel)
+
+        await viewModel.submit()
+
+        #expect(harness.presentedError == .tournamentLimit)
+        #expect(spy.offerCount == 0)
+    }
+
+    /// A start an hour ahead puts "a day before" behind the clock, so the proposal is the injected now (the wall clock
+    /// would answer the day before); a start three days ahead gets the full lead.
+    @Test func theDeadlineProposalUsesTheInjectedClock() {
+        let viewModel = harness.makeCreateViewModel()
+        viewModel.draft.startsAt = Self.now.addingTimeInterval(3600)
+        #expect(viewModel.proposedDeadline() == Self.now)
+
+        viewModel.draft.startsAt = Self.now.addingTimeInterval(3 * 24 * 3600)
+        let lead = AppConfig.Tournaments.defaultDeadlineLead
+        #expect(viewModel.proposedDeadline() == viewModel.draft.startsAt.addingTimeInterval(-lead))
+    }
+
+    @Test func aNewTournamentOffersItsStructure() {
+        let viewModel = harness.makeCreateViewModel()
+        #expect(viewModel.allowsStructureChanges)
     }
 }
 
@@ -152,6 +242,18 @@ struct EditTournamentViewModelTests {
     @Test func aStartedTournamentIsLocked() {
         let viewModel = harness.makeEditViewModel(for: .fixture(status: .inProgress))
         #expect(viewModel.isLocked)
+    }
+
+    /// The type, format, team size and visibility are fixed once the tournament exists, whatever its phase.
+    @Test func anEditNeverOffersTheStructure() {
+        let open = harness.makeEditViewModel(for: .fixture())
+        let started = harness.makeEditViewModel(for: .fixture(status: .inProgress))
+        #expect(!open.allowsStructureChanges && !started.allowsStructureChanges)
+    }
+
+    @Test func anEditsDeadlineProposalUsesTheInjectedClock() {
+        let viewModel = harness.makeEditViewModel(for: .fixture(startsAt: TournamentHarness.now.addingTimeInterval(3600)))
+        #expect(viewModel.proposedDeadline() == TournamentHarness.now)
     }
 
     @Test func aTryAgainIsRepeatedAndAFailureReported() async {

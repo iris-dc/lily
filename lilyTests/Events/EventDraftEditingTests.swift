@@ -106,17 +106,51 @@ struct EventDraftEditingTests {
         #expect(updated.hostUserId == "marta" && updated.hostName == "Marta" && updated.group == Self.kickers)
     }
 
-    /// An edit only needs the future: a host fixing the place of a game about to start must not have to move it.
-    @Test func editingRulesNeedNoLeadTime() {
+    /// An edit needs only the request margin, not the create's quarter hour: a host fixing the place of a game about
+    /// to start must not have to move it.
+    @Test func anEditNeedsOnlyTheRequestMarginNotTheCreatesLeadTime() {
         var draft = EventDraft(editing: Self.makeEvent())
-        draft.startsAt = Self.now.addingTimeInterval(60)
+        let margin = AppConfig.Events.Editing.startMargin
+        draft.startsAt = Self.now.addingTimeInterval(margin)
         let rules = EventDraft.Rules.editing(participantCount: 6)
 
         #expect(draft.issues(now: Self.now, rules: rules).isEmpty)
-        #expect(draft.issues(now: Self.now) == [.startsAtTooSoon], "a create keeps its margin")
-        #expect(EventDraft.earliestStart(now: Self.now, rules: rules) == Self.now)
-        draft.startsAt = Self.now.addingTimeInterval(-1)
-        #expect(draft.issues(now: Self.now, rules: rules) == [.startsAtTooSoon])
+        #expect(draft.issues(now: Self.now) == [.startsAtTooSoon], "a create keeps its quarter hour")
+        #expect(EventDraft.earliestStart(now: Self.now, rules: rules) == Self.now.addingTimeInterval(margin))
+    }
+
+    /// The margin covers the request's round trip and clock skew, so a start inside it is refused like one in the past.
+    @Test func anEditWithinTheMarginIsStartsAtTooSoon() {
+        var draft = EventDraft(editing: Self.makeEvent())
+        let rules = EventDraft.Rules.editing(participantCount: 6)
+
+        for offset in [AppConfig.Events.Editing.startMargin - 1, 0, -1] {
+            draft.startsAt = Self.now.addingTimeInterval(offset)
+            #expect(draft.issues(now: Self.now, rules: rules) == [.startsAtTooSoon], "\(offset) s ahead")
+        }
+    }
+
+    /// A game that grew past the backend's maximum (a number needed, or no limit) still opens for editing: the
+    /// stepper's floor stops at the maximum instead of inverting its range, and a cap is refused as below the people in.
+    @Test func aGameWithMoreThan200PlayersOpensForEditing() {
+        let limits = AppConfig.Events.Creation.capacityRange
+        let crowd = limits.upperBound + 50
+        let crowded = SportEvent.fixture(capacity: nil,
+                                         participants: crowd,
+                                         startsAt: Self.now.addingTimeInterval(3600),
+                                         hostUserId: "marta",
+                                         isJoined: true)
+        var draft = EventDraft(editing: crowded)
+        let rules = EventDraft.Rules.editing(participantCount: crowd)
+
+        #expect(draft.playerLimit == .unlimited && draft.capacity == limits.upperBound)
+        #expect(draft.issues(now: Self.now, rules: rules).isEmpty)
+        #expect(rules.capacityRange(for: .maximum) == limits.upperBound...limits.upperBound)
+        #expect(rules.capacityRange(for: .minimum) == limits)
+        draft.playerLimit = .maximum
+        #expect(draft.issues(now: Self.now, rules: rules) == [.capacityBelowParticipants], "never out of range")
+        draft.playerLimit = .minimum
+        #expect(draft.issues(now: Self.now, rules: rules).isEmpty)
     }
 
     /// The floor protects a cap. A draft that allows extras treats the capacity as a target and may set it below the
@@ -143,7 +177,8 @@ struct EventDraftEditingTests {
     @Test func everyIssueHasCopy() {
         let issues: [EventDraft.Issue] = [
             .titleMissing, .titleTooLong, .startsAtTooSoon, .locationNameMissing, .locationNameTooLong, .coordinateMissing,
-            .capacityOutOfRange, .capacityBelowParticipants, .descriptionTooLong, .lookingForTooLong, .priceOutOfRange,
+            .capacityOutOfRange, .capacityBelowParticipants, .descriptionTooLong, .lookingForTooLong, .priceUnreadable,
+            .priceOutOfRange,
         ]
         for issue in issues {
             #expect(!AppBranding.Events.Create.message(for: issue).isEmpty, "\(issue)")

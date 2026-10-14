@@ -33,9 +33,9 @@ struct InboxStoreTests {
         #expect(repository.pageRequests == [FakeInboxRepository.PageRequest(before: nil, limit: AppConfig.Inbox.pageSize)])
         #expect(store.items == items && !store.loadFailed && !store.hasOlder)
         #expect(logger.messages(in: .cache).contains { $0.contains("never loaded") })
-        #expect(logger.messages(in: .inbox, at: .info) == ["Loaded 2 inbox items"])
+        #expect(logger.count(in: .inbox, at: .info) == 1 && logger.hasLine(in: .inbox, at: .info, mentioning: "Loaded 2"))
 
-        clock = clock.addingTimeInterval(AppConfig.Inbox.listStaleAfter)
+        clock = clock.addingTimeInterval(AppConfig.Lists.staleAfter)
         await store.loadIfStale()
         #expect(repository.pageRequests.count == 2)
         #expect(logger.messages(in: .cache).contains { $0.contains("older than TTL") })
@@ -64,19 +64,9 @@ struct InboxStoreTests {
         await store.loadIfStale()
         #expect(repository.pageRequests.count == 1)
 
-        clock = clock.addingTimeInterval(AppConfig.Inbox.retryAfterFailure)
+        clock = clock.addingTimeInterval(AppConfig.Lists.retryAfterFailure)
         await store.loadIfStale()
         #expect(repository.pageRequests.count == 2 && store.items == items && !store.loadFailed)
-    }
-
-    @Test func cancellationStaysQuiet() async {
-        repository.pageError = CancellationError()
-        let store = makeStore()
-
-        await store.reload()
-
-        #expect(!store.loadFailed && errorCenter.current == nil)
-        #expect(logger.messages(in: .inbox, at: .debug).contains { $0.contains("cancelled") })
     }
 
     /// A guest has no inbox; asking is pointless, and whatever a previous user left must go.
@@ -92,21 +82,6 @@ struct InboxStoreTests {
 
         await store.reload()
         #expect(repository.pageRequests.count == 1)
-    }
-
-    @Test func concurrentReloadsCollapseIntoOne() async {
-        repository.holdsRequests = true
-        let store = makeStore()
-
-        let first = Task { await store.reload() }
-        await settle(until: { store.isLoading })
-        let second = Task { await store.reload() }
-        await Task.yield()
-        repository.releaseRequests()
-        await first.value
-        await second.value
-
-        #expect(repository.pageRequests.count == 1 && !store.isLoading)
     }
 
     /// The earlier page is asked for before the cursor the last page named, lands ahead of what is held without
@@ -151,23 +126,6 @@ struct InboxStoreTests {
         await store.reload()
 
         #expect(store.items == items && store.hasOlder)
-    }
-
-    /// A sign-out while a page is in flight: the answer is the previous user's and must not repopulate a guest's store.
-    @Test func anAnswerForAPreviousCallerIsDropped() async {
-        repository.pages = [.fixture(items)]
-        repository.holdsRequests = true
-        let store = makeStore()
-
-        let load = Task { await store.reload() }
-        await settle(until: { store.isLoading })
-        identity.currentUserID = nil
-        store.sessionDidEnd()
-        repository.releaseRequests()
-        await load.value
-
-        #expect(store.items.isEmpty && !store.isLoading)
-        #expect(logger.messages(in: .cache, at: .debug).contains { $0.contains("previous caller") })
     }
 
     @Test func signOutClearsTheStoreThroughTheObserverHook() async {

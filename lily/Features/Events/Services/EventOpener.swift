@@ -1,8 +1,8 @@
 import Foundation
 
-/// Fetches a game by id and pushes its detail on the Chats stack (Home while chat is switched off): the inbox's
-/// reminder card and a tapped reminder notification both go through it. A game that is gone or unreachable reaches
-/// the popup; cancellation stays quiet.
+/// Fetches a game by id and pushes its detail through `AppNavigation.openFromNotification`: the inbox's reminder card
+/// and a tapped reminder notification both go through it. A game that is gone or unreachable reaches the popup;
+/// cancellation stays quiet.
 final class EventOpener {
     private let events: any EventRepository
     private let navigation: AppNavigation
@@ -21,11 +21,7 @@ final class EventOpener {
     func open(eventID: String, from source: String) async -> Bool {
         do {
             let event = try await events.event(id: eventID)
-            if AppConfig.FeatureFlags.chat {
-                navigation.openInChat(event)
-            } else {
-                navigation.openInHome(event)
-            }
+            navigation.openFromNotification(event)
             return true
         } catch {
             guard !AppError.isCancellation(error) else { return false }

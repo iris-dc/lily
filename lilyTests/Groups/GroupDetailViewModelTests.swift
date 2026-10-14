@@ -55,13 +55,14 @@ struct GroupDetailViewModelTests {
 
     @Test func joinPutsTheGroupIntoMine() async {
         let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g", memberCount: 5))
+        let before = harness.changes.version
 
         await viewModel.join()
 
         #expect(viewModel.group.isMember && viewModel.group.memberCount == 6)
         #expect(harness.store.groups.map(\.id) == ["g"])
-        #expect(harness.logs(.info).contains("Joined group g (public)"))
-        #expect(harness.changes.version == 1 && !viewModel.isGone)
+        #expect(harness.logs(.info).mentioning("Joined", "group g").count == 1)
+        #expect(harness.changes.version > before && !viewModel.isGone, "the lists behind reload on the store's change")
     }
 
     @Test func leaveTakesTheGroupOutOfMine() async {
@@ -74,7 +75,7 @@ struct GroupDetailViewModelTests {
 
         #expect(!viewModel.group.isMember && harness.store.groups.isEmpty)
         #expect(harness.changes.version == before + 1, "the lists behind reload on the store's change")
-        #expect(harness.logs(.info).contains("Left group g"))
+        #expect(harness.logs(.info).mentioning("Left", "group g").count == 1)
     }
 
     @Test func deleteMarksTheGroupGone() async {
@@ -86,7 +87,7 @@ struct GroupDetailViewModelTests {
 
         #expect(viewModel.isGone && viewModel.group.isDeleted)
         #expect(harness.store.groups.isEmpty)
-        #expect(harness.logs(.info).contains("Group g deleted"))
+        #expect(harness.logs(.info).mentioning("g deleted").count == 1)
     }
 
     /// The view sends a guest to sign in; the view model never lets a guest's tap become a request.
@@ -107,7 +108,7 @@ struct GroupDetailViewModelTests {
 
         #expect(harness.repository.joinedGroupIDs.count == 2)
         #expect(viewModel.group.isMember && harness.presentedError == nil)
-        #expect(harness.logs(.info).contains("Join lost a race for group g; retrying once"))
+        #expect(harness.logs(.info).mentioning("group g", "lost a race").count == 1)
     }
 
     @Test func aSecondTryAgainIsARefusal() async {

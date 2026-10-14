@@ -84,6 +84,8 @@ struct ChatCatchUpTests {
 
         #expect(repository.newerRequests.map(\.after) == ["m1", "m2", "m3"])
         #expect(room?.restWatermark == "m4" && room?.messages.count == 4)
+        let stopped = "Catch-up for group g stopped after \(AppConfig.Chat.maxCatchUpPages) pages with more pending"
+        #expect(logger.messages(in: .chat, at: .info).filter { $0 == stopped }.count == 1)
     }
 
     /// A page of hidden or already-held messages names where to continue; the watermark follows it, not the items.
@@ -104,6 +106,7 @@ struct ChatCatchUpTests {
         _ = try await catchUp.catchUp(groupID: "g")
 
         #expect(repository.newerRequests.count == 1)
+        #expect(!logger.messages(in: .chat, at: .info).contains { $0.contains("stopped after") })
     }
 
     @Test func aRoomWithoutAWatermarkTakesTheNewestPage() async throws {
@@ -162,5 +165,44 @@ struct ChatCatchUpTests {
 
         #expect(repository.newerRequests.map(\.groupID) == ["open"])
         #expect(logger.messages(in: .chat, at: .warning).contains { $0.contains("Catch-up failed for group open") })
+    }
+
+    /// The stub cached before the first page stays when that page fails: a live line still has somewhere to land, and
+    /// the next catch-up asks for the newest page again instead of finding nothing to do.
+    @Test func aFailedNewestKeepsTheStub() async throws {
+        repository.pageError = AppError.chatUnavailable
+
+        await #expect(throws: AppError.chatUnavailable) { try await catchUp.loadNewest(groupID: "g", epoch: 1) }
+
+        let stub = try #require(cache.room(for: "g"))
+        #expect(!stub.hasHistory && stub.restWatermark == nil)
+        cache.update(groupID: "g") { $0.insert(.fixture(id: "m1")) }
+        #expect(cache.room(for: "g")?.messages.count == 1)
+
+        repository.pageError = nil
+        repository.newestPages = [.fixture([.fixture(id: "m1"), .fixture(id: "m2")])]
+        let room = try await catchUp.catchUp(groupID: "g")
+
+        #expect(repository.newestGroupIDs == ["g", "g"] && repository.newerRequests.isEmpty)
+        #expect(room?.restWatermark == "m2" && room?.messages.map(\.id) == ["m1", "m2"])
+    }
+
+    /// The pages a catch-up applied before a later one failed stay applied, with the watermark on the last of them,
+    /// so the next catch-up continues from there rather than asking for them again. A throw is no stop at the limit.
+    @Test func aNewerFailureMidLoopKeepsThePagesApplied() async {
+        cache.store(.fixture(messages: [.fixture(id: "m1")]), for: "g")
+        repository.newerPages = [.fixture([.fixture(id: "m2")], hasMore: true), .fixture([.fixture(id: "m3")], hasMore: true)]
+        var calls = 0
+        repository.onRequest = {
+            calls += 1
+            if calls == 3 { repository.pageError = AppError.chatUnavailable }
+        }
+
+        await #expect(throws: AppError.chatUnavailable) { try await catchUp.catchUp(groupID: "g") }
+
+        let room = cache.room(for: "g")
+        #expect(room?.messages.map(\.id) == ["m1", "m2", "m3"] && room?.restWatermark == "m3")
+        #expect(repository.newerRequests.map(\.after) == ["m1", "m2", "m3"])
+        #expect(!logger.messages(in: .chat, at: .info).contains { $0.contains("stopped after") })
     }
 }

@@ -3,7 +3,7 @@ import Foundation
 /// Fixture groups with in-memory memberships and rosters, for previews, UI tests and `-mock-events` runs. The caller
 /// is whoever `identity` names at the moment of the call; the fixture memberships are theirs.
 final class MockGroupRepository: GroupRepository {
-    /// Stored state is internal, not private, so `MockGroupRepository+Direct.swift` can reach it.
+    /// Stored state is internal, not private, so the `+Direct`, `+Discover` and `+Tournaments` siblings can reach it.
     var groups: [SportGroup]
     /// The other members of each group, banned rows included; the caller's own row comes from the group's membership.
     var rosters: [String: [GroupMember]]
@@ -26,34 +26,12 @@ final class MockGroupRepository: GroupRepository {
 
     func groups(in scope: GroupScope, cursor: String?, near position: Coordinate?) async throws -> Page<SportGroup> {
         logger.debug(.groups, "Mock groups served for \(scope == .mine ? "mine" : "discover")")
-        let live = groups.filter { !$0.isDeleted }
         switch scope {
         case .mine:
-            let mine = live.filter { $0.isMember && !hiddenConversationIDs.contains($0.id) }
+            let mine = groups.filter { !$0.isDeleted && $0.isMember && !hiddenConversationIDs.contains($0.id) }
             return Page(items: mine.sorted(by: SportGroup.mineOrder))
-        case .discover(let query, let type):
-            // Like the backend: only communities are discoverable; rooms are reached through their tournament or person.
-            let matching = live.filter { $0.isCommunity && $0.isPublic && $0.matches(query: query, type: type) }
-            return Page(items: Self.discoverOrder(matching, query: query, near: position))
-        }
-    }
-
-    /// The backend's three Discover orders: by name for a search, nearest first around a position (a group without a
-    /// place last), newest first otherwise.
-    private static func discoverOrder(_ groups: [SportGroup], query: String?, near position: Coordinate?) -> [SportGroup] {
-        if query != nil {
-            return groups.sorted { $0.name < $1.name }
-        }
-        guard let position else {
-            return groups.sorted { $0.createdAt > $1.createdAt }
-        }
-        return groups.sorted { lhs, rhs in
-            switch (lhs.distance(from: position), rhs.distance(from: position)) {
-            case (let left?, let right?): left < right
-            case (.some, nil): true
-            case (nil, .some): false
-            case (nil, nil): lhs.createdAt > rhs.createdAt
-            }
+        case .discover(_, let type):
+            return discover(prefix: scope.searchPrefix, type: type, near: position)
         }
     }
 
@@ -77,18 +55,23 @@ final class MockGroupRepository: GroupRepository {
     func update(id: String, _ draft: GroupDraft) async throws -> SportGroup {
         let group = try readable(id)
         guard group.role?.isAdmin == true else { throw AppError.insufficientRole }
+        try requireGroupRoute(group)
         return store(group.updating(with: draft))
     }
 
     func delete(id: String) async throws -> SportGroup {
         let group = try readable(id)
         guard group.role == .owner else { throw AppError.insufficientRole }
+        try requireGroupRoute(group)
         return store(group.markingDeleted(at: now()))
     }
 
     func join(id: String) async throws -> SportGroup {
         let group = try readable(id)
+        // Like the backend, a member joining again is answered before the group's rules are consulted.
+        if group.isMember { return group }
         guard group.isPublic else { throw AppError.groupNotFound }
+        try requireGroupRoute(group)
         return try admit(group, via: "public")
     }
 
@@ -101,6 +84,7 @@ final class MockGroupRepository: GroupRepository {
     func leave(id: String) async throws -> SportGroup {
         let group = try readable(id)
         guard let role = group.role else { throw AppError.notAMember }
+        try requireGroupRoute(group)
         guard role != .owner else { throw AppError.ownerCannotLeave }
         logger.info(.groups, "Left group \(id)")
         return store(group.dropping())
@@ -145,12 +129,14 @@ final class MockGroupRepository: GroupRepository {
     func bans(id: String) async throws -> [GroupMember] {
         let group = try readable(id)
         guard group.role?.isAdmin == true else { throw AppError.insufficientRole }
+        try requireGroupRoute(group)
         return others(in: id).filter { $0.role == .banned }
     }
 
     func unban(id: String, userID: String) async throws {
         let group = try readable(id)
         guard group.role?.isAdmin == true else { throw AppError.insufficientRole }
+        try requireGroupRoute(group)
         rosters[id]?.removeAll { $0.userId == userID && $0.role == .banned }
     }
 
@@ -172,14 +158,24 @@ final class MockGroupRepository: GroupRepository {
         if group.isMember { return group }
         guard !group.isFull else { throw AppError.groupFull }
         logger.info(.groups, "Joined group \(group.id) (\(via))")
-        let membership = GroupMembership(role: .member, joinedAt: now(), lastReadMessageId: group.lastMessageId)
-        return store(group.updatingMembership(membership, memberCount: group.memberCount + 1))
+        return store(group.updatingMembership(membershipOnJoin(of: group), memberCount: group.memberCount + 1))
+    }
+
+    /// The row of someone joining now: a member, read up to the room's latest message.
+    func membershipOnJoin(of group: SportGroup) -> GroupMembership {
+        GroupMembership(role: .member, joinedAt: now(), lastReadMessageId: group.lastMessageId)
     }
 
     /// The group as a reader may see it: a private group is not there for anyone who is not in it.
     private func readable(_ id: String) throws -> SportGroup {
         guard let group = find(id), group.isPublic || group.isMember else { throw AppError.groupNotFound }
         return group
+    }
+
+    /// The backend's `requireGroupKind`: a conversation and a tournament's room are entered and left through the
+    /// person or the tournament, so the group routes answer FORBIDDEN; an unknown kind passes, as there.
+    private func requireGroupRoute(_ group: SportGroup) throws {
+        guard !group.isDirect, !group.isTournamentRoom else { throw AppError.insufficientRole }
     }
 
     func find(_ id: String) -> SportGroup? {
@@ -200,8 +196,9 @@ final class MockGroupRepository: GroupRepository {
         return member
     }
 
+    /// The one replace of a stored group; the `+Tournaments` extension writes its rooms through it too.
     @discardableResult
-    private func store(_ group: SportGroup) -> SportGroup {
+    func store(_ group: SportGroup) -> SportGroup {
         if let index = groups.firstIndex(where: { $0.id == group.id }) {
             groups[index] = group
         }
@@ -219,20 +216,5 @@ final class MockGroupRepository: GroupRepository {
     private static func rosterOrder(_ lhs: GroupMember, _ rhs: GroupMember) -> Bool {
         let rank: (MemberRole) -> Int = { $0 == .owner ? 0 : $0 == .admin ? 1 : 2 }
         return rank(lhs.role) != rank(rhs.role) ? rank(lhs.role) < rank(rhs.role) : lhs.joinedAt < rhs.joinedAt
-    }
-}
-
-private extension SportGroup {
-    /// The group after someone left, was removed or was banned: one member fewer and a new chat epoch. `membership`
-    /// is the caller's afterwards: `nil` when it was them.
-    func dropping(_ membership: GroupMembership? = nil) -> SportGroup {
-        updatingMembership(membership, memberCount: memberCount - 1, channelEpoch: channelEpoch + 1)
-    }
-
-    /// Discover's criteria: a name prefix, case-insensitively, and the event type.
-    func matches(query: String?, type: EventType?) -> Bool {
-        let nameMatches = query.map { $0.isEmpty || name.lowercased().hasPrefix($0.lowercased()) } ?? true
-        let typeMatches = type.map { $0 == self.type } ?? true
-        return nameMatches && typeMatches
     }
 }

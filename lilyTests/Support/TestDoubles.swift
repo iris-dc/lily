@@ -1,28 +1,6 @@
 import Foundation
-import Synchronization
 import Testing
 @testable import lily
-
-/// Records log lines so tests can assert on key events.
-@MainActor
-final class SpyLogger: Logging {
-    struct Entry {
-        let level: LogLevel
-        let category: LogCategory
-        let message: String
-    }
-
-    private(set) var entries: [Entry] = []
-
-    func log(_ level: LogLevel, _ category: LogCategory, _ message: String) {
-        entries.append(Entry(level: level, category: category, message: message))
-    }
-
-    /// Messages of one category, optionally narrowed to one level.
-    func messages(in category: LogCategory, at level: LogLevel? = nil) -> [String] {
-        entries.filter { $0.category == category && (level == nil || $0.level == level) }.map(\.message)
-    }
-}
 
 @MainActor
 final class InMemorySessionStore: SessionStore {
@@ -164,47 +142,69 @@ func makeEventListViewModel(scope: EventScope = .upcoming,
                        filterStore: filterStore ?? NoOpEventFilterStore())
 }
 
-/// A `UserDefaults` suite of its own, so tests that build the composition root never share a stored session.
-func makeTestDefaults() -> UserDefaults {
-    UserDefaults(suiteName: "lily.tests.\(UUID().uuidString)")!
+/// A `UserDefaults` suite of its own, whose values go with the last reference, so tests that build the composition
+/// root never share a stored session and unit runs leave no stored sessions, choices or filters in the simulator's
+/// container (cfprefsd keeps an empty plist per suite behind).
+final class TestDefaults: UserDefaults {
+    let suiteName: String
+
+    /// Names the suite `lily.tests.<id>`. Not `init?()`: that would override `UserDefaults.init()`, which is not failable.
+    init?(id: UUID) {
+        suiteName = "lily.tests.\(id.uuidString)"
+        super.init(suiteName: suiteName)
+    }
+
+    deinit {
+        // Through the standard instance, never `self`: a change posts a notification holding its receiver.
+        UserDefaults.standard.removePersistentDomain(forName: suiteName)
+    }
 }
 
-/// Upper bound on the yields `settle(until:)` spends before it gives up and fails.
+func makeTestDefaults() -> UserDefaults {
+    TestDefaults(id: UUID())!
+}
+
+/// The mock composition root the App suites start from: reset, mock auth and mock events, signed out.
+@MainActor
+func makeMockDependencies(extraArguments: [String] = []) -> AppDependencies {
+    AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
+                                            AppConfig.LaunchArguments.mockAuth,
+                                            AppConfig.LaunchArguments.mockEvents] + extraArguments,
+                                defaults: makeTestDefaults())
+}
+
+/// `makeMockDependencies` with the mock Apple user signed in.
+@MainActor
+func makeSignedInMockDependencies(extraArguments: [String] = []) async -> AppDependencies {
+    let dependencies = makeMockDependencies(extraArguments: extraArguments)
+    await dependencies.sessionController.signIn(with: .apple)
+    return dependencies
+}
+
+/// Upper bound on the yields the `settle` helpers spend before they give up and fail.
 private let settleYieldLimit = 1_000
 
 /// Yields to the main actor until `condition` holds, so a held request is observably in flight (or observably
 /// dropped) before the test goes on. Bounded, so a regression fails at the call site instead of hanging.
 @MainActor
 func settle(until condition: () -> Bool, sourceLocation: SourceLocation = #_sourceLocation) async {
-    var yields = 0
-    while !condition() && yields < settleYieldLimit {
-        await Task.yield()
-        yields += 1
-    }
-    #expect(condition(), "condition still false after \(settleYieldLimit) yields", sourceLocation: sourceLocation)
+    // A synchronous condition cannot throw, so the awaited form never does here.
+    try? await settle(untilAsync: condition, sourceLocation: sourceLocation)
 }
 
-/// Scripted location updates: yields the given fixes, then stays open (like CoreLocation) until cancelled,
-/// or fails with `error` once the fixes are out. Records whether the consumer tore the stream down.
-final class FakeLocationUpdateSource: LocationUpdateSource, Sendable {
-    private let fixes: [LocationFix]
-    private let error: (any Error)?
-    private let terminated = Mutex(false)
-
-    var wasTerminated: Bool { terminated.withLock { $0 } }
-
-    init(fixes: [LocationFix] = [], error: (any Error)? = nil) {
-        self.fixes = fixes
-        self.error = error
+/// `settle(until:)` for a condition that has to be awaited, such as a page read from a repository; the one yield
+/// loop both helpers run.
+@MainActor
+func settle(untilAsync condition: () async throws -> Bool,
+            sourceLocation: SourceLocation = #_sourceLocation) async throws {
+    var yields = 0
+    var settled = try await condition()
+    while !settled && yields < settleYieldLimit {
+        await Task.yield()
+        yields += 1
+        settled = try await condition()
     }
-
-    func updates() -> AsyncThrowingStream<LocationFix, any Error> {
-        AsyncThrowingStream { continuation in
-            fixes.forEach { continuation.yield($0) }
-            if let error { continuation.finish(throwing: error) }
-            continuation.onTermination = { [self] _ in terminated.withLock { $0 = true } }
-        }
-    }
+    #expect(settled, "condition still false after \(settleYieldLimit) yields", sourceLocation: sourceLocation)
 }
 
 /// Keeps the last saved filter and counts the saves, so a test can see what a view model wrote.
@@ -226,29 +226,6 @@ final class InMemoryEventFilterStore: EventFilterStore {
 
     func clear() {
         stored = nil
-    }
-}
-
-/// Counts requests and can hold them open until released, to test coalescing of concurrent callers.
-@MainActor
-final class FakeLocationService: LocationService {
-    var result: Coordinate?
-    /// While true, `currentLocation()` suspends until `release()`.
-    var holdsRequests: Bool {
-        get { hold.isEnabled }
-        set { hold.isEnabled = newValue }
-    }
-    private let hold = RequestHold()
-    private(set) var callCount = 0
-
-    func currentLocation() async -> Coordinate? {
-        callCount += 1
-        await hold.wait()
-        return result
-    }
-
-    func release() {
-        hold.release()
     }
 }
 

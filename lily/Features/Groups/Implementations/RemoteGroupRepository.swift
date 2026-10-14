@@ -84,7 +84,7 @@ private extension GroupScope {
     /// Only a browse of Discover is ordered by place: a name is searched because it is known, not because it is near,
     /// and Mine is the caller's own.
     var takesPosition: Bool {
-        if case .discover(let query, _) = self { return query?.isEmpty ?? true }
+        if case .discover = self { return searchPrefix == nil }
         return false
     }
 
@@ -93,11 +93,11 @@ private extension GroupScope {
         let keys = AppConfig.API.Query.self
         switch self {
         case .mine:
-            return [URLQueryItem(name: keys.scope, value: "mine")]
-        case .discover(let query, let type):
-            var items = [URLQueryItem(name: keys.scope, value: "public")]
-            if let query, !query.isEmpty {
-                items.append(URLQueryItem(name: keys.query, value: query))
+            return [URLQueryItem(name: keys.scope, value: wireName)]
+        case .discover(_, let type):
+            var items = [URLQueryItem(name: keys.scope, value: wireName)]
+            if let prefix = searchPrefix {
+                items.append(URLQueryItem(name: keys.query, value: prefix))
             }
             if let type {
                 items.append(URLQueryItem(name: keys.type, value: type.wireName))

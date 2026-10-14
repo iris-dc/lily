@@ -23,7 +23,7 @@ struct TournamentParticipationControl: View {
         case .hidden:
             EmptyView()
         case .join:
-            busyButton(Copy.join) { await viewModel.join() }
+            BusyButton(Copy.join, isBusy: viewModel.isBusy) { await viewModel.join() }
                 .lilyProminentButton()
                 .accessibilityIdentifier(AccessibilityIdentifiers.tournamentJoin)
         case .createTeam:
@@ -41,7 +41,7 @@ struct TournamentParticipationControl: View {
         case .registrationClosed:
             notice(Copy.registrationClosed)
         case .full:
-            busyButton(Copy.full)
+            BusyButton(Copy.full, isBusy: viewModel.isBusy)
                 .lilyProminentButton()
                 .accessibilityIdentifier(AccessibilityIdentifiers.tournamentJoin)
         }
@@ -51,24 +51,6 @@ struct TournamentParticipationControl: View {
         Text(text)
             .font(LilyTheme.Fonts.caption)
             .foregroundStyle(.secondary)
-    }
-
-    /// Action with a spinner beside its title while the request runs. Without an action it is disabled. The caller
-    /// applies the button style, which also sets the full width and height (see the Buttons note in CLAUDE.md).
-    private func busyButton(_ title: String, action: (() async -> Void)? = nil) -> some View {
-        Button {
-            Task { await action?() }
-        } label: {
-            HStack(spacing: DesignTokens.Spacing.sm) {
-                Text(title)
-                if viewModel.isBusy {
-                    ProgressView()
-                        .controlSize(.regular)
-                        .accessibilityHidden(true)
-                }
-            }
-        }
-        .disabled(action == nil || viewModel.isBusy)
     }
 }
 

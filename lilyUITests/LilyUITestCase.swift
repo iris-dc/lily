@@ -2,13 +2,15 @@ import XCTest
 
 /// Shared launch and helpers of the UI test classes. The app starts on the landing with the session reset, mock
 /// location, mock auth and mock events (mirroring `AppConfig.LaunchArguments`; the test target cannot import the app
-/// module), so no run depends on the Cognito pool or a running backend.
+/// module), so no run depends on the Cognito pool or a running backend. The app is pinned to English, which keeps the
+/// copy assertions independent of the Mac's language list, which the simulator inherits (`AppleLanguages`); the region
+/// stays the simulator's, so distances and currency symbols follow it.
 class LilyUITestCase: XCTestCase {
     let app = XCUIApplication()
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        app.launchArguments = ["-reset-session", "-mock-location", "-mock-auth", "-mock-events"]
+        app.launchArguments = ["-reset-session", "-mock-location", "-mock-auth", "-mock-events", "-app-language", "en"]
         app.launch()
     }
 
@@ -49,11 +51,19 @@ class LilyUITestCase: XCTestCase {
         openTab(titled: "Profile")
     }
 
-    /// Tab titles double as the roots' navigation titles, so one name finds both. The iPhone's bar is a `tabBar`;
-    /// the iPad's top bar exposes each tab as a plain button nested in another with the same label and no `tabBar`
-    /// around them, so the fallback takes the first button with that exact label.
+    /// Tab titles double as the roots' navigation titles, so one name finds both.
     @MainActor
     private func openTab(titled title: String) {
+        selectTab(title)
+        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5))
+    }
+
+    /// Selects a tab and asserts nothing about the screen it shows: for a tab whose stack is not at its root (the
+    /// Chats stack under the inbox, which hides the tab bar), where the root's title is not what appears. The iPhone's
+    /// bar is a `tabBar`; the iPad's top bar exposes each tab as a plain button nested in another with the same label
+    /// and no `tabBar` around them, so the fallback takes the first button with that exact label.
+    @MainActor
+    func selectTab(_ title: String) {
         let inBar = app.tabBars.buttons[title]
         var isInBar = inBar.waitForExistence(timeout: 3)
         if !isInBar, expandMinimisedTabBar() {
@@ -62,7 +72,6 @@ class LilyUITestCase: XCTestCase {
         let tab = isInBar ? inBar : app.buttons.matching(NSPredicate(format: "label == %@", title)).firstMatch
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
         tab.tap()
-        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5))
     }
 
     /// A screen scrolled down has minimised the tab bar (iOS 26 `tabBarMinimizeBehavior`): the bar keeps only the
@@ -81,6 +90,7 @@ class LilyUITestCase: XCTestCase {
     }
 
     /// The first element whose label contains `text`; for texts that a control folds into its own label.
+    @MainActor
     func labelled(_ text: String) -> XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
     }
@@ -101,13 +111,42 @@ class LilyUITestCase: XCTestCase {
         XCTAssertTrue(element.exists, "element never scrolled into the accessibility tree")
     }
 
-    /// Swipes up until `element` exists and is hittable, for content further down a list; fails after `maxSwipes`.
+    /// Pulls the content down, slowly, from the upper half of the screen so a `.refreshable` fires: a quick
+    /// `swipeDown()` may not pass its threshold, and the pull ends above the tab bar.
+    @MainActor
+    func pullToRefresh() {
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85))
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
+            .press(forDuration: 0.1, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
+    }
 
-    func scrollUntilHittable(_ element: XCUIElement, maxSwipes: Int = 8) {
-        for _ in 0..<maxSwipes where !(element.exists && element.isHittable) {
-            app.swipeUp()
+    /// The way a scroll-until loop moves the content: `up` reaches content further down, `down` content above.
+    enum ScrollDirection {
+        case up
+        case down
+    }
+
+    /// Swipes in `direction` until `element` is in the accessibility tree and hittable, at most `maxSwipes` times, and
+    /// fails when it never is. The one scroll-until loop: an explicit `while`, because a `for … where` guard was once
+    /// seen running neither a check nor a swipe.
+    @MainActor
+    func scrollUntilHittable(_ element: XCUIElement, direction: ScrollDirection = .up, maxSwipes: Int = 8) {
+        var swipes = 0
+        while !(element.exists && element.isHittable) && swipes < maxSwipes {
+            switch direction {
+            case .up: app.swipeUp()
+            case .down: app.swipeDown()
+            }
+            swipes += 1
         }
         XCTAssertTrue(element.exists && element.isHittable, "element never scrolled into a hittable position")
+    }
+
+    /// Waits for `element` to become enabled: the GitHub runner is two to three times slower than a Mac, so an
+    /// `isEnabled` read right after typing or a tap must wait.
+    @MainActor
+    func assertBecomesEnabled(_ element: XCUIElement, _ message: String = "", timeout: TimeInterval = 5) {
+        XCTAssertTrue(element.wait(for: \.isEnabled, toEqual: true, timeout: timeout), message)
     }
 
     @MainActor
@@ -137,12 +176,23 @@ class LilyUITestCase: XCTestCase {
     /// `XCUIElement.tap()` resolves its target through the accessibility tree, and when the keyboard rose while the
     /// transcript was scrolled up (a reply to an early message) a row lay under the glass composer, won the hit and
     /// pushed its event, so the composer "vanished" (2026-10-08). A coordinate touch is no answer either: a form field
-    /// under the keyboard needs `tap()`, which brings it into view.
+    /// under the keyboard needs `tap()`, which brings it into view. A field that is not in the tree yet is dragged into
+    /// it first (`dragUpUntilExists`): a `Form` row below the fold is not in the accessibility tree at all, and on the
+    /// 390 x 844 pt iPhone 17e the create form's place field lay under the fold that the 17 Pro's 30 pt more showed
+    /// (2026-10-13).
     @MainActor
     func enter(_ text: String, into field: XCUIElement) {
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "missing text field")
+        if !field.waitForExistence(timeout: 5) { dragUpUntilExists(field) }
         if !field.hasKeyboardFocus { field.tap() }
         field.typeText(text)
+    }
+
+    /// Opens the sign-in sheet from whatever screen shows "Sign in": the landing, Home's guest prompt or Profile.
+    @MainActor
+    func openSignInSheet() {
+        let signIn = app.buttons["Sign in"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
+        signIn.tap()
     }
 
     /// Opens the sign-in sheet from whatever screen shows "Sign in" and picks the mock Apple provider. Returns the
@@ -150,10 +200,7 @@ class LilyUITestCase: XCTestCase {
     @MainActor
     @discardableResult
     func tapSignInWithApple() -> XCUIElement {
-        let signIn = app.buttons["Sign in"]
-        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
-        signIn.tap()
-
+        openSignInSheet()
         let apple = app.buttons["Continue with Apple"]
         XCTAssertTrue(apple.waitForExistence(timeout: 5))
         apple.tap()
@@ -163,9 +210,7 @@ class LilyUITestCase: XCTestCase {
     /// Opens the sign-in sheet from the landing and pushes the email form.
     @MainActor
     func openEmailForm() {
-        let signIn = app.buttons["Sign in"]
-        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
-        signIn.tap()
+        openSignInSheet()
         let email = app.buttons["Continue with Email"]
         XCTAssertTrue(email.waitForExistence(timeout: 5))
         email.tap()

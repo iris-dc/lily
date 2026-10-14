@@ -35,8 +35,7 @@ private struct TranscriptWidthMeasurer: ViewModifier {
         return content
             .onGeometryChange(for: CGFloat.self,
                               of: { @Sendable proxy in
-                                  UsableWidth.of(width: proxy.size.width,
-                                                 leading: proxy.safeAreaInsets.leading,
+                                  UsableWidth.of(leading: proxy.safeAreaInsets.leading,
                                                  trailing: proxy.safeAreaInsets.trailing,
                                                  frameInWindow: proxy.frame(in: .global),
                                                  windowWidth: windowWidth)

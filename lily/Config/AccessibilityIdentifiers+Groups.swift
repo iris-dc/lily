@@ -15,6 +15,8 @@ nonisolated extension AccessibilityIdentifiers {
     static let groupMore = "group-more"
     static let groupSection = "group-section"
     static let groupLeave = "group-leave"
+    /// The menu's Report group item.
+    static let groupReport = "group-report"
     static let membersList = "members-list"
     /// Chat: the message list, the composer field and its send button, and the title button that opens the group.
     static let chatList = "chat-list"
@@ -24,6 +26,9 @@ nonisolated extension AccessibilityIdentifiers {
     /// The room's "more" menu and its one item, Clear chat or Delete chat.
     static let chatMore = "chat-more"
     static let chatClear = "chat-clear"
+    /// The Report and Block items of a bubble's long-press menu.
+    static let messageReport = "message-report"
+    static let messageBlock = "message-block"
     /// The composer's reply preview (a container; its children keep their own identifiers) and the X that drops it.
     static let chatReplyPreview = "chat-reply-preview"
     static let chatReplyCancel = "chat-reply-cancel"
@@ -42,11 +47,13 @@ nonisolated extension AccessibilityIdentifiers {
         "group-row-\(id)"
     }
 
-    /// A bubble is keyed by its client id when it has one (stable across the optimistic -> confirmed swap).
+    /// A bubble whose message carries a client id: the caller's always (stable across the optimistic -> stored swap)
+    /// and, from the backend, every member's, since Laurel sends clientMessageId on every member message.
     static func message(clientID: String) -> String {
         "message-client-\(clientID)"
     }
 
+    /// A bubble whose message carries no client id (the mock's other senders).
     static func message(id: String) -> String {
         "message-\(id)"
     }

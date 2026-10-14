@@ -54,4 +54,45 @@ struct MessageDraftTests {
         #expect(plain.replyTo == nil && plain.draft.payload.replyToMessageId == nil)
         #expect(plain.id == "c-1" && plain.text == "Thursday works" && plain.state == pending.state)
     }
+
+    /// The counter shows from `counterThreshold` on, judged on the text as it would be sent: an emoji counts two, the
+    /// whitespace around the words counts for nothing.
+    @Test func theCounterShowsAtTheThresholdOverTheTrimmedText() {
+        let threshold = AppConfig.Chat.counterThreshold
+        var draft = MessageDraft()
+        draft.text = String(repeating: "a", count: threshold - 1)
+        #expect(!draft.showsCounter)
+
+        draft.text = String(repeating: "a", count: threshold)
+        #expect(draft.showsCounter && draft.remaining == AppConfig.Chat.messageMaxLength - threshold)
+
+        draft.text = String(repeating: "😀", count: threshold / 2)
+        #expect(draft.showsCounter)
+
+        draft.text = "\n  " + String(repeating: "a", count: threshold) + "  "
+        #expect(draft.showsCounter && draft.remaining == AppConfig.Chat.messageMaxLength - threshold)
+
+        draft.text = "\n  " + String(repeating: "a", count: threshold - 1) + "  "
+        #expect(!draft.showsCounter)
+    }
+
+    /// The limit and the counter judge the same text the payload carries: trimmed, so whitespace around the words
+    /// neither fills nor overflows the limit.
+    @Test func theLimitAndTheCounterJudgeTheTextAsSent() {
+        let words = String(repeating: "a", count: AppConfig.Chat.messageMaxLength)
+        var draft = MessageDraft(clientMessageID: "c-1")
+        draft.text = "\n" + words + " "
+        #expect(draft.isValid && draft.remaining == 0)
+        #expect(draft.payload.text == words)
+
+        draft.text = words + "a"
+        #expect(draft.issues == [.tooLong] && draft.remaining == -1)
+    }
+
+    @Test func whitespaceAloneCountsForNothing() {
+        var draft = MessageDraft()
+        draft.text = String(repeating: " ", count: AppConfig.Chat.counterThreshold + 100)
+        #expect(draft.issues == [.empty])
+        #expect(draft.remaining == AppConfig.Chat.messageMaxLength && !draft.showsCounter)
+    }
 }

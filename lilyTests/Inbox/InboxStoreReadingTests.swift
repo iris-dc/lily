@@ -100,7 +100,7 @@ struct InboxStoreReadingTests {
 
         #expect(store.items.map(\.id) == [items[0].id, between.id, items[1].id, newest.id])
         #expect(store.items.last?.invite?.status == .accepted)
-        #expect(logger.messages(in: .inbox, at: .debug).contains("Inbox item \(newest.id) arrived (group_invite)"))
+        #expect(logger.hasLine(in: .inbox, at: .debug, mentioning: newest.id, "group_invite"))
     }
 
     /// A store that never loaded still takes a live item, so the badge can light up before the tab was visited.
@@ -122,5 +122,51 @@ struct InboxStoreReadingTests {
 
         #expect(store.items.map(\.id) == items.map(\.id))
         #expect(store.items[1].invite?.status == .declined)
+    }
+
+    /// The dot follows the newest item this build can draw: a kind it does not know shows nothing new on the screen,
+    /// so it lights nothing, while the backend still hears the newest id.
+    @Test func anItemOfAnUnknownKindNeverLightsTheDot() async {
+        let all: [InboxItem] = [.reminder(), .invite(), .unknown()]
+        repository.pages = [.fixture(all), .fixture(all, lastReadId: InboxItem.invite().id)]
+        let store = makeStore()
+
+        await store.reload()
+        #expect(store.hasUnread && store.newest?.id == InboxItem.unknown().id,
+                "the invite is unread; the newest item is the hidden one")
+        await store.reload()
+        #expect(!store.hasUnread, "nothing this build can draw is newer than the marker")
+
+        await store.markRead()
+        #expect(repository.readMarks == [InboxItem.unknown().id], "the backend still hears the newest id")
+    }
+
+    /// Another device read further: the marker the backend answers wins over the id just sent, and an item older than
+    /// it earns neither a dot nor a second PUT.
+    @Test func aNewerMarkerFromTheBackendMovesTheLocalOne() async {
+        repository.pages = [.fixture(items)]
+        repository.readMarkerAnswer = "01J9INBOX00000000000000009"
+        let store = makeStore()
+        await store.reload()
+
+        await store.markRead()
+        #expect(repository.readMarks == [items[1].id] && store.lastReadID == "01J9INBOX00000000000000009" && !store.hasUnread)
+
+        store.apply(.invite(id: "01J9INBOX00000000000000005"))
+        #expect(!store.hasUnread, "read further on another device")
+        await store.markRead()
+        #expect(repository.readMarks.count == 1, "nothing newer than the marker to send")
+    }
+
+    /// A stale marker answered to the PUT never moves the local one back.
+    @Test func anOlderMarkerAnsweredToMarkReadIsIgnored() async {
+        repository.pages = [.fixture(items)]
+        repository.readMarkerAnswer = items[0].id
+        let store = makeStore()
+        await store.reload()
+
+        await store.markRead()
+
+        #expect(store.lastReadID == items[1].id && !store.hasUnread)
     }
 }

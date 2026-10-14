@@ -23,23 +23,22 @@ struct IntroSlideTests {
         #expect(UIImage(systemName: DesignTokens.Symbols.swipeUp) != nil)
     }
 
-    /// The detail miniature opens a game the user could join, skipping a full one, and falls back to the first game
-    /// when every one is full.
-    @Test func theContentPicksAGameWithASpotFreeForTheJoinSlide() throws {
-        let events = IntroFixtures.events(now: .now)
-        let full = try #require(events.first { $0.isFull })
-        let open = try #require(events.first { !$0.isFull })
+    /// The detail miniature opens a game the user could join (one without a limit counts as open), skipping a full
+    /// one, and falls back to the first game when every one is full; the cards are kept as given.
+    @Test func theContentPicksAGameWithASpotFreeForTheJoinSlide() {
+        let full = SportEvent.fixture(id: "full", capacity: 4, participants: 4)
+        let open = SportEvent.fixture(id: "open", capacity: 4, participants: 1)
+        let unlimited = SportEvent.fixture(id: "any", capacity: nil, participants: 50)
 
-        #expect(IntroContent(events: events).events.count == IntroFixtures.eventCount)
         #expect(IntroContent(events: [full, open]).joinEvent == open)
+        #expect(IntroContent(events: [full, unlimited]).joinEvent == unlimited)
         #expect(IntroContent(events: [full]).joinEvent == full)
         #expect(IntroContent(events: []).joinEvent == nil)
+        #expect(IntroContent(events: [full, open]).events == [full, open])
     }
 
-    @Test func theChatMiniatureHasItsLines() {
-        #expect(!AppBranding.Intro.Chat.question.isEmpty)
-        #expect(!AppBranding.Intro.Chat.answer.isEmpty)
-        #expect(!AppBranding.Intro.Chat.followUp.isEmpty)
-        #expect(!IntroFixtures.groupName.initials.isEmpty)
+    /// The Explore miniature shows as many cards as the live preview it stands in for.
+    @Test func theMiniatureShowsAsManyCardsAsTheLivePreview() {
+        #expect(IntroFixtures.events(now: .now).count == AppConfig.Events.landingPreviewCount)
     }
 }

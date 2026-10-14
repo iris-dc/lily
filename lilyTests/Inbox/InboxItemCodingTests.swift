@@ -75,21 +75,20 @@ struct InboxItemCodingTests {
         #expect(InboxItem.reminder().caption == "Game reminder · Sunset 5-a-side")
     }
 
-    /// The reminder names the day as the chat's chips do, then the clock time, then how far off the start is; the
-    /// distance is judged against the wall clock, as the relative style is, so it is computed the same way here. A
-    /// 24-hour locale, because `.shortened` puts a narrow no-break space before AM/PM that no literal here could show.
-    @Test func theReminderNamesTheDayTheTimeAndTheDistance() throws {
+    /// The reminder's line is the shared time caption, every part judged against the given `now`: the day as the
+    /// chat's chips name it, the clock time, the countdown. A 24-hour locale, because `.shortened` puts a narrow
+    /// no-break space before AM/PM that no literal here could show.
+    @Test func theReminderCaptionIsTheSharedTimeCaption() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
         calendar.locale = Locale(identifier: "en_GB")
-        let now = Date.now
-        let noonToday = calendar.startOfDay(for: now).addingTimeInterval(12 * 3_600)
-        let today = try #require(InboxItem.reminder(startsAt: noonToday).reminder)
-        let yesterday = try #require(InboxItem.reminder(startsAt: noonToday.addingTimeInterval(-86_400)).reminder)
+        let now = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 11))!
+        let startsAt = now.addingTimeInterval(3_600)
+        let reminder = try #require(InboxItem.reminder(startsAt: startsAt).reminder)
 
-        let distance = noonToday.formatted(.relative(presentation: .named))
-        #expect(today.startsAtCaption(now: now, calendar: calendar) == "Today, 12:00 · \(distance)")
-        #expect(yesterday.startsAtCaption(now: now, calendar: calendar).hasPrefix("Yesterday, 12:00 · "))
+        let caption = reminder.startsAtCaption(now: now, calendar: calendar)
+        #expect(caption == InboxTimeCaption.text(for: startsAt, now: now, calendar: calendar))
+        #expect(caption == "Today, 12:00 · in 1 hour")
     }
 
     /// Accept and Decline show while the invite is open; afterwards the card says what happened.

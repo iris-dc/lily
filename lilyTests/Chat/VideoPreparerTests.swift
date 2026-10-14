@@ -1,6 +1,5 @@
 import AVFoundation
 import Foundation
-import ImageIO
 import Testing
 @testable import lily
 
@@ -18,14 +17,6 @@ struct VideoPreparerTests {
 
     private func makePreparer(limits: VideoPreparer.Limits = VideoPreparer.Limits()) -> VideoPreparer {
         VideoPreparer(limits: limits, directory: directory, logger: logger)
-    }
-
-    private func dimensions(of url: URL) throws -> (width: Int, height: Int) {
-        let source = try #require(CGImageSourceCreateWithURL(url as CFURL, nil))
-        let properties = try #require(CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any])
-        let width = try #require(properties[kCGImagePropertyPixelWidth] as? Int)
-        let height = try #require(properties[kCGImagePropertyPixelHeight] as? Int)
-        return (width, height)
     }
 
     /// The "prepared" debug line for `id`, if one was logged.
@@ -46,7 +37,7 @@ struct VideoPreparerTests {
         let tracks = try await exported.loadTracks(withMediaType: .video)
         #expect(tracks.count == 1, "the export is a playable MP4")
         let thumbnail = try #require(draft.thumbnailURL)
-        let size = try dimensions(of: thumbnail)
+        let size = try ImageFiles.dimensions(of: thumbnail)
         #expect(size.width == 320 && size.height == 180, "the frame keeps its size under the 512 px cap")
         #expect(draft.thumbnailSizeBytes == (try Data(contentsOf: thumbnail)).count)
         #expect(draft.uploadRequest.kind == .video && draft.uploadRequest.durationSeconds == 2)
@@ -120,14 +111,5 @@ struct VideoPreparerTests {
         await #expect(throws: AppError.attachmentTypeNotAllowed) {
             try await makePreparer().prepareVideo(at: text, id: "v4", caps: .group)
         }
-    }
-}
-
-/// The non-Swift fixtures of the test bundle (`lilyTests/Fixtures`, copied in by the synchronized group).
-enum TestFixtureFiles {
-    private final class BundleToken {}
-
-    static var tinyVideo: URL {
-        Bundle(for: BundleToken.self).url(forResource: "tiny", withExtension: "mp4")!
     }
 }

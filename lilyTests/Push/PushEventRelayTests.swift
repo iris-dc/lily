@@ -4,7 +4,14 @@ import Testing
 
 @MainActor
 struct PushEventRelayTests {
-    private let relay = PushEventRelay()
+    private let sleep: HeldSleep
+    private let relay: PushEventRelay
+
+    init() {
+        let sleep = HeldSleep()
+        self.sleep = sleep
+        relay = PushEventRelay { try await sleep.sleep(for: $0) }
+    }
 
     @Test func theDeliveredTokenReachesTheWaiterAsHex() async throws {
         let waiting = Task { try await relay.token(timeout: .seconds(5)) {} }
@@ -25,9 +32,30 @@ struct PushEventRelayTests {
     }
 
     @Test func aSilentSystemTimesOut() async {
-        await #expect(throws: PushRegistrationError.timedOut) {
-            try await relay.token(timeout: .milliseconds(10)) {}
-        }
+        let waiting = Task { try await relay.token(timeout: .seconds(10)) {} }
+        await settle(until: { sleep.held.count == 1 })
+
+        sleep.release()
+
+        await #expect(throws: PushRegistrationError.timedOut) { try await waiting.value }
+    }
+
+    /// The timer of a registration the system already answered finds no waiter and must leave every other one alone;
+    /// a second resume of the answered continuation would crash the app. A later registration's own timeout is what
+    /// the test waits on, so the late timer has fired while the relay is still here.
+    @Test func aLateTimeoutAfterDeliveryIsHarmless() async throws {
+        let answered = Task { try await relay.token(timeout: .seconds(10)) {} }
+        await settle(until: { sleep.held.count == 1 })
+        relay.deliver(token: Data([0x01, 0xab, 0xff]))
+        #expect(try await answered.value == "01abff")
+        let later = Task { try await relay.token(timeout: .seconds(20)) {} }
+        await settle(until: { sleep.held.count == 2 })
+
+        sleep.release()
+
+        await #expect(throws: PushRegistrationError.timedOut) { try await later.value }
+        #expect(!relay.isWaiting)
+        #expect(sleep.held.isEmpty)
     }
 
     @Test func aTapWaitsForTheHandlerAndLaterOnesGoStraightThrough() {

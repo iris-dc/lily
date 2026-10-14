@@ -1,46 +1,39 @@
 import SwiftUI
 
 /// The attachments of a stored message: pictures and videos as `GalleryLayout` lays them out, each a thumbnail loaded
-/// through the `AttachmentLoader`, and files as cards under the grid; a tap on a tile hands the attachment up and the
-/// transcript opens the viewer or the player, a tap on a card downloads the file and hands its preview up.
+/// through the `AttachmentLoader`, and files as cards under the grid; a tap on a tile hands its `AttachmentSelection` up
+/// (the tapped picture, or the first hidden one from the "+N" tile) and the transcript opens the viewer or the player,
+/// a tap on a card downloads the file and hands its preview up.
 struct AttachmentGallery: View {
     let message: ChatMessage
     let loader: AttachmentLoader
     let own: Bool
     let alignment: Alignment
-    let onTap: (Attachment) -> Void
+    let onTap: (AttachmentSelection) -> Void
     let onOpenFile: (URL) -> Void
 
     var body: some View {
-        let partition = GalleryLayout.partition(message.attachments.map(\.kind))
-        VStack(alignment: alignment.horizontal, spacing: DesignTokens.Spacing.xs) {
-            if !partition.media.isEmpty {
-                GalleryGrid(layout: GalleryLayout(count: partition.media.count),
-                            singleAspectRatio: message.attachments[partition.media[0]].aspectRatio,
-                            alignment: alignment) { index in
-                    tile(message.attachments[partition.media[index]])
-                }
-            }
-            ForEach(partition.files, id: \.self) { index in
-                FileAttachmentCard(attachment: message.attachments[index],
-                                   message: message,
-                                   loader: loader,
-                                   own: own,
-                                   onOpen: onOpenFile)
-                    .galleryWidth(alignment: alignment)
-            }
+        AttachmentColumn(items: message.attachments, alignment: alignment) { index, attachment in
+            tile(attachment, at: index)
+        } card: { attachment in
+            FileAttachmentCard(attachment: attachment, message: message, loader: loader, own: own, onOpen: onOpenFile)
         }
     }
 
-    @ViewBuilder private func tile(_ attachment: Attachment) -> some View {
+    /// The grid's tile for `attachment` at the grid's `index`; its tap hands the selection up.
+    @ViewBuilder private func tile(_ attachment: Attachment, at index: Int) -> some View {
         switch attachment.kind {
         case .image:
-            ImageAttachmentView(attachment: attachment, message: message, loader: loader) { onTap(attachment) }
+            ImageAttachmentView(attachment: attachment, message: message, loader: loader) { select(tile: index) }
         case .video:
-            VideoAttachmentView(attachment: attachment, message: message, loader: loader) { onTap(attachment) }
+            VideoAttachmentView(attachment: attachment, message: message, loader: loader) { select(tile: index) }
         case .file, .unknown:
             EmptyView()
         }
+    }
+
+    private func select(tile index: Int) {
+        if let selection = AttachmentSelection(message: message, tappedTile: index) { onTap(selection) }
     }
 }
 
@@ -51,20 +44,38 @@ struct DraftGallery: View {
     let alignment: Alignment
 
     var body: some View {
-        let partition = GalleryLayout.partition(drafts.map(\.kind))
+        AttachmentColumn(items: drafts, alignment: alignment) { _, draft in
+            DraftMediaTile(draft: draft)
+        } card: { draft in
+            FileCard(info: FileCardInfo(fileName: draft.fileName, contentType: draft.contentType, sizeBytes: draft.sizeBytes),
+                     own: true,
+                     isPreparing: draft.state == .preparing)
+        }
+    }
+}
+
+/// The one column both galleries draw: the pictures and videos in a `GalleryGrid`, the file cards under it, both at the
+/// gallery's width. The pending bubble is swapped for the stored one when a send settles, so one shared rule is what
+/// keeps that swap from moving anything. `tileIndex` is the grid's index (what `AttachmentSelection(tappedTile:)`
+/// takes), not the attachment's position among all of them.
+struct AttachmentColumn<Item: GalleryItem, Tile: View, Card: View>: View {
+    let items: [Item]
+    let alignment: Alignment
+    @ViewBuilder let tile: (_ tileIndex: Int, _ item: Item) -> Tile
+    @ViewBuilder let card: (Item) -> Card
+
+    var body: some View {
+        let partition = GalleryLayout.partition(items.map(\.kind))
         VStack(alignment: alignment.horizontal, spacing: DesignTokens.Spacing.xs) {
             if !partition.media.isEmpty {
                 GalleryGrid(layout: GalleryLayout(count: partition.media.count),
-                            singleAspectRatio: drafts[partition.media[0]].aspectRatio,
+                            singleAspectRatio: items[partition.media[0]].aspectRatio,
                             alignment: alignment) { index in
-                    DraftMediaTile(draft: drafts[partition.media[index]])
+                    tile(index, items[partition.media[index]])
                 }
             }
             ForEach(partition.files, id: \.self) { index in
-                let draft = drafts[index]
-                FileCard(info: FileCardInfo(fileName: draft.fileName, contentType: draft.contentType, sizeBytes: draft.sizeBytes),
-                         own: true,
-                         isPreparing: draft.state == .preparing)
+                card(items[index])
                     .galleryWidth(alignment: alignment)
             }
         }

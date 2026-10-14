@@ -4,11 +4,10 @@ import Testing
 
 @MainActor
 struct EventListLayoutTests {
-    @Test func onlyAWideWindowWithAMapGetsTheSideBySideLayout() {
-        #expect(EventListLayout.resolve(mode: .wide, showsMap: true) == .sideBySide)
-        #expect(EventListLayout.resolve(mode: .wide, showsMap: false) == .switchable)
-        #expect(EventListLayout.resolve(mode: .regular, showsMap: true) == .switchable)
-        #expect(EventListLayout.resolve(mode: .compact, showsMap: true) == .switchable)
+    @Test func onlyAWideWindowGetsTheSideBySideLayout() {
+        #expect(EventListLayout.resolve(mode: .wide) == .sideBySide)
+        #expect(EventListLayout.resolve(mode: .regular) == .switchable)
+        #expect(EventListLayout.resolve(mode: .compact) == .switchable)
     }
 }
 

@@ -24,7 +24,10 @@ nonisolated struct MessageDraft: Equatable, Sendable {
         case attachmentsPending
     }
 
-    var trimmedText: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var trimmedText: String { text.trimmed }
+
+    /// The length the backend will judge: the trimmed text in UTF-16 units.
+    private var length: Int { trimmedText.wireLength }
 
     /// The pictures the send may name.
     var uploadedRefs: [AttachmentRef] { attachments.compactMap(\.uploadedRef) }
@@ -32,20 +35,24 @@ nonisolated struct MessageDraft: Equatable, Sendable {
     var issues: [Issue] {
         var issues: [Issue] = []
         if trimmedText.isEmpty && uploadedRefs.isEmpty { issues.append(.empty) }
-        if trimmedText.wireLength > AppConfig.Chat.messageMaxLength { issues.append(.tooLong) }
+        if length > AppConfig.Chat.messageMaxLength { issues.append(.tooLong) }
         if attachments.contains(where: { $0.uploadedRef == nil }) { issues.append(.attachmentsPending) }
         return issues
     }
 
     var isValid: Bool { issues.isEmpty }
 
-    /// Characters the backend still accepts; negative once the draft is too long.
-    var remaining: Int { AppConfig.Chat.messageMaxLength - text.wireLength }
+    /// Characters the backend still accepts, counting the text as it would be sent (trimmed); negative once the draft
+    /// is too long.
+    var remaining: Int { AppConfig.Chat.messageMaxLength - length }
+
+    /// Whether the composer shows the characters-left counter: once the text nears the limit (`counterThreshold`).
+    var showsCounter: Bool { length >= AppConfig.Chat.counterThreshold }
 
     var payload: SendMessagePayload {
         let refs = uploadedRefs
         return SendMessagePayload(clientMessageId: clientMessageID,
-                                  text: trimmedText.isEmpty ? nil : trimmedText,
+                                  text: text.nonBlankTrimmed,
                                   replyToMessageId: replyTo?.messageId,
                                   attachments: refs.isEmpty ? nil : refs)
     }

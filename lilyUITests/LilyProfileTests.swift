@@ -1,8 +1,9 @@
 import XCTest
 
 /// The contact form on Profile: a guest is sent to sign in first, a user picks what the message is about, writes it
-/// and is thanked; the mock accepts the send, so no backend is needed. And the currency row: a pick changes the
-/// currency the create form's price and the filter's cap are typed in.
+/// and is thanked; the mock accepts the send, so no backend is needed. The currency row: a pick changes the
+/// currency the create form's price and the filter's cap are typed in. And Sign out: it returns to the landing and
+/// forgets the session.
 final class LilyProfileTests: LilyUITestCase {
     /// The symbol the en_US simulator shows for złoty is the code itself; a Polish device shows "zł".
     private static let zlotySymbols: Set<String> = ["PLN", "zł"]
@@ -20,7 +21,9 @@ final class LilyProfileTests: LilyUITestCase {
         let zloty = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'PLN'")).firstMatch
         XCTAssertTrue(zloty.waitForExistence(timeout: 5), "the menu names each currency by code and name")
         zloty.tap()
-        XCTAssertTrue(app.buttons["profile-currency"].label.contains("PLN"), "the picker reads its title and the choice")
+        let picked = app.buttons
+            .matching(NSPredicate(format: "identifier == 'profile-currency' AND label CONTAINS 'PLN'")).firstMatch
+        XCTAssertTrue(picked.waitForExistence(timeout: 5), "the row reads its title and the choice")
 
         openExploreTab()
         tapCreateButton()
@@ -59,11 +62,34 @@ final class LilyProfileTests: LilyUITestCase {
 
         app.buttons["Bug"].tap()
         enter("The map shows no pins after I change the radius.", into: app.descendants(matching: .any)["feedback-message"])
-        XCTAssertTrue(send.wait(for: \.isEnabled, toEqual: true, timeout: 5))
+        assertBecomesEnabled(send, "a message enables Send")
         send.tap()
 
         XCTAssertTrue(app.staticTexts["Thanks for writing"].waitForExistence(timeout: 5))
         app.buttons["feedback-done"].tap()
         XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
+    }
+
+    /// Sign out on Profile returns to the landing and forgets the session: the next way in is a guest's.
+    @MainActor
+    func testSigningOutReturnsToTheLanding() {
+        tapSignInWithApple()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+        openProfileTab()
+        XCTAssertTrue(app.staticTexts["Apple Tester"].waitForExistence(timeout: 5))
+
+        let signOut = app.buttons["Sign out"]
+        XCTAssertTrue(signOut.waitForExistence(timeout: 5))
+        scrollUntilHittable(signOut)
+        signOut.tap()
+        let enter = app.buttons["Find a game near you"]
+        XCTAssertTrue(enter.waitForExistence(timeout: 10), "a sign-out returns to the landing")
+        XCTAssertFalse(app.tabBars.firstMatch.exists, "the shell is gone")
+
+        enter.tap()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
+        openHomeTab()
+        XCTAssertTrue(app.staticTexts["You're browsing as a guest"].waitForExistence(timeout: 5), "the session was forgotten")
+        XCTAssertFalse(app.buttons["group-row-mock-group-kickers"].exists)
     }
 }

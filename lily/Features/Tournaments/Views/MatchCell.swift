@@ -1,10 +1,11 @@
 import SwiftUI
 
 /// One match as a plain fill on the surface, never glass (a bracket draws dozens at once, and Liquid Glass is for the
-/// controls): both sides with their seeds, the score or an en dash, the winner in ink and the loser faded, "Bye" or
-/// "TBD" for an empty side, a flag while a dispute is open, and a faint accent border on the caller's own match. The list
-/// variant adds the status and, when set, the time and place under the sides; a bye's empty side already reads "Bye",
-/// so its caption is left out rather than saying it twice.
+/// controls): both sides with their seeds, the score or an en dash, the winner in ink and the loser faded (a draw fades
+/// neither side), "Bye" or "TBD" for an empty side, a flag while a dispute is open, and a faint accent border on the
+/// caller's own match. The list variant adds the status and, when set, the time and place under the sides (wrapping
+/// when they do not fit one line); a bye's empty side already reads "Bye", so its caption is left out rather than
+/// saying it twice.
 struct MatchCell: View {
     let match: TournamentMatch
     let viewModel: TournamentDetailViewModel
@@ -12,7 +13,6 @@ struct MatchCell: View {
     var showsDetails = false
 
     private typealias Copy = AppBranding.Tournaments
-    private static let dateStyle = Date.FormatStyle(date: .abbreviated, time: .shortened)
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
@@ -35,14 +35,15 @@ struct MatchCell: View {
 
     /// One side: seed, name, the flag (on the first side only) and the score.
     private func side(_ entryID: String?, score: Int?, flagged: Bool) -> some View {
-        HStack(spacing: DesignTokens.Spacing.sm) {
+        let outcome = match.outcome(for: entryID)
+        return HStack(spacing: DesignTokens.Spacing.sm) {
             if let seed = viewModel.entry(entryID)?.seed {
                 Text(String(seed))
                     .font(LilyTheme.Fonts.caption)
                     .foregroundStyle(.secondary)
             }
             Text(name(of: entryID))
-                .fontWeight(isWinner(entryID) ? .semibold : .regular)
+                .fontWeight(outcome == .won ? .semibold : .regular)
                 .lineLimit(1)
             Spacer(minLength: DesignTokens.Spacing.sm)
             if flagged {
@@ -56,23 +57,23 @@ struct MatchCell: View {
         .font(.subheadline)
         .monospacedDigit()
         .foregroundStyle(entryID == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.lilyInk))
-        .opacity(isLoser(entryID) ? DesignTokens.Opacity.matchLoser : 1)
+        .opacity(outcome == .lost ? DesignTokens.Opacity.matchLoser : 1)
     }
 
-    private var hasSchedule: Bool { match.scheduledAt != nil || match.location != nil }
     /// A bye says so on its empty side; anything else has a status to caption.
-    private var hasDetails: Bool { match.status != .bye || hasSchedule }
+    private var hasDetails: Bool { match.status != .bye || match.hasSchedule }
 
-    /// The status (an open dispute wins over it) and the schedule, in one caption line.
+    /// The status (an open dispute wins over it) and the schedule as one caption: a row while the three fit, else the
+    /// place wraps under the time, so a time and a long venue never truncate each other (seen in the sheet's cell).
     private var details: some View {
-        HStack(spacing: DesignTokens.Spacing.md) {
+        FlowLayout(spacing: DesignTokens.Spacing.md, rowSpacing: DesignTokens.Spacing.xs) {
             if match.status != .bye {
                 Text(match.isOpenDispute ? Copy.Match.disputed : Copy.Match.status(match.status))
                     .foregroundStyle(match.isOpenDispute ? AnyShapeStyle(Color.lilyAccent) : AnyShapeStyle(.secondary))
             }
             if let scheduledAt = match.scheduledAt {
                 Label {
-                    Text(scheduledAt, format: Self.dateStyle)
+                    Text(scheduledAt, format: LilyTheme.DateStyles.dateTime)
                 } icon: {
                     Image(systemName: DesignTokens.Symbols.scheduled)
                 }
@@ -90,14 +91,6 @@ struct MatchCell: View {
     private func name(of entryID: String?) -> String {
         if entryID == nil, match.status == .bye { return Copy.bye }
         return viewModel.entryName(entryID)
-    }
-
-    private func isWinner(_ entryID: String?) -> Bool {
-        entryID != nil && match.winnerEntryId == entryID
-    }
-
-    private func isLoser(_ entryID: String?) -> Bool {
-        entryID != nil && match.isDecided && match.winnerEntryId != entryID
     }
 }
 

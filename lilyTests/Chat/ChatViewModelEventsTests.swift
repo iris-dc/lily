@@ -44,6 +44,40 @@ struct ChatViewModelEventsTests {
         #expect(await viewModel.destination(for: .fixture(id: "t", text: "plain")) == nil, "a text row has no game")
     }
 
+    /// Until 2026-10-13 a deleted game earned a GET and a warning on every scroll-in of its row.
+    @Test func aGoneGameIsLookedUpOnce() async {
+        let (harness, viewModel) = await makeChat()
+
+        await viewModel.loadLinkedContent(for: systemRow)
+        await viewModel.loadLinkedContent(for: systemRow)
+
+        #expect(harness.events.fetchedEventIDs == ["e"])
+        #expect(harness.chatLogs(.warning).filter { $0.hasPrefix("Event e behind a system row") }.count == 1)
+        #expect(viewModel.systemText(for: systemRow) == "Marta created a game")
+        #expect(viewModel.systemRows.linked.unavailableEventIDs == ["e"])
+
+        #expect(await viewModel.destination(for: systemRow) == nil)
+        #expect(harness.events.fetchedEventIDs == ["e", "e"], "a tap still asks, so the popup can say why")
+        #expect(harness.errorCenter.current?.error == .eventNotFound)
+    }
+
+    @Test func aTransientlyUnavailableGameIsLookedUpAgain() async {
+        let (harness, viewModel) = await makeChat()
+        harness.events.thrownError = AppError.network
+
+        await viewModel.loadLinkedContent(for: systemRow)
+        await viewModel.loadLinkedContent(for: systemRow)
+
+        #expect(harness.events.fetchedEventIDs == ["e", "e"])
+        #expect(harness.chatLogs(.warning).filter { $0.hasPrefix("Event e behind a system row") }.count == 2)
+        #expect(viewModel.systemRows.linked.unavailableEventIDs.isEmpty)
+
+        harness.events.thrownError = nil
+        harness.events.result = .success([game])
+        await viewModel.loadLinkedContent(for: systemRow)
+        #expect(viewModel.systemText(for: systemRow) == "Marta created Sunday 5-a-side")
+    }
+
     @Test func aLiveEventCreatedRowBumpsTheEventChanges() async {
         let (harness, viewModel) = await makeChat()
         await viewModel.appear()

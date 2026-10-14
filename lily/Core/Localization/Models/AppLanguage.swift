@@ -2,7 +2,7 @@ import Foundation
 
 /// The languages the app ships copy in, as `Localizable.xcstrings` lists them. English is the source language and the
 /// fallback for every device language the catalog does not cover.
-nonisolated enum AppLanguage: String, CaseIterable, Codable, Hashable, Sendable {
+nonisolated enum AppLanguage: String, CaseIterable, Sendable {
     case english = "en"
     case russian = "ru"
     case spanish = "es"

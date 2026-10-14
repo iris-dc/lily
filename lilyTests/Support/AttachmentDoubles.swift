@@ -4,14 +4,10 @@ import Foundation
 /// Records every upload and answers at once, or after `releaseRequests()` while `holdsRequests`; `errors` are thrown
 /// one per upload, `error` by every one. Reports half-way progress before the hold and full progress after.
 @MainActor
-final class FakeAttachmentUploader: AttachmentUploader {
+final class FakeAttachmentUploader: AttachmentUploader, HoldsRequests {
     var error: (any Error)?
     var errors: [any Error] = []
-    var holdsRequests: Bool {
-        get { hold.isEnabled }
-        set { hold.isEnabled = newValue }
-    }
-    private let hold = RequestHold()
+    let hold = RequestHold()
     private(set) var uploads: [(draft: AttachmentDraft, ticket: UploadTicket)] = []
     /// Uploads started and not yet answered.
     private(set) var inFlight = 0
@@ -23,15 +19,10 @@ final class FakeAttachmentUploader: AttachmentUploader {
         inFlight += 1
         defer { inFlight -= 1 }
         progress(0.5)
-        await hold.wait()
-        try Task.checkCancellation()
+        try await hold.waitOrThrow()
         if !errors.isEmpty { throw errors.removeFirst() }
         if let error { throw error }
         progress(1)
-    }
-
-    func releaseRequests() {
-        hold.release()
     }
 }
 
@@ -39,25 +30,21 @@ final class FakeAttachmentUploader: AttachmentUploader {
 /// answers have real files to copy and read; a video or a file is answered over a copy of its own in tmp (`<id>.mp4`
 /// with a thumbnail, `<id>.<ext>`), as the real preparers do, because the composer removes a picked movie once the
 /// preparer is done with it. `error` refuses everything; `photo`, `video` and `file` are what the mock picker hands over.
+/// Like the real preparers' detached work, a prepare of any kind cancelled while held still delivers its files, so the
+/// model's handling of a late answer for a removed slot can be tested.
 @MainActor
-final class FakeMediaPreparer: MediaPreparer {
+final class FakeMediaPreparer: MediaPreparer, HoldsRequests {
     var error: (any Error)?
     var photo: Data?
     var video: URL?
     var file: URL?
-    var holdsRequests: Bool {
-        get { hold.isEnabled }
-        set { hold.isEnabled = newValue }
-    }
-    private let hold = RequestHold()
+    let hold = RequestHold()
     private(set) var preparedIDs: [String] = []
     private(set) var preparedVideoURLs: [URL] = []
     private(set) var preparedFileURLs: [URL] = []
     /// The room's caps each prepare was given, in order.
     private(set) var preparedCaps: [AttachmentCaps] = []
 
-    /// Like the real preparer's detached work, a prepare cancelled while held still delivers its files, so the model's
-    /// handling of a late answer for a removed slot can be tested.
     func prepareImage(_ data: Data, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {
         preparedIDs.append(id)
         preparedCaps.append(caps)
@@ -71,7 +58,6 @@ final class FakeMediaPreparer: MediaPreparer {
         preparedVideoURLs.append(url)
         preparedCaps.append(caps)
         await hold.wait()
-        try Task.checkCancellation()
         if let error { throw error }
         let draft = AttachmentDraft.fixture(id: id, kind: .video, fileURL: try Self.copy(url, to: "\(id).mp4"), state: .preparing)
         if let thumbnailURL = draft.thumbnailURL { try Data("thumb".utf8).write(to: thumbnailURL) }
@@ -83,7 +69,6 @@ final class FakeMediaPreparer: MediaPreparer {
         preparedFileURLs.append(url)
         preparedCaps.append(caps)
         await hold.wait()
-        try Task.checkCancellation()
         if let error { throw error }
         let own = try Self.copy(url, to: url.pathExtension.isEmpty ? id : "\(id).\(url.pathExtension)")
         return .fixture(id: id, kind: .file, fileURL: own, fileName: url.lastPathComponent, state: .preparing)
@@ -102,15 +87,11 @@ final class FakeMediaPreparer: MediaPreparer {
     func videoWithoutPicker() -> URL? { video }
 
     func fileWithoutPicker() -> URL? { file }
-
-    func releaseRequests() {
-        hold.release()
-    }
 }
 
-/// An attachment cache in memory: downloaded bytes go to a temporary file, copies are recorded and answered as the
-/// source itself (nothing is copied), evictions are counted, and a `storeError` is what both stores refuse with (a
-/// full disk), before anything is written or recorded.
+/// An attachment cache in memory: downloaded bytes go to a file in a directory of the instance's own (removed by
+/// `clear()`), copies are recorded and answered as the source itself (nothing is copied), `evict()` has nothing to do,
+/// and a `storeError` is what both stores refuse with (a full disk), before anything is written or recorded.
 @MainActor
 final class FakeAttachmentCache: AttachmentCache {
     struct Copy: Equatable {
@@ -120,10 +101,10 @@ final class FakeAttachmentCache: AttachmentCache {
     }
 
     var storeError: (any Error)?
+    private let directory = FileManager.default.temporaryDirectory
+        .appending(path: "fake-cache-\(UUID().uuidString)", directoryHint: .isDirectory)
     private var files: [String: URL] = [:]
     private(set) var copied: [Copy] = []
-    private(set) var evictCount = 0
-    private(set) var clearCount = 0
 
     func fileURL(for id: String, variant: AttachmentVariant) -> URL? {
         files[id + variant.fileSuffix]
@@ -132,7 +113,8 @@ final class FakeAttachmentCache: AttachmentCache {
     @discardableResult
     func store(_ data: Data, for id: String, variant: AttachmentVariant) async throws -> URL {
         if let storeError { throw storeError }
-        let url = FileManager.default.temporaryDirectory.appending(path: "fake-cache-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appending(path: UUID().uuidString)
         try data.write(to: url)
         files[id + variant.fileSuffix] = url
         return url
@@ -146,13 +128,11 @@ final class FakeAttachmentCache: AttachmentCache {
         return fileURL
     }
 
-    func evict() async {
-        evictCount += 1
-    }
+    func evict() async {}
 
     func clear() async {
-        clearCount += 1
         files = [:]
+        try? FileManager.default.removeItem(at: directory)
     }
 }
 

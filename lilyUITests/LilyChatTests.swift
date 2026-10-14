@@ -2,22 +2,31 @@ import XCTest
 
 /// The Chats tab against the mock repositories: the pinned inbox row over the caller's rooms, the inbox itself with
 /// Noor's invite into Climbing Buddies and the reminder for the first fixture game, deleting the conversation with
-/// Marta from the room's menu, replying, and attaching a photo and a file through the mock picker. Identifiers mirror
+/// Marta from the room's menu, replying, attaching a photo and a file through the mock picker, and paging through five
+/// pictures in the viewer (helpers in `LilyChatTests+Attachments.swift`). Identifiers mirror
 /// `AccessibilityIdentifiers(+Inbox, +Attachments)`; the item ids mirror `MockInboxFixtures` (the tournament invite
 /// and the match reminder, ids 1 and 3, are `LilyTournamentTests`').
 final class LilyChatTests: LilyUITestCase {
     let inviteID = "01J8MOCKNB0000000000000004"
     let reminderID = "01J8MOCKNB0000000000000002"
 
+    /// The tab's badge sums the unread rooms (Kickers, the conversation with Marta) and the unseen inbox; opening a
+    /// room takes its share off and leaves the inbox's.
     @MainActor
     func testChatsTabShowsInboxRowAndRooms() {
         tapSignInWithApple()
+        let chats = app.tabBars.buttons["Chats"]
+        XCTAssertTrue(chats.waitForExistence(timeout: 10))
+        expectBadge(of: chats, toRead: "3 unread chats")
         openChatsTab()
 
         XCTAssertTrue(app.buttons["inbox-row"].waitForExistence(timeout: 10))
         XCTAssertTrue(labelled("Noor invited you to Climbing Buddies").waitForExistence(timeout: 5),
                       "the inbox row previews its newest item")
         XCTAssertTrue(app.buttons["group-row-mock-group-kickers"].exists, "the caller's rooms follow the inbox")
+
+        openRoomAndComeBack("group-row-mock-group-kickers")
+        expectBadge(of: chats, toRead: "2 unread chats")
     }
 
     /// Accepting joins the group and opens its chat on the Chats stack; on the way back the card says "You joined",
@@ -73,11 +82,8 @@ final class LilyChatTests: LilyUITestCase {
     @MainActor
     func testDeletingTheConversationWithMartaRemovesItFromChats() {
         tapSignInWithApple()
-        openChatsTab()
+        openRoom("group-row-mock-dm-mock-user-marta", titled: "Marta")
         let marta = app.buttons["group-row-mock-dm-mock-user-marta"]
-        XCTAssertTrue(marta.waitForExistence(timeout: 10))
-        marta.tap()
-        XCTAssertTrue(app.navigationBars["Marta"].waitForExistence(timeout: 10))
 
         let more = app.buttons["chat-more"]
         XCTAssertTrue(more.waitForExistence(timeout: 5))
@@ -102,20 +108,13 @@ final class LilyChatTests: LilyUITestCase {
     @MainActor
     func testReplyingQuotesTheOriginalInTheBubble() {
         tapSignInWithApple()
-        openChatsTab()
-        let kickers = app.buttons["group-row-mock-group-kickers"]
-        XCTAssertTrue(kickers.waitForExistence(timeout: 10))
-        kickers.tap()
+        openRoom("group-row-mock-group-kickers", titled: "Kreuzberg Kickers")
         let original = "Anyone up for a game this week?"
         let line = app.staticTexts[original]
         XCTAssertTrue(line.waitForExistence(timeout: 10))
         // The room's first row: the transcript opens at the bottom, so bring it on screen before the long press, and
         // press again when the runner turned the press into a scroll (a CI runner did, 2026-10-09).
-        var swipes = 0
-        while !line.isHittable && swipes < 6 {
-            app.swipeDown()
-            swipes += 1
-        }
+        scrollUntilHittable(line, direction: .down, maxSwipes: 6)
         let reply = app.buttons["Reply"]
         var presses = 0
         while !reply.exists && presses < 3 {
@@ -146,27 +145,11 @@ final class LilyChatTests: LilyUITestCase {
     /// Send opens once it is uploaded, the sent bubble is the picture, and a tap opens the viewer.
     @MainActor
     func testAttachingPhotoSendsImageBubble() {
-        relaunch(appending: "-mock-attachment-picker")
-        tapSignInWithApple()
-        openChatsTab()
-        let kickers = app.buttons["group-row-mock-group-kickers"]
-        XCTAssertTrue(kickers.waitForExistence(timeout: 10))
-        kickers.tap()
-        XCTAssertTrue(app.navigationBars["Kreuzberg Kickers"].waitForExistence(timeout: 10))
-
-        let attach = app.buttons["chat-attach"]
-        XCTAssertTrue(attach.waitForExistence(timeout: 5), "the composer offers the attach menu")
-        attach.tap()
-        let library = app.buttons["Photo library"]
-        XCTAssertTrue(library.waitForExistence(timeout: 5), "the menu offers the photo library")
-        library.tap()
-
-        let strip = app.descendants(matching: .any)["chat-attachment-strip"]
-        XCTAssertTrue(strip.waitForExistence(timeout: 10), "the picked photo shows above the field")
+        let strip = attachFromKickersRoom("Photo library")
         let removes = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'chat-attachment-remove-'"))
         XCTAssertTrue(removes.firstMatch.waitForExistence(timeout: 5), "the tile carries its X")
         let send = app.buttons["chat-send"]
-        XCTAssertTrue(send.wait(for: \.isEnabled, toEqual: true, timeout: 10), "Send opens once the upload is done")
+        assertBecomesEnabled(send, "Send opens once the upload is done", timeout: 10)
         send.tap()
 
         let pictures = app.descendants(matching: .any)
@@ -188,26 +171,10 @@ final class LilyChatTests: LilyUITestCase {
     /// whose own bar names the file and offers Done (an X labelled "close" on iOS 26, under QuickLook's identifier).
     @MainActor
     func testAttachingFileShowsCardThatOpensQuickLook() {
-        relaunch(appending: "-mock-attachment-picker")
-        tapSignInWithApple()
-        openChatsTab()
-        let kickers = app.buttons["group-row-mock-group-kickers"]
-        XCTAssertTrue(kickers.waitForExistence(timeout: 10))
-        kickers.tap()
-        XCTAssertTrue(app.navigationBars["Kreuzberg Kickers"].waitForExistence(timeout: 10))
-
-        let attach = app.buttons["chat-attach"]
-        XCTAssertTrue(attach.waitForExistence(timeout: 5))
-        attach.tap()
-        let file = app.buttons["File"]
-        XCTAssertTrue(file.waitForExistence(timeout: 5), "the menu offers File")
-        file.tap()
-
-        let strip = app.descendants(matching: .any)["chat-attachment-strip"]
-        XCTAssertTrue(strip.waitForExistence(timeout: 10), "the picked file shows above the field")
+        let strip = attachFromKickersRoom("File")
         XCTAssertTrue(strip.staticTexts["training-plan.pdf"].waitForExistence(timeout: 5), "the chip names the file")
         let send = app.buttons["chat-send"]
-        XCTAssertTrue(send.wait(for: \.isEnabled, toEqual: true, timeout: 10), "Send opens once the upload is done")
+        assertBecomesEnabled(send, "Send opens once the upload is done", timeout: 10)
         send.tap()
 
         let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'message-attachment-file-'"))
@@ -225,13 +192,40 @@ final class LilyChatTests: LilyUITestCase {
         XCTAssertTrue(cards.firstMatch.exists, "the chat is back")
     }
 
-    /// Opens the Chats tab and pushes the inbox from its pinned row (the inbox is titled with the app's name).
+    /// Five pictures draw four tiles and "+1"; the last tile opens the fifth picture and the viewer pages back through
+    /// all of them, stopping at the first.
     @MainActor
-    private func openInbox() {
-        openChatsTab()
-        let row = app.buttons["inbox-row"]
-        XCTAssertTrue(row.waitForExistence(timeout: 10))
-        row.tap()
-        XCTAssertTrue(app.navigationBars["iskra"].waitForExistence(timeout: 5))
+    func testOverflowTileOpensTheFifthPictureAndTheViewerPagesThroughAll() {
+        openKickersRoomWithMockPicker()
+        attachPhotosFromTheMockLibrary(5)
+        let tiles = sendAndWaitForTiles(4)
+        XCTAssertTrue(app.staticTexts["+1"].waitForExistence(timeout: 5), "the last tile counts the hidden picture")
+        openTile(tiles.element(boundBy: 3))
+        XCTAssertTrue(viewerShows("5 / 5"), "the +1 tile opens the fifth picture")
+        XCTAssertTrue(viewerShows(["4 / 5", "3 / 5", "2 / 5", "1 / 5", "1 / 5"], swiping: .right), "the first stays")
+        XCTAssertTrue(viewerShows(["2 / 5"], swiping: .left), "a swipe left pages forward again")
+        app.buttons["attachment-viewer-close"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["attachment-viewer"].waitForNonExistence(timeout: 5))
+    }
+}
+
+/// The Chats root's helpers: the inbox push, and the tab's badge, read through the tab button's accessibility value
+/// (`AppBranding.Chats.unreadChats`) because the badge itself is not in the accessibility tree.
+private extension LilyChatTests {
+    /// Waits for the tab's value to read `expected`, naming what it read instead when it never does.
+    @MainActor
+    func expectBadge(of tab: XCUIElement, toRead expected: String) {
+        let reads = expectation(for: NSPredicate(format: "value == %@", expected), evaluatedWith: tab)
+        let outcome = XCTWaiter().wait(for: [reads], timeout: 10)
+        XCTAssertEqual(outcome, .completed, "the Chats badge reads \(tab.value as? String ?? "nothing"), not \(expected)")
+    }
+
+    /// Opens the room behind `rowID` from the Chats root and pops back to the root.
+    @MainActor
+    func openRoomAndComeBack(_ rowID: String) {
+        app.buttons[rowID].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["chat-composer"].waitForExistence(timeout: 10), "the room opens")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 5), "back on the Chats root")
     }
 }

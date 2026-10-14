@@ -87,17 +87,3 @@ nonisolated struct MatchSchedulePayload: Encodable, Equatable, Sendable {
         location = schedule.location.map { CreateEventPayload.Location(name: $0.name, coordinate: $0.coordinate) }
     }
 }
-
-/// What keeps a team's name from being sent, judged against `AppConfig.Tournaments.teamNameLength`.
-nonisolated enum TeamNameIssue: Hashable, Sendable {
-    case tooShort
-    case tooLong
-
-    static func issue(in name: String) -> TeamNameIssue? {
-        let length = name.trimmingCharacters(in: .whitespacesAndNewlines).wireLength
-        let limits = AppConfig.Tournaments.teamNameLength
-        if length < limits.lowerBound { return .tooShort }
-        if length > limits.upperBound { return .tooLong }
-        return nil
-    }
-}

@@ -12,6 +12,7 @@ struct TournamentDraftTests {
         #expect(draft.effectiveVisibility == .public && !draft.isTeam)
     }
 
+    /// The form's sections top to bottom: Tournament (the name), Where, When, Entries, Details.
     @Test func issuesComeInFormOrder() {
         var draft = TournamentDraft(startsAt: Self.now, clientId: "id")
         draft.teamSize = 12
@@ -19,8 +20,8 @@ struct TournamentDraftTests {
         draft.registrationClosesAt = Self.now.addingTimeInterval(3600)
         draft.description = String(repeating: "x", count: AppConfig.Tournaments.descriptionMaxLength + 1)
 
-        #expect(draft.issues(now: Self.now) == [.nameTooShort, .teamSizeOutOfRange, .maxEntriesOutOfRange, .startsAtTooSoon,
-                                                .registrationClosesAfterStart, .locationNameMissing, .coordinateMissing,
+        #expect(draft.issues(now: Self.now) == [.nameTooShort, .locationNameMissing, .coordinateMissing, .startsAtTooSoon,
+                                                .registrationClosesAfterStart, .teamSizeOutOfRange, .maxEntriesOutOfRange,
                                                 .descriptionTooLong])
     }
 
@@ -47,12 +48,30 @@ struct TournamentDraftTests {
         #expect(TournamentDraft.Rules.editing(entryCount: 5).entriesRange(for: .singleElimination) == 5...64)
     }
 
+    /// A format change pulls the entries back under the new cap and raises nothing: switching back keeps the number.
+    @Test func changingTheFormatClampsTheEntries() {
+        var draft = TournamentDraft.fixture(now: Self.now)
+        draft.maxEntries = 64
+        draft.select(format: .roundRobin)
+        #expect(draft.format == .roundRobin && draft.maxEntries == 12)
+        #expect(!draft.issues(now: Self.now).contains(.maxEntriesOutOfRange))
+        draft.select(format: .singleElimination)
+        #expect(draft.format == .singleElimination && draft.maxEntries == 12, "switching back raises nothing")
+
+        var underTheCap = TournamentDraft.fixture(now: Self.now)
+        underTheCap.maxEntries = 8
+        underTheCap.select(format: .roundRobin)
+        #expect(underTheCap.maxEntries == 8, "under the cap nothing moves")
+    }
+
     /// An edit has no lead time and never fewer entries than are already in.
     @Test func editingRulesFloorTheEntriesAndDropTheLeadTime() {
         let tournament = Tournament.fixture(entryCount: 6, startsAt: Self.now.addingTimeInterval(60))
         var draft = TournamentDraft(editing: tournament)
         let rules = TournamentDraft.Rules.editing(entryCount: 6)
         #expect(draft.issues(now: Self.now, rules: rules).isEmpty)
+        #expect(TournamentDraft.earliestStart(now: Self.now, rules: rules) == Self.now,
+                "a tournament edit keeps no margin: its backend has no future check")
         #expect(draft.issues(now: Self.now) == [.startsAtTooSoon], "the creation rules want fifteen minutes")
         draft.maxEntries = 5
         #expect(draft.issues(now: Self.now, rules: rules) == [.maxEntriesBelowEntries])
@@ -112,11 +131,5 @@ struct TournamentDraftTests {
         #expect(!draft.resolvedAllowsDraws)
         draft.allowsDraws = true
         #expect(draft.resolvedAllowsDraws, "the organiser's choice wins over the default")
-    }
-
-    @Test func teamNamesAreJudgedAgainstTheBackendsLimits() {
-        #expect(TeamNameIssue.issue(in: "A") == .tooShort && TeamNameIssue.issue(in: " ") == .tooShort)
-        #expect(TeamNameIssue.issue(in: "Görli Giants") == nil)
-        #expect(TeamNameIssue.issue(in: String(repeating: "x", count: 41)) == .tooLong)
     }
 }

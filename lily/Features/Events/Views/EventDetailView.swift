@@ -19,9 +19,12 @@ struct EventDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     EventTypeChip(type: event.type)
-                    titleBlock
+                    OwnerTitleBlock(title: event.title,
+                                    subtitle: AppBranding.hostedByTitle(for: event.hostName),
+                                    destination: viewModel.hostProfile,
+                                    identifier: AccessibilityIdentifiers.eventHost)
                     if let group = event.group {
-                        groupLine(group)
+                        HostedInLine(group: group)
                     }
                     if let description = event.description {
                         Text(description).font(.body)
@@ -35,7 +38,7 @@ struct EventDetailView: View {
                     }
                     participationControl
                 }
-                .padding(DesignTokens.Spacing.xl)
+                .padding(DesignTokens.Layout.detailMargin)
                 .readableColumn()
             }
         }
@@ -62,27 +65,6 @@ struct EventDetailView: View {
             .accessibilityIdentifier(AccessibilityIdentifiers.eventEdit)
     }
 
-    /// The title with "Hosted by <name>" under it, a link to the host's profile when the caller may open it.
-    private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-            ScreenTitle(text: event.title)
-            if let host = viewModel.hostProfile {
-                NavigationLink(value: host) {
-                    HStack(spacing: DesignTokens.Spacing.xs) {
-                        ScreenSubtitle(text: AppBranding.hostedByTitle(for: event.hostName))
-                        Image(systemName: DesignTokens.Symbols.chevron)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier(AccessibilityIdentifiers.eventHost)
-            } else {
-                ScreenSubtitle(text: AppBranding.hostedByTitle(for: event.hostName))
-            }
-        }
-    }
-
     /// "Who's in": the host first, then everyone else, each row opening the person's profile except the caller's own.
     private var participantsSection: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
@@ -95,29 +77,6 @@ struct EventDetailView: View {
                 ParticipantRow(participant: participant, isSelf: viewModel.isSelf(participant))
             }
         }
-    }
-
-    /// "Hosted in <group>": a link to the group when it is public and live, its name alone otherwise; a private
-    /// group's game says so, since the link is withheld on purpose.
-    private func groupLine(_ group: EventGroupRef) -> some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-            if group.isLinkable {
-                NavigationLink(value: group) {
-                    Label(AppBranding.Groups.hostedIn(groupName: group.name), systemImage: DesignTokens.Symbols.groups)
-                        .foregroundStyle(Color.lilyAccent)
-                }
-                .buttonStyle(.plain)
-            } else {
-                Label(AppBranding.Groups.hostedIn(groupName: group.name), systemImage: DesignTokens.Symbols.groups)
-                    .foregroundStyle(.secondary)
-            }
-            if group.isPrivate {
-                Text(AppBranding.Groups.membersOnly)
-                    .font(LilyTheme.Fonts.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .font(.subheadline)
     }
 
     private func lookingForCard(_ text: String) -> some View {
@@ -138,38 +97,19 @@ struct EventDetailView: View {
         case .hidden:
             EmptyView()
         case .join:
-            actionButton(AppBranding.joinAction) { await viewModel.join() }
+            BusyButton(AppBranding.joinAction, isBusy: viewModel.isBusy) { await viewModel.join() }
                 .lilyProminentButton()
         case .leave:
-            actionButton(AppBranding.leaveAction) { await viewModel.leave() }
+            BusyButton(AppBranding.leaveAction, isBusy: viewModel.isBusy) { await viewModel.leave() }
                 .lilyGlassButton()
         case .full:
-            actionButton(AppBranding.eventFullAction)
+            BusyButton(AppBranding.eventFullAction, isBusy: viewModel.isBusy)
                 .lilyProminentButton()
         case .hosting:
             Text(AppBranding.hostingNotice)
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
         }
-    }
-
-    /// Action with a spinner beside its title while the request runs. Without an action it is disabled. The caller
-    /// applies the button style, which also sets the full width and height (see the Buttons note in CLAUDE.md).
-    private func actionButton(_ title: String, action: (() async -> Void)? = nil) -> some View {
-        Button {
-            Task { await action?() }
-        } label: {
-            HStack(spacing: DesignTokens.Spacing.sm) {
-                Text(title)
-                if viewModel.isBusy {
-                    // The button's `.large` control size would inflate the spinner past the text height.
-                    ProgressView()
-                        .controlSize(.regular)
-                        .accessibilityHidden(true)
-                }
-            }
-        }
-        .disabled(action == nil || viewModel.isBusy)
     }
 }
 

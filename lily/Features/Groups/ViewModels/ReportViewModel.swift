@@ -2,9 +2,9 @@ import Foundation
 import Observation
 
 /// The report sheet: a reason, an optional comment, one send. What is reported is fixed when the sheet opens (a
-/// tournament, in time a group or a message); the backend keeps the report and answers a receipt, and the sheet thanks
-/// the caller. Failures reach the popup through the reporter; nothing is retried, a repeat on the same target answers
-/// the same report.
+/// tournament, a group or a message); the backend keeps the report and answers a receipt, and the sheet thanks the
+/// caller. Failures reach the popup through the reporter; nothing is retried, a repeat on the same target answers the
+/// same report.
 @Observable
 final class ReportViewModel {
     let target: ReportTarget
@@ -31,9 +31,13 @@ final class ReportViewModel {
         self.logger = logger
     }
 
-    /// A reason picked, a comment within the backend's limit, nothing in flight.
+    /// The comment as it is sent. The vertical-axis field inserts newlines, so a comment of exactly the limit followed
+    /// by Return must still pass.
+    var trimmedComment: String { comment.trimmed }
+
+    /// A reason picked, the sent comment within the backend's limit, nothing in flight.
     var canSubmit: Bool {
-        reason != nil && !isSubmitting && comment.wireLength <= AppConfig.Moderation.commentMaxLength
+        reason != nil && !isSubmitting && trimmedComment.wireLength <= AppConfig.Moderation.commentMaxLength
     }
 
     func submit() async {
@@ -41,7 +45,8 @@ final class ReportViewModel {
         isSubmitting = true
         defer { isSubmitting = false }
         do {
-            let receipt = try await repository.report(ReportPayload(target: target, reason: reason, comment: comment))
+            let payload = ReportPayload(target: target, reason: reason, comment: trimmedComment)
+            let receipt = try await repository.report(payload)
             isSubmitted = true
             logger.info(target.logCategory, "Report \(receipt.id) filed on \(target.kind.rawValue) \(target.id)")
         } catch {

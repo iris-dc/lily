@@ -1,11 +1,10 @@
 import Foundation
 @testable import lily
 
-/// Records what the screens report and how often they ask for a flush.
+/// Records what the screens report.
 @MainActor
 final class SpyInteractionRecorder: InteractionRecorder {
     private(set) var interactions: [Interaction] = []
-    private(set) var flushCount = 0
 
     var kinds: [InteractionKind] { interactions.map(\.kind) }
 
@@ -13,9 +12,7 @@ final class SpyInteractionRecorder: InteractionRecorder {
         interactions.append(interaction)
     }
 
-    func flush() async {
-        flushCount += 1
-    }
+    func flush() async {}
 }
 
 /// A sleep that holds until released, so a timer can be fired or cancelled on cue instead of waiting on a clock.
@@ -62,5 +59,12 @@ final class HeldSleep {
     private func release(id: UUID) {
         guard let index = waiting.firstIndex(where: { $0.id == id }) else { return }
         waiting.remove(at: index).continuation.resume()
+    }
+}
+
+/// Reads a held duration in seconds, for the Realtime suites' timing assertions over `HeldSleep.held`.
+extension Duration {
+    var seconds: Double {
+        Double(components.seconds) + Double(components.attoseconds) / 1e18
     }
 }

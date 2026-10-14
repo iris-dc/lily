@@ -116,8 +116,9 @@ extension ContractSamples {
     static let groupedEvent = """
     {"id":"evt_03","title":"Sunset 5-a-side","type":"football","startsAt":"2026-09-13T17:00:00Z",\
     "location":{"name":"Riverside Pitch 2","coordinate":{"latitude":52.529,"longitude":13.387}},\
-    "capacity":10,"participantCount":6,"hostUserId":"seed-marta","hostName":"Marta","isJoined":false,\
-    "group":{"id":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","name":"Kreuzberg Kickers","visibility":"public","isDeleted":false}}
+    "capacity":10,"allowsExtraParticipants":false,"participantCount":6,"hostUserId":"seed-marta","hostName":"Marta",\
+    "isJoined":false,"group":{"id":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","name":"Kreuzberg Kickers",\
+    "visibility":"public","isDeleted":false}}
     """
     static let group = """
     {"id":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","name":"Kreuzberg Kickers","description":"Casual 5-a-side, every week",\
@@ -137,7 +138,7 @@ extension ContractSamples {
     "channelEpoch":1,"membersCanCreateEvents":true,"membersCanInvite":true,"createdAt":"2026-09-01T10:00:00Z"}
     """
     static let groupPage = #"{"items":[\#(group)],"nextCursor":"eyJuYW1lTG93ZXIiOiJrIn0"}"#
-    static let lastGroupPage = #"{"items":[\#(minimalGroup)],"nextCursor":null}"#
+    static let lastGroupPage = #"{"items":[\#(minimalGroup)]}"#
     static let member = #"{"userId":"seed-marta","displayName":"Marta","role":"owner","joinedAt":"2026-06-01T10:00:00Z"}"#
     static let memberList = #"{"items":[\#(member)]}"#
     /// `GET /api/groups/{id}/invitees`: sorted by name, one candidate per shared group or game, `isInvited` per person.
@@ -163,8 +164,4 @@ extension ContractSamples {
     static let membershipChange = """
     {"type":"membership_changed","groupId":"g1","change":"role_changed","role":"admin","channelEpoch":4}
     """
-
-    static func decode<T: Decodable>(_ type: T.Type, from json: String) throws -> T {
-        try APIJSONCoding.makeDecoder().decode(type, from: Data(json.utf8))
-    }
 }

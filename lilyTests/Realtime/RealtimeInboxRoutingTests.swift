@@ -7,18 +7,15 @@ import Testing
 struct RealtimeInboxRoutingTests {
     private let userChannel = RealtimeChannel.user(sub: TestFixtures.user.id)
 
-    @Test func anInboxItemOnTheUserChannelLandsInTheStoreAndReachesItsListeners() async {
+    @Test func anInboxItemOnTheUserChannelLandsInTheStore() async {
         let harness = RealtimeHarness()
         await harness.connect()
-        let stream = harness.controller.userEnvelopes()
-        let delivered = Task { await stream.first { _ in true } }
         let invite = InboxItem.invite(id: "i1")
 
         harness.transport.post(.inboxItem(invite), to: userChannel)
         await settle(until: { harness.inbox.items == [invite] })
 
         #expect(harness.inbox.hasUnread, "an item nobody has read lights the badge")
-        #expect(await delivered.value == .inboxItem(invite))
 
         let accepted = invite.responding(.accepted, at: harness.clock.now)
         harness.transport.post(.inboxItem(accepted), to: userChannel)
@@ -30,10 +27,12 @@ struct RealtimeInboxRoutingTests {
         let harness = RealtimeHarness()
         harness.groups.result = .success([.fixture(id: "g1", role: .member)])
         await harness.connect()
+        let sink = harness.sink(for: "g1")
 
         harness.transport.post(.inboxItem(.invite(id: "i1")), to: .room(groupID: "g1", epoch: 1))
-        await settle(until: { harness.chatLogs(.debug).contains { $0.contains("user-channel event on rooms/g1/1") } })
+        harness.transport.post(.message(.fixture(id: "m1", groupID: "g1")), to: .room(groupID: "g1", epoch: 1))
+        await settle(until: { sink.messageIDs == ["m1"] })
 
-        #expect(harness.inbox.items.isEmpty)
+        #expect(harness.inbox.items.isEmpty, "a room says nothing about the inbox")
     }
 }

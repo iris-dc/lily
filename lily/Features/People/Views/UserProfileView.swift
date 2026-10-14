@@ -40,20 +40,12 @@ struct UserProfileView: View {
 
     /// Opens (or reopens) the direct conversation; a spinner beside the title while the request runs.
     private var messageButton: some View {
-        Button {
-            Task { await viewModel.message() }
-        } label: {
-            HStack(spacing: DesignTokens.Spacing.sm) {
-                Label(Copy.message, systemImage: DesignTokens.Symbols.chat)
-                if viewModel.isStartingConversation {
-                    ProgressView()
-                        .controlSize(.regular)
-                        .accessibilityHidden(true)
-                }
-            }
-        }
+        BusyButton(
+            isBusy: viewModel.isStartingConversation,
+            action: { await viewModel.message() },
+            label: { Label(Copy.message, systemImage: DesignTokens.Symbols.chat) }
+        )
         .lilyProminentButton()
-        .disabled(viewModel.isStartingConversation)
         .accessibilityIdentifier(AccessibilityIdentifiers.profileMessage)
         .padding(.horizontal, DesignTokens.Layout.screenMargin)
     }

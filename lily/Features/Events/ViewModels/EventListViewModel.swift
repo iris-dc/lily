@@ -28,13 +28,9 @@ final class EventListViewModel {
     private let errorCenter: ErrorCenter
     /// Where every filter change is kept for the next launch; a no-op for the lists that start from `.everything`.
     private let filterStore: any EventFilterStore
-    /// TTL, the change counter and caller the content reflects, and the cooldown after a failed load.
-    private var freshness = ContentFreshness(staleAfter: AppConfig.Events.listStaleAfter,
-                                             retryAfterFailure: AppConfig.Events.retryAfterFailure)
-    /// The position the current content was asked for, as `Coordinate.coarse` (the rounding the backend, which orders
-    /// by distance, receives); `nil` after a load without one. Explore content for another position than the user's
-    /// now is stale.
-    private var loadedPosition: Coordinate?
+    /// TTL, the change counter, caller and (on Explore) position the content reflects, and the cooldown after a failed
+    /// load.
+    private var freshness = ContentFreshness.standard
 
     init(scope: EventScope,
          repository: any EventRepository,
@@ -64,9 +60,14 @@ final class EventListViewModel {
 
     /// The very first load, before any result exists. Later loads keep the current content (and its refresh spinner) on screen.
     var isInitialLoad: Bool { isLoading && !freshness.hasLoaded && !loadFailed }
+    /// What a segment drawing this list shows now.
+    var listState: ListState { ListState(isInitialLoad: isInitialLoad, isEmpty: visibleEvents.isEmpty, loadFailed: loadFailed) }
 
     /// True from a failed load until the next successful one, so the screen can say so instead of "nothing yet".
     var loadFailed: Bool { freshness.loadFailed }
+
+    /// An answer landed at least once since the last reset; `loadFailed` is the other way a load ends.
+    var hasLoaded: Bool { freshness.hasLoaded }
 
     /// Distance is judged from the user's position; while that is unknown the distance criterion is skipped. The price
     /// cap is judged in the user's currency, read on every pass so a change on Profile applies at once.
@@ -83,11 +84,11 @@ final class EventListViewModel {
         logger.debug(.events, "Filter changed; active: \(filter.isActive), visible: \(visibleEvents.count) of \(events.count)")
     }
 
-    /// Loads once per `AppConfig.Events.listStaleAfter`, or sooner when another screen changed an event meanwhile,
+    /// Loads once per `AppConfig.Lists.staleAfter`, or sooner when another screen changed an event meanwhile,
     /// the caller changed (sign-in or sign-out; `isJoined` is per caller) or the position is not the one Explore
     /// content was loaded for (it became known after a load without one, or the user moved; the backend orders by
     /// distance), so a tab that reappears reuses what it already has.
-    /// A failed load is retried only after `AppConfig.Events.retryAfterFailure`, so switching tabs while the backend
+    /// A failed load is retried only after `AppConfig.Lists.retryAfterFailure`, so switching tabs while the backend
     /// is down does not hammer it, unless an event changed elsewhere or the caller changed meanwhile, which proves
     /// the backend is up and the answer different; `load()` (pull-to-refresh) never waits.
     func loadIfStale() async {
@@ -103,38 +104,41 @@ final class EventListViewModel {
         await load()
     }
 
-    /// Always asks the repository (pull-to-refresh). A call made while one is in flight is dropped. Explore sends the
-    /// user's position when known; one that arrived or moved while the request was out earns one reload right away, so
-    /// the backend's order for where the user is replaces the answer without waiting for the next appearance.
+    /// Always asks the repository (pull-to-refresh). A call made while one is in flight is dropped. Whatever landed
+    /// while the request was out (a join or create applied through `replace`/`add`, a sign-in, or on Explore a
+    /// position that arrived or moved) may be missing from its answer, so it earns one reload right away instead of
+    /// overwriting the change until the next appearance. Bounded: only such a landing leaves a fresh answer stale, and
+    /// a failed or cancelled load earns nothing.
     func load() async {
         guard !isLoading else { return }
         isLoading = true
         let succeeded = await performLoad(near: requestPosition)
         isLoading = false
-        if succeeded, let reason = positionReason {
+        if succeeded, let reason = stalenessReason {
             logger.debug(.cache, "Events for scope \(scope): \(reason) while loading; reloading")
             await load()
         }
     }
 
     /// Takes the event the detail screen just changed. Applied in place, so the list is right on the way back without
-    /// a round trip; a joined-only list drops an event the user has left, and a list in start order (Home, a group's
-    /// Events) moves a game whose start the host changed. The change is recorded so every other list (Home after a join
-    /// on Explore) reloads on its next appearance; this one already shows it and does not.
+    /// a round trip: Explore keeps the row where the backend's relevance order put it and never takes a game it does
+    /// not hold; a list in start order (Home, a group's Events) re-inserts the row by start while it still lists the
+    /// game (Home drops one the user left, a group's list keeps it) and inserts a game it lists but does not hold yet
+    /// (a join made on a detail pushed from a group's segment on the Home stack reaches Home's games at once). The
+    /// change is recorded so every other list (Home after a join on Explore) reloads on its next appearance; this one
+    /// already shows it and does not.
     func replace(_ event: SportEvent) {
         if let index = events.firstIndex(where: { $0.id == event.id }) {
-            if scope == .joined && !event.participates {
-                events.remove(at: index)
-            } else if scope == .upcoming {
+            if scope == .upcoming {
                 events[index] = event
             } else {
                 events.remove(at: index)
-                insertByStart(event)
+                if listsByStart(event) { insertByStart(event) }
             }
+        } else if listsByStart(event) {
+            insertByStart(event)
         }
-        changes.recordChange()
-        freshness.acknowledge(version: changes.version)
-        logger.debug(.cache, "Event \(event.id) replaced in scope \(scope); sibling lists invalidated")
+        recordOwnChange("Event \(event.id) replaced in scope \(scope)")
     }
 
     /// Takes an event just created from this screen so it shows without a round trip: first on Explore, whose order
@@ -151,20 +155,34 @@ final class EventListViewModel {
         switch scope {
         case .upcoming where event.isListed:
             events.insert(event, at: 0)
-        case .joined where event.participates:
-            insertByStart(event)
-        case .group(let id) where event.group?.id == id:
-            insertByStart(event)
-        case .upcoming, .joined, .group:
+        case .upcoming:
             break
+        case .joined, .group:
+            if listsByStart(event) { insertByStart(event) }
         }
-        changes.recordChange()
-        freshness.acknowledge(version: changes.version)
-        logger.debug(.cache, "Event \(event.id) added to scope \(scope); sibling lists invalidated")
+        recordOwnChange("Event \(event.id) added to scope \(scope)")
+    }
+
+    /// Whether a list in start order lists `event`, held or not: Home the caller's own games, a group's Events that
+    /// group's games (one the caller left stays). Explore's relevance order cannot be guessed on device, so it never
+    /// takes a game it does not hold.
+    private func listsByStart(_ event: SportEvent) -> Bool {
+        switch scope {
+        case .upcoming: false
+        case .joined: event.participates
+        case .group(let id): event.group?.id == id
+        }
     }
 
     private func insertByStart(_ event: SportEvent) {
         events.insert(event, at: events.firstIndex { $0.startsAt > event.startsAt } ?? events.endIndex)
+    }
+
+    /// This list already shows the change it applied; every other list reloads on its next appearance.
+    private func recordOwnChange(_ what: String) {
+        changes.recordChange()
+        freshness.acknowledge(version: changes.version)
+        logger.debug(.cache, "\(what); sibling lists invalidated")
     }
 
     /// Asks for the position on every appearance: the cache in front of CoreLocation answers within its TTL, so a tab
@@ -201,8 +219,7 @@ final class EventListViewModel {
         let userID = identity.currentUserID
         do {
             events = try await repository.events(in: scope, near: position)
-            freshness.recordSuccess(at: now(), version: version, userID: userID)
-            loadedPosition = position?.coarse
+            freshness.recordSuccess(at: now(), version: version, userID: userID, position: position)
             logger.info(.events, "Loaded \(events.count) events for scope \(scope); with position: \(position != nil)")
             return true
         } catch {
@@ -220,21 +237,19 @@ final class EventListViewModel {
     /// Only Explore is ordered by distance; Home is the caller's own games, in start order.
     private var requestPosition: Coordinate? { scope == .upcoming ? userLocation : nil }
 
-    /// Why the user's position makes the content stale, or `nil`: it was loaded without one that is known now, or for
-    /// another one than the user's now, so the backend can order it better.
-    private var positionReason: String? {
-        guard freshness.hasLoaded, let position = requestPosition?.coarse else { return nil }
-        guard let loadedPosition else { return "position became known" }
-        return loadedPosition == position ? nil : "position changed"
-    }
+    /// Why the user's position makes Explore content stale (`ContentFreshness.positionReason`); Home sends none.
+    private var positionReason: String? { freshness.positionReason(for: requestPosition) }
 
     private var isWaitingToRetry: Bool {
         freshness.isWaitingToRetry(now: now(), version: changes.version, userID: identity.currentUserID)
     }
 
-    /// Why the content must be reloaded, or `nil` while it can be reused: the shared rules first, then the reasons
-    /// only Explore has, a position that became known or changed since the load.
+    /// Why the content must be reloaded, or `nil` while it can be reused: the shared rules first, then the position
+    /// only Explore sends.
     private var stalenessReason: String? {
-        freshness.stalenessReason(now: now(), version: changes.version, userID: identity.currentUserID) ?? positionReason
+        freshness.stalenessReason(now: now(),
+                                  version: changes.version,
+                                  userID: identity.currentUserID,
+                                  position: requestPosition)
     }
 }

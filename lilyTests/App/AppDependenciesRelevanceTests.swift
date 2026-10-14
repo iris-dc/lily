@@ -35,16 +35,26 @@ struct AppDependenciesRelevanceTests {
     }
 
     @Test func aFreshInstallStartsFromTheDefaultsAndResetSessionForgetsTheFilter() {
-        #expect(AppDependencies.makeEventFilterStore(arguments: [], defaults: defaults, logger: logger).load() == nil)
+        #expect(AppDependencies.makeEventFilterStore(startsFresh: false, defaults: defaults, logger: logger).load() == nil)
         let fresh = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: defaults)
         #expect(fresh.makeEventListViewModel(scope: .upcoming).filter == EventFilter())
 
         stored.save(Self.makeFilter())
-        let reset = AppDependencies.makeEventFilterStore(arguments: [AppConfig.LaunchArguments.resetSession],
-                                                         defaults: defaults,
-                                                         logger: logger)
+        let reset = AppDependencies.makeEventFilterStore(startsFresh: true, defaults: defaults, logger: logger)
         #expect(reset.load() == nil && stored.load() == nil)
         #expect(AppDependencies.makeMock().eventFilterStore is NoOpEventFilterStore, "previews store nothing")
+    }
+
+    /// The factory test above passes `startsFresh` itself; this one proves the launch argument reaches the store.
+    @Test func theCompositionRootForgetsTheStoredFilterOnAResetSessionLaunch() {
+        stored.save(Self.makeFilter())
+
+        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
+                                                                   AppConfig.LaunchArguments.mockEvents],
+                                                       defaults: defaults,
+                                                       apply: { _ in })
+
+        #expect(dependencies.eventFilterStore.load() == nil && stored.load() == nil)
     }
 
     /// Discover asks the shared location service for the position it sends and shows distances by; the group form
@@ -52,7 +62,7 @@ struct AppDependenciesRelevanceTests {
     @Test func discoverAndTheGroupFormTakeTheLocationService() async {
         let dependencies = AppDependencies.makeMock()
 
-        let discover = dependencies.makeGroupListViewModel(scope: .discover)
+        let discover = dependencies.makeDiscoverGroupsViewModel()
         await discover.loadUserLocation()
         #expect(discover.userLocation == AppConfig.Location.mockCenter)
         await discover.loadIfStale()

@@ -104,7 +104,11 @@ final class EventDetailViewModel {
         isBusy = true
         defer { isBusy = false }
         do {
-            let updated = try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: { logRetry(action) }, change)
+            let updated = try await LostRace.attemptTwice(delay: tryAgainDelay,
+                                                          logger: logger,
+                                                          category: .events,
+                                                          retrying: "\(action) for event \(event.id)",
+                                                          change)
             apply(updated)
             logSuccess(action, updated)
             await loadParticipants()
@@ -121,10 +125,6 @@ final class EventDetailViewModel {
             }
             errorCenter.report(error)
         }
-    }
-
-    private func logRetry(_ action: String) {
-        logger.info(.events, "\(action) lost a race for event \(event.id); retrying once")
     }
 
     private func logSuccess(_ action: String, _ updated: SportEvent) {

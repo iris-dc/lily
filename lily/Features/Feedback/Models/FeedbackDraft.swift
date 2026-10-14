@@ -13,8 +13,8 @@ nonisolated struct FeedbackDraft: Equatable, Sendable {
         self.replyEmail = replyEmail ?? ""
     }
 
-    var trimmedMessage: String { message.trimmingCharacters(in: .whitespacesAndNewlines) }
-    var trimmedEmail: String { replyEmail.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var trimmedMessage: String { message.trimmed }
+    var trimmedEmail: String { replyEmail.trimmed }
 
     /// In form order; empty when the draft may go out.
     var issues: [FeedbackIssue] {
@@ -47,7 +47,7 @@ nonisolated struct FeedbackDraft: Equatable, Sendable {
         let cap = AppConfig.Feedback.detailMaxLength
         return FeedbackPayload(kind: kind,
                                message: trimmedMessage,
-                               replyEmail: trimmedEmail.isEmpty ? nil : trimmedEmail,
+                               replyEmail: replyEmail.nonBlankTrimmed,
                                appVersion: environment.appVersion.prefix(wireLength: cap),
                                osVersion: environment.osVersion.prefix(wireLength: cap),
                                device: environment.device.prefix(wireLength: cap),

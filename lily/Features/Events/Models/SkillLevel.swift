@@ -50,7 +50,7 @@ nonisolated enum SkillLevel: WireNamedKind {
         case .beginner: localized("Beginner")
         case .intermediate: localized("Intermediate")
         case .advanced: localized("Advanced")
-        case .unknown: AppBranding.Events.Filter.anyLevel
+        case .unknown: AppBranding.Events.anyLevel
         }
     }
 }

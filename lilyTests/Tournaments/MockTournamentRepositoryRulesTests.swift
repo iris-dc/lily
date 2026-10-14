@@ -18,24 +18,6 @@ struct MockTournamentRepositoryRulesTests {
         repository = MockTournamentRepository(groups: groups, identity: identity, logger: logger, now: { now })
     }
 
-    /// A three-player round robin the caller organises without playing, draws allowed, ready to start.
-    private func seedLeague() {
-        let players = ["Marta", "Jonas", "Dev"].enumerated().map { index, name in
-            TournamentEntry.fixture(id: "league-e\(index + 1)",
-                                    tournamentId: Self.leagueID,
-                                    name: name,
-                                    captainUserId: MockGroupFixtures.memberID(for: name),
-                                    seed: index + 1)
-        }
-        let league = Tournament.fixture(id: Self.leagueID,
-                                        name: "Thursday League",
-                                        format: .roundRobin,
-                                        entryCount: players.count,
-                                        allowsDraws: true,
-                                        organizerUserId: MockTournamentFixtures.callerMarker)
-        repository.details[Self.leagueID] = .fixture(tournament: league, entries: players)
-    }
-
     /// The caller plays Tuesday Table Tennis: their report waits for the other side, who alone (or the organiser) may
     /// confirm or dispute it; disputing Jonas's report drops it and reopens the match with the flag.
     @Test func aPlayersReportWaitsForTheOtherSideWhoAloneAnswersIt() async throws {
@@ -67,7 +49,7 @@ struct MockTournamentRepositoryRulesTests {
     }
 
     @Test func aRoundRobinCompletesOnItsLastResultWithTheTablesLeader() async throws {
-        seedLeague()
+        repository.seedLeague(id: Self.leagueID)
         let id = Self.leagueID
         let started = try await repository.start(id: id)
         #expect(started.matches.count == 3 && started.standings.count == 3 && started.standings.allSatisfy { $0.played == 0 })
@@ -88,7 +70,7 @@ struct MockTournamentRepositoryRulesTests {
     }
 
     @Test func aMatchIdThatNamesNothingIsNotFound() async throws {
-        seedLeague()
+        repository.seedLeague(id: Self.leagueID)
         let id = Self.leagueID
         await #expect(throws: AppError.matchNotReady, "no match route before the start") {
             try await repository.report(id: id, matchID: "r01p001", scoreA: 1, scoreB: 0)
@@ -103,7 +85,7 @@ struct MockTournamentRepositoryRulesTests {
     }
 
     @Test func aStartedTournamentStillTakesARenameButNotANewCap() async throws {
-        seedLeague()
+        repository.seedLeague(id: Self.leagueID)
         let id = Self.leagueID
         let started = try await repository.start(id: id)
         var draft = TournamentDraft(editing: started.tournament)
@@ -118,7 +100,7 @@ struct MockTournamentRepositoryRulesTests {
     /// reopens the match.
     @Test func theOrganiserConfirmsOrDisputesASidesReport() async throws {
         let id = Self.leagueID
-        seedLeague()
+        repository.seedLeague(id: Self.leagueID)
         _ = try await repository.start(id: id)
         // The stored rows, not the answer: the answer has the caller's id swapped in for the marker.
         let stored = try #require(repository.details[id])
@@ -148,8 +130,12 @@ struct MockTournamentRepositoryRulesTests {
         await #expect(throws: AppError.notOrganizer) {
             try await repository.walkover(id: tableTennis, matchID: open.id, winnerEntryID: open.entryAId ?? "")
         }
-        seedLeague()
+        repository.noteInvitee(of: MockTournamentFixtures.padelOpenID)
         await #expect(throws: AppError.matchNotReady, "the status is judged before the organiser's seat") {
+            try await repository.walkover(id: MockTournamentFixtures.padelOpenID, matchID: "r01p001", winnerEntryID: "any")
+        }
+        repository.seedLeague(id: Self.leagueID)
+        await #expect(throws: AppError.matchNotReady, "and before the organiser's own") {
             try await repository.walkover(id: Self.leagueID, matchID: "r01p001", winnerEntryID: "league-e1")
         }
 

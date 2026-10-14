@@ -10,7 +10,7 @@ struct UserDefaultsSessionStoreTests {
         let store: UserDefaultsSessionStore
 
         init() {
-            defaults = UserDefaults(suiteName: "lily.tests.\(UUID().uuidString)")!
+            defaults = makeTestDefaults()
             store = UserDefaultsSessionStore(defaults: defaults, logger: logger)
         }
     }

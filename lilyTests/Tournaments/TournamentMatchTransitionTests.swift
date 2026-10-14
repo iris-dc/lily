@@ -74,4 +74,45 @@ struct TournamentMatchTransitionTests {
         #expect(Tournament.fixture(format: .roundRobin, allowsDraws: true).permitsDraws)
         #expect(!Tournament.fixture(format: .roundRobin, allowsDraws: false).permitsDraws)
     }
+
+    /// A confirmed draw is neither side's loss (the cell used to fade both), a winner's side won and the other lost, a bye
+    /// is its one entry's win, and only a side of a decided match is judged at all.
+    @Test func aDrawnMatchHasNoLoser() {
+        let drawn = match.recording(2, 2, by: "org", at: noon)
+        #expect(drawn.outcome(for: "e1") == .drew && drawn.outcome(for: "e2") == .drew)
+
+        let won = match.recording(3, 1, by: "org", at: noon)
+        #expect(won.outcome(for: "e1") == .won && won.outcome(for: "e2") == .lost)
+        #expect(won.outcome(for: "e9") == .undecided, "an outsider is no side and is not judged")
+
+        #expect(match.outcome(for: "e1") == .undecided && match.outcome(for: "e2") == .undecided, "nothing decided yet")
+
+        let bye = TournamentMatch(id: "r01p002",
+                                  tournamentId: "t",
+                                  round: 1,
+                                  position: 2,
+                                  entryAId: "e3",
+                                  status: .bye,
+                                  winnerEntryId: "e3")
+        #expect(bye.outcome(for: "e3") == .won && bye.outcome(for: nil) == .undecided)
+    }
+
+    /// `hasSchedule` on a match and `isEmpty` on a schedule are one rule read from both ends: a time or a place alone
+    /// counts, and an empty schedule sent to a scheduled match clears it.
+    @Test func hasScheduleAndIsEmptyAgree() {
+        #expect(MatchSchedule().isEmpty && !match.hasSchedule)
+
+        let place = EventLocation(name: "Sports Hall", coordinate: AppConfig.Location.mockCenter)
+        let schedules = [MatchSchedule(scheduledAt: noon),
+                         MatchSchedule(location: place),
+                         MatchSchedule(scheduledAt: noon, location: place)]
+        for schedule in schedules {
+            let copy = match.scheduling(schedule)
+            #expect(copy.hasSchedule && !schedule.isEmpty)
+            #expect(copy.hasSchedule == !MatchSchedule(scheduledAt: copy.scheduledAt, location: copy.location).isEmpty)
+        }
+
+        let cleared = match.scheduling(MatchSchedule(scheduledAt: noon, location: place)).scheduling(MatchSchedule())
+        #expect(!cleared.hasSchedule && cleared.status == .pending)
+    }
 }

@@ -18,8 +18,7 @@ struct RealtimeOfflineResumeTests {
         #expect(harness.controller.state == .unavailable && harness.transport.connectCount == 0)
         #expect(harness.chat.newerRequests.map { "\($0.groupID)/\($0.after)" } == ["g1/m1"])
         #expect(harness.cache.room(for: "g1")?.messages.map(\.id) == ["m1", "m2"])
-        #expect(harness.controller.knownEpochs["g1"] == 2, "the epoch the page answered is kept for the next connect")
-        #expect(harness.chatLogs(.info).contains("No connection; catching up the open room g1 over REST"))
+        #expect(harness.chatLogs(.info).mentioning("No connection", "g1").count == 1)
 
         await harness.controller.suspend()
         await harness.controller.resume()
@@ -32,6 +31,13 @@ struct RealtimeOfflineResumeTests {
         await harness.controller.suspend()
         await harness.controller.resume()
         #expect(harness.chat.newerRequests.count == 2, "no open room, nothing to catch up")
+
+        harness.controller.setOpenRoom(RoomSubscription(groupID: "g1", epoch: 1))
+        harness.endpoint.url = URL(string: "https://realtime.test/event")
+        await harness.controller.suspend()
+        await harness.controller.resume()
+        #expect(harness.controller.subscribedRooms["g1"] == 2,
+                "the epoch the page answered is the one the next connect subscribes at")
     }
 
     /// A connection that did come up leaves the catch-up to the resume protocol; nothing runs twice.

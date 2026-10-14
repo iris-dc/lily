@@ -42,10 +42,63 @@ struct SingleFlightTests {
         #expect(log.runs == 1 && log.uncancelledRuns == 1 && !flight.isRunning)
     }
 
+    /// A caller for another key while a run is held: it never runs beside it, and starts its own once it ended.
+    @Test func aCallerForAnotherKeyWaitsOutTheRunAndThenRunsItself() async {
+        gate.isEnabled = true
+
+        let first = Task { await flight.run(key: "a") { await held(as: "a") } }
+        await settle(until: { flight.isRunning })
+        let second = Task { await flight.run(key: "b") { await held(as: "b") } }
+        await Task.yield()
+        #expect(log.events == ["a"], "b waits, it does not run beside a")
+        gate.release()
+        await first.value
+        await second.value
+
+        #expect(log.events == ["a", "a done", "b", "b done"] && !flight.isRunning)
+    }
+
+    /// Two callers for one key while its run is held: one run, and both return once it ends.
+    @Test func callersForTheSameKeyJoinTheRunInFlight() async {
+        gate.isEnabled = true
+
+        let first = Task { await flight.run(key: "a") { await held(as: "a") } }
+        await settle(until: { flight.isRunning })
+        let second = Task { await flight.run(key: "a") { await held(as: "a") } }
+        await Task.yield()
+        gate.release()
+        await first.value
+        await second.value
+
+        #expect(log.runs == 1 && !flight.isRunning)
+    }
+
+    /// A caller without a key joins the keyed run in flight instead of waiting it out.
+    @Test func anUnkeyedCallerJoinsWhateverRuns() async {
+        gate.isEnabled = true
+
+        let keyed = Task { await flight.run(key: "a") { await held(as: "a") } }
+        await settle(until: { flight.isRunning })
+        let unkeyed = Task { await flight.run { await held(as: "any") } }
+        await Task.yield()
+        gate.release()
+        await keyed.value
+        await unkeyed.value
+
+        #expect(log.events == ["a", "a done"] && log.runs == 1)
+    }
+
     private func held() async {
         log.runs += 1
         await gate.wait()
         if !Task.isCancelled { log.uncancelledRuns += 1 }
+    }
+
+    private func held(as key: String) async {
+        log.events.append(key)
+        log.runs += 1
+        await gate.wait()
+        log.events.append("\(key) done")
     }
 }
 
@@ -53,4 +106,5 @@ struct SingleFlightTests {
 private final class RunLog {
     var runs = 0
     var uncancelledRuns = 0
+    var events: [String] = []
 }

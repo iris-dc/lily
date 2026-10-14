@@ -5,9 +5,6 @@ nonisolated extension AppConfig {
     enum Inbox {
         /// Items per page, the backend's maximum.
         static let pageSize = 50
-        /// A reappearing inbox reuses items loaded more recently than this; pull-to-refresh always reloads.
-        static let listStaleAfter: TimeInterval = 60
-        static let retryAfterFailure: TimeInterval = 10
         /// The mock invite expires this long after the launch: seven days, the backend's `invites.pending-days`.
         static let mockInviteExpiry: TimeInterval = 7 * 24 * 60 * 60
         /// The mock reminder names a game starting this far ahead, the backend's `reminders.lead`.

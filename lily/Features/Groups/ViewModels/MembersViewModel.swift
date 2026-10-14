@@ -22,10 +22,10 @@ final class MembersViewModel {
         var isDestructive: Bool { self == .remove || self == .ban }
 
         /// The question asked before a destructive action; nil for the ones that act at once.
-        func confirmationTitle(memberName: String) -> String? {
+        func confirmation(for member: GroupMember) -> GroupConfirmation? {
             switch self {
-            case .remove: AppBranding.Groups.removeConfirmation(memberName: memberName)
-            case .ban: AppBranding.Groups.banConfirmation(memberName: memberName)
+            case .remove: .remove(member)
+            case .ban: .ban(member)
             case .makeAdmin, .removeAdmin: nil
             }
         }
@@ -41,7 +41,7 @@ final class MembersViewModel {
     private let identity: any IdentityProvider
     private let reporter: GroupErrorReporter
     private let logger: any Logging
-    private let tryAgainDelay: Duration
+    private let gate: WriteGate
     private let onChange: @MainActor (SportGroup) -> Void
 
     init(group: SportGroup,
@@ -56,7 +56,10 @@ final class MembersViewModel {
         self.identity = identity
         self.reporter = reporter
         self.logger = logger
-        self.tryAgainDelay = tryAgainDelay
+        gate = WriteGate(category: .groups,
+                         logger: logger,
+                         tryAgainDelay: tryAgainDelay,
+                         report: { reporter.report($0) })
         self.onChange = onChange
     }
 
@@ -144,23 +147,14 @@ final class MembersViewModel {
         }
     }
 
-    /// One action at a time; `TRY_AGAIN` is repeated once; a dismissed screen stays quiet; a failure goes to the popup.
-    /// Every action is safe to repeat, so a refusal needs no second-guessing: the next load shows the roster as it is.
+    /// One action at a time; the gate repeats a `TRY_AGAIN` once, keeps a dismissed screen quiet and sends a failure
+    /// to the popup. Every action is safe to repeat, so a refusal needs no second-guessing: the next load shows the
+    /// roster as it is.
     private func act(_ name: String, _ change: () async throws -> Void) async {
         guard !isBusy else { return }
         isBusy = true
         defer { isBusy = false }
-        do {
-            try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: { logRetry(name) }, change)
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            logger.error(.groups, "\(name) failed in group \(group.id): \(error)")
-            reporter.report(error)
-        }
-    }
-
-    private func logRetry(_ name: String) {
-        logger.info(.groups, "\(name) lost a race in group \(group.id); retrying once")
+        await gate.run("\(name) in group \(group.id)", change)
     }
 
     private func allows(_ action: MemberAction, on member: GroupMember) -> Bool {

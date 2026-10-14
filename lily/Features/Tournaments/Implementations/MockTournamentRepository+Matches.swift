@@ -1,13 +1,13 @@
 import Foundation
 
-/// The start and the results: the backend's match rules in memory, its refusals in its order. A start draws the matches
-/// through `TournamentSchedule`; every match route needs the tournament under way (`MATCH_NOT_READY` whoever asks) and
-/// a match the id names (`MATCH_NOT_FOUND`), then asks who the caller is (`NOT_IN_MATCH`) before what the match can
-/// take. A side's score is `reported` until the other side confirms it or reports the same score; the organiser's is
-/// `confirmed` at once; a report is answered by the other side or the organiser, never by the side that made it, which
-/// reports again instead; a settled result advances the winner in a bracket and completes the tournament on the final,
-/// or on a round robin's last open match with the table's leader as winner; a round robin's standings are recomputed on
-/// every write.
+/// The start and the results: the backend's refusals in its order, in memory. A start is the organiser's while
+/// registration is open and needs the format's minimum (a second start replays); every match route needs a signed-in
+/// caller, the tournament under way (`MATCH_NOT_READY` whoever asks) and a match the id names (`MATCH_NOT_FOUND`), then
+/// asks who the caller is (`NOT_IN_MATCH`) before what the match can take. A side's score is `reported` until the other
+/// side confirms it or reports the same score; the organiser's is `confirmed` at once; a report is answered by the
+/// other side or the organiser, never by the side that made it, which reports again instead. What a start draws and
+/// what a settled result moves (the winner's advance, the table, the completion) is `TournamentDetail.starting` and
+/// `.settling`'s.
 extension MockTournamentRepository {
     func start(id: String) async throws -> TournamentDetail {
         let detail = try organized(id)
@@ -15,13 +15,8 @@ extension MockTournamentRepository {
         if tournament.status == .inProgress { return resolved(detail) }
         guard tournament.status == .registration else { throw AppError.tournamentLocked }
         guard tournament.canStart else { throw AppError.notEnoughEntries }
-        let seeds = detail.registeredEntries.sorted { $0.seed < $1.seed }.map(\.id)
-        let matches = TournamentSchedule.pairings(format: tournament.format, seeds: seeds).map {
-            TournamentMatch(pairing: $0, tournamentId: id)
-        }
-        let started = detail.replacing(tournament: tournament.starting(at: now()))
-        logger.info(.tournaments, "Mock tournament \(id) started with \(seeds.count) entries")
-        return resolved(storeMatches(matches, in: started))
+        logger.info(.tournaments, "Mock tournament \(id) started with \(detail.registeredEntries.count) entries")
+        return resolved(store(detail.starting(at: now())))
     }
 
     func report(id: String, matchID: String, scoreA: Int, scoreB: Int) async throws -> TournamentDetail {
@@ -48,6 +43,7 @@ extension MockTournamentRepository {
     func confirm(id: String, matchID: String) async throws -> TournamentDetail {
         let (detail, match) = try runningMatch(id, matchID)
         try requireAnswerable(match, in: detail)
+        logger.info(.tournaments, "Mock match \(matchID) of \(id) confirmed")
         return resolved(settle(match.confirming(by: MockTournamentFixtures.callerMarker, at: now()), in: detail))
     }
 
@@ -55,7 +51,7 @@ extension MockTournamentRepository {
         let (detail, match) = try runningMatch(id, matchID)
         try requireAnswerable(match, in: detail)
         logger.info(.tournaments, "Mock dispute of match \(matchID) of \(id)")
-        return resolved(replace(match.disputing(), in: detail))
+        return resolved(settle(match.disputing(), in: detail))
     }
 
     func walkover(id: String, matchID: String, winnerEntryID: String) async throws -> TournamentDetail {
@@ -63,22 +59,27 @@ extension MockTournamentRepository {
         try requireOrganizer(of: detail)
         try requireOpen(match)
         guard match.contains(entryID: winnerEntryID) else { throw AppError.tournamentActionFailed }
+        logger.info(.tournaments, "Mock walkover for match \(matchID) of \(id): entry \(winnerEntryID)")
         let settled = match.walkover(winnerEntryId: winnerEntryID, by: MockTournamentFixtures.callerMarker, at: now())
         return resolved(settle(settled, in: detail))
     }
 
+    /// A schedule moves no result, so the match takes its place and the table stays.
     func schedule(id: String, matchID: String, _ schedule: MatchSchedule) async throws -> TournamentMatch {
         let (detail, match) = try runningMatch(id, matchID)
         try requireOrganizer(of: detail)
         guard !match.isDecided else { throw AppError.matchNotReady }
         let scheduled = match.scheduling(schedule)
-        replace(scheduled, in: detail)
+        store(detail.replacing(match: scheduled))
+        let outcome = schedule.isEmpty ? "schedule cleared" : "scheduled"
+        logger.info(.tournaments, "Mock match \(matchID) of \(id) \(outcome)")
         return scheduled
     }
 
-    /// A match of a tournament under way, under the read rule: not in progress refuses whoever asks, and a well-formed
-    /// id that names no match is its own refusal, in that order.
+    /// A match of a tournament under way, for a signed-in caller under the read rule: not in progress refuses whoever
+    /// asks, and a well-formed id that names no match is its own refusal, in that order.
     private func runningMatch(_ id: String, _ matchID: String) throws -> (TournamentDetail, TournamentMatch) {
+        try requireCaller()
         let detail = try readable(id)
         guard detail.tournament.status == .inProgress else { throw AppError.matchNotReady }
         guard let match = detail.match(id: matchID) else { throw AppError.matchNotFound }
@@ -119,41 +120,12 @@ extension MockTournamentRepository {
         return side.id == detail.entry(containing: userID)?.id
     }
 
-    /// A settled result: the winner stands in the next match of a bracket; the final's result, or a round robin's last,
-    /// completes the tournament.
+    /// The result stored as `TournamentDetail.settling` makes it; the completion it may bring is logged here.
     private func settle(_ match: TournamentMatch, in detail: TournamentDetail) -> TournamentDetail {
-        var detail = replace(match, in: detail)
-        guard match.isDecided else { return detail }
-        if let nextID = match.nextMatchId, let slot = match.nextSlot, let winner = match.winnerEntryId,
-           let next = detail.match(id: nextID) {
-            detail = replace(next.placing(winner, in: slot), in: detail)
-        } else if let champion = champion(of: detail) {
-            detail = store(detail.replacing(tournament: detail.tournament.completing(winnerEntryId: champion, at: now())))
+        let settled = store(detail.settling(match, at: now()))
+        if detail.tournament.status != .completed, settled.tournament.status == .completed {
             logger.info(.tournaments, "Mock tournament \(detail.id) completed")
         }
-        return detail
-    }
-
-    /// The winner once nothing is left to play: the final's in a bracket, the table's leader in a round robin.
-    private func champion(of detail: TournamentDetail) -> String? {
-        guard detail.matches.allSatisfy(\.isDecided) else { return nil }
-        switch detail.tournament.format {
-        case .singleElimination: return detail.matches.first { $0.nextMatchId == nil }?.winnerEntryId
-        case .roundRobin: return detail.standings.first?.entryId
-        }
-    }
-
-    @discardableResult
-    private func replace(_ match: TournamentMatch, in detail: TournamentDetail) -> TournamentDetail {
-        var matches = detail.matches
-        if let index = matches.firstIndex(where: { $0.id == match.id }) { matches[index] = match }
-        return storeMatches(matches, in: detail)
-    }
-
-    private func storeMatches(_ matches: [TournamentMatch], in detail: TournamentDetail) -> TournamentDetail {
-        let standings = detail.tournament.format == .roundRobin
-            ? RoundRobinStandings.compute(entries: detail.registeredEntries, matches: matches)
-            : []
-        return store(detail.replacing(matches: matches, standings: standings))
+        return settled
     }
 }

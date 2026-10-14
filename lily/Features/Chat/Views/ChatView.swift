@@ -15,7 +15,6 @@ struct ChatView: View {
     private let onGone: (() -> Void)?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.horizontalSizeClass) private var sizeClass
 
     init(viewModel: ChatViewModel, dependencies: AppDependencies, onGone: (() -> Void)? = nil) {
         _viewModel = State(initialValue: viewModel)
@@ -34,7 +33,7 @@ struct ChatView: View {
         .navigationTitle(group.name)
         .navigationSubtitle(ifPresent: viewModel.subtitle)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarVisibility(sizeClass == .compact ? .hidden : .automatic, for: .tabBar)
+        .hidesTabBarOnCompact()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { infoButton }
             ToolbarItem(placement: .topBarTrailing) {
@@ -77,11 +76,19 @@ struct ChatView: View {
         }
     }
 
-    /// A spinner while the first page loads; the empty state for a room nobody has written in (or one just cleared).
+    /// A spinner while the first page loads; Try again when that page failed and the room is still the caller's; the
+    /// empty state for a room nobody has written in (or one just cleared).
     @ViewBuilder private var placeholder: some View {
         if viewModel.rows.isEmpty {
             if viewModel.isLoadingHistory {
                 ProgressView()
+            } else if viewModel.historyLoadFailed {
+                EmptyStateView(symbolName: DesignTokens.Symbols.error,
+                               title: AppBranding.Chat.loadFailedTitle,
+                               message: AppBranding.Groups.loadFailedMessage,
+                               actionTitle: AppBranding.Groups.tryAgain) {
+                    Task { await viewModel.loadHistory() }
+                }
             } else {
                 EmptyStateView(symbolName: DesignTokens.Symbols.chat,
                                title: AppBranding.Chat.emptyTitle,

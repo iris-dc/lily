@@ -42,7 +42,10 @@ final class MeStore: SessionObserver {
             clear()
             return
         }
-        guard account == nil || loadedUserID != userID else { return }
+        guard account == nil || loadedUserID != userID else {
+            logger.debug(.cache, "Account reused for the signed-in user")
+            return
+        }
         await reload()
     }
 
@@ -111,6 +114,7 @@ final class MeStore: SessionObserver {
     }
 
     func sessionDidEnd() {
+        logger.debug(.cache, "Account cleared on sign-out")
         clear()
     }
 

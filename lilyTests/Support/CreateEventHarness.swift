@@ -1,18 +1,9 @@
 import Foundation
 @testable import lily
 
-/// What a create view model handed on through `onCreated`.
-@MainActor
-final class CreatedEvents {
-    private(set) var events: [SportEvent] = []
-
-    func record(_ event: SportEvent) {
-        events.append(event)
-    }
-}
-
 /// A `CreateEventViewModel` over fakes with a fixed clock; `created` records what it handed on. Collaborators not
-/// given are created in the body: a main-actor default argument would be evaluated off the actor.
+/// given (the location service, `pushOptIn`) are created in the body: a main-actor default argument would be
+/// evaluated off the actor.
 @MainActor
 final class CreateEventHarness {
     /// 08:25:07 UTC, so "the next full hour" is unambiguous. `nonisolated`: read by `@Test(arguments:)` off the actor.
@@ -26,13 +17,14 @@ final class CreateEventHarness {
     let errorCenter: ErrorCenter
     let groups: MyGroupsStore
     let viewModel: CreateEventViewModel
-    private let createdEvents = CreatedEvents()
+    private let createdEvents = Recorded<SportEvent>()
 
-    var created: [SportEvent] { createdEvents.events }
+    var created: [SportEvent] { createdEvents.values }
 
     init(locationService: (any LocationService)? = nil,
          lockedGroup: EventGroupRef? = nil,
-         currencyCode: String = EventDraft.testCurrencyCode) {
+         currencyCode: String = EventDraft.testCurrencyCode,
+         pushOptIn: (any PushOptIn)? = nil) {
         errorCenter = ErrorCenter(logger: logger)
         identity.currentUserID = repository.hostUserID
         groups = MyGroupsStore(repository: groupRepository,
@@ -48,6 +40,7 @@ final class CreateEventHarness {
                                          logger: logger,
                                          now: { Self.now },
                                          currencyCode: currencyCode,
+                                         pushOptIn: pushOptIn ?? NoPushOptIn(),
                                          lockedGroup: lockedGroup,
                                          onCreated: createdEvents.record)
     }

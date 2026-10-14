@@ -51,7 +51,8 @@ final class LilyPeopleTests: LilyUITestCase {
         let dev = app.buttons[devMemberRow]
         XCTAssertTrue(dev.waitForExistence(timeout: 10), "Dev owns Berlin Basketball")
         XCTAssertTrue(app.buttons["member-row-mock-user-marta"].exists)
-        XCTAssertFalse(labelled("You").exists, "an outsider has no row of their own")
+        // mock-apple is the mock Apple user's id (MockAuthService); a label match on "You" would also hit the hints.
+        XCTAssertFalse(app.buttons["member-row-mock-apple"].exists, "an outsider has no row of their own")
         dev.tap()
         XCTAssertTrue(app.navigationBars["Dev"].waitForExistence(timeout: 10), "a roster row opens the person's profile")
         XCTAssertTrue(app.buttons["profile-message"].waitForExistence(timeout: 5))
@@ -88,9 +89,7 @@ final class LilyPeopleTests: LilyUITestCase {
     @MainActor
     func testChatsTabListsTheConversationWithMarta() {
         tapSignInWithApple()
-        openChatsTab()
-        let marta = app.buttons[martaConversationRow]
-        XCTAssertTrue(marta.waitForExistence(timeout: 10))
+        let marta = chatsRow(martaConversationRow)
         XCTAssertTrue(marta.label.contains("Direct message"), "a person row is captioned Direct message: \(marta.label)")
         marta.tap()
 
@@ -114,9 +113,9 @@ final class LilyPeopleTests: LilyUITestCase {
     /// Opens "Sunset 5-a-side" from Explore and waits for its "Who's in" list.
     @MainActor
     private func openSunsetParticipants() {
-        let card = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Sunset 5-a-side")).firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 10))
-        card.tap()
+        let sunset = card(containing: "Sunset 5-a-side")
+        XCTAssertTrue(sunset.waitForExistence(timeout: 10))
+        sunset.tap()
         XCTAssertTrue(app.staticTexts["Who's in"].waitForExistence(timeout: 10), "a signed-in caller sees who is in")
     }
 }

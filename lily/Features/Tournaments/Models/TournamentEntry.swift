@@ -68,4 +68,13 @@ nonisolated struct TournamentEntry: Identifiable, Hashable, Codable, Sendable {
         if copy.captainUserId == userID { copy.captainUserId = next.userId }
         return copy
     }
+
+    /// The entry with `marker` read as `userID` wherever a fixture names them; the mock stores the caller as a marker.
+    func replacingUser(_ marker: String, with userID: String?) -> TournamentEntry {
+        guard let userID else { return self }
+        var copy = self
+        if captainUserId == marker { copy.captainUserId = userID }
+        copy.members = members.map { $0.userId == marker ? EntryMember(userId: userID, displayName: $0.displayName) : $0 }
+        return copy
+    }
 }

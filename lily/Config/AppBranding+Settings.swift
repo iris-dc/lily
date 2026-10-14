@@ -10,6 +10,6 @@ nonisolated extension AppBranding {
         /// "System (PLN)": following the region, which names this code.
         static func systemCurrency(_ code: String) -> String { localized("System (\(code))") }
         /// A currency in the menu: its code and its name, "PLN · Polish Zloty".
-        static func currencyChoice(code: String, name: String) -> String { "\(code) · \(name)" }
+        static func currencyChoice(code: String, name: String) -> String { Groups.caption([code, name]) }
     }
 }

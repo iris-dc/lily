@@ -19,7 +19,7 @@ struct GroupActionRow: View {
         case .member, .conversation, .room:
             memberActions
         case .canJoin:
-            busyButton(Copy.joinGroup) { await viewModel.join() }
+            BusyButton(Copy.joinGroup, isBusy: viewModel.isBusy) { await viewModel.join() }
                 .lilyProminentButton()
                 .accessibilityIdentifier(AccessibilityIdentifiers.groupJoin)
         case .guest:
@@ -31,7 +31,7 @@ struct GroupActionRow: View {
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
         case .full:
-            busyButton(Copy.groupFull)
+            BusyButton(Copy.groupFull, isBusy: viewModel.isBusy)
                 .lilyProminentButton()
                 .accessibilityIdentifier(AccessibilityIdentifiers.groupJoin)
         }
@@ -61,23 +61,5 @@ struct GroupActionRow: View {
                 }
             }
         }
-    }
-
-    /// Action with a spinner beside its title while the request runs. Without an action it is disabled. The caller
-    /// applies the button style, which also sets the full width and height (see the Buttons note in CLAUDE.md).
-    private func busyButton(_ title: String, action: (() async -> Void)? = nil) -> some View {
-        Button {
-            Task { await action?() }
-        } label: {
-            HStack(spacing: DesignTokens.Spacing.sm) {
-                Text(title)
-                if viewModel.isBusy {
-                    ProgressView()
-                        .controlSize(.regular)
-                        .accessibilityHidden(true)
-                }
-            }
-        }
-        .disabled(action == nil || viewModel.isBusy)
     }
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Top of the group detail: chips for type and visibility, the name, who runs it and how many are in, where it plays
+/// Top of the group detail: chips for visibility and type, the name, who runs it and how many are in, where it plays
 /// (with the distance when the position is known), the description.
 struct GroupHeader: View {
     let group: SportGroup
@@ -9,11 +9,10 @@ struct GroupHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
             HStack(spacing: DesignTokens.Spacing.sm) {
+                VisibilityChip(visibility: group.visibility)
                 if let type = group.type {
                     EventTypeChip(type: type)
                 }
-                Label(group.visibility.displayName, systemImage: group.visibility.symbolName)
-                    .lilyChip(.regular)
             }
             ScreenTitle(text: group.name, subtitle: subtitle)
             if let location = group.location {

@@ -4,45 +4,6 @@ import Testing
 
 @MainActor
 struct EventDetailViewModelTests {
-    /// What the view model handed to the list through `onChange`.
-    @MainActor private final class ReplacedEvents {
-        private(set) var events: [SportEvent] = []
-
-        func record(_ event: SportEvent) {
-            events.append(event)
-        }
-    }
-
-    /// Builds a view model over fakes; `replaced` records what it handed to the list. The retry pause is zero so
-    /// no test waits on a clock.
-    @MainActor private final class Harness {
-        let repository = FakeEventRepository()
-        let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
-        let recorder = SpyInteractionRecorder()
-        let logger = SpyLogger()
-        let errorCenter: ErrorCenter
-        let viewModel: EventDetailViewModel
-        private let replacedEvents = ReplacedEvents()
-
-        var replaced: [SportEvent] { replacedEvents.events }
-
-        init(event: SportEvent) {
-            errorCenter = ErrorCenter(logger: logger)
-            repository.result = .success([event])
-            viewModel = EventDetailViewModel(event: event,
-                                             repository: repository,
-                                             identity: identity,
-                                             errorCenter: errorCenter,
-                                             recorder: recorder,
-                                             logger: logger,
-                                             tryAgainDelay: .zero,
-                                             now: { EventDetailViewModelTests.now },
-                                             onChange: replacedEvents.record)
-        }
-    }
-
-    nonisolated private static let now = Date(timeIntervalSince1970: 1_800_000_000)
-
     /// Refusals that mean the event moved on under the caller: expected product states, logged as warnings.
     /// `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let conflicts: [AppError] = [
@@ -74,7 +35,7 @@ struct EventDetailViewModelTests {
     }
 
     @Test func viewModelReadsTheIdentityLive() {
-        let harness = Harness(event: Self.makeEvent(capacity: 4, participants: 1))
+        let harness = EventDetailHarness(event: Self.makeEvent(capacity: 4, participants: 1))
         #expect(harness.viewModel.participation == .join)
 
         harness.identity.currentUserID = nil
@@ -86,17 +47,17 @@ struct EventDetailViewModelTests {
 
     /// The view's task restarts when a sheet over it comes and goes; the screen is still one view.
     @Test func recordViewedReportsTheEventOncePerInstance() {
-        let harness = Harness(event: Self.makeEvent(capacity: 4, participants: 1))
+        let harness = EventDetailHarness(event: Self.makeEvent(capacity: 4, participants: 1))
 
         harness.viewModel.recordViewed()
         harness.viewModel.recordViewed()
 
-        #expect(harness.recorder.interactions == [.viewed(harness.viewModel.event, at: Self.now)])
+        #expect(harness.recorder.interactions == [.viewed(harness.viewModel.event, at: EventDetailHarness.now)])
     }
 
     @Test func joinReplacesTheEventAndTellsTheList() async {
         let event = Self.makeEvent(capacity: 4, participants: 1)
-        let harness = Harness(event: event)
+        let harness = EventDetailHarness(event: event)
 
         await harness.viewModel.join()
 
@@ -112,7 +73,7 @@ struct EventDetailViewModelTests {
     /// "Capacity reached" is a key event of its own, so a full game can be found in the log without reading numbers.
     @Test func aJoinThatFillsTheEventLogsCapacityReached() async {
         let event = Self.makeEvent(capacity: 2, participants: 1)
-        let harness = Harness(event: event)
+        let harness = EventDetailHarness(event: event)
 
         await harness.viewModel.join()
 
@@ -122,7 +83,7 @@ struct EventDetailViewModelTests {
     }
 
     @Test func aJoinThatLeavesRoomDoesNotLogCapacityReached() async {
-        let harness = Harness(event: Self.makeEvent(capacity: 4, participants: 1))
+        let harness = EventDetailHarness(event: Self.makeEvent(capacity: 4, participants: 1))
 
         await harness.viewModel.join()
 
@@ -131,7 +92,7 @@ struct EventDetailViewModelTests {
 
     @Test func leaveReplacesTheEventAndTellsTheList() async {
         let event = Self.makeEvent(capacity: 4, participants: 2, isJoined: true)
-        let harness = Harness(event: event)
+        let harness = EventDetailHarness(event: event)
 
         await harness.viewModel.leave()
 
@@ -144,7 +105,7 @@ struct EventDetailViewModelTests {
     /// A refusal is an expected product state and stays a warning; a failure of unknown outcome is an app fault.
     @Test(arguments: conflicts)
     func aRefusalIsLoggedAsAWarning(error: AppError) async {
-        let harness = Harness(event: Self.makeEvent(capacity: 4, participants: 1))
+        let harness = EventDetailHarness(event: Self.makeEvent(capacity: 4, participants: 1))
         harness.repository.participationError = error
 
         await harness.viewModel.join()
@@ -155,7 +116,7 @@ struct EventDetailViewModelTests {
 
     @Test(arguments: unknownOutcomes)
     func aFailureOfUnknownOutcomeIsLoggedAsAnError(error: AppError) async {
-        let harness = Harness(event: Self.makeEvent(capacity: 4, participants: 1))
+        let harness = EventDetailHarness(event: Self.makeEvent(capacity: 4, participants: 1))
         harness.repository.participationError = error
 
         await harness.viewModel.join()
@@ -170,7 +131,7 @@ struct EventDetailViewModelTests {
     func aRefusalOrAnUnknownOutcomeRefreshesTheEventAndTellsTheList(error: AppError) async {
         let stale = Self.makeEvent(capacity: 4, participants: 1)
         let fresh = stale.updatingParticipation(count: 4, isJoined: false)
-        let harness = Harness(event: stale)
+        let harness = EventDetailHarness(event: stale)
         harness.repository.result = .success([fresh])
         harness.repository.participationError = error
 
@@ -191,7 +152,7 @@ struct EventDetailViewModelTests {
     func anUnknownOutcomeWhoseWriteLandedShowsNoPopup(error: AppError) async {
         let stale = Self.makeEvent(capacity: 4, participants: 1)
         let landed = stale.updatingParticipation(count: 2, isJoined: true)
-        let harness = Harness(event: stale)
+        let harness = EventDetailHarness(event: stale)
         harness.repository.result = .success([landed])
         harness.repository.participationError = error
 
@@ -207,7 +168,7 @@ struct EventDetailViewModelTests {
     @Test func aRefusalStaysReportedEvenWhenTheCallerIsIn() async {
         let stale = Self.makeEvent(capacity: 4, participants: 1)
         let joined = stale.updatingParticipation(count: 2, isJoined: true)
-        let harness = Harness(event: stale)
+        let harness = EventDetailHarness(event: stale)
         harness.repository.result = .success([joined])
         harness.repository.participationError = AppError.alreadyJoined
 
@@ -220,7 +181,7 @@ struct EventDetailViewModelTests {
     @Test(arguments: refreshTriggers)
     func aFailedRefreshKeepsTheEventAndStillReportsTheFailure(error: AppError) async {
         let stale = Self.makeEvent(capacity: 4, participants: 1)
-        let harness = Harness(event: stale)
+        let harness = EventDetailHarness(event: stale)
         harness.repository.participationError = error
         harness.repository.result = .failure(.network)
 
@@ -237,7 +198,7 @@ struct EventDetailViewModelTests {
     /// A lost race is the backend's business, not the user's: the request is repeated once and succeeds quietly.
     @Test func aLostRaceIsRetriedOnceWithoutAPopup() async {
         let event = Self.makeEvent(capacity: 4, participants: 1)
-        let harness = Harness(event: event)
+        let harness = EventDetailHarness(event: event)
         harness.repository.nextParticipationError = AppError.tryAgain
 
         await harness.viewModel.join()
@@ -252,7 +213,7 @@ struct EventDetailViewModelTests {
 
     @Test func cancellationIsQuiet() async {
         for cancellation: any Error in [CancellationError(), URLError(.cancelled)] {
-            let harness = Harness(event: Self.makeEvent(capacity: 4, participants: 1))
+            let harness = EventDetailHarness(event: Self.makeEvent(capacity: 4, participants: 1))
             harness.repository.participationError = cancellation
 
             await harness.viewModel.join()
@@ -263,7 +224,7 @@ struct EventDetailViewModelTests {
     }
 
     @Test func secondActionIsDroppedWhileTheFirstRuns() async {
-        let harness = Harness(event: Self.makeEvent(capacity: 4, participants: 1))
+        let harness = EventDetailHarness(event: Self.makeEvent(capacity: 4, participants: 1))
         harness.repository.holdsRequests = true
 
         let join = Task { await harness.viewModel.join() }

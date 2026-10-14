@@ -9,7 +9,7 @@ nonisolated enum TournamentDetailSection: Hashable, CaseIterable, Sendable {
         switch self {
         case .entries: tournament.isTeam ? AppBranding.Tournaments.teamsSection : AppBranding.Tournaments.playersSection
         case .results:
-            tournament.format == .roundRobin ? AppBranding.Tournaments.standingsSection : AppBranding.Tournaments.bracketSection
+            tournament.format.drawsBracket ? AppBranding.Tournaments.bracketSection : AppBranding.Tournaments.standingsSection
         case .matches: AppBranding.Tournaments.matchesSection
         }
     }

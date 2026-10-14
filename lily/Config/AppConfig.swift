@@ -37,6 +37,8 @@ nonisolated enum AppConfig {
         }
         /// Each preview gets its own `UserDefaults` suite so mock sessions never bleed into the real app.
         static let previewSuitePrefix = "lily.preview."
+        /// The stored word for "follow the system", shared by the language and currency choices.
+        static let systemChoiceValue = "system"
     }
 
     enum Events {
@@ -50,11 +52,6 @@ nonisolated enum AppConfig {
         static let defaultFilterRadiusMeters: Double = 10_000
         /// Length of the date range the filter proposes when dates are switched on.
         static let defaultFilterDateSpanDays = 7
-        /// A tab that reappears reuses events loaded more recently than this; pull-to-refresh always reloads.
-        static let listStaleAfter: TimeInterval = 60
-        /// A failed load is not retried by a reappearing tab before this has passed, so switching tabs while the
-        /// backend is down neither hammers it nor repeats the popup; pull-to-refresh is not held back.
-        static let retryAfterFailure: TimeInterval = 10
         /// Decimals of the position sent with the upcoming list (about 1 km): enough to order by distance, too coarse to
         /// place the user. The backend rounds to the same precision.
         static let positionPrecision = 2
@@ -78,11 +75,28 @@ nonisolated enum AppConfig {
             static let priceMinorUnitsPerUnit: Decimal = 100
         }
 
-        /// What an edit is held to beyond `Creation`'s limits: the backend requires only the future, and a host fixing
-        /// the place of a game that starts in ten minutes must not be told to move the start as well.
+        /// What an edit is held to beyond `Creation`'s limits. The backend requires only the future, so a host fixing
+        /// the place of a game that starts in ten minutes is not told to move the start as well; the start only has to
+        /// lie `startMargin` ahead of the device clock, far enough that the backend still sees the future when the
+        /// request lands.
         enum Editing {
+            /// An edit's start must lie this far ahead of the device clock: the margin covers the request's round trip
+            /// and clock skew, so a Save never earns the backend's 400 for a start the form could have warned about.
+            static let startMargin: TimeInterval = 60
+            /// What a tournament edit needs beyond the future: nothing. `TournamentDraft.Rules.editing` reads it, and
+            /// its backend has no future check.
             static let minimumLeadTime: TimeInterval = 0
         }
+    }
+
+    /// The one freshness rule of every list that caches a backend answer (the events lists, Mine, the inbox, the
+    /// tournament lists), read through `ContentFreshness.standard`.
+    enum Lists {
+        /// A tab that reappears reuses content loaded more recently than this; pull-to-refresh always reloads.
+        static let staleAfter: TimeInterval = 60
+        /// A failed load is not retried by a reappearing tab before this has passed, so switching tabs while the
+        /// backend is down neither hammers it nor repeats the popup; pull-to-refresh is not held back.
+        static let retryAfterFailure: TimeInterval = 10
     }
 
     enum Location {
@@ -134,6 +148,8 @@ nonisolated enum AppConfig {
         static let unauthorizedStatus = 401
         /// The backend's rate limit; recognised by status too, in case the `{code, message}` body is missing.
         static let rateLimitedStatus = 429
+        /// The range of a refusal; a known backend code inside it is an expected product state, not a fault.
+        static let clientErrorStatuses = 400..<500
 
         enum Headers {
             static let localUserID = "X-Local-User-Id"
@@ -175,6 +191,13 @@ nonisolated enum AppConfig {
         static let flushDelay: Duration = .seconds(30)
         /// Beyond this the oldest buffered interaction is dropped: a backend that stays down must not grow memory.
         static let maxBuffered = 100
+        /// A sign-out flushes what is buffered while the Bearer still goes out, and waits for it this long at most: a
+        /// stalled network must not hold the sign-out (`API.requestTimeout` is 15 s).
+        static let signOutFlushTimeout: Duration = .seconds(3)
+        /// The most type names a `filter_applied` carries: the backend's `FilterSummaryDto.MAX_TYPES`. A longer list is a
+        /// `400 VALIDATION_FAILED` for the whole batch, which the recorder drops without retry, so `EventType.known` must stay
+        /// within it; `InteractionTests` pins both, and a type list grown past the cap fails a unit test here instead.
+        static let maxFilterTypes = 32
     }
 
     /// Process arguments recognised at launch (used by UI tests). Debug builds only: `AppDependencies` reads them
@@ -200,6 +223,9 @@ nonisolated enum AppConfig {
         static let mockAuthFail = "-mock-auth-fail"
         /// Serves the fixture events and accepts profile updates in memory, so UI tests and demos need no backend.
         static let mockEvents = "-mock-events"
+        /// With the mock events, the first list load fails with a network error and every later one answers, so the
+        /// root error popup and the list's failed state can be walked without a backend.
+        static let mockEventsFail = "-mock-events-fail"
         /// Takes the next argument as its value, e.g. `-api-base-url http://<mac-name>.local:8080`.
         static let apiBaseURL = "-api-base-url"
         /// An argument with this prefix is a flag, never a value.

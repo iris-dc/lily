@@ -23,11 +23,7 @@ struct AppDependenciesPushTests {
     /// Joining under the mock asks the mock registrar, which grants without an alert, and the device lands in the mock
     /// registry; signing out removes it again.
     @Test func joiningRegistersTheMockDeviceAndSigningOutRemovesIt() async throws {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeTestDefaults())
-        await dependencies.sessionController.signIn(with: .apple)
+        let dependencies = await makeSignedInMockDependencies()
         let open = try #require(try await dependencies.eventRepository.events(in: .upcoming, near: nil)
             .first { !$0.participates && !$0.isFull })
         let detail = dependencies.makeEventDetailViewModel(for: open) { _ in }

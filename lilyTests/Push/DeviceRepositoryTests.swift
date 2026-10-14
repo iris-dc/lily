@@ -32,14 +32,13 @@ struct DeviceRepositoryTests {
         #expect(request.method == .delete && request.path == "/api/me/devices/\(token)" && request.body == nil)
     }
 
-    @Test func failuresKeepTheSharedMappingAndFallBackToUnknown() async {
-        client.error = APIError.http(status: 401, body: nil)
-        await #expect(throws: AppError.sessionExpired) { try await remote.unregister(token: token) }
+    /// A failure with no case of its own falls back to `.unknown`; the shared mapping is proved once, in
+    /// `SendFailingWithTests`.
+    @Test func unnamedFailuresFallBackToUnknown() async {
         client.error = APIError.http(status: 400, body: APIErrorBody(code: "VALIDATION_FAILED", message: "m"))
         let payload = DeviceRegistrationPayload(token: "x", platform: "ios", environment: .sandbox, appVersion: "1", locale: "en")
+
         await #expect(throws: AppError.unknown) { try await remote.register(payload) }
-        client.error = URLError(.notConnectedToInternet)
-        await #expect(throws: AppError.network) { try await remote.unregister(token: token) }
     }
 
     @Test func theMockRefusesGuestsAndRemembersRegistrations() async throws {

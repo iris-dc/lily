@@ -75,11 +75,11 @@ final class LilyGroupsTests: LilyUITestCase {
 
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
-        let card = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
-        scrollUntilHittable(card)
-        XCTAssertTrue(card.label.contains("Kreuzberg Kickers"), "the card must carry the group badge: \(card.label)")
+        let created = card(containing: title)
+        scrollUntilHittable(created)
+        XCTAssertTrue(created.label.contains("Kreuzberg Kickers"), "the card must carry the group badge: \(created.label)")
 
-        card.tap()
+        created.tap()
         XCTAssertTrue(app.staticTexts["Hosted in Kreuzberg Kickers"].waitForExistence(timeout: 5))
     }
 
@@ -138,11 +138,7 @@ final class LilyGroupsTests: LilyUITestCase {
     @MainActor
     func testOpenChatSendShowsOwnBubble() {
         tapSignInWithApple()
-        openChatsTab()
-        let kickers = app.buttons[kickersRow]
-        XCTAssertTrue(kickers.waitForExistence(timeout: 10))
-        kickers.tap()
-        XCTAssertTrue(app.navigationBars["Kreuzberg Kickers"].waitForExistence(timeout: 10), "a Chats row opens the room")
+        openRoom(kickersRow, titled: "Kreuzberg Kickers")
         XCTAssertTrue(app.staticTexts["Anyone up for a game this week?"].waitForExistence(timeout: 10),
                       "the fixture history shows")
 
@@ -150,7 +146,7 @@ final class LilyGroupsTests: LilyUITestCase {
         let composer = app.descendants(matching: .any)["chat-composer"]
         enter(text, into: composer)
         let send = app.buttons["chat-send"]
-        XCTAssertTrue(send.isEnabled, "text enables Send")
+        assertBecomesEnabled(send, "text enables Send")
         send.tap()
 
         XCTAssertTrue(app.staticTexts[text].waitForExistence(timeout: 10), "the sent message shows as a bubble")
@@ -164,9 +160,7 @@ final class LilyGroupsTests: LilyUITestCase {
     @MainActor
     func testUnreadRoomShowsDotUntilOpened() {
         tapSignInWithApple()
-        openChatsTab()
-        let kickers = app.buttons[kickersRow]
-        XCTAssertTrue(kickers.waitForExistence(timeout: 10))
+        let kickers = chatsRow(kickersRow)
         let dot = kickers.descendants(matching: .any)["Unread messages"]
         XCTAssertTrue(dot.waitForExistence(timeout: 10), "the unread row carries the dot")
         kickers.tap()

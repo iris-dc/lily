@@ -29,13 +29,13 @@ final class TournamentDetailViewModel {
     let identity: any IdentityProvider
     let reporter: GroupErrorReporter
     let logger: any Logging
-    let tryAgainDelay: Duration
     let now: () -> Date
     let pushOptIn: any PushOptIn
     let onChange: @MainActor (Tournament) -> Void
     private let groupRepository: any GroupRepository
     private let navigation: AppNavigation
     private let recorder: any InteractionRecorder
+    private let gate: WriteGate
     /// Tournament changes made anywhere; the screen reloads when it moved past the version it last agreed with.
     private let changes: ChangeTracker
     private var acknowledgedVersion: Int?
@@ -72,7 +72,11 @@ final class TournamentDetailViewModel {
         self.reporter = reporter
         self.recorder = recorder
         self.logger = logger
-        self.tryAgainDelay = tryAgainDelay
+        gate = WriteGate(category: .tournaments,
+                         logger: logger,
+                         tryAgainDelay: tryAgainDelay,
+                         report: { reporter.report($0) },
+                         isExpected: { $0.isTournamentRefusal })
         self.now = now
         self.pushOptIn = pushOptIn
         self.onChange = onChange
@@ -224,37 +228,16 @@ final class TournamentDetailViewModel {
         }
     }
 
-    /// One action at a time; `TRY_AGAIN` is repeated once; every failure reaches the popup through the reporter, so a
-    /// `TERMS_REQUIRED` raises the terms sheet. Answers whether the work went through, so a sheet can close on success.
-    /// Shared with the `+Entries` and `+Matches` files.
+    /// One action at a time; the gate repeats a `TRY_AGAIN` once, keeps a dismissed screen quiet, logs a refusal at
+    /// warning (an expected product state: the detail was stale) and sends every failure to the popup through the
+    /// reporter, so a `TERMS_REQUIRED` raises the terms sheet. Answers whether the work went through, so a sheet can
+    /// close on success. Shared with the `+Entries` and `+Matches` files.
     @discardableResult
     func perform(_ action: String, _ work: () async throws -> Void) async -> Bool {
         guard !isBusy, identity.currentUserID != nil else { return false }
         isBusy = true
         defer { isBusy = false }
-        do {
-            try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: { logRetry(action) }, work)
-            return true
-        } catch {
-            guard !AppError.isCancellation(error) else { return false }
-            logFailure(action, error)
-            reporter.report(error)
-            return false
-        }
-    }
-
-    private func logRetry(_ action: String) {
-        logger.info(.tournaments, "\(action) lost a race for tournament \(destination.id); retrying once")
-    }
-
-    /// A refusal is an expected product state (the detail was stale) and stays a warning; anything else is an error.
-    private func logFailure(_ action: String, _ error: any Error) {
-        let message = "\(action) failed for tournament \(destination.id): \(error)"
-        if (error as? AppError)?.isTournamentRefusal == true {
-            logger.warning(.tournaments, message)
-        } else {
-            logger.error(.tournaments, message)
-        }
+        return await gate.run("\(action) for tournament \(destination.id)", work)
     }
 }
 

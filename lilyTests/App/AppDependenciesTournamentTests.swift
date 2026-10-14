@@ -29,11 +29,7 @@ struct AppDependenciesTournamentTests {
     /// The factories hand every view model the shared repository and change counter, and the mock's two tournaments
     /// reach Home's list for a signed-in caller while their rooms stay out of the communities.
     @Test func theFactoriesAndTheMockFixturesWorkTogether() async throws {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeTestDefaults())
-        await dependencies.sessionController.signIn(with: .apple)
+        let dependencies = await makeSignedInMockDependencies()
         let mine = dependencies.makeTournamentListViewModel(scope: .mine)
         await mine.load()
         #expect(mine.tournaments.map(\.name) == ["Tuesday Table Tennis", "Kickers Cup"])

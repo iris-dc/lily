@@ -58,7 +58,7 @@ struct LandingViewModelTests {
         let viewModel = makeViewModel(repository, harness: harness)
 
         #expect(viewModel.introContent.events == viewModel.sampleEvents)
-        #expect(viewModel.sampleEvents.count == IntroFixtures.eventCount)
+        #expect(viewModel.sampleEvents.count == AppConfig.Events.landingPreviewCount)
 
         await viewModel.loadPreview()
 

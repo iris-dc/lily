@@ -79,6 +79,42 @@ struct MeStoreTests {
         #expect(store.account == nil && !store.needsTerms && !store.isOperator)
     }
 
+    /// A second load for the same user reuses the account, said once under `.cache`; a new caller is a load, not
+    /// a reuse.
+    @Test func aSecondLoadForTheSameUserReusesTheAccount() async {
+        repository.meResult = .success(.fixture())
+        let store = makeStore()
+
+        await store.loadIfNeeded()
+        await store.loadIfNeeded()
+        let reused = "Account reused for the signed-in user"
+        #expect(logger.messages(in: .cache, at: .debug).filter { $0 == reused }.count == 1)
+
+        identity.currentUserID = "someone-else"
+        await store.loadIfNeeded()
+        #expect(logger.messages(in: .cache, at: .debug).filter { $0 == reused }.count == 1)
+    }
+
+    @Test func signOutLogsTheClearedAccount() async {
+        let store = makeStore()
+        await store.loadIfNeeded()
+
+        store.sessionDidEnd()
+
+        #expect(logger.messages(in: .cache, at: .debug).filter { $0 == "Account cleared on sign-out" }.count == 1)
+    }
+
+    /// A guest's load clears the account without the sign-out line: that line is `sessionDidEnd()`'s alone.
+    @Test func aGuestLoadLogsNoCacheLine() async {
+        let store = makeStore()
+        await store.loadIfNeeded()
+        identity.currentUserID = nil
+
+        await store.loadIfNeeded()
+
+        #expect(store.account == nil && logger.messages(in: .cache).isEmpty)
+    }
+
     /// A sign-out while `GET /api/me` is in flight: the answer is the previous user's account, not a guest's.
     @Test func anAnswerForAPreviousCallerIsDropped() async {
         repository.holdsRequests = true

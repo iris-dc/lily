@@ -1,16 +1,20 @@
 import Foundation
 @testable import lily
 
-/// Scriptable `ChatRepository`: pages answer from queues (an empty page once a queue runs dry), sends from `sendErrors`
-/// then `makeSent`, and every call is recorded in order. `holdsRequests` parks page requests until released.
+/// Scriptable `ChatRepository`: pages answer from queues (an empty page once a queue runs dry), sends from `sendErrors`,
+/// then `sentMessages`, then a `sent-N` fixture, and every call is recorded in order. `holdsRequests` parks page, send
+/// and clear requests until released (every other write answers at once); each is recorded before it waits, so a test
+/// can see it in flight.
 @MainActor
-final class FakeChatRepository: ChatRepository {
+final class FakeChatRepository: ChatRepository, HoldsRequests {
     var epoch = 1
     var newestPages: [MessagePage] = []
     var olderPages: [MessagePage] = []
     var newerPages: [MessagePage] = []
     /// Thrown by the next sends, one each, before a send succeeds.
     var sendErrors: [any Error] = []
+    /// Answered to the next sends, one each, before the `sent-N` fallback: the message a test will also post as the echo.
+    var sentMessages: [ChatMessage] = []
     /// Thrown by every page request when set.
     var pageError: (any Error)?
     var deleteError: (any Error)?
@@ -18,6 +22,9 @@ final class FakeChatRepository: ChatRepository {
     var clearError: (any Error)?
     /// Whether a clear answers `hidden`, as the backend does for a conversation.
     var clearAnswersHidden = false
+    /// The floor the next clear answers; `nil` answers one that sorts after every fixture id, as the backend's floor
+    /// (now) sorts after every stored message.
+    var clearFloor: String?
     /// Answered to the next upload requests, one each; a fixture ticket numbered by the request once they run dry.
     var uploadTickets: [UploadTicket] = []
     var uploadError: (any Error)?
@@ -26,14 +33,9 @@ final class FakeChatRepository: ChatRepository {
     var refreshError: (any Error)?
     /// The epoch the next send and read marker answers carry; `epoch` otherwise.
     var responseEpoch: Int?
-    /// While true, every request suspends until `releaseRequests()`.
-    var holdsRequests: Bool {
-        get { hold.isEnabled }
-        set { hold.isEnabled = newValue }
-    }
     /// Runs at the start of every request, so a test can look at other collaborators at that moment.
     var onRequest: () -> Void = {}
-    private let hold = RequestHold()
+    let hold = RequestHold()
     private(set) var newestGroupIDs: [String] = []
     private(set) var olderRequests: [(groupID: String, before: String)] = []
     private(set) var newerRequests: [(groupID: String, after: String)] = []
@@ -70,8 +72,11 @@ final class FakeChatRepository: ChatRepository {
     func send(groupID: String, _ draft: MessageDraft) async throws -> SentMessage {
         onRequest()
         sentDrafts.append(draft)
-        await hold.wait()
+        try await hold.waitOrThrow()
         if !sendErrors.isEmpty { throw sendErrors.removeFirst() }
+        if !sentMessages.isEmpty {
+            return SentMessage(message: sentMessages.removeFirst(), channelEpoch: responseEpoch ?? epoch)
+        }
         sequence += 1
         let message = ChatMessage.fixture(id: "sent-\(sequence)",
                                           groupID: groupID,
@@ -111,19 +116,19 @@ final class FakeChatRepository: ChatRepository {
     }
 
     func clearHistory(groupID: String) async throws -> ClearedHistory {
+        onRequest()
         clearedGroupIDs.append(groupID)
+        try await hold.waitOrThrow()
         if let clearError { throw clearError }
         sequence += 1
-        return ClearedHistory(historyFloor: "floor-\(sequence)", hidden: clearAnswersHidden, channelEpoch: responseEpoch ?? epoch)
-    }
-
-    func releaseRequests() {
-        hold.release()
+        return ClearedHistory(historyFloor: clearFloor ?? "~floor-\(sequence)",
+                              hidden: clearAnswersHidden,
+                              channelEpoch: responseEpoch ?? epoch)
     }
 
     private func page(_ queue: ReferenceWritableKeyPath<FakeChatRepository, [MessagePage]>) async throws -> MessagePage {
         onRequest()
-        await hold.wait()
+        try await hold.waitOrThrow()
         if let pageError { throw pageError }
         guard !self[keyPath: queue].isEmpty else { return MessagePage(items: [], hasMore: false, channelEpoch: epoch) }
         return self[keyPath: queue].removeFirst()
@@ -220,30 +225,19 @@ final class FakeRealtimeTransport: RealtimeTransport {
 
 /// Answers a fixed endpoint; `holdsRequests` parks every request until `releaseRequests()`.
 @MainActor
-final class FakeRealtimeEndpointProvider: RealtimeEndpointProvider {
+final class FakeRealtimeEndpointProvider: RealtimeEndpointProvider, HoldsRequests {
     var url: URL?
-    var holdsRequests: Bool {
-        get { hold.isEnabled }
-        set { hold.isEnabled = newValue }
-    }
-    private let hold = RequestHold()
+    let hold = RequestHold()
     private(set) var requestCount = 0
 
     init(url: URL? = URL(string: "https://realtime.test/event")) {
         self.url = url
     }
 
-    /// A request held right now.
-    var isHolding: Bool { hold.isHolding }
-
     func endpoint() async -> URL? {
         requestCount += 1
         await hold.wait()
         return url
-    }
-
-    func releaseRequests() {
-        hold.release()
     }
 }
 
@@ -258,11 +252,5 @@ final class DateClock {
 
     func advance(by seconds: TimeInterval) {
         now = now.addingTimeInterval(seconds)
-    }
-}
-
-extension Duration {
-    var seconds: Double {
-        Double(components.seconds) + Double(components.attoseconds) / 1e18
     }
 }

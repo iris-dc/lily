@@ -134,8 +134,7 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
 
     /// Meters from `origin` to the group's place; `nil` while the user's position is unknown or the group has none.
     func distance(from origin: Coordinate?) -> Measurement<UnitLength>? {
-        guard let location, let origin else { return nil }
-        return Measurement(value: location.coordinate.distance(to: origin), unit: .meters)
+        location?.distance(from: origin)
     }
 
     /// The group as its badge on an event shows it.
@@ -150,6 +149,12 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
         copy.memberCount = memberCount
         copy.channelEpoch = channelEpoch ?? self.channelEpoch
         return copy
+    }
+
+    /// The group after someone left, was removed or was banned: one member fewer and a new chat epoch. `membership`
+    /// is the caller's afterwards: `nil` when it was them.
+    func dropping(_ membership: GroupMembership? = nil) -> SportGroup {
+        updatingMembership(membership, memberCount: memberCount - 1, channelEpoch: channelEpoch + 1)
     }
 
     /// A room-wide `group_updated` broadcast carries no `membership` (one payload reaches every member), so the

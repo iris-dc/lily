@@ -20,7 +20,7 @@ extension TournamentDetailViewModel {
     }
 
     func createTeam(named name: String) async {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = name.trimmed
         await enter("Create team") { [self] in try await repository.join(id: destination.id, teamName: trimmed) }
     }
 

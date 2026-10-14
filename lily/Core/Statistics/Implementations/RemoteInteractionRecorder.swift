@@ -1,9 +1,10 @@
 import Foundation
 
-/// Buffers interactions and posts them to Laurel: at `batchSize`, or `flushDelay` after the first one, or on `flush()`.
+/// Buffers interactions and posts them to Laurel: at `batchSize`, or `flushDelay` after the first one, or on `flush()`,
+/// and before a sign-out, under `signOutTimeout`; what is still buffered when the session has ended is dropped.
 /// Guests are never recorded. Every entry remembers who it was recorded for, so a sign-out between recording and
 /// sending drops it instead of charging it to the next user.
-final class RemoteInteractionRecorder: InteractionRecorder {
+final class RemoteInteractionRecorder: InteractionRecorder, SessionObserver {
     private struct Entry {
         let userID: String
         let interaction: Interaction
@@ -15,6 +16,7 @@ final class RemoteInteractionRecorder: InteractionRecorder {
     private let batchSize: Int
     private let flushDelay: Duration
     private let maxBuffered: Int
+    private let signOutTimeout: Duration
     private let sleep: Sleep
     private var buffer: [Entry] = []
     private var timer: Task<Void, Never>?
@@ -25,6 +27,7 @@ final class RemoteInteractionRecorder: InteractionRecorder {
          batchSize: Int = AppConfig.Statistics.batchSize,
          flushDelay: Duration = AppConfig.Statistics.flushDelay,
          maxBuffered: Int = AppConfig.Statistics.maxBuffered,
+         signOutTimeout: Duration = AppConfig.Statistics.signOutFlushTimeout,
          sleep: @escaping Sleep = systemSleep) {
         self.client = client
         self.identity = identity
@@ -32,6 +35,7 @@ final class RemoteInteractionRecorder: InteractionRecorder {
         self.batchSize = batchSize
         self.flushDelay = flushDelay
         self.maxBuffered = maxBuffered
+        self.signOutTimeout = signOutTimeout
         self.sleep = sleep
     }
 
@@ -61,6 +65,25 @@ final class RemoteInteractionRecorder: InteractionRecorder {
         }
         guard !interactions.isEmpty else { return }
         await send(interactions)
+    }
+
+    /// The Bearer still goes out here, so the user's last interactions are not lost to the sign-out; capped so a stalled
+    /// network never holds it (a cancelled send is a warning like any failed one, never retried).
+    func sessionWillEnd() async {
+        guard !buffer.isEmpty else { return }
+        do {
+            try await Deadline.within(signOutTimeout, sleep: sleep) { [self] in await flush() }
+        } catch {
+            logger.warning(.statistics, "Flush before sign-out gave up: \(error)")
+        }
+    }
+
+    func sessionDidEnd() {
+        timer?.cancel()
+        timer = nil
+        guard !buffer.isEmpty else { return }
+        logger.debug(.statistics, "Dropped \(buffer.count) interactions at sign-out")
+        buffer.removeAll()
     }
 
     private func send(_ interactions: [Interaction]) async {

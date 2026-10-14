@@ -16,6 +16,8 @@ nonisolated enum TournamentFormat: String, CaseIterable, Codable, Sendable {
 
     var entriesRange: ClosedRange<Int> { AppConfig.Tournaments.entriesRange(for: self) }
     var minimumEntriesToStart: Int { AppConfig.Tournaments.minEntries(for: self) }
+    /// A knockout is drawn as a bracket; everyone-against-everyone as a standings table.
+    var drawsBracket: Bool { self == .singleElimination }
 }
 
 /// Where a tournament stands: entries join and leave while in `registration`, the organiser starts it by hand, the

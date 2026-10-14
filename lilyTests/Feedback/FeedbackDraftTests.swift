@@ -29,11 +29,21 @@ struct FeedbackDraftTests {
         #expect(draft.isValid)
         draft.replyEmail = "jane@"
         #expect(draft.issues == [.emailInvalid] && draft.hint(for: .replyEmail) == "That email doesn't look right")
-        draft.replyEmail = String(repeating: "j", count: AppConfig.Feedback.replyEmailMaxLength) + "@example.com"
+        // A local part over `AppConfig.Auth.emailLocalPartMaxLength` reads as invalid, so the length comes from the domain.
+        draft.replyEmail = "jane@" + String(repeating: "x", count: AppConfig.Feedback.replyEmailMaxLength) + ".com"
         #expect(draft.issues == [.emailTooLong])
         #expect(draft.hint(for: .replyEmail) == AppBranding.Feedback.tooLong(limit: AppConfig.Feedback.replyEmailMaxLength))
         draft.replyEmail = "jane@example.com"
         #expect(draft.isValid && draft.hint(for: .replyEmail) == nil)
+    }
+
+    @Test func anEmailWithWhitespaceOrTwoAtSignsIsRefused() {
+        var draft = FeedbackDraft(message: "Hello", replyEmail: "ja ne@example.com")
+        #expect(draft.issues == [.emailInvalid] && draft.hint(for: .replyEmail) == AppBranding.Feedback.invalidEmail)
+        draft.replyEmail = "jane@doe@example.com"
+        #expect(draft.issues == [.emailInvalid] && draft.hint(for: .replyEmail) == AppBranding.Feedback.invalidEmail)
+        draft.replyEmail = "  jane@example.com  "
+        #expect(draft.isValid, "the trim runs before the whitespace rule")
     }
 
     @Test func issuesComeInFormOrder() {

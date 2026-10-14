@@ -135,7 +135,7 @@ struct MockChatRepositoryTests {
         _ = try await repository.send(groupID: kickers, draft)
         await settle(until: { sleep.held.contains(AppConfig.Chat.mockAutoReplyDelay) })
         sleep.release { $0 == AppConfig.Chat.mockAutoReplyDelay }
-        await settle(until: { sleep.requested.count == 3 })
+        try await settle(untilAsync: { try await repository.newest(groupID: kickers).items.last?.senderName == "Marta" })
 
         let newest = try await repository.newest(groupID: kickers).items.last
         #expect(newest?.senderName == "Marta" && newest?.text == MockChatFixtures.replies[0])

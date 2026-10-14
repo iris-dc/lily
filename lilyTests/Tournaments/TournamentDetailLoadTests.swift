@@ -114,7 +114,7 @@ struct TournamentDetailLoadTests {
 
         #expect(harness.presentedError == .network)
         #expect(harness.navigation.chatPath.isEmpty)
-        #expect(harness.logs(.error).contains { $0.contains("Open chat failed") })
+        #expect(harness.logs(.error).contains { $0.contains("Open chat for tournament \(destination.id) failed") })
     }
 
     /// A loaded detail with a second load held in flight, as a pull-to-refresh that is slow to answer.

@@ -5,9 +5,9 @@ import Testing
 @MainActor
 struct LanguageStoreTests {
     @MainActor private final class Harness {
-        let store = UserDefaultsLanguagePreferenceStore(defaults: makeTestDefaults())
+        let store = UserDefaultsChoiceStore<LanguagePreference>(defaults: makeTestDefaults(), logger: SpyLogger())
         let logger = SpyLogger()
-        private(set) var applied: [AppLanguage?] = []
+        private(set) var applied: [AppLocale.Context] = []
         var systemChoice = AppLanguage.english
 
         func makeStore(launchChoice: AppLanguage? = nil) -> LanguageStore {
@@ -17,6 +17,11 @@ struct LanguageStoreTests {
                           apply: { [weak self] in self?.applied.append($0) },
                           logger: logger)
         }
+
+        /// The languages of the contexts applied so far, in order (`nil` is the system's choice).
+        var appliedLanguages: [AppLanguage?] { applied.map(\.language) }
+
+        var infoLines: [String] { logger.messages(in: .localization, at: .info) }
     }
 
     @Test func startsFromTheStoredChoiceAndAppliesIt() {
@@ -26,8 +31,10 @@ struct LanguageStoreTests {
         let store = harness.makeStore()
 
         #expect(store.preference == .fixed(.polish) && store.language == .polish)
-        #expect(harness.applied == [.polish])
-        #expect(harness.logger.messages(in: .localization) == ["Language pl (chosen)"])
+        #expect(harness.appliedLanguages == [.polish])
+        let lines = harness.infoLines
+        #expect(lines.count == 1)
+        #expect(lines.last?.contains("pl") == true && lines.last?.contains("chosen") == true)
     }
 
     @Test func withoutAChoiceItFollowsTheSystem() {
@@ -37,8 +44,10 @@ struct LanguageStoreTests {
         let store = harness.makeStore()
 
         #expect(store.preference == .system && store.language == .french)
-        #expect(harness.applied == [nil])
-        #expect(harness.logger.messages(in: .localization) == ["Language fr (system)"])
+        #expect(harness.appliedLanguages == [nil])
+        let lines = harness.infoLines
+        #expect(lines.count == 1)
+        #expect(lines.last?.contains("fr") == true && lines.last?.contains("system") == true)
     }
 
     @Test func selectingSavesAppliesAndPublishesTheLanguage() {
@@ -48,13 +57,15 @@ struct LanguageStoreTests {
         store.select(.fixed(.ukrainian))
 
         #expect(store.language == .ukrainian && harness.store.load() == .fixed(.ukrainian))
-        #expect(harness.applied == [nil, .ukrainian])
-        #expect(harness.logger.messages(in: .localization).last == "Language changed to uk (chosen)")
+        #expect(harness.appliedLanguages == [nil, .ukrainian])
+        let lines = harness.infoLines
+        #expect(lines.count == 2)
+        #expect(lines.last?.contains("uk") == true && lines.last?.contains("chosen") == true)
 
         store.select(.system)
 
         #expect(store.language == .english && harness.store.load() == .system)
-        #expect(harness.applied == [nil, .ukrainian, nil])
+        #expect(harness.appliedLanguages == [nil, .ukrainian, nil])
     }
 
     @Test func selectingTheCurrentChoiceDoesNothing() {
@@ -63,7 +74,7 @@ struct LanguageStoreTests {
 
         store.select(.system)
 
-        #expect(harness.applied == [nil] && harness.logger.messages(in: .localization).count == 1)
+        #expect(harness.appliedLanguages == [nil] && harness.infoLines.count == 1)
     }
 
     @Test func aLaunchChoiceIsUsedButNeverStored() {
@@ -72,7 +83,7 @@ struct LanguageStoreTests {
 
         let store = harness.makeStore(launchChoice: .russian)
 
-        #expect(store.language == .russian && harness.applied == [.russian])
+        #expect(store.language == .russian && harness.appliedLanguages == [.russian])
         #expect(harness.store.load() == .fixed(.spanish))
     }
 
@@ -83,5 +94,7 @@ struct LanguageStoreTests {
         store.select(.fixed(.portuguese))
 
         #expect(store.locale.language.languageCode?.identifier == "pt")
+        #expect(harness.applied.last?.language == .portuguese)
+        #expect(store.locale.identifier == harness.applied.last?.locale.identifier)
     }
 }

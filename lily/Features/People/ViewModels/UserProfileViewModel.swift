@@ -22,7 +22,7 @@ final class UserProfileViewModel {
     private let navigation: AppNavigation
     private let reporter: GroupErrorReporter
     private let logger: any Logging
-    private let tryAgainDelay: Duration
+    private let gate: WriteGate
     private var hasLoggedOpen = false
 
     init(destination: UserProfileDestination,
@@ -40,7 +40,10 @@ final class UserProfileViewModel {
         self.navigation = navigation
         self.reporter = reporter
         self.logger = logger
-        self.tryAgainDelay = tryAgainDelay
+        gate = WriteGate(category: .groups,
+                         logger: logger,
+                         tryAgainDelay: tryAgainDelay,
+                         report: { reporter.report($0) })
     }
 
     var userID: String { destination.userId }
@@ -74,23 +77,18 @@ final class UserProfileViewModel {
         }
     }
 
-    /// One request at a time; `TRY_AGAIN` is repeated once (one id per pair, so a repeat answers the same room). The
-    /// conversation goes into Mine before its chat opens, so the Chats tab lists it on the way back.
+    /// One request at a time; the gate repeats a `TRY_AGAIN` once (one id per pair, so a repeat answers the same room)
+    /// and sends a failure to the popup. The conversation goes into Mine before its chat opens, so the Chats tab lists
+    /// it on the way back.
     func message() async {
         guard canMessage, !isStartingConversation else { return }
         isStartingConversation = true
         defer { isStartingConversation = false }
-        do {
-            let conversation = try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: logRetry) {
-                try await repository.startConversation(with: userID)
-            }
+        await gate.run("Starting a conversation with \(userID)") {
+            let conversation = try await repository.startConversation(with: userID)
             myGroups.add(conversation)
             logger.info(.groups, "Conversation \(conversation.id) started with \(userID)")
             navigation.open(chat: conversation)
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            logger.error(.groups, "Starting a conversation with \(userID) failed: \(error)")
-            reporter.report(error)
         }
     }
 
@@ -99,9 +97,5 @@ final class UserProfileViewModel {
         guard !hasLoggedOpen else { return }
         hasLoggedOpen = true
         logger.info(.groups, "Profile \(userID) opened")
-    }
-
-    private func logRetry() {
-        logger.info(.groups, "Starting a conversation with \(userID) lost a race; retrying once")
     }
 }

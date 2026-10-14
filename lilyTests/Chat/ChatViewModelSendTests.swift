@@ -29,29 +29,33 @@ struct ChatViewModelSendTests {
         #expect(viewModel.room.messages.map(\.id) == ["m1", "sent-1"])
         #expect(viewModel.room.messages.last?.clientMessageId == clientID)
         #expect(harness.chat.readMarks.map(\.messageID) == ["m1"], "own message: marker waits for the interval")
-        #expect(harness.logger.messages(in: .chat, at: .info).contains("Message sent sent-1 in group g"))
+        #expect(harness.chatLogs(.info).mentioning("sent-1", "group g").count == 1)
 
         harness.transport.post(.message(viewModel.room.messages[1]), to: .room(groupID: "g", epoch: 1))
         await harness.yield()
         #expect(viewModel.room.messages.count == 2)
     }
 
+    /// The answer and the echo are the same stored message: whichever comes first replaces the bubble, the other is
+    /// deduplicated by id.
     @Test func anEchoBeforeTheAnswerReplacesTheBubble() async {
         let (harness, viewModel) = await makeOpenChat()
         let clientID = viewModel.draft.clientMessageID
+        let echoed = ChatMessage.fixture(id: "m2", senderUserID: TestFixtures.user.id, text: "hello", clientMessageID: clientID)
+        harness.chat.sentMessages = [echoed]
         harness.chat.holdsRequests = true
 
         let send = Task { await viewModel.send() }
         await settle(until: { viewModel.pending.count == 1 && harness.chat.sentDrafts.count == 1 })
         #expect(viewModel.rows.last?.id == clientID)
 
-        let echoed = ChatMessage.fixture(id: "m2", senderUserID: TestFixtures.user.id, text: "hello", clientMessageID: clientID)
         harness.transport.post(.message(echoed), to: .room(groupID: "g", epoch: 1))
         await settle(until: { viewModel.pending.isEmpty })
         harness.chat.releaseRequests()
         await send.value
 
-        #expect(viewModel.room.messages.map(\.id) == ["m1", "m2", "sent-1"] || viewModel.room.messages.map(\.id) == ["m1", "m2"])
+        #expect(viewModel.room.messages.map(\.id) == ["m1", "m2"])
+        #expect(viewModel.pending.isEmpty && harness.chat.sentDrafts.count == 1)
     }
 
     /// The backend commits before it answers: a lost answer is settled by the catch-up finding the client id.
@@ -78,7 +82,7 @@ struct ChatViewModelSendTests {
         await viewModel.send()
         #expect(viewModel.pending.map(\.hasFailed) == [true])
         #expect(harness.errorCenter.current?.error == .messageSendFailed)
-        #expect(harness.logger.messages(in: .chat, at: .error).contains("Send failed in group g: messageSendFailed"))
+        #expect(harness.chatLogs(.error).mentioning("group g", "\(AppError.messageSendFailed)").count == 1)
 
         await viewModel.retry(viewModel.pending[0])
 
@@ -97,7 +101,7 @@ struct ChatViewModelSendTests {
         let clientIDs = harness.chat.sentDrafts.map(\.clientMessageID)
         #expect(clientIDs.count == 2 && Set(clientIDs).count == 1, "one repeat, the same client id")
         #expect(viewModel.pending.isEmpty && viewModel.room.messages.count == 2 && harness.errorCenter.current == nil)
-        #expect(harness.logger.messages(in: .chat, at: .info).contains("Send lost a race in group g; retrying once"))
+        #expect(harness.chatLogs(.info).mentioning("group g", "lost a race").count == 1)
     }
 
     @Test func aSecondLostRaceFailsLikeAnyRefusal() async {
@@ -157,6 +161,18 @@ struct ChatViewModelSendTests {
         #expect(viewModel.cooldownSeconds == Int(AppConfig.Chat.rateLimitCooldownFallback))
     }
 
+    /// A cooldown is a state the room expects, so its line is a warning; a fault (`messageSendFailed` above) stays an
+    /// error.
+    @Test func aRateLimitIsARefusalLoggedAtWarning() async {
+        let (harness, viewModel) = await makeOpenChat()
+        harness.chat.sendErrors = [AppError.rateLimited(retryAfter: 7)]
+
+        await viewModel.send()
+
+        #expect(harness.chatLogs(.warning).filter { $0.hasPrefix("Send failed in group g: rateLimited") }.count == 1)
+        #expect(harness.chatLogs(.error).isEmpty)
+    }
+
     /// A lost `member_left` is learned from the send's answer: resubscribe to the new epoch, then catch up.
     @Test func lostMemberLeftConvergesOnNextSend() async {
         let (harness, viewModel) = await makeOpenChat()
@@ -166,7 +182,7 @@ struct ChatViewModelSendTests {
 
         #expect(harness.controller.subscribedRooms["g"] == 2 && viewModel.subscribedEpoch == 2)
         #expect(harness.chat.newerRequests.count == 2, "one catch-up on appear, one after the epoch change")
-        #expect(harness.logger.messages(in: .chat, at: .info).contains("Epoch changed for group g: 1 -> 2"))
+        #expect(harness.chatLogs(.info).mentioning("group g", "1 -> 2").count == 1)
         await harness.yield()
         #expect(!harness.transport.subscribedChannels.contains(.room(groupID: "g", epoch: 1)))
     }

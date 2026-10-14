@@ -4,16 +4,22 @@ import SwiftUI
 /// side types and reports a score, or confirms or disputes the score the other side reported; the organiser records a
 /// score (final at once), confirms a reported one, gives a walkover to either side or sets the time and place
 /// (`MatchScheduleView`, pushed in this sheet's stack). Everyone else reads. Closes once a write went through; the
-/// detail behind it already shows the answer.
+/// detail behind it already shows the answer. The score rules are `MatchScoreDraft`'s.
 struct MatchSheet: View {
     let viewModel: TournamentDetailViewModel
     let matchID: String
     let errorCenter: ErrorCenter
-    @State private var scoreA = ""
-    @State private var scoreB = ""
+    @State private var scores: MatchScoreDraft
     @Environment(\.dismiss) private var dismiss
 
     private typealias Copy = AppBranding.Tournaments.Match
+
+    init(viewModel: TournamentDetailViewModel, matchID: String, errorCenter: ErrorCenter) {
+        self.viewModel = viewModel
+        self.matchID = matchID
+        self.errorCenter = errorCenter
+        _scores = State(initialValue: MatchScoreDraft(match: viewModel.detail?.match(id: matchID)))
+    }
 
     /// The match as the detail holds it now; a write's answer changes it under the sheet.
     private var match: TournamentMatch? { viewModel.detail?.match(id: matchID) }
@@ -42,7 +48,6 @@ struct MatchSheet: View {
         .interactiveDismissDisabled(viewModel.isBusy)
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
         .errorPopup(errorCenter)
-        .onAppear { seedScores() }
     }
 
     private func content(_ match: TournamentMatch, actions: MatchActions) -> some View {
@@ -75,14 +80,18 @@ struct MatchSheet: View {
     private func scoreFields(_ match: TournamentMatch) -> some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
             HStack(alignment: .bottom, spacing: DesignTokens.Spacing.lg) {
-                scoreField(viewModel.entryName(match.entryAId), text: $scoreA, identifier: AccessibilityIdentifiers.matchScoreA)
+                scoreField(viewModel.entryName(match.entryAId),
+                           text: $scores.scoreA,
+                           identifier: AccessibilityIdentifiers.matchScoreA)
                 Text(verbatim: Copy.scoreSeparator)
                     .font(.title2)
                     .foregroundStyle(.secondary)
                     .padding(.bottom, DesignTokens.Spacing.md)
-                scoreField(viewModel.entryName(match.entryBId), text: $scoreB, identifier: AccessibilityIdentifiers.matchScoreB)
+                scoreField(viewModel.entryName(match.entryBId),
+                           text: $scores.scoreB,
+                           identifier: AccessibilityIdentifiers.matchScoreB)
             }
-            if isDisallowedDraw {
+            if scores.isDisallowedDraw(permitsDraws: permitsDraws) {
                 Text(Copy.drawsNotAllowed)
                     .font(LilyTheme.Fonts.caption)
                     .foregroundStyle(Color.lilyAccent)
@@ -137,29 +146,17 @@ struct MatchSheet: View {
     /// Report or Record: enabled once both scores parse and the pair is allowed.
     private func scoreButton(_ title: String, match: TournamentMatch, identifier: String) -> some View {
         actionButton(title, identifier: identifier) {
-            guard let scores = parsedScores else { return false }
-            return await viewModel.report(match, scoreA: scores.a, scoreB: scores.b)
+            guard let parsed = scores.parsed else { return false }
+            return await viewModel.report(match, scoreA: parsed.a, scoreB: parsed.b)
         }
         .lilyProminentButton()
-        .disabled(!canSubmitScore)
+        .disabled(!scores.canSubmit(permitsDraws: permitsDraws))
     }
 
     /// A write that closes the sheet when it went through; the detail behind already shows the answer.
     private func actionButton(_ title: String, identifier: String, _ write: @escaping () async -> Bool) -> some View {
-        Button {
-            Task { if await write() { dismiss() } }
-        } label: {
-            HStack(spacing: DesignTokens.Spacing.sm) {
-                Text(title)
-                if viewModel.isBusy {
-                    ProgressView()
-                        .controlSize(.regular)
-                        .accessibilityHidden(true)
-                }
-            }
-        }
-        .disabled(viewModel.isBusy)
-        .accessibilityIdentifier(identifier)
+        BusyButton(title, isBusy: viewModel.isBusy, write: write, onSuccess: { dismiss() })
+            .accessibilityIdentifier(identifier)
     }
 
     /// The organiser picks who wins a match that was not played.
@@ -178,24 +175,5 @@ struct MatchSheet: View {
         .lilyGlassButton(labelColor: .lilyInk)
         .disabled(viewModel.isBusy)
         .accessibilityIdentifier(AccessibilityIdentifiers.matchWalkover)
-    }
-
-    private var parsedScores: (a: Int, b: Int)? {
-        let range = AppConfig.Tournaments.scoreRange
-        guard let a = Int(scoreA), let b = Int(scoreB), range.contains(a), range.contains(b) else { return nil }
-        return (a, b)
-    }
-
-    private var isDisallowedDraw: Bool {
-        guard let scores = parsedScores else { return false }
-        return scores.a == scores.b && !permitsDraws
-    }
-
-    private var canSubmitScore: Bool { parsedScores != nil && !isDisallowedDraw }
-
-    /// A reported score is the starting point for the organiser's record or a side's correction.
-    private func seedScores() {
-        scoreA = match?.scoreA.map(String.init) ?? ""
-        scoreB = match?.scoreB.map(String.init) ?? ""
     }
 }

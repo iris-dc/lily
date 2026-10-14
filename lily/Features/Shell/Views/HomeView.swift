@@ -5,7 +5,6 @@ import SwiftUI
 /// nothing is requested for them; the loads run again for whoever signs in from here.
 struct HomeView: View {
     private let dependencies: AppDependencies
-    @State private var groups: GroupListViewModel
     @State private var events: EventListViewModel
     @State private var tournaments: TournamentListViewModel
 
@@ -20,7 +19,6 @@ struct HomeView: View {
 
     init(dependencies: AppDependencies) {
         self.dependencies = dependencies
-        _groups = State(initialValue: dependencies.makeGroupListViewModel(scope: .mine))
         _events = State(initialValue: dependencies.makeEventListViewModel(scope: .joined))
         _tournaments = State(initialValue: dependencies.makeTournamentListViewModel(scope: .mine))
     }
@@ -41,11 +39,14 @@ struct HomeView: View {
                                   message: Copy.guestMessage,
                                   dependencies: dependencies)
             case .overview:
-                HomeOverview(groups: groups, events: events, tournaments: tournaments, dependencies: dependencies)
+                HomeOverview(groups: dependencies.myGroups,
+                             events: events,
+                             tournaments: tournaments,
+                             dependencies: dependencies)
             }
         }
         .navigationTitle(AppBranding.homeTitle)
-        .groupDestinations(dependencies: dependencies)
+        .groupDestinations(dependencies: dependencies, onTournamentChange: tournaments.replace)
         // The only `SportEvent` destination on this stack (the cards here and a group detail's Events segment push them).
         .navigationDestination(for: SportEvent.self) { event in
             EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event, onChange: events.replace),
@@ -54,16 +55,28 @@ struct HomeView: View {
         .task(id: loadKey) { await loadIfStale() }
     }
 
-    /// The caller's games and groups are theirs alone, so a guest asks for nothing.
+    /// The caller's games and groups are theirs alone, so a guest asks for nothing. The three lists load at once, so
+    /// the screen's spinner lasts one round trip and not three; the position follows the lists, as before. The child
+    /// tasks capture the main-actor collaborators (`Sendable`), never the view.
     private func loadIfStale() async {
         guard content == .overview else { return }
-        await events.loadIfStale()
+        let events = events
+        let tournaments = tournaments
+        let myGroups = dependencies.myGroups
+        async let games: Void = events.loadIfStale()
+        async let groups: Void = Self.loadGroupsIfStale(myGroups)
+        async let mine: Void = Self.loadTournamentsIfStale(tournaments)
+        _ = await (games, groups, mine)
         await events.loadUserLocation()
-        if AppConfig.FeatureFlags.groups { await groups.loadIfStale() }
-        if AppConfig.FeatureFlags.tournaments {
-            await tournaments.loadIfStale()
-            await tournaments.loadUserLocation()
-        }
+        if AppConfig.FeatureFlags.tournaments { await tournaments.loadUserLocation() }
+    }
+
+    private static func loadGroupsIfStale(_ myGroups: MyGroupsStore) async {
+        if AppConfig.FeatureFlags.groups { await myGroups.loadIfStale() }
+    }
+
+    private static func loadTournamentsIfStale(_ tournaments: TournamentListViewModel) async {
+        if AppConfig.FeatureFlags.tournaments { await tournaments.loadIfStale() }
     }
 }
 

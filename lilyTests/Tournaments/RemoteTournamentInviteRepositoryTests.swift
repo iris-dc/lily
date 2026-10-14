@@ -1,15 +1,13 @@
-import Foundation
 import Testing
 @testable import lily
 
 @MainActor
 struct RemoteTournamentInviteRepositoryTests {
-    /// The entry codes read as invite refusals here; the rest keep their shared mapping.
+    /// The two entry codes this route re-reads as invite refusals, and its fallback: the shared mapping is proved
+    /// once, in `SendFailingWithTests` and `BackendErrorCodeTests.everyCodeMapsToItsCase`.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
         ("ALREADY_ENTERED", .inviteeAlreadyEntered), ("FORBIDDEN", .cannotInviteToTournament),
-        ("REGISTRATION_CLOSED", .registrationClosed), ("USER_NOT_FOUND", .userNotFound),
-        ("TOURNAMENT_NOT_FOUND", .tournamentNotFound), ("RATE_LIMITED", .rateLimited(retryAfter: nil)),
-        ("TERMS_REQUIRED", .termsRequired), ("TRY_AGAIN", .tryAgain), ("VALIDATION_FAILED", .inviteUnavailable),
+        ("VALIDATION_FAILED", .inviteUnavailable),
     ]
 
     private let client = FakeAPIClient()
@@ -38,14 +36,10 @@ struct RemoteTournamentInviteRepositoryTests {
         await #expect(throws: expected) { try await repository.invite(groupID: "t1", userID: "sub-2") }
     }
 
-    @Test func otherFailuresBecomeInviteUnavailableAndTransportKeepsTheSharedMapping() async {
+    @Test func otherFailuresBecomeInviteUnavailable() async {
         client.error = APIError.http(status: 500, body: nil)
+
         await #expect(throws: AppError.inviteUnavailable) { try await repository.candidates(groupID: "t1") }
-        client.error = APIError.http(status: 401, body: nil)
-        await #expect(throws: AppError.sessionExpired) { try await repository.invite(groupID: "t1", userID: "sub-2") }
-        client.error = URLError(.notConnectedToInternet)
-        await #expect(throws: AppError.network) { try await repository.invite(groupID: "t1", userID: "sub-2") }
-        client.error = URLError(.cancelled)
-        await #expect(throws: URLError(.cancelled)) { try await repository.candidates(groupID: "t1") }
+        await #expect(throws: AppError.inviteUnavailable) { try await repository.invite(groupID: "t1", userID: "sub-2") }
     }
 }

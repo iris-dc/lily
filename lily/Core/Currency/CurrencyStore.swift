@@ -9,12 +9,12 @@ import Observation
 final class CurrencyStore {
     private(set) var preference: CurrencyPreference
 
-    private let store: any CurrencyPreferenceStore
+    private let store: any ChoiceStore<CurrencyPreference>
     private let systemChoice: () -> String?
     private let logger: any Logging
 
     /// `systemChoice` answers the region's currency code, `nil` where the region names none (then the default applies).
-    init(store: any CurrencyPreferenceStore,
+    init(store: any ChoiceStore<CurrencyPreference>,
          systemChoice: @escaping () -> String? = { AppLocale.locale.currency?.identifier },
          logger: any Logging) {
         self.store = store

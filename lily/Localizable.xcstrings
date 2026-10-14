@@ -2155,46 +2155,6 @@
         }
       }
     },
-    "All clear": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Всё чисто"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Todo en orden"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rien à signaler"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Усе чисто"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wszystko w porządku"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tudo em ordem"
-          }
-        }
-      }
-    },
     "Allowed": {
       "localizations": {
         "ru": {
@@ -2275,42 +2235,42 @@
         }
       }
     },
-    "Already have an account?": {
+    "Already have an account? Sign in": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Уже есть аккаунт?"
+            "value": "Уже есть аккаунт? Войти"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Ya tienes una cuenta?"
+            "value": "¿Ya tienes una cuenta? Iniciar sesión"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous avez déjà un compte ?"
+            "value": "Vous avez déjà un compte ? Se connecter"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Уже є обліковий запис?"
+            "value": "Уже є обліковий запис? Увійти"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Masz już konto?"
+            "value": "Masz już konto? Zaloguj się"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Já tem uma conta?"
+            "value": "Já tem uma conta? Entrar"
           }
         }
       }
@@ -2425,6 +2385,52 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dowolne"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qualquer"
+          }
+        }
+      }
+    },
+    "Any (price)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Any"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Любая"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cualquiera"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indifférent"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Будь-яка"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dowolna"
           }
         },
         "pt": {
@@ -3623,6 +3629,46 @@
         }
       }
     },
+    "Block %@?": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заблокировать %@?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Bloquear a %@?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloquer %@ ?"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заблокувати %@?"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zablokować %@?"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloquear %@?"
+          }
+        }
+      }
+    },
     "Block list full": {
       "localizations": {
         "ru": {
@@ -3659,46 +3705,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lista de bloqueios cheia"
-          }
-        }
-      }
-    },
-    "Blocked users": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заблокированные пользователи"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Usuarios bloqueados"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Utilisateurs bloqués"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заблоковані користувачі"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zablokowani użytkownicy"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Utilizadores bloqueados"
           }
         }
       }
@@ -5219,6 +5225,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não foi possível carregar o grupo"
+          }
+        }
+      }
+    },
+    "Couldn't load messages": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось загрузить сообщения"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudieron cargar los mensajes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de charger les messages"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося завантажити повідомлення"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie udało się wczytać wiadomości"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível carregar as mensagens"
           }
         }
       }
@@ -7579,6 +7625,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Insira o código que enviámos para concluir a sua conta."
+          }
+        }
+      }
+    },
+    "Enter the price as a number": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Укажите цену числом"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Introduce el precio como un número"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saisissez le prix sous forme de nombre"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Укажіть ціну числом"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podaj cenę jako liczbę"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insira o preço como um número"
           }
         }
       }
@@ -10251,46 +10337,6 @@
         }
       }
     },
-    "Join %@?": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Вступить в %@?"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Unirse a %@?"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rejoindre %@ ?"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Приєднатися до %@?"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dołączyć do %@?"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entrar em %@?"
-          }
-        }
-      }
-    },
     "Join group": {
       "localizations": {
         "ru": {
@@ -12471,6 +12517,52 @@
         }
       }
     },
+    "Message (verb)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Message"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Написать"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mensaje"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Message"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Написати"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Napisz"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mensagem"
+          }
+        }
+      }
+    },
     "Message deleted": {
       "localizations": {
         "ru": {
@@ -13763,46 +13855,6 @@
         }
       }
     },
-    "Nobody blocked": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Никто не заблокирован"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nadie bloqueado"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Personne n’est bloqué"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Нікого не заблоковано"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nikt nie jest zablokowany"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ninguém bloqueado"
-          }
-        }
-      }
-    },
     "Nobody found": {
       "localizations": {
         "ru": {
@@ -14919,46 +14971,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abrir jogo"
-          }
-        }
-      }
-    },
-    "Open reports show up here.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Здесь появятся открытые жалобы."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aquí aparecen las denuncias abiertas."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les signalements en cours apparaissent ici."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Тут з’являтимуться відкриті скарги."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tutaj pojawią się otwarte zgłoszenia."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "As denúncias em aberto aparecem aqui."
           }
         }
       }
@@ -17351,46 +17363,6 @@
         }
       }
     },
-    "Report user": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Пожаловаться на пользователя"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Denunciar usuario"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signaler l’utilisateur"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Поскаржитися на користувача"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zgłoś użytkownika"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Denunciar utilizador"
-          }
-        }
-      }
-    },
     "Reported": {
       "localizations": {
         "ru": {
@@ -17427,46 +17399,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reportada"
-          }
-        }
-      }
-    },
-    "Reports": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Жалобы"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Denuncias"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signalements"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Скарги"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zgłoszenia"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Denúncias"
           }
         }
       }
@@ -17547,46 +17479,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Repor"
-          }
-        }
-      }
-    },
-    "Resolve": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Закрыть"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resolver"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Résoudre"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Закрити"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rozwiąż"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resolver"
           }
         }
       }
@@ -19547,46 +19439,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Suporte"
-          }
-        }
-      }
-    },
-    "Suspend account": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заблокировать аккаунт"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Suspender cuenta"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Suspendre le compte"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Заблокувати обліковий запис"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zawieś konto"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Suspender conta"
           }
         }
       }
@@ -22707,46 +22559,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Retirar banimento"
-          }
-        }
-      }
-    },
-    "Unblock": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Разблокировать"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Desbloquear"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Débloquer"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Розблокувати"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Odblokuj"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Desbloquear"
           }
         }
       }

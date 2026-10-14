@@ -6,6 +6,8 @@ import SwiftUI
 /// person's profile and a tournament's room its tournament: neither has a group detail of its own.
 private struct GroupDestinations: ViewModifier {
     let dependencies: AppDependencies
+    /// What a tournament detail pushed on this stack hands back after a write.
+    let onTournamentChange: @MainActor (Tournament) -> Void
 
     func body(content: Content) -> some View {
         content
@@ -31,11 +33,12 @@ private struct GroupDestinations: ViewModifier {
             }
     }
 
-    /// Every list reloads on `tournamentChanges`, so a change made on the detail only has to be recorded.
+    /// The detail's answer goes to the root's `onTournamentChange`: Home's Mine list replaces its row with it, every
+    /// other root records the change for the lists to reload on.
     private func tournamentDetail(for destination: TournamentDestination) -> some View {
-        TournamentDetailView(viewModel: dependencies.makeTournamentDetailViewModel(for: destination) { _ in
-            dependencies.tournamentChanges.recordChange()
-        }, dependencies: dependencies)
+        TournamentDetailView(viewModel: dependencies.makeTournamentDetailViewModel(for: destination,
+                                                                                   onChange: onTournamentChange),
+                             dependencies: dependencies)
     }
 
     @ViewBuilder private func detail(for group: SportGroup, context: GroupDetailContext) -> some View {
@@ -53,7 +56,13 @@ private struct GroupDestinations: ViewModifier {
 }
 
 extension View {
-    func groupDestinations(dependencies: AppDependencies) -> some View {
-        modifier(GroupDestinations(dependencies: dependencies))
+    /// `onTournamentChange` is what a tournament detail pushed on this stack hands back after a write. Home passes its
+    /// Mine list's `replace`, so the row changes in place, drops when the caller left, or appears when they entered from
+    /// a group's segment pushed on this stack; every other root takes the default, which records the change every list
+    /// reloads on.
+    func groupDestinations(dependencies: AppDependencies,
+                           onTournamentChange: (@MainActor (Tournament) -> Void)? = nil) -> some View {
+        let onChange = onTournamentChange ?? { _ in dependencies.tournamentChanges.recordChange() }
+        return modifier(GroupDestinations(dependencies: dependencies, onTournamentChange: onChange))
     }
 }

@@ -75,6 +75,20 @@ final class GroupDetailViewModel {
         access.canChat && context == .standalone && AppConfig.FeatureFlags.chat
     }
 
+    var canReport: Bool {
+        access.canReport(in: group)
+    }
+
+    /// What the detail's "Report group" files, like `TournamentDetailViewModel.reportTarget`.
+    var reportTarget: ReportTarget {
+        .group(id: group.id)
+    }
+
+    /// The toolbar menu is for members, and for a signed-in reader of a public group, who gets "Report group" alone.
+    var showsMenu: Bool {
+        access.canChat || canReport
+    }
+
     /// One view per screen instance, however often the view's task restarts.
     func recordViewed() {
         guard !hasRecordedView else { return }
@@ -123,7 +137,11 @@ final class GroupDetailViewModel {
         isBusy = true
         defer { isBusy = false }
         do {
-            let updated = try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: { logRetry(intent) }, change)
+            let updated = try await LostRace.attemptTwice(delay: tryAgainDelay,
+                                                          logger: logger,
+                                                          category: .groups,
+                                                          retrying: "\(intent.name) for group \(group.id)",
+                                                          change)
             apply(updated)
             logSuccess(intent, updated)
         } catch {
@@ -191,10 +209,6 @@ final class GroupDetailViewModel {
     private func markGone() {
         isGone = true
         store.remove(id: group.id)
-    }
-
-    private func logRetry(_ intent: Intent) {
-        logger.info(.groups, "\(intent.name) lost a race for group \(group.id); retrying once")
     }
 
     private func logSuccess(_ intent: Intent, _ updated: SportGroup) {

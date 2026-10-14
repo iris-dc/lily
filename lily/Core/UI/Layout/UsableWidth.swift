@@ -6,13 +6,11 @@ import SwiftUI
 /// view running under a floating panel); `width - leading - trailing` is right only in the second case and squeezed
 /// the iPad bubbles to a third of the column (seen 2026-10-08). The view's frame in the window (`.global`) says how
 /// much of the leading inset it overlaps; the trailing inset needs the window's width too (`\.windowWidth`, published
-/// by `layoutModeProvider()`), and is taken to overlap the view whole while that is unknown.
+/// by `layoutModeProvider()`), and is taken to overlap the view whole while that is unknown. The view's width is its
+/// frame's (`GeometryProxy.size` and `frame(in: .global)` agree without a scaling ancestor, and the app has none).
 nonisolated enum UsableWidth {
-    static func of(width: CGFloat,
-                   leading: CGFloat,
-                   trailing: CGFloat,
-                   frameInWindow: CGRect,
-                   windowWidth: CGFloat?) -> CGFloat {
+    static func of(leading: CGFloat, trailing: CGFloat, frameInWindow: CGRect, windowWidth: CGFloat?) -> CGFloat {
+        let width = frameInWindow.width
         let coveredLeading = min(max(leading - frameInWindow.minX, 0), width)
         let coveredTrailing: CGFloat
         if let windowWidth {

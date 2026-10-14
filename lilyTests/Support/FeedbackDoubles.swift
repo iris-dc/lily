@@ -4,23 +4,14 @@ import Foundation
 /// Scriptable `FeedbackRepository`: every send is recorded and answered with a receipt, or refused with `error`;
 /// `holdsRequests` parks a send until `releaseRequests()`, so a test can look at the model while one is in flight.
 @MainActor
-final class FakeFeedbackRepository: FeedbackRepository {
+final class FakeFeedbackRepository: FeedbackRepository, HoldsRequests {
     var error: (any Error)?
     private(set) var sent: [FeedbackPayload] = []
-    private let hold = RequestHold()
-
-    var holdsRequests: Bool {
-        get { hold.isEnabled }
-        set { hold.isEnabled = newValue }
-    }
-
-    func releaseRequests() {
-        hold.release()
-    }
+    let hold = RequestHold()
 
     func send(_ feedback: FeedbackPayload) async throws -> FeedbackReceipt {
         sent.append(feedback)
-        await hold.wait()
+        try await hold.waitOrThrow()
         if let error { throw error }
         return FeedbackReceipt(id: "f-\(sent.count)", createdAt: .now)
     }

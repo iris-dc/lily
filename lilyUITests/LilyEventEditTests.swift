@@ -18,7 +18,7 @@ final class LilyEventEditTests: LilyUITestCase {
         XCTAssertFalse(save.isEnabled, "nothing to save until something changed")
 
         replaceText(in: app.textFields["create-title"], with: "Friday five-a-side")
-        XCTAssertTrue(save.isEnabled, "a changed title is something to save")
+        assertBecomesEnabled(save, "a changed title is something to save")
         save.tap()
         XCTAssertTrue(app.navigationBars["Edit game"].waitForNonExistence(timeout: 10), "the sheet must close once saved")
         XCTAssertTrue(app.staticTexts["Friday five-a-side"].waitForExistence(timeout: 5), "the detail must show the new title")
@@ -56,7 +56,7 @@ final class LilyEventEditTests: LilyUITestCase {
             .press(forDuration: 0.2, thenDragTo: target, withVelocity: .default, thenHoldForDuration: 0.3)
         waitUntilHittableAndStill(map)
         leaveSpotPicker()
-        XCTAssertTrue(save.wait(for: \.isEnabled, toEqual: true, timeout: 5), "a dragged spot is something to save")
+        assertBecomesEnabled(save, "a dragged spot is something to save")
         XCTAssertNotEqual(spotText(of: row), before, "the row must show the new spot")
     }
 
@@ -108,27 +108,18 @@ final class LilyEventEditTests: LilyUITestCase {
     @MainActor
     private func choosePlayerLimit(_ segment: String) {
         let button = app.buttons[segment]
-        if !button.isHittable { app.swipeUp() }
-        XCTAssertTrue(button.waitForExistence(timeout: 5), "missing segment \(segment)")
+        scrollUntilHittable(button)
         button.tap()
     }
 
-    /// Opens the created game from Home. Nothing scrolls before the tab tap: a scrolled list minimises the tab bar.
+    /// "Doubles, all levels" is 1 of 4 and unjoined, so the caller is neither host nor participant; `canEdit` is host
+    /// versus everyone else.
     @MainActor
-    private func openFromHome(_ title: String) {
-        app.tabBars.buttons["Home"].tap()
-        let card = app.staticTexts[title]
-        if !card.waitForExistence(timeout: 10) { app.swipeUp() }
-        XCTAssertTrue(card.waitForExistence(timeout: 5), "the hosted game must be listed under Home")
-        card.tap()
-    }
-
-    @MainActor
-    func testAParticipantSeesNoEditButton() {
+    func testANonHostSeesNoEditButton() {
         tapSignInWithApple()
         let card = app.staticTexts["Doubles, all levels"]
-        if !card.waitForExistence(timeout: 10) { app.swipeUp() }
-        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        _ = card.waitForExistence(timeout: 10)
+        scrollUntilHittable(card)
         card.tap()
 
         XCTAssertTrue(app.buttons["Join"].waitForExistence(timeout: 5), "the detail must be open")

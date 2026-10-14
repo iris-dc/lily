@@ -1,37 +1,27 @@
 import SwiftUI
 
-/// Toolbar button that drops the filter panel down from itself as a popover (kept a popover on iPhone too, so it
-/// reads as a dropdown rather than a sheet). The glyph fills while any criterion is active.
+/// Toolbar button that drops the filter panel down from itself as a popover. The glyph fills while any criterion is
+/// active, and every panel session is reported to the view model as one interaction.
 struct EventFilterButton: View {
     let viewModel: EventListViewModel
-    @State private var isPresented = false
 
     private typealias Copy = AppBranding.Events.Filter
 
     var body: some View {
-        Button {
-            isPresented = true
-        } label: {
-            Label(Copy.title, systemImage: iconName)
-        }
-        .accessibilityIdentifier(AccessibilityIdentifiers.eventsFilter)
-        // The filled glyph is the only visual cue that the feed is narrowed; VoiceOver needs it as a value.
-        .accessibilityValue(viewModel.filter.isActive ? Copy.activeValue : Copy.inactiveValue)
-        .popover(isPresented: $isPresented, arrowEdge: .top) {
-            EventFilterPanel(viewModel: viewModel) { isPresented = false }
-                .presentationCompactAdaptation(.popover)
-        }
-        // One panel session is one interaction, whether it ends with Done or a tap outside.
-        .onChange(of: isPresented) {
-            if isPresented {
-                viewModel.filterPanelOpened()
-            } else {
-                viewModel.filterPanelClosed()
-            }
+        FilterDropdownButton(title: Copy.title,
+                             isActive: viewModel.filter.isActive,
+                             identifier: AccessibilityIdentifiers.eventsFilter,
+                             onPresentedChange: panelPresented) { dismiss in
+            EventFilterPanel(viewModel: viewModel, onDone: dismiss)
         }
     }
 
-    private var iconName: String {
-        viewModel.filter.isActive ? DesignTokens.Symbols.filterActive : DesignTokens.Symbols.filter
+    /// One panel session is one interaction, whether it ends with Done or a tap outside.
+    private func panelPresented(_ isPresented: Bool) {
+        if isPresented {
+            viewModel.filterPanelOpened()
+        } else {
+            viewModel.filterPanelClosed()
+        }
     }
 }

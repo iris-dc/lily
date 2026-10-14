@@ -1,59 +1,20 @@
 import SwiftUI
 
-/// The public groups above the Explore list, Meetup-style: a "Groups" heading with "See all", and two rows of tiles
-/// that scroll together sideways; on a regular width a wrapping grid of the first few instead (`TileGrid`), since a
-/// sideways scroll on a screen that wide would leave most of it empty. Nothing at all until Discover has answered with
-/// at least one group, so the list above which it sits gains no gap meanwhile.
+/// The public groups above the Explore list: a "Groups" heading with "See all" and two rows of tiles, through
+/// `TileCarousel`, shown once Discover has answered with at least one group.
 struct GroupCarousel: View {
-    let viewModel: GroupListViewModel
-    @Environment(\.horizontalSizeClass) private var sizeClass
-
-    private var rows: [GridItem] {
-        Array(repeating: GridItem(.fixed(DesignTokens.Layout.groupTileHeight), spacing: DesignTokens.Spacing.md),
-              count: DesignTokens.Layout.groupCarouselRows)
-    }
+    let viewModel: DiscoverGroupsViewModel
 
     var body: some View {
-        if !viewModel.groups.isEmpty {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                SectionTitle(text: AppBranding.Groups.title) {
-                    NavigationLink(value: DiscoverGroupsDestination()) {
-                        Text(AppBranding.Groups.seeAll)
-                            .font(LilyTheme.Fonts.button)
-                            .tappableLabel()
-                    }
-                    .buttonStyle(.borderless)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.groupsSeeAll)
-                }
-                if sizeClass == .regular {
-                    grid
-                } else {
-                    tiles
-                }
-            }
+        TileCarousel(items: viewModel.groups,
+                     title: AppBranding.Groups.title,
+                     seeAll: DiscoverGroupsDestination(),
+                     seeAllIdentifier: AccessibilityIdentifiers.groupsSeeAll,
+                     identifier: AccessibilityIdentifiers.groupCarousel,
+                     rows: DesignTokens.Layout.groupCarouselRows,
+                     tileHeight: DesignTokens.Layout.groupTileHeight) { group, fillsWidth in
+            GroupTileGrid.tile(for: group, distance: viewModel.distanceText(for: group), fillsWidth: fillsWidth)
         }
-    }
-
-    private var grid: some View {
-        GroupTileGrid(groups: viewModel.groups, distance: viewModel.distanceText)
-            // A container's identifier would otherwise be stamped on every tile and hide theirs.
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier(AccessibilityIdentifiers.groupCarousel)
-    }
-
-    private var tiles: some View {
-        ScrollView(.horizontal) {
-            LazyHGrid(rows: rows, spacing: DesignTokens.Spacing.md) {
-                ForEach(viewModel.groups) { group in
-                    GroupTileGrid.tile(for: group, distance: viewModel.distanceText(for: group), fillsWidth: false)
-                }
-            }
-            .scrollTargetLayout()
-        }
-        .contentMargins(.horizontal, DesignTokens.Layout.screenMargin, for: .scrollContent)
-        .scrollTargetBehavior(.viewAligned)
-        .scrollIndicators(.hidden)
-        .accessibilityIdentifier(AccessibilityIdentifiers.groupCarousel)
     }
 }
 
@@ -70,18 +31,15 @@ struct GroupTileGrid: View {
     }
 
     static func tile(for group: SportGroup, distance: String?, fillsWidth: Bool) -> some View {
-        NavigationLink(value: group) {
+        TileLink(value: group, identifier: AccessibilityIdentifiers.groupRow(group.id)) {
             GroupTile(group: group, distance: distance, fillsWidth: fillsWidth)
         }
-        .buttonStyle(.plain)
-        .lilyHoverable()
-        .accessibilityIdentifier(AccessibilityIdentifiers.groupRow(group.id))
     }
 }
 
 #Preview {
     let dependencies = AppDependencies.makeMock()
-    let discover = dependencies.makeGroupListViewModel(scope: .discover)
+    let discover = dependencies.makeDiscoverGroupsViewModel()
     NavigationStack {
         ContentScreen {
             GroupCarousel(viewModel: discover)

@@ -6,8 +6,6 @@ import SwiftUI
 /// conversation opened from elsewhere in the app (a group's "Open chat", an accepted invite) selects itself here.
 struct ChatsSplitView: View {
     let dependencies: AppDependencies
-    /// The room awaiting the caller's word on a clear; `nil` while nothing is asked.
-    @State private var clearing: SportGroup?
 
     /// False once the selected room left Mine (left, deleted, a conversation cleared); the inbox is always available.
     private var selectionIsAvailable: Bool {
@@ -21,8 +19,7 @@ struct ChatsSplitView: View {
                 ConversationList(dependencies: dependencies,
                                  selection: navigation.selectedConversation,
                                  onOpenInbox: { navigation.openInbox() },
-                                 onOpenRoom: { navigation.open(chat: $0) },
-                                 onClear: { clearing = $0 })
+                                 onOpenRoom: { navigation.open(chat: $0) })
             }
             .navigationTitle(AppBranding.chatsTitle)
             .navigationSplitViewColumnWidth(min: DesignTokens.Layout.chatsSidebarMinWidth,
@@ -37,9 +34,6 @@ struct ChatsSplitView: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
-        .chatClearConfirmation(for: $clearing) { group in
-            Task { await dependencies.makeChatHistoryClearer().clear(group) }
-        }
         .conversationLoads(dependencies: dependencies)
         // The detail falls back to the empty state by itself, but the selection must go too, or the room would come
         // back into the detail on its own the moment Mine lists it again (a cleared conversation the other side writes

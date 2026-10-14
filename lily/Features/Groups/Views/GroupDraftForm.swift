@@ -37,15 +37,12 @@ struct GroupDraftForm: View {
         } header: {
             Text(Copy.groupSection)
         } footer: {
-            issueText(first(of: .nameTooShort, .nameTooLong, .descriptionTooLong))
+            issues.first(of: .nameTooShort, .nameTooLong, .descriptionTooLong).map { Text(Copy.message(for: $0)) }
         }
     }
 
     private var typeChips: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-            Text(Copy.eventType)
-                .font(LilyTheme.Fonts.caption)
-                .foregroundStyle(.secondary)
+        CaptionedControl(Copy.eventType) {
             EventTypeChips(anyTitle: Copy.anyType, isSelected: { $0 == draft.type }, onSelect: { draft.type = $0 })
         }
     }
@@ -53,16 +50,14 @@ struct GroupDraftForm: View {
     /// The place the group plays at: Discover orders public groups by it and shows the distance to it.
     private var whereSection: some View {
         Section {
-            TextField(AppBranding.Events.Create.locationNamePlaceholder, text: $draft.locationName)
-                .textInputAutocapitalization(.words)
-                .submitLabel(.done)
-                .accessibilityIdentifier(AccessibilityIdentifiers.createGroupLocationName)
-            PlacePickerRow(coordinate: $draft.coordinate)
-                .accessibilityIdentifier(AccessibilityIdentifiers.createGroupPickOnMap)
+            PlaceFields(name: $draft.locationName,
+                        coordinate: $draft.coordinate,
+                        nameIdentifier: AccessibilityIdentifiers.createGroupLocationName,
+                        pickerIdentifier: AccessibilityIdentifiers.createGroupPickOnMap)
         } header: {
             Text(AppBranding.Events.Create.whereSection)
         } footer: {
-            if let issue = first(of: .locationNameMissing, .locationNameTooLong, .coordinateMissing) {
+            if let issue = issues.first(of: .locationNameMissing, .locationNameTooLong, .coordinateMissing) {
                 Text(Copy.message(for: issue))
             } else {
                 Text(draft.visibility == .public ? Copy.placePublicFooter : Copy.placePrivateFooter)
@@ -92,18 +87,6 @@ struct GroupDraftForm: View {
             Toggle(Copy.membersCanInvite, isOn: $draft.membersCanInvite)
         } header: {
             Text(Copy.permissionsSection)
-        }
-    }
-
-    /// The first of `candidates` the draft has, for the hint under the fields they concern.
-    private func first(of candidates: GroupDraft.Issue...) -> GroupDraft.Issue? {
-        candidates.first { issues.contains($0) }
-    }
-
-    @ViewBuilder
-    private func issueText(_ issue: GroupDraft.Issue?) -> some View {
-        if let issue {
-            Text(Copy.message(for: issue))
         }
     }
 }

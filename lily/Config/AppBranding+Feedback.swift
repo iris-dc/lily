@@ -23,7 +23,7 @@ nonisolated extension AppBranding {
         static var thanksMessage: String {
             localized("We read every message and reply by email when you ask for an answer.")
         }
-        static var done: String { Groups.Invite.done }
+        static var done: String { AppBranding.done }
 
         /// Under the email field: what is attached to every message, so the caller sees it before sending.
         static func attachedDetails(_ summary: String) -> String {

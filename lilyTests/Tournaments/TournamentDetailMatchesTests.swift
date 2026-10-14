@@ -32,13 +32,13 @@ struct TournamentDetailMatchesTests {
                  myEntryId: "e1")
     }
 
+    /// The cup with one team in: under a bracket's minimum of two.
+    private var oneTeam: Tournament {
+        .fixture(id: "t", format: .singleElimination, teamSize: 5, entryCount: 1, organizerUserId: TestFixtures.user.id)
+    }
+
     @Test func startIsTheOrganisersWhileRegistrationIsOpenAndNeedsTheMinimum() async {
-        let one = Tournament.fixture(id: "t",
-                                     format: .singleElimination,
-                                     teamSize: 5,
-                                     entryCount: 1,
-                                     organizerUserId: TestFixtures.user.id)
-        let few = await loaded(one, entries: [teams[0]])
+        let few = await loaded(oneTeam, entries: [teams[0]])
         #expect(few.permissions.showsStart && !few.permissions.canStart)
         #expect(few.permissions.startBlockedReason == "Needs at least 2 teams")
         let soloFew = await loaded(.fixture(id: "t", format: .roundRobin, entryCount: 2, organizerUserId: TestFixtures.user.id),
@@ -50,6 +50,16 @@ struct TournamentDetailMatchesTests {
         #expect(ready.permissions.startBlockedReason == nil)
         let player = await loaded(.fixture(id: "t", entryCount: 4, myEntryId: "e1"), entries: teams)
         #expect(!player.permissions.showsStart && !player.permissions.canStart && player.permissions.startBlockedReason == nil)
+    }
+
+    /// A start under the minimum is the backend's refusal: reported, nothing drawn, the tournament still in registration.
+    @Test func aStartOnTooFewEntriesIsRefusedNotCrashed() async {
+        let few = await loaded(oneTeam, entries: [teams[0]])
+
+        await few.start()
+
+        #expect(harness.presentedError == .notEnoughEntries && harness.repository.startedIDs == ["t"])
+        #expect(!few.hasMatches && few.tournament?.status == .registration)
     }
 
     @Test func startDrawsTheMatchesShowsThemAndHandsTheTournamentOn() async {
@@ -74,7 +84,7 @@ struct TournamentDetailMatchesTests {
         #expect(viewModel.detail?.match(id: "r01p001")?.status == .confirmed)
         #expect(viewModel.detail?.match(id: "r02p001")?.entryAId == "e1", "the winner advances")
         #expect(harness.repository.reports == [FakeTournamentRepository.Report(matchID: "r01p001", scoreA: 2, scoreB: 1)])
-        #expect(harness.logs(.info).contains { $0.contains("Match r01p001 of tournament t: result confirmed") })
+        #expect(harness.logs(.info).mentioning("r01p001", "result confirmed").count == 1)
 
         let other = try #require(viewModel.detail?.match(id: "r01p002"))
         #expect(await viewModel.walkover(other, winnerEntryID: "e2"))
@@ -85,7 +95,7 @@ struct TournamentDetailMatchesTests {
         #expect(await viewModel.report(final, scoreA: 3, scoreB: 0))
         #expect(viewModel.tournament?.status == .completed && viewModel.tournament?.winnerEntryId == "e1")
         #expect(viewModel.winnerName == "Team 1", "the winner line names the entry")
-        #expect(harness.logs(.info).contains { $0 == "Tournament t completed" })
+        #expect(harness.logs(.info).mentioning("completed").count == 1)
         #expect(harness.sink.tournaments.count == 4, "the start and every result reached the lists")
     }
 
@@ -128,7 +138,8 @@ struct TournamentDetailMatchesTests {
         #expect(await viewModel.report(semi, scoreA: 1, scoreB: 0) == false)
 
         #expect(viewModel.detail?.match(id: "r01p001")?.status == .pending && harness.presentedError == .matchNotReady)
-        #expect(harness.logs(.warning).contains { $0.contains("Report result failed") } && harness.logs(.error).isEmpty)
+        #expect(!harness.logs(.warning).mentioning("Report result", "tournament t", "\(AppError.matchNotReady)").isEmpty)
+        #expect(harness.logs(.error).isEmpty)
         harness.identity.currentUserID = nil
         #expect(await viewModel.confirm(semi) == false, "a guest never writes")
     }
@@ -149,12 +160,12 @@ struct TournamentDetailMatchesTests {
         #expect(scheduled.status == .scheduled && scheduled.scheduledAt == when && scheduled.location == place)
         #expect(viewModel.detail?.matches.count == 3 && viewModel.detail?.match(id: "r02p001")?.status == .pending)
         #expect(harness.repository.schedules.map(\.matchID) == ["r01p001"] && harness.sink.tournaments.count == 2)
-        #expect(harness.logs(.info).contains("Match r01p001 of tournament t: scheduled"))
+        #expect(harness.logs(.info).mentioning("r01p001", "scheduled").count == 1)
 
         #expect(await viewModel.schedule(scheduled, MatchSchedule()))
         let cleared = viewModel.detail?.match(id: "r01p001")
-        #expect(cleared?.scheduledAt == nil && cleared?.location == nil && cleared?.status == .pending)
-        #expect(harness.logs(.info).contains("Match r01p001 of tournament t: schedule cleared"))
+        #expect(cleared?.hasSchedule == false && cleared?.status == .pending)
+        #expect(harness.logs(.info).mentioning("r01p001", "schedule cleared").count == 1)
 
         let player = await loaded(.fixture(id: "t", status: .inProgress, entryCount: 4, myEntryId: "e1"), entries: teams)
         #expect(!player.actions(for: semi).canSchedule)

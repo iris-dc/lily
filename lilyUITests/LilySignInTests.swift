@@ -15,8 +15,7 @@ final class LilySignInTests: LilyUITestCase {
         let apple = tapSignInWithApple()
 
         // The popup combines its children into one element, so match on the label.
-        let popup = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "label CONTAINS %@", "You're offline")).firstMatch
+        let popup = labelled("You're offline")
         XCTAssertTrue(popup.waitForExistence(timeout: 10), "a failed sign-in must show the shared error popup")
         waitUntilHittableAndStill(popup)
         XCTAssertTrue(popup.isHittable, "the popup must sit above the sheet, not behind it")
@@ -26,7 +25,7 @@ final class LilySignInTests: LilyUITestCase {
     @MainActor
     func testSignInFromProfileDismissesTheSheet() {
         relaunchAsGuest()
-        app.tabBars.buttons["Profile"].tap()
+        openProfileTab()
         let apple = tapSignInWithApple()
 
         XCTAssertTrue(apple.waitForNonExistence(timeout: 10), "the sheet must close once the guest is signed in")
@@ -49,14 +48,14 @@ final class LilySignInTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Check your email"].waitForExistence(timeout: 10), "sign-up must lead to the code step")
         XCTAssertTrue(app.staticTexts["We sent a code to jane.doe@example.com"].exists)
         XCTAssertTrue(app.buttons["auth-resend-code"].exists)
-        XCTAssertTrue(app.buttons["auth-mode-toggle"].label == "Back to sign in")
+        XCTAssertEqual(app.buttons["auth-mode-toggle"].label, "Back to sign in")
         let code = app.textFields["auth-confirmation-code"]
         XCTAssertTrue(code.exists)
         XCTAssertFalse(app.buttons["auth-submit"].isEnabled, "Confirm waits for a complete code")
         attachScreenshot(named: "confirm-code")
 
         enter("123456", into: code)
-        XCTAssertTrue(app.buttons["auth-submit"].isEnabled)
+        assertBecomesEnabled(app.buttons["auth-submit"], "a complete code enables Confirm")
         app.buttons["auth-submit"].tap()
 
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10), "a confirmed sign-up must sign the user in")
@@ -84,11 +83,7 @@ final class LilySignInTests: LilyUITestCase {
         accept.tap()
         XCTAssertTrue(accept.waitForNonExistence(timeout: 10), "the recorded acceptance closes the sheet")
 
-        openChatsTab()
-        let kickers = app.buttons["group-row-mock-group-kickers"]
-        XCTAssertTrue(kickers.waitForExistence(timeout: 10))
-        kickers.tap()
-        XCTAssertTrue(app.navigationBars["Kreuzberg Kickers"].waitForExistence(timeout: 10), "a Chats row opens the room")
+        openRoom("group-row-mock-group-kickers", titled: "Kreuzberg Kickers")
 
         let text = "See you at seven"
         enter(text, into: app.descendants(matching: .any)["chat-composer"])

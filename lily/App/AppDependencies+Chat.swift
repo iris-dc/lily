@@ -25,6 +25,7 @@ struct AttachmentDependencies {
 extension AppDependencies {
     var chatRepository: any ChatRepository { groups.chatRepository }
     var chatHistory: InMemoryChatHistoryCache { groups.chatHistory }
+    var outbox: ChatOutbox { groups.outbox }
     var unreadCenter: UnreadCenter { groups.unreadCenter }
     var realtime: RealtimeSessionController { groups.realtime }
 
@@ -61,11 +62,13 @@ extension AppDependencies {
                       catchUp: groups.catchUp,
                       unread: unreadCenter,
                       me: me,
+                      blocks: groups.blocks,
                       attachments: makeAttachmentComposer(for: group),
                       attachmentLoader: groups.attachments.loader,
                       identity: identity,
                       reporter: groups.errorReporter,
                       clearer: makeChatHistoryClearer(),
+                      outbox: outbox,
                       recorder: interactionRecorder,
                       logger: logger)
     }
@@ -86,7 +89,8 @@ extension AppDependencies {
     func makeChatHistoryClearer() -> ChatHistoryClearer {
         ChatHistoryClearer(repository: chatRepository,
                            cache: chatHistory,
-                           myGroups: myGroups,
+                           outbox: outbox,
+                           realtime: realtime,
                            unread: unreadCenter,
                            reporter: groups.errorReporter,
                            logger: logger)

@@ -2,7 +2,7 @@ import Foundation
 
 /// What a system row points at and what it changes: the repositories that answer the game behind an `event_created`
 /// row and the tournament behind a tournament row, and the change counters the lists behind the chat reload on when
-/// such a row arrives live. Held by `ChatViewModel` as one value.
+/// such a row arrives live. Held by `SystemRowContent` as one value.
 struct SystemRowLinks {
     let events: any EventRepository
     let tournaments: any TournamentRepository
@@ -18,10 +18,4 @@ struct SystemRowLinks {
             tournamentChanges.recordChange()
         }
     }
-}
-
-/// The games and tournaments behind the system rows on screen, fetched once each.
-struct LinkedContent {
-    var events: [String: SportEvent] = [:]
-    var tournaments: [String: Tournament] = [:]
 }

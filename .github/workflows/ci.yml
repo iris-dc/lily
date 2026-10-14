@@ -6,6 +6,16 @@ on:
   pull_request:
     branches: [main]
 
+# The jobs read the repository and upload artifacts, which the token's read scope covers.
+permissions:
+  contents: read
+
+# The SwiftLint release the build job installs and ci.sh lint checks for, with the SHA-256 of that release's
+# portable_swiftlint.zip; change both together.
+env:
+  SWIFTLINT_VERSION: "0.65.1"
+  SWIFTLINT_SHA256: "c1e429b0599cf1b516f369a2d9ec04eaf0e436f3c12b637df8851fa52ff694d0"
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -14,24 +24,37 @@ concurrency:
 # job limit (lint, build, unit and 22 minutes of UI tests on a developer Mac, longer on a runner). The build job lints,
 # builds for testing once, runs the unit tests and archives the simulator products; each UI job restores them and
 # runs its shard through the .xctestrun without rebuilding (scripts/ci.sh ui-shard). Lint fails when a UI test class
-# is in no shard or the matrix below misses a shard, so neither can slip past CI.
+# is in no shard or the matrix below misses a shard, so neither can slip past CI. The build job hands the Xcode it
+# selected to the UI jobs as a job output (DEVELOPER_DIR), so every shard runs the products under the Xcode that
+# built them.
 jobs:
   build-and-unit:
     name: Lint, build for testing, unit tests
     runs-on: macos-26
     timeout-minutes: 45
+    outputs:
+      developer_dir: ${{ steps.xcode.outputs.developer_dir }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Select newest Xcode 26
+        id: xcode
         run: |
           XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
           echo "Using $XCODE"
           sudo xcode-select -s "$XCODE"
           xcodebuild -version
+          echo "developer_dir=$XCODE/Contents/Developer" >> "$GITHUB_OUTPUT"
 
-      - name: Install SwiftLint
-        run: brew install swiftlint
+      # ci.sh lints --strict with opt_in_rules, so a release turning a rule on by default would fail the gate with no
+      # code change (redundant_sendable in 0.58.0 did); the zip is checked against the SHA-256 recorded when the
+      # version was pinned. GITHUB_PATH prepends, so the pinned copy wins over the image's Homebrew one.
+      - name: Install SwiftLint ${{ env.SWIFTLINT_VERSION }}
+        run: |
+          curl -fsSL -o /tmp/swiftlint.zip "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/portable_swiftlint.zip"
+          echo "${SWIFTLINT_SHA256}  /tmp/swiftlint.zip" | shasum -a 256 -c -
+          mkdir -p "$HOME/.swiftlint" && unzip -o -q /tmp/swiftlint.zip swiftlint -d "$HOME/.swiftlint"
+          echo "$HOME/.swiftlint" >> "$GITHUB_PATH"
 
       - name: Lint, build for testing, unit tests
         run: ./scripts/ci.sh build-and-unit
@@ -63,6 +86,10 @@ jobs:
     needs: build-and-unit
     runs-on: macos-26
     timeout-minutes: 45
+    # xcodebuild and xcrun honour DEVELOPER_DIR without xcode-select, so a shard never runs products built under
+    # another 26.x when runner images differ within one run.
+    env:
+      DEVELOPER_DIR: ${{ needs.build-and-unit.outputs.developer_dir }}
     strategy:
       fail-fast: false
       matrix:
@@ -71,11 +98,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Select newest Xcode 26
+      # A missing one fails loudly rather than silently picking another Xcode.
+      - name: Use the build job's Xcode
         run: |
-          XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
-          echo "Using $XCODE"
-          sudo xcode-select -s "$XCODE"
+          test -d "$DEVELOPER_DIR" || { echo "The build job's Xcode is not on this runner: $DEVELOPER_DIR" >&2; exit 1; }
           xcodebuild -version
 
       - name: Download build products

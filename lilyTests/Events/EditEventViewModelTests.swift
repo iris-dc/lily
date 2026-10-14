@@ -9,7 +9,7 @@ struct EditEventViewModelTests {
     private let repository = FakeEventRepository()
     private let logger = SpyLogger()
     private let errorCenter: ErrorCenter
-    private let changed = CreatedEvents()
+    private let changed = Recorded<SportEvent>()
     private let event: SportEvent
     private let viewModel: EditEventViewModel
 
@@ -67,7 +67,8 @@ struct EditEventViewModelTests {
         #expect(!viewModel.hasChanges && !viewModel.canSubmit && !viewModel.isDone)
         #expect(viewModel.issues.isEmpty)
         #expect(viewModel.capacityRange.lowerBound == 3, "the three already in are the floor")
-        #expect(viewModel.earliestStart == Self.now)
+        #expect(viewModel.earliestStart == Self.now.addingTimeInterval(AppConfig.Events.Editing.startMargin),
+                "an edit's start is held the request margin ahead, not a create's quarter hour")
         #expect(!viewModel.showsGroupRow && viewModel.lockedGroup == nil)
     }
 
@@ -98,9 +99,10 @@ struct EditEventViewModelTests {
 
         #expect(viewModel.updatedEvent?.title == "New title" && viewModel.updatedEvent?.capacity == 6)
         #expect(viewModel.isDone)
-        #expect(changed.events.map(\.title) == ["New title"])
+        #expect(changed.values.map(\.title) == ["New title"])
         #expect(repository.updatedDrafts.map(\.id) == ["e"])
-        #expect(logger.messages(in: .events, at: .info) == ["Event e updated (6 spots)"])
+        #expect(logger.count(in: .events, at: .info) == 1)
+        #expect(logger.hasLine(in: .events, at: .info, mentioning: "e updated", "6 spots"))
     }
 
     @Test func fewerSpotsThanPeopleInCannotBeSaved() {
@@ -110,11 +112,19 @@ struct EditEventViewModelTests {
         #expect(viewModel.issue(for: .capacityOutOfRange, .capacityBelowParticipants) == .capacityBelowParticipants)
     }
 
-    /// The edit rules have no lead time: a game about to start can still be edited without moving it.
+    /// The edit rules want only the request margin: a game about to start can still be edited without moving it.
     @Test func aStartJustAheadIsAccepted() {
-        viewModel.draft.startsAt = Self.now.addingTimeInterval(30)
+        viewModel.draft.startsAt = Self.now.addingTimeInterval(AppConfig.Events.Editing.startMargin)
 
         #expect(viewModel.canSubmit)
+    }
+
+    /// Inside the margin the backend could refuse the start by the time the request lands, so Save waits.
+    @Test func aStartWithinTheMarginHoldsSave() {
+        viewModel.draft.startsAt = Self.now.addingTimeInterval(AppConfig.Events.Editing.startMargin - 1)
+
+        #expect(!viewModel.canSubmit)
+        #expect(viewModel.issues == [.startsAtTooSoon])
     }
 
     /// The backend refuses an edit when another one landed since its pre-read; the same request then goes through.
@@ -126,7 +136,7 @@ struct EditEventViewModelTests {
 
         #expect(viewModel.updatedEvent?.title == "New title")
         #expect(repository.updatedDrafts.count == 2)
-        #expect(logger.messages(in: .events, at: .info).first == "Update lost a race for event e; retrying once")
+        #expect(logger.hasLine(in: .events, at: .info, mentioning: "event e", "lost a race"))
         #expect(errorCenter.current == nil)
     }
 
@@ -138,7 +148,7 @@ struct EditEventViewModelTests {
 
         #expect(viewModel.updatedEvent == nil && !viewModel.isDone)
         #expect(errorCenter.current?.error == .notHost)
-        #expect(changed.events.isEmpty)
+        #expect(changed.values.isEmpty)
         #expect(logger.messages(in: .events, at: .error).count == 1)
     }
 
@@ -162,6 +172,6 @@ struct EditEventViewModelTests {
         await first.value
 
         #expect(repository.updatedDrafts.count == 1)
-        #expect(changed.events.count == 1)
+        #expect(changed.values.count == 1)
     }
 }

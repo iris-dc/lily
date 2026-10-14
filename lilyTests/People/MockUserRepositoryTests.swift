@@ -49,20 +49,24 @@ struct MockUserRepositoryTests {
         await #expect(throws: AppError.sessionExpired) { try await repository.startConversation(with: marta) }
     }
 
-    /// One conversation per pair: a private two-member group of kind `direct` named after the person, the same one on
-    /// every call, in Mine with the caller as a member, its roster naming the person, and never a group in common.
+    /// One conversation per pair: a direct group named after the person, the same one on every call, in Mine, its
+    /// roster naming the person, and never a group in common. The fixed shape of a direct group (private, two of two,
+    /// member, both permissions off) is pinned on the Marta fixture in `MockGroupRepositoryTests`
+    /// (`theMartaConversationIsAFixtureThatStartDirectReplays`).
     @Test func startConversationCreatesTheDirectGroupOnceAndAnswersItAgain() async throws {
         let conversation = try await repository.startConversation(with: jonas)
 
         #expect(conversation.id == MockGroupFixtures.directConversationID(for: jonas) && conversation.name == "Jonas")
         #expect(conversation.isDirect && conversation.counterpart == Counterpart(userId: jonas, displayName: "Jonas"))
-        #expect(conversation.visibility == .private && conversation.memberCount == 2 && conversation.maxMembers == 2)
-        #expect(conversation.role == .member && !conversation.membersCanCreateEvents && !conversation.membersCanInvite)
         #expect(try await repository.startConversation(with: jonas) == conversation)
         #expect(try await groups.groups(in: .mine, cursor: nil, near: nil).items.contains(conversation))
         #expect(try await groups.members(id: conversation.id).map(\.displayName) == ["Jonas", "You"])
         #expect(try await repository.profile(userID: jonas).sharedGroups.map(\.name) == ["Kreuzberg Kickers"])
-        #expect(logger.messages(in: .groups, at: .info).contains("Mock conversation \(conversation.id) created with \(jonas)"))
+        #expect(logger.hasLine(in: .groups, at: .info, mentioning: conversation.id, "created", jonas))
+    }
+
+    /// The caller is nobody's counterpart.
+    @Test func startingAConversationWithOneselfIsRefused() async {
         await #expect(throws: AppError.conversationFailed) { try await repository.startConversation(with: TestFixtures.user.id) }
     }
 

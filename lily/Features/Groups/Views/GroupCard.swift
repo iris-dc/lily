@@ -10,9 +10,7 @@ struct GroupCard: View {
         GlassCard {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
                 HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.sm) {
-                    Label(group.visibility.displayName, systemImage: group.visibility.symbolName)
-                        .lilyChip(.regular)
-                        .fixedSize()
+                    VisibilityChip(visibility: group.visibility).fixedSize()
                     if let type = group.type {
                         EventTypeChip(type: type).fixedSize()
                     }

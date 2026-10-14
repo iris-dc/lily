@@ -2,9 +2,11 @@ import Foundation
 import Testing
 @testable import lily
 
-/// What keeps a draft from being sent, judged at the boundaries of `AppConfig.Events.Creation`.
+/// What keeps a draft from being sent, judged at the boundaries of `AppConfig.Events.Creation`. The price cases are in
+/// `EventDraftPriceTests.swift`, an extension of this suite, because this body is at the SwiftLint limit; the helpers
+/// they share are internal for that.
 struct EventDraftTests {
-    private static let now = Date(timeIntervalSince1970: 1_800_000_000)
+    static let now = Date(timeIntervalSince1970: 1_800_000_000)
     private static let limits = AppConfig.Events.Creation.self
 
     /// One change that breaks a valid draft so that exactly the named issue shows.
@@ -25,14 +27,11 @@ struct EventDraftTests {
         Breakage(issue: .capacityOutOfRange) { $0.capacity = limits.capacityRange.upperBound + 1 },
         Breakage(issue: .descriptionTooLong) { $0.description = text(limits.descriptionMaxLength + 1) },
         Breakage(issue: .lookingForTooLong) { $0.lookingFor = text(limits.lookingForMaxLength + 1) },
-        Breakage(issue: .priceOutOfRange) { $0.price = Decimal(string: "0.001") },
+        Breakage(issue: .priceUnreadable) { $0.priceText = "€5" },
+        Breakage(issue: .priceOutOfRange) { $0.priceText = "0.001" },
     ]
 
-    /// The backend takes at most seven integer digits and two decimals; zero and nothing both mean free.
-    private static let acceptedPrices: [String?] = [nil, "0", "5", "7.5", "12.99", "9999999.99"]
-    private static let refusedPrices = ["0.001", "10000000", "-1"]
-
-    private static func makeValidDraft() -> EventDraft {
+    static func makeValidDraft() -> EventDraft {
         .fixture(now: now)
     }
 
@@ -40,7 +39,7 @@ struct EventDraftTests {
         String(repeating: "x", count: count)
     }
 
-    private func issues(of draft: EventDraft) -> [EventDraft.Issue] {
+    func issues(of draft: EventDraft) -> [EventDraft.Issue] {
         draft.issues(now: Self.now)
     }
 
@@ -50,7 +49,7 @@ struct EventDraftTests {
         #expect(draft.title.isEmpty && draft.locationName.isEmpty && draft.coordinate == nil)
         #expect(draft.type == .football)
         #expect(draft.capacity == Self.limits.defaultCapacity && draft.playerLimit == .maximum)
-        #expect(draft.skillLevel == nil && draft.price == nil && draft.isFree)
+        #expect(draft.skillLevel == nil && draft.priceText.isEmpty && draft.price == nil && draft.isFree)
         #expect(issues(of: draft) == [.titleMissing, .locationNameMissing, .coordinateMissing])
         #expect(!draft.isValid(now: Self.now))
     }
@@ -86,22 +85,6 @@ struct EventDraftTests {
         draft.description = String(repeating: emoji, count: Self.limits.descriptionMaxLength / 2 + 1)
         draft.lookingFor = String(repeating: emoji, count: Self.limits.lookingForMaxLength / 2 + 1)
         #expect(issues(of: draft) == [.locationNameTooLong, .descriptionTooLong, .lookingForTooLong])
-    }
-
-    /// One place turns a draft's amount into a `Price`: free (nothing or zero) is no price at all.
-    @Test func thePriceIsAbsentForAFreeGameAndCarriesTheCurrencyOtherwise() {
-        var draft = Self.makeValidDraft()
-        #expect(draft.eventPrice == nil)
-
-        draft.price = 0
-        #expect(draft.eventPrice == nil)
-
-        draft.price = 5
-        #expect(draft.eventPrice == Price(amount: 5, currencyCode: EventDraft.testCurrencyCode))
-
-        var dollars = EventDraft(startsAt: Self.now, currencyCode: "USD")
-        dollars.price = 5
-        #expect(dollars.eventPrice == Price(amount: 5, currencyCode: "USD"), "the price is in the draft's currency")
     }
 
     /// What the mock repository and the test fake answer for a create: the draft as a stored event, hosted and joined
@@ -207,42 +190,13 @@ struct EventDraftTests {
         }
     }
 
-    @Test(arguments: acceptedPrices)
-    func pricesWithinTheLimitsPass(text: String?) {
-        var draft = Self.makeValidDraft()
-
-        draft.price = text.flatMap { Decimal(string: $0) }
-
-        #expect(issues(of: draft).isEmpty)
-    }
-
-    @Test(arguments: refusedPrices)
-    func pricesBeyondTheLimitsAreRefused(text: String) {
-        var draft = Self.makeValidDraft()
-
-        draft.price = Decimal(string: text)
-
-        #expect(issues(of: draft) == [.priceOutOfRange])
-    }
-
-    @Test func zeroOrNoPriceMeansFree() {
-        var draft = Self.makeValidDraft()
-        #expect(draft.isFree)
-
-        draft.price = 0
-        #expect(draft.isFree)
-
-        draft.price = 5
-        #expect(!draft.isFree)
-    }
-
     /// Issues come in the order the form shows its fields, so the first one is the one nearest the top.
     @Test func issuesFollowTheFormOrder() {
         var draft = EventDraft(startsAt: Self.now)
         draft.capacity = Self.limits.capacityRange.lowerBound - 1
         draft.description = Self.text(Self.limits.descriptionMaxLength + 1)
         draft.lookingFor = Self.text(Self.limits.lookingForMaxLength + 1)
-        draft.price = -1
+        draft.priceText = "10000000"
 
         #expect(issues(of: draft) == [
             .titleMissing, .startsAtTooSoon, .locationNameMissing, .coordinateMissing,

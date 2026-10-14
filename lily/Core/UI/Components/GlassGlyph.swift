@@ -6,10 +6,9 @@ struct GlassGlyph: View {
     let systemName: String
 
     var body: some View {
-        AvatarCircle(initials: "",
-                     systemImage: systemName,
+        AvatarCircle(systemImage: systemName,
                      size: DesignTokens.Layout.controlHeight,
-                     tint: .lilySecondary,
+                     tint: .secondary,
                      glyphFont: LilyTheme.Fonts.glyph,
                      glyphColor: .lilySecondary)
     }

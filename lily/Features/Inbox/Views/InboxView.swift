@@ -6,7 +6,6 @@ import SwiftUI
 /// room; on a regular width it sits in the Chats split view's detail under the tabs' top bar.
 struct InboxView: View {
     @State private var viewModel: InboxViewModel
-    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private typealias Copy = AppBranding.Inbox
 
@@ -21,7 +20,7 @@ struct InboxView: View {
         }
         .navigationTitle(Copy.title)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarVisibility(sizeClass == .compact ? .hidden : .automatic, for: .tabBar)
+        .hidesTabBarOnCompact()
         .task { await viewModel.appear() }
         .onChange(of: viewModel.newestID) { Task { await viewModel.noteNewItems() } }
     }

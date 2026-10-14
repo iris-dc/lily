@@ -17,26 +17,15 @@ nonisolated extension AppConfig {
 }
 
 nonisolated extension AppConfig.API.Paths {
+    /// The app only posts here; the operator's per-report and suspension routes are Laurel's admin CLI's.
     static let reports = "/api/reports"
     static let blocks = "/api/blocks"
     static let me = "/api/me"
     static let meTerms = "/api/me/terms"
 
-    static func report(id: String) -> String {
-        "\(reports)/\(id)"
-    }
-
     static func block(userID: String) -> String {
         "\(blocks)/\(userID)"
     }
-
-    static func suspension(userID: String) -> String {
-        "/api/moderation/users/\(userID)/suspension"
-    }
-}
-
-nonisolated extension AppConfig.API.Query {
-    static let status = "status"
 }
 
 nonisolated extension AppConfig.LaunchArguments {

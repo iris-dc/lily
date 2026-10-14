@@ -7,13 +7,13 @@ import SwiftUI
 /// what they show by distance, and the tiles show it.
 struct ExploreTab: View {
     private let dependencies: AppDependencies
-    @State private var discover: GroupListViewModel
+    @State private var discover: DiscoverGroupsViewModel
     /// The public tournaments open for entries, under the groups; it keeps a failure to itself like Discover does.
     @State private var tournaments: TournamentListViewModel
 
     init(dependencies: AppDependencies) {
         self.dependencies = dependencies
-        let discover = dependencies.makeGroupListViewModel(scope: .discover)
+        let discover = dependencies.makeDiscoverGroupsViewModel()
         discover.reportsSearchFailures = false
         _discover = State(initialValue: discover)
         let tournaments = dependencies.makeTournamentListViewModel(scope: .upcoming)
@@ -40,15 +40,7 @@ struct ExploreTab: View {
     }
 
     var body: some View {
-        EventListView(title: AppBranding.exploreTitle,
-                      emptyState: EmptyStateView(symbolName: DesignTokens.Symbols.explore,
-                                                 title: AppBranding.exploreEmptyTitle,
-                                                 message: AppBranding.exploreEmptyMessage),
-                      listTitle: showsGroups || showsTournaments ? AppBranding.Events.eventsSection : nil,
-                      showsMap: true,
-                      filterable: true,
-                      creatable: true,
-                      scope: .upcoming,
+        EventListView(listTitle: showsGroups || showsTournaments ? AppBranding.Events.eventsSection : nil,
                       dependencies: dependencies,
                       refreshHeader: refreshCarousels,
                       header: carousels)

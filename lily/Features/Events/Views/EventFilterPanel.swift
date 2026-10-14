@@ -11,39 +11,33 @@ struct EventFilterPanel: View {
     private typealias Copy = AppBranding.Events.Filter
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
-                header
-                FilterSection(Copy.eventType) { typeChips }
-                FilterSection(Copy.distance) { distanceChoice }
-                FilterSection(Copy.maxPrice) { priceRow }
-                levelRow
-                datesSection
-                Toggle(Copy.openSpotsOnly, isOn: binding(\.openSpotsOnly))
-            }
-            .padding(DesignTokens.Spacing.lg)
-        }
-        .frame(width: DesignTokens.Layout.filterPanelWidth)
-        .presentationBackground(.clear)
-        .tint(Color.lilyAccent)
+        DropdownPanel(title: Copy.title,
+                      scrolls: true,
+                      accessory: {
+                          if viewModel.filter.isActive {
+                              resetButton
+                          }
+                      },
+                      onDone: onDone,
+                      content: {
+                          CaptionedControl(Copy.eventType) { typeChips }
+                          CaptionedControl(Copy.distance) { distanceChoice }
+                          CaptionedControl(Copy.maxPrice) { priceRow }
+                          levelRow
+                          datesSection
+                          Toggle(Copy.openSpotsOnly, isOn: binding(\.openSpotsOnly))
+                      })
     }
 
-    private var header: some View {
-        HStack {
-            Text(Copy.title).font(LilyTheme.Fonts.cardTitle)
-            Spacer()
-            if viewModel.filter.isActive {
-                Button {
-                    viewModel.clearFilter()
-                } label: {
-                    Text(Copy.reset).tappableLabel()
-                }
-                .buttonStyle(.borderless)
-                .font(LilyTheme.Fonts.caption)
-            }
-            Button(Copy.done, action: onDone)
-                .lilyProminentButton(sizing: .fitted, controlSize: .small)
+    /// Shown in the title row while any criterion is active.
+    private var resetButton: some View {
+        Button {
+            viewModel.clearFilter()
+        } label: {
+            Text(Copy.reset).tappableLabel()
         }
+        .buttonStyle(.borderless)
+        .font(LilyTheme.Fonts.caption)
     }
 
     /// Multi-select; "Any type" is on while nothing is chosen.
@@ -71,7 +65,7 @@ struct EventFilterPanel: View {
         } else {
             Picker(Copy.distance, selection: binding(\.maxDistanceMeters)) {
                 ForEach(AppConfig.Events.filterRadiiMeters, id: \.self) { meters in
-                    Text(Measurement(value: meters, unit: UnitLength.meters).roadText).tag(Double?.some(meters))
+                    Text(Measurement(value: meters, unit: UnitLength.meters).roadText()).tag(Double?.some(meters))
                 }
                 Text(Copy.anywhere).tag(Double?.none)
             }
@@ -93,14 +87,16 @@ struct EventFilterPanel: View {
     }
 
     /// Drawn like the compact date pickers' capsule, so the trailing controls read as one family. The text is the
-    /// source while typing; the filter is parsed from it, and only a value set elsewhere (Reset, the chip) rewrites it.
+    /// source while typing: a text that reads as a number sets the cap, an empty one clears it, an unreadable one (a
+    /// symbol, a foreign separator) changes nothing until it reads again; only a value set elsewhere (Reset, the chip)
+    /// rewrites the text.
     private var priceField: some View {
         HStack(spacing: DesignTokens.Spacing.xs) {
             TextField(Copy.anyPrice, text: $priceText)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .focused($isPriceFocused)
-                .frame(width: DesignTokens.Layout.filterPriceFieldWidth)
+                .frame(width: DesignTokens.Layout.priceFieldWidth)
                 .accessibilityIdentifier(AccessibilityIdentifiers.filterMaxPrice)
                 .accessibilityLabel(Copy.maxPrice)
             Text(Price.symbol(for: viewModel.priceCurrencyCode))
@@ -113,29 +109,33 @@ struct EventFilterPanel: View {
         .glassEffect(.regular, in: .capsule)
         .contentShape(.capsule)
         .onTapGesture { isPriceFocused = true }
-        .onChange(of: priceText) {
-            viewModel.updateFilter { $0.maxPrice = Price.parseAmount(priceText) }
-        }
+        .onChange(of: priceText) { applyTypedCap() }
         .onChange(of: viewModel.filter.maxPrice, initial: true) {
             if Price.parseAmount(priceText) != viewModel.filter.maxPrice {
-                priceText = viewModel.filter.maxPrice.map { $0.formatted(Price.inputFormat) } ?? ""
+                priceText = viewModel.filter.maxPrice.map { Price.inputText($0) } ?? ""
             }
+        }
+    }
+
+    /// An empty text clears the cap, a readable one sets it, an unreadable one leaves the cap as it was, so the
+    /// filter never holds a misread amount and the seeding `onChange` above never rewrites what is being typed.
+    private func applyTypedCap() {
+        let typed = priceText.trimmed
+        if typed.isEmpty, viewModel.filter.maxPrice != nil {
+            viewModel.updateFilter { $0.maxPrice = nil }
+        } else if let amount = Price.parseAmount(typed), amount != viewModel.filter.maxPrice {
+            viewModel.updateFilter { $0.maxPrice = amount }
         }
     }
 
     /// A menu picker shows only its selection, so the title sits on the left like the price row's.
     private var levelRow: some View {
         HStack {
-            Text(Copy.level)
+            Text(AppBranding.Events.levelLabel)
             Spacer()
-            Picker(Copy.level, selection: binding(\.skillLevel)) {
-                Text(Copy.anyLevel).tag(SkillLevel?.none)
-                ForEach(SkillLevel.known, id: \.self) { level in
-                    Text(level.displayName).tag(SkillLevel?.some(level))
-                }
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
+            SkillLevelPicker(selection: binding(\.skillLevel))
+                .pickerStyle(.menu)
+                .labelsHidden()
         }
     }
 
@@ -178,24 +178,6 @@ struct EventFilterPanel: View {
     private func binding<Value>(_ keyPath: WritableKeyPath<EventFilter, Value>) -> Binding<Value> {
         Binding(get: { viewModel.filter[keyPath: keyPath] },
                 set: { value in viewModel.updateFilter { $0[keyPath: keyPath] = value } })
-    }
-}
-
-/// Caption title over a criterion's control.
-private struct FilterSection<Content: View>: View {
-    let title: String
-    @ViewBuilder var content: () -> Content
-
-    init(_ title: String, @ViewBuilder content: @escaping () -> Content) {
-        self.title = title
-        self.content = content
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-            Text(title).font(LilyTheme.Fonts.caption).foregroundStyle(.secondary)
-            content()
-        }
     }
 }
 

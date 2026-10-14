@@ -29,17 +29,17 @@ struct MatchScheduleView: View {
                         .accessibilityIdentifier(AccessibilityIdentifiers.matchScheduleTime)
                 }
                 Section {
-                    TextField(Copy.placePlaceholder, text: $draft.locationName)
-                        .textInputAutocapitalization(.words)
-                        .submitLabel(.done)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.matchLocationName)
-                    PlacePickerRow(coordinate: $draft.coordinate)
+                    PlaceFields(name: $draft.locationName,
+                                coordinate: $draft.coordinate,
+                                placeholder: Copy.placePlaceholder,
+                                nameIdentifier: AccessibilityIdentifiers.matchLocationName,
+                                pickerIdentifier: AccessibilityIdentifiers.matchPickOnMap)
                 } header: {
                     Text(Copy.place)
                 } footer: {
                     Text(Copy.placeFooter)
                 }
-                if hasSchedule {
+                if match.hasSchedule {
                     Section {
                         Button(Copy.clear, role: .destructive) { Task { await send(MatchSchedule()) } }
                             .disabled(viewModel.isBusy)
@@ -61,8 +61,6 @@ struct MatchScheduleView: View {
             }
         }
     }
-
-    private var hasSchedule: Bool { match.scheduledAt != nil || match.location != nil }
 
     private func send(_ schedule: MatchSchedule) async {
         if await viewModel.schedule(match, schedule) { onDone() }

@@ -48,6 +48,6 @@ extension EntriesBar {
         self.init(fillRatio: tournament.fillRatio,
                   text: tournament.entriesText,
                   isFull: tournament.isFull,
-                  isNearlyFull: !tournament.isFull && tournament.fillRatio >= AppConfig.Events.nearlyFullRatio)
+                  isNearlyFull: tournament.isNearlyFull)
     }
 }

@@ -32,10 +32,11 @@ nonisolated extension AccessibilityIdentifiers {
     static let matchDispute = "match-dispute"
     static let matchRecord = "match-record"
     static let matchWalkover = "match-walkover"
-    /// The organiser's schedule: the link on the match sheet, then the time, the place, Save and Clear.
+    /// The organiser's schedule: the link on the match sheet, then the time, the place and its map row, Save and Clear.
     static let matchSchedule = "match-schedule"
     static let matchScheduleTime = "match-schedule-time"
     static let matchLocationName = "match-location-name"
+    static let matchPickOnMap = "match-pick-on-map"
     static let matchScheduleSave = "match-schedule-save"
     static let matchScheduleClear = "match-schedule-clear"
     /// The team-name sheet: its one field and its submit.

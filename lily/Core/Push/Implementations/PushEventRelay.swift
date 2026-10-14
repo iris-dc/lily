@@ -16,6 +16,8 @@ final class PushEventRelay {
     }
     private var pendingTap: PushTap?
     private var waiters: [Waiter] = []
+    /// The pause a registration's timeout waits on; held in tests.
+    private let sleep: Sleep
 
     /// Whether a registration is waiting for the system's answer.
     var isWaiting: Bool { !waiters.isEmpty }
@@ -25,14 +27,18 @@ final class PushEventRelay {
         let continuation: CheckedContinuation<String, any Error>
     }
 
+    init(sleep: @escaping Sleep = systemSleep) {
+        self.sleep = sleep
+    }
+
     /// Runs `register` (the system call) and waits for the token it answers with, or its refusal, or `timeout`.
     func token(timeout: Duration, register: () -> Void) async throws -> String {
         let id = UUID()
         return try await withCheckedThrowingContinuation { continuation in
             waiters.append(Waiter(id: id, continuation: continuation))
             register()
-            Task { [weak self] in
-                try? await Task.sleep(for: timeout)
+            Task { [weak self, sleep] in
+                try? await sleep(timeout)
                 self?.resume(id, with: .failure(PushRegistrationError.timedOut))
             }
         }

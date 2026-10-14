@@ -171,6 +171,24 @@ struct GroupModelsTests {
         #expect(group.updatingMembership(group.membership, memberCount: 4).channelEpoch == 1, "the epoch is kept unless given")
     }
 
+    /// A departure, removal or ban: one member fewer and a new epoch, the caller's membership whatever they are left
+    /// with, `nil` when they were the one leaving.
+    @Test func droppingTakesOneMemberOffAndRotatesTheEpoch() {
+        let group = SportGroup.fixture(memberCount: 5, channelEpoch: 1, role: .member)
+
+        let left = group.dropping()
+        #expect(left.memberCount == 4 && left.channelEpoch == 2)
+        #expect(left.membership == nil && !left.isMember)
+
+        let stayed = group.dropping(group.membership)
+        #expect(stayed.memberCount == 4 && stayed.channelEpoch == 2)
+        #expect(stayed.membership == group.membership && stayed.isMember)
+
+        for changed in [left, stayed] {
+            #expect(changed.id == group.id && changed.name == group.name && changed.visibility == group.visibility)
+        }
+    }
+
     @Test func roleAndVisibilityNamesComeFromBranding() {
         #expect(MemberRole.owner.isAdmin && MemberRole.admin.isAdmin && !MemberRole.member.isAdmin && !MemberRole.banned.isAdmin)
         #expect(MemberRole.owner.displayName == AppBranding.Groups.ownerRole)

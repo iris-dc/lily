@@ -7,28 +7,15 @@ struct ImageAttachmentView: View {
     let message: ChatMessage
     let loader: AttachmentLoader
     let onTap: () -> Void
-    @State private var image: UIImage?
-    @State private var failed = false
+    @State private var picture = AttachmentImageLoad()
 
     var body: some View {
         Button(action: onTap) {
-            AttachmentTile(image: image, isLoading: image == nil && !failed)
+            AttachmentTile(image: picture.image, isLoading: picture.isLoading)
         }
         .buttonStyle(.plain)
-        .task(id: attachment.id) { await load() }
+        .task(id: attachment.id) { await picture.load(attachment, variant: .thumbnail, in: message, through: loader) }
         .accessibilityLabel(AppBranding.Chat.Attachments.photo)
         .accessibilityIdentifier(AccessibilityIdentifiers.messageAttachmentImage(id: attachment.id))
-    }
-
-    /// A failed download leaves the stand-in; the loader logged why, and the full picture can still be tried in the viewer.
-    private func load() async {
-        do {
-            let url = try await loader.file(for: attachment, variant: .thumbnail, in: message)
-            image = await ImageFile.load(url)
-            failed = image == nil
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            failed = true
-        }
     }
 }

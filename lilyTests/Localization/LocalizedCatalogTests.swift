@@ -22,7 +22,7 @@ struct LocalizedCatalogTests {
     }
 
     @Test func aFixedLanguageAnswersInItsWordsAndPluralForms() throws {
-        let russian = AppLocale.Context(language: .russian, current: Locale(identifier: "en_US"))
+        let russian = AppLocale.Context(language: .russian, current: { Locale(identifier: "en_US") })
         #expect(String(localized: "Sign in", bundle: russian.bundle, locale: russian.locale) == "Войти")
         #expect(String(localized: "\(1) spots left", bundle: russian.bundle, locale: russian.locale) == "Осталось 1 место")
         #expect(String(localized: "\(2) spots left", bundle: russian.bundle, locale: russian.locale) == "Осталось 2 места")
@@ -46,6 +46,35 @@ struct LocalizedCatalogTests {
         let russian = AppLocale.Context(language: .russian)
         let line = String(localized: "\("Marta") created \("Sunset 5-a-side")", bundle: russian.bundle, locale: russian.locale)
         #expect(line == "Новая игра от Marta: Sunset 5-a-side")
+    }
+
+    /// A key that names a role carries the English it shows, so the lookup never answers the key itself.
+    @Test func aRoleKeyShowsItsEnglishValueAndItsOwnTranslation() {
+        let english = AppLocale.Context(language: .english)
+        #expect(String(localized: "Message (verb)", bundle: english.bundle, locale: english.locale) == "Message")
+        #expect(String(localized: "Any (price)", bundle: english.bundle, locale: english.locale) == "Any")
+        let russian = AppLocale.Context(language: .russian)
+        #expect(String(localized: "Message (verb)", bundle: russian.bundle, locale: russian.locale) == "Написать")
+        #expect(String(localized: "Any (price)", bundle: russian.bundle, locale: russian.locale) == "Любая")
+    }
+
+    /// The split moved nothing: the composer's placeholder stays the noun and the distance menu the neuter.
+    @Test func theNounKeysKeptTheirTranslations() {
+        let russian = AppLocale.Context(language: .russian)
+        #expect(String(localized: "Message", bundle: russian.bundle, locale: russian.locale) == "Сообщение")
+        #expect(String(localized: "Any", bundle: russian.bundle, locale: russian.locale) == "Любое")
+    }
+
+    /// One key for the whole toggle, so a language orders the question and the action its own way.
+    @Test func theSignInToggleIsOneSentencePerLanguage() {
+        let russian = AppLocale.Context(language: .russian)
+        let sentence = String(localized: "Already have an account? Sign in", bundle: russian.bundle, locale: russian.locale)
+        #expect(sentence == "Уже есть аккаунт? Войти")
+        let english = AppLocale.Context(language: .english)
+        let englishSentence = String(localized: "Already have an account? Sign in",
+                                     bundle: english.bundle,
+                                     locale: english.locale)
+        #expect(englishSentence == "Already have an account? Sign in")
     }
 
     /// The keys of a folder's `Localizable.strings` and `Localizable.stringsdict` (plurals land in the latter).

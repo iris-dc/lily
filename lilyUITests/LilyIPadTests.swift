@@ -3,19 +3,18 @@ import XCTest
 /// The iPad layouts, run on an iPad simulator by `ci.sh ui-ipad`; the same launch as every other UI test class. On a
 /// phone (the `ui` stage runs every class) the whole class is skipped: it asserts regular-width layouts.
 final class LilyIPadTests: LilyUITestCase {
+    // Mirrors `DesignTokens.Layout.wideMinWidth`/`cardMinWidth`/`cardMaxWidth` and `Spacing.md`, the grid's spacing;
+    // the test target cannot import the app module.
+    private let wideMinWidth: CGFloat = 1000
+    private let cardMinWidth: CGFloat = 340
+    private let cardMaxWidth: CGFloat = 520
+    private let cardSpacing: CGFloat = 12
+
     override func setUpWithError() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "regular-width layouts need an iPad")
         // A rotation test that failed mid-way leaves the device in landscape; every case starts upright.
         XCUIDevice.shared.orientation = .portrait
         try super.setUpWithError()
-    }
-
-    @MainActor
-    func testExploreShowsOnIPad() {
-        relaunchAsGuest()
-        // A grid on a regular width, a scroll view on a compact one: the identifier is the same either way.
-        XCTAssertTrue(app.descendants(matching: .any)["group-carousel"].firstMatch.waitForExistence(timeout: 10),
-                      "the group grid never appeared: \(app.debugDescription)")
     }
 
     /// Explore on a wide window: the map is a pane beside the content, the list/map picker is gone, and in landscape
@@ -26,14 +25,14 @@ final class LilyIPadTests: LilyUITestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
         // The card, not the map pin of the same title: only the card's label carries the place.
-        let sunset = card(titled: "Sunset 5-a-side", at: "Riverside Pitch 2")
-        let pickup = card(titled: "Pickup at the Cage", at: "Westside Courts")
+        let sunset = card(containing: "Sunset 5-a-side", "Riverside Pitch 2")
+        let pickup = card(containing: "Pickup at the Cage", "Westside Courts")
         XCTAssertTrue(sunset.waitForExistence(timeout: 10) && pickup.waitForExistence(timeout: 10), app.debugDescription)
         // The rotation is asynchronous: the window turns first and the layout follows, so wait for both.
         waitForOrientation(landscape: true)
         waitUntilHittableAndStill(sunset)
         let width = app.windows.firstMatch.frame.width
-        if width >= 1000 {
+        if width >= wideMinWidth {
             XCTAssertTrue(app.otherElements["explore-map-pane"].waitForExistence(timeout: 5), "the map is a pane")
             XCTAssertFalse(app.segmentedControls["events-presentation"].exists, "no list/map switch beside a pane")
         } else {
@@ -42,17 +41,17 @@ final class LilyIPadTests: LilyUITestCase {
         // The column the cards get is what lies between the first card and the scroll view's right edge: in landscape
         // on the 13-inch that is two cards, on a narrower iPad one.
         let usable = app.scrollViews.firstMatch.frame.maxX - sunset.frame.minX
-        if usable >= 2 * 340 + 16 {
+        if usable >= 2 * cardMinWidth + cardSpacing {
             XCTAssertEqual(sunset.frame.minY, pickup.frame.minY, accuracy: 2, "two cards share a row")
             XCTAssertNotEqual(sunset.frame.minX, pickup.frame.minX, "side by side, not stacked")
         } else {
             XCTAssertGreaterThan(pickup.frame.minY, sunset.frame.maxY - 1, "one card per row in a narrow column")
-            XCTAssertLessThanOrEqual(sunset.frame.width, 520, "a lone card stops at the grid's maximum")
+            XCTAssertLessThanOrEqual(sunset.frame.width, cardMaxWidth, "a lone card stops at the grid's maximum")
         }
         XCUIDevice.shared.orientation = .portrait
         waitForOrientation(landscape: false)
         XCTAssertTrue(sunset.waitForExistence(timeout: 5))
-        if width >= 1000 {
+        if width >= wideMinWidth {
             XCTAssertTrue(app.otherElements["explore-map-pane"].waitForExistence(timeout: 5), "the pane survives a rotation")
         }
     }
@@ -69,10 +68,6 @@ final class LilyIPadTests: LilyUITestCase {
         XCTFail("the window never turned to \(landscape ? "landscape" : "portrait")")
     }
 
-    private func card(titled title: String, at place: String) -> XCUIElement {
-        app.buttons.containing(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@", title, place)).firstMatch
-    }
-
     /// Discover's cards fill the width as a grid: the first two share a row.
     @MainActor
     func testDiscoverGroupsUsesAGrid() {
@@ -85,6 +80,18 @@ final class LilyIPadTests: LilyUITestCase {
         let first = rows.element(boundBy: 0), second = rows.element(boundBy: 1)
         XCTAssertEqual(first.frame.minY, second.frame.minY, accuracy: 2, "two cards share a row")
         XCTAssertNotEqual(first.frame.minX, second.frame.minX)
+    }
+
+    /// Home on a regular width draws the caller's groups as tiles, each captioned with its place and the distance from
+    /// the mock position (the games section's position; Home never asked for one of its own before).
+    @MainActor
+    func testHomeTilesShowTheDistanceToEachGroup() {
+        tapSignInWithApple()
+        openHomeTab()
+        let tile = app.buttons["group-row-mock-group-kickers"]
+        XCTAssertTrue(tile.waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(tile.label.contains(" km") || tile.label.contains(" m"),
+                      "the tile shows the distance from the mock position: \(tile.label)")
     }
 
     /// On a regular width Chats is a split view: the list stays beside the room, through a rotation and back.
@@ -116,11 +123,8 @@ final class LilyIPadTests: LilyUITestCase {
     @MainActor
     func testInboxOpensInTheDetailColumn() {
         tapSignInWithApple()
-        openChatsTab()
+        openInbox()
         let inbox = app.buttons["inbox-row"]
-        XCTAssertTrue(inbox.waitForExistence(timeout: 10))
-        inbox.tap()
-        XCTAssertTrue(app.navigationBars["iskra"].waitForExistence(timeout: 10), "the inbox is titled after the app")
         let accept = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'inbox-accept-'")).firstMatch
         XCTAssertTrue(accept.waitForExistence(timeout: 10), "the inbox's cards are in the detail column")
         XCTAssertTrue(inbox.exists && app.buttons["group-row-mock-group-kickers"].exists, "the list stays beside it")

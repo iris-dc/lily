@@ -81,7 +81,7 @@ struct MessageComposer: View {
         if let seconds = viewModel.cooldownSeconds {
             return Copy.slowDown(seconds: seconds)
         }
-        if viewModel.draft.text.wireLength >= AppConfig.Chat.counterThreshold {
+        if viewModel.draft.showsCounter {
             return Copy.remaining(viewModel.draft.remaining)
         }
         return nil

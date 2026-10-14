@@ -12,11 +12,19 @@ struct EditGroupViewModelTests {
     init() {
         harness.repository.result = .success([group])
         harness.store.add(group)
-        viewModel = EditGroupViewModel(group: group,
-                                       repository: harness.repository,
-                                       reporter: harness.reporter,
-                                       logger: harness.logger,
-                                       onChange: harness.sink.record)
+        viewModel = Self.makeViewModel(editing: group, in: harness, onChange: harness.sink.record)
+    }
+
+    /// The sheet's view model over the harness, with the lost-race pause removed.
+    private static func makeViewModel(editing group: SportGroup,
+                                      in harness: GroupHarness,
+                                      onChange: @escaping @MainActor (SportGroup) -> Void) -> EditGroupViewModel {
+        EditGroupViewModel(group: group,
+                           repository: harness.repository,
+                           reporter: harness.reporter,
+                           logger: harness.logger,
+                           tryAgainDelay: .zero,
+                           onChange: onChange)
     }
 
     @Test func startsFromTheGroupWithNothingToSave() {
@@ -45,11 +53,7 @@ struct EditGroupViewModelTests {
     /// one "sibling screens invalidated" line, not two.
     @Test func oneEditWritesMineOnce() async {
         let detail = harness.makeGroupDetailViewModel(group)
-        let editor = EditGroupViewModel(group: group,
-                                        repository: harness.repository,
-                                        reporter: harness.reporter,
-                                        logger: harness.logger,
-                                        onChange: detail.accept)
+        let editor = Self.makeViewModel(editing: group, in: harness, onChange: detail.accept)
         let versionBefore = harness.changes.version
         let mineWritesBefore = mineWriteLines.count
         editor.draft.name = "New name"
@@ -70,11 +74,7 @@ struct EditGroupViewModelTests {
     /// A public group from before places existed asks for one the first time it is edited; a private one does not.
     @Test func anOldPublicGroupWithoutAPlaceAsksForOneOnEdit() {
         let old = SportGroup.fixture(id: "old", name: "Old name", role: .owner)
-        let viewModel = EditGroupViewModel(group: old,
-                                           repository: harness.repository,
-                                           reporter: harness.reporter,
-                                           logger: harness.logger,
-                                           onChange: harness.sink.record)
+        let viewModel = Self.makeViewModel(editing: old, in: harness, onChange: harness.sink.record)
         #expect(viewModel.issues == [.locationNameMissing] && !viewModel.canSubmit)
 
         viewModel.draft.locationName = "Görlitzer Park"
@@ -82,11 +82,7 @@ struct EditGroupViewModelTests {
         #expect(viewModel.hasChanges && viewModel.canSubmit)
 
         let privateGroup = SportGroup.fixture(id: "p", visibility: .private, role: .owner)
-        let privateViewModel = EditGroupViewModel(group: privateGroup,
-                                                  repository: harness.repository,
-                                                  reporter: harness.reporter,
-                                                  logger: harness.logger,
-                                                  onChange: harness.sink.record)
+        let privateViewModel = Self.makeViewModel(editing: privateGroup, in: harness, onChange: harness.sink.record)
         #expect(privateViewModel.issues.isEmpty)
     }
 
@@ -94,7 +90,20 @@ struct EditGroupViewModelTests {
         viewModel.draft.name = "ab"
 
         #expect(viewModel.hasChanges && !viewModel.canSubmit)
-        #expect(viewModel.issue(for: .nameTooShort, .nameTooLong) == .nameTooShort)
+        #expect(viewModel.issues.contains(.nameTooShort))
+    }
+
+    /// The group edit repeats one `TRY_AGAIN` like the event and tournament edits do: an update is idempotent.
+    @Test func aLostRaceOnSaveIsRepeatedOnce() async {
+        viewModel.draft.name = "New name"
+        harness.repository.transientErrors = [.tryAgain]
+
+        await viewModel.submit()
+
+        #expect(viewModel.updatedGroup?.name == "New name")
+        #expect(harness.repository.updatedDrafts.count == 2)
+        #expect(harness.logs(.info).contains("Update of group g lost a race; retrying once"))
+        #expect(harness.presentedError == nil)
     }
 
     @Test func aFailureReachesThePopup() async {

@@ -14,8 +14,9 @@ nonisolated enum ReportReason: String, CaseIterable, Codable, Sendable {
 }
 
 /// What a report is about. A message's, a group's or a tournament's report carries the room so the backend can check
-/// the reporter may see the target; a tournament's room is the tournament's own id.
-nonisolated struct ReportTarget: Hashable, Sendable {
+/// the reporter may see the target; a tournament's room is the tournament's own id. The target's id doubles as the
+/// report sheet's item identity (`sheet(item:)`).
+nonisolated struct ReportTarget: Hashable, Identifiable, Sendable {
     enum Kind: String, Codable, Sendable {
         case message, group, user, tournament
     }
@@ -57,8 +58,7 @@ nonisolated struct ReportPayload: Encodable, Equatable, Sendable {
         targetId = target.id
         groupId = target.groupID
         self.reason = reason
-        let trimmed = comment?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        self.comment = trimmed.isEmpty ? nil : trimmed
+        self.comment = comment.nonBlankTrimmed
     }
 }
 

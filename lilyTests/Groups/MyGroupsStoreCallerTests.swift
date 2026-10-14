@@ -96,4 +96,92 @@ struct MyGroupsStoreCallerTests {
         await store.reload()
         #expect(store.loadVersion == 2)
     }
+
+    /// A join made while Mine was out: the answer predates it and is applied, so the screen never empties, and the
+    /// load runs once more so the backend's view of the join replaces the local one.
+    @Test func aLocalAddDuringAMineLoadSurvivesTheAnswer() async {
+        repository.result = .success(mine)
+        repository.holdsRequests = true
+        let store = makeStore()
+        let joined = SportGroup.fixture(id: "c", role: .member)
+
+        let load = Task { await store.reload() }
+        await settle(until: { repository.requestedScopes.count == 1 })
+        store.add(joined)
+        repository.releaseRequests()
+        repository.holdsRequests = true
+        await settle(until: { repository.requestedScopes.count == 2 })
+        #expect(store.isLoading, "the first answer was applied and the load runs once more")
+
+        repository.result = .success(mine + [joined])
+        repository.releaseRequests()
+        await load.value
+
+        #expect(Set(store.groups.map(\.id)) == ["a", "b", "c"] && store.loadVersion == 2 && !store.isLoading)
+        #expect(logger.messages(in: .cache, at: .debug).contains { $0.contains("loading once more") })
+        await store.loadIfStale()
+        #expect(repository.requestedScopes.count == 2, "current after the repeat")
+    }
+
+    /// The repeat is bounded: a change landing during it leaves the store stale for the next trigger, never a loop.
+    @Test func aChangeDuringTheRepeatWaitsForTheNextTrigger() async {
+        repository.result = .success(mine)
+        repository.holdsRequests = true
+        let store = makeStore()
+
+        let load = Task { await store.reload() }
+        await settle(until: { repository.requestedScopes.count == 1 })
+        store.add(.fixture(id: "c", role: .member))
+        repository.releaseRequests()
+        repository.holdsRequests = true
+        await settle(until: { repository.requestedScopes.count == 2 })
+        store.add(.fixture(id: "d", role: .member))
+        repository.releaseRequests()
+        await load.value
+
+        #expect(repository.requestedScopes.count == 2 && !store.isLoading, "one repeat, never a loop")
+        await store.loadIfStale()
+        #expect(repository.requestedScopes.count == 3, "the next trigger reloads over the second change")
+    }
+
+    /// A sign-out and sign-in while the previous user's request is still out: the new user's load waits it out instead
+    /// of joining it, so the previous user's answer is dropped and theirs is what the store shows.
+    @Test func aReloadForANewUserWaitsOutThePreviousUsersRun() async {
+        repository.result = .success(mine)
+        repository.holdsRequests = true
+        let store = makeStore()
+
+        let first = Task { await store.reload() }
+        await settle(until: { repository.requestedScopes.count == 1 })
+        identity.currentUserID = "someone-else"
+        let second = Task { await store.reload() }
+        await Task.yield()
+        #expect(repository.requestedScopes.count == 1, "the new user waits, nothing runs beside the old request")
+
+        repository.result = .success([.fixture(id: "theirs", role: .member)])
+        repository.releaseRequests()
+        await first.value
+        await second.value
+
+        #expect(repository.requestedScopes.count == 2 && store.groups.map(\.id) == ["theirs"])
+        #expect(store.loadVersion == 1 && !store.isLoading)
+        #expect(logger.messages(in: .cache, at: .debug).contains { $0.contains("previous caller") })
+    }
+
+    /// A change to a group Mine does not hold inserts nothing and says so, while sibling screens still learn of it.
+    @Test func replaceOfAGroupNotInMineNeverClaimsAReplace() async {
+        repository.result = .success(mine)
+        let store = makeStore()
+        await store.reload()
+        let version = changes.version
+
+        store.replace(.fixture(id: "stranger", role: .member))
+
+        #expect(store.groups.map(\.id) == ["a", "b"] && changes.version == version + 1)
+        let lines = logger.messages(in: .cache, at: .debug)
+        #expect(lines.contains { $0.contains("Group stranger not in Mine") })
+        #expect(!lines.contains { $0.contains("stranger replaced") })
+        await store.loadIfStale()
+        #expect(repository.requestedScopes.count == 1, "the bump is this store's own")
+    }
 }

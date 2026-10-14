@@ -58,7 +58,7 @@ struct GroupRepositories {
     static func mock(identity: any IdentityProvider,
                      logger: any Logging,
                      autoReplies: Bool,
-                     mockPicker: Bool = false,
+                     mockPicker: Bool,
                      termsPending: Bool = false) -> GroupRepositories {
         let groups = MockGroupRepository(identity: identity, logger: logger)
         let tournaments = MockTournamentRepository(groups: groups, identity: identity, logger: logger)
@@ -106,8 +106,12 @@ struct GroupDependencies {
     let me: MeStore
     /// The caller's invites and reminders; the Chats row, the tab badge and the inbox screen read it.
     let inbox: InboxStore
+    /// The caller's block list; every room's rows read it and every block replaces it.
+    let blocks: BlockListStore
     /// The rooms held in memory; the open chat and the realtime controller share it.
     let chatHistory: InMemoryChatHistoryCache
+    /// The unsent and failed messages of every room; every open chat reads and writes its own there.
+    let outbox = ChatOutbox()
     let unreadCenter: UnreadCenter
     let catchUp: ChatCatchUp
     let realtime: RealtimeSessionController
@@ -115,11 +119,10 @@ struct GroupDependencies {
     let attachments: AttachmentDependencies
     /// Every groups and chat screen reports failures through it: the popup, plus `MeStore.noteTermsRequired()` on `TERMS_REQUIRED`.
     let errorReporter: GroupErrorReporter
-    let pasteboard: any Pasteboard
-    let navigation = AppNavigation()
+    let pasteboard: any Pasteboard = SystemPasteboard()
     /// Counts group changes made anywhere, as `AppDependencies.eventChanges` does for events.
     let groupChanges = ChangeTracker()
-    /// Counts tournament changes made anywhere, the realtime controller's included; `TournamentDependencies` shares it.
+    /// Counts tournament changes made anywhere, the realtime controller's included; every tournament list reloads on it.
     let tournamentChanges = ChangeTracker()
 
     var groupRepository: any GroupRepository { repositories.groups }
@@ -135,8 +138,7 @@ struct GroupDependencies {
          identity: any IdentityProvider,
          tokenProvider: (any AuthTokenProvider)?,
          errorCenter: ErrorCenter,
-         logger: any Logging,
-         pasteboard: any Pasteboard = SystemPasteboard()) {
+         logger: any Logging) {
         self.repositories = repositories
         let myGroups = MyGroupsStore(repository: repositories.groups,
                                      identity: identity,
@@ -148,6 +150,7 @@ struct GroupDependencies {
         self.me = me
         let inbox = InboxStore(repository: repositories.inbox, identity: identity, errorCenter: errorCenter, logger: logger)
         self.inbox = inbox
+        blocks = BlockListStore(repository: repositories.moderation, identity: identity, logger: logger)
         errorReporter = GroupErrorReporter(errorCenter: errorCenter) { me.noteTermsRequired() }
         let chatHistory = InMemoryChatHistoryCache(logger: logger)
         self.chatHistory = chatHistory
@@ -170,12 +173,11 @@ struct GroupDependencies {
                                              groupRepository: repositories.groups,
                                              errorCenter: errorCenter,
                                              logger: logger)
-        self.pasteboard = pasteboard
     }
 
     /// Everything here that holds state for the signed-in user; `SessionController` tells them when the session ends.
     var sessionObservers: [any SessionObserver] {
-        [myGroups, me, inbox, chatHistory, unreadCenter, attachments.cache, realtime, navigation]
+        [myGroups, me, inbox, blocks, chatHistory, outbox, unreadCenter, attachments.cache, realtime]
     }
 }
 
@@ -187,18 +189,19 @@ extension AppDependencies {
     var moderationRepository: any ModerationRepository { groups.moderationRepository }
     var myGroups: MyGroupsStore { groups.myGroups }
     var me: MeStore { groups.me }
-    var navigation: AppNavigation { groups.navigation }
+    var blocks: BlockListStore { groups.blocks }
     var groupChanges: ChangeTracker { groups.groupChanges }
 
-    func makeGroupListViewModel(scope: GroupListScope) -> GroupListViewModel {
-        GroupListViewModel(scope: scope,
-                           store: myGroups,
-                           repository: groupRepository,
-                           identity: identity,
-                           locationService: locationService,
-                           errorCenter: errorCenter,
-                           recorder: interactionRecorder,
-                           logger: logger)
+    /// Discover searches the group repository around the shared location service's position and searches again when
+    /// `groupChanges` moved.
+    func makeDiscoverGroupsViewModel() -> DiscoverGroupsViewModel {
+        DiscoverGroupsViewModel(changes: groupChanges,
+                                repository: groupRepository,
+                                identity: identity,
+                                locationService: locationService,
+                                errorCenter: errorCenter,
+                                recorder: interactionRecorder,
+                                logger: logger)
     }
 
     func makeGroupDetailViewModel(for group: SportGroup, context: GroupDetailContext) -> GroupDetailViewModel {

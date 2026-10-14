@@ -64,6 +64,6 @@ struct TournamentParticipationTests {
         #expect(TournamentRole(tournament: tournament, userID: "org") == .organizer)
         #expect(TournamentRole(tournament: tournament, userID: "player") == .entrant(entryID: "e1"))
         #expect(TournamentRole(tournament: .fixture(), userID: "someone") == .outsider)
-        #expect(TournamentRole.organizer.isOrganizer && TournamentRole.guest.isGuest && !TournamentRole.outsider.isOrganizer)
+        #expect(TournamentRole.organizer.isOrganizer && !TournamentRole.outsider.isOrganizer)
     }
 }

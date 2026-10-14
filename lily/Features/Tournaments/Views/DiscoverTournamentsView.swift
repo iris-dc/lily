@@ -4,10 +4,12 @@ import SwiftUI
 /// distances, and a type dropdown in the toolbar. Works for guests; a card opens the tournament's detail.
 struct DiscoverTournamentsView: View {
     @State private var viewModel: TournamentListViewModel
+    private let dependencies: AppDependencies
 
     private typealias Copy = AppBranding.Tournaments
 
     init(dependencies: AppDependencies) {
+        self.dependencies = dependencies
         _viewModel = State(initialValue: dependencies.makeTournamentListViewModel(scope: .upcoming))
     }
 
@@ -23,7 +25,8 @@ struct DiscoverTournamentsView: View {
                 TypeFilterButton(typeFilter: $viewModel.typeFilter, identifier: AccessibilityIdentifiers.tournamentsTypeFilter)
             }
         }
-        .task {
+        // Re-runs on a change made elsewhere; the position first, so the one request is ranked by distance.
+        .task(id: dependencies.tournamentChanges.version) {
             await viewModel.loadUserLocation()
             await viewModel.loadIfStale()
         }
@@ -33,11 +36,11 @@ struct DiscoverTournamentsView: View {
         if viewModel.isInitialLoad {
             ProgressView()
         } else if viewModel.visibleTournaments.isEmpty {
-            RefreshableScroll(action: viewModel.load) {
+            refreshableScroll {
                 emptyState.readableColumn().containerRelativeFrame(.vertical)
             }
         } else {
-            RefreshableScroll(action: viewModel.load) {
+            refreshableScroll {
                 TournamentCardList(tournaments: viewModel.visibleTournaments, distance: viewModel.distanceText)
                     .padding(.vertical, DesignTokens.Spacing.md)
                     .padding(.bottom, DesignTokens.Spacing.xxl)
@@ -57,6 +60,11 @@ struct DiscoverTournamentsView: View {
         } else {
             EmptyStateView(symbolName: DesignTokens.Symbols.tournament, title: Copy.emptyTitle, message: Copy.emptyMessage)
         }
+    }
+
+    private func refreshableScroll(@ViewBuilder _ content: @escaping () -> some View) -> some View {
+        ScrollView { content() }
+            .refreshable { await viewModel.load() }
     }
 }
 

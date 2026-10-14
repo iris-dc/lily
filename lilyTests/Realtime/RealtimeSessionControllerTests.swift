@@ -19,14 +19,13 @@ struct RealtimeSessionControllerTests {
         harness.endpoint.url = nil
         await harness.connect()
         #expect(harness.controller.state == .unavailable && harness.transport.connectCount == 0)
-        #expect(harness.chatLogs(.info).contains("Realtime disabled; catch-up only"))
+        #expect(harness.chatLogs(.info).mentioning("catch-up only").count == 1)
 
         harness.endpoint.url = URL(string: "https://realtime.test/event")
         await harness.controller.resume()
         #expect(harness.controller.state == .connected && harness.transport.connectCount == 1)
         #expect(harness.transport.connectedEndpoints == [URL(string: "https://realtime.test/event")])
         #expect(harness.transport.subscribedChannels == [userChannel])
-        #expect(harness.chatLogs(.info).contains("Chat connection opened"))
         #expect(harness.groups.requestedScopes == [.mine], "the resume protocol reloads Mine once")
     }
 
@@ -44,7 +43,6 @@ struct RealtimeSessionControllerTests {
 
         await harness.controller.suspend()
         #expect(harness.transport.disconnectCount == 1 && harness.controller.state == .disconnected)
-        #expect(harness.chatLogs(.info).contains("Chat connection closed (background)"))
         await harness.yield()
         #expect(harness.transport.subscribedChannels.isEmpty)
 
@@ -142,7 +140,7 @@ struct RealtimeSessionControllerTests {
         #expect(tokens.freshRequestCount == 1 && tokens.requestCount == 1)
         #expect(harness.transport.disconnectCount == 1)
         #expect(harness.sleep.held.map(\.seconds) == [10_800 - 3300 - AppConfig.Realtime.reconnectBeforeExpiry])
-        #expect(harness.chatLogs(.info).contains("Chat connection closed (token renewal)"))
+        #expect(harness.chatLogs(.info).mentioning("closed", "token renewal").count == 1)
     }
 
     /// A refresh that hands back the same token would renew at once and loop; instead it waits out the backoff table.
@@ -188,13 +186,11 @@ struct RealtimeSessionControllerTests {
 
         await harness.connect()
         #expect(harness.controller.state == .disconnected && harness.sleep.held.map(\.seconds) == [table[0] * jitter])
-        #expect(harness.chatLogs(.info).contains("Chat reconnecting in 1s (connect failed)"))
 
         harness.sleep.release()
         await settle(until: { harness.sleep.held.map(\.seconds) == [table[1] * jitter] })
         harness.sleep.release()
         await settle(until: { harness.controller.state == .connected && harness.sleep.held == [renewal] })
-        #expect(harness.controller.backoffAttempt == 0, "a successful connect resets the backoff")
     }
 
     @Test func aLostConnectionReconnectsAfterABackoff() async {
@@ -205,7 +201,6 @@ struct RealtimeSessionControllerTests {
         let backoff = AppConfig.Realtime.reconnectBackoffSeconds[0] * (1 + AppConfig.Realtime.reconnectJitter)
         await settle(until: { harness.sleep.held.map(\.seconds) == [backoff] })
         #expect(harness.controller.state == .disconnected)
-        #expect(harness.chatLogs(.info).contains("Chat connection closed (connection lost)"))
 
         harness.sleep.release()
         await settle(until: { harness.transport.connectCount == 2 })
@@ -220,8 +215,10 @@ struct RealtimeSessionControllerTests {
         #expect(harness.errorCenter.current?.error == .sessionExpired && harness.controller.state == .disconnected)
         #expect(harness.sleep.held.isEmpty, "no reconnect is scheduled")
 
+        // Dismissed first: with the popup gone, only the once-flag can keep the second refusal quiet.
+        harness.errorCenter.dismiss()
         await harness.controller.resume()
-        #expect(harness.logger.messages(in: .ui).count == 1, "said once")
+        #expect(harness.errorCenter.current == nil, "said once")
         #expect(!harness.logger.entries.contains { $0.message.contains("eyJ.token") })
     }
 

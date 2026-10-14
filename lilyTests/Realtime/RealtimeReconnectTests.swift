@@ -5,7 +5,7 @@ import Testing
 /// Connection lifecycle cases the main suite, at its 200-line body limit, cannot hold: the bounded reconnect when a
 /// forced token refresh answers nothing, a backoff timer made stale by a connect that landed meanwhile, every stream
 /// ending at once or finishing cleanly, a Mine reload that fails or is interrupted by a suspend during the resume
-/// protocol, and the session state a changed user leaves behind.
+/// protocol, the session state a changed user leaves behind, and the opened line naming the endpoint's host.
 @MainActor
 struct RealtimeReconnectTests {
     private let userChannel = RealtimeChannel.user(sub: TestFixtures.user.id)
@@ -191,7 +191,7 @@ struct RealtimeReconnectTests {
         harness.transport.connectErrors = [RealtimeTransportError.unauthorized]
         harness.sleep.release()
         await settle(until: { harness.errorCenter.current?.error == .sessionExpired })
-        #expect(harness.controller.reportedExpiredSession && harness.controller.backoffAttempt == 1)
+        #expect(harness.controller.reportedExpiredSession && harness.controller.backoff.attempt == 1)
         #expect(harness.controller.knownEpochs["g1"] == 3 && harness.controller.lastExpiry != nil)
 
         harness.errorCenter.dismiss()
@@ -200,7 +200,7 @@ struct RealtimeReconnectTests {
         #expect(harness.errorCenter.current?.error == .sessionExpired, "the new user's refused token is reported again")
         #expect(harness.controller.knownEpochs["g1"] == nil)
         #expect(harness.controller.lastExpiry == nil, "the renewal compares the next token against nothing")
-        #expect(harness.controller.backoffAttempt == 0 && harness.controller.reconnectsWithoutToken == 0)
+        #expect(harness.controller.backoff.attempt == 0 && harness.controller.reconnectsWithoutToken == 0)
         #expect(harness.sleep.held.isEmpty)
     }
 
@@ -222,5 +222,14 @@ struct RealtimeReconnectTests {
         await settle(until: { harness.sleep.held.isEmpty })
         #expect(harness.controller.reconnectsWithoutToken == 0 && harness.controller.state == .disconnected)
         #expect(harness.transport.connectCount == 1, "no token, no connect for the new user either")
+    }
+
+    /// The opened line names the endpoint's host (ours, never user data), so a log shows which endpoint a build reached.
+    @Test func theConnectionOpenedLineNamesTheHost() async throws {
+        let harness = RealtimeHarness()
+        await harness.connect()
+
+        let host = try #require(harness.endpoint.url?.host())
+        #expect(harness.chatLogs(.info).filter { $0 == "Chat connection opened to \(host)" }.count == 1)
     }
 }

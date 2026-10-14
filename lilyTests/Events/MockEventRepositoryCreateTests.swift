@@ -89,4 +89,16 @@ struct MockEventRepositoryCreateTests {
     @Test func createWithoutACoordinateIsRefused() async {
         await #expect(throws: AppError.eventCreationFailed) { try await repository.create(.fixture(coordinate: nil)) }
     }
+
+    /// Like the backend: `HOST_CANNOT_LEAVE` is judged before participation, and the game is left as it was.
+    @Test func theHostCannotLeaveTheirOwnGame() async throws {
+        let created = try await repository.create(.fixture())
+
+        await #expect(throws: AppError.hostCannotLeave) { try await repository.leave(eventId: created.id) }
+
+        let stored = try await repository.event(id: created.id)
+        #expect(stored.participates && stored.participantCount == 1)
+        #expect(stored.hostUserId == TestFixtures.user.id)
+        #expect(Participation(event: stored, userID: TestFixtures.user.id) == .hosting)
+    }
 }

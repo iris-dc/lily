@@ -1,6 +1,6 @@
 import Foundation
 
-/// The event screens' view models over the shared repositories, changes tracker and the push opt-in.
+/// The event screens' and the landing's view models over the shared repositories, changes tracker and the push opt-in.
 extension AppDependencies {
     /// Explore starts from the filter as the user last left it (the defaults, 10 km around the user, on a fresh
     /// install) and keeps every change; a list without a filter button, such as Home, must never hide a game, so it
@@ -19,12 +19,18 @@ extension AppDependencies {
                            filterStore: scope == .upcoming ? eventFilterStore : NoOpEventFilterStore())
     }
 
-    /// Explore's filter as last set, forgotten by `-reset-session` like the session and the language choice, so UI
-    /// tests and screenshot runs start from the defaults.
-    static func makeEventFilterStore(arguments: [String], defaults: UserDefaults, logger: any Logging) -> any EventFilterStore {
+    /// Explore's filter as last set, forgotten on a fresh start (`-reset-session`, decided and logged once by
+    /// `makeDefault`) like the session and the language choice, so UI tests and screenshot runs start from the defaults.
+    static func makeEventFilterStore(startsFresh: Bool, defaults: UserDefaults, logger: any Logging) -> any EventFilterStore {
         let store = UserDefaultsEventFilterStore(defaults: defaults, logger: logger)
-        if arguments.contains(AppConfig.LaunchArguments.resetSession) { store.clear() }
+        if startsFresh { store.clear() }
         return store
+    }
+
+    /// The landing's intro and its two ways in (enter as a guest, sign in) over the event preview; `now` keeps its
+    /// default, so the intro's sample cards are dated from launch.
+    func makeLandingViewModel() -> LandingViewModel {
+        LandingViewModel(session: sessionController, repository: eventRepository, logger: logger)
     }
 
     func makeEventDetailViewModel(for event: SportEvent,

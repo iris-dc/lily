@@ -17,6 +17,8 @@ nonisolated extension AppBranding {
         static var eventCreatedFallbackTitle: String { localized("a game") }
         static var emptyTitle: String { localized("No messages yet") }
         static var emptyMessage: String { localized("Say hello to the group.") }
+        /// Over the empty transcript when the first page failed; the message and Try again are the groups' shared ones.
+        static var loadFailedTitle: String { localized("Couldn't load messages") }
         /// The room's "more" menu and its one item: a group's history is cleared for the caller, a conversation is
         /// deleted for them (it returns, without the old messages, when the other person writes).
         static var more: String { localized("More") }
@@ -29,9 +31,9 @@ nonisolated extension AppBranding {
         static var reply: String { localized("Reply") }
         static var cancelReply: String { localized("Cancel reply") }
         static var quotedDeleted: String { deletedPlaceholder }
-        static var quotedPhoto: String { localized("Photo") }
-        static var quotedVideo: String { localized("Video") }
-        static var quotedFile: String { localized("File") }
+        static var quotedPhoto: String { Attachments.photo }
+        static var quotedVideo: String { Attachments.video }
+        static var quotedFile: String { Attachments.file }
 
         static func replyingTo(_ name: String) -> String {
             localized("Replying to \(name)")
@@ -42,7 +44,7 @@ nonisolated extension AppBranding {
             localized("\(name) created \(title)")
         }
 
-        /// How many attachments the composer still takes.
+        /// Characters left before the message limit, shown once the text nears it.
         static func remaining(_ count: Int) -> String {
             localized("\(count) left")
         }

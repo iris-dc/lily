@@ -1,13 +1,15 @@
 import SwiftUI
 
-/// The "more" menu of a group's detail, for members: invite, edit, leave, report, delete; only what `GroupAccess`
-/// allows appears. Leaving and deleting go through the caller's confirmation first.
+/// The "more" menu of a group's detail, for members and for any signed-in reader of a public group, who gets Report
+/// group alone: invite, edit, leave, report, delete; only what `GroupAccess` allows appears. Leaving and deleting go
+/// through the caller's confirmation first.
 struct GroupDetailMenu: View {
     let viewModel: GroupDetailViewModel
     let onInvite: () -> Void
     let onCreateTournament: () -> Void
     let onEdit: () -> Void
     let onLeave: () -> Void
+    let onReport: () -> Void
     let onDelete: () -> Void
 
     private typealias Copy = AppBranding.Groups
@@ -32,9 +34,10 @@ struct GroupDetailMenu: View {
                 Button(Copy.leave, systemImage: DesignTokens.Symbols.leave, role: .destructive, action: onLeave)
                     .accessibilityIdentifier(AccessibilityIdentifiers.groupLeave)
             }
-            // Reporting arrives with moderation; the entry is here so the menu's shape is final.
-            Button(Copy.reportGroup, systemImage: DesignTokens.Symbols.report) {}
-                .disabled(true)
+            if viewModel.canReport {
+                Button(Copy.reportGroup, systemImage: DesignTokens.Symbols.report, action: onReport)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.groupReport)
+            }
             if access.canDelete {
                 Button(Copy.delete, systemImage: DesignTokens.Symbols.delete, role: .destructive, action: onDelete)
             }

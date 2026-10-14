@@ -23,7 +23,8 @@ struct EventFilterStoreTests {
 
     @Test func nothingStoredReadsAsNoneAndLogsTheMiss() {
         #expect(store.load() == nil)
-        #expect(logger.messages(in: .cache, at: .debug) == ["No stored event filter; using the defaults"])
+        #expect(logger.count(in: .cache, at: .debug) == 1)
+        #expect(logger.hasLine(in: .cache, at: .debug, mentioning: "defaults"))
     }
 
     /// Every criterion but the date window comes back; the window would be stale within days. The save and the hit
@@ -38,8 +39,9 @@ struct EventFilterStoreTests {
         expected.dateWindow = nil
         #expect(store.load() == expected)
         #expect(UserDefaultsEventFilterStore(defaults: defaults, logger: logger).load() == expected, "it is in the defaults")
-        #expect(logger.messages(in: .cache, at: .debug) == ["Event filter stored; active: true"])
-        #expect(logger.messages(in: .cache, at: .info).allSatisfy { $0 == "Event filter restored; active: true" })
+        #expect(logger.hasLine(in: .cache, at: .debug, mentioning: "stored", "active: true"))
+        #expect(logger.count(in: .cache, at: .info) == 2, "both loads are logged")
+        #expect(logger.count(in: .cache, at: .info, mentioning: "restored", "active: true") == 2)
         #expect(!logger.messages(in: .cache).contains { $0.contains("tennis") || $0.contains("25") })
     }
 
@@ -56,7 +58,8 @@ struct EventFilterStoreTests {
         store.save(Self.makeFilter())
         store.clear()
         #expect(store.load() == nil && defaults.data(forKey: AppConfig.Storage.Keys.eventFilter) == nil)
-        #expect(logger.messages(in: .cache, at: .info) == ["Stored event filter cleared"])
+        #expect(logger.count(in: .cache, at: .info) == 1)
+        #expect(logger.hasLine(in: .cache, at: .info, mentioning: "cleared"))
     }
 
     /// A filter kept by a newer build may name a type or a level this one does not know; the panel could neither show

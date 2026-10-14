@@ -26,9 +26,8 @@ struct GroupsConfigTests {
     }
 
     @Test func moderationPaths() {
-        #expect(Paths.report(id: "r1") == "/api/reports/r1")
+        #expect(Paths.reports == "/api/reports")
         #expect(Paths.block(userID: "u1") == "/api/blocks/u1")
-        #expect(Paths.suspension(userID: "u1") == "/api/moderation/users/u1/suspension")
         #expect(Paths.meTerms == "/api/me/terms")
     }
 
@@ -74,12 +73,10 @@ struct GroupsConfigTests {
         #expect(AccessibilityIdentifiers.inboxDecline("i1") == "inbox-decline-i1")
     }
 
-    /// The inbox pages at the backend's maximum and reuses what it loaded like the other lists; the mocks keep the
-    /// backend's invite expiry (`invites.pending-days`) and reminder lead (`reminders.lead`).
+    /// The inbox pages at the backend's maximum (`inbox.page-size`); the mocks keep the backend's invite expiry
+    /// (`invites.pending-days`) and reminder lead (`reminders.lead`).
     @Test func inboxLimitsMirrorTheBackend() {
         #expect(AppConfig.Inbox.pageSize == 50)
-        #expect(AppConfig.Inbox.listStaleAfter == AppConfig.Groups.listStaleAfter)
-        #expect(AppConfig.Inbox.retryAfterFailure == AppConfig.Groups.retryAfterFailure)
         #expect(AppConfig.Inbox.mockInviteExpiry == 7 * 86_400 && AppConfig.Inbox.mockReminderLead == 3_600)
     }
 }

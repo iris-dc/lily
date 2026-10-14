@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// The room's "more" menu, for anyone who may chat: one destructive item, "Clear chat" for a group (the caller stays a
-/// member; Leave is on the detail) or "Delete chat" for a conversation. The item is `ChatClearMenuItem`, which the
-/// Chats rows' context menu reuses, and both ask through `chatClearConfirmation` before anything is sent.
+/// The room's "more" menu, for anyone who may chat: one destructive item that clears a group's history or deletes a
+/// conversation, worded by `ChatClearPrompt` (the caller stays a member; Leave is on the detail). The item is
+/// `ChatClearMenuItem`, which the Chats rows' context menu reuses, and both ask through `chatClearConfirmation` before
+/// anything is sent.
 struct ChatRoomMenu: View {
     let group: SportGroup
     let userID: String?
@@ -20,13 +21,14 @@ struct ChatRoomMenu: View {
     }
 }
 
-/// The clear or delete item, worded for the room's kind.
+/// The clear or delete item, worded by `ChatClearPrompt` for the room's kind.
 struct ChatClearMenuItem: View {
     let group: SportGroup
     let action: () -> Void
 
     var body: some View {
-        Button(group.isDirect ? AppBranding.Chat.deleteChat : AppBranding.Chat.clearChat,
+        let prompt = ChatClearPrompt(group: group)
+        Button(prompt.actionTitle,
                systemImage: DesignTokens.Symbols.clearChat,
                role: .destructive,
                action: action)
@@ -34,34 +36,23 @@ struct ChatClearMenuItem: View {
     }
 }
 
-/// The confirmation the room's menu and a Chats row share: title, message and action worded for a group ("the messages
-/// disappear for you only") or a conversation (it comes back without the old messages if the other person writes).
-/// `group` is the room awaiting the caller's word, `nil` while nothing is asked.
+/// The confirmation the room's menu and a Chats row share, worded by `ChatClearPrompt`. `group` is the room awaiting
+/// the caller's word, `nil` while nothing is asked.
 private struct ChatClearConfirmation: ViewModifier {
     @Binding var group: SportGroup?
     let onConfirm: (SportGroup) -> Void
 
-    private typealias Copy = AppBranding.Chat
-
     func body(content: Content) -> some View {
-        content.confirmationDialog(title, isPresented: isPresented, titleVisibility: .visible, presenting: group) { group in
-            Button(role: .destructive) {
-                onConfirm(group)
-            } label: {
-                Text(group.isDirect ? Copy.deleteChat : Copy.clearChat)
-            }
-        } message: { group in
-            Text(group.isDirect ? Copy.deleteConfirmationMessage(name: group.name) : Copy.clearConfirmationMessage)
-        }
-    }
-
-    private var isPresented: Binding<Bool> {
-        Binding(get: { group != nil }, set: { if !$0 { group = nil } })
-    }
-
-    private var title: String {
-        guard let group else { return "" }
-        return group.isDirect ? Copy.deleteConfirmationTitle(name: group.name) : Copy.clearConfirmationTitle
+        content.confirmationDialog(item: $group,
+                                   title: { ChatClearPrompt(group: $0).title },
+                                   actions: { group in
+                                       Button(role: .destructive) {
+                                           onConfirm(group)
+                                       } label: {
+                                           Text(ChatClearPrompt(group: group).actionTitle)
+                                       }
+                                   },
+                                   message: { Text(ChatClearPrompt(group: $0).message) })
     }
 }
 

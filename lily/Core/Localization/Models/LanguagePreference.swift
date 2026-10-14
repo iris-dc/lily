@@ -1,14 +1,17 @@
 import Foundation
 
 /// What the user chose on Profile: follow the system, or one language whatever the device speaks.
-nonisolated enum LanguagePreference: Hashable, Sendable {
+nonisolated enum LanguagePreference: StoredChoice {
     case system
     case fixed(AppLanguage)
+
+    static let storageKey = AppConfig.Storage.Keys.languagePreference
+    static let logCategory = LogCategory.localization
 
     /// How the choice is stored: the word `system`, or the language's code.
     var storedValue: String {
         switch self {
-        case .system: Self.systemStoredValue
+        case .system: AppConfig.Storage.systemChoiceValue
         case .fixed(let language): language.code
         }
     }
@@ -35,6 +38,4 @@ nonisolated enum LanguagePreference: Hashable, Sendable {
         }
         self = .fixed(language)
     }
-
-    private static let systemStoredValue = "system"
 }

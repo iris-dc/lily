@@ -1,106 +1,22 @@
 import SwiftUI
 
-/// What a sheet over `GroupDraftForm` needs from its view model, so creating and editing a group share one screen.
-protocol GroupDraftEditing: AnyObject, Observable {
-    var draft: GroupDraft { get set }
-    var issues: [GroupDraft.Issue] { get }
-    var isSubmitting: Bool { get }
-    var canSubmit: Bool { get }
-    /// The backend answered; the sheet closes.
-    var isDone: Bool { get }
-    /// Run once when the sheet opens, before the user types: a create proposes the device's position as the spot.
-    func prepare() async
-    func submit() async
-}
-
-extension CreateGroupViewModel: GroupDraftEditing {
-    var isDone: Bool { createdGroup != nil }
-}
-
-extension EditGroupViewModel: GroupDraftEditing {
-    var isDone: Bool { updatedGroup != nil }
-
-    /// The group's own place is the draft's already; nothing to propose.
-    func prepare() async {}
-}
-
-/// The group form in a sheet: Cancel and the submit button in the bar, the fields below. Closes itself once the
-/// backend answered.
+/// The group form in the shared draft sheet; the visibility is chosen on a create and fixed on an edit.
 struct GroupDraftSheet<Model: GroupDraftEditing>: View {
-    @State private var viewModel: Model
-    private let title: String
-    private let submitTitle: String
-    private let allowsVisibilityChoice: Bool
-    private let errorCenter: ErrorCenter
-    @Environment(\.dismiss) private var dismiss
-
-    private typealias Copy = AppBranding.Groups.Create
-
-    init(viewModel: Model, title: String, submitTitle: String, allowsVisibilityChoice: Bool, errorCenter: ErrorCenter) {
-        _viewModel = State(initialValue: viewModel)
-        self.title = title
-        self.submitTitle = submitTitle
-        self.allowsVisibilityChoice = allowsVisibilityChoice
-        self.errorCenter = errorCenter
-    }
-
-    var body: some View {
-        @Bindable var viewModel = viewModel
-        NavigationStack {
-            ContentScreen {
-                GroupDraftForm(draft: $viewModel.draft, issues: viewModel.issues, allowsVisibilityChoice: allowsVisibilityChoice)
-            }
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(Copy.cancel, role: .cancel) { dismiss() }
-                        .disabled(viewModel.isSubmitting)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.createGroupCancel)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    DraftSubmitButton(title: submitTitle, isSubmitting: viewModel.isSubmitting, isEnabled: viewModel.canSubmit) {
-                        await viewModel.submit()
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.createGroupSubmit)
-                }
-            }
-            .tint(Color.lilyAccent)
-        }
-        .lilyFormSheet()
-        .presentationDragIndicator(.visible)
-        // Swiping the sheet away mid-request would leave the outcome unknown to the user.
-        .interactiveDismissDisabled(viewModel.isSubmitting)
-        // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
-        .errorPopup(errorCenter)
-        .task { await viewModel.prepare() }
-        .onChange(of: viewModel.isDone) {
-            if viewModel.isDone { dismiss() }
-        }
-    }
-}
-
-/// The bar's submit button of a draft sheet: a spinner in place of the title while the request runs, disabled until
-/// the draft is complete. It keeps the toolbar's own glass and size (see `CreateEventSheet`).
-struct DraftSubmitButton: View {
+    let viewModel: Model
     let title: String
-    let isSubmitting: Bool
-    let isEnabled: Bool
-    let action: () async -> Void
+    let submitTitle: String
+    let allowsVisibilityChoice: Bool
+    let errorCenter: ErrorCenter
 
     var body: some View {
-        Button {
-            Task { await action() }
-        } label: {
-            if isSubmitting {
-                ProgressView()
-                    .controlSize(.small)
-                    .accessibilityLabel(title)
-            } else {
-                Text(title)
-            }
+        DraftSheet(viewModel: viewModel,
+                   title: title,
+                   submitTitle: submitTitle,
+                   cancelIdentifier: AccessibilityIdentifiers.createGroupCancel,
+                   submitIdentifier: AccessibilityIdentifiers.createGroupSubmit,
+                   errorCenter: errorCenter) { model in
+            @Bindable var model = model
+            GroupDraftForm(draft: $model.draft, issues: model.issues, allowsVisibilityChoice: allowsVisibilityChoice)
         }
-        .lilyProminentButton(sizing: .fitted, controlSize: nil)
-        .disabled(!isEnabled)
     }
 }

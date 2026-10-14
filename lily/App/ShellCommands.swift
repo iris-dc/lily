@@ -10,14 +10,6 @@ struct ShellCommands: Commands {
 
     private var navigation: AppNavigation { dependencies.navigation }
 
-    /// Whether the shell (the tabs) is on screen: a guest or a signed-in user, never the landing.
-    private var isInShell: Bool {
-        switch dependencies.sessionController.state {
-        case .guest, .signedIn: true
-        case .loading, .signedOut: false
-        }
-    }
-
     var body: some Commands {
         CommandGroup(after: .newItem) {
             Button(AppBranding.Events.Create.title) { inShell { $0.requestCreate(.game) } }
@@ -40,7 +32,7 @@ struct ShellCommands: Commands {
     }
 
     private func inShell(_ action: (AppNavigation) -> Void) {
-        guard isInShell else { return }
+        guard dependencies.sessionController.state.showsShell else { return }
         action(navigation)
     }
 }

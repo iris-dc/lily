@@ -8,6 +8,10 @@ import Testing
 struct TournamentDetailEntriesTests {
     private let harness = TournamentHarness()
     private let destination = TournamentDestination(id: "t", name: "Tuesday Table Tennis")
+    /// The organiser who also plays, as `e1`, next to one other entry.
+    private let organiserPlaying = Tournament.fixture(entryCount: 2, organizerUserId: TestFixtures.user.id, myEntryId: "e1")
+    private let ownEntry = TournamentEntry.fixture(id: "e1", captainUserId: TestFixtures.user.id)
+    private let otherEntry = TournamentEntry.fixture(id: "e2", name: "Dev", captainUserId: "u-2", seed: 2)
 
     private func loaded(_ tournament: Tournament, entries: [TournamentEntry] = [.fixture()]) async -> TournamentDetailViewModel {
         await harness.loadedDetailViewModel(tournament, entries: entries, for: destination)
@@ -125,6 +129,25 @@ struct TournamentDetailEntriesTests {
         #expect(harness.groupRepository.requestedScopes.isEmpty, "the organiser's own rooms are unchanged")
     }
 
+    /// The backend clears `myEntryId` only when the removed entry held the caller: an organiser who plays keeps theirs.
+    @Test func removingAnotherEntryKeepsMyEntryId() async {
+        let viewModel = await loaded(organiserPlaying, entries: [ownEntry, otherEntry])
+
+        await viewModel.removeEntry(otherEntry)
+
+        #expect(viewModel.tournament?.myEntryId == "e1" && viewModel.detail?.entries.map(\.id) == ["e1"])
+        #expect(viewModel.participation == .leave, "still in, so Leave rather than Join")
+    }
+
+    @Test func removingTheCallersOwnEntryClearsMyEntryId() async {
+        let viewModel = await loaded(organiserPlaying, entries: [ownEntry, otherEntry])
+
+        await viewModel.removeEntry(ownEntry)
+
+        #expect(viewModel.tournament?.myEntryId == nil && viewModel.detail?.entries.map(\.id) == ["e2"])
+        #expect(viewModel.participation == .join)
+    }
+
     /// A refusal is an expected product state: the popup explains it, the log stays at warning, nothing is fetched again.
     @Test func refusalsLogAtWarning() async {
         harness.repository.actionError = AppError.tournamentFull
@@ -133,7 +156,7 @@ struct TournamentDetailEntriesTests {
         await viewModel.join()
 
         #expect(harness.presentedError == .tournamentFull && viewModel.participation == .join)
-        #expect(harness.logs(.warning).contains { $0.contains("Join failed") })
+        #expect(harness.logs(.warning).contains { $0.contains("Join for tournament t failed") })
         #expect(harness.logs(.error).isEmpty)
         #expect(harness.repository.fetchedIDs.count == 1, "a refusal refetches nothing")
         #expect(harness.groupRepository.requestedScopes.isEmpty, "a refused entry moves no room")

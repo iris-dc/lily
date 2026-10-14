@@ -18,12 +18,12 @@ final class CreateEventViewModel {
     let lockedGroup: EventGroupRef?
 
     private let repository: any EventRepository
-    /// Who is creating; a game found on the backend after a failed create counts as ours only when this user hosts it.
-    private let identity: any IdentityProvider
     private let locationService: any LocationService
     private let groups: MyGroupsStore
-    private let errorCenter: ErrorCenter
     private let logger: any Logging
+    /// A `.network` or `.eventCreationFailed` leaves the outcome unknown; the game is ours when the caller hosts what
+    /// the backend holds under the draft's id (another host's, the backend's `EVENT_ID_TAKEN`, keeps the failure).
+    private let flow: CreateFlow<SportEvent>
     private let now: () -> Date
     /// Asked after a successful create: the host wants the reminder too.
     private let pushOptIn: any PushOptIn
@@ -36,21 +36,28 @@ final class CreateEventViewModel {
          errorCenter: ErrorCenter,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
+         calendar: Calendar = .current,
          currencyCode: String,
          pushOptIn: any PushOptIn = NoPushOptIn(),
          lockedGroup: EventGroupRef? = nil,
          onCreated: @escaping @MainActor (SportEvent) -> Void) {
         self.repository = repository
-        self.identity = identity
         self.locationService = locationService
         self.groups = groups
-        self.errorCenter = errorCenter
         self.logger = logger
         self.now = now
         self.pushOptIn = pushOptIn
         self.lockedGroup = lockedGroup
         self.onCreated = onCreated
-        self.draft = EventDraft(startsAt: Self.defaultStart(now: now()), currencyCode: currencyCode)
+        flow = CreateFlow(noun: "event",
+                          category: .events,
+                          logger: logger,
+                          report: { errorCenter.report($0) },
+                          leavesOutcomeUnknown: { $0.leavesCreateOutcomeUnknown },
+                          notFound: .eventNotFound,
+                          lookup: { try await repository.event(id: $0) },
+                          isOurs: { $0.hostUserId != nil && $0.hostUserId == identity.currentUserID })
+        self.draft = EventDraft(startsAt: Self.defaultStart(now: now(), calendar: calendar), currencyCode: currencyCode)
         self.draft.group = lockedGroup
     }
 
@@ -86,27 +93,17 @@ final class CreateEventViewModel {
     }
 
     /// Sends the draft. A call while one is in flight is dropped; a dismissed sheet (cancellation) stays quiet; a
-    /// failure goes to the popup, unless the backend turns out to have the game already (see `storedEvent(despite:)`).
-    /// The same `clientId` travels with every attempt, so a retry after a lost answer finds the event the backend
-    /// already stored instead of creating a second one.
+    /// failure goes to the popup, unless the backend turns out to have the game already (`CreateFlow`). The same
+    /// `clientId` travels with every attempt, so a retry after a lost answer finds the event the backend already
+    /// stored instead of creating a second one.
     func submit() async {
         guard canSubmit else { return }
         isSubmitting = true
         defer { isSubmitting = false }
-        do {
-            let event = try await repository.create(draft)
-            await accept(event)
-            logger.info(.events, "Event created \(event.id) (\(event.spotsDescription))\(Self.groupSuffix(for: event))")
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            logger.error(.events, "Create failed: \(error)")
-            if let landed = await storedEvent(despite: error) {
-                logger.info(.events, "Create landed for event \(landed.id) despite \(error)")
-                await accept(landed)
-            } else {
-                errorCenter.report(error)
-            }
-        }
+        let created = await flow.submit(clientID: draft.clientId,
+                                        describing: { "(\($0.spotsDescription))\(Self.groupSuffix(for: $0))" },
+                                        send: { try await repository.create(draft) })
+        if let created { await accept(created) }
     }
 
     /// The sheet dismisses on `createdEvent`; the permission prompt, when it is due, comes up over the screen behind.
@@ -116,29 +113,14 @@ final class CreateEventViewModel {
         await pushOptIn.offerReminders()
     }
 
-    /// A `.network` or `.eventCreationFailed` leaves the outcome unknown: the backend commits before it answers, so
-    /// the game may exist although the answer never arrived. It does when the backend has an event under the draft's
-    /// id hosted by the caller; anything else (not found, another host's id, a failed lookup) keeps the failure.
-    private func storedEvent(despite error: any Error) async -> SportEvent? {
-        guard let appError = error as? AppError, appError.leavesCreateOutcomeUnknown else { return nil }
-        guard let stored = try? await repository.event(id: draft.clientId) else {
-            logger.warning(.events, "Could not check whether the create landed after \(appError)")
-            return nil
-        }
-        guard let hostUserId = stored.hostUserId, hostUserId == identity.currentUserID else { return nil }
-        return stored
-    }
-
     /// The group id for the log line; ids only, never the name.
     private static func groupSuffix(for event: SportEvent) -> String {
         event.group.map { " in group \($0.id)" } ?? ""
     }
 
     /// `AppConfig.Events.Creation.defaultStartOffset` ahead, rounded up to the next full hour: a round time to edit from.
-    private static func defaultStart(now: Date) -> Date {
-        let target = now.addingTimeInterval(AppConfig.Events.Creation.defaultStartOffset)
-        guard let hour = Calendar.current.dateInterval(of: .hour, for: target) else { return target }
-        return hour.start == target ? target : hour.end
+    private static func defaultStart(now: Date, calendar: Calendar) -> Date {
+        calendar.nextFullHour(after: now.addingTimeInterval(AppConfig.Events.Creation.defaultStartOffset))
     }
 }
 
@@ -149,3 +131,5 @@ private extension AppError {
         self == .network || self == .eventCreationFailed
     }
 }
+
+extension CreateEventViewModel: EventDraftEditing {}

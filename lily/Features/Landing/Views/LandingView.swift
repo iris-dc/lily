@@ -5,15 +5,11 @@ import SwiftUI
 struct LandingView: View {
     @State private var viewModel: LandingViewModel
     @State private var visibleSlide: IntroSlide? = .first
-    private let session: SessionController
-    private let errorCenter: ErrorCenter
+    private let dependencies: AppDependencies
 
     init(dependencies: AppDependencies) {
-        session = dependencies.sessionController
-        errorCenter = dependencies.errorCenter
-        _viewModel = State(initialValue: LandingViewModel(session: dependencies.sessionController,
-                                                          repository: dependencies.eventRepository,
-                                                          logger: dependencies.logger))
+        self.dependencies = dependencies
+        _viewModel = State(initialValue: dependencies.makeLandingViewModel())
     }
 
     var body: some View {
@@ -40,7 +36,7 @@ struct LandingView: View {
         .onChange(of: visibleSlide) { viewModel.slideShown(visibleSlide) }
         .task { await viewModel.loadPreview() }
         .sheet(isPresented: $viewModel.isSignInPresented) {
-            SignInSheet(session: session, errorCenter: errorCenter)
+            SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
         }
     }
 

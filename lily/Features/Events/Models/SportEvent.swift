@@ -1,10 +1,5 @@
 import Foundation
 
-nonisolated struct EventLocation: Hashable, Codable, Sendable {
-    let name: String
-    let coordinate: Coordinate
-}
-
 /// Decodes the backend's `Event` directly: same keys, same optionality. `CodingKeys` and `init(from:)` are written out
 /// for one reason: `allowsExtraParticipants` reads as `false` when absent, so fixtures and payloads from before it keep
 /// decoding, while the synthesized encoder still writes it.
@@ -131,7 +126,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
 
     /// Meters from `origin`, or `nil` when the user's position is unknown.
     func distance(from origin: Coordinate?) -> Measurement<UnitLength>? {
-        origin.map { Measurement(value: location.coordinate.distance(to: $0), unit: .meters) }
+        location.distance(from: origin)
     }
 
     /// The event after the host's edit: what the draft says, over who is in, who hosts and where it is hosted, which
@@ -141,8 +136,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
                    title: draft.trimmedTitle,
                    type: draft.type,
                    startsAt: draft.startsAt,
-                   location: EventLocation(name: draft.trimmedLocationName,
-                                           coordinate: draft.coordinate ?? location.coordinate),
+                   location: draft.place.location(at: draft.coordinate ?? location.coordinate),
                    capacity: draft.capacityIfLimited,
                    allowsExtraParticipants: draft.allowsExtraParticipants,
                    participantCount: participantCount,
@@ -213,4 +207,13 @@ nonisolated enum EventScope: Hashable, Sendable {
     case joined
     /// The upcoming games of one group, in start order; what its Events segment shows.
     case group(id: String)
+
+    /// The `scope` query value; `nil` for a group's games, a resource of their own (`Paths.groupEvents`).
+    var wireName: String? {
+        switch self {
+        case .upcoming: "upcoming"
+        case .joined: "joined"
+        case .group: nil
+        }
+    }
 }

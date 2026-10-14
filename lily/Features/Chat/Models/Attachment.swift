@@ -41,10 +41,7 @@ nonisolated struct Attachment: Identifiable, Hashable, Codable, Sendable {
     }
 
     /// Width over height when both hints are known, for a gallery to size a single picture.
-    var aspectRatio: CGFloat? {
-        guard let width, let height, width > 0, height > 0 else { return nil }
-        return CGFloat(width) / CGFloat(height)
-    }
+    var aspectRatio: CGFloat? { AspectRatio.of(width: width, height: height) }
 
     /// The link of `variant`; a thumbnail falls back to the full object when none was uploaded.
     func url(for variant: AttachmentVariant) -> URL {
@@ -83,3 +80,5 @@ nonisolated enum AttachmentVariant: Hashable, Sendable {
         }
     }
 }
+
+extension Attachment: GalleryItem {}

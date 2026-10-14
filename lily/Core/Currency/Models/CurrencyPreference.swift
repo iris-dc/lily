@@ -2,14 +2,17 @@ import Foundation
 
 /// What the user chose on Profile for the currency prices are typed in: follow the device's region, or one currency
 /// whatever the region says.
-nonisolated enum CurrencyPreference: Hashable, Sendable {
+nonisolated enum CurrencyPreference: StoredChoice {
     case system
     case fixed(String)
+
+    static let storageKey = AppConfig.Storage.Keys.currencyPreference
+    static let logCategory = LogCategory.currency
 
     /// How the choice is stored: the word `system`, or the ISO 4217 code.
     var storedValue: String {
         switch self {
-        case .system: Self.systemStoredValue
+        case .system: AppConfig.Storage.systemChoiceValue
         case .fixed(let code): code
         }
     }
@@ -36,6 +39,4 @@ nonisolated enum CurrencyPreference: Hashable, Sendable {
         }
         self = .fixed(storedValue)
     }
-
-    private static let systemStoredValue = "system"
 }

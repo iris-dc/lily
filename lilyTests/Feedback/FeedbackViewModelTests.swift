@@ -44,7 +44,8 @@ struct FeedbackViewModelTests {
         #expect(sent?.appVersion == "1.0 (42)" && sent?.osVersion == "iOS 26.0.1" && sent?.device == "iPhone17,1")
         #expect(sent?.locale == "en")
         #expect(viewModel.isSubmitted && !viewModel.isSubmitting && errorCenter.current == nil)
-        #expect(logger.messages(in: .feedback, at: .info) == ["Feedback f-1 sent (bug)"])
+        #expect(logger.count(in: .feedback, at: .info) == 1)
+        #expect(logger.hasLine(in: .feedback, at: .info, mentioning: "f-1", "bug"))
     }
 
     @Test func aFailureReachesThePopupAndKeepsTheDraft() async {
@@ -56,7 +57,8 @@ struct FeedbackViewModelTests {
 
         #expect(errorCenter.current?.error == .feedbackFailed && !viewModel.isSubmitted)
         #expect(viewModel.draft.message == "Hello" && viewModel.canSubmit, "Send stays available for a repeat")
-        #expect(logger.messages(in: .feedback, at: .error) == ["Feedback send failed (feedback): feedbackFailed"])
+        #expect(logger.count(in: .feedback, at: .error) == 1)
+        #expect(logger.hasLine(in: .feedback, at: .error, mentioning: "(feedback)", "\(AppError.feedbackFailed)"))
     }
 
     @Test func aCancelledSendStaysQuiet() async {

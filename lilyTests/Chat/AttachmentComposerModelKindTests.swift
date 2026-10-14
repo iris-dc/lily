@@ -90,6 +90,16 @@ struct AttachmentComposerModelKindTests {
         #expect(harness.chatLogs(.warning).contains { $0.hasPrefix("The files importer failed") })
     }
 
+    /// A file error's description names the file, so the importer's failure is logged by domain and code alone.
+    @Test func theImportersFailureIsLoggedByDomainAndCodeNeverByPath() {
+        let model = makeModel()
+
+        model.noteFileImportFailure(CocoaError(.fileReadNoSuchFile, userInfo: [NSFilePathErrorKey: "/tmp/tax-return.pdf"]))
+
+        #expect(harness.chatLogs(.warning).filter { $0 == "The files importer failed: NSCocoaErrorDomain 260" }.count == 1)
+        #expect(!harness.chatLogs().contains { $0.contains("tax-return") })
+    }
+
     /// A conversation's composer hands the preparers the smaller caps, a group's the full ones, so a 6 MB file is
     /// refused on the device in a conversation and taken in a group; a backend refusal for size is restated with the
     /// room's caps before it reaches the popup, since the code names no room.

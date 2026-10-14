@@ -81,10 +81,48 @@ struct CachedLocationServiceTests {
         await settle(until: { upstream.callCount == 1 })
         let second = Task { await service.currentLocation() }
         await settle(until: { logger.messages(in: .cache).contains { $0.contains("joined") } })
-        upstream.release()
+        upstream.releaseRequests()
 
         #expect(await first.value == berlin)
         #expect(await second.value == berlin)
+        #expect(upstream.callCount == 1)
+    }
+
+    /// The shared request is bounded by the upstream timeout, not by its first caller: the fix it obtains is
+    /// remembered for whichever screen asks next. Propagating the cancellation into it would cancel the upstream
+    /// request and leave every caller without a fix.
+    @Test func aSharedFixSurvivesACallersCancellation() async {
+        upstream.holdsRequests = true
+        let service = makeService()
+        let first = Task { await service.currentLocation() }
+        await settle(until: { upstream.callCount == 1 })
+
+        first.cancel()
+        upstream.result = berlin
+        upstream.releaseRequests()
+
+        #expect(await first.value == berlin)
+        #expect(await service.currentLocation() == berlin)
+        #expect(upstream.callCount == 1)
+        #expect(upstream.cancelledCount == 0)
+    }
+
+    @Test func aJoinedCallerCancelledWhileWaitingLeavesTheSharedRequestRunning() async {
+        upstream.holdsRequests = true
+        let service = makeService()
+        let first = Task { await service.currentLocation() }
+        await settle(until: { upstream.callCount == 1 })
+        let second = Task { await service.currentLocation() }
+        await settle(until: { logger.messages(in: .cache).contains { $0.contains("joined") } })
+
+        second.cancel()
+        upstream.result = berlin
+        upstream.releaseRequests()
+
+        #expect(await first.value == berlin)
+        #expect(upstream.callCount == 1)
+        #expect(upstream.cancelledCount == 0)
+        #expect(await service.currentLocation() == berlin)
         #expect(upstream.callCount == 1)
     }
 }

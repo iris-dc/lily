@@ -8,12 +8,14 @@ struct AppDependenciesCurrencyTests {
     private let defaults = makeTestDefaults()
     private let logger = SpyLogger()
 
-    private var stored: UserDefaultsCurrencyPreferenceStore { UserDefaultsCurrencyPreferenceStore(defaults: defaults) }
+    private var stored: UserDefaultsChoiceStore<CurrencyPreference> {
+        UserDefaultsChoiceStore(defaults: defaults, logger: logger)
+    }
 
     @Test func aStoredChoiceIsKept() {
         stored.save(.fixed("PLN"))
 
-        let currency = AppDependencies.makeCurrencyStore(arguments: [], defaults: defaults, logger: logger)
+        let currency = AppDependencies.makeCurrencyStore(startsFresh: false, defaults: defaults, logger: logger)
 
         #expect(currency.preference == .fixed("PLN") && currency.currencyCode == "PLN")
     }
@@ -21,10 +23,21 @@ struct AppDependenciesCurrencyTests {
     @Test func resetSessionForgetsTheStoredCurrency() {
         stored.save(.fixed("PLN"))
 
-        let arguments = [AppConfig.LaunchArguments.resetSession]
-        let currency = AppDependencies.makeCurrencyStore(arguments: arguments, defaults: defaults, logger: logger)
+        let currency = AppDependencies.makeCurrencyStore(startsFresh: true, defaults: defaults, logger: logger)
 
         #expect(currency.preference == .system && stored.load() == .system)
+    }
+
+    /// The factory test above passes `startsFresh` itself; this one proves the launch argument reaches the store.
+    @Test func theCompositionRootForgetsTheStoredCurrencyOnAResetSessionLaunch() {
+        stored.save(.fixed("PLN"))
+
+        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
+                                                                   AppConfig.LaunchArguments.mockEvents],
+                                                       defaults: defaults,
+                                                       apply: { _ in })
+
+        #expect(dependencies.currency.preference == .system && stored.load() == .system)
     }
 
     @Test func theCompositionRootHandsTheCurrencyToTheEventScreens() {

@@ -2,7 +2,8 @@ import Foundation
 
 /// The pairings a start draws, in pure Swift, for the mock alone: the backend draws the real ones, and the shared
 /// fixtures (`lilyTests/Fixtures/pairings`) pin both to the same contract. Seeds arrive in registration order
-/// (`seeds[0]` is seed 1); a match id is `r<round>p<position>` with two- and three-digit padding.
+/// (`seeds[0]` is seed 1); a match id is `r<round>p<position>` with two- and three-digit padding. Fewer than two seeds
+/// draw nothing: the backend refuses a start before drawing.
 nonisolated enum TournamentSchedule {
     /// One drawn match, exactly as the backend's `Match` shows it right after a start: no scores, no schedule, and the
     /// optionals absent rather than null, so the fixtures decode into it directly.
@@ -19,7 +20,8 @@ nonisolated enum TournamentSchedule {
     }
 
     static func pairings(format: TournamentFormat, seeds: [String]) -> [Pairing] {
-        switch format {
+        guard seeds.count >= 2 else { return [] }
+        return switch format {
         case .singleElimination: singleElimination(seeds: seeds)
         case .roundRobin: roundRobin(seeds: seeds)
         }
@@ -35,16 +37,12 @@ nonisolated enum TournamentSchedule {
     private static func singleElimination(seeds: [String]) -> [Pairing] {
         let count = seeds.count
         var size = 1
-        var rounds = 0
-        while size < count {
-            size *= 2
-            rounds += 1
-        }
+        while size < count { size *= 2 }
+        let rounds = size.trailingZeroBitCount
         let order = bracketOrder(size: size)
         var matches: [Pairing] = []
-        for round in 1...max(rounds, 1) {
-            let matchCount = size >> round
-            for position in 1...max(matchCount, 1) {
+        for round in 1...rounds {
+            for position in 1...(size >> round) {
                 var match = Pairing(id: matchID(round: round, position: position), round: round, position: position)
                 if round == 1 {
                     let seedA = order[2 * position - 2], seedB = order[2 * position - 1]
@@ -98,7 +96,7 @@ nonisolated enum TournamentSchedule {
         if !table.count.isMultiple(of: 2) { table.append(nil) }
         let length = table.count
         var matches: [Pairing] = []
-        for round in 1..<max(length, 2) {
+        for round in 1..<length {
             var position = 0
             for index in 0..<(length / 2) {
                 guard let entryA = table[index], let entryB = table[length - 1 - index] else { continue }

@@ -32,13 +32,23 @@ nonisolated struct Price: Hashable, Codable, Sendable {
         locale.localizedString(forCurrencyCode: currencyCode) ?? currencyCode
     }
 
-    /// How an amount is shown in and read from an input field (the price cap, the price of a new game): the user's
-    /// locale, at most two decimals.
-    static let inputFormat = Decimal.FormatStyle.number.precision(.fractionLength(0...2))
+    /// How an amount is shown in and read from an input field (the price cap, the price of a new game): at most two
+    /// decimals and no grouping, because the same text is read back whole, and a grouping separator would be refused
+    /// here and read as a decimal one in another locale.
+    static let inputFormat = Decimal.FormatStyle.number.precision(.fractionLength(0...2)).grouping(.never)
 
-    /// Reads typed text as an amount, locale-aware ("6,5" and "6.5"); empty, unreadable or negative text is no amount.
+    /// The text an input field is seeded with (an edited game's price, a cap set by the chip or Reset): the
+    /// counterpart of `parseAmount`, in the same locale, so what is seeded reads back unchanged.
+    static func inputText(_ amount: Decimal, locale: Locale = AppLocale.locale) -> String {
+        amount.formatted(inputFormat.locale(locale))
+    }
+
+    /// Reads typed text as an amount. The whole trimmed text must be one number in the locale's form, so a stray or
+    /// foreign separator, a symbol or a code is unreadable rather than misread (en_US "5,50" was 550 under the lenient
+    /// strategy); empty, unreadable or negative text is no amount.
     static func parseAmount(_ text: String, locale: Locale = AppLocale.locale) -> Decimal? {
-        guard let amount = try? inputFormat.locale(locale).parseStrategy.parse(text), amount >= 0 else { return nil }
+        let trimmed = text.trimmed
+        guard let amount = trimmed.wholeMatch(of: inputFormat.locale(locale))?.output, amount >= 0 else { return nil }
         return amount
     }
 

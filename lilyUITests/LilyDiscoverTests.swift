@@ -39,11 +39,11 @@ final class LilyDiscoverTests: LilyUITestCase {
         let submit = app.buttons["create-group-submit"]
         XCTAssertFalse(submit.isEnabled, "a public group without a place cannot be created")
         // The Where section sits under the type chips, below the fold; a Form row off screen is not in the tree.
-        scrollUntilHittable(app.staticTexts["Name the place where the group plays"])
+        dragUpUntilExists(app.staticTexts["Name the place where the group plays"])
 
         let place = "Görli Clubhouse"
         enter(place, into: app.textFields["create-group-location-name"])
-        XCTAssertTrue(submit.isEnabled, "name, place and the mock position complete the draft")
+        assertBecomesEnabled(submit, "name, place and the mock position complete the draft")
         submit.tap()
 
         XCTAssertTrue(app.navigationBars["New group"].waitForNonExistence(timeout: 10), "the sheet must close once created")

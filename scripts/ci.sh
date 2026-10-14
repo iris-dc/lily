@@ -11,11 +11,14 @@ UI_TARGET="lilyUITests"
 # The iPad layouts have a UI test class of their own, run on an iPad; the rest of the UI suite stays on the iPhone.
 IPAD_UI_TEST_CLASS="LilyIPadTests"
 IPAD_UI_TESTS="$UI_TARGET/$IPAD_UI_TEST_CLASS"
+# What every UI test class derives from (the base itself derives from XCTestCase); lint lists the classes by it.
+UI_BASE_CLASS="LilyUITestCase"
 # The iPhone UI classes grouped into shards of roughly equal running time, so CI runs them side by side and no job
-# nears its timeout as the suite grows. Lint checks that every class under lilyUITests/ is in exactly one shard.
+# nears its timeout as the suite grows. Lint checks that every test class under lilyUITests/ (whatever its name, see
+# ui_test_classes) is in exactly one shard and that the iPad class is in none.
 UI_SHARDS=(
   "LilyTournamentTests LilyPeopleTests LilyLanguageTests"
-  "LilyChatTests LilySmokeTests LilyDiscoverTests"
+  "LilyChatTests LilySmokeTests LilyDiscoverTests LilyStateTests"
   "LilyGroupsTests LilyEventEditTests LilySignInTests LilyProfileTests LilyRosterTests"
 )
 RESULTS_DIR="${RESULTS_DIR:-build/results}"
@@ -23,72 +26,85 @@ DERIVED_DATA="${DERIVED_DATA:-build/DerivedData}"
 PRODUCTS_DIR="$DERIVED_DATA/Build/Products"
 # What the build job hands the UI shard jobs (the simulator products and the .xctestrun), relative to the repository root.
 PRODUCTS_ARCHIVE="${PRODUCTS_ARCHIVE:-build/products.tgz}"
+# What of xcodebuild's output reaches the console (errors, the app's warnings, test and build verdicts); the whole of it goes to the log.
+CONSOLE_FILTER="error:|/lily/.*: warning:|Test Suite .* (passed|failed)|Test Case .* (passed|failed)|Executed|Test case .* (passed|failed)|\*\* .* (SUCCEEDED|FAILED) \*\*"
+XCODE_VERSION_SHOWN=0
 STAGE="${1:-all}"
 SHARD="${2:-}"
 
 cd "$(dirname "$0")/.."
 
-pick_simulator() {
-  # First available, shutdown-or-booted iPhone. Prefer the Pro model if present.
+# The first available simulator of a family, the preferred model when present (the Pro iPhone; the 13-inch iPad Pro
+# as the widest layout).
+pick_device() {
+  local family="$1" preferred="$2"
   local list
-  list=$(xcrun simctl list devices available | grep -E "^[[:space:]]+iPhone" || true)
+  list=$(xcrun simctl list devices available | grep -E "^[[:space:]]+${family}" || true)
   local name
-  name=$(echo "$list" | grep -m1 "iPhone 17 Pro (" | sed -E 's/^[[:space:]]+(.*) \([0-9A-F-]+\).*/\1/' || true)
+  name=$(echo "$list" | grep -m1 "$preferred" | sed -E 's/^[[:space:]]+(.*) \([0-9A-F-]+\).*/\1/' || true)
   if [[ -z "$name" ]]; then
     name=$(echo "$list" | head -1 | sed -E 's/^[[:space:]]+(.*) \([0-9A-F-]+\).*/\1/')
   fi
   if [[ -z "$name" ]]; then
-    echo "No iPhone simulator available" >&2
+    echo "No ${family} simulator available" >&2
     xcrun simctl list devices available >&2
     exit 1
   fi
   echo "$name"
 }
 
-pick_ipad() {
-  # First available iPad. Prefer the 13-inch Pro, the widest layout, if present.
-  local list
-  list=$(xcrun simctl list devices available | grep -E "^[[:space:]]+iPad" || true)
-  local name
-  name=$(echo "$list" | grep -m1 "iPad Pro 13-inch" | sed -E 's/^[[:space:]]+(.*) \([0-9A-F-]+\).*/\1/' || true)
-  if [[ -z "$name" ]]; then
-    name=$(echo "$list" | head -1 | sed -E 's/^[[:space:]]+(.*) \([0-9A-F-]+\).*/\1/')
-  fi
-  if [[ -z "$name" ]]; then
-    echo "No iPad simulator available" >&2
-    xcrun simctl list devices available >&2
-    exit 1
-  fi
-  echo "$name"
-}
-
-DEVICE=$(pick_simulator)
-DESTINATION="platform=iOS Simulator,name=${DEVICE}"
-echo "Xcode: $(xcodebuild -version | tr '\n' ' ')"
-echo "Destination: ${DESTINATION}"
 mkdir -p "$RESULTS_DIR"
 
-# Only the stages that run on an iPad need one, so lint, build and unit still run on a Mac without an iPad simulator.
-ipad_destination() {
-  local ipad
-  ipad=$(pick_ipad)
-  echo "iPad destination: platform=iOS Simulator,name=${ipad}" >&2
-  echo "platform=iOS Simulator,name=${ipad}"
+# Printed once per run, by the first stage that runs xcodebuild.
+show_xcode_version() {
+  if [[ "$XCODE_VERSION_SHOWN" -eq 0 ]]; then
+    echo "Xcode: $(xcodebuild -version | tr '\n' ' ')"
+    XCODE_VERSION_SHOWN=1
+  fi
 }
 
-# The destination is the iPhone unless XCODEBUILD_DESTINATION says otherwise (the iPad stage sets it).
-run_xcodebuild() {
-  local label="$1"; shift
-  local action="$1"
-  local log="$RESULTS_DIR/${label}.log"
-  local destination="${XCODEBUILD_DESTINATION:-$DESTINATION}"
+# Picked once by the first stage that runs xcodebuild on an iPhone; lint, archive-products and restore-products never
+# do, so they run on a Mac whose simulator runtimes are unavailable. Sets the global DESTINATION: call it as a plain
+# statement, never inside $(...).
+resolve_iphone_destination() {
+  if [[ -z "${DESTINATION:-}" ]]; then
+    local device
+    device=$(pick_device iPhone "iPhone 17 Pro (")
+    DESTINATION="platform=iOS Simulator,name=${device}"
+    echo "Destination: ${DESTINATION}"
+  fi
+}
+
+# Only the stages that run on an iPad need one, so lint, build and unit still run on a Mac without an iPad simulator.
+# Sets the global IPAD_DESTINATION: call it as a plain statement, never inside $(...).
+resolve_ipad_destination() {
+  if [[ -z "${IPAD_DESTINATION:-}" ]]; then
+    local device
+    device=$(pick_device iPad "iPad Pro 13-inch")
+    IPAD_DESTINATION="platform=iOS Simulator,name=${device}"
+    echo "iPad destination: ${IPAD_DESTINATION}"
+  fi
+}
+
+# One xcodebuild run: the log and the result bundle land under RESULTS_DIR/<label>.*, tests run without simulator clones
+# (with them the unit suite took minutes on a loaded runner and a timing-based test failed), a failure is shown with
+# the log's tail, and a test action must prove that it ran a test.
+run_logged() {
+  local label="$1" action="$2"; shift 2
+  local log="$RESULTS_DIR/${label}.log" is_test=0
+  case "$action" in
+    test|test-without-building)
+      is_test=1
+      set -- "$@" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/${label}.xcresult"
+      ;;
+  esac
+  show_xcode_version
   rm -rf "$RESULTS_DIR/${label}.xcresult"
   echo "==> ${label}"
   set +e
   # Amplify pulls in smithy-swift, whose build plug-in xcodebuild refuses to validate without an interactive approval.
-  xcodebuild "$@" -scheme "$SCHEME" -destination "$destination" -derivedDataPath "$DERIVED_DATA" \
-    -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$log" \
-    | { grep -E "error:|/lily/.*: warning:|Test Suite .* (passed|failed)|Test Case .* (passed|failed)|Executed|Test case .* (passed|failed)|\*\* .* (SUCCEEDED|FAILED) \*\*" || true; }
+  xcodebuild "$action" "$@" -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$log" \
+    | { grep -E "$CONSOLE_FILTER" || true; }
   local status=${PIPESTATUS[0]}
   set -e
   if [[ $status -ne 0 ]]; then
@@ -96,21 +112,70 @@ run_xcodebuild() {
     tail -n 40 "$log" >&2
     exit "$status"
   fi
-  case "$action" in
-    test|test-without-building) require_executed_tests "$label" "$log" ;;
-  esac
+  [[ $is_test -eq 0 ]] || require_executed_tests "$label" "$log"
+}
+
+# The destination is the iPhone unless XCODEBUILD_DESTINATION says otherwise (the iPad stage sets it).
+run_xcodebuild() {
+  local label="$1" action="$2"; shift 2
+  local destination="${XCODEBUILD_DESTINATION:-}"
+  if [[ -z "$destination" ]]; then
+    resolve_iphone_destination
+    destination="$DESTINATION"
+  fi
+  run_logged "$label" "$action" "$@" -scheme "$SCHEME" -destination "$destination" -derivedDataPath "$DERIVED_DATA"
 }
 
 # xcodebuild exits 0 and prints a passing suite when -only-testing matches nothing (a renamed target or test bundle),
-# so a green test stage must also show a test that ran: XCTest prints "Test Case '...' passed" and "Executed N tests";
-# Swift Testing prints "Test case '...' passed" per clone when parallel testing is on and, without clones,
-# "Test run with N tests in M suites passed" at the end.
+# and a stage whose every test skipped itself (LilyIPadTests alone on an iPhone, a class-level XCTSkip) ends the same
+# way with "Executed N tests, with N tests skipped", so a green test stage must show a test that passed: XCTest prints
+# "Test Case '...' passed" per test, Swift Testing "Test case '...' passed" per clone with parallel testing on and,
+# without clones, "Test run with N tests in M suites passed".
 require_executed_tests() {
   local label="$1" log="$2"
-  if ! grep -qE "Test [Cc]ase '.*' passed|Executed [1-9][0-9]* tests?|Test run with [1-9][0-9]* tests? in .* passed" "$log"; then
-    echo "==> ${label}: no tests were executed" >&2
-    exit 1
+  if grep -qE "Test [Cc]ase '.*' passed|Test run with [1-9][0-9]* tests? in .* passed" "$log"; then
+    return
   fi
+  local counts executed="" skipped=""
+  counts=$(grep -oE "Executed [0-9]+ tests?, with [0-9]+ tests? skipped" "$log" | tail -1 \
+    | grep -oE "[0-9]+" | tr '\n' ' ' || true)
+  read -r executed skipped <<< "$counts"
+  if [[ -n "$executed" && "$executed" -eq "$skipped" ]]; then
+    echo "==> ${label}: every test was skipped" >&2
+  else
+    echo "==> ${label}: no tests were executed" >&2
+  fi
+  exit 1
+}
+
+# The gate's own test, run by lint, so a regression in the pattern cannot go unnoticed.
+check_executed_tests_gate() {
+  echo "==> test gate"
+  local dir ok=1 name
+  dir=$(mktemp -d)
+  printf '%s\n' "Test Case '-[lilyUITests.LilySmokeTests testLanding]' passed (1.0 seconds)." > "$dir/xctest.log"
+  printf '%s\n' "✔ Test run with 1638 tests in 237 suites passed after 36.263 seconds." > "$dir/swift-testing.log"
+  printf '%s\n' "Test Case '-[lilyUITests.LilyIPadTests testSplit]' skipped (0.070 seconds)." \
+    "Executed 7 tests, with 7 tests skipped and 0 failures (0 unexpected) in 0.375 (0.379) seconds" > "$dir/skipped.log"
+  printf '%s\n' "Executed 5 tests, with 0 failures (0 unexpected) in 99.105 (99.107) seconds" "** TEST SUCCEEDED **" \
+    > "$dir/summary-only.log"
+  : > "$dir/empty.log"
+  for name in xctest swift-testing; do
+    (require_executed_tests "$name" "$dir/$name.log" 2>/dev/null) \
+      || { echo "require_executed_tests rejected $name.log, which shows a passed test" >&2; ok=0; }
+  done
+  for name in skipped summary-only empty; do
+    if (require_executed_tests "$name" "$dir/$name.log" 2>/dev/null); then
+      echo "require_executed_tests accepted $name.log, which shows no passed test" >&2
+      ok=0
+    fi
+  done
+  local message
+  message=$( (require_executed_tests skipped "$dir/skipped.log") 2>&1 || true)
+  [[ "$message" == *"every test was skipped"* ]] \
+    || { echo "require_executed_tests must say 'every test was skipped' for skipped.log" >&2; ok=0; }
+  rm -rf "$dir"
+  [[ $ok -eq 1 ]] || exit 1
 }
 
 # The UI tests of one shard, run from the products of an earlier build-for-testing through its .xctestrun (no scheme,
@@ -123,27 +188,38 @@ run_prebuilt_tests() {
     echo "No .xctestrun under $PRODUCTS_DIR; run './scripts/ci.sh build-and-unit' (or restore the build products) first" >&2
     exit 1
   fi
-  local log="$RESULTS_DIR/${label}.log"
-  rm -rf "$RESULTS_DIR/${label}.xcresult"
-  echo "==> ${label}"
-  set +e
-  xcodebuild test-without-building -xctestrun "$xctestrun" -destination "$destination" "$@" \
-    -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/${label}.xcresult" \
-    -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$log" \
-    | { grep -E "error:|Test Suite .* (passed|failed)|Test Case .* (passed|failed)|Executed|\*\* .* (SUCCEEDED|FAILED) \*\*" || true; }
-  local status=${PIPESTATUS[0]}
-  set -e
-  if [[ $status -ne 0 ]]; then
-    echo "==> ${label} FAILED (exit ${status}); last lines:" >&2
-    tail -n 40 "$log" >&2
-    exit "$status"
-  fi
-  require_executed_tests "$label" "$log"
+  run_logged "$label" test-without-building "$@" -xctestrun "$xctestrun" -destination "$destination"
 }
 
-# The UI test classes declared under lilyUITests/ (every `class LilyXxxTests: LilyUITestCase`), one per line.
+# The UI test classes declared under the directory (lilyUITests/ by default), one per line: every class deriving from
+# LilyUITestCase or XCTestCase directly, whatever its name, except the base class. Today's declarations are all
+# `final class LilyXxxTests: LilyUITestCase` and the base is `class LilyUITestCase: XCTestCase` in
+# lilyUITests/LilyUITestCase.swift. -o lets the `final` and `@MainActor final` prefixes through; the trailing
+# [[:space:],{] keeps a `LilyUITestCaseProtocol`-style name out (no \b: BSD grep).
 ui_test_classes() {
-  grep -hoE 'class Lily[A-Za-z0-9]+Tests: LilyUITestCase' lilyUITests/*.swift | sed -E 's/^class ([A-Za-z0-9]+):.*/\1/' | sort
+  local dir="${1:-lilyUITests}"
+  grep -hoE "class [A-Za-z0-9_]+: *(${UI_BASE_CLASS}|XCTestCase)[[:space:],{]" "$dir"/*.swift \
+    | sed -E 's/^class ([A-Za-z0-9_]+):.*/\1/' | grep -vx "$UI_BASE_CLASS" | sort
+}
+
+# The grep's own test, so a class named outside the LilyXxxTests scheme or deriving from XCTestCase directly can
+# never again be in no shard with lint green.
+check_ui_test_classes_grep() {
+  echo "==> ui test classes"
+  local dir found
+  dir=$(mktemp -d)
+  printf '%s\n' 'final class ScratchTests: XCTestCase {' > "$dir/ScratchTests.swift"
+  printf '%s\n' '@MainActor final class IPadLayoutTests: LilyUITestCase {' > "$dir/IPadLayoutTests.swift"
+  printf '%s\n' 'class LilyUITestCase: XCTestCase {' > "$dir/LilyUITestCase.swift"
+  printf '%s\n' 'extension LilyFooTests {' > "$dir/LilyFooTests+Helpers.swift"
+  printf '%s\n' 'final class LilyUITestCaseSpy: LilyUITestCaseProtocol {' > "$dir/Spy.swift"
+  found=$(ui_test_classes "$dir" || true)
+  rm -rf "$dir"
+  if [[ "$found" != $'IPadLayoutTests\nScratchTests' ]]; then
+    echo "ui_test_classes must list exactly IPadLayoutTests and ScratchTests from the fixture files; it listed:" \
+      "${found//$'\n'/ }" >&2
+    exit 1
+  fi
 }
 
 # Every UI class must be in exactly one shard (or be the iPad class), or a new class would silently never run on CI.
@@ -168,6 +244,17 @@ check_ui_shards() {
       ok=0
     fi
   done
+  # The iPad class runs on an iPad through 'ui-shard ipad' and skips itself on an iPhone, so it must be declared and
+  # be in no iPhone shard.
+  if printf '%s\n' "$listed" | grep -qx "$IPAD_UI_TEST_CLASS"; then
+    echo "UI_SHARDS in scripts/ci.sh lists $IPAD_UI_TEST_CLASS, which runs on an iPad through 'ui-shard ipad'" \
+      "and would only skip itself in an iPhone shard" >&2
+    ok=0
+  fi
+  if ! printf '%s\n' "$classes" | grep -qx "$IPAD_UI_TEST_CLASS"; then
+    echo "lilyUITests/ does not declare $IPAD_UI_TEST_CLASS, which scripts/ci.sh runs on an iPad" >&2
+    ok=0
+  fi
   # The workflow's matrix must name every shard, or a new UI_SHARDS entry would never run on CI.
   local matrix="" i
   for ((i = 1; i <= ${#UI_SHARDS[@]}; i++)); do matrix+="$i, "; done
@@ -191,17 +278,37 @@ ui_shard_only_testing() {
   done
 }
 
-run_lint() {
-  echo "==> lint"
+# CI exports the pin and installs that release; a run that lints with another copy on PATH would lint with a version
+# nobody chose. A developer Mac sets no pin and lints with what brew installed.
+require_swiftlint() {
   if ! command -v swiftlint >/dev/null; then
     echo "swiftlint not installed (brew install swiftlint)" >&2
     exit 1
   fi
+  local version
+  version=$(swiftlint version)
+  echo "SwiftLint ${version}"
+  if [[ -n "${SWIFTLINT_VERSION:-}" && "$version" != "$SWIFTLINT_VERSION" ]]; then
+    echo "swiftlint is ${version}, CI pins ${SWIFTLINT_VERSION} (.github/workflows/ci.yml)" >&2
+    exit 1
+  fi
+}
+
+run_lint() {
+  echo "==> lint"
+  require_swiftlint
   swiftlint --strict --quiet --reporter emoji
-  # Every localized("...") in the code must be a catalog key translated into every language the app ships.
+  # Every localized("...") in the code must be a catalog key translated into every language the app ships, and the
+  # usage descriptions a Release build sets must be in InfoPlist.xcstrings. The checker's own tests run first,
+  # because `placeholders` and `values` can regress with the real catalog still passing (verified by the review
+  # with mutated copies). Both import only the standard library, so isolated mode costs nothing and keeps a planted
+  # module out.
   echo "==> l10n"
-  python3 scripts/l10n-check.py
+  python3 -I scripts/test_l10n_check.py
+  python3 -I scripts/l10n-check.py
+  check_ui_test_classes_grep
   check_ui_shards
+  check_executed_tests_gate
 }
 
 # The UI tests type into text fields, which needs the simulator's software keyboard; with "Connect Hardware Keyboard"
@@ -209,6 +316,22 @@ run_lint() {
 # preference of Simulator.app on the host, idempotent, and never touches CoreSimulatorService.
 use_software_keyboard() {
   defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+}
+
+# The test stages, each holding its flags once; the argument is the action, test or test-without-building.
+run_unit_tests() {
+  run_xcodebuild unit-tests "$1" -only-testing:"$UNIT_TARGET"
+}
+
+run_ui_tests() {
+  use_software_keyboard
+  run_xcodebuild ui-tests "$1" -only-testing:"$UI_TARGET"
+}
+
+run_ipad_ui_tests() {
+  use_software_keyboard
+  resolve_ipad_destination
+  XCODEBUILD_DESTINATION="$IPAD_DESTINATION" run_xcodebuild ui-ipad-tests "$1" -only-testing:"$IPAD_UI_TESTS"
 }
 
 case "$STAGE" in
@@ -219,22 +342,19 @@ case "$STAGE" in
     run_xcodebuild build build
     ;;
   unit)
-    run_xcodebuild unit-tests test -only-testing:"$UNIT_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/unit-tests.xcresult"
+    run_unit_tests test
     ;;
   ui)
-    use_software_keyboard
-    run_xcodebuild ui-tests test -only-testing:"$UI_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/ui-tests.xcresult"
+    run_ui_tests test
     ;;
   ui-ipad)
-    IPAD_DESTINATION=$(ipad_destination)
-    use_software_keyboard
-    XCODEBUILD_DESTINATION="$IPAD_DESTINATION" run_xcodebuild ui-ipad-tests test -only-testing:"$IPAD_UI_TESTS" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/ui-ipad-tests.xcresult"
+    run_ipad_ui_tests test
     ;;
   # CI's first job: lint, one build for testing, the unit tests from it; the products are then archived for the UI shards.
   build-and-unit)
     run_lint
     run_xcodebuild build build-for-testing
-    run_xcodebuild unit-tests test-without-building -only-testing:"$UNIT_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/unit-tests.xcresult"
+    run_unit_tests test-without-building
     ;;
   # The products the UI shards need, as one tar: upload-artifact stores every file as 644, which no app launches with,
   # while tar keeps the executable bits. COPYFILE_DISABLE keeps macOS from adding ._ metadata files.
@@ -251,24 +371,23 @@ case "$STAGE" in
   ui-shard)
     use_software_keyboard
     if [[ "$SHARD" == "ipad" ]]; then
-      IPAD_DESTINATION=$(ipad_destination)
+      resolve_ipad_destination
       run_prebuilt_tests ui-ipad-tests "$IPAD_DESTINATION" -only-testing:"$IPAD_UI_TESTS"
     else
       # Assigned first: a failed substitution inside an argument list would not stop the script, and the
       # test run without -only-testing flags would be the whole UI target.
       ONLY_TESTING=$(ui_shard_only_testing "$SHARD")
+      resolve_iphone_destination
       run_prebuilt_tests "ui-shard-${SHARD}" "$DESTINATION" $ONLY_TESTING
     fi
     ;;
   all)
     run_lint
     run_xcodebuild build build-for-testing
-    run_xcodebuild unit-tests test-without-building -only-testing:"$UNIT_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/unit-tests.xcresult"
-    use_software_keyboard
-    run_xcodebuild ui-tests test-without-building -only-testing:"$UI_TARGET" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/ui-tests.xcresult"
+    run_unit_tests test-without-building
+    run_ui_tests test-without-building
     # The iPhone build's simulator products are arm64 like the iPad's, so the iPad stage runs them without a rebuild.
-    IPAD_DESTINATION=$(ipad_destination)
-    XCODEBUILD_DESTINATION="$IPAD_DESTINATION" run_xcodebuild ui-ipad-tests test-without-building -only-testing:"$IPAD_UI_TESTS" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/ui-ipad-tests.xcresult"
+    run_ipad_ui_tests test-without-building
     ;;
   *)
     echo "Usage: $0 [lint|build|unit|ui|ui-ipad|all|build-and-unit|ui-shard <1..${#UI_SHARDS[@]}|ipad>]" >&2

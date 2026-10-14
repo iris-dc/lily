@@ -1,7 +1,9 @@
 import Foundation
 
-/// Copy for tournaments; `message(for:)` routes exactly those cases here. Four switches, so none grows past the
-/// complexity limit: the tournament itself, entering it, its matches, then its invites.
+/// Copy for tournaments. The tournament cases reach `tournamentMessage(for:)` through `peopleMessage(for:)`'s `default`
+/// (`ErrorMessageMapper+People.swift`), because the main switch stands at the complexity limit (an eleventh arm fails
+/// strict lint) and its exhaustiveness is what makes a forgotten `AppError` case a compile error. Four switches, so none
+/// grows past the complexity limit: the tournament itself, entering it, its matches, then its invites.
 nonisolated extension ErrorMessageMapper {
     static func tournamentMessage(for error: AppError) -> ErrorMessage {
         switch error {

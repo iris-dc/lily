@@ -8,7 +8,7 @@ struct BracketView: View {
     let onSelect: (TournamentMatch) -> Void
     /// Where the first column starts and the last ends: the detail's margin, or the readable column's edge on a wide
     /// screen, so the bracket lines up with the text above it and still scrolls under both screen edges.
-    var contentInset: CGFloat = DesignTokens.Spacing.xl
+    var contentInset: CGFloat = DesignTokens.Layout.detailMargin
 
     private typealias Layout = DesignTokens.Layout
 
@@ -22,9 +22,9 @@ struct BracketView: View {
             }
         }
         .scrollIndicators(.hidden)
-        // Undoes the detail's padding and puts the inset back as a content margin, so the columns scroll under the
+        // Undoes the detail's margin and puts the inset back as a content margin, so the columns scroll under the
         // screen edge.
-        .padding(.horizontal, -DesignTokens.Spacing.xl)
+        .padding(.horizontal, -Layout.detailMargin)
         .contentMargins(.horizontal, contentInset, for: .scrollContent)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AccessibilityIdentifiers.tournamentBracket)

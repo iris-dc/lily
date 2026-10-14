@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Reports what the sheet was opened for (a tournament today): the reason as an inline list, an optional comment and
-/// Send in the bar; once the report went out the sheet thanks the caller and Done closes it. Mounts its own popup,
-/// since a sheet is drawn above the root's.
+/// Reports what the sheet was opened for (a tournament, a group or a message): the reason as an inline list, an
+/// optional comment and Send in the bar; once the report went out the sheet thanks the caller and Done closes it.
+/// Mounts its own popup, since a sheet is drawn above the root's.
 struct ReportSheet: View {
     @State private var viewModel: ReportViewModel
     private let errorCenter: ErrorCenter

@@ -56,7 +56,7 @@ struct IntroChatScreen: View {
         HStack(spacing: DesignTokens.Spacing.md) {
             AvatarCircle(initials: IntroFixtures.groupName.initials,
                          size: DesignTokens.Layout.avatarMedium,
-                         tint: .lilySecondary)
+                         tint: .secondary)
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                 Text(IntroFixtures.groupName).font(LilyTheme.Fonts.cardTitle)
                 Text(AppBranding.Groups.members(IntroFixtures.memberCount))
@@ -72,8 +72,7 @@ struct IntroChatScreen: View {
             if !own {
                 AvatarCircle(initials: IntroFixtures.senderName.initials,
                              size: DesignTokens.Layout.avatarSmall,
-                             tint: .lilySecondary,
-                             tintOpacity: DesignTokens.Opacity.secondaryGlassTint)
+                             tint: .secondary)
             }
             VStack(alignment: own ? .trailing : .leading, spacing: DesignTokens.Spacing.xs) {
                 if !own {

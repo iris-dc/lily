@@ -10,7 +10,7 @@ final class SpyPasteboard: Pasteboard {
     }
 }
 
-/// Counts calls, for closures a harness hands out before it is fully initialised.
+/// Counts calls made through a closure a struct suite hands out, since the suite cannot write back into itself.
 @MainActor
 final class CallCounter {
     private(set) var count = 0
@@ -20,13 +20,17 @@ final class CallCounter {
     }
 }
 
-/// What a view model handed on through `onChange` or `onCreated`.
+/// A `GroupErrorReporter` whose requests for the terms sheet are counted; the harnesses share it.
 @MainActor
-final class GroupSink {
-    private(set) var groups: [SportGroup] = []
+final class TermsCountingReporter {
+    private(set) var termsRequiredCount = 0
+    private(set) lazy var reporter = GroupErrorReporter(errorCenter: errorCenter) { [weak self] in
+        self?.termsRequiredCount += 1
+    }
+    private let errorCenter: ErrorCenter
 
-    func record(_ group: SportGroup) {
-        groups.append(group)
+    init(errorCenter: ErrorCenter) {
+        self.errorCenter = errorCenter
     }
 }
 
@@ -48,15 +52,15 @@ final class GroupHarness {
     let recorder = SpyInteractionRecorder()
     let pasteboard = SpyPasteboard()
     let navigation = AppNavigation()
-    let sink = GroupSink()
+    let sink = Recorded<SportGroup>()
     let errorCenter: ErrorCenter
     let store: MyGroupsStore
     let inbox: InboxStore
-    let reporter: GroupErrorReporter
-    private let termsRequests = CallCounter()
+    private let terms: TermsCountingReporter
 
-    var termsRequiredCount: Int { termsRequests.count }
-    var changed: [SportGroup] { sink.groups }
+    var reporter: GroupErrorReporter { terms.reporter }
+    var termsRequiredCount: Int { terms.termsRequiredCount }
+    var changed: [SportGroup] { sink.values }
     var presentedError: AppError? { errorCenter.current?.error }
 
     init() {
@@ -67,8 +71,7 @@ final class GroupHarness {
                               errorCenter: errorCenter,
                               logger: logger)
         inbox = InboxStore(repository: inboxRepository, identity: identity, errorCenter: errorCenter, logger: logger)
-        let termsRequests = self.termsRequests
-        reporter = GroupErrorReporter(errorCenter: errorCenter) { termsRequests.increment() }
+        terms = TermsCountingReporter(errorCenter: errorCenter)
     }
 
     func logs(_ level: LogLevel? = nil) -> [String] {
@@ -93,6 +96,15 @@ final class GroupHarness {
                        reporter: reporter,
                        logger: logger,
                        tryAgainDelay: .zero)
+    }
+
+    /// A view model over an inbox holding `items`, opened once: the page queued, the fake told what it holds, `appear()` run.
+    func openInbox(_ items: [InboxItem]) async -> InboxViewModel {
+        inboxRepository.pages = [.fixture(items)]
+        inboxRepository.items = items
+        let viewModel = makeInboxViewModel()
+        await viewModel.appear()
+        return viewModel
     }
 
     /// The repository stores `group`, so writes and refetches answer from it until a test changes `result`.
@@ -130,5 +142,16 @@ final class GroupHarness {
 
     func makeInvitePeopleViewModel(for target: InviteTarget) -> InvitePeopleViewModel {
         InvitePeopleViewModel(target: target, repository: invites, reporter: reporter, logger: logger, tryAgainDelay: .zero)
+    }
+
+    /// Discover searches the repository and reloads on `changes`; the position comes from `location`.
+    func makeDiscoverGroupsViewModel() -> DiscoverGroupsViewModel {
+        DiscoverGroupsViewModel(changes: changes,
+                                repository: repository,
+                                identity: identity,
+                                locationService: location,
+                                errorCenter: errorCenter,
+                                recorder: recorder,
+                                logger: logger)
     }
 }

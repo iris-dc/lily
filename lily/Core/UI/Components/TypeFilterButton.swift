@@ -5,26 +5,13 @@ import SwiftUI
 struct TypeFilterButton: View {
     @Binding var typeFilter: EventType?
     let identifier: String
-    @State private var isPresented = false
 
     private typealias Copy = AppBranding.Events.Filter
 
     var body: some View {
-        Button {
-            isPresented = true
-        } label: {
-            Label(Copy.eventType, systemImage: iconName)
+        FilterDropdownButton(title: Copy.eventType, isActive: typeFilter != nil, identifier: identifier) { dismiss in
+            TypeFilterPanel(typeFilter: $typeFilter, onDone: dismiss)
         }
-        .accessibilityIdentifier(identifier)
-        .accessibilityValue(typeFilter == nil ? Copy.inactiveValue : Copy.activeValue)
-        .popover(isPresented: $isPresented, arrowEdge: .top) {
-            TypeFilterPanel(typeFilter: $typeFilter) { isPresented = false }
-                .presentationCompactAdaptation(.popover)
-        }
-    }
-
-    private var iconName: String {
-        typeFilter == nil ? DesignTokens.Symbols.filter : DesignTokens.Symbols.filterActive
     }
 }
 
@@ -36,19 +23,9 @@ struct TypeFilterPanel: View {
     private typealias Copy = AppBranding.Events.Filter
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
-            HStack {
-                Text(Copy.eventType).font(LilyTheme.Fonts.cardTitle)
-                Spacer()
-                Button(Copy.done, action: onDone)
-                    .lilyProminentButton(sizing: .fitted, controlSize: .small)
-            }
+        DropdownPanel(title: Copy.eventType, onDone: onDone) {
             EventTypeChips(anyTitle: Copy.anyType, isSelected: { $0 == typeFilter }, onSelect: { typeFilter = $0 })
         }
-        .padding(DesignTokens.Spacing.lg)
-        .frame(width: DesignTokens.Layout.filterPanelWidth)
-        .presentationBackground(.clear)
-        .tint(Color.lilyAccent)
     }
 }
 

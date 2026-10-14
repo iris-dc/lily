@@ -22,24 +22,34 @@ nonisolated struct EventDraft: Equatable, Sendable {
     var lookingFor = ""
     /// `nil` means any level.
     var skillLevel: SkillLevel?
-    /// Per person; `nil` or zero means free.
-    var price: Decimal?
+    /// What the host typed into the price field, per person, the one source: `price` reads it as an amount. Empty
+    /// means free.
+    var priceText = ""
+    /// The locale the price is typed in and an edit is seeded in, so the text and its amount always agree: the app's
+    /// locale when the draft was made, like `currencyCode`.
+    let locale: Locale
     /// The currency `price` is typed in: the user's preferred one for a new game, the game's own for an edit.
     let currencyCode: String
     /// The group to host the game in; `nil` for a game of its own. The ref, not a bare id, so the stored event can
     /// show its badge without a second lookup.
     var group: EventGroupRef?
 
-    init(startsAt: Date, currencyCode: String, clientId: String = UUID().uuidString.lowercased()) {
+    init(startsAt: Date,
+         currencyCode: String,
+         locale: Locale = AppLocale.locale,
+         clientId: String = UUID().uuidString.lowercased()) {
         self.clientId = clientId
         self.startsAt = startsAt
         self.currencyCode = currencyCode
+        self.locale = locale
     }
 
     /// The event as a draft, for the host's edit: `clientId` is the event's id, and `updating(with:)` on the event or
     /// `UpdateEventPayload` turn the draft back into the event. Blank details read back as empty text. A priced game
-    /// keeps its currency; a free one takes `currencyCode` (the user's) should the host add a price.
-    init(editing event: SportEvent, currencyCode: String) {
+    /// keeps its currency; a free one takes `currencyCode` (the user's) should the host add a price. The price is
+    /// seeded as the field shows it, in `locale`.
+    init(editing event: SportEvent, currencyCode: String, locale: Locale = AppLocale.locale) {
+        self.locale = locale
         clientId = event.id
         self.currencyCode = event.price?.currencyCode ?? currencyCode
         title = event.title
@@ -52,13 +62,13 @@ nonisolated struct EventDraft: Equatable, Sendable {
         description = event.description ?? ""
         lookingFor = event.lookingFor ?? ""
         skillLevel = event.skillLevel
-        price = event.price?.amount
         group = event.group
+        price = event.price?.amount
     }
 
     /// What a draft is judged against beyond the backend's limits: a create keeps the app's lead-time margin, an
-    /// edit only needs the future (the backend's rule) and never a cap below the people already in; a number needed
-    /// is a target the host may set below them, and no limit has nothing to judge.
+    /// edit the request margin (the backend requires only the future) and never a cap below the people already in; a
+    /// number needed is a target the host may set below them, and no limit has nothing to judge.
     struct Rules: Equatable, Sendable {
         let minimumLeadTime: TimeInterval
         let minimumCapacity: Int
@@ -66,16 +76,21 @@ nonisolated struct EventDraft: Equatable, Sendable {
         static let creation = Rules(minimumLeadTime: AppConfig.Events.Creation.minimumLeadTime,
                                     minimumCapacity: AppConfig.Events.Creation.capacityRange.lowerBound)
 
+        /// The floor is the people in, unclamped: a cap of 200 under 250 people is `.capacityBelowParticipants`, the
+        /// backend's `CAPACITY_FLOOR`.
         static func editing(participantCount: Int) -> Rules {
-            Rules(minimumLeadTime: AppConfig.Events.Editing.minimumLeadTime,
+            Rules(minimumLeadTime: AppConfig.Events.Editing.startMargin,
                   minimumCapacity: max(AppConfig.Events.Creation.capacityRange.lowerBound, participantCount))
         }
 
         /// The capacities the form's stepper offers under these rules: from the floor up for a cap, the backend's whole
-        /// range otherwise.
+        /// range otherwise. The floor never passes the backend's maximum, so a game that grew past it (a number needed
+        /// or no limit with 250 in) still opens for editing; the stepper then offers 200...200 and the hint says why no
+        /// cap can be set.
         func capacityRange(for limit: PlayerLimit) -> ClosedRange<Int> {
             let limits = AppConfig.Events.Creation.capacityRange
-            return limit == .maximum ? minimumCapacity...limits.upperBound : limits
+            let floor = min(minimumCapacity, limits.upperBound)
+            return limit == .maximum ? floor...limits.upperBound : limits
         }
     }
 
@@ -92,18 +107,25 @@ nonisolated struct EventDraft: Equatable, Sendable {
         case capacityBelowParticipants
         case descriptionTooLong
         case lookingForTooLong
+        /// Text in the price field that is not a number (a symbol, a code, a stray or foreign separator); it holds
+        /// Create instead of making the game free or misreading the amount.
+        case priceUnreadable
         case priceOutOfRange
     }
 
     /// The capacity as the wire and the stored event carry it: none without a limit.
     var capacityIfLimited: Int? { playerLimit.hasCapacity ? capacity : nil }
     var allowsExtraParticipants: Bool { playerLimit.allowsExtraParticipants }
-    var trimmedTitle: String { title.trimmingCharacters(in: .whitespacesAndNewlines) }
-    var trimmedLocationName: String { locationName.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var trimmedTitle: String { title.trimmed }
+    /// The Where section as the shared rule judges it: the name typed and the spot picked.
+    var place: PlaceDraft { PlaceDraft(name: locationName, coordinate: coordinate) }
+    var trimmedLocationName: String { place.trimmedName }
     /// `nil` when the host wrote nothing, so the payload omits the field.
-    var trimmedDescription: String? { Self.optionalText(description) }
-    var trimmedLookingFor: String? { Self.optionalText(lookingFor) }
+    var trimmedDescription: String? { description.nonBlankTrimmed }
+    var trimmedLookingFor: String? { lookingFor.nonBlankTrimmed }
     var isFree: Bool { (price ?? 0) <= 0 }
+    /// Something typed that the parser cannot read in the draft's locale; blank is empty, not unreadable.
+    var hasUnreadablePrice: Bool { price == nil && !priceText.trimmed.isEmpty }
 
     /// The earliest start the form accepts, relative to `now`.
     static func earliestStart(now: Date, rules: Rules = .creation) -> Date {
@@ -124,9 +146,7 @@ nonisolated struct EventDraft: Equatable, Sendable {
         if trimmedTitle.isEmpty { issues.append(.titleMissing) }
         if trimmedTitle.wireLength > limits.titleMaxLength { issues.append(.titleTooLong) }
         if startsAt < Self.earliestStart(now: now, rules: rules) { issues.append(.startsAtTooSoon) }
-        if trimmedLocationName.isEmpty { issues.append(.locationNameMissing) }
-        if trimmedLocationName.wireLength > limits.locationNameMaxLength { issues.append(.locationNameTooLong) }
-        if coordinate == nil { issues.append(.coordinateMissing) }
+        issues += place.issues(maxLength: limits.locationNameMaxLength).map(Issue.init)
         return issues
     }
 
@@ -144,12 +164,23 @@ nonisolated struct EventDraft: Equatable, Sendable {
         let limits = AppConfig.Events.Creation.self
         if trimmedDescription.wireLength > limits.descriptionMaxLength { issues.append(.descriptionTooLong) }
         if trimmedLookingFor.wireLength > limits.lookingForMaxLength { issues.append(.lookingForTooLong) }
-        if let price, !Self.isAcceptable(price: price) { issues.append(.priceOutOfRange) }
+        if hasUnreadablePrice {
+            issues.append(.priceUnreadable)
+        } else if let price, !Self.isAcceptable(price: price) {
+            issues.append(.priceOutOfRange)
+        }
         return issues
     }
 
     func isValid(now: Date, rules: Rules = .creation) -> Bool {
         issues(now: now, rules: rules).isEmpty
+    }
+
+    /// The typed text as an amount, `nil` for an empty or unreadable text. Setting an amount types it as the field
+    /// would show it (at most two decimals), in the draft's locale, so it reads back unchanged.
+    var price: Decimal? {
+        get { Price.parseAmount(priceText, locale: locale) }
+        set { priceText = newValue.map { Price.inputText($0, locale: locale) } ?? "" }
     }
 
     /// The price the game carries on the wire and on its event, in the draft's currency: `nil` for a free game. Not
@@ -166,7 +197,7 @@ nonisolated struct EventDraft: Equatable, Sendable {
                    title: trimmedTitle,
                    type: type,
                    startsAt: startsAt,
-                   location: EventLocation(name: trimmedLocationName, coordinate: coordinate),
+                   location: place.location(at: coordinate),
                    capacity: capacityIfLimited,
                    allowsExtraParticipants: allowsExtraParticipants,
                    participantCount: 1,
@@ -195,9 +226,15 @@ nonisolated struct EventDraft: Equatable, Sendable {
         NSDecimalRound(&rounded, &scaled, 0, .plain)
         return rounded == scaled
     }
+}
 
-    private static func optionalText(_ text: String) -> String? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
+nonisolated extension EventDraft.Issue {
+    /// The shared place issue under the name this form's Where section reports it by.
+    fileprivate init(_ place: PlaceDraft.Issue) {
+        switch place {
+        case .nameMissing: self = .locationNameMissing
+        case .nameTooLong: self = .locationNameTooLong
+        case .coordinateMissing: self = .coordinateMissing
+        }
     }
 }

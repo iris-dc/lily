@@ -9,18 +9,13 @@ final class MockRealtimeTransport: RealtimeTransport {
     }
 
     private var subscriptions: [UUID: Subscription] = [:]
-    private(set) var isConnected = false
     private let logger: any Logging
 
     init(logger: any Logging) {
         self.logger = logger
     }
 
-    /// The channels with a live subscription, for tests and the debug log.
-    var subscribedChannels: [RealtimeChannel] { subscriptions.values.map(\.channel) }
-
     func connect(endpoint: URL) async throws {
-        isConnected = true
         logger.debug(.chat, "Mock realtime connected")
     }
 
@@ -35,7 +30,6 @@ final class MockRealtimeTransport: RealtimeTransport {
     }
 
     func disconnect() async {
-        isConnected = false
         let open = subscriptions.values
         subscriptions.removeAll()
         open.forEach { $0.continuation.finish() }

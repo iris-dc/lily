@@ -6,15 +6,6 @@ import Testing
 /// The inbox wiring per launch argument and the mock inbox end to end; the main suite is at its type-body limit.
 @MainActor
 struct AppDependenciesInboxTests {
-    private func makeSignedInMock() async -> AppDependencies {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeTestDefaults())
-        await dependencies.sessionController.signIn(with: .apple)
-        return dependencies
-    }
-
     @Test func mockEventsSelectTheMockInboxAndTheDefaultTheRemoteOne() {
         let mocked = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: makeTestDefaults())
         #expect(mocked.inboxRepository is MockInboxRepository)
@@ -31,7 +22,7 @@ struct AppDependenciesInboxTests {
     }
 
     @Test func theInboxClearsOnSignOut() async {
-        let dependencies = await makeSignedInMock()
+        let dependencies = await makeSignedInMockDependencies()
         await dependencies.inbox.reload()
         #expect(dependencies.inbox.items.count == 4 && dependencies.inbox.hasUnread)
 
@@ -43,7 +34,7 @@ struct AppDependenciesInboxTests {
     /// The mock run end to end: opening the inbox marks it read, accepting the invite puts Climbing Buddies into Mine
     /// and opens its chat on the Chats tab, and the reminder opens its game on the same stack.
     @Test func theMockInboxWorksThroughTheFactories() async throws {
-        let dependencies = await makeSignedInMock()
+        let dependencies = await makeSignedInMockDependencies()
         let viewModel = dependencies.makeInboxViewModel()
 
         await viewModel.appear()

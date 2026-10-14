@@ -29,7 +29,7 @@ struct UserProfileViewModelTests {
         #expect(viewModel.state == .loaded(.fixture()))
         #expect(viewModel.profile?.sharedGroups.map(\.name) == ["Kreuzberg Kickers"])
         #expect(users.requestedProfileIDs == ["u-2", "u-2"])
-        #expect(harness.logs(.info).filter { $0 == "Profile u-2 opened" }.count == 1)
+        #expect(harness.logs(.info).mentioning("u-2", "opened").count == 1)
     }
 
     /// The profile's current name replaces the one the row carried.
@@ -74,7 +74,7 @@ struct UserProfileViewModelTests {
         #expect(users.requestedProfileIDs == ["u-2", "u-2"])
         #expect(harness.logs(.error).count == 1, "the first failure alone was logged")
         #expect(harness.presentedError == .profileUnavailable, "the first failure's popup; the retry raised none")
-        #expect(harness.logs(.info).filter { $0 == "Profile u-2 opened" }.count == 1)
+        #expect(harness.logs(.info).mentioning("u-2", "opened").count == 1)
     }
 
     @Test func selfHidesTheMessageButtonAndNeverStartsAConversation() async {
@@ -135,7 +135,7 @@ struct UserProfileViewModelTests {
         #expect(users.conversationRequests == ["u-2"])
         #expect(harness.store.groups == [conversation] && harness.store.communities.isEmpty, "a room, not one of Home's groups")
         #expect(harness.navigation.selectedTab == .chat && harness.navigation.chatPath.count == 1)
-        #expect(harness.logs(.info).contains("Conversation \(conversation.id) started with u-2"))
+        #expect(harness.logs(.info).mentioning("Conversation", conversation.id, "u-2").count == 1)
         #expect(!viewModel.isStartingConversation && harness.presentedError == nil)
     }
 
@@ -158,7 +158,7 @@ struct UserProfileViewModelTests {
 
         #expect(harness.presentedError == .conversationLimit)
         #expect(harness.store.groups.isEmpty && harness.navigation.chatPath.isEmpty)
-        #expect(harness.logs(.error).contains { $0.contains("Starting a conversation with u-2 failed") })
+        #expect(!harness.logs(.error).mentioning("conversation", "u-2", "\(AppError.conversationLimit)").isEmpty)
     }
 
     /// A `TERMS_REQUIRED` on the start raises the terms sheet like every groups write.

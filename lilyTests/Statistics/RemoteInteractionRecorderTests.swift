@@ -165,8 +165,81 @@ struct RemoteInteractionRecorderTests {
     }
 
     @Test func anEmptyFlushSendsNothing() async {
-        await makeRecorder().flush()
+        let recorder = makeRecorder()
+
+        await recorder.flush()
+        await recorder.sessionWillEnd()
 
         #expect(client.requests.isEmpty)
+        #expect(sleep.requested.isEmpty, "no deadline is armed for nothing")
+    }
+
+    /// The Bearer still goes out before the session ends, so the user's last interactions reach the backend.
+    @Test func bufferedInteractionsAreFlushedBeforeSignOut() async {
+        client.responses = [InteractionReceipt(accepted: 2)]
+        let recorder = makeRecorder(batchSize: 3)
+        recorder.record(viewed)
+        recorder.record(switched)
+
+        await recorder.sessionWillEnd()
+
+        #expect(sentBatches.map(\.interactions) == [[viewed, switched]])
+        identity.currentUserID = nil
+        recorder.sessionDidEnd()
+        await recorder.flush()
+        #expect(client.requests.count == 1, "nothing is left to send after the session ended")
+        await settle(until: { sleep.held.isEmpty })
+    }
+
+    /// A stalled network never holds the sign-out: the deadline wins, the parked send is cancelled and never retried.
+    @Test func aSlowFlushDoesNotHoldTheSignOut() async {
+        client.holdsRequests = true
+        let recorder = makeRecorder()
+        recorder.record(viewed)
+        recorder.record(switched)
+
+        let ending = Task { await recorder.sessionWillEnd() }
+        await settle(until: { sleep.held.contains(AppConfig.Statistics.signOutFlushTimeout) })
+        sleep.release(where: { $0 == AppConfig.Statistics.signOutFlushTimeout })
+        await ending.value
+
+        #expect(logger.messages(in: .statistics, at: .warning).contains { $0.contains("gave up") })
+        client.releaseRequests()
+        await settle(until: { logger.messages(in: .statistics, at: .warning).count == 2 })
+        #expect(logger.messages(in: .statistics, at: .warning).contains { $0.contains("Sending 2 interactions failed") })
+        #expect(client.requests.count == 1, "the cancelled send is not retried")
+    }
+
+    /// Once the session has ended the Bearer is gone, so what is still buffered is dropped and its timer stopped.
+    @Test func signOutDropsWhatIsStillBufferedAndStopsTheTimer() async {
+        let recorder = makeRecorder()
+        recorder.record(viewed)
+        recorder.record(switched)
+        await settle(until: { sleep.held == [flushDelay] })
+
+        recorder.sessionDidEnd()
+        await recorder.flush()
+
+        #expect(client.requests.isEmpty, "the identity still names the user, so only the drop keeps the flush quiet")
+        await settle(until: { sleep.held.isEmpty })
+        #expect(logger.messages(in: .statistics, at: .debug).contains { $0.contains("Dropped 2") })
+    }
+
+    /// A record made while a batch is in flight is neither lost nor sent twice: it waits for the next batch.
+    @Test func aRecordDuringASendIsKeptForTheNextBatch() async {
+        client.responses = [InteractionReceipt(accepted: 3), InteractionReceipt(accepted: 1)]
+        client.holdsRequests = true
+        let recorder = makeRecorder(batchSize: 3)
+        let third = Interaction.viewed(.fixture(id: "evt-2", hostUserId: "host"), at: Self.date)
+        for interaction in [viewed, switched, third] { recorder.record(interaction) }
+        await settle(until: { client.requests.count == 1 })
+
+        let late = Interaction.viewed(.fixture(id: "evt-3", hostUserId: "host"), at: Self.date)
+        recorder.record(late)
+        client.releaseRequests()
+        await settle(until: { logger.messages(in: .statistics, at: .info).contains { $0.contains("Sent 3") } })
+        await recorder.flush()
+
+        #expect(sentBatches.map(\.interactions) == [[viewed, switched, third], [late]])
     }
 }

@@ -29,7 +29,7 @@ extension LilyGroupsTests {
         enter(title, into: app.textFields["create-title"])
         enter("Görli Pitch", into: app.textFields["create-location-name"])
         let submit = app.buttons["create-submit"]
-        XCTAssertTrue(submit.isEnabled, "title, place and the mock position complete the draft")
+        assertBecomesEnabled(submit, "title, place and the mock position complete the draft")
         submit.tap()
         XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
     }

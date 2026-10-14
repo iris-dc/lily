@@ -48,8 +48,11 @@ final class InboxViewModel {
     var hasOlder: Bool { store.hasOlder }
     var isLoadingOlder: Bool { store.isLoadingOlder }
     var loadFailed: Bool { store.loadFailed }
-    /// True until the first page answered, so the empty state waits for it.
-    var isInitialLoad: Bool { store.isLoading && store.items.isEmpty }
+    /// True until the first page answered or failed, whether or not the view's `.task` has entered `appear()` yet:
+    /// until then the store is not loading, and judging by `isLoading` composed "Nothing here yet" for one commit
+    /// before the spinner (most visible in the iPad split view's unanimated swap). Safe to wait on because `appear()`
+    /// always starts a load, a guest never reaches the screen, and every load ends in a success or a failure record.
+    var isInitialLoad: Bool { !store.hasLoaded && !store.loadFailed }
     /// The newest item's id; the screen watches it to mark a live arrival read while open.
     var newestID: String? { store.newest?.id }
 
@@ -81,7 +84,10 @@ final class InboxViewModel {
 
     /// Accepts: the item shows as accepted; a group goes into Mine at once and its chat opens; a tournament's lists
     /// reload and its detail opens (with the caller entered, so Mine is reloaded for the room they are now in, or, for
-    /// a team tournament, ready to pick or name a team).
+    /// a team tournament, ready to pick or name a team). An acceptance naming neither (a known kind answered
+    /// differently, contract drift) admitted the caller somewhere this build cannot name: the item already shows the
+    /// backend's answer, and Mine, the Chats tab's one source, is reloaded as the one recovery that can reveal a room;
+    /// nothing opens and no popup shows.
     func accept(_ item: InboxItem) async {
         await answer(item, verb: "accept") {
             let acceptance = try await repository.accept(itemID: item.id)
@@ -97,7 +103,8 @@ final class InboxViewModel {
                 if tournament.hasEntered { await myGroups.reload() }
                 navigation.open(tournament: tournament.destination)
             } else {
-                logger.warning(.inbox, "Invite \(item.id) accepted into nothing this build knows")
+                logger.warning(.inbox, "Invite \(item.id) accepted into nothing this build knows; reloading Mine")
+                await myGroups.reload()
             }
         }
     }
@@ -109,12 +116,14 @@ final class InboxViewModel {
         }
     }
 
-    /// The game a reminder points at, pushed on the Chats stack; a game that is gone or unreachable reaches the popup.
+    /// The game a reminder points at, pushed on the Chats stack; a game that is gone or unreachable reaches the popup,
+    /// and a game that opened is logged, as `openTournament` logs its match.
     func openEvent(for item: InboxItem) async {
         guard let reminder = item.reminder, openingItemID == nil else { return }
         openingItemID = item.id
         defer { openingItemID = nil }
-        await opener.open(eventID: reminder.eventId, from: "reminder \(item.id)")
+        let opened = await opener.open(eventID: reminder.eventId, from: "reminder \(item.id)")
+        if opened { logger.info(.inbox, "Reminder \(item.id) opened game \(reminder.eventId)") }
     }
 
     /// The tournament a match reminder points at, pushed on the Chats stack with that match's sheet up; the card
@@ -126,23 +135,25 @@ final class InboxViewModel {
     }
 
     /// One answer per invite at a time; `TRY_AGAIN` is repeated once. A verdict on the invite (answered already,
-    /// expired) reloads the inbox after the popup, so the card shows the invite as the backend now has it.
+    /// expired) is a stale card, not a fault: logged at warning, and the inbox is reloaded after the popup, so the card
+    /// shows the invite as the backend now has it. Anything else is logged at error and shown.
     private func answer(_ item: InboxItem, verb: String, _ attempt: () async throws -> Void) async {
         guard !busyItemIDs.contains(item.id) else { return }
         busyItemIDs.insert(item.id)
         defer { busyItemIDs.remove(item.id) }
         do {
-            try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: { logRetry(item, verb: verb) }, attempt)
+            try await LostRace.attemptTwice(delay: tryAgainDelay,
+                                            logger: logger,
+                                            category: .inbox,
+                                            retrying: "Invite \(item.id) \(verb)",
+                                            attempt)
         } catch {
             guard !AppError.isCancellation(error) else { return }
-            logger.error(.inbox, "Invite \(item.id) \(verb) failed: \(error)")
+            let isVerdict = (error as? AppError)?.isInviteVerdict == true
+            logger.log(isVerdict ? .warning : .error, .inbox, "Invite \(item.id) \(verb) failed: \(error)")
             reporter.report(error)
-            if let appError = error as? AppError, appError.isInviteVerdict { await store.reload() }
+            if isVerdict { await store.reload() }
         }
-    }
-
-    private func logRetry(_ item: InboxItem, verb: String) {
-        logger.info(.inbox, "Invite \(item.id) \(verb) lost a race; retrying once")
     }
 }
 

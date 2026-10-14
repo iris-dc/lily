@@ -11,13 +11,16 @@ struct RecordedRequest {
     let body: (any Encodable & Sendable)?
 }
 
-/// Scripted `APIClient`: records every request and answers from a queue of responses, or throws `error`.
-/// A cancelled task gets `CancellationError` before anything is recorded, as it would from `URLSession`.
+/// Scripted `APIClient`: records every request and answers from a queue of responses, or throws `error`; while it
+/// `holdsRequests`, a recorded request is parked until `releaseRequests()`, like the other fakes' holds.
+/// A cancelled task gets `CancellationError` before anything is recorded, as it would from `URLSession`, and a parked
+/// request whose task was cancelled meanwhile gets it once released.
 @MainActor
-final class FakeAPIClient: APIClient {
+final class FakeAPIClient: APIClient, HoldsRequests {
     /// Dequeued one per `send`; each must have the request's `Response` type.
     var responses: [Any] = []
     var error: (any Error)?
+    let hold = RequestHold()
     private(set) var requests: [RecordedRequest] = []
 
     func send<Response: Decodable>(_ request: APIRequest<Response>) async throws -> Response {
@@ -26,6 +29,7 @@ final class FakeAPIClient: APIClient {
                                         path: request.path,
                                         queryItems: request.queryItems,
                                         body: request.body))
+        try await hold.waitOrThrow()
         if let error { throw error }
         guard !responses.isEmpty, let response = responses.removeFirst() as? Response else {
             Issue.record("No \(Response.self) queued for \(request.method.rawValue) \(request.path)")
@@ -56,6 +60,18 @@ final class StubURLProtocol: URLProtocol {
         handlers.withLock { $0[host] = handler }
     }
 
+    static func unregister(host: String) {
+        handlers.withLock { $0[host] = nil }
+    }
+
+    /// An ephemeral session routing every request through this protocol: a registered host answers, any other fails
+    /// with `URLError(.unsupportedURL)`.
+    static func makeSession() -> URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [StubURLProtocol.self]
+        return URLSession(configuration: configuration)
+    }
+
     override static func canInit(with request: URLRequest) -> Bool { true }
 
     override static func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -80,21 +96,28 @@ final class StubURLProtocol: URLProtocol {
 }
 
 /// A stubbed backend on a host of its own. Records what it received, with the body materialised into `httpBody`.
+/// The handler goes with the backend: the host is unregistered when the test's last reference is gone, so the
+/// backends built over a run do not stay registered for the process lifetime.
 final class StubBackend: Sendable {
+    let host: String
     let baseURL: URL
     private let recorded = Mutex<[URLRequest]>([])
 
     var requests: [URLRequest] { recorded.withLock { $0 } }
 
     init(respond: @escaping @Sendable (URLRequest) -> Result<StubURLProtocol.Response, URLError>) {
-        let host = "laurel-\(UUID().uuidString.lowercased()).test"
+        host = "laurel-\(UUID().uuidString.lowercased()).test"
         baseURL = URL(string: "http://\(host)")!
-        StubURLProtocol.register(host: host) { request in
+        StubURLProtocol.register(host: host) { [weak self] request in
             var received = request
             received.httpBody = request.bodyData
-            self.recorded.withLock { $0.append(received) }
+            if let self { self.recorded.withLock { $0.append(received) } }
             return respond(request)
         }
+    }
+
+    deinit {
+        StubURLProtocol.unregister(host: host)
     }
 
     /// Answers every request with the same status, body and headers.
@@ -103,9 +126,7 @@ final class StubBackend: Sendable {
     }
 
     func makeSession() -> URLSession {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.protocolClasses = [StubURLProtocol.self]
-        return URLSession(configuration: configuration)
+        StubURLProtocol.makeSession()
     }
 }
 
@@ -147,5 +168,9 @@ enum ContractSamples {
 
     static func profile(createdAt: String = "2026-09-11T10:00:00Z") -> String {
         #"{"userId":"u-1","displayName":"Apple Tester","createdAt":"\#(createdAt)"}"#
+    }
+
+    static func decode<T: Decodable>(_ type: T.Type, from json: String) throws -> T {
+        try APIJSONCoding.makeDecoder().decode(type, from: Data(json.utf8))
     }
 }

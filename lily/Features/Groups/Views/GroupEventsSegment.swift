@@ -8,11 +8,7 @@ struct GroupEventsSegment: View {
     private typealias Copy = AppBranding.Groups
 
     var body: some View {
-        if viewModel.isInitialLoad {
-            ProgressView().frame(maxWidth: .infinity)
-        } else if viewModel.visibleEvents.isEmpty {
-            viewModel.loadFailed ? loadFailedState : emptyState
-        } else {
+        ListSegment(state: viewModel.listState, empty: emptyState, failed: loadFailedState) {
             EventCardList(events: viewModel.visibleEvents,
                           distance: viewModel.distanceText,
                           horizontalPadding: 0,
@@ -38,7 +34,7 @@ struct GroupEventsSegment: View {
     ContentScreen {
         ScrollView {
             GroupEventsSegment(viewModel: dependencies.makeEventListViewModel(scope: .group(id: MockGroupFixtures.kickersID)))
-                .padding(DesignTokens.Spacing.xl)
+                .padding(DesignTokens.Layout.detailMargin)
         }
     }
 }

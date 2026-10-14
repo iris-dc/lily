@@ -70,6 +70,17 @@ struct AttachmentCodingTests {
         #expect(lily.Attachment.fixture(id: "a", url: URL(string: "https://x.test/a")!).aspectRatio.isAbout(4.0 / 3.0))
     }
 
+    /// The one rule behind both `aspectRatio`s: a dimension unknown or not positive gives none, as a file has none.
+    @Test func aMissingOrZeroDimensionGivesNoAspectRatio() {
+        #expect(AspectRatio.of(width: nil, height: 1_536) == nil)
+        #expect(AspectRatio.of(width: 2_048, height: nil) == nil)
+        #expect(AspectRatio.of(width: 2_048, height: 0) == nil)
+        #expect(AspectRatio.of(width: 0, height: 1_536) == nil)
+        #expect(AspectRatio.of(width: -1, height: 10) == nil)
+        #expect(AspectRatio.of(width: 2_048, height: 1_536).isAbout(4.0 / 3.0))
+        #expect(AttachmentDraft.fixture(kind: .file).aspectRatio == nil)
+    }
+
     @Test func theUploadTicketDecodesItsTargets() throws {
         let ticket = try ContractSamples.decode(UploadTicket.self, from: ContractSamples.uploadTicket)
 

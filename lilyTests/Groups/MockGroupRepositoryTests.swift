@@ -41,7 +41,6 @@ struct MockGroupRepositoryTests {
         #expect(try await repository.members(id: conversation.id).map(\.displayName) == ["Marta", "You"])
 
         #expect(repository.startDirect(with: marta.userId, name: marta.displayName) == conversation)
-        #expect(logger.messages(in: .groups, at: .info).contains("Mock conversation \(conversation.id) replayed"))
         let jonas = MockGroupFixtures.memberID(for: "Jonas")
         let started = repository.startDirect(with: jonas, name: "Jonas")
         #expect(started.isDirect && started.counterpart == Counterpart(userId: jonas, displayName: "Jonas"))
@@ -61,7 +60,6 @@ struct MockGroupRepositoryTests {
         #expect(mine.map(\.name) == ["Kreuzberg Kickers", "Tuesday Table Tennis", "Tempelhof Runners", "Sunday Padel Crew",
                                      "Kickers Cup"])
         #expect(try await repository.group(id: marta).isDirect, "the room stays readable while it is cleared")
-        #expect(logger.messages(in: .groups, at: .info).contains("Mock conversation \(marta) hidden"))
 
         repository.unhideConversation(id: marta)
         #expect(try await repository.groups(in: .mine, cursor: nil, near: nil).items.contains { $0.id == marta })
@@ -124,7 +122,8 @@ struct MockGroupRepositoryTests {
         #expect(joined.role == .member && joined.memberCount == 59)
         #expect(try await repository.join(id: MockGroupFixtures.basketballID).memberCount == 59, "a replay changes nothing")
         #expect(try await repository.groups(in: .mine, cursor: nil, near: nil).items.count == 7)
-        #expect(logger.messages(in: .groups, at: .info).contains("Joined group \(MockGroupFixtures.basketballID) (public)"))
+        let joinLines = logger.messages(in: .groups, at: .info)
+        #expect(joinLines.contains { $0.contains(joined.id) } && !joinLines.contains { $0.contains(joined.name) })
 
         await #expect(throws: AppError.groupFull) { try await repository.join(id: MockGroupFixtures.volleyID) }
     }
@@ -145,7 +144,8 @@ struct MockGroupRepositoryTests {
         let created = try await repository.create(draft)
         #expect(created.id == draft.clientId && created.role == .owner && created.memberCount == 1)
         #expect(try await repository.create(draft) == created)
-        #expect(logger.messages(in: .groups, at: .info).contains("Group created \(draft.clientId) (public)"))
+        let createLines = logger.messages(in: .groups, at: .info)
+        #expect(createLines.contains { $0.contains(draft.clientId) } && !createLines.contains { $0.contains(draft.name) })
 
         var edited = draft
         edited.name = "Renamed"

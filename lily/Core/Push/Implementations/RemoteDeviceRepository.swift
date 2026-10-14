@@ -13,7 +13,10 @@ final class RemoteDeviceRepository: DeviceRepository {
         return try await client.send(request, failingWith: .unknown)
     }
 
+    /// The route carries the token; the log line carries `AppConfig.Push.redactedToken` in its place.
     func unregister(token: String) async throws -> DeviceRemoval {
-        try await client.send(.delete(AppConfig.API.Paths.device(token: token)), failingWith: .unknown)
+        let request = APIRequest<DeviceRemoval>.delete(AppConfig.API.Paths.device(token: token),
+                                                       logPath: AppConfig.API.Paths.device(token: AppConfig.Push.redactedToken))
+        return try await client.send(request, failingWith: .unknown)
     }
 }

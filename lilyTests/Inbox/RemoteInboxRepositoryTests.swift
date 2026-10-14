@@ -4,13 +4,11 @@ import Testing
 
 @MainActor
 struct RemoteInboxRepositoryTests {
+    /// The route's own alias (a gone item reads as an answered invite) and its fallback: the shared mapping is proved
+    /// once, in `SendFailingWithTests` and `BackendErrorCodeTests.everyCodeMapsToItsCase`.
     /// `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
-        ("INVITE_NOT_PENDING", .inviteNotPending), ("INBOX_ITEM_NOT_FOUND", .inviteNotPending),
-        ("INVITE_EXPIRED", .inviteExpired), ("BANNED", .bannedFromGroup), ("GROUP_FULL", .groupFull),
-        ("GROUP_NOT_FOUND", .groupNotFound), ("MEMBERSHIP_LIMIT", .membershipLimitReached),
-        ("TERMS_REQUIRED", .termsRequired), ("ACCOUNT_SUSPENDED", .accountSuspended), ("TRY_AGAIN", .tryAgain),
-        ("VALIDATION_FAILED", .inviteActionFailed),
+        ("INBOX_ITEM_NOT_FOUND", .inviteNotPending), ("VALIDATION_FAILED", .inviteActionFailed),
     ]
     private static let otherFailures: [APIError] = [
         .http(status: 500, body: nil), .http(status: 403, body: nil), .decodingFailed, .notHTTPResponse,
@@ -79,19 +77,5 @@ struct RemoteInboxRepositoryTests {
             await #expect(throws: AppError.inviteActionFailed) { try await repository.accept(itemID: "i1") }
             await #expect(throws: AppError.inviteActionFailed) { try await repository.decline(itemID: "i1") }
         }
-    }
-
-    @Test func statusOnlyFailuresAndTransportKeepTheSharedMapping() async {
-        client.error = APIError.http(status: 401, body: nil)
-        await #expect(throws: AppError.sessionExpired) { try await repository.page(before: nil, limit: 50) }
-
-        client.error = APIError.http(status: 429, body: nil)
-        await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.accept(itemID: "i1") }
-
-        client.error = URLError(.notConnectedToInternet)
-        await #expect(throws: AppError.network) { try await repository.decline(itemID: "i1") }
-
-        client.error = URLError(.cancelled)
-        await #expect(throws: URLError(.cancelled)) { try await repository.page(before: nil, limit: 50) }
     }
 }

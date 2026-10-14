@@ -116,7 +116,6 @@ nonisolated extension AppBranding {
             /// The group detail's menu item.
             static var menuItem: String { localized("Create tournament") }
             static var save: String { Groups.Create.save }
-            static var cancel: String { Events.Create.cancel }
             static var tournamentSection: String { Tournaments.tournament }
             static var nameField: String { Groups.Create.nameField }
             static var namePlaceholder: String { localized("Kickers Cup") }

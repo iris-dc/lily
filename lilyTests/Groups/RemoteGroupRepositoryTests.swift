@@ -4,13 +4,10 @@ import Testing
 
 @MainActor
 struct RemoteGroupRepositoryTests {
-    /// `nonisolated`: `@Test(arguments:)` reads it off the main actor.
+    /// One known code and the route's fallback: the shared mapping is proved once, in `SendFailingWithTests` and
+    /// `BackendErrorCodeTests.everyCodeMapsToItsCase`. `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
-        ("GROUP_NOT_FOUND", .groupNotFound), ("GROUP_FULL", .groupFull), ("NOT_A_MEMBER", .notAMember),
-        ("BANNED", .bannedFromGroup), ("MEMBER_BANNED", .memberBanned), ("OWNER_CANNOT_LEAVE", .ownerCannotLeave),
-        ("FORBIDDEN", .insufficientRole), ("MEMBERSHIP_LIMIT", .membershipLimitReached), ("TERMS_REQUIRED", .termsRequired),
-        ("ACCOUNT_SUSPENDED", .accountSuspended), ("CONTENT_REJECTED", .contentRejected), ("TRY_AGAIN", .tryAgain),
-        ("VALIDATION_FAILED", .groupActionFailed),
+        ("GROUP_FULL", .groupFull), ("VALIDATION_FAILED", .groupActionFailed),
     ]
     private static let otherFailures: [APIError] = [
         .http(status: 500, body: nil), .http(status: 403, body: nil), .decodingFailed, .notHTTPResponse,
@@ -167,19 +164,5 @@ struct RemoteGroupRepositoryTests {
             await #expect(throws: AppError.groupActionFailed) { try await repository.leave(id: "g1") }
             await #expect(throws: AppError.groupActionFailed) { try await repository.unban(id: "g1", userID: "u-2") }
         }
-    }
-
-    @Test func statusOnlyFailuresAndTransportKeepTheSharedMapping() async {
-        client.error = APIError.http(status: 401, body: nil)
-        await #expect(throws: AppError.sessionExpired) { try await repository.groups(in: .mine, cursor: nil, near: nil) }
-
-        client.error = APIError.http(status: 429, body: nil)
-        await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await repository.join(id: "g1") }
-
-        client.error = URLError(.notConnectedToInternet)
-        await #expect(throws: AppError.network) { try await repository.group(id: "g1") }
-
-        client.error = URLError(.cancelled)
-        await #expect(throws: URLError(.cancelled)) { try await repository.groups(in: .mine, cursor: nil, near: nil) }
     }
 }

@@ -2,8 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Clearing from the open chat: the room empties for the caller and the screen stays for a group, leaves for a
-/// conversation; a refused clear keeps everything.
+/// Clearing from the open chat: the room empties for the caller, the screen stays or leaves on the server's verdict,
+/// and a refused clear keeps everything.
 @MainActor
 struct ChatViewModelClearTests {
     private let group = SportGroup.fixture(id: "g", channelEpoch: 1, role: .member)
@@ -22,20 +22,23 @@ struct ChatViewModelClearTests {
         return (harness, viewModel)
     }
 
+    /// The read marker starts over with the room: the first line after the clear is flushed at once rather than after
+    /// the interval, since the backend dropped the caller's marker with the history.
     @Test func clearingAGroupEmptiesTheRoomAndKeepsTheScreen() async {
         let (harness, viewModel) = await makeOpenChat(for: group)
-        #expect(viewModel.lastFlushedReadID == "m1" && viewModel.rows.count == 3)
+        harness.chat.clearFloor = "m1"
+        #expect(viewModel.readMarker.lastFlushedID == "m1" && viewModel.rows.count == 3)
 
         await viewModel.clearHistory()
 
         #expect(harness.chat.clearedGroupIDs == ["g"])
         #expect(viewModel.pending.isEmpty && viewModel.rows.isEmpty && viewModel.room.hasHistory)
-        #expect(viewModel.lastFlushedReadID == nil && viewModel.lastFlushAt == nil, "the marker starts over")
         #expect(!viewModel.isGone)
 
         harness.transport.post(.message(.fixture(id: "m2")), to: .room(groupID: "g", epoch: 1))
         await settle(until: { viewModel.room.messages.map(\.id) == ["m2"] })
         #expect(viewModel.rows.count == 2, "a line written after the clear lands in the emptied room")
+        await settle(until: { harness.chat.readMarks.map(\.messageID) == ["m1", "m2"] })
     }
 
     /// A picture that never left goes with the room it was meant for: nothing of the unsent bubble stays in tmp.
@@ -55,14 +58,28 @@ struct ChatViewModelClearTests {
         #expect(files.allSatisfy { !FileManager.default.fileExists(atPath: $0.path()) }, "the files went with the bubble")
     }
 
-    @Test func deletingAConversationLeavesTheScreen() async {
-        let (harness, viewModel) = await makeOpenChat(for: conversation)
+    /// The server's verdict, not the group's kind, says whether the room left Mine: a group whose clear answers `hidden`
+    /// leaves the screen as a deleted conversation does.
+    @Test func theClearersVerdictDecidesIsGone() async {
+        let (harness, viewModel) = await makeOpenChat(for: group)
         harness.chat.clearAnswersHidden = true
 
         await viewModel.clearHistory()
 
         #expect(viewModel.isGone && viewModel.pending.isEmpty)
-        #expect(harness.store.groups.isEmpty && harness.cache.room(for: conversation.id) == nil)
+        #expect(harness.store.groups.isEmpty && harness.cache.room(for: "g") == nil)
+    }
+
+    @Test func aConversationWhoseClearIsNotHiddenStaysOnScreen() async throws {
+        let (harness, viewModel) = await makeOpenChat(for: conversation)
+        harness.chat.clearAnswersHidden = false
+
+        await viewModel.clearHistory()
+
+        #expect(!viewModel.isGone && viewModel.pending.isEmpty)
+        #expect(harness.store.groups.map(\.id) == [conversation.id])
+        let room = try #require(harness.cache.room(for: conversation.id))
+        #expect(room.messages.isEmpty && room.hasHistory)
     }
 
     @Test func aRefusedClearKeepsTheRoomAndTheUnsentBubble() async {
@@ -72,7 +89,7 @@ struct ChatViewModelClearTests {
         await viewModel.clearHistory()
 
         #expect(viewModel.pending.count == 1 && viewModel.room.messages.map(\.id) == ["m1"])
-        #expect(viewModel.lastFlushedReadID == "m1" && !viewModel.isGone)
+        #expect(viewModel.readMarker.lastFlushedID == "m1" && !viewModel.isGone)
         #expect(harness.errorCenter.current?.error == .chatUnavailable)
     }
 }

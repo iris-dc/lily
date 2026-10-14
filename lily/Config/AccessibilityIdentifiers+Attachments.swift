@@ -9,6 +9,8 @@ nonisolated extension AccessibilityIdentifiers {
     /// The full-screen viewer and the video player (containers) and their Close button.
     static let attachmentViewer = "attachment-viewer"
     static let attachmentViewerClose = "attachment-viewer-close"
+    /// The viewer's "n / m" caption, so a UI test can tell which page is on screen.
+    static let attachmentViewerPosition = "attachment-viewer-position"
 
     /// A picked picture in the strip, keyed by the id chosen for it on the device.
     static func chatAttachment(clientID: String) -> String {

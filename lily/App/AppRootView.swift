@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// Switches between launch, welcome and the main shell based on session state, runs the per-user sync (account,
-/// realtime connection, groups, inbox) whenever the scene phase or the user changes, and presents the terms sheet
-/// while a signed-in caller owes the current terms.
+/// Switches between launch, welcome and the main shell based on session state, ties `ShellSync` to the scene phase
+/// and the user (the restore once, a run whenever either changes), and presents the terms sheet while a signed-in
+/// caller owes the current terms. Wiring only: what a run does, and in which order, is `ShellSync`'s.
 struct AppRootView: View {
     let dependencies: AppDependencies
     @State private var terms: TermsViewModel
+    @State private var sync: ShellSync
     @Environment(\.scenePhase) private var scenePhase
 
     private var session: SessionController { dependencies.sessionController }
@@ -14,6 +15,7 @@ struct AppRootView: View {
     init(dependencies: AppDependencies) {
         self.dependencies = dependencies
         _terms = State(initialValue: dependencies.makeTermsViewModel())
+        _sync = State(initialValue: dependencies.makeShellSync())
     }
 
     var body: some View {
@@ -32,17 +34,13 @@ struct AppRootView: View {
         .environment(\.locale, language.locale)
         .layoutModeProvider()
         .animation(.smooth(duration: DesignTokens.Duration.slow), value: rootScreen)
-        .task {
-            await session.restore()
-            dependencies.navigation.selectedTab = AppNavigation.startTab(for: session.state)
-            await dependencies.pushCoordinator.openPendingTap()
-        }
+        .task { await sync.restore() }
         // Going to the background is the last moment a small batch is sure to be sent.
         .onChange(of: scenePhase) {
             if scenePhase == .background { Task { await dependencies.interactionRecorder.flush() } }
         }
         .task(id: SyncKey(phase: scenePhase, userID: session.state.user?.id, language: language.language)) {
-            await syncAccountAndRealtime()
+            await sync.run(active: scenePhase != .background, user: session.state.user)
         }
         .onChange(of: dependencies.myGroups.groups) { dependencies.myGroupsDidChange() }
         .onChange(of: dependencies.myGroups.loadVersion) { dependencies.myGroupsDidLoad() }
@@ -78,28 +76,6 @@ struct AppRootView: View {
         let phase: ScenePhase
         let userID: String?
         let language: AppLanguage
-    }
-
-    /// The signed-in user's account, the realtime connection, their groups, their inbox and the push registration, in
-    /// that order: the account names the realtime endpoint, and a connection that opens reloads Mine itself (the resume
-    /// protocol), so the store's own load afterwards is usually a no-op. The connection closes in the background; a
-    /// guest has none of this and the stores clear themselves. A run stops at the first await after its key changed,
-    /// so the phase it read is never applied over a newer one.
-    private func syncAccountAndRealtime() async {
-        let active = scenePhase != .background
-        let user = session.state.user
-        if active { await dependencies.me.loadIfNeeded() }
-        guard !Task.isCancelled else { return }
-        await dependencies.realtime.setDesired(active: active, user: user)
-        guard !Task.isCancelled else { return }
-        if active { await dependencies.myGroups.loadIfStale() }
-        guard !Task.isCancelled else { return }
-        if active { await dependencies.inbox.loadIfStale() }
-        guard !Task.isCancelled else { return }
-        guard active, user != nil else { return }
-        // A signed-in user entering the app is asked for the permission once; a grant registers the device at once.
-        await dependencies.pushCoordinator.offerReminders()
-        await dependencies.pushCoordinator.sync()
     }
 }
 

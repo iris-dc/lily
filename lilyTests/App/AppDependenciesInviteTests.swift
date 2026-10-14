@@ -15,11 +15,7 @@ struct AppDependenciesInviteTests {
 
     /// The mock run end to end: the owner of Sunday Padel Crew sees Marta from Kreuzberg Kickers and invites her.
     @Test func theMockInviteFlowWorksThroughTheFactory() async throws {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeTestDefaults())
-        await dependencies.sessionController.signIn(with: .apple)
+        let dependencies = await makeSignedInMockDependencies()
         await dependencies.myGroups.reload()
         let padel = try #require(dependencies.myGroups.groups.first { $0.id == MockGroupFixtures.padelID })
         let viewModel = dependencies.makeInvitePeopleViewModel(for: padel)

@@ -3,27 +3,24 @@ import Observation
 
 /// The caller's groups (Mine, direct conversations included), kept for the app's lifetime because more than one screen
 /// needs them: the create form's group picker, the invite flow, the room subscriptions and the tab badge. A tab-local
-/// view model would exist only once the user visited the tab. Follows the events lists' staleness rules through
-/// `ContentFreshness`, so a tab that reappears reuses what it already has.
+/// view model would exist only once the user visited the tab. Loads through `StoreLoader` (the events lists' staleness
+/// rules, one request at a time, judged against the group-changes version), so a tab that reappears reuses what it
+/// already has.
 @Observable
 final class MyGroupsStore: SessionObserver {
     /// Most recently active first, as the backend orders Mine.
     private(set) var groups: [SportGroup] = []
-    private let load = SingleFlight()
     /// Counts the loads that answered. The unread set follows this, not `groups`: a local `add` or `replace` carries
     /// membership flags read before the rooms were, and would bring a read room's dot back.
     private(set) var loadVersion = 0
-    private var freshness = ContentFreshness(staleAfter: AppConfig.Groups.listStaleAfter,
-                                             retryAfterFailure: AppConfig.Groups.retryAfterFailure)
+    private let loader: StoreLoader
 
     private let repository: any GroupRepository
     private let identity: any IdentityProvider
     private let changes: ChangeTracker
     /// The group-changes version as of now, for screens that decide staleness against it (Discover behind the carousel).
     var changesVersion: Int { changes.version }
-    private let errorCenter: ErrorCenter
     private let logger: any Logging
-    private let now: () -> Date
 
     init(repository: any GroupRepository,
          identity: any IdentityProvider,
@@ -34,14 +31,21 @@ final class MyGroupsStore: SessionObserver {
         self.repository = repository
         self.identity = identity
         self.changes = changes
-        self.errorCenter = errorCenter
         self.logger = logger
-        self.now = now
+        loader = StoreLoader(noun: "groups",
+                             category: .groups,
+                             identity: identity,
+                             errorCenter: errorCenter,
+                             logger: logger,
+                             now: now,
+                             version: { changes.version })
     }
 
     /// True from a failed load until the next successful one.
-    var loadFailed: Bool { freshness.loadFailed }
-    var isLoading: Bool { load.isRunning }
+    var loadFailed: Bool { loader.loadFailed }
+    /// An answer landed at least once since the last reset; `loadFailed` is the other way a load ends.
+    var hasLoaded: Bool { loader.hasLoaded }
+    var isLoading: Bool { loader.isLoading }
 
     /// The communities in Mine (kind `group`): what "your groups" means on Home, in the event form and anywhere else a
     /// group is a community; conversations and rooms of a kind this build does not know stay out. `groups` (everything)
@@ -56,57 +60,39 @@ final class MyGroupsStore: SessionObserver {
         return communities.filter { GroupAccess(group: $0, userID: userID).canCreateEvents(in: $0) }
     }
 
-    /// Loads once per `AppConfig.Groups.listStaleAfter`, or sooner when a group changed elsewhere or the caller
-    /// changed; after a failed load it waits `AppConfig.Groups.retryAfterFailure` unless one of those happened.
+    /// Loads once per `AppConfig.Lists.staleAfter`, or sooner when a group changed elsewhere or the caller
+    /// changed; after a failed load it waits `AppConfig.Lists.retryAfterFailure` unless one of those happened.
     /// A guest has no groups: the list is cleared without a request.
     func loadIfStale() async {
         guard identity.currentUserID != nil else {
             clear()
             return
         }
-        let version = changes.version
-        let userID = identity.currentUserID
-        guard !freshness.isWaitingToRetry(now: now(), version: version, userID: userID) else {
-            logger.debug(.cache, "Groups failed to load recently; not retrying yet")
-            return
-        }
-        guard let reason = freshness.stalenessReason(now: now(), version: version, userID: userID) else {
-            logger.debug(.cache, "Groups are fresh; skipping reload")
-            return
-        }
-        logger.debug(.cache, "Groups are stale (\(reason)); reloading")
-        await reload()
+        await loader.loadIfStale(fetch: fetchMine, apply: applyMine)
     }
 
-    /// Always asks the backend (pull-to-refresh, the resume protocol). A call made while one is in flight joins it; an
-    /// answer that arrives after the caller signed out or changed is dropped.
+    /// Always asks the backend (pull-to-refresh, the resume protocol). A call made while one is in flight for the same
+    /// user joins it; one for another user (a sign-out and sign-in while the previous user's request is still out)
+    /// waits it out and then loads for them; an answer that arrives after the caller signed out or changed is dropped.
+    /// A join, leave, create or edit recorded anywhere while the request was out (a local `add`, `remove` or `replace`
+    /// here, a change on a detail) means the answer predates it: the answer is applied and the load runs once more.
     func reload() async {
-        guard let userID = identity.currentUserID else {
+        guard identity.currentUserID != nil else {
             clear()
             return
         }
-        await load.run { [self] in await performLoad(for: userID) }
+        await loader.reload(fetch: fetchMine, apply: applyMine)
     }
 
-    private func performLoad(for userID: String) async {
-        let version = changes.version
-        do {
-            let loaded = try await repository.groups(in: .mine, cursor: nil, near: nil).items
-            guard identity.isStillCaller(userID, orDrop: "Groups answer", logger: logger) else { return }
-            groups = loaded
-            loadVersion += 1
-            freshness.recordSuccess(at: now(), version: version, userID: userID)
-            logger.info(.groups, "Loaded \(groups.count) groups")
-        } catch {
-            guard !AppError.isCancellation(error) else {
-                logger.debug(.groups, "Loading groups cancelled")
-                return
-            }
-            guard identity.isStillCaller(userID, orDrop: "Groups answer", logger: logger) else { return }
-            freshness.recordFailure(at: now(), version: version, userID: userID)
-            logger.error(.groups, "Loading groups failed: \(error)")
-            errorCenter.report(error)
-        }
+    private func fetchMine() async throws -> [SportGroup] {
+        try await repository.groups(in: .mine, cursor: nil, near: nil).items
+    }
+
+    /// The answer replaces what is held; `loadVersion` tells the unread set a load, not a local change, did it.
+    private func applyMine(_ loaded: [SportGroup]) {
+        groups = loaded
+        loadVersion += 1
+        logger.info(.groups, "Loaded \(groups.count) groups")
     }
 
     /// A group the caller just joined or created, placed where a reload would put it under `SportGroup.mineOrder`. The
@@ -118,15 +104,18 @@ final class MyGroupsStore: SessionObserver {
         recordChange("Group \(group.id) added to Mine")
     }
 
-    /// The group as a screen just changed it. One the caller is no longer in leaves the list.
+    /// The group as a screen just changed it. One the caller is no longer in leaves the list. One not held is never
+    /// inserted (the realtime refetch after a local drop relies on that), but sibling screens still learn of the change.
     func replace(_ group: SportGroup) {
         guard group.isMember, !group.isDeleted else {
             remove(id: group.id)
             return
         }
-        if let index = groups.firstIndex(where: { $0.id == group.id }) {
-            groups[index] = group
+        guard let index = groups.firstIndex(where: { $0.id == group.id }) else {
+            recordChange("Group \(group.id) not in Mine; nothing replaced")
+            return
         }
+        groups[index] = group
         recordChange("Group \(group.id) replaced in Mine")
     }
 
@@ -150,12 +139,12 @@ final class MyGroupsStore: SessionObserver {
     /// Recorded so every other group screen reloads on its next appearance; this store already shows it and does not.
     private func recordChange(_ what: String) {
         changes.recordChange()
-        freshness.acknowledge(version: changes.version)
+        loader.acknowledge(version: changes.version)
         logger.debug(.cache, "\(what); sibling screens invalidated")
     }
 
     private func clear() {
         groups = []
-        freshness.reset()
+        loader.reset()
     }
 }

@@ -26,12 +26,18 @@ struct EventDetailsTests {
         #expect(event.priceText == "Free")
     }
 
-    /// The Profile menu names each currency in the user's locale; a code the locale cannot name shows as itself.
+    /// The Profile menu names each currency in the user's locale.
     @Test func currenciesAreNamedInTheUsersLocale() {
         #expect(Price.name(for: "PLN", locale: us) == "Polish Zloty")
         #expect(Price.name(for: euro, locale: Locale(identifier: "pl_PL")) == "euro")
-        #expect(Price.name(for: "XXX", locale: us) == "Unknown Currency" || Price.name(for: "XXX", locale: us) == "XXX")
         #expect(Price.symbol(for: "PLN", locale: Locale(identifier: "pl_PL")) == "zł")
+    }
+
+    /// A code the locale cannot name shows as itself; ISO's own "no currency" code XXX is named, so it is no test of
+    /// the fallback, only the contrast.
+    @Test func anUnassignedCurrencyCodeNamesItself() {
+        #expect(Price.name(for: "ZZZ", locale: us) == "ZZZ")
+        #expect(Price.name(for: "XXX", locale: us) == "Unknown Currency")
     }
 
     @Test func wholeAmountsDropTheMinorUnits() {
@@ -55,25 +61,41 @@ struct EventDetailsTests {
         #expect(Price.symbol(for: "USD", locale: us) == "$")
     }
 
-    /// Typed amounts (the filter's cap, a new game's price) are read in the user's locale; empty, unreadable or
-    /// negative text is no amount at all.
+    /// Typed amounts (the filter's cap, a new game's price) are read in the user's locale, whole and trimmed; empty,
+    /// unreadable (a symbol, a code, a stray separator) or negative text is no amount at all.
     @Test func typedAmountsAreParsedInTheLocale() {
         #expect(Price.parseAmount("6.5", locale: us) == Decimal(string: "6.5"))
         #expect(Price.parseAmount("6,5", locale: germany) == Decimal(string: "6.5"))
         #expect(Price.parseAmount("6", locale: germany) == 6)
         #expect(Price.parseAmount("0", locale: us) == 0)
-        for text in ["", "abc", "-3"] {
+        #expect(Price.parseAmount("5.", locale: us) == 5)
+        #expect(Price.parseAmount(".5", locale: us) == Decimal(string: "0.5"))
+        #expect(Price.parseAmount(" 7.5 ", locale: us) == Decimal(string: "7.5"))
+        for text in ["", "abc", "-3", "€5", "$5", "5 EUR", "5..5", "5.5.5", "1,500"] {
             #expect(Price.parseAmount(text, locale: us) == nil, "\(text)")
         }
     }
 
-    /// The edit form seeds its price field with `inputFormat` and parses what it holds with `parseAmount`, so the
-    /// two must agree in every locale, grouping separators included, or opening a game would change its price.
+    /// A separator of another locale is refused, never read as a grouping one: en_US "5,50" was 550 and a French app
+    /// on an en_CA device turned "7.50" into 750 under the lenient strategy.
+    @Test func aForeignSeparatorIsNeverAHundredfold() {
+        let frenchCanada = Locale(identifier: "fr_CA")
+        #expect(Price.parseAmount("5,50", locale: us) == nil)
+        #expect(Price.parseAmount("5.50", locale: germany) == nil)
+        #expect(Price.parseAmount("7.50", locale: frenchCanada) == nil)
+        #expect(Price.parseAmount("7,50", locale: frenchCanada) == Decimal(string: "7.5"))
+        #expect(Price.parseAmount("5,5", locale: germany) == Decimal(string: "5.5"))
+    }
+
+    /// The forms seed their price fields with `inputText` and parse what they hold with `parseAmount`, so the two
+    /// must agree in every locale, without a grouping separator (which the strict parse would refuse), or opening a
+    /// game would change its price.
     @Test func aFormattedAmountReadsBackUnchanged() {
-        let amounts = ["7.5", "12", "0.99", "1234.5", "9999999.99"].map { Decimal(string: $0)! }
-        for locale in [us, germany] {
+        #expect(Price.inputText(1500, locale: us) == "1500")
+        let amounts = ["7.5", "12", "0.99", "1500", "1234.5", "9999999.99"].map { Decimal(string: $0)! }
+        for locale in [us, germany, Locale(identifier: "fr_CA"), Locale(identifier: "pl_PL")] {
             for amount in amounts {
-                let text = amount.formatted(Price.inputFormat.locale(locale))
+                let text = Price.inputText(amount, locale: locale)
                 #expect(Price.parseAmount(text, locale: locale) == amount, "\(text) in \(locale.identifier)")
             }
         }

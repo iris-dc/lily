@@ -96,7 +96,5 @@ struct RealtimeChannelTests {
     @Test func pathsFollowTheNamespaces() {
         #expect(RealtimeChannel.room(groupID: "g1", epoch: 3).path == "rooms/g1/3")
         #expect(RealtimeChannel.user(sub: "u-1").path == "users/u-1")
-        #expect(RealtimeChannel.room(groupID: "g1", epoch: 3).groupID == "g1")
-        #expect(RealtimeChannel.user(sub: "u-1").groupID == nil)
     }
 }

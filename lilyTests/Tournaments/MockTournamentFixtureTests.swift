@@ -79,7 +79,7 @@ struct MockTournamentFixtureTests {
         #expect(try await repository.tournament(id: id).match(id: "r01p002") == scheduled, "stored")
 
         let cleared = try await repository.schedule(id: id, matchID: "r01p002", MatchSchedule())
-        #expect(cleared.status == .pending && cleared.scheduledAt == nil && cleared.location == nil)
+        #expect(cleared.status == .pending && !cleared.hasSchedule)
 
         await #expect(throws: AppError.notOrganizer) {
             try await repository.schedule(id: MockTournamentFixtures.tableTennisID, matchID: "r03p001", MatchSchedule())

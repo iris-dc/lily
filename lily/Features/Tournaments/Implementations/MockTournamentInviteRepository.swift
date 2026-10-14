@@ -1,7 +1,7 @@
 import Foundation
 
 /// Invites into a tournament without a backend, behind the same seam as the group invites: the candidates are the
-/// people of the caller's communities and the hosts of the mock games minus everyone already in the tournament
+/// people of the caller's groups and rooms and the hosts of the mock games minus everyone already in the tournament
 /// (`MockInviteCandidatePool`); sent invites are remembered per tournament for the run (`MockInviteLedger`). The
 /// refusals follow the backend's: only entrants and the organiser invite, while registration is open, never someone
 /// who is in already. Nothing lands in an inbox: the mock user's inbox is the only one there is.
@@ -28,7 +28,10 @@ final class MockTournamentInviteRepository: InviteRepository {
     func candidates(groupID tournamentID: String) async throws -> [InviteCandidate] {
         let detail = try requireInviteRights(in: tournamentID)
         var seen = peopleIn(detail)
-        let candidates = try await pool.candidates(excludingGroup: nil, seen: &seen) { ledger.isInvited($0, into: tournamentID) }
+        // The tournament's own room (under its id) is left out, as the backend leaves the target room out.
+        let candidates = try await pool.candidates(excludingGroup: tournamentID, seen: &seen) {
+            ledger.isInvited($0, into: tournamentID)
+        }
         logger.debug(.tournaments, "Mock invite candidates served for tournament \(tournamentID) (\(candidates.count))")
         return candidates
     }
@@ -38,16 +41,12 @@ final class MockTournamentInviteRepository: InviteRepository {
     func invite(groupID tournamentID: String, userID: String) async throws -> SentInvite {
         let detail = try requireInviteRights(in: tournamentID)
         guard !peopleIn(detail).contains(userID) else { throw AppError.inviteeAlreadyEntered }
-        guard let candidate = try await candidates(groupID: tournamentID).first(where: { $0.userId == userID }) else {
-            throw AppError.userNotFound
-        }
-        if let existing = ledger.existing(for: userID, into: tournamentID) {
-            logger.info(.tournaments, "Mock invite \(existing.id) replayed for \(userID) in tournament \(tournamentID)")
-            return existing
-        }
-        let invite = ledger.record(candidate, into: .tournament(id: tournamentID), now: now())
-        logger.info(.tournaments, "Mock invite \(invite.id) into tournament \(tournamentID) sent to \(userID)")
-        return invite
+        let candidates = try await self.candidates(groupID: tournamentID)
+        return try ledger.send(to: userID,
+                               among: candidates,
+                               into: .tournament(id: tournamentID),
+                               now: now(),
+                               logger: logger)
     }
 
     /// Like the backend: a signed-in entrant or the organiser, while registration is open.

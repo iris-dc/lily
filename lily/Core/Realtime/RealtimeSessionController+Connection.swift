@@ -53,7 +53,7 @@ extension RealtimeSessionController {
         // this very connect nils its own slot before calling reconnect, so it is never the one cancelled here.
         reconnectTask?.cancel()
         reconnectTask = nil
-        logger.info(.chat, "Chat connection opened")
+        logger.info(.chat, "Chat connection opened to \(endpoint.host() ?? endpoint.absoluteString)")
         scheduleRenewal(for: token, fresh: fresh)
         subscribe(to: .user(sub: user.id))
         reconcileSubscriptions()
@@ -116,22 +116,19 @@ extension RealtimeSessionController {
         scheduleReconnect(reason: "no token")
     }
 
-    /// Renews at `exp - reconnectBeforeExpiry` or at `maxConnectionAge`, whichever is first. A refreshed token whose
-    /// `exp` is not later than the last one's, or a token already inside the renewal margin, would renew at once and
-    /// loop: those waits fall into the backoff table instead (and never before the expiry-bound moment).
+    /// Renews when `RenewalDelay` says: at the expiry-bound moment for a good token, after a backoff wait for one
+    /// that would renew at once and loop (stale, or already inside the renewal margin).
     func scheduleRenewal(for token: String?, fresh: Bool) {
         renewalTask?.cancel()
         let expiry = token.flatMap(JWTClaims.expiration)
-        let untilExpiryBound = expiry.map { $0.timeIntervalSince(now()) - AppConfig.Realtime.reconnectBeforeExpiry }
-        var delay = min(untilExpiryBound ?? AppConfig.Realtime.maxConnectionAge, AppConfig.Realtime.maxConnectionAge)
-        if fresh, let expiry, let lastExpiry, expiry <= lastExpiry {
-            delay = max(delay, nextBackoff())
+        let renewal = RenewalDelay(expiry: expiry, lastExpiry: lastExpiry, now: now(), fresh: fresh)
+        let delay = renewal.seconds(backingOff: &backoff, random: random)
+        switch renewal.reason {
+        case .staleToken:
             logger.warning(.chat, "Refreshed token expires no later than the last one; renewing in \(Int(delay))s")
-        } else if let untilExpiryBound, untilExpiryBound <= 0 {
-            delay = max(delay, nextBackoff())
+        case .insideMargin:
             logger.warning(.chat, "Token is already inside the renewal margin; renewing in \(Int(delay))s")
-        } else {
-            backoffAttempt = 0
+        case .scheduled:
             logger.debug(.chat, "Chat connection renews in \(Int(delay))s")
         }
         lastExpiry = expiry ?? lastExpiry
@@ -146,7 +143,7 @@ extension RealtimeSessionController {
     /// The connection dropped: back off, then reconnect with a fresh token.
     func scheduleReconnect(reason: String) {
         guard isActive, user != nil, reconnectTask == nil else { return }
-        let delay = nextBackoff()
+        let delay = backoff.next(random: random)
         logger.info(.chat, "Chat reconnecting in \(Int(delay))s (\(reason))")
         reconnectTask = Task { [weak self, sleep] in
             guard (try? await sleep(.seconds(delay))) != nil, let self else { return }
@@ -211,22 +208,13 @@ extension RealtimeSessionController {
     /// rooms that moved.
     func adoptCachedEpochs() -> Set<String> {
         var moved: Set<String> = []
-        for (groupID, epoch) in subscribedRooms {
-            if let fresh = cache.room(for: groupID)?.channelEpoch, fresh > epoch {
-                logger.info(.chat, "Epoch changed for group \(groupID): \(epoch) -> \(fresh)")
-                noteEpoch(fresh, for: groupID)
+        for groupID in subscribedRooms.keys {
+            if let fresh = cache.room(for: groupID)?.channelEpoch, moveEpoch(of: groupID, to: fresh) {
                 moved.insert(groupID)
             }
         }
         reconcileSubscriptions()
         return moved
-    }
-
-    private func nextBackoff() -> TimeInterval {
-        let table = AppConfig.Realtime.reconnectBackoffSeconds
-        let base = table[min(backoffAttempt, table.count - 1)]
-        backoffAttempt += 1
-        return base * (1 + random(-AppConfig.Realtime.reconnectJitter...AppConfig.Realtime.reconnectJitter))
     }
 
     /// A refused token is the session's problem, not the socket's: said once, and no reconnect until the session changes.

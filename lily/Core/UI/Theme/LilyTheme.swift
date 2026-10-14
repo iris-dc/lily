@@ -3,7 +3,8 @@ import SwiftUI
 /// Semantic styling that isn't a plain color asset. Colors live in `Assets.xcassets` (`Color.lily*`).
 enum LilyTheme {
     enum Fonts {
-        /// SF Pro Display with tight tracking everywhere: the wordmark, the landing headline and screen titles.
+        /// The launch screen's wordmark (`Wordmark`, its one caller). SF Pro with tight tracking is the design language
+        /// every font here follows.
         static func wordmark(size: CGFloat) -> Font {
             .system(size: size, weight: .semibold)
         }
@@ -21,6 +22,16 @@ enum LilyTheme {
         static var caption: Font { .system(.footnote, design: .default, weight: .medium) }
         /// A symbol as a mark in a `GlassGlyph`: the type glyph on the map's preview card.
         static var glyph: Font { .system(.title3, design: .default, weight: .medium) }
+    }
+
+    /// The one date-and-time style of the facts cards and match rows ("15 Jan 2027 at 18:30"), in the app language.
+    /// A `static var`, never a `static let`: a `let` would freeze the first language.
+    nonisolated enum DateStyles {
+        static var dateTime: Date.FormatStyle { dateTime(locale: AppLocale.locale) }
+
+        static func dateTime(locale: Locale) -> Date.FormatStyle {
+            Date.FormatStyle(date: .abbreviated, time: .shortened, locale: locale)
+        }
     }
 
     /// The one selected look for toggling controls (map pins, `ChoiceChip`): accent glass with a white label when on,

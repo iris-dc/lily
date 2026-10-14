@@ -1,8 +1,8 @@
 import Foundation
 
-/// Fetches a tournament by id and pushes its detail on the Chats stack (Home while chat is switched off), with a match's
-/// sheet up when one is named: a tapped match reminder goes through it (the inbox's reminder card carries the name and
-/// needs no fetch). A tournament that is gone or unreachable reaches the popup; cancellation stays quiet.
+/// Fetches a tournament by id and pushes its detail through `AppNavigation.openFromNotification`, with a match's sheet
+/// up when one is named: a tapped match reminder goes through it (the inbox's reminder card carries the name and needs
+/// no fetch). A tournament that is gone or unreachable reaches the popup; cancellation stays quiet.
 final class TournamentOpener {
     private let tournaments: any TournamentRepository
     private let navigation: AppNavigation
@@ -22,11 +22,7 @@ final class TournamentOpener {
         do {
             let detail = try await tournaments.tournament(id: tournamentID)
             let destination = TournamentDestination(id: tournamentID, name: detail.tournament.name, matchID: matchID)
-            if AppConfig.FeatureFlags.chat {
-                navigation.openInChat(destination)
-            } else {
-                navigation.openInHome(destination)
-            }
+            navigation.openFromNotification(destination)
             return true
         } catch {
             guard !AppError.isCancellation(error) else { return false }

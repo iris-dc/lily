@@ -58,7 +58,7 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
         /// read-only and the payload repeats them as stored, which the backend compares and never re-validates.
         let judgesSchedule: Bool
 
-        static let creation = Rules(minimumLeadTime: AppConfig.Tournaments.minimumLeadTime,
+        static let creation = Rules(minimumLeadTime: AppConfig.Events.Creation.minimumLeadTime,
                                     minimumEntries: AppConfig.Tournaments.entriesRange.lowerBound,
                                     judgesSchedule: true)
 
@@ -75,33 +75,40 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
         }
     }
 
-    /// One reason a draft cannot be sent, in the order the form shows its fields.
+    /// One reason a draft cannot be sent, in the order the form lays its sections out: the Tournament section (the
+    /// name), Where, When, Entries, Details.
     enum Issue: Hashable, Sendable {
         case nameTooShort
         case nameTooLong
+        case locationNameMissing
+        case locationNameTooLong
+        case coordinateMissing
+        case startsAtTooSoon
+        case registrationClosesAfterStart
         case teamSizeOutOfRange
         case maxEntriesOutOfRange
         /// An edit asked for fewer entries than are already in.
         case maxEntriesBelowEntries
-        case startsAtTooSoon
-        case registrationClosesAfterStart
-        case locationNameMissing
-        case locationNameTooLong
-        case coordinateMissing
         case descriptionTooLong
     }
 
-    var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
-    var trimmedLocationName: String { locationName.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var trimmedName: String { name.trimmed }
+    /// The Where section as the shared rule judges it: the name typed and the spot picked.
+    var place: PlaceDraft { PlaceDraft(name: locationName, coordinate: coordinate) }
+    var trimmedLocationName: String { place.trimmedName }
     /// `nil` when nothing was written, so the payload omits the field.
-    var trimmedDescription: String? {
-        let trimmed = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
-    }
+    var trimmedDescription: String? { description.nonBlankTrimmed }
     var isTeam: Bool { teamSize > 1 }
     var resolvedAllowsDraws: Bool { allowsDraws ?? type.allowsDrawsByDefault }
     /// A hosted tournament's visibility is its group's; the picker's choice applies to a standalone one.
     var effectiveVisibility: GroupVisibility { group?.visibility ?? visibility }
+
+    /// A format change pulls the entries back under its cap; nothing is raised. Only a create changes the format, and
+    /// the creation floor lies under every cap, so the format's own range is the one that applies.
+    mutating func select(format: TournamentFormat) {
+        self.format = format
+        maxEntries = min(maxEntries, format.entriesRange.upperBound)
+    }
 
     /// The earliest start the form accepts, relative to `now`.
     static func earliestStart(now: Date, rules: Rules = .creation) -> Date {
@@ -115,26 +122,24 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
 
     /// Everything that keeps the draft from being sent, in form order; empty means it can go.
     func issues(now: Date, rules: Rules = .creation) -> [Issue] {
-        tournamentIssues(rules: rules) + scheduleIssues(now: now, rules: rules) + placeIssues() + detailIssues()
+        nameIssues() + placeIssues() + scheduleIssues(now: now, rules: rules) + entriesIssues(rules: rules) + detailIssues()
     }
 
     func isValid(now: Date, rules: Rules = .creation) -> Bool {
         issues(now: now, rules: rules).isEmpty
     }
 
-    /// The Tournament section: name, team size, entries.
-    private func tournamentIssues(rules: Rules) -> [Issue] {
-        var issues: [Issue] = []
-        let limits = AppConfig.Tournaments.self
-        if trimmedName.wireLength < limits.nameLength.lowerBound { issues.append(.nameTooShort) }
-        if trimmedName.wireLength > limits.nameLength.upperBound { issues.append(.nameTooLong) }
-        if !limits.teamSizeRange.contains(teamSize) { issues.append(.teamSizeOutOfRange) }
-        if !format.entriesRange.contains(maxEntries) {
-            issues.append(.maxEntriesOutOfRange)
-        } else if maxEntries < rules.minimumEntries {
-            issues.append(.maxEntriesBelowEntries)
-        }
-        return issues
+    /// The Tournament section: the name.
+    private func nameIssues() -> [Issue] {
+        let limits = AppConfig.Tournaments.nameLength
+        if trimmedName.wireLength < limits.lowerBound { return [.nameTooShort] }
+        if trimmedName.wireLength > limits.upperBound { return [.nameTooLong] }
+        return []
+    }
+
+    /// Where: the place name and the spot.
+    private func placeIssues() -> [Issue] {
+        place.issues(maxLength: AppConfig.Events.Creation.locationNameMaxLength).map(Issue.init)
     }
 
     /// When: the start and the deadline before it.
@@ -146,16 +151,19 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
         return issues
     }
 
-    /// Where: the place name and the spot.
-    private func placeIssues() -> [Issue] {
+    /// Entries: the team size and the cap.
+    private func entriesIssues(rules: Rules) -> [Issue] {
         var issues: [Issue] = []
-        let maxLength = AppConfig.Events.Creation.locationNameMaxLength
-        if trimmedLocationName.isEmpty { issues.append(.locationNameMissing) }
-        if trimmedLocationName.wireLength > maxLength { issues.append(.locationNameTooLong) }
-        if coordinate == nil { issues.append(.coordinateMissing) }
+        if !AppConfig.Tournaments.teamSizeRange.contains(teamSize) { issues.append(.teamSizeOutOfRange) }
+        if !format.entriesRange.contains(maxEntries) {
+            issues.append(.maxEntriesOutOfRange)
+        } else if maxEntries < rules.minimumEntries {
+            issues.append(.maxEntriesBelowEntries)
+        }
         return issues
     }
 
+    /// Details: the description.
     private func detailIssues() -> [Issue] {
         trimmedDescription.wireLength > AppConfig.Tournaments.descriptionMaxLength ? [.descriptionTooLong] : []
     }
@@ -174,11 +182,22 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
                    allowsDraws: resolvedAllowsDraws,
                    startsAt: startsAt,
                    registrationClosesAt: registrationClosesAt,
-                   location: EventLocation(name: trimmedLocationName, coordinate: coordinate),
+                   location: place.location(at: coordinate),
                    organizerUserId: organizerUserId,
                    organizerName: organizerName,
                    group: group,
                    createdAt: now)
+    }
+}
+
+nonisolated extension TournamentDraft.Issue {
+    /// The shared place issue under the name this form's Where section reports it by.
+    fileprivate init(_ place: PlaceDraft.Issue) {
+        switch place {
+        case .nameMissing: self = .locationNameMissing
+        case .nameTooLong: self = .locationNameTooLong
+        case .coordinateMissing: self = .coordinateMissing
+        }
     }
 }
 

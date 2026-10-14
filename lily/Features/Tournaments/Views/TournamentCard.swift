@@ -9,26 +9,12 @@ struct TournamentCard: View {
     var body: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                header
+                CardHeader(startsAt: tournament.startsAt) { badgeCapped in chips(badgeCapped: badgeCapped) }
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                     Text(tournament.name).font(LilyTheme.Fonts.cardTitle)
                     PlaceLine(name: tournament.locationName, distance: distance)
                 }
                 EntriesBar(tournament: tournament)
-            }
-        }
-    }
-
-    private var header: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.sm) {
-                chips(badgeCapped: true)
-                Spacer()
-                relativeTime.multilineTextAlignment(.trailing)
-            }
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-                FlowLayout(spacing: DesignTokens.Spacing.sm, rowSpacing: DesignTokens.Spacing.sm) { chips(badgeCapped: false) }
-                relativeTime
             }
         }
     }
@@ -39,12 +25,6 @@ struct TournamentCard: View {
         if let group = tournament.group {
             GroupBadge(ref: group, capsWidth: badgeCapped)
         }
-    }
-
-    private var relativeTime: some View {
-        Text(tournament.startsAt, format: .relative(presentation: .named))
-            .font(LilyTheme.Fonts.caption)
-            .foregroundStyle(.secondary)
     }
 }
 

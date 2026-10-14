@@ -19,7 +19,9 @@ struct RemoteFeedbackRepositoryTests {
         #expect(request.body as? FeedbackPayload == payload)
     }
 
-    @Test func failuresWithoutACodeBecomeFeedbackFailedAndTheSharedOnesKeepTheirs() async {
+    /// A failure with no case of its own takes the route's fallback; the shared mapping is proved once, in
+    /// `SendFailingWithTests`.
+    @Test func failuresWithoutACodeBecomeFeedbackFailed() async {
         let payload = FeedbackDraft(message: "Hi").payload(in: .fixture)
 
         client.error = APIError.http(status: 500, body: nil, retryAfter: nil)
@@ -27,14 +29,5 @@ struct RemoteFeedbackRepositoryTests {
 
         client.error = APIError.http(status: 400, body: APIErrorBody(code: "VALIDATION_FAILED", message: "m"), retryAfter: nil)
         await #expect(throws: AppError.feedbackFailed) { try await repository.send(payload) }
-
-        client.error = APIError.http(status: 401, body: nil, retryAfter: nil)
-        await #expect(throws: AppError.sessionExpired) { try await repository.send(payload) }
-
-        client.error = APIError.http(status: 429, body: APIErrorBody(code: "RATE_LIMITED", message: "m"), retryAfter: 9)
-        await #expect(throws: AppError.rateLimited(retryAfter: 9)) { try await repository.send(payload) }
-
-        client.error = URLError(.notConnectedToInternet)
-        await #expect(throws: AppError.network) { try await repository.send(payload) }
     }
 }

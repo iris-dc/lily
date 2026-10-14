@@ -33,40 +33,63 @@ struct PushModelsTests {
         #expect(!registration.isCurrent(token: "t", userID: "u", locale: "ru", now: now, within: 3_600))
     }
 
+    /// `PushCoordinator` keeps the registration in `UserDefaults` through a plain `JSONEncoder`/`JSONDecoder`, whose
+    /// default writes a `Date` as seconds since the reference date; a row written before the app spoke more than one
+    /// language is that shape without a `locale`.
     @Test func aRegistrationStoredBeforeTheAppSpokeLanguagesReadsWithoutOneAndIsNotCurrent() throws {
-        let stored = try JSONDecoder.apiDecoder.decode(LastDeviceRegistration.self, from: Data("""
-        {"token":"t","userID":"u","registeredAt":"2026-10-02T10:00:00Z"}
+        let stored = try JSONDecoder().decode(LastDeviceRegistration.self, from: Data("""
+        {"token":"t","userID":"u","registeredAt":780000000}
         """.utf8))
         #expect(stored.locale == nil)
+        #expect(stored.registeredAt == Date(timeIntervalSinceReferenceDate: 780_000_000))
         #expect(!stored.isCurrent(token: "t", userID: "u", locale: "en", now: stored.registeredAt, within: 3_600))
     }
 
-    @Test func theCurrentEnvironmentFollowsTheBuildAndTheWireNamesAreLowerCase() throws {
+    @Test func aStoredRegistrationRoundTripsThroughTheCoordinatorsCoding() throws {
+        let registration = LastDeviceRegistration(token: "t",
+                                                  userID: "u",
+                                                  locale: "en",
+                                                  registeredAt: Date(timeIntervalSinceReferenceDate: 780_000_000))
+        let data = try JSONEncoder().encode(registration)
+        let json = try #require(String(data: data, encoding: .utf8))
+        #expect(json.contains("\"registeredAt\":780000000"))
+        #expect(try JSONDecoder().decode(LastDeviceRegistration.self, from: data) == registration)
+    }
+
+    @Test func theCurrentEnvironmentIsTheSandboxInADebugBuild() {
         #if DEBUG
         #expect(PushEnvironment.current == .sandbox)
-        #else
-        #expect(PushEnvironment.current == .production)
         #endif
+    }
+
+    @Test func thePayloadWritesLowerCaseWireNamesAndTheLocale() throws {
         let payload = DeviceRegistrationPayload(token: "ab",
                                                 platform: "ios",
                                                 environment: .sandbox,
                                                 appVersion: "1.0 (42)",
                                                 locale: "ru")
-        let json = try #require(String(data: JSONEncoder().encode(payload), encoding: .utf8))
-        #expect(json.contains("\"environment\":\"sandbox\"") && json.contains("\"platform\":\"ios\""))
+        let json = try #require(String(data: APIJSONCoding.makeEncoder().encode(payload), encoding: .utf8))
+        #expect(json.contains("\"token\":\"ab\""))
+        #expect(json.contains("\"platform\":\"ios\""))
+        #expect(json.contains("\"environment\":\"sandbox\""))
+        #expect(json.contains("\"appVersion\":\"1.0 (42)\""))
         #expect(json.contains("\"locale\":\"ru\""))
-        let registration = try JSONDecoder.apiDecoder.decode(DeviceRegistration.self, from: Data("""
+    }
+
+    /// The API client reads the backend's ISO-8601 instants, with or without fractional seconds.
+    @Test func aRegistrationDecodesFromTheBackendsShape() throws {
+        let tenOnTheSecondOfOctober2026 = Date(timeIntervalSince1970: 1_790_935_200)
+        let decoder = APIJSONCoding.makeDecoder()
+        let registration = try decoder.decode(DeviceRegistration.self, from: Data("""
         {"token":"ab","environment":"production","registeredAt":"2026-10-02T10:00:00Z"}
         """.utf8))
-        #expect(registration.environment == .production && registration.token == "ab")
-    }
-}
+        #expect(registration.environment == .production)
+        #expect(registration.token == "ab")
+        #expect(registration.registeredAt == tenOnTheSecondOfOctober2026)
 
-private extension JSONDecoder {
-    /// The backend's instant format, as `APIJSONCoding` reads it.
-    static var apiDecoder: JSONDecoder {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
+        let fractional = try decoder.decode(DeviceRegistration.self, from: Data("""
+        {"token":"ab","environment":"production","registeredAt":"2026-10-02T10:00:00.250Z"}
+        """.utf8))
+        #expect(fractional.registeredAt == tenOnTheSecondOfOctober2026.addingTimeInterval(0.25))
     }
 }

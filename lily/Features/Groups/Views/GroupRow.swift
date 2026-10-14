@@ -46,9 +46,7 @@ struct GroupRowContent: View {
     var avatarSymbol: String?
 
     var body: some View {
-        ConversationRow(caption: caption, hasUnread: hasUnread) {
-            avatar
-        } title: {
+        ConversationRow(caption: caption, hasUnread: hasUnread, avatar: avatar) {
             title
         }
     }
@@ -60,8 +58,7 @@ struct GroupRowContent: View {
             AvatarCircle(initials: name.initials,
                          systemImage: avatarSymbol,
                          size: DesignTokens.Layout.avatarMedium,
-                         tint: .lilySecondary,
-                         tintOpacity: DesignTokens.Opacity.secondaryGlassTint)
+                         tint: .secondary)
         }
     }
 

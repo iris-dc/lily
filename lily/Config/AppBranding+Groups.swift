@@ -13,7 +13,7 @@ nonisolated extension AppBranding {
         static var privateFooter: String { localized("Only people who are invited can join") }
         static var openChat: String { localized("Open chat") }
         static var invite: String { localized("Invite") }
-        static var createGame: String { localized("Create game") }
+        static var createGame: String { AppBranding.Events.Create.submit }
         static var joinGroup: String { localized("Join group") }
         static var groupFull: String { localized("Group is full") }
         static var inviteOnly: String { localized("Invite only") }
@@ -21,7 +21,7 @@ nonisolated extension AppBranding {
         static var discoverEmptyTitle: String { localized("Nothing found") }
         static var discoverEmptyMessage: String { localized("Try another name or event type.") }
         static var eventsEmptyTitle: String { localized("No games yet") }
-        static var eventsSection: String { localized("Events") }
+        static var eventsSection: String { AppBranding.Events.eventsSection }
         static var membersSection: String { localized("Members") }
         static var bannedSection: String { localized("Banned") }
         static var youSuffix: String { localized("You") }
@@ -40,22 +40,18 @@ nonisolated extension AppBranding {
         static var adminRole: String { localized("Admin") }
         static var memberRole: String { localized("Member") }
         /// Toolbar menu and member actions, with the confirmations the destructive ones ask for.
-        static var edit: String { localized("Edit") }
+        static var edit: String { AppBranding.Events.Edit.action }
         static var leave: String { localized("Leave group") }
         static var delete: String { localized("Delete group") }
         static var reportGroup: String { localized("Report group") }
         static var makeAdmin: String { localized("Make admin") }
         static var removeAdmin: String { localized("Remove admin") }
-        static var removeMember: String { localized("Remove") }
+        static var removeMember: String { AppBranding.remove }
         static var banMember: String { localized("Ban") }
         static var unbanMember: String { localized("Unban") }
 
         static func members(_ count: Int) -> String {
             localized("\(count) members")
-        }
-
-        static func joinConfirmation(groupName: String) -> String {
-            localized("Join \(groupName)?")
         }
 
         static func hostedIn(groupName: String) -> String {
@@ -102,20 +98,19 @@ nonisolated extension AppBranding {
             static var title: String { localized("New group") }
             static var editTitle: String { localized("Edit group") }
             static var submit: String { localized("Create group") }
-            static var save: String { localized("Save") }
-            static var cancel: String { localized("Cancel") }
-            static var groupSection: String { localized("Group") }
+            static var save: String { AppBranding.Events.Edit.save }
+            static var groupSection: String { AppBranding.Events.Create.group }
             static var permissionsSection: String { localized("Members may") }
             static var membersCanCreateEvents: String { localized("Create games") }
-            static var membersCanInvite: String { localized("Invite people") }
-            static var anyType: String { localized("Any type") }
+            static var membersCanInvite: String { Groups.Invite.title }
+            static var anyType: String { AppBranding.Events.Filter.anyType }
             static var nameField: String { localized("Name") }
             static var namePlaceholder: String { localized("Kreuzberg Kickers") }
             static var descriptionPlaceholder: String { localized("What the group is about") }
-            static var eventType: String { localized("Event type") }
+            static var eventType: String { AppBranding.Events.Filter.eventType }
             static var visibility: String { localized("Who can join") }
             /// The mock repository has no profile to read the owner's name from; the backend stamps the real one.
-            static var mockOwnerName: String { localized("You") }
+            static var mockOwnerName: String { Groups.youSuffix }
             /// Under the place fields while nothing is wrong with them: why a public group names one, and that a
             /// private one need not.
             static var placePublicFooter: String { localized("People nearby find the group by where it plays.") }
@@ -138,10 +133,10 @@ nonisolated extension AppBranding {
         /// The sheet that invites people the caller shares a group or a game with; the invitee answers from their inbox.
         enum Invite {
             static var title: String { localized("Invite people") }
-            static var done: String { localized("Done") }
+            static var done: String { AppBranding.done }
             static var searchPrompt: String { localized("Search people") }
             /// The row's button before and after the invite went out.
-            static var send: String { localized("Invite") }
+            static var send: String { Groups.invite }
             static var sent: String { localized("Invited") }
             static var emptyTitle: String { localized("Nobody to invite yet") }
             static var emptyMessage: String { localized("People you share a group or a game with show up here.") }

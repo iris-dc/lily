@@ -23,7 +23,7 @@ final class InvitePeopleViewModel {
     private let repository: any InviteRepository
     private let reporter: GroupErrorReporter
     private let logger: any Logging
-    private let tryAgainDelay: Duration
+    private let gate: WriteGate
 
     init(target: InviteTarget,
          repository: any InviteRepository,
@@ -34,7 +34,10 @@ final class InvitePeopleViewModel {
         self.repository = repository
         self.reporter = reporter
         self.logger = logger
-        self.tryAgainDelay = tryAgainDelay
+        gate = WriteGate(category: target.logCategory,
+                         logger: logger,
+                         tryAgainDelay: tryAgainDelay,
+                         report: { reporter.report($0) })
     }
 
     /// The candidates whose name contains the query (case and diacritics aside), every one while the query is blank.
@@ -75,31 +78,22 @@ final class InvitePeopleViewModel {
         }
     }
 
-    /// One invite per row at a time; `TRY_AGAIN` is repeated once; a row already invited sends nothing more.
+    /// One invite per row at a time; the gate repeats a `TRY_AGAIN` once and sends a failure to the popup; a row
+    /// already invited sends nothing more.
     func invite(_ candidate: InviteCandidate) async {
         guard let current = candidates.first(where: { $0.userId == candidate.userId }),
               !current.isInvited, !sendingUserIDs.contains(current.userId) else { return }
         sendingUserIDs.insert(current.userId)
         defer { sendingUserIDs.remove(current.userId) }
-        do {
-            _ = try await LostRace.attemptTwice(delay: tryAgainDelay,
-                                                onRetry: { logRetry(current) },
-                                                { try await repository.invite(groupID: target.id, userID: current.userId) })
+        await gate.run("Invite to \(current.userId) for \(target.logName)") {
+            _ = try await repository.invite(groupID: target.id, userID: current.userId)
             markInvited(current.userId)
             logger.info(target.logCategory, "Invite sent to \(current.userId) for \(target.logName)")
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            logger.error(target.logCategory, "Invite to \(current.userId) for \(target.logName) failed: \(error)")
-            reporter.report(error)
         }
     }
 
     private func markInvited(_ userID: String) {
         guard let index = candidates.firstIndex(where: { $0.userId == userID }) else { return }
         candidates[index] = candidates[index].markingInvited()
-    }
-
-    private func logRetry(_ candidate: InviteCandidate) {
-        logger.info(target.logCategory, "Invite to \(candidate.userId) for \(target.logName) lost a race; retrying once")
     }
 }

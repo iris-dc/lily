@@ -56,7 +56,7 @@ struct MockInboxRepositoryTests {
         #expect(try await groups.group(id: climbing).isMember, "the group mock admitted the caller")
         #expect(try await inbox.accept(itemID: inviteID) == acceptance, "a repeat changes nothing")
         #expect(try await inbox.page(before: nil, limit: 50).items[3].invite?.status == .accepted)
-        #expect(logger.messages(in: .inbox, at: .info).contains("Mock invite \(inviteID) accepted into group \(climbing)"))
+        #expect(logger.hasLine(in: .inbox, at: .info, mentioning: inviteID, "accepted", climbing))
         await #expect(throws: AppError.inviteNotPending) { try await inbox.decline(itemID: inviteID) }
     }
 
@@ -86,8 +86,7 @@ struct MockInboxRepositoryTests {
         #expect(tournament.id == padelOpen && tournament.hasEntered && tournament.entryCount == 5)
         #expect(try await groups.group(id: padelOpen).isMember, "the room admitted the caller")
         #expect(try await inbox.accept(itemID: tournamentInviteID) == acceptance, "a repeat changes nothing")
-        #expect(logger.messages(in: .inbox, at: .info)
-            .contains("Mock invite \(tournamentInviteID) accepted into tournament \(padelOpen)"))
+        #expect(logger.hasLine(in: .inbox, at: .info, mentioning: tournamentInviteID, "accepted", padelOpen))
         await #expect(throws: AppError.inviteNotPending) { try await inbox.decline(itemID: tournamentInviteID) }
     }
 

@@ -15,7 +15,7 @@ struct EmailSignInViewModelTests {
     @Test func copyComesFromBrandingSoSheetAndFormCannotDrift() {
         #expect(EmailAuthMode.signIn.title == AppBranding.signInSheetTitle)
         #expect(EmailAuthMode.signIn.submitLabel == AppBranding.signInAction)
-        #expect(EmailAuthMode.signUp.toggleLabel == "\(AppBranding.signInPrompt) \(AppBranding.signInAction)")
+        #expect(EmailAuthMode.signUp.toggleLabel == AppBranding.signInPrompt)
         #expect(EmailAuthMode.confirm.title == AppBranding.confirmEmailTitle)
         #expect(EmailAuthMode.confirm.submitLabel == AppBranding.confirmAction)
         #expect(EmailAuthMode.confirm.toggleLabel == AppBranding.backToSignInAction)

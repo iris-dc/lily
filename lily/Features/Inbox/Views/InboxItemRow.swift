@@ -3,20 +3,33 @@ import SwiftUI
 /// One item of the inbox as a system card on the surface colour (a plain fill, never glass: the list draws many at
 /// once): an invite into a group or a tournament with Accept / Decline while it is open and its status once it is not,
 /// or a reminder that opens its game or its match's tournament. The parts are `InboxCardParts.swift`, the tournament
-/// cards `InboxItemRow+Tournaments.swift`. A kind this build cannot draw renders nothing.
+/// cards `InboxItemRow+Tournaments.swift`. The body switches on the kind, so a case added to `InboxItemKind` fails to
+/// compile here until it has a card; a kind this build cannot draw renders nothing, as does a known kind whose payload
+/// is missing.
 struct InboxItemRow: View {
     let item: InboxItem
     let viewModel: InboxViewModel
 
     var body: some View {
-        if let invite = item.invite {
-            InviteCard(item: item, invite: invite, viewModel: viewModel)
-        } else if let reminder = item.reminder {
-            ReminderCard(item: item, reminder: reminder, viewModel: viewModel)
-        } else if let invite = item.tournamentInvite {
-            TournamentInviteCard(item: item, invite: invite, viewModel: viewModel)
-        } else if let reminder = item.matchReminder {
-            MatchReminderCard(item: item, reminder: reminder, viewModel: viewModel)
+        switch item.kind {
+        case .groupInvite:
+            if let invite = item.invite {
+                InviteCard(item: item, invite: invite, viewModel: viewModel)
+            }
+        case .eventReminder:
+            if let reminder = item.reminder {
+                ReminderCard(item: item, reminder: reminder, viewModel: viewModel)
+            }
+        case .tournamentInvite:
+            if let invite = item.tournamentInvite {
+                TournamentInviteCard(item: item, invite: invite, viewModel: viewModel)
+            }
+        case .matchReminder:
+            if let reminder = item.matchReminder {
+                MatchReminderCard(item: item, reminder: reminder, viewModel: viewModel)
+            }
+        case .unknown:
+            EmptyView()
         }
     }
 }
@@ -34,8 +47,7 @@ private struct InviteCard: View {
                         status: invite.statusCaption(now: viewModel.now())) {
             AvatarCircle(initials: invite.groupName.initials,
                          size: DesignTokens.Layout.avatarMedium,
-                         tint: .lilySecondary,
-                         tintOpacity: DesignTokens.Opacity.secondaryGlassTint)
+                         tint: .secondary)
         } details: {
             Label(invite.groupVisibility.displayName, systemImage: invite.groupVisibility.symbolName)
         }

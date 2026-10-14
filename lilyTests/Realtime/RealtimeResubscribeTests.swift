@@ -147,6 +147,7 @@ struct RealtimeResubscribeTests {
         #expect(harness.controller.knownEpochs["g1"] == 1)
         #expect(harness.cache.room(for: "g1")?.channelEpoch == 1)
         #expect(!harness.chatLogs(.info).contains { $0.hasPrefix("Epoch changed") })
+        #expect(!harness.chatLogs(.debug).contains { $0.hasPrefix("Resubscribing to group") })
     }
 
     /// A newer `member_left` while a jitter is pending cancels that timer and arms its own; the room stays at the old

@@ -9,13 +9,12 @@ struct VideoAttachmentView: View {
     let message: ChatMessage
     let loader: AttachmentLoader
     let onTap: () -> Void
-    @State private var image: UIImage?
-    @State private var failed = false
+    @State private var picture = AttachmentImageLoad()
 
     var body: some View {
         Button(action: onTap) {
-            AttachmentTile(image: image,
-                           isLoading: image == nil && !failed,
+            AttachmentTile(image: picture.image,
+                           isLoading: picture.isLoading,
                            placeholderSymbol: DesignTokens.Symbols.videoPlaceholder)
                 .overlay { PlayBadge(size: DesignTokens.Layout.playBadgeSize) }
                 .overlay(alignment: .bottomTrailing) {
@@ -23,25 +22,15 @@ struct VideoAttachmentView: View {
                 }
         }
         .buttonStyle(.plain)
-        .task(id: attachment.id) { await load() }
+        .task(id: attachment.id) {
+            await picture.load(attachment,
+                               variant: .thumbnail,
+                               in: message,
+                               through: loader,
+                               available: attachment.thumbnailUrl != nil)
+        }
         .accessibilityLabel(AppBranding.Chat.Attachments.video)
         .accessibilityIdentifier(AccessibilityIdentifiers.messageAttachmentVideo(id: attachment.id))
-    }
-
-    /// A failed download leaves the stand-in; the loader logged why, and the clip can still be played.
-    private func load() async {
-        guard attachment.thumbnailUrl != nil else {
-            failed = true
-            return
-        }
-        do {
-            let url = try await loader.file(for: attachment, variant: .thumbnail, in: message)
-            image = await ImageFile.load(url)
-            failed = image == nil
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            failed = true
-        }
     }
 }
 

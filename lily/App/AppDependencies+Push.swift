@@ -2,7 +2,8 @@ import Foundation
 
 /// The push collaborators, built as one value so `AppDependencies` gains a single stored property: the coordinator
 /// over the registrar and device repository the data layer chose (system or mock), the game opener it shares with the
-/// inbox, and the tournament opener behind a match reminder's tap.
+/// inbox, and the tournament opener behind a match reminder's tap. Both openers push through the shell's navigation
+/// and report through the groups' error reporter.
 struct PushDependencies {
     let registrar: any PushRegistrar
     let devices: any DeviceRepository
@@ -15,16 +16,17 @@ struct PushDependencies {
          events: any EventRepository,
          tournaments: any TournamentRepository,
          identity: any IdentityProvider,
+         navigation: AppNavigation,
          groups: GroupDependencies,
          defaults: UserDefaults,
          languageCode: @escaping () -> String,
          logger: any Logging) {
         let opener = EventOpener(events: events,
-                                 navigation: groups.navigation,
+                                 navigation: navigation,
                                  reporter: groups.errorReporter,
                                  logger: logger)
         let tournamentOpener = TournamentOpener(tournaments: tournaments,
-                                                navigation: groups.navigation,
+                                                navigation: navigation,
                                                 reporter: groups.errorReporter,
                                                 logger: logger)
         self.opener = opener

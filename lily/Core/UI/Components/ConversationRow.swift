@@ -1,16 +1,18 @@
 import SwiftUI
 
-/// A row of a conversation list (a group room on the Chats tab, the inbox): a mark, a title line, a one-line caption
-/// and the unread dot, with the padding and hit shape every such row shares.
-struct ConversationRow<Title: View>: View {
+/// A row led by a medium mark (a group room on the Chats tab, the inbox, a person to invite): the mark, a title line,
+/// a one-line caption and a trailing slot (the unread dot, an Invite button), with the padding and hit shape every such
+/// row shares. The mark is the concrete `AvatarCircle` on purpose, not a generic slot: the row is defined as led by a
+/// medium avatar, and `AvatarRowDivider` offsets its divider by that size.
+struct ConversationRow<Title: View, Trailing: View>: View {
     let caption: String
-    let hasUnread: Bool
-    @ViewBuilder var avatar: () -> AvatarCircle
+    let avatar: AvatarCircle
     @ViewBuilder var title: () -> Title
+    @ViewBuilder var trailing: () -> Trailing
 
     var body: some View {
         HStack(spacing: DesignTokens.Spacing.md) {
-            avatar()
+            avatar
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                 title()
                     .font(.body.weight(.semibold))
@@ -21,12 +23,24 @@ struct ConversationRow<Title: View>: View {
                     .lineLimit(1)
             }
             Spacer(minLength: DesignTokens.Spacing.sm)
-            if hasUnread {
-                UnreadDot()
-            }
+            trailing()
         }
         .padding(.vertical, DesignTokens.Spacing.md)
         .contentShape(.rect)
+    }
+}
+
+extension ConversationRow where Trailing == UnreadDot? {
+    /// A conversation's row: the trailing slot is the unread dot while `hasUnread`.
+    init(caption: String,
+         hasUnread: Bool,
+         avatar: AvatarCircle,
+         @ViewBuilder title: @escaping () -> Title) {
+        self.init(caption: caption, avatar: avatar, title: title, trailing: {
+            if hasUnread {
+                UnreadDot()
+            }
+        })
     }
 }
 

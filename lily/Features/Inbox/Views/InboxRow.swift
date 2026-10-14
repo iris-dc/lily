@@ -10,9 +10,7 @@ struct InboxRow: View {
 
     var body: some View {
         Button(action: onOpen) {
-            ConversationRow(caption: caption, hasUnread: inbox.hasUnread) {
-                AvatarCircle(initials: "", systemImage: DesignTokens.Symbols.inbox, size: DesignTokens.Layout.avatarMedium)
-            } title: {
+            ConversationRow(caption: caption, hasUnread: inbox.hasUnread, avatar: avatar) {
                 Text(AppBranding.Inbox.title)
             }
             .selectedRowBackground(isSelected)
@@ -24,6 +22,10 @@ struct InboxRow: View {
 
     private var caption: String {
         inbox.newestVisible?.caption ?? AppBranding.Inbox.emptyCaption
+    }
+
+    private var avatar: AvatarCircle {
+        AvatarCircle(systemImage: DesignTokens.Symbols.inbox, size: DesignTokens.Layout.avatarMedium)
     }
 }
 

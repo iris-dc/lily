@@ -12,21 +12,22 @@ final class EditGroupViewModel {
 
     private let original: SportGroup
     private let repository: any GroupRepository
-    private let reporter: GroupErrorReporter
     private let logger: any Logging
     private let onChange: @MainActor (SportGroup) -> Void
+    private let gate: WriteGate
 
     init(group: SportGroup,
          repository: any GroupRepository,
          reporter: GroupErrorReporter,
          logger: any Logging,
+         tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
          onChange: @escaping @MainActor (SportGroup) -> Void) {
         self.original = group
         self.draft = GroupDraft(editing: group)
         self.repository = repository
-        self.reporter = reporter
         self.logger = logger
         self.onChange = onChange
+        gate = WriteGate(category: .groups, logger: logger, tryAgainDelay: tryAgainDelay, report: { reporter.report($0) })
     }
 
     var issues: [GroupDraft.Issue] { draft.issues }
@@ -36,26 +37,22 @@ final class EditGroupViewModel {
 
     var canSubmit: Bool { !isSubmitting && hasChanges && draft.isValid }
 
-    func issue(for candidates: GroupDraft.Issue...) -> GroupDraft.Issue? {
-        let present = issues
-        return candidates.first { present.contains($0) }
-    }
-
-    /// Saves the draft; a call while one is in flight is dropped, a dismissed sheet stays quiet, a failure goes to
-    /// the popup. Repeating an update is harmless, so there is no outcome to second-guess.
+    /// Saves the draft; a call while one is in flight is dropped. The gate repeats a `TRY_AGAIN` once, keeps a
+    /// dismissed sheet quiet and sends a failure to the popup. Repeating an update is harmless, so there is no outcome
+    /// to second-guess.
     func submit() async {
         guard canSubmit else { return }
         isSubmitting = true
         defer { isSubmitting = false }
-        do {
+        await gate.run("Update of group \(original.id)") {
             let group = try await repository.update(id: original.id, draft)
             updatedGroup = group
             onChange(group)
             logger.info(.groups, "Group \(group.id) updated")
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            logger.error(.groups, "Update failed for group \(original.id): \(error)")
-            reporter.report(error)
         }
     }
+}
+
+extension EditGroupViewModel: GroupDraftEditing {
+    var isDone: Bool { updatedGroup != nil }
 }

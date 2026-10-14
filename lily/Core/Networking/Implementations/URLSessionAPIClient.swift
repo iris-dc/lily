@@ -13,6 +13,11 @@ final class URLSessionAPIClient: APIClient {
     private let decoder = APIJSONCoding.makeDecoder()
     private let encoder = APIJSONCoding.makeEncoder()
 
+    /// `+`, `&` and `=` are percent-encoded along with everything `urlQueryAllowed` refuses. `URL.append(queryItems:)`
+    /// leaves `+` bare, which the backend's servlet layer reads as a space, so a `+` typed into Discover's search never
+    /// reached Laurel.
+    private static let queryAllowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "+&="))
+
     /// `tokenProvider` is `nil` when auth is mocked: no token exists, and none is sent.
     init(session: URLSession = URLSessionAPIClient.makeSession(),
          baseURL: URL = AppConfig.API.baseURL,
@@ -37,8 +42,10 @@ final class URLSessionAPIClient: APIClient {
         return URLSession(configuration: configuration)
     }
 
+    /// Every log line names the endpoint through `logPath` when the request has one, so a path that carries a value
+    /// the log must not hold (the device token) is logged redacted.
     func send<Response: Decodable>(_ request: APIRequest<Response>) async throws -> Response {
-        let endpoint = "\(request.method.rawValue) \(request.path)"
+        let endpoint = "\(request.method.rawValue) \(request.logPath ?? request.path)"
         logger.debug(.network, "Sending \(endpoint)")
         let (data, response) = try await perform(try await makeURLRequest(request), endpoint: endpoint)
         guard let http = response as? HTTPURLResponse else {
@@ -53,11 +60,7 @@ final class URLSessionAPIClient: APIClient {
 
     /// The token is read per request, only while the app's session has a user, and never logged.
     private func makeURLRequest<Response>(_ request: APIRequest<Response>) async throws -> URLRequest {
-        var url = baseURL.appending(path: request.path)
-        if !request.queryItems.isEmpty {
-            url.append(queryItems: request.queryItems)
-        }
-        var urlRequest = URLRequest(url: url)
+        var urlRequest = URLRequest(url: Self.url(baseURL, path: request.path, query: request.queryItems))
         urlRequest.httpMethod = request.method.rawValue
         urlRequest.setValue(AppConfig.API.Headers.json, forHTTPHeaderField: AppConfig.API.Headers.accept)
         urlRequest.setValue(appVersion, forHTTPHeaderField: AppConfig.API.Headers.appVersion)
@@ -77,6 +80,17 @@ final class URLSessionAPIClient: APIClient {
         return urlRequest
     }
 
+    private static func url(_ base: URL, path: String, query: [URLQueryItem]) -> URL {
+        let url = base.appending(path: path)
+        guard !query.isEmpty, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
+        components.percentEncodedQuery = query.map { item in
+            let name = item.name.addingPercentEncoding(withAllowedCharacters: queryAllowed) ?? item.name
+            guard let value = item.value else { return name }
+            return "\(name)=\(value.addingPercentEncoding(withAllowedCharacters: queryAllowed) ?? value)"
+        }.joined(separator: "&")
+        return components.url ?? url
+    }
+
     /// Transport failures are logged and rethrown as they are, so callers can still recognise a cancellation.
     private func perform(_ urlRequest: URLRequest, endpoint: String) async throws -> (Data, URLResponse) {
         do {
@@ -92,13 +106,24 @@ final class URLSessionAPIClient: APIClient {
     }
 
     /// Reads the backend's `{code, message}` when there is one, and `Retry-After` in seconds (the only form the
-    /// backend sends; a date is ignored); the log carries the code, never the body itself.
+    /// backend sends; a date is ignored); the log carries the code, never the body itself. A refusal the product
+    /// expects (a known backend code on a 4xx, a rejected token, a throttle) is a warning, since the view model logs
+    /// its own line; a fault (a 5xx, an unreadable body, a code the app does not know such as `VALIDATION_FAILED`,
+    /// which signals a client-validation drift) is an error.
     private func failure(_ response: HTTPURLResponse, data: Data, endpoint: String) -> APIError {
+        let status = response.statusCode
         let body = try? decoder.decode(APIErrorBody.self, from: data)
         let code = body.map { " (\($0.code))" } ?? ""
-        logger.error(.network, "\(endpoint) failed with status \(response.statusCode)\(code)")
+        let level: LogLevel = Self.isRefusal(status: status, body: body) ? .warning : .error
+        logger.log(level, .network, "\(endpoint) failed with status \(status)\(code)")
         let retryAfter = response.value(forHTTPHeaderField: AppConfig.API.Headers.retryAfter).flatMap(TimeInterval.init)
-        return .http(status: response.statusCode, body: body, retryAfter: retryAfter)
+        return .http(status: status, body: body, retryAfter: retryAfter)
+    }
+
+    private static func isRefusal(status: Int, body: APIErrorBody?) -> Bool {
+        guard AppConfig.API.clientErrorStatuses.contains(status) else { return false }
+        let isKnownCode = body.map { BackendErrorCode(rawValue: $0.code) != nil } ?? false
+        return isKnownCode || status == AppConfig.API.unauthorizedStatus || status == AppConfig.API.rateLimitedStatus
     }
 
     /// An empty body (`204`) is an answer for the types that allow one (`EmptyDecodable`); every other type needs JSON.

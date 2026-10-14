@@ -1,4 +1,3 @@
-import Foundation
 import SwiftUI
 import Testing
 @testable import lily
@@ -33,8 +32,9 @@ struct TournamentOpenerTests {
 
         #expect(!opened && navigation.chatPath.isEmpty)
         #expect(errorCenter.current?.error == .tournamentNotFound)
-        #expect(logger.messages(in: .tournaments, at: .warning)
-                == ["Tournament t1 behind a notification is unavailable: tournamentNotFound"])
+        let reason = "\(AppError.tournamentNotFound)"
+        #expect(logger.count(in: .tournaments, at: .warning) == 1)
+        #expect(logger.hasLine(in: .tournaments, at: .warning, mentioning: "t1", "a notification", reason))
     }
 
     @Test func aCancelledOpenReportsNothing() async {

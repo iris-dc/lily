@@ -58,6 +58,38 @@ struct InteractionTests {
         #expect(!text.contains("12.5"))
     }
 
+    /// Laurel's `FilterSummaryDto.MAX_TYPES`: a change on one side must be repeated on the other.
+    @Test func theTypeCapIsTheBackendsLiteral() {
+        #expect(AppConfig.Statistics.maxFilterTypes == 32)
+    }
+
+    /// Selecting every type this build offers must never earn the 400 that drops the whole batch.
+    @Test func aFilterWithEveryTypeStillFitsTheBackendsCap() {
+        #expect(EventType.known.count <= AppConfig.Statistics.maxFilterTypes)
+        var filter = EventFilter()
+        filter.types = Set(EventType.known)
+
+        let summary = FilterSummary(filter)
+
+        #expect(summary.types == EventType.known.map(\.wireName).sorted(), "every name, nothing dropped, in order")
+        #expect(summary.types.count <= AppConfig.Statistics.maxFilterTypes)
+    }
+
+    /// Only unknown names can be that many; the summary keeps the first names in order instead of failing the batch.
+    @Test func aFilterWiderThanTheCapSendsTheFirstNamesInOrder() throws {
+        let names = (0..<(AppConfig.Statistics.maxFilterTypes + 3)).map { String(format: "zz_%02d", $0) }
+        var filter = EventFilter()
+        filter.types = Set(names.map { EventType.unknown($0) })
+
+        let summary = FilterSummary(filter)
+
+        #expect(summary.types == Array(names.prefix(AppConfig.Statistics.maxFilterTypes)))
+        #expect(summary.types.count == AppConfig.Statistics.maxFilterTypes)
+        let encoded = try json(summary)
+        let encodedTypes = try #require(encoded["types"] as? [String])
+        #expect(encodedTypes.count == AppConfig.Statistics.maxFilterTypes)
+    }
+
     @Test func absentCriteriaAreLeftOutRatherThanNull() throws {
         let encoded = try json(Interaction.filterApplied(.everything, at: Self.date))
 

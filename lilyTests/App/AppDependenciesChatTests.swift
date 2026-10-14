@@ -67,34 +67,46 @@ struct AppDependenciesChatTests {
         #expect(dependencies.unreadCenter === dependencies.groups.unreadCenter)
         #expect(dependencies.realtime.cache === dependencies.chatHistory)
         #expect(dependencies.realtime.store === dependencies.myGroups)
+        #expect(dependencies.outbox === dependencies.groups.outbox)
+        let viewModel = dependencies.makeChatViewModel(for: SportGroup.fixture(id: "g"))
+        #expect(viewModel.outbox === dependencies.outbox)
+        #expect(viewModel.blocks === dependencies.groups.blocks)
+    }
+
+    /// One store feeds every room's rows and the shell's sync; sign-out empties it with the rest of the account.
+    @Test func theBlockListIsOneStoreThatSignOutClears() async throws {
+        let dependencies = makeMockDependencies()
+        #expect(dependencies.blocks === dependencies.groups.blocks)
+        #expect(dependencies.groups.sessionObservers.contains { $0 === dependencies.groups.blocks })
+        await dependencies.sessionController.signIn(with: .apple)
+        try await dependencies.blocks.block(userID: "u-9")
+        #expect(dependencies.blocks.blockedUserIDs == ["u-9"])
+
+        await dependencies.sessionController.signOut()
+
+        #expect(dependencies.blocks.blockedUserIDs.isEmpty)
     }
 
     @Test func chatStateClearsOnSignOut() async {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeTestDefaults())
-        await dependencies.sessionController.signIn(with: .apple)
+        let dependencies = await makeSignedInMockDependencies()
         await dependencies.realtime.setDesired(active: true, user: dependencies.sessionController.state.user)
         dependencies.chatHistory.store(ChatRoomState(groupID: "g", channelEpoch: 1), for: "g")
         dependencies.unreadCenter.markUnread(groupID: "g", messageID: "m1")
+        dependencies.outbox.replace([PendingMessage(draft: MessageDraft(), sentAt: .now)], in: "g")
         #expect(dependencies.realtime.state == .connected)
 
         await dependencies.sessionController.signOut()
         await settle(until: { dependencies.realtime.state == .disconnected })
 
         #expect(dependencies.chatHistory.cachedGroupIDs.isEmpty && dependencies.unreadCenter.unreadGroupIDs.isEmpty)
+        #expect(dependencies.outbox.messages(in: "g").isEmpty, "the unsent bubbles go with the account")
         #expect(dependencies.realtime.subscribedRooms.isEmpty)
     }
 
     /// The mock run end to end: Mine feeds the rooms and the unread set, a chat opens on fixtures and reads its room
     /// for good (the next Mine load shows it read), a send echoes back.
     @Test func theMockChatWorksThroughTheFactories() async throws {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeTestDefaults())
-        await dependencies.sessionController.signIn(with: .apple)
+        let dependencies = await makeSignedInMockDependencies()
         await dependencies.realtime.setDesired(active: true, user: dependencies.sessionController.state.user)
         dependencies.myGroupsDidLoad()
         dependencies.myGroupsDidChange()

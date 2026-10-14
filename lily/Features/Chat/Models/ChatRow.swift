@@ -17,6 +17,16 @@ nonisolated enum ChatRow: Identifiable, Hashable, Sendable {
         case .pending(let pending): pending.id
         }
     }
+
+    /// Whether the row is the caller's: their unsent messages and their own bubbles follow to the bottom whatever the
+    /// reader does.
+    var isOwn: Bool {
+        switch self {
+        case .pending: true
+        case .message(let row): row.isOwn
+        case .day, .system: false
+        }
+    }
 }
 
 /// A member's message with what its bubble needs from its neighbours.

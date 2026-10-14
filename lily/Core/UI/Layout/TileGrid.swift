@@ -25,11 +25,3 @@ struct TileGrid<Data: RandomAccessCollection, Content: View>: View where Data.El
         Array(data.prefix(DesignTokens.Layout.regularTileCount))
     }
 }
-
-extension View {
-    /// A tile's frame: the carousel's fixed width (so its rows line up), or the whole cell in a `TileGrid`, at one height.
-    func tileFrame(fixedWidth: CGFloat, height: CGFloat, fillsWidth: Bool) -> some View {
-        frame(width: fillsWidth ? nil : fixedWidth, height: height)
-            .frame(maxWidth: fillsWidth ? .infinity : nil)
-    }
-}

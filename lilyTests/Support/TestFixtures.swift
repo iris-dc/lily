@@ -63,6 +63,7 @@ extension EventDraft {
                         currencyCode: String = testCurrencyCode) -> EventDraft {
         var draft = EventDraft(startsAt: now.addingTimeInterval(AppConfig.Events.Creation.defaultStartOffset),
                                currencyCode: currencyCode,
+                               locale: testLocale,
                                clientId: clientId)
         draft.title = "Thursday five-a-side"
         draft.locationName = "Test Park"

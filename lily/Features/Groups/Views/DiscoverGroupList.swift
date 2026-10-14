@@ -3,12 +3,12 @@ import SwiftUI
 /// Discover's cards with cursor paging, and the empty state around them. Scrolling and pull-to-refresh live here;
 /// the screen owns the search field and the toolbar.
 struct DiscoverGroupList: View {
-    let viewModel: GroupListViewModel
+    let viewModel: DiscoverGroupsViewModel
 
     var body: some View {
         if viewModel.isInitialLoad {
             ProgressView()
-        } else if viewModel.isDiscoverEmpty {
+        } else if viewModel.nothingMatched {
             refreshableScroll { nothingFoundState.readableColumn().containerRelativeFrame(.vertical) }
         } else {
             refreshableScroll { cards }
@@ -47,6 +47,7 @@ struct DiscoverGroupList: View {
     }
 
     private func refreshableScroll(@ViewBuilder _ content: @escaping () -> some View) -> some View {
-        RefreshableScroll(action: viewModel.refresh, content: content)
+        ScrollView { content() }
+            .refreshable { await viewModel.refresh() }
     }
 }

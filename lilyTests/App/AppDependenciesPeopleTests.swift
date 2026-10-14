@@ -17,11 +17,7 @@ struct AppDependenciesPeopleTests {
     /// The user mock reads the group mock's rosters, so a profile names the people the other mocks name and a
     /// conversation started here is in Mine on the next load.
     @Test func theMockProfilesFollowTheMockRostersAndConversationsReachMine() async throws {
-        let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,
-                                                                   AppConfig.LaunchArguments.mockAuth,
-                                                                   AppConfig.LaunchArguments.mockEvents],
-                                                       defaults: makeTestDefaults())
-        await dependencies.sessionController.signIn(with: .apple)
+        let dependencies = await makeSignedInMockDependencies()
         let marta = UserProfileDestination(userId: MockGroupFixtures.memberID(for: "Marta"), displayName: "Marta")
         let viewModel = dependencies.makeUserProfileViewModel(for: marta)
 

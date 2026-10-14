@@ -81,7 +81,7 @@ extension TournamentDetailViewModel {
             let updated = try await repository.schedule(id: destination.id, matchID: match.id, schedule)
             guard let current = detail else { return }
             accept(current.replacing(match: updated))
-            logMatch(match.id, schedule.scheduledAt == nil && schedule.location == nil ? "schedule cleared" : "scheduled")
+            logMatch(match.id, schedule.isEmpty ? "schedule cleared" : "scheduled")
         }
     }
 

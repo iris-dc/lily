@@ -115,7 +115,7 @@ struct InboxOpenCard<Details: View>: View {
     var body: some View {
         Button(action: action) {
             HStack(alignment: .top, spacing: DesignTokens.Spacing.md) {
-                AvatarCircle(initials: "", systemImage: symbol, size: DesignTokens.Layout.avatarMedium)
+                AvatarCircle(systemImage: symbol, size: DesignTokens.Layout.avatarMedium)
                 details()
                     .multilineTextAlignment(.leading)
                 Spacer(minLength: DesignTokens.Spacing.sm)

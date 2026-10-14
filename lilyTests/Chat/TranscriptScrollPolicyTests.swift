@@ -1,10 +1,15 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import lily
 
 @MainActor
 struct TranscriptScrollPolicyTests {
     typealias Snapshot = TranscriptScrollPolicy.Snapshot
+
+    /// The oldest message held while nothing is prepended, and the one the older page puts before it.
+    private let oldest = "m10"
+    private let older = "m1"
 
     private func snapshot(offsetY: CGFloat = 0,
                           contentHeight: CGFloat = 2_000,
@@ -22,46 +27,99 @@ struct TranscriptScrollPolicyTests {
     @Test func pinsTheBottomOnceWhenTheFirstPageHasLaidOut() {
         var policy = TranscriptScrollPolicy()
         let slotOnly = snapshot(contentHeight: 28)
-        #expect(policy.geometryChanged(from: .empty, to: slotOnly, hasRows: false, canLoadOlder: true) == .none)
-        #expect(policy.geometryChanged(from: .empty, to: snapshot(contentHeight: 0), hasRows: true, canLoadOlder: true) == .none)
-        #expect(policy.geometryChanged(from: .empty, to: snapshot(), hasRows: true, canLoadOlder: true) == .scrollToBottom)
+        #expect(policy.geometryChanged(from: .empty, to: slotOnly, hasRows: false, canLoadOlder: true, oldestID: nil) == .none)
+        let noContent = snapshot(contentHeight: 0)
+        #expect(policy.geometryChanged(from: .empty, to: noContent, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        #expect(policy.geometryChanged(from: .empty, to: snapshot(), hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
         #expect(policy.hasSettled)
-        #expect(policy.geometryChanged(from: snapshot(), to: snapshot(offsetY: 1), hasRows: true, canLoadOlder: true) == .none)
+        let nudged = snapshot(offsetY: 1)
+        #expect(policy.geometryChanged(from: snapshot(), to: nudged, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
     }
 
     /// The initial layout lands near the top of a lazy stack; the older page must wait for the first settle.
     @Test func neverLoadsOlderBeforeTheFirstSettle() {
         var policy = TranscriptScrollPolicy()
         let nearTop = snapshot(isAtBottom: false, isNearTop: true)
-        #expect(policy.geometryChanged(from: .empty, to: nearTop, hasRows: true, canLoadOlder: true) == .scrollToBottom)
+        #expect(policy.geometryChanged(from: .empty, to: nearTop, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
     }
 
     @Test func loadsOlderNearTheTopOnlyWhenAPageIsAvailable() {
         var policy = settled()
         let nearTop = snapshot(offsetY: 10, isAtBottom: false, isNearTop: true)
-        #expect(policy.geometryChanged(from: snapshot(), to: nearTop, hasRows: true, canLoadOlder: false) == .none)
-        #expect(policy.geometryChanged(from: snapshot(), to: nearTop, hasRows: true, canLoadOlder: true) == .loadOlder)
+        #expect(policy.geometryChanged(from: snapshot(), to: nearTop, hasRows: true, canLoadOlder: false, oldestID: oldest)
+                == .none)
+        #expect(policy.geometryChanged(from: snapshot(), to: nearTop, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .loadOlder)
     }
 
     /// The prepend is compensated by the height it added, measured against the reader's latest offset.
     @Test func restoresThePlaceAfterAnOlderPageWasPrepended() {
         var policy = settled()
-        policy.willLoadOlder(at: snapshot(offsetY: 10, contentHeight: 2_000, isAtBottom: false, isNearTop: true))
-        let stillWaiting = snapshot(offsetY: 40, contentHeight: 2_000, isAtBottom: false, isNearTop: true)
-        #expect(policy.geometryChanged(from: snapshot(), to: stillWaiting, hasRows: true, canLoadOlder: true) == .none)
+        policy.willLoadOlder(at: snapshot(offsetY: 10, isAtBottom: false, isNearTop: true), oldestID: oldest)
+        let stillWaiting = snapshot(offsetY: 40, isAtBottom: false, isNearTop: true)
+        #expect(policy.geometryChanged(from: snapshot(), to: stillWaiting, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
         let grown = snapshot(offsetY: 40, contentHeight: 3_500, isAtBottom: false, isNearTop: true)
-        #expect(policy.geometryChanged(from: stillWaiting, to: grown, hasRows: true, canLoadOlder: true) == .scrollTo(y: 1_540))
+        #expect(policy.geometryChanged(from: stillWaiting, to: grown, hasRows: true, canLoadOlder: true, oldestID: older)
+                == .scrollTo(y: 1_540))
         #expect(policy.pendingRestore == nil)
     }
 
     /// While a page is pending, nothing else (not even another load) is asked for.
     @Test func holdsOtherActionsWhileAPageIsPending() {
         var policy = settled()
-        policy.willLoadOlder(at: snapshot(offsetY: 0, isAtBottom: false, isNearTop: true))
+        policy.willLoadOlder(at: snapshot(offsetY: 0, isAtBottom: false, isNearTop: true), oldestID: oldest)
         let nearTop = snapshot(offsetY: 0, isAtBottom: false, isNearTop: true)
-        #expect(policy.geometryChanged(from: snapshot(), to: nearTop, hasRows: true, canLoadOlder: true) == .none)
+        #expect(policy.geometryChanged(from: snapshot(), to: nearTop, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
         policy.didNotLoadOlder()
-        #expect(policy.geometryChanged(from: snapshot(), to: nearTop, hasRows: true, canLoadOlder: true) == .loadOlder)
+        #expect(policy.geometryChanged(from: snapshot(), to: nearTop, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .loadOlder)
+    }
+
+    /// A live message or a system row's game landing below the reader during the round trip grows the content without
+    /// moving the oldest message; that growth becomes the baseline and only the page itself is compensated.
+    @Test func bottomGrowthWhileAnOlderPageIsPendingIsNotAPrepend() {
+        var policy = settled()
+        let waiting = snapshot(offsetY: 10, isAtBottom: false, isNearTop: true)
+        policy.willLoadOlder(at: waiting, oldestID: oldest)
+        let grewBelow = snapshot(offsetY: 10, contentHeight: 2_060, isAtBottom: false, isNearTop: true)
+        #expect(policy.geometryChanged(from: waiting, to: grewBelow, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        #expect(policy.pendingRestore?.geometry.contentHeight == 2_060)
+        let prepended = snapshot(offsetY: 10, contentHeight: 3_560, isAtBottom: false, isNearTop: true)
+        #expect(policy.geometryChanged(from: grewBelow, to: prepended, hasRows: true, canLoadOlder: true, oldestID: older)
+                == .scrollTo(y: 1_510))
+        #expect(policy.pendingRestore == nil)
+    }
+
+    /// The model holds the page before the layout grows; a report in between keeps the restore and follows the reader.
+    @Test func aPageHeldButNotYetLaidOutKeepsTheRestoreWaiting() {
+        var policy = settled()
+        policy.willLoadOlder(at: snapshot(offsetY: 10, isAtBottom: false, isNearTop: true), oldestID: oldest)
+        let held = snapshot(offsetY: 25, isAtBottom: false, isNearTop: true)
+        #expect(policy.geometryChanged(from: snapshot(), to: held, hasRows: true, canLoadOlder: true, oldestID: older) == .none)
+        #expect(policy.pendingRestore != nil)
+        let laidOut = snapshot(offsetY: 25, contentHeight: 3_500, isAtBottom: false, isNearTop: true)
+        #expect(policy.geometryChanged(from: held, to: laidOut, hasRows: true, canLoadOlder: true, oldestID: older)
+                == .scrollTo(y: 1_525))
+    }
+
+    /// A failed or empty page never moves the oldest message, so the restore is dropped and later growth is not compensated.
+    @Test func aFailedPageDropsTheRestoreAndBottomGrowthIsThenPlainGeometry() {
+        var policy = settled()
+        policy.willLoadOlder(at: snapshot(offsetY: 300, isAtBottom: false, isNearTop: true), oldestID: oldest)
+        policy.didNotLoadOlder()
+        #expect(policy.pendingRestore == nil)
+        let reading = snapshot(offsetY: 300, isAtBottom: false)
+        let grewBelow = snapshot(offsetY: 300, contentHeight: 2_060, isAtBottom: false)
+        #expect(policy.geometryChanged(from: reading, to: grewBelow, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        #expect(policy.pendingRestore == nil)
     }
 
     /// The keyboard or a growing composer changes the bottom inset; a list at the bottom stays at the bottom.
@@ -69,15 +127,76 @@ struct TranscriptScrollPolicyTests {
         var policy = settled()
         let before = snapshot(bottomInset: 80)
         let keyboardUp = snapshot(bottomInset: 380)
-        #expect(policy.geometryChanged(from: before, to: keyboardUp, hasRows: true, canLoadOlder: true) == .scrollToBottom)
+        #expect(policy.geometryChanged(from: before, to: keyboardUp, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
         let readingBefore = snapshot(offsetY: 500, isAtBottom: false)
         let readingAfter = snapshot(offsetY: 500, bottomInset: 380, isAtBottom: false)
-        #expect(policy.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true) == .none)
+        #expect(policy.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+    }
+
+    /// Rows a block hid (or a tombstone shorter than its bubble) shrink the content under the reader: at the bottom the
+    /// newest row is pinned above the composer again, higher up the reader's place is left alone, and growth at the
+    /// bottom stays `rowAppended`'s to follow.
+    @Test func followsAContentShrinkOnlyWhileAtTheBottom() {
+        var policy = settled()
+        let shrunk = snapshot(contentHeight: 1_700)
+        #expect(policy.geometryChanged(from: snapshot(), to: shrunk, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
+        let readingBefore = snapshot(offsetY: 500, isAtBottom: false)
+        let readingAfter = snapshot(offsetY: 500, contentHeight: 1_700, isAtBottom: false)
+        #expect(policy.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        let grown = snapshot(contentHeight: 2_300)
+        #expect(policy.geometryChanged(from: snapshot(), to: grown, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+    }
+
+    /// The caller's rows (unsent or sent) follow to the bottom whatever the reader does; any other row only while the
+    /// reader is there, so reading older messages is never interrupted; no row, nothing.
+    @Test func ownRowsFollowOthersOnlyAtTheBottom() {
+        let unsent = ChatRow.pending(PendingMessage(draft: MessageDraft(clientMessageID: "c-1"), sentAt: .now))
+        #expect(TranscriptScrollPolicy.rowAppended(unsent, isAtBottom: false) == .scrollToBottom)
+        #expect(TranscriptScrollPolicy.rowAppended(bubble(isOwn: true), isAtBottom: false) == .scrollToBottom)
+        #expect(TranscriptScrollPolicy.rowAppended(bubble(isOwn: false), isAtBottom: true) == .scrollToBottom)
+        #expect(TranscriptScrollPolicy.rowAppended(bubble(isOwn: false), isAtBottom: false) == .none)
+        let note = ChatRow.system(.fixture(id: "s1", kind: .eventCreated))
+        #expect(TranscriptScrollPolicy.rowAppended(note, isAtBottom: true) == .scrollToBottom)
+        #expect(TranscriptScrollPolicy.rowAppended(note, isAtBottom: false) == .none)
+        #expect(TranscriptScrollPolicy.rowAppended(.day(Date()), isAtBottom: false) == .none)
+        #expect(TranscriptScrollPolicy.rowAppended(nil, isAtBottom: true) == .none)
+    }
+
+    /// The thresholds turn the scroll view's geometry into the flags: within `atBottomThreshold` of the content end is
+    /// at the bottom, within `olderPageTriggerDistance` of the top (the top inset included) is near it.
+    @Test func thresholdsMapGeometryToTheFlags() {
+        var geometry = ScrollGeometry(contentOffset: CGPoint(x: 0, y: 1_180),
+                                      contentSize: CGSize(width: 390, height: 2_000),
+                                      contentInsets: EdgeInsets(top: 50, leading: 0, bottom: 80, trailing: 0),
+                                      containerSize: CGSize(width: 390, height: 800))
+        let reading = Snapshot(geometry)
+        #expect(reading.isAtBottom, "the visible bottom is 20 pt above the end")
+        #expect(!reading.isNearTop)
+        #expect(reading.offsetY == 1_180 && reading.contentHeight == 2_000 && reading.bottomInset == 80)
+        geometry.contentOffset.y = 1_170
+        #expect(!Snapshot(geometry).isAtBottom, "30 pt short of the end")
+        geometry.contentOffset.y = -50
+        #expect(Snapshot(geometry).isNearTop, "the top inset exactly")
+        geometry.contentOffset.y = 151
+        #expect(!Snapshot(geometry).isNearTop, "201 pt past the top")
+    }
+
+    private func bubble(isOwn: Bool) -> ChatRow {
+        .message(MessageRow(message: .fixture(id: "m1", senderUserID: isOwn ? "me" : "u-2"),
+                            isOwn: isOwn,
+                            senderName: isOwn ? "You" : "Marta",
+                            isFirstInRun: true,
+                            isLastInRun: true))
     }
 
     private func settled() -> TranscriptScrollPolicy {
         var policy = TranscriptScrollPolicy()
-        _ = policy.geometryChanged(from: .empty, to: snapshot(), hasRows: true, canLoadOlder: true)
+        _ = policy.geometryChanged(from: .empty, to: snapshot(), hasRows: true, canLoadOlder: true, oldestID: oldest)
         return policy
     }
 }

@@ -27,7 +27,7 @@ struct RealtimeTournamentRoutingTests {
         await settle(until: { harness.tournamentChanges.version == 2 })
 
         #expect(harness.changes.version == 0, "Mine did not move")
-        #expect(harness.controller.subscribedEpoch(for: roomID) == 1, "the same epoch stays subscribed")
+        #expect(harness.controller.subscribedRooms[roomID] == 1, "the same epoch stays subscribed")
     }
 
     @Test func aChangeWithANewerEpochResubscribes() async {
@@ -35,19 +35,23 @@ struct RealtimeTournamentRoutingTests {
         let change = TournamentChange(tournamentId: roomID, status: .registration, entryCount: 6, channelEpoch: 2)
 
         harness.transport.post(.tournamentChanged(change), to: room)
-        await settle(until: { harness.controller.subscribedEpoch(for: roomID) == 2 })
+        await settle(until: { harness.controller.subscribedRooms[roomID] == 2 })
 
         #expect(harness.tournamentChanges.version == 1)
-        #expect(harness.chatLogs(.info).contains("Epoch changed for group t1: 1 -> 2"))
+        #expect(harness.chatLogs(.info).mentioning("t1", "1 -> 2").count == 1)
     }
 
     @Test func aChangeForAnotherTournamentOnTheRoomIsDropped() async {
         let harness = await connected()
+        let sink = harness.sink(for: roomID)
         let other = TournamentChange(tournamentId: "t9", status: .completed, entryCount: 4, channelEpoch: 1)
 
         harness.transport.post(.tournamentChanged(other), to: room)
-        await settle(until: { harness.chatLogs(.warning).contains { $0.contains("another group on rooms/t1/1") } })
+        harness.transport.post(.message(.fixture(id: "m1", groupID: roomID)), to: room)
+        await settle(until: { sink.received.count == 1 })
 
-        #expect(harness.tournamentChanges.version == 0)
+        #expect(sink.messageIDs == ["m1"], "the room's consumers never see another tournament's change")
+        #expect(harness.tournamentChanges.version == 0, "the foreign change bumped nothing")
+        #expect(harness.chatLogs(.warning).mentioning("t9", "another group").count == 1)
     }
 }

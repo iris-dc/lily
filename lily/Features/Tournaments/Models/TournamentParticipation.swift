@@ -23,7 +23,6 @@ nonisolated enum TournamentRole: Equatable, Sendable {
     }
 
     var isOrganizer: Bool { self == .organizer }
-    var isGuest: Bool { self == .guest }
 }
 
 /// What the tournament detail's primary control is. Decided in one place so the control and its tests agree; the

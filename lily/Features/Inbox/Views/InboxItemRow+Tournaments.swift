@@ -13,11 +13,9 @@ struct TournamentInviteCard: View {
                         inviter: invite.inviterName,
                         target: invite.tournamentName,
                         status: invite.statusCaption(now: viewModel.now())) {
-            AvatarCircle(initials: "",
-                         systemImage: DesignTokens.Symbols.tournament,
+            AvatarCircle(systemImage: DesignTokens.Symbols.tournament,
                          size: DesignTokens.Layout.avatarMedium,
-                         tint: .lilySecondary,
-                         tintOpacity: DesignTokens.Opacity.secondaryGlassTint)
+                         tint: .secondary)
         } details: {
             Label(invite.details, systemImage: invite.type.symbolName)
         }

@@ -1,17 +1,13 @@
 import Foundation
 @testable import lily
 
-/// Scriptable `EventRepository`: answers from `result`, can hold requests, and records every call.
+/// Scriptable `EventRepository`: answers from `result` and records every call; while `holdsRequests`, every request
+/// records its call and then suspends until `releaseRequests()`.
 @MainActor
-final class FakeEventRepository: EventRepository {
+final class FakeEventRepository: EventRepository, HoldsRequests {
     var result: Result<[SportEvent], AppError> = .success([])
     /// Thrown instead of `result` when set, for errors that are not `AppError` (such as `CancellationError`).
     var thrownError: (any Error)?
-    /// While true, every request records its call and then suspends until `releaseRequests()`.
-    var holdsRequests: Bool {
-        get { hold.isEnabled }
-        set { hold.isEnabled = newValue }
-    }
     /// Thrown by `join` and `leave` when set; otherwise they answer with the event from `result`, adjusted.
     var participationError: (any Error)?
     /// Thrown by the next `join` or `leave` only, ahead of `participationError`: for answers that change between
@@ -24,9 +20,9 @@ final class FakeEventRepository: EventRepository {
     /// Thrown by the next `update` only, ahead of `updateError`: a `TRY_AGAIN` that a repeat gets past.
     var nextUpdateError: (any Error)?
     var hostUserID = "host"
-    /// Answered by `participants(eventId:)`.
+    /// Answered by `participants(eventId:)`, which honours `thrownError` first like `events` and `event`.
     var participantsResult: Result<[EventParticipant], AppError> = .success([])
-    private let hold = RequestHold()
+    let hold = RequestHold()
     private(set) var requestedScopes: [EventScope] = []
     /// The position each `events(in:near:)` carried, `nil` included, in call order.
     private(set) var requestedPositions: [Coordinate?] = []
@@ -40,7 +36,7 @@ final class FakeEventRepository: EventRepository {
     func events(in scope: EventScope, near position: Coordinate?) async throws -> [SportEvent] {
         requestedScopes.append(scope)
         requestedPositions.append(position)
-        await hold.wait()
+        try await hold.waitOrThrow()
         if let thrownError { throw thrownError }
         return try result.get()
     }
@@ -48,14 +44,15 @@ final class FakeEventRepository: EventRepository {
     /// Answers from `result` like `events(in:near:)`, so a test sets the "server state" once for both.
     func event(id: String) async throws -> SportEvent {
         fetchedEventIDs.append(id)
-        await hold.wait()
+        try await hold.waitOrThrow()
         if let thrownError { throw thrownError }
         return try stored(id)
     }
 
     func participants(eventId: String) async throws -> [EventParticipant] {
         participantsRequests.append(eventId)
-        await hold.wait()
+        try await hold.waitOrThrow()
+        if let thrownError { throw thrownError }
         return try participantsResult.get()
     }
 
@@ -71,7 +68,7 @@ final class FakeEventRepository: EventRepository {
 
     func create(_ draft: EventDraft) async throws -> SportEvent {
         createdDrafts.append(draft)
-        await hold.wait()
+        try await hold.waitOrThrow()
         if let createError { throw createError }
         return draft.makeEvent(hostUserId: hostUserID,
                                hostName: TestFixtures.user.displayName,
@@ -80,7 +77,7 @@ final class FakeEventRepository: EventRepository {
 
     func update(id: String, _ draft: EventDraft) async throws -> SportEvent {
         updatedDrafts.append((id, draft))
-        await hold.wait()
+        try await hold.waitOrThrow()
         if let error = nextUpdateError {
             nextUpdateError = nil
             throw error
@@ -89,13 +86,8 @@ final class FakeEventRepository: EventRepository {
         return try stored(id).updating(with: draft)
     }
 
-    /// Lets every held request through and stops holding new ones.
-    func releaseRequests() {
-        hold.release()
-    }
-
     private func participationResult(for eventId: String, delta: Int, isJoined: Bool) async throws -> SportEvent {
-        await hold.wait()
+        try await hold.waitOrThrow()
         if let error = nextParticipationError {
             nextParticipationError = nil
             throw error

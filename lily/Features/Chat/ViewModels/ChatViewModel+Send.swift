@@ -15,9 +15,12 @@ extension ChatViewModel {
 
     /// Sends the bubble's draft again under the same client id. The bubble is found by that id, so a copy taken before
     /// the bubble changed (a quote dropped meanwhile) still names it, and what goes out is the bubble's current draft.
+    /// Only a failed bubble is sent: a second tap landing before the first re-rendered finds the bubble `.sending`
+    /// (the copy it carries is stale) and must send nothing more.
     func retry(_ message: PendingMessage) async {
         guard !isCoolingDown,
-              let current = pending.first(where: { $0.clientMessageID == message.clientMessageID }) else { return }
+              let current = pending.first(where: { $0.clientMessageID == message.clientMessageID }),
+              current.hasFailed else { return }
         updatePending(current.clientMessageID) { $0.state = .sending }
         await perform(current.draft)
     }
@@ -46,7 +49,10 @@ extension ChatViewModel {
 
     private func perform(_ draft: MessageDraft) async {
         do {
-            let sent = try await LostRace.attemptTwice(delay: tryAgainDelay, onRetry: logRetry) {
+            let sent = try await LostRace.attemptTwice(delay: tryAgainDelay,
+                                                       logger: logger,
+                                                       category: .chat,
+                                                       retrying: "Send in group \(group.id)") {
                 try await repository.send(groupID: group.id, draft)
             }
             await settle(draft.clientMessageID, with: sent.message)
@@ -100,10 +106,6 @@ extension ChatViewModel {
         guard let message = room.message(clientMessageID: clientMessageID) else { return false }
         await confirmPending(clientMessageID: clientMessageID, with: message)
         return true
-    }
-
-    private func logRetry() {
-        logger.info(.chat, "Send lost a race in group \(group.id); retrying once")
     }
 
     private func markFailed(_ clientMessageID: String) {

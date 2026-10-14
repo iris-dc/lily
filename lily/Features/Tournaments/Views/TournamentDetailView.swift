@@ -82,7 +82,7 @@ struct TournamentDetailView: View {
             if viewModel.isGone { dismiss() }
         }
         .sheet(item: $presentedSheet) { sheet($0) }
-        .confirmationDialog(confirmationTitle, isPresented: isConfirming, titleVisibility: .visible, presenting: confirmation) {
+        .confirmationDialog(item: $confirmation, title: confirmationTitle(for:)) {
             confirmationButton(for: $0)
         } message: { confirmation in
             if let tournament = viewModel.tournament, let message = confirmation.message(entries: tournament.entriesText) {
@@ -137,7 +137,7 @@ struct TournamentDetailView: View {
                                                onLeave: { confirmation = .leave })
                     .inReadableColumn()
             }
-            .padding(.vertical, DesignTokens.Spacing.xl)
+            .padding(.vertical, DesignTokens.Layout.detailMargin)
         }
         .onGeometryChange(for: CGFloat.self, of: \.size.width) { contentWidth = $0 }
         .refreshable { await viewModel.load() }
@@ -146,7 +146,8 @@ struct TournamentDetailView: View {
     /// The bracket's columns start where the readable column does: the detail's margin on a phone, further in on a
     /// wide screen.
     private var bracketInset: CGFloat {
-        max(DesignTokens.Spacing.xl, (contentWidth - DesignTokens.Layout.readableWidth) / 2 + DesignTokens.Spacing.xl)
+        let margin = DesignTokens.Layout.detailMargin
+        return max(margin, (contentWidth - DesignTokens.Layout.readableWidth) / 2 + margin)
     }
 
     private func sectionPicker(_ tournament: Tournament) -> some View {
@@ -162,30 +163,26 @@ struct TournamentDetailView: View {
         case .entries:
             TournamentEntriesSegment(viewModel: viewModel, detail: detail) { confirmation = .removeEntry($0) }
                 .inReadableColumn()
-        case .results where detail.tournament.format == .singleElimination && !detail.matches.isEmpty:
+        case .results where detail.tournament.format.drawsBracket && !detail.matches.isEmpty:
             // `BracketView` undoes the margin itself and scrolls edge to edge; only its inset follows the column.
             results(detail, bracketInset: bracketInset)
-                .padding(.horizontal, DesignTokens.Spacing.xl)
+                .padding(.horizontal, DesignTokens.Layout.detailMargin)
         case .results, .matches:
-            results(detail, bracketInset: DesignTokens.Spacing.xl)
+            results(detail, bracketInset: DesignTokens.Layout.detailMargin)
                 .inReadableColumn()
         }
     }
 
     private func results(_ detail: TournamentDetail, bracketInset: CGFloat) -> some View {
-        TournamentResultsSegment(section: section,
+        TournamentResultsSegment(showsMatches: section == .matches,
                                  detail: detail,
                                  viewModel: viewModel,
                                  onSelect: { presentedSheet = .match(id: $0.id) },
                                  bracketInset: bracketInset)
     }
 
-    private var confirmationTitle: String {
-        confirmation?.title(name: viewModel.name) ?? ""
-    }
-
-    private var isConfirming: Binding<Bool> {
-        Binding(get: { confirmation != nil }, set: { if !$0 { confirmation = nil } })
+    private func confirmationTitle(for confirmation: TournamentConfirmation) -> String {
+        confirmation.title(name: viewModel.name)
     }
 
     private func confirmationButton(for confirmation: TournamentConfirmation) -> some View {

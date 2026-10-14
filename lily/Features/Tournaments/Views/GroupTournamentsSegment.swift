@@ -8,11 +8,7 @@ struct GroupTournamentsSegment: View {
     private typealias Copy = AppBranding.Tournaments
 
     var body: some View {
-        if viewModel.isInitialLoad {
-            ProgressView().frame(maxWidth: .infinity)
-        } else if viewModel.visibleTournaments.isEmpty {
-            viewModel.loadFailed ? loadFailedState : emptyState
-        } else {
+        ListSegment(state: viewModel.listState, empty: emptyState, failed: loadFailedState) {
             TournamentCardList(tournaments: viewModel.visibleTournaments,
                                distance: viewModel.distanceText,
                                horizontalPadding: 0,
