@@ -1,12 +1,10 @@
 import Foundation
 import Observation
 
-/// The load skeleton the app-lifetime stores share: content reused while `ContentFreshness` calls it fresh (TTL, the
-/// version `version()` answers, the caller), a failed load waiting out the cooldown, one request at a time through
-/// `SingleFlight` (a call for the same caller joins it, one for another waits it out), an answer for a caller who signed
-/// out or changed meanwhile dropped, a cancellation quiet, a failure logged under `category` and reported, and a version
-/// that moved while the request was out loaded once more, exactly once. The store keeps what an answer means (`apply`)
-/// and clears itself for a guest; the loader keeps the bookkeeping.
+/// The load bookkeeping the app-lifetime stores share: freshness through `ContentFreshness`, one request at a time
+/// through `SingleFlight`, an answer for a caller who signed out or changed meanwhile dropped, a cancellation quiet, a
+/// failure logged under `category` and reported. The store keeps what an answer means (`apply`) and clears itself for a
+/// guest.
 @Observable
 final class StoreLoader {
     private let load = SingleFlight()
@@ -58,10 +56,9 @@ final class StoreLoader {
     }
 
     /// Always asks the backend (pull-to-refresh, the resume protocol). A call made while one is in flight for the same
-    /// user joins it; one for another user waits it out and then loads for them. A change recorded anywhere while the
-    /// request was out means the answer predates it: the answer is applied, so the screen is never empty, and the load
-    /// runs once more, exactly once; both requests run inside the same `SingleFlight` task, so `isLoading` stays true
-    /// through the repeat.
+    /// user joins it; one for another user waits it out and then loads for them. A change recorded while the request was
+    /// out means the answer predates it: the answer is still applied, so the screen is never empty, and the load runs
+    /// once more, exactly once, inside the same `SingleFlight` task, so `isLoading` stays true through the repeat.
     func reload<Fetched>(fetch: @escaping () async throws -> Fetched, apply: @escaping (Fetched) -> Void) async {
         guard let userID = identity.currentUserID else { return }
         await load.run(key: userID) { [self] in

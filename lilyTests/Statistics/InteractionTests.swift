@@ -147,8 +147,8 @@ struct InteractionTests {
         #expect(encoded["groupId"] as? String == "grp_01")
     }
 
-    /// Laurel's `TOURNAMENT_VIEWED` reads exactly `kind`, `occurredAt`, `tournamentId`, `tournamentFormat` and `eventType`
-    /// (B3's follow-up); never the name.
+    /// Laurel's `TOURNAMENT_VIEWED` reads exactly `kind`, `occurredAt`, `tournamentId`, `tournamentFormat` and `eventType`;
+    /// never the name.
     @Test func tournamentViewedCarriesTheIdTheFormatAndTheTypeAndNothingElse() throws {
         let tournament = Tournament.fixture(id: "t1", name: "Padel Open", type: .padel, format: .roundRobin)
 

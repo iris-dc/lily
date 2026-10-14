@@ -2,21 +2,17 @@ import Foundation
 import Testing
 @testable import lily
 
-/// How a change made on a tournament detail reaches a list that does not hold the row: Home's Mine must take a
-/// tournament the caller just entered on a detail pushed from a group's segment, and must ignore one that is none of
-/// its business. The last two tests wire a detail the way Home does, its `onChange` being Mine's `replace`.
+/// Mine receives `replace` from details pushed from other scopes too (a group's segment), so it must insert what it does not hold.
 @MainActor
 struct TournamentListReplaceTests {
     nonisolated private static let base = Date(timeIntervalSince1970: 1_800_000_000)
     nonisolated private static let secondsPerHour: TimeInterval = 3600
     private let harness = TournamentHarness()
 
-    /// A tournament the caller has entered, `hours` after `base`; another user organises it.
     private func entered(_ id: String, hours: Double) -> Tournament {
         .fixture(id: id, startsAt: Self.base.addingTimeInterval(hours * Self.secondsPerHour), myEntryId: "e-\(id)")
     }
 
-    /// Mine with `loaded` on screen.
     private func loadedMine(_ loaded: [Tournament]) async -> TournamentListViewModel {
         harness.repository.result = .success(loaded)
         let mine = harness.makeListViewModel(scope: .mine)
@@ -24,7 +20,6 @@ struct TournamentListReplaceTests {
         return mine
     }
 
-    /// A detail of `tournament`, loaded, answering through `mine.replace` as Home's stack wires it.
     private func detailOnHome(_ tournament: Tournament,
                               entries: [TournamentEntry] = [.fixture()],
                               replacingIn mine: TournamentListViewModel) async -> TournamentDetailViewModel {
@@ -45,7 +40,6 @@ struct TournamentListReplaceTests {
         #expect(harness.repository.requestedScopes == [.mine], "the list shows the change itself and does not reload")
     }
 
-    /// Mine lists what the caller organises or has entered; a change to anything else only tells the other lists.
     @Test func replaceOfATournamentNeitherHeldNorBelongingChangesOnlyTheVersion() async {
         let loaded = [entered("a", hours: 0), entered("c", hours: 2)]
         let mine = await loadedMine(loaded)
@@ -58,8 +52,6 @@ struct TournamentListReplaceTests {
         #expect(harness.logger.messages(in: .cache).contains { $0.contains("Tournament x replaced in scope") })
     }
 
-    /// The detail's answer changes the row without a list request, and Mine, having acknowledged its own change, asks
-    /// nothing on its next appearance either.
     @Test func theDetailsAnswerReplacesTheRowOnHome() async {
         let organised = Tournament.fixture(id: "t", organizerUserId: TestFixtures.user.id)
         let mine = await loadedMine([organised])
@@ -72,8 +64,6 @@ struct TournamentListReplaceTests {
         #expect(harness.repository.requestedScopes == [.mine], "Mine acknowledged its own change")
     }
 
-    /// A leave answers the tournament without the caller's entry, and Mine lists only what the caller organises or has
-    /// entered: the row goes, again without a list request.
     @Test func theDetailsAnswerDropsARowTheCallerLeftFromHome() async {
         let entry = TournamentEntry.fixture(id: "e-1", captainUserId: TestFixtures.user.id)
         let left = Tournament.fixture(id: "t", entryCount: 1, myEntryId: "e-1")

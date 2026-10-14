@@ -56,7 +56,6 @@ nonisolated struct EventFilter: Hashable, Sendable {
         return price.currencyCode == currencyCode && price.amount <= maxPrice
     }
 
-    /// A game that welcomes any level, by stating none or one this build does not know, passes every choice.
     private func matchesLevel(_ event: SportEvent) -> Bool {
         guard let skillLevel, let eventLevel = event.skillLevel?.ifKnown else { return true }
         return eventLevel == skillLevel

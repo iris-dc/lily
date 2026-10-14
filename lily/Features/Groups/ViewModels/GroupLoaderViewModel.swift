@@ -1,9 +1,8 @@
 import Foundation
 import Observation
 
-/// Fetches the group behind a reference (an event's "Hosted in" badge) before the detail can show it. `loadIfNeeded()`
-/// is the view's entry and fetches once; `load()` is the failed screen's Try again, and a group already loaded stays on
-/// screen while it runs and when it fails.
+/// Fetches the group behind a reference (an event's "Hosted in" badge) before the detail can show it. A group already
+/// loaded stays on screen while a reload runs and when it fails.
 @Observable
 final class GroupLoaderViewModel {
     enum State: Equatable {

@@ -18,9 +18,9 @@ nonisolated enum AppLocale {
             bundlePath.flatMap(Bundle.init(path:)) ?? .main
         }
 
-        /// Derived on every read, so a Region change in Settings reaches prices, distances and the Profile currency row's
-        /// "System" code without a relaunch: the system path hands back the live `.autoupdatingCurrent` itself, the fixed
-        /// path rebuilds its components from it (Foundation serves `Locale(components:)` from its identifier cache).
+        /// Derived on every read, so a Region change in Settings reaches prices and distances without a relaunch: the
+        /// system path hands back the live `.autoupdatingCurrent` itself, the fixed path rebuilds its components from it
+        /// (cheap: Foundation serves `Locale(components:)` from its identifier cache).
         var locale: Locale {
             language.map { Self.locale(for: $0, current: current()) } ?? current()
         }

@@ -42,7 +42,6 @@ struct AttachmentLoaderTests {
                        urlExpiresAt: clock.now.addingTimeInterval(3600))
     }
 
-    /// The stored PDF fixture with a link into `backend`, good for an hour.
     private func document(id: String, on backend: StubBackend) -> lily.Attachment {
         let named = lily.Attachment.fileFixture(id: id)
         return lily.Attachment(id: named.id,
@@ -179,8 +178,8 @@ struct AttachmentLoaderTests {
         #expect(!FileManager.default.fileExists(atPath: preview.deletingLastPathComponent().path()))
     }
 
-    /// A picture stored without a thumbnail has one object: the gallery's thumbnail request and the viewer's full
-    /// request download it once and share the one cached file, kept under the full variant.
+    /// A picture stored without a thumbnail is one object: the thumbnail and the full request share one download and one
+    /// cached file, kept under the full variant.
     @Test func aPictureWithoutAThumbnailIsDownloadedOnce() async throws {
         let backend = StubBackend(json: "full-bytes")
         let loader = makeLoader(backend)
@@ -197,8 +196,7 @@ struct AttachmentLoaderTests {
         #expect(cache.fileURL(for: "a1", variant: .full) != nil && cache.fileURL(for: "a1", variant: .thumbnail) == nil)
     }
 
-    /// A cache that cannot keep the bytes (the disk is full) fails the download as unavailable and says so once, with
-    /// the id and never the link.
+    /// A full disk fails the download as unavailable, logged once with the id and never the link.
     @Test func aFailedCacheStoreIsLoggedAndTheDownloadFails() async throws {
         let backend = StubBackend(json: "thumb-bytes")
         let loader = makeLoader(backend)
@@ -214,8 +212,8 @@ struct AttachmentLoaderTests {
         #expect(cache.fileURL(for: "a1", variant: .thumbnail) == nil)
     }
 
-    /// A preview copy the file system refuses (here a file where the attachment's folder should be) is unavailable and
-    /// logged with the id; the download itself landed in the cache, so a retry costs no second download.
+    /// A preview copy the file system refuses is unavailable and logged with the id; the bytes are in the cache by then,
+    /// so a retry costs no second download.
     @Test func aFailedPreviewCopyIsLoggedAndSurfacesAsUnavailable() async throws {
         let backend = StubBackend(json: "%PDF-1.4 fake")
         let loader = makeLoader(backend)
@@ -232,7 +230,6 @@ struct AttachmentLoaderTests {
         #expect(backend.requests.count == 1 && cache.fileURL(for: "blocked-1", variant: .full) != nil)
     }
 
-    /// Every preview copy goes at the end of a session, and a second sweep over nothing is no error.
     @Test func removeAllDropsEveryPreviewCopy() throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: "previews-\(UUID().uuidString)")
         for id in ["p1", "p2"] {

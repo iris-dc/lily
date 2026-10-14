@@ -32,7 +32,7 @@ struct FilterDropdownButton<Panel: View>: View {
 }
 
 /// The dropdown's panel: a title row with an optional accessory and Done over the criteria, at the panel width, on
-/// clear glass. `scrolls` wraps the column in a scroll view for a panel taller than the screen allows.
+/// clear glass.
 struct DropdownPanel<Accessory: View, Content: View>: View {
     let title: String
     var scrolls = false

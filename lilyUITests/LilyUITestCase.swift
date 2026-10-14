@@ -127,8 +127,8 @@ class LilyUITestCase: XCTestCase {
     }
 
     /// Swipes in `direction` until `element` is in the accessibility tree and hittable, at most `maxSwipes` times, and
-    /// fails when it never is. The one scroll-until loop: an explicit `while`, because a `for … where` guard was once
-    /// seen running neither a check nor a swipe.
+    /// fails when it never is. Kept as an explicit `while`: a `for … where` guard does not reliably run its check or
+    /// its swipe here.
     @MainActor
     func scrollUntilHittable(_ element: XCUIElement, direction: ScrollDirection = .up, maxSwipes: Int = 8) {
         var swipes = 0
@@ -142,7 +142,7 @@ class LilyUITestCase: XCTestCase {
         XCTAssertTrue(element.exists && element.isHittable, "element never scrolled into a hittable position")
     }
 
-    /// Waits for `element` to become enabled: the GitHub runner is two to three times slower than a Mac, so an
+    /// Waits for `element` to become enabled: a CI runner can be two to three times slower than a developer Mac, so an
     /// `isEnabled` read right after typing or a tap must wait.
     @MainActor
     func assertBecomesEnabled(_ element: XCUIElement, _ message: String = "", timeout: TimeInterval = 5) {
@@ -172,14 +172,12 @@ class LilyUITestCase: XCTestCase {
         item.tap()
     }
 
-    /// Focuses a text field and types into it. A field that already has keyboard focus is typed into as it is:
-    /// `XCUIElement.tap()` resolves its target through the accessibility tree, and when the keyboard rose while the
-    /// transcript was scrolled up (a reply to an early message) a row lay under the glass composer, won the hit and
-    /// pushed its event, so the composer "vanished" (2026-10-08). A coordinate touch is no answer either: a form field
-    /// under the keyboard needs `tap()`, which brings it into view. A field that is not in the tree yet is dragged into
-    /// it first (`dragUpUntilExists`): a `Form` row below the fold is not in the accessibility tree at all, and on the
-    /// 390 x 844 pt iPhone 17e the create form's place field lay under the fold that the 17 Pro's 30 pt more showed
-    /// (2026-10-13).
+    /// Focuses a text field and types into it. A field that already has keyboard focus is not tapped first:
+    /// `XCUIElement.tap()` resolves its target through the accessibility tree, and with the keyboard up over a scrolled
+    /// transcript a row under the glass composer wins the hit and pushes its event. A coordinate touch is no answer
+    /// either: a form field under the keyboard needs `tap()`, which brings it into view. A field not yet in the tree is
+    /// dragged into it first (`dragUpUntilExists`): a `Form` row below the fold is not in the accessibility tree at all,
+    /// and a row that shows on one phone model can be below the fold on another.
     @MainActor
     func enter(_ text: String, into field: XCUIElement) {
         if !field.waitForExistence(timeout: 5) { dragUpUntilExists(field) }

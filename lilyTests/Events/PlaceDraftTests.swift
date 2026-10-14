@@ -3,7 +3,7 @@ import Testing
 @testable import lily
 
 /// The place rule the event and tournament drafts share: the name typed and the spot picked, judged in form order against
-/// the backend's UTF-16 count. `EventDraftTests` and `TournamentDraftTests` pin where each form reports the issues.
+/// the backend's UTF-16 count.
 @MainActor
 struct PlaceDraftTests {
     private let limit = AppConfig.Events.Creation.locationNameMaxLength

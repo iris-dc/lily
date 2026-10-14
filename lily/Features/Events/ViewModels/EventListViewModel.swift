@@ -104,11 +104,10 @@ final class EventListViewModel {
         await load()
     }
 
-    /// Always asks the repository (pull-to-refresh). A call made while one is in flight is dropped. Whatever landed
-    /// while the request was out (a join or create applied through `replace`/`add`, a sign-in, or on Explore a
-    /// position that arrived or moved) may be missing from its answer, so it earns one reload right away instead of
-    /// overwriting the change until the next appearance. Bounded: only such a landing leaves a fresh answer stale, and
-    /// a failed or cancelled load earns nothing.
+    /// Always asks the repository (pull-to-refresh); a call made while one is in flight is dropped. Whatever landed
+    /// while the request was out (a join or create through `replace`/`add`, a sign-in, on Explore a position that
+    /// arrived or moved) may be missing from the answer, so it earns one reload right away. Bounded: only such a
+    /// landing leaves a fresh answer stale, and a failed or cancelled load earns nothing.
     func load() async {
         guard !isLoading else { return }
         isLoading = true
@@ -120,13 +119,11 @@ final class EventListViewModel {
         }
     }
 
-    /// Takes the event the detail screen just changed. Applied in place, so the list is right on the way back without
-    /// a round trip: Explore keeps the row where the backend's relevance order put it and never takes a game it does
-    /// not hold; a list in start order (Home, a group's Events) re-inserts the row by start while it still lists the
-    /// game (Home drops one the user left, a group's list keeps it) and inserts a game it lists but does not hold yet
-    /// (a join made on a detail pushed from a group's segment on the Home stack reaches Home's games at once). The
-    /// change is recorded so every other list (Home after a join on Explore) reloads on its next appearance; this one
-    /// already shows it and does not.
+    /// Takes the event the detail screen just changed, so the list is right on the way back without a round trip:
+    /// Explore updates the row in place (its relevance order cannot be guessed on device, so it never takes a game it
+    /// does not hold); a list in start order re-inserts the row by start, drops a game it no longer lists and inserts
+    /// one it lists but did not hold yet (a join made from a group's segment on the Home stack reaches Home's games at
+    /// once). Every other list reloads on its next appearance; this one already shows the change.
     func replace(_ event: SportEvent) {
         if let index = events.firstIndex(where: { $0.id == event.id }) {
             if scope == .upcoming {

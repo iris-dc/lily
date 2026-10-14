@@ -69,7 +69,6 @@ struct ReplyQuoteCodingTests {
         #expect(!AttachmentKind.image.isUnknown && !AttachmentKind.video.isUnknown && !AttachmentKind.file.isUnknown)
     }
 
-    /// A kind this build does not know is kept by name, is no media, and a quote naming it reads as a file.
     @Test func anUnknownAttachmentKindIsKeptByNameAndQuotedAsAFile() {
         let gif = AttachmentKind(wireName: "gif")
 

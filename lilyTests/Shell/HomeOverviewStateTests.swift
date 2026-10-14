@@ -2,7 +2,6 @@ import Testing
 @testable import lily
 
 struct HomeOverviewStateTests {
-    /// An answered, empty list that did not fail: the shape most of Home's lists have for most callers.
     private func snapshot(isEmpty: Bool = true, hasAnswered: Bool = true, loadFailed: Bool = false) -> HomeListSnapshot {
         HomeListSnapshot(isEmpty: isEmpty, hasAnswered: hasAnswered, loadFailed: loadFailed)
     }

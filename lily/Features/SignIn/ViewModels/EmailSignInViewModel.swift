@@ -74,8 +74,8 @@ final class EmailSignInViewModel {
         mode = mode.toggled
     }
 
-    /// The pool accepted the code, so a second Confirm would be refused, and the sign-in after it has shown its own
-    /// failure where it had one. Email and password stay, so one tap on Sign in finishes what the confirmation started.
+    /// The pool has accepted the code, so a second Confirm would be refused, and a failed sign-in has shown its own
+    /// popup. Email and password stay, so one tap on Sign in finishes what the confirmation started.
     private func returnToSignIn() {
         code = ""
         mode = .signIn

@@ -2,8 +2,7 @@ import SwiftUI
 
 /// The signed-in Home content: a "Your groups" section of rows and a "Your games" section of cards, one scroll with
 /// pull-to-refresh over both, and one state for the whole screen while nothing has loaded yet or nothing is there.
-/// What shows is `HomeOverviewState`, resolved from a snapshot of each list. With groups switched off only the cards
-/// remain, without a heading of their own.
+/// With groups switched off only the cards remain, without a heading of their own.
 struct HomeOverview: View {
     let groups: MyGroupsStore
     let events: EventListViewModel
@@ -15,7 +14,7 @@ struct HomeOverview: View {
 
     private var showsGroups: Bool { AppConfig.FeatureFlags.groups }
 
-    /// One snapshot per list; a list behind a flag that is off is left out, so the screen never waits for it.
+    /// A list behind a flag that is off is left out, so the screen never waits for it.
     private var state: HomeOverviewState {
         .resolve(events: HomeListSnapshot(isEmpty: events.visibleEvents.isEmpty,
                                           hasAnswered: events.hasLoaded || events.loadFailed,

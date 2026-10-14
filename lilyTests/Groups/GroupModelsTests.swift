@@ -52,8 +52,7 @@ struct GroupModelsTests {
         #expect(group.kind == .group && group.counterpart == nil, "a payload without kind is a community")
     }
 
-    /// Mine's order: the newest message first, silent groups by their creation, a tie by name; strict, so a group never
-    /// precedes itself.
+    /// Mine's order: the newest message first, silent groups by creation, ties by name; strict, so a group never precedes itself.
     @Test func mineOrderPutsTheLatestActivityFirstAndTiesByName() {
         let base = Date(timeIntervalSince1970: 1_700_000_000)
         let busy = SportGroup.fixture(id: "busy", name: "Zebra", lastMessageAt: base + 60, createdAt: base - 1000)
@@ -171,8 +170,7 @@ struct GroupModelsTests {
         #expect(group.updatingMembership(group.membership, memberCount: 4).channelEpoch == 1, "the epoch is kept unless given")
     }
 
-    /// A departure, removal or ban: one member fewer and a new epoch, the caller's membership whatever they are left
-    /// with, `nil` when they were the one leaving.
+    /// A departure, removal or ban: one member fewer, a new epoch, and the caller's membership as given (`nil` when they left).
     @Test func droppingTakesOneMemberOffAndRotatesTheEpoch() {
         let group = SportGroup.fixture(memberCount: 5, channelEpoch: 1, role: .member)
 

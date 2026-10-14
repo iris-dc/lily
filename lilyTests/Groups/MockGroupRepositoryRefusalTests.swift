@@ -2,8 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The backend's refusals on the group routes a conversation and a tournament's room never take, and the replay of a
-/// member's own join; a sibling file because the main suite's body is near the limit.
+/// The group routes a conversation and a tournament's room refuse, and the replay of a member's own join; a sibling file
+/// because the main suite is near the type-body limit.
 extension MockGroupRepositoryTests {
     /// Laurel's `requireGroupKind`: a conversation is left through the person, so every group route answers FORBIDDEN,
     /// while a member's join is replayed and the roster route stays open.
@@ -65,7 +65,6 @@ extension MockGroupRepositoryTests {
         #expect(mine.count == 6, "a replayed join adds nothing to Mine")
     }
 
-    /// A target off the roster is nobody to remove or promote, whatever the caller may do there.
     @Test func aTargetOffTheRosterIsNotAMember() async throws {
         let repository = makeRepository()
         let runners = MockGroupFixtures.runnersID
@@ -83,7 +82,6 @@ extension MockGroupRepositoryTests {
         #expect(after.count == before.count)
     }
 
-    /// Unbanning is an admin's: a plain member is refused.
     @Test func aMemberCannotUnban() async throws {
         let repository = makeRepository()
         let priya = MockGroupFixtures.memberID(for: "Priya")

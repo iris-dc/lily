@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Who may edit from the detail, and how the edit sheet's answer reaches it. The main detail suite is at its file limit.
+/// Who may edit from the detail, and how the edit sheet's answer reaches it.
 @MainActor
 struct EventDetailEditTests {
     private let repository = FakeEventRepository()

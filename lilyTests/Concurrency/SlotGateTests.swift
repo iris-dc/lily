@@ -1,8 +1,7 @@
 import Testing
 @testable import lily
 
-/// The concurrency cap behind the uploads: at most the limit hold a slot and the rest wait in order, a released slot
-/// is handed to the next waiter or freed, and a waiter cancelled while parked leaves the queue without one.
+/// The concurrency cap behind the uploads.
 @MainActor
 struct SlotGateTests {
     @Test func atMostTheLimitRunAtOnceAndTheRestFollowInOrder() async throws {
@@ -64,7 +63,6 @@ struct SlotGateTests {
     }
 }
 
-/// Who got a slot, in order.
 @MainActor
 private final class AcquisitionOrder {
     private(set) var entries: [Int] = []

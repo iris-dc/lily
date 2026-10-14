@@ -12,9 +12,7 @@ nonisolated extension String {
 }
 
 nonisolated extension String? {
-    /// `""` for `nil`, else the text trimmed.
     var trimmed: String { self?.trimmed ?? "" }
 
-    /// `nil` for `nil` or blank text, else the trimmed text.
     var nonBlankTrimmed: String? { self?.nonBlankTrimmed }
 }

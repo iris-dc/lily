@@ -1,10 +1,9 @@
 import SwiftUI
 
-/// What a bubble holds on its fill: the quoted original above, the attachments between, the words below, each only
-/// when there is one, stacked by `QuoteStack` so a short message still hugs its words. `BubbleFill.standsAlone` decides
-/// from the attachments' kinds, the words and the quote whether the attachments are the bubble themselves (pictures and
-/// videos alone: no fill, no padding, the bubble's own corner radius) or sit on the fill, as a file card does. The
-/// stored and the unsent bubble both draw through it. Plain fills, never glass: a chat scrolls dozens of these at once.
+/// What a bubble holds: the quoted original above, the attachments between, the words below, each only when there is
+/// one, stacked by `QuoteStack` so a short message still hugs its words. Pictures and videos alone are the bubble
+/// themselves (no fill, no padding, the bubble's own corner radius; `BubbleFill.standsAlone` decides), a file card sits
+/// on the fill. Plain fills, never glass: a chat scrolls dozens of these at once.
 struct BubbleContent<Media: View>: View {
     let text: String
     let quote: ReplyQuote?

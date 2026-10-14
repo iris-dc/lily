@@ -38,8 +38,8 @@ struct AppDependenciesLanguageTests {
         #expect(warnings.count == 1 && warnings.first?.contains("klingon") == true)
     }
 
-    /// `-app-language` as the last argument or followed by another flag carries no code; the store's own
-    /// "Language <code>" line is not about the flag, so only a launch-argument info line would be wrong here.
+    /// `-app-language` as the last argument or followed by another flag carries no code. The store still logs its own
+    /// "Language <code>" line; only a launch-argument info line would be wrong.
     @Test(arguments: [[AppConfig.LaunchArguments.appLanguage],
                       [AppConfig.LaunchArguments.appLanguage, AppConfig.LaunchArguments.mockEvents]])
     func anAppLanguageFlagWithoutAValueIsIgnoredWithAWarning(arguments: [String]) {

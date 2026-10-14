@@ -7,7 +7,6 @@ struct SingleFlightTests {
     private let gate = RequestHold()
     private let log = RunLog()
 
-    /// A second caller while the first run is held: one run, and both callers return once it ends.
     @Test func callersMadeWhileRunningJoinTheRunInFlight() async {
         gate.isEnabled = true
 
@@ -29,7 +28,7 @@ struct SingleFlightTests {
         #expect(log.runs == 2 && !flight.isRunning)
     }
 
-    /// The work is the flight's own task: a caller cancelled while waiting for it does not cancel it.
+    /// The work runs in the flight's own task, so a caller's cancellation never reaches it.
     @Test func aCancelledCallerDoesNotCancelTheWork() async {
         gate.isEnabled = true
 
@@ -42,7 +41,6 @@ struct SingleFlightTests {
         #expect(log.runs == 1 && log.uncancelledRuns == 1 && !flight.isRunning)
     }
 
-    /// A caller for another key while a run is held: it never runs beside it, and starts its own once it ended.
     @Test func aCallerForAnotherKeyWaitsOutTheRunAndThenRunsItself() async {
         gate.isEnabled = true
 
@@ -58,7 +56,6 @@ struct SingleFlightTests {
         #expect(log.events == ["a", "a done", "b", "b done"] && !flight.isRunning)
     }
 
-    /// Two callers for one key while its run is held: one run, and both return once it ends.
     @Test func callersForTheSameKeyJoinTheRunInFlight() async {
         gate.isEnabled = true
 
@@ -73,7 +70,6 @@ struct SingleFlightTests {
         #expect(log.runs == 1 && !flight.isRunning)
     }
 
-    /// A caller without a key joins the keyed run in flight instead of waiting it out.
     @Test func anUnkeyedCallerJoinsWhateverRuns() async {
         gate.isEnabled = true
 

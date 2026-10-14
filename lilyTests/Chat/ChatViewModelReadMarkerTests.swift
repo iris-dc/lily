@@ -67,9 +67,8 @@ struct ChatViewModelReadMarkerTests {
         #expect(harness.chat.readMarks.count == 2, "the waiting attempt went with the flush and sends nothing more")
     }
 
-    /// What the open room shows counts as read at once, before the backend hears of it: a Mine snapshot taken while
-    /// the marker still waits reports the room unread up to the line just read, and the centre overrules it, while a
-    /// line newer than anything read here still counts.
+    /// What the open room shows counts as read before the backend hears of it: a Mine snapshot that still reports the
+    /// line just read as unread is overruled, while a line newer than anything read here still counts.
     @Test func aLiveMessageReadInTheOpenRoomAdvancesTheUnreadMark() async {
         let (harness, viewModel) = await makeHarness(cached: [first])
         await viewModel.appear()

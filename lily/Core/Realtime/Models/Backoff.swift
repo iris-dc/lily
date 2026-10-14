@@ -1,7 +1,7 @@
 import Foundation
 
-/// Where along the reconnect table the next wait falls: `next` answers the table's entry at `attempt` (its last one
-/// past the end) times `1 + random(-jitter...jitter)` and moves on; `reset` starts the table over.
+/// The wait before the next reconnect: walks `table` one entry per attempt and stays on its last, each wait jittered
+/// by up to `jitter` either way.
 nonisolated struct Backoff: Equatable, Sendable {
     let table: [TimeInterval]
     let jitter: Double

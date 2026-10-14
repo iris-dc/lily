@@ -3,8 +3,8 @@ import Foundation
 /// Which slice of groups a list shows: the caller's own, or the public ones anyone can browse and search.
 nonisolated enum GroupScope: Hashable, Sendable {
     case mine
-    /// `query` is a name prefix (name order; `searchPrefix` is how it is read); without one, or with a blank one, the
-    /// page is a browse: nearest first around a position, newest first otherwise.
+    /// `query` is a name prefix (name order); without one, or with a blank one, the page is a browse: nearest first
+    /// around a position, newest first otherwise.
     case discover(query: String?, type: EventType?)
 
     /// The `scope` query value; the backend calls Discover's slice `public`.

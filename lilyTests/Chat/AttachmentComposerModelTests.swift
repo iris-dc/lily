@@ -2,10 +2,9 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The pictures of a message on their way: preparing, uploading under the concurrency cap, uploaded; removal (of an
-/// item in flight, and of one still parked for a slot), the cap, a failed upload and its retry, the cache seeded with
-/// what was sent, and the composer's end, which stops the uploads quietly and takes the strip's files with it. A
-/// refused item of any kind is in `AttachmentComposerModelKindTests`.
+/// The pictures of a message on their way: preparing, uploading under the concurrency cap, uploaded; removal, the cap,
+/// a failed upload and its retry, the cache seeded with what was sent, and the composer's end, which stops its uploads
+/// quietly and takes the strip's files with it.
 @MainActor
 struct AttachmentComposerModelTests {
     private let harness = RealtimeHarness()

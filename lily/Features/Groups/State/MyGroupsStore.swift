@@ -71,11 +71,10 @@ final class MyGroupsStore: SessionObserver {
         await loader.loadIfStale(fetch: fetchMine, apply: applyMine)
     }
 
-    /// Always asks the backend (pull-to-refresh, the resume protocol). A call made while one is in flight for the same
-    /// user joins it; one for another user (a sign-out and sign-in while the previous user's request is still out)
-    /// waits it out and then loads for them; an answer that arrives after the caller signed out or changed is dropped.
-    /// A join, leave, create or edit recorded anywhere while the request was out (a local `add`, `remove` or `replace`
-    /// here, a change on a detail) means the answer predates it: the answer is applied and the load runs once more.
+    /// Always asks the backend (pull-to-refresh, the resume protocol). A call made while one is in flight joins it (one
+    /// for another user waits it out and then loads for them); an answer for a caller who signed out or changed is
+    /// dropped; a change recorded while the request was out (a local `add`, `remove` or `replace`, a detail's write) is
+    /// newer than the answer, so the answer is applied and the load runs once more.
     func reload() async {
         guard identity.currentUserID != nil else {
             clear()

@@ -40,9 +40,8 @@ struct PushEventRelayTests {
         await #expect(throws: PushRegistrationError.timedOut) { try await waiting.value }
     }
 
-    /// The timer of a registration the system already answered finds no waiter and must leave every other one alone;
-    /// a second resume of the answered continuation would crash the app. A later registration's own timeout is what
-    /// the test waits on, so the late timer has fired while the relay is still here.
+    /// A timeout firing after the system answered finds no waiter and must leave the next registration's alone: a second
+    /// resume of the answered continuation would crash the app.
     @Test func aLateTimeoutAfterDeliveryIsHarmless() async throws {
         let answered = Task { try await relay.token(timeout: .seconds(10)) {} }
         await settle(until: { sleep.held.count == 1 })

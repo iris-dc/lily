@@ -44,8 +44,8 @@ nonisolated struct Price: Hashable, Codable, Sendable {
     }
 
     /// Reads typed text as an amount. The whole trimmed text must be one number in the locale's form, so a stray or
-    /// foreign separator, a symbol or a code is unreadable rather than misread (en_US "5,50" was 550 under the lenient
-    /// strategy); empty, unreadable or negative text is no amount.
+    /// foreign separator, a symbol or a code is unreadable rather than misread (a lenient parse reads en_US "5,50" as
+    /// 550); empty, unreadable or negative text is no amount.
     static func parseAmount(_ text: String, locale: Locale = AppLocale.locale) -> Decimal? {
         let trimmed = text.trimmed
         guard let amount = trimmed.wholeMatch(of: inputFormat.locale(locale))?.output, amount >= 0 else { return nil }

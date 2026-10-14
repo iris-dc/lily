@@ -109,8 +109,7 @@ struct CreateTournamentViewModelTests {
         #expect(!viewModel.isDone && harness.presentedError == .network)
     }
 
-    /// Nothing under the client id is the check's answer: the create did not land, the popup shows the create's own
-    /// failure, and the lookup leaves a debug line, never a warning.
+    /// Finding nothing under the client id is the expected answer to a failed create, so the lookup logs at debug, not warning.
     @Test func aCreateThatDidNotLandIsReportedWithoutAWarning() async {
         harness.repository.actionError = AppError.network
         let viewModel = harness.makeCreateViewModel()
@@ -124,7 +123,6 @@ struct CreateTournamentViewModelTests {
         #expect(harness.logs(.debug).contains { $0.contains("did not land") })
     }
 
-    /// A lookup that fails for another reason settles nothing: the create's failure stands and a warning says so.
     @Test func aFailedLookupKeepsTheFailureWithAWarning() async {
         harness.repository.actionError = AppError.network
         harness.repository.detailError = AppError.tournamentsUnavailable
@@ -138,7 +136,6 @@ struct CreateTournamentViewModelTests {
             .filter { $0.contains("Could not check whether tournament \(viewModel.draft.clientId) landed") }.count == 1)
     }
 
-    /// The reminder prompt follows the create: once, after the sheet is done and the tournament was handed on.
     @Test func aTournamentCreateOffersRemindersOnceAfterTheTournamentWasHandedOn() async {
         let spy = SpyPushOptIn()
         let viewModel = harness.makeCreateViewModel(pushOptIn: spy)
@@ -152,7 +149,6 @@ struct CreateTournamentViewModelTests {
         #expect(handedOnAtOffer)
     }
 
-    /// A create that landed although its answer was lost earns the prompt like a direct answer.
     @Test func aTournamentCreateThatLandedDespiteAFailureOffersRemindersOnce() async {
         harness.repository.actionError = AppError.network
         let spy = SpyPushOptIn()
@@ -167,7 +163,6 @@ struct CreateTournamentViewModelTests {
         #expect(spy.offerCount == 1)
     }
 
-    /// Nothing landed, so the popup is what the user sees and there is nothing to be reminded of.
     @Test func aFailedTournamentCreateNeverOffersReminders() async {
         harness.repository.actionError = AppError.tournamentLimit
         let spy = SpyPushOptIn()
@@ -180,8 +175,6 @@ struct CreateTournamentViewModelTests {
         #expect(spy.offerCount == 0)
     }
 
-    /// A start an hour ahead puts "a day before" behind the clock, so the proposal is the injected now (the wall clock
-    /// would answer the day before); a start three days ahead gets the full lead.
     @Test func theDeadlineProposalUsesTheInjectedClock() {
         let viewModel = harness.makeCreateViewModel()
         viewModel.draft.startsAt = Self.now.addingTimeInterval(3600)
@@ -244,7 +237,6 @@ struct EditTournamentViewModelTests {
         #expect(viewModel.isLocked)
     }
 
-    /// The type, format, team size and visibility are fixed once the tournament exists, whatever its phase.
     @Test func anEditNeverOffersTheStructure() {
         let open = harness.makeEditViewModel(for: .fixture())
         let started = harness.makeEditViewModel(for: .fixture(status: .inProgress))

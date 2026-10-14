@@ -32,8 +32,7 @@ struct DeviceRepositoryTests {
         #expect(request.method == .delete && request.path == "/api/me/devices/\(token)" && request.body == nil)
     }
 
-    /// A failure with no case of its own falls back to `.unknown`; the shared mapping is proved once, in
-    /// `SendFailingWithTests`.
+    /// Only the route's own fallback; the shared mapping of `send(_:failingWith:)` has tests of its own.
     @Test func unnamedFailuresFallBackToUnknown() async {
         client.error = APIError.http(status: 400, body: APIErrorBody(code: "VALIDATION_FAILED", message: "m"))
         let payload = DeviceRegistrationPayload(token: "x", platform: "ios", environment: .sandbox, appVersion: "1", locale: "en")

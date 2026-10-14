@@ -13,7 +13,7 @@ struct EmailSignInView: View {
     }
 
     /// A scroll view, not a fixed column: at accessibility type sizes the form with the keyboard up outgrows the sheet,
-    /// and a fixed `VStack` was compressed instead (the title rode up under the back button, both header lines truncated).
+    /// and a fixed `VStack` gets compressed instead (the title rides up under the back button, both header lines truncate).
     var body: some View {
         ContentScreen {
             ScrollView {

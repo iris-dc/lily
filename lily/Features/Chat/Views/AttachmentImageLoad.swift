@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// The state of one picture a view brings through the `AttachmentLoader`: nothing yet, the decoded picture, or
-/// failed (a refused or lost download, bytes that are no picture, or no object to fetch at all). The loader logged why
-/// a download failed, so nothing is logged here. A refusal met after the caller left (its task cancelled) leaves the
-/// state as it was, so a page swiped away mid-download never shows the failed glyph when it comes back; a download
-/// that still lands is kept, since the loader shares it with anyone else asking. Nothing resets when a view's
-/// `.task(id:)` re-runs for another attachment, as the `@State` pair it replaced did not either.
+/// The state of one picture a view brings through the `AttachmentLoader`: nothing yet, the decoded picture, or failed
+/// (a refused or lost download, bytes that are no picture, or nothing to fetch); the loader logs why a download failed.
+/// A cancellation leaves the state as it was, so a page swiped away mid-download never shows the failed glyph when it
+/// comes back, and a download that still lands is kept, since the loader shares it with anyone else asking. Nothing
+/// resets when a view's `.task(id:)` re-runs for another attachment.
 @Observable @MainActor
 final class AttachmentImageLoad {
     private(set) var image: UIImage?
@@ -13,9 +12,9 @@ final class AttachmentImageLoad {
 
     var isLoading: Bool { image == nil && !failed }
 
-    /// Brings the `variant` of `attachment` and decodes it; answers the picture so a caller can hand it on. `available`
-    /// is `false` for a video without a thumbnail: the tile shows its stand-in rather than downloading the whole clip
-    /// for a frame.
+    /// Fetches and decodes `variant` of `attachment`, answering the picture so a caller can hand it on. `available` is
+    /// `false` for a video without a thumbnail: the tile shows its stand-in rather than downloading the whole clip for a
+    /// frame.
     @discardableResult
     func load(_ attachment: Attachment,
               variant: AttachmentVariant,

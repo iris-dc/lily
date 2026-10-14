@@ -66,10 +66,9 @@ nonisolated enum GroupAccess: Equatable, Sendable {
         isMember || (self != .guest && group.isPublic)
     }
 
-    /// Whoever may read the group may report it, as Laurel's `requireReadable` gate admits: members of any group,
-    /// every signed-in caller of a public one, guests never. The owner is left out like a tournament's organiser
-    /// (`TournamentPermissions.canReport`). `.conversation` and `.room` never reach a group detail
-    /// (`GroupDestinations` shows the person or the tournament), so they need no case of their own.
+    /// Whoever may read the group may report it, as Laurel's `requireReadable` admits (members of any group, every
+    /// signed-in caller of a public one, guests never), except the owner, like a tournament's organiser. `.conversation`
+    /// and `.room` never reach a group detail, so they need no rule of their own.
     func canReport(in group: SportGroup) -> Bool {
         canSeeMembers(in: group) && role != .owner
     }

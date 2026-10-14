@@ -129,8 +129,7 @@ struct RemoteChatRepositoryTests {
         #expect(page.nextBefore == nil && page.nextAfter == nil && page.hasMore && page.items.count == 1)
     }
 
-    /// One known code and the route's fallback: the shared mapping is proved once, in `SendFailingWithTests` and
-    /// `BackendErrorCodeTests.everyCodeMapsToItsCase`. `nonisolated`: `@Test(arguments:)` reads it off the main actor.
+    /// `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
         ("MESSAGE_NOT_FOUND", .messageNotFound), ("VALIDATION_FAILED", .messageSendFailed),
     ]

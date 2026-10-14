@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The bar's submit button of a draft sheet: a spinner in place of the title while the request runs, disabled until
-/// the draft is complete. It keeps the toolbar's own glass and size (the toolbar glass lesson is on `DraftSheet`).
+/// the draft is complete. `controlSize: nil` keeps the toolbar's own glass and size (see `DraftSheet`'s toolbar).
 struct DraftSubmitButton: View {
     let title: String
     let isSubmitting: Bool

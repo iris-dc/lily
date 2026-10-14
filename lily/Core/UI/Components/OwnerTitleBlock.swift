@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// The screen title with who owns it underneath (the event's host, the tournament's organiser), a link to that
-/// person's profile when the caller may open it (`destination` set) and the line alone otherwise. Generic over the
-/// destination so Core/UI stays free of the People model; both callers pass a `UserProfileDestination`.
+/// The screen title with who owns it underneath (the event's host, the tournament's organiser), as a link to their
+/// profile when `destination` is set and a plain line otherwise. Generic over the destination so Core/UI stays free of
+/// the People model.
 struct OwnerTitleBlock<Destination: Hashable>: View {
     let title: String
     let subtitle: String

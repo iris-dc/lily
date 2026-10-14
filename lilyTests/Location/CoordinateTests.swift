@@ -21,9 +21,8 @@ struct CoordinateTests {
         #expect(abs(a.distance(to: b) - b.distance(to: a)) < 0.001)
     }
 
-    /// Laurel only ever receives the two-decimal text of `coarse` (its `CoarsePosition.round` is HALF_UP on that
-    /// text, so a binary 1.005 could differ), hence what both sides must share is the printed value: this side keeps
-    /// the given decimals with halves away from zero and prints them fixed (`String(format: "%.2f")`).
+    /// Laurel receives only the printed two-decimal text of `coarse` (and re-rounds that text HALF_UP), so the printed
+    /// value is the contract: this side rounds halves away from zero and prints fixed decimals (`"%.2f"`).
     @Test func roundingKeepsTheGivenDecimalsWithHalvesAwayFromZero() {
         #expect(Coordinate(latitude: 52.5449, longitude: -0.1251).rounded(toDecimals: 2)
                 == Coordinate(latitude: 52.54, longitude: -0.13))

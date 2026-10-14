@@ -68,8 +68,8 @@ struct ChatRoomStateTests {
         #expect(replaced && room.messages.first?.isDeleted == true)
     }
 
-    /// The fourth ordering of a message and its deletion: a page delivered the tombstone, then the live form arrives
-    /// (AppSync delivers unordered); nothing is known as tombstoned, the held row alone says it is gone, and it stays so.
+    /// AppSync delivers unordered: a page may bring the tombstone before the live form arrives; the held row alone says
+    /// it is gone, and it stays so.
     @Test func aLiveFormAfterAPageTombstoneKeepsTheTombstone() {
         var room = ChatRoomState(groupID: "g", channelEpoch: 1)
         room.insert(first.markingDeleted())
@@ -155,8 +155,8 @@ struct ChatRoomStateTests {
         #expect(room.channelEpoch == 5)
     }
 
-    /// The caller's floor moved to m2: what is at or below it is gone, rows and tombstones alike, nothing older exists
-    /// for them, and the watermark sits at the floor so the next catch-up asks from there; the live line above it stays.
+    /// A clear drops rows and tombstones at or below the floor, forgets that older ones exist, and seats the watermark
+    /// at the floor so the next catch-up asks from there.
     @Test func applyClearedDropsWhatIsAtOrBelowTheFloorAndSeatsTheWatermarkThere() {
         var room = ChatRoomState(groupID: "g", channelEpoch: 1)
         room.applyNewest(.fixture([first], hasMore: true))

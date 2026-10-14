@@ -19,8 +19,8 @@ nonisolated struct TournamentDetail: Identifiable, Hashable, Codable, Sendable {
     }
 
     var id: String { tournament.id }
-    /// The entries still in, in seed order. The wire delivers them so and `TournamentContractTests` pins it; the
-    /// sort here is the one guard for a mock or a local edit that reorders them.
+    /// The entries still in, in seed order. The wire delivers them so; the sort guards against a mock or a local edit
+    /// that reorders them.
     var registeredEntries: [TournamentEntry] { entries.filter(\.isRegistered).sorted { $0.seed < $1.seed } }
 
     func entry(id: String) -> TournamentEntry? {

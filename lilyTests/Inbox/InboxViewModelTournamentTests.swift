@@ -57,6 +57,32 @@ struct InboxViewModelTournamentTests {
         #expect(harness.inbox.items.first?.tournamentInvite?.status == .declined)
     }
 
+    /// One code for both caps: on a tournament invite it is the tournaments cap, and no verdict, so nothing reloads.
+    @Test func aTournamentInviteAtTheCapNamesTheTournamentsCap() async {
+        let viewModel = await harness.openInbox([invite])
+        harness.inboxRepository.acceptError = AppError.membershipLimitReached
+
+        await viewModel.accept(invite)
+
+        #expect(harness.presentedError == .tournamentMembershipLimit)
+        #expect(harness.inboxLogs(.error).contains {
+            $0.contains("Invite i1 accept failed") && $0.contains("\(AppError.tournamentMembershipLimit)")
+        })
+        #expect(harness.inbox.items.first?.tournamentInvite?.status == .pending && harness.tournamentChanges.version == 0)
+        #expect(harness.inboxRepository.pageRequests.count == 1, "not a verdict on the invite, so no reload")
+    }
+
+    @Test func aGroupInviteAtTheCapKeepsTheGroupsCap() async {
+        let groupInvite = InboxItem.invite(id: "i2", groupID: "g3")
+        let viewModel = await harness.openInbox([groupInvite])
+        harness.inboxRepository.acceptError = AppError.membershipLimitReached
+
+        await viewModel.accept(groupInvite)
+
+        #expect(harness.presentedError == .membershipLimitReached)
+        #expect(harness.inbox.items.first?.invite?.status == .pending && harness.navigation.chatPath.isEmpty)
+    }
+
     @Test func decliningATournamentInviteMarksItDeclined() async {
         let viewModel = await harness.openInbox([invite])
 

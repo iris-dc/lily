@@ -168,7 +168,7 @@ struct ChatCatchUpTests {
     }
 
     /// The stub cached before the first page stays when that page fails: a live line still has somewhere to land, and
-    /// the next catch-up asks for the newest page again instead of finding nothing to do.
+    /// the next catch-up asks for the newest page again.
     @Test func aFailedNewestKeepsTheStub() async throws {
         repository.pageError = AppError.chatUnavailable
 
@@ -187,8 +187,8 @@ struct ChatCatchUpTests {
         #expect(room?.restWatermark == "m2" && room?.messages.map(\.id) == ["m1", "m2"])
     }
 
-    /// The pages a catch-up applied before a later one failed stay applied, with the watermark on the last of them,
-    /// so the next catch-up continues from there rather than asking for them again. A throw is no stop at the limit.
+    /// Pages applied before a later one fails stay applied, the watermark on the last of them, so the next catch-up
+    /// continues from there; a throw is no stop at the page limit.
     @Test func aNewerFailureMidLoopKeepsThePagesApplied() async {
         cache.store(.fixture(messages: [.fixture(id: "m1")]), for: "g")
         repository.newerPages = [.fixture([.fixture(id: "m2")], hasMore: true), .fixture([.fixture(id: "m3")], hasMore: true)]

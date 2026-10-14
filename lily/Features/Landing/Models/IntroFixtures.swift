@@ -8,8 +8,7 @@ nonisolated enum IntroFixtures {
     /// Who announces the game and asks the question in the chat miniature: the mock rooms' first sender.
     static let senderName = MockChatFixtures.senders[0]
 
-    /// As many cards as the live preview is trimmed to, so the miniature's cropped frame shows one length for samples
-    /// and live data.
+    /// The live preview's count, so samples and live data fill the cropped frame to the same length.
     static func events(now: Date) -> [SportEvent] {
         MockEventFixtures.make(now: now, count: AppConfig.Events.landingPreviewCount)
     }

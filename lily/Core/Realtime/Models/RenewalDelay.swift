@@ -10,7 +10,6 @@ nonisolated struct RenewalDelay: Equatable, Sendable {
         case insideMargin
     }
 
-    /// The expiry-bound wait: `exp - margin - now`, at most `maxConnectionAge`; `maxConnectionAge` without an `exp`.
     let bound: TimeInterval
     let reason: Reason
 
@@ -27,8 +26,6 @@ nonisolated struct RenewalDelay: Equatable, Sendable {
         }
     }
 
-    /// The wait to sleep: the bound for `.scheduled`, which also starts the backoff over; for the other two reasons
-    /// the later of the bound and the backoff's next wait.
     func seconds(backingOff backoff: inout Backoff, random: (ClosedRange<Double>) -> Double) -> TimeInterval {
         guard reason != .scheduled else {
             backoff.reset()

@@ -3,9 +3,8 @@ import Foundation
 /// The rows of a mock room: `AppConfig.Chat.mockMessagesPerRoom` text messages from three fixture members and the
 /// caller, plus one system row about a game created in the group; the conversation with Marta has a few lines of its
 /// own. Ids sort like ULIDs and are shared with the group fixtures, so a group's `lastMessageId` and the caller's read
-/// marker name real rows; a line written in the run (`sentMessageID`) takes the room's own id space above every
-/// fixture index, so it sorts after the room's fixtures and after every earlier line of the run, as the backend's
-/// ULIDs do.
+/// marker name real rows; a line written in the run (`sentMessageID`) sorts after every fixture row of its room and
+/// after every earlier line of the run, as the backend's ULIDs do.
 nonisolated enum MockChatFixtures {
     static let senders = ["Marta", "Jonas", "Ayşe"]
     /// What Marta answers under `-mock-chat-replies`, in turn.
@@ -82,8 +81,8 @@ nonisolated enum MockChatFixtures {
     private static let idDigits = 16
     private static let secondsBetweenMessages = 540.0
     private static let idGroupCodeLength = 2
-    /// Every fixture index lies below it, the deepest demo room (`AppConfig.Chat.mockLongRoomMessages`, 300) included;
-    /// `idDigits` pads either.
+    /// Above every fixture index, the deepest demo room (`AppConfig.Chat.mockLongRoomMessages`) included; `idDigits`
+    /// pads both.
     private static let sentIndexBase = 1_000_000
 
     /// Sortable like a ULID: a fixed prefix, a two-symbol group code and a zero-padded sequence.
@@ -91,9 +90,9 @@ nonisolated enum MockChatFixtures {
         idPrefix + groupCode(groupID) + String(format: "%0\(idDigits)d", index)
     }
 
-    /// The id of the `sequence`-th line written in this run, in the room's own id space: it follows every fixture row
-    /// of that room and every earlier line of the run, like the ULIDs the backend mints. The clock plays no part, so a
-    /// test clock near the epoch can never land on a fixture index.
+    /// The id of the `sequence`-th line written in this run: above every fixture row of the room and every earlier
+    /// line of the run, like the ULIDs the backend mints. A sequence, not a clock, so an id can never land among the
+    /// fixture indices whatever the time is.
     static func sentMessageID(groupID: String, sequence: Int) -> String {
         messageID(groupID: groupID, index: sentIndexBase + sequence)
     }

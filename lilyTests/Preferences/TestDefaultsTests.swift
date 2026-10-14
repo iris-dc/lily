@@ -1,9 +1,8 @@
 import Foundation
 import Testing
 
-/// `makeTestDefaults()` hands every store and composition root a `TestDefaults`: a `UserDefaults` suite of its own,
-/// whose values go with the last reference, so no two tests share a stored session and a run leaves no stored
-/// session, choice or filter in the simulator's container.
+/// `TestDefaults` is a `UserDefaults` suite of its own whose values go with the last reference: no two tests share a
+/// stored session, and a run leaves no session, choice or filter behind in the simulator's container.
 @MainActor
 struct TestDefaultsTests {
     private let key = "k"

@@ -21,8 +21,7 @@ struct MembersViewModelGroupTests {
         harness.makeMembersViewModel(group: .fixture(id: "g", memberCount: 3, role: .owner))
     }
 
-    /// The backend answers the banned member alone, so the group shown and handed on is the one read back, never a
-    /// snapshot with its count decremented on the device.
+    /// The backend answers the banned member alone, so the group is read back rather than its count decremented on the device.
     @Test func aBanRefetchesTheGroup() async {
         let viewModel = makeOwnersViewModel()
         await viewModel.load()

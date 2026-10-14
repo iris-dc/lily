@@ -1,13 +1,10 @@
 import Foundation
 
-/// The start and the results: the backend's refusals in its order, in memory. A start is the organiser's while
-/// registration is open and needs the format's minimum (a second start replays); every match route needs a signed-in
-/// caller, the tournament under way (`MATCH_NOT_READY` whoever asks) and a match the id names (`MATCH_NOT_FOUND`), then
-/// asks who the caller is (`NOT_IN_MATCH`) before what the match can take. A side's score is `reported` until the other
-/// side confirms it or reports the same score; the organiser's is `confirmed` at once; a report is answered by the
-/// other side or the organiser, never by the side that made it, which reports again instead. What a start draws and
-/// what a settled result moves (the winner's advance, the table, the completion) is `TournamentDetail.starting` and
-/// `.settling`'s.
+/// The start and the results, with the backend's refusals in the backend's order: a signed-in caller, the tournament
+/// under way (`MATCH_NOT_READY` whoever asks), a match the id names (`MATCH_NOT_FOUND`), then who the caller is
+/// (`NOT_IN_MATCH`), then what the match can take. A result, confirmation or walkover that already stands by the
+/// caller's own hand is a repeat and answers the detail without a write; a dispute never is. What a start draws and what
+/// a settled result moves is `TournamentDetail.starting` and `.settling`'s.
 extension MockTournamentRepository {
     func start(id: String) async throws -> TournamentDetail {
         let detail = try organized(id)
@@ -24,6 +21,7 @@ extension MockTournamentRepository {
         guard range.contains(scoreA), range.contains(scoreB) else { throw AppError.tournamentActionFailed }
         let (detail, match) = try runningMatch(id, matchID)
         try requireSideOrOrganizer(match, in: detail)
+        if repeatsResult(match, scoreA, scoreB) { return replayed(detail, "result", matchID) }
         try requireOpen(match)
         guard scoreA != scoreB || detail.tournament.permitsDraws else { throw AppError.drawNotAllowed }
         let caller = MockTournamentFixtures.callerMarker
@@ -42,14 +40,17 @@ extension MockTournamentRepository {
 
     func confirm(id: String, matchID: String) async throws -> TournamentDetail {
         let (detail, match) = try runningMatch(id, matchID)
-        try requireAnswerable(match, in: detail)
+        try requireSideOrOrganizer(match, in: detail)
+        if repeatsConfirm(match) { return replayed(detail, "confirmation", matchID) }
+        try requireReportedByTheOtherSide(match, in: detail)
         logger.info(.tournaments, "Mock match \(matchID) of \(id) confirmed")
         return resolved(settle(match.confirming(by: MockTournamentFixtures.callerMarker, at: now()), in: detail))
     }
 
     func dispute(id: String, matchID: String) async throws -> TournamentDetail {
         let (detail, match) = try runningMatch(id, matchID)
-        try requireAnswerable(match, in: detail)
+        try requireSideOrOrganizer(match, in: detail)
+        try requireReportedByTheOtherSide(match, in: detail)
         logger.info(.tournaments, "Mock dispute of match \(matchID) of \(id)")
         return resolved(settle(match.disputing(), in: detail))
     }
@@ -57,6 +58,7 @@ extension MockTournamentRepository {
     func walkover(id: String, matchID: String, winnerEntryID: String) async throws -> TournamentDetail {
         let (detail, match) = try runningMatch(id, matchID)
         try requireOrganizer(of: detail)
+        if repeatsWalkover(match, winnerEntryID) { return replayed(detail, "walkover", matchID) }
         try requireOpen(match)
         guard match.contains(entryID: winnerEntryID) else { throw AppError.tournamentActionFailed }
         logger.info(.tournaments, "Mock walkover for match \(matchID) of \(id): entry \(winnerEntryID)")
@@ -106,12 +108,34 @@ extension MockTournamentRepository {
     }
 
     /// A report is answered by the other side or the organiser; the side that made it reports again instead.
-    private func requireAnswerable(_ match: TournamentMatch, in detail: TournamentDetail) throws {
-        try requireSideOrOrganizer(match, in: detail)
+    private func requireReportedByTheOtherSide(_ match: TournamentMatch, in detail: TournamentDetail) throws {
         guard match.status == .reported else { throw AppError.matchNotReady }
         guard isOrganizer(of: detail) || !reportedBySide(of: MockTournamentFixtures.callerMarker, match, in: detail) else {
             throw AppError.matchNotReady
         }
+    }
+
+    /// The backend's repeat rule: the write stands by the caller's own hand, so sending it again changes nothing.
+    private func standsByCaller(_ match: TournamentMatch, as status: MatchStatus) -> Bool {
+        match.status == status && match.confirmedBy == MockTournamentFixtures.callerMarker
+    }
+
+    private func repeatsResult(_ match: TournamentMatch, _ scoreA: Int, _ scoreB: Int) -> Bool {
+        standsByCaller(match, as: .confirmed) && match.scoreA == scoreA && match.scoreB == scoreB
+    }
+
+    private func repeatsConfirm(_ match: TournamentMatch) -> Bool {
+        standsByCaller(match, as: .confirmed)
+    }
+
+    private func repeatsWalkover(_ match: TournamentMatch, _ winnerEntryID: String) -> Bool {
+        standsByCaller(match, as: .walkover) && match.winnerEntryId == winnerEntryID
+    }
+
+    /// A repeat is answered with the detail as it stands, as the backend answers a replay: no write, no change.
+    private func replayed(_ detail: TournamentDetail, _ write: String, _ matchID: String) -> TournamentDetail {
+        logger.info(.tournaments, "Mock \(write) for match \(matchID) of \(detail.id) repeated; answering the detail")
+        return resolved(detail)
     }
 
     /// Whether the stored report came from the user's side; a teammate's report counts as theirs.

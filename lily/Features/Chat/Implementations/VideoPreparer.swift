@@ -9,7 +9,7 @@ import Foundation
 /// in tmp. The export runs on AVFoundation's own queues off the main actor and dies with the caller (`DetachedWork`);
 /// only the draft comes back. One of the three workers behind `DeviceMediaPreparer`.
 final class VideoPreparer {
-    /// Plain data, free of the actor, so the detached export task and a test's default argument can build one.
+    /// Plain data, free of the actor, so the detached export task can take one.
     nonisolated struct Limits: Sendable {
         var maxDurationSeconds = AppConfig.Chat.Attachments.videoMaxDurationSeconds
         var exportPreset = AppConfig.Chat.Attachments.videoExportPreset

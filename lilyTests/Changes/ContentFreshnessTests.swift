@@ -138,8 +138,7 @@ struct ContentFreshnessTests {
         #expect(freshness.positionReason(for: Self.berlin) == nil)
     }
 
-    /// The four lists (events, Mine, the inbox, the tournaments) build their freshness from `standard`, so the TTL and
-    /// the cooldown are decided once in `AppConfig.Lists`.
+    /// Every list builds its freshness from `standard`, so the TTL and the cooldown are decided once in `AppConfig.Lists`.
     @Test func everyListSharesOneFreshnessRule() {
         var fresh = ContentFreshness.standard
         let loaded = Self.start

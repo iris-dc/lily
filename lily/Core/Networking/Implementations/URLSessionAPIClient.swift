@@ -13,9 +13,9 @@ final class URLSessionAPIClient: APIClient {
     private let decoder = APIJSONCoding.makeDecoder()
     private let encoder = APIJSONCoding.makeEncoder()
 
-    /// `+`, `&` and `=` are percent-encoded along with everything `urlQueryAllowed` refuses. `URL.append(queryItems:)`
-    /// leaves `+` bare, which the backend's servlet layer reads as a space, so a `+` typed into Discover's search never
-    /// reached Laurel.
+    /// `+`, `&` and `=` are percent-encoded along with everything `urlQueryAllowed` refuses: `URL.append(queryItems:)`
+    /// leaves `+` bare, which the backend's servlet layer reads as a space, so a `+` typed into a search would never
+    /// reach Laurel.
     private static let queryAllowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "+&="))
 
     /// `tokenProvider` is `nil` when auth is mocked: no token exists, and none is sent.
@@ -42,8 +42,8 @@ final class URLSessionAPIClient: APIClient {
         return URLSession(configuration: configuration)
     }
 
-    /// Every log line names the endpoint through `logPath` when the request has one, so a path that carries a value
-    /// the log must not hold (the device token) is logged redacted.
+    /// Log lines name the endpoint by `logPath` when the request has one, so a path carrying a value the log must not
+    /// hold (the device token) is logged redacted.
     func send<Response: Decodable>(_ request: APIRequest<Response>) async throws -> Response {
         let endpoint = "\(request.method.rawValue) \(request.logPath ?? request.path)"
         logger.debug(.network, "Sending \(endpoint)")
@@ -106,10 +106,10 @@ final class URLSessionAPIClient: APIClient {
     }
 
     /// Reads the backend's `{code, message}` when there is one, and `Retry-After` in seconds (the only form the
-    /// backend sends; a date is ignored); the log carries the code, never the body itself. A refusal the product
-    /// expects (a known backend code on a 4xx, a rejected token, a throttle) is a warning, since the view model logs
-    /// its own line; a fault (a 5xx, an unreadable body, a code the app does not know such as `VALIDATION_FAILED`,
-    /// which signals a client-validation drift) is an error.
+    /// backend sends; a date is ignored); the log carries the code, never the body. A refusal the product expects (a
+    /// known code on a 4xx, a rejected token, a throttle) is a warning, since the view model logs its own line; a fault
+    /// (a 5xx, an unreadable body, an unknown code such as `VALIDATION_FAILED`, which means client validation drifted)
+    /// is an error.
     private func failure(_ response: HTTPURLResponse, data: Data, endpoint: String) -> APIError {
         let status = response.statusCode
         let body = try? decoder.decode(APIErrorBody.self, from: data)

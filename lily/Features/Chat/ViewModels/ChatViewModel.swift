@@ -3,12 +3,9 @@ import Observation
 
 /// One open chat room. The room's messages live in the shared `ChatHistoryCache` (the realtime controller writes
 /// there too, so this screen never holds a stale copy) and its unsent messages in the shared `ChatOutbox` (so a send
-/// that fails after Back is still a failed bubble with Retry on the next open); this owns what is local to the screen:
-/// the draft, the pictures being attached (`ChatViewModel+Attachments.swift`), the roster for live names, the read
-/// marker (`ReadMarkerFlusher`), the content behind the system rows (`SystemRowContent`, reached through
-/// `ChatViewModel+Events.swift`), the history paging (`ChatViewModel+History.swift`), the live subscription
-/// (`ChatViewModel+Live.swift`), the clear (`ChatViewModel+Clear.swift`) and the moderation items
-/// (`ChatViewModel+Moderation.swift`).
+/// that fails after Back is still a failed bubble with Retry on the next open); this owns only what is local to the
+/// screen: the draft, the attachments being composed, the roster for live names, the read marker, the content behind
+/// the system rows, the history paging and the live subscription.
 @Observable
 final class ChatViewModel {
     var group: SportGroup
@@ -17,8 +14,8 @@ final class ChatViewModel {
     let attachments: AttachmentComposerModel
     private(set) var members: [GroupMember] = []
     var isLoadingHistory = false
-    /// The last `loadHistory()` failed for a reason that leaves the room the caller's, so the empty state offers Try
-    /// again; cleared by the next load.
+    /// The last `loadHistory()` failed while the room stays readable, so the empty state offers Try again; cleared by
+    /// the next load.
     var historyLoadFailed = false
     /// The older page in flight: the transcript's scroll never asks beside it, a quote tap waits for it.
     var olderPageTask: Task<Bool, Never>?
@@ -33,17 +30,14 @@ final class ChatViewModel {
 
     let repository: any ChatRepository
     let groups: any GroupRepository
-    /// The games and tournaments behind the system rows and where a row leads (`ChatViewModel+Events.swift`).
     let systemRows: SystemRowContent
     let pasteboard: any Pasteboard
     let cache: any ChatHistoryCache
     let realtime: RealtimeSessionController
     let catchUp: ChatCatchUp
-    /// The room's read marker: the dot at once, the backend at the flusher's pace (see `ReadMarkerFlusher`).
     let readMarker: ReadMarkerFlusher
     /// Whether the backend takes attachments comes from here.
     let me: MeStore
-    /// The caller's block list, shared by every room; the senders whose lines `rows` hides.
     let blocks: BlockListStore
     /// The bytes of stored pictures, for the bubbles and the viewer.
     let attachmentLoader: AttachmentLoader
@@ -52,7 +46,6 @@ final class ChatViewModel {
     let reporter: GroupErrorReporter
     /// Clears the room for the caller; shared with the Chats rows, so both do exactly the same.
     let clearer: ChatHistoryClearer
-    /// The unsent and failed messages of every room; this room's are read and written as `pending`.
     let outbox: ChatOutbox
     let recorder: any InteractionRecorder
     let logger: any Logging
@@ -192,8 +185,7 @@ final class ChatViewModel {
     }
 
     /// Cancellation stays quiet; a room the caller lost access to is dropped everywhere (Mine, cache, dot,
-    /// subscription), as it is when a `member_left` names the caller; everything else reaches the popup. A refusal the
-    /// room expects (`AppError.isChatRefusal`) is logged at warning, a fault at error.
+    /// subscription), as when a `member_left` names the caller; everything else reaches the popup.
     func report(_ error: any Error, during step: String) {
         guard !AppError.isCancellation(error) else { return }
         logger.log(AppError.chatLogLevel(for: error), .chat, "\(step) failed in group \(group.id): \(error)")
@@ -231,10 +223,7 @@ extension AppError {
         self == .notAMember || self == .groupNotFound
     }
 
-    /// Refusals a room expects as product states, not faults, logged at warning like the event and tournament
-    /// details' conflict sets so error-level lines stay faults: a cooldown, a quote whose target is gone, the terms,
-    /// rejected content, a lost race the repeat lost too, a room the caller is out of, a message or a system row's
-    /// game already gone.
+    /// Refusals a room expects as product states, logged at warning so that error-level lines stay faults.
     var isChatRefusal: Bool {
         switch self {
         case .rateLimited, .replyTargetNotFound, .termsRequired, .contentRejected, .tryAgain, .notAMember,
@@ -245,7 +234,6 @@ extension AppError {
         }
     }
 
-    /// The level a room logs a failure at: a refusal it expects (`isChatRefusal`) is a warning, a fault an error.
     static func chatLogLevel(for error: any Error) -> LogLevel {
         (error as? AppError)?.isChatRefusal == true ? .warning : .error
     }

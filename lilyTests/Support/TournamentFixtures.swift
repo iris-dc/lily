@@ -64,7 +64,7 @@ extension TournamentEntry {
 }
 
 extension TournamentDetail {
-    /// The caller's entry by `myEntryId`, for the contract and mock tests that read it; nothing in the app does.
+    /// The caller's entry by `myEntryId`; nothing in the app reads it, so it lives with the tests.
     var myEntry: TournamentEntry? { tournament.myEntryId.flatMap(entry(id:)) }
 
     static func fixture(tournament: Tournament = .fixture(),

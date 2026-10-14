@@ -13,10 +13,9 @@ extension ChatViewModel {
         await perform(draft)
     }
 
-    /// Sends the bubble's draft again under the same client id. The bubble is found by that id, so a copy taken before
-    /// the bubble changed (a quote dropped meanwhile) still names it, and what goes out is the bubble's current draft.
-    /// Only a failed bubble is sent: a second tap landing before the first re-rendered finds the bubble `.sending`
-    /// (the copy it carries is stale) and must send nothing more.
+    /// Sends the bubble's draft again under the same client id. The bubble is looked up by that id rather than trusting
+    /// the copy the tap carries, which may be stale: a quote dropped meanwhile must go out dropped, and a second tap
+    /// landing before the first re-rendered finds the bubble `.sending` and sends nothing more.
     func retry(_ message: PendingMessage) async {
         guard !isCoolingDown,
               let current = pending.first(where: { $0.clientMessageID == message.clientMessageID }),
@@ -64,10 +63,9 @@ extension ChatViewModel {
         }
     }
 
-    /// The stored message replaces the bubble; the live echo arriving first has already done so. The bubble is
-    /// confirmed (its files seeded) before the stored message goes in: its thumbnail request must find the pictures in
-    /// the cache, or it downloads what was just sent. `mutateRoom` re-reads the room after the await, so a room
-    /// dropped meanwhile is not re-created.
+    /// The stored message replaces the bubble (the live echo arriving first has already done so). The bubble's files are
+    /// seeded before the message goes in, or its thumbnail request would download what was just sent; `mutateRoom`
+    /// re-reads the room after the await, so a room dropped meanwhile is not re-created.
     private func settle(_ clientMessageID: String, with message: ChatMessage) async {
         await confirmPending(clientMessageID: clientMessageID, with: message)
         mutateRoom { $0.insert(message) }

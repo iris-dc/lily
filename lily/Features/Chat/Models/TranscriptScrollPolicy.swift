@@ -1,14 +1,11 @@
 import Foundation
 
-/// What the chat transcript's scroll position does after each geometry report and each appended row. Pure, so the
-/// rules are tested without a view: the newest row is pinned above the composer once the first page has laid out (the
-/// default bottom anchor ignores the composer's safe-area inset), an older page keeps what was on screen where it was
-/// (the prepended height is added to the offset; the prepend is told from growth at the bottom by the oldest message
-/// held, not by the height, so a live message or a system row's game landing during the round trip is never
-/// compensated), an inset change or a shrink of the content at the bottom re-pins the bottom (the keyboard, a block
-/// hiding a sender's rows), the page before is requested only when the reader has scrolled near the top after that
-/// first settle, never during the initial layout, and an appended row is followed to the bottom when it is the
-/// caller's own or the reader is already there.
+/// What the chat transcript's scroll position does after each geometry report and each appended row; pure, so the rules
+/// can be checked without a view. The newest row is pinned above the composer once the first page has laid out (the
+/// default bottom anchor ignores the composer's safe-area inset), an older page keeps what was on screen where it was,
+/// an inset change or a shrink of the content while at the bottom re-pins it (the keyboard, a block hiding a sender's
+/// rows), and the page before is requested only once the reader has scrolled near the top after that first settle,
+/// never during the initial layout.
 nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     struct Snapshot: Equatable, Sendable {
         var offsetY: CGFloat
@@ -47,8 +44,8 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
         pendingRestore = nil
     }
 
-    /// What the list does when a row is appended: the caller's rows always scroll to the bottom, any other row (another
-    /// member's bubble, a system note) only while the reader is there, so reading older messages is never interrupted.
+    /// The caller's own row always scrolls to the bottom; another member's or a system row only while the reader is
+    /// there, so reading older messages is never interrupted.
     static func rowAppended(_ row: ChatRow?, isAtBottom: Bool) -> Action {
         guard let row, row.isOwn || isAtBottom else { return .none }
         return .scrollToBottom

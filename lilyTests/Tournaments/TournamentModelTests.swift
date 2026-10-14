@@ -1,7 +1,6 @@
 import Testing
 @testable import lily
 
-/// The tournament model's own derived rules; the detail model's are in `TournamentDetailModelTests`.
 struct TournamentModelTests {
     @Test func isNearlyFullFollowsTheFillRatio() {
         let nearlyFull = Tournament.fixture(maxEntries: 8, entryCount: 6)

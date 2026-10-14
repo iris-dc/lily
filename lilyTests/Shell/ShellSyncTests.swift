@@ -3,8 +3,6 @@ import SwiftUI
 import Testing
 @testable import lily
 
-/// The shell's restore and per-user sync over the realtime, push and session harnesses: what waits for what, what a
-/// guest and a background run leave alone, and the start tab landing before a parked notification tap opens.
 @MainActor
 struct ShellSyncTests {
     private let realtime: RealtimeHarness

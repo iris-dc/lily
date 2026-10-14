@@ -24215,6 +24215,154 @@
         }
       }
     },
+    "You can be in at most %lld tournaments. Leave one that hasn't started yet to enter another.": {
+      "localizations": {
+        "ru": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можно участвовать не больше чем в %lld турнире. Покиньте один, который ещё не начался, чтобы вступить в другой."
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можно участвовать не больше чем в %lld турнирах. Покиньте один, который ещё не начался, чтобы вступить в другой."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можно участвовать не больше чем в %lld турнирах. Покиньте один, который ещё не начался, чтобы вступить в другой."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можно участвовать не больше чем в %lld турнирах. Покиньте один, который ещё не начался, чтобы вступить в другой."
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Puedes estar como máximo en %lld torneo. Sal de uno que aún no haya empezado para inscribirte en otro."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Puedes estar como máximo en %lld torneos. Sal de uno que aún no haya empezado para inscribirte en otro."
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vous pouvez être dans %lld tournoi au plus. Quittez-en un qui n'a pas encore commencé pour vous inscrire à un autre."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vous pouvez être dans %lld tournois au plus. Quittez-en un qui n'a pas encore commencé pour vous inscrire à un autre."
+                }
+              }
+            }
+          }
+        },
+        "uk": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можна брати участь щонайбільше в %lld турнірі. Вийдіть з одного, що ще не почався, щоб вступити в інший."
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можна брати участь щонайбільше в %lld турнірах. Вийдіть з одного, що ще не почався, щоб вступити в інший."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можна брати участь щонайбільше в %lld турнірах. Вийдіть з одного, що ще не почався, щоб вступити в інший."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можна брати участь щонайбільше в %lld турнірах. Вийдіть з одного, що ще не почався, щоб вступити в інший."
+                }
+              }
+            }
+          }
+        },
+        "pl": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Możesz być najwyżej w %lld turnieju. Opuść jeden, który jeszcze się nie zaczął, aby dołączyć do innego."
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Możesz być najwyżej w %lld turniejach. Opuść jeden, który jeszcze się nie zaczął, aby dołączyć do innego."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Możesz być najwyżej w %lld turniejach. Opuść jeden, który jeszcze się nie zaczął, aby dołączyć do innego."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Możesz być najwyżej w %lld turniejach. Opuść jeden, który jeszcze się nie zaczął, aby dołączyć do innego."
+                }
+              }
+            }
+          }
+        },
+        "pt": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Pode estar no máximo em %lld torneio. Saia de um que ainda não começou para entrar em outro."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Pode estar no máximo em %lld torneios. Saia de um que ainda não começou para entrar em outro."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "You can have at most %lld conversations.": {
       "localizations": {
         "ru": {

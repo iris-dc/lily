@@ -184,10 +184,9 @@ extension RealtimeSessionController {
         if moveEpoch(of: groupID, to: epoch) { reconcileSubscriptions() }
     }
 
-    /// The newest epoch learned for a room from any source (an event, a page, a refetched group, the open chat's
-    /// send): noted for the cached room when newer than its own, and for the controller when newer than anything
-    /// known, which is logged once. Answers whether the controller's knowledge moved; callers resubscribe
-    /// themselves (`reconcileSubscriptions()`), because the jittered one waits first.
+    /// Notes an epoch learned from any source (an event, a page, a refetched group, the open chat's send) for the cached
+    /// room and for the controller, each when newer than what it holds. Answers whether the controller's knowledge
+    /// moved; the caller decides whether to resubscribe at once or with jitter.
     @discardableResult
     func moveEpoch(of groupID: String, to epoch: Int?) -> Bool {
         guard let epoch else { return false }
@@ -217,9 +216,9 @@ extension RealtimeSessionController {
         }
     }
 
-    /// The caller is out of the group, whichever way: Mine (which records the change for every other screen), the
-    /// room cache, the unread dot and the subscription go. The chat calls it for a page or write the backend refused
-    /// (`NOT_A_MEMBER`, `GROUP_NOT_FOUND`) and the clearer for a conversation it hid.
+    /// The caller is out of the group, whichever way (an event, a page or write refused with `NOT_A_MEMBER` or
+    /// `GROUP_NOT_FOUND`, a conversation they hid): Mine (which records the change for every other screen), the room
+    /// cache, the unread dot and the subscription go.
     func removeGroupLocally(_ groupID: String, reason: String) {
         store.remove(id: groupID)
         cache.drop(groupID: groupID, reason: reason)

@@ -88,9 +88,8 @@ struct CachedLocationServiceTests {
         #expect(upstream.callCount == 1)
     }
 
-    /// The shared request is bounded by the upstream timeout, not by its first caller: the fix it obtains is
-    /// remembered for whichever screen asks next. Propagating the cancellation into it would cancel the upstream
-    /// request and leave every caller without a fix.
+    /// The shared request is bounded by the upstream timeout, not by its first caller. Propagating a cancellation into
+    /// it would cancel the upstream request and leave every caller without a fix.
     @Test func aSharedFixSurvivesACallersCancellation() async {
         upstream.holdsRequests = true
         let service = makeService()

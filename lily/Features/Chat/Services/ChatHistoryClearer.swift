@@ -1,13 +1,11 @@
 import Foundation
 
 /// Clears a room for the caller alone: `DELETE /api/groups/{id}/messages` moves their history floor, so what came
-/// before is gone from their pages while every other member keeps it. The room's unsent bubbles go with it, files and
-/// all. The backend's verdict says what becomes of the room: one it still lists keeps its row and its cached room is
-/// seated at the floor (a line that landed meanwhile stays, the watermark sits at the floor, so the next appear catches
-/// up from there and a quiet room is not fetched at all); one it hid (`hidden`, a conversation with today's Laurel)
-/// leaves Mine, the cache and the realtime subscription at once through `RealtimeSessionController.removeGroupLocally`,
-/// and returns on a later Mine load once either side writes again. The chat's menu and a Chats row's context menu both
-/// go through one of these.
+/// before is gone from their pages while every other member keeps it; the room's unsent bubbles go with it, files and
+/// all. The backend's verdict decides the room's fate: one it still lists keeps its row and its cached room is seated
+/// at the floor (a line that landed meanwhile stays, and the watermark at the floor lets the next appear catch up from
+/// there); one it hid leaves Mine, the cache and the realtime subscription at once, and returns on a later Mine load
+/// once either side writes again.
 final class ChatHistoryClearer {
     private let repository: any ChatRepository
     private let cache: any ChatHistoryCache
@@ -33,8 +31,8 @@ final class ChatHistoryClearer {
         self.logger = logger
     }
 
-    /// The backend's verdict, or `nil` when the history is not gone: a failure has reached the popup already (a refusal
-    /// the room expects, `AppError.isChatRefusal`, logged at warning, a fault at error), cancellation stays quiet.
+    /// The backend's verdict, or `nil` when the history is not gone: a failure has reached the popup already,
+    /// cancellation stays quiet.
     func clear(_ group: SportGroup) async -> ClearedHistory? {
         do {
             let cleared = try await repository.clearHistory(groupID: group.id)

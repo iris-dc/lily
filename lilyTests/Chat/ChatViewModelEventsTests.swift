@@ -44,7 +44,6 @@ struct ChatViewModelEventsTests {
         #expect(await viewModel.destination(for: .fixture(id: "t", text: "plain")) == nil, "a text row has no game")
     }
 
-    /// Until 2026-10-13 a deleted game earned a GET and a warning on every scroll-in of its row.
     @Test func aGoneGameIsLookedUpOnce() async {
         let (harness, viewModel) = await makeChat()
 

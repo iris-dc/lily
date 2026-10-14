@@ -1,14 +1,12 @@
 import AVKit
 import SwiftUI
 
-/// One page of `AttachmentViewerSheet`: a video brought onto the device through the `AttachmentLoader` first (a ring
-/// shows the download; the cache answers at once for a clip seen before or just sent) and then played from its named
-/// file (`previewFile`: the cache's file has no extension, and `AVPlayer` refuses one) in the system player, so the
-/// mock's `mock://` links play like the bucket's and a replay never costs egress again. The clip loads and plays only
-/// while the page is the one on screen (`isCurrent`): the pager instantiates a neighbour during a swipe, so a clip
-/// must not start behind a picture, and a page swiped away stops, a download in flight cancelled with it. The preview
-/// copy goes with the player, as the QuickLook modifier removes its own (`QuickLookPreview`), because a hard link in
-/// tmp would otherwise keep a cleared clip's bytes alive until iOS purges tmp.
+/// One page of `AttachmentViewerSheet`: the clip is downloaded through the `AttachmentLoader` (a ring shows the
+/// progress; the cache answers at once for a clip seen before or just sent) and played from `previewFile`'s named copy,
+/// since `AVPlayer` refuses the cache's extensionless file. It loads and plays only while `isCurrent`: the pager
+/// instantiates a neighbour during a swipe, so a clip must not start behind a picture, and a page swiped away stops,
+/// its download cancelled. The preview copy is removed with the player, or a hard link in tmp would keep a cleared
+/// clip's bytes alive until iOS purges tmp.
 struct VideoPlayerPage: View {
     let attachment: Attachment
     let message: ChatMessage
@@ -49,8 +47,8 @@ struct VideoPlayerPage: View {
     private func load() async {
         do {
             let url = try await loader.previewFile(for: attachment, in: message) { progress = $0 }
-            // The page may have been swiped away or closed by now (the download outlives it): a player nobody shows
-            // must not start, and the copy nobody else would remove goes now.
+            // Swiped away or closed while the download ran: no player nobody shows, and the copy nobody else would
+            // remove goes now.
             guard !Task.isCancelled else {
                 PreviewFiles.remove(url)
                 return
@@ -65,8 +63,8 @@ struct VideoPlayerPage: View {
         }
     }
 
-    /// The player is let go with the page, so no clip keeps playing or its file open behind another page or the chat,
-    /// and the preview copy with it; the ring starts afresh should the page come back.
+    /// Lets the player go, so no clip plays on or holds its file open behind another page, removes the preview copy and
+    /// resets the ring for a return to this page.
     private func stop() {
         player?.pause()
         player = nil

@@ -2,10 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Subscriptions and resubscribes, which the routing suite, near its limits, cannot hold: a stream's end told from a
-/// cancelled predecessor's on the same channel, `ensureSubscribed` outlasting every jittered resubscribe, what a
-/// refused subscribe's refetch does when it fails or answers a group the caller is out of, a `member_left` that is
-/// stale or that supersedes a pending jitter, and a message for a room the cache never held.
+/// Subscribe and resubscribe cases that `RealtimeSessionControllerRoutingTests`, near SwiftLint's limits, has no room for.
 @MainActor
 struct RealtimeResubscribeTests {
     private let userChannel = RealtimeChannel.user(sub: TestFixtures.user.id)

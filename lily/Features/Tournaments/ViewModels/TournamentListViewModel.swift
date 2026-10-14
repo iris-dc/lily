@@ -22,8 +22,6 @@ final class TournamentListViewModel {
     private let errorCenter: ErrorCenter
     private let logger: any Logging
     private let now: () -> Date
-    /// TTL, the change counter, caller and (on Explore) position the content reflects, and the cooldown after a failed
-    /// load.
     private var freshness = ContentFreshness.standard
 
     init(scope: TournamentScope,
@@ -47,7 +45,6 @@ final class TournamentListViewModel {
     /// True until the first answer, success or failure, so a screen shows its spinner through a location wait and never
     /// an empty state before the list was asked.
     var isInitialLoad: Bool { !freshness.hasLoaded && !loadFailed }
-    /// What a segment drawing this list shows now.
     var listState: ListState {
         ListState(isInitialLoad: isInitialLoad, isEmpty: visibleTournaments.isEmpty, loadFailed: loadFailed)
     }
@@ -83,11 +80,10 @@ final class TournamentListViewModel {
         await load()
     }
 
-    /// Always asks the repository (pull-to-refresh). A call made while one is in flight is dropped. Whatever landed
-    /// while the request was out (an entry or a create applied through `replace`/`add`, a sign-in, or on Explore a
-    /// position that arrived or moved) may be missing from its answer, so it earns one reload right away instead of
-    /// overwriting the change until the next appearance. Bounded: only such a landing leaves a fresh answer stale, and
-    /// a failed or cancelled load earns nothing.
+    /// Always asks the repository (pull-to-refresh); a call made while one is in flight is dropped. A change that landed
+    /// while the request was out (`replace`/`add`, a sign-in, on Explore a position that arrived or moved) may be
+    /// missing from the answer, so it earns one reload at once; the recursion is bounded because a failed or cancelled
+    /// load earns nothing and a fresh answer is stale only after such a landing.
     func load() async {
         guard !isLoading else { return }
         isLoading = true
@@ -152,10 +148,9 @@ final class TournamentListViewModel {
     }
 
     /// Takes the tournament a detail just changed: in place while it still belongs to the scope, out of the list when
-    /// it no longer does (a cancelled one on Explore, one the caller left on Home), and in by start, where `add` puts a
-    /// new one in every scope, when the list does not hold a tournament that belongs to it (one the caller entered on a
-    /// detail pushed from a group's segment on the Home stack reaches Home's at once). Recorded so every other list
-    /// reloads on its next appearance; this one already shows the change and does not.
+    /// it no longer does (a cancelled one on Explore, one the caller left on Home), and in by start when the list does
+    /// not hold it yet (one entered on a detail pushed from a group's segment reaches Home's list at once). Recorded so
+    /// every other list reloads on its next appearance; this one already shows the change.
     func replace(_ tournament: Tournament) {
         switch (tournaments.firstIndex(where: { $0.id == tournament.id }), belongs(tournament)) {
         case (let index?, true): tournaments[index] = tournament

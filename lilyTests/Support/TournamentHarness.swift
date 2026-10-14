@@ -48,7 +48,6 @@ final class TournamentHarness {
         logger.messages(in: .tournaments, at: level)
     }
 
-    /// `now` defaults to the harness's fixed clock; a cooldown test hands in one it can advance.
     func makeListViewModel(scope: TournamentScope,
                            locationService: (any LocationService)? = nil,
                            now: (() -> Date)? = nil) -> TournamentListViewModel {
@@ -62,10 +61,8 @@ final class TournamentHarness {
                                 now: now ?? { Self.now })
     }
 
-    /// `pushOptIn` is created in the body when not given: a main-actor default argument would run off the actor. The
-    /// `onChange` records the tournament (`sink.tournaments`) and then does what the stack's root would: the given closure
-    /// (Home hands its Mine list's `replace`), else the tracker bump every other root hands over through
-    /// `GroupDestinations`.
+    /// `onChange` records the tournament in `sink.tournaments`, then does what a stack root would: the given closure
+    /// (Home passes its Mine list's `replace`), else the `changes` bump `GroupDestinations` hands every other root.
     func makeDetailViewModel(for destination: TournamentDestination,
                              pushOptIn: (any PushOptIn)? = nil,
                              onChange: (@MainActor (Tournament) -> Void)? = nil) -> TournamentDetailViewModel {
@@ -101,7 +98,6 @@ final class TournamentHarness {
         return viewModel
     }
 
-    /// `pushOptIn` is created in the body when not given: a main-actor default argument would run off the actor.
     func makeCreateViewModel(locationService: (any LocationService)? = nil,
                              lockedGroup: EventGroupRef? = nil,
                              pushOptIn: (any PushOptIn)? = nil) -> CreateTournamentViewModel {

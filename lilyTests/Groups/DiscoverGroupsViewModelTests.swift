@@ -188,7 +188,6 @@ struct DiscoverGroupsViewModelTests {
         #expect(!viewModel.isLoading)
     }
 
-    /// Cancelling a pending search ends its wait and sends nothing.
     @Test func cancelStopsAPendingSearch() async {
         let viewModel = makeViewModel()
         viewModel.query = "x"

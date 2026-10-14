@@ -2,11 +2,10 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Mine's and Discover's orders against the backend's contract, in a sibling file because the main suite's body is near
-/// the limit.
+/// Mine's and Discover's orders against the backend's contract; a sibling file because the main suite is near the type-body limit.
 extension MockGroupRepositoryTests {
-    /// A group created now is silent and the newest activity, so it leads Mine (under a `nullsLast` order it came last);
-    /// every row with a message precedes the silent Kickers Cup room, whose creation is older than their messages.
+    /// A group created now is silent and the newest activity, so it leads Mine; every row with a message precedes the
+    /// silent Kickers Cup room, whose creation is older than their messages.
     @Test func theMockOrdersMineLikeTheBackend() async throws {
         let repository = makeRepository()
         let created = try await repository.create(.fixture())
@@ -22,9 +21,8 @@ extension MockGroupRepositoryTests {
         #expect(lastWithMessage < silentFixture, "the silent fixture follows every row with a message")
     }
 
-    /// The backend reads a blank query as none and trims the rest, so the mock browses on a blank one (nearest first
-    /// around the position, as without a query) and the remote sends no `q` but the position, and the trimmed prefix
-    /// without the position for a typed one.
+    /// The backend reads a blank query as none and trims the rest: the mock browses on a blank one and the remote sends
+    /// the position without `q`; a typed one goes out trimmed and without the position.
     @Test func aBlankQueryIsABrowseOnBothSides() async throws {
         let center = AppConfig.Location.mockCenter
         let repository = makeRepository()

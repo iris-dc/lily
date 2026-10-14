@@ -66,9 +66,8 @@ final class InboxStore: SessionObserver {
         await loader.loadIfStale(fetch: fetchNewestPage, apply: applyNewestPage)
     }
 
-    /// Always asks the backend (pull-to-refresh). A call made while one is in flight for the same user joins it; one
-    /// for another user (a sign-out and sign-in while the previous user's request is still out) waits it out and then
-    /// loads for them; an answer that arrives after the caller signed out or changed is dropped.
+    /// Always asks the backend (pull-to-refresh). A call made while one is in flight joins it (one for another user
+    /// waits it out and then loads for them); an answer for a caller who signed out or changed is dropped.
     func reload() async {
         guard identity.currentUserID != nil else {
             clear()

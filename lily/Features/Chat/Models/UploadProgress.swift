@@ -1,8 +1,7 @@
 import Foundation
 
 /// The share of an upload's bytes sent so far, with the file and its thumbnail as one total, so the ring on the strip
-/// never runs backwards when the second PUT starts. Pure, because `URLSession` reports no intermediate progress for a
-/// stubbed request and the arithmetic must be tested apart from it.
+/// never runs backwards when the second PUT starts.
 nonisolated struct UploadProgress: Hashable, Sendable {
     let fileBytes: Int
     let thumbnailBytes: Int

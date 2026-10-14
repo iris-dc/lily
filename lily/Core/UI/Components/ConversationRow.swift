@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// A row led by a medium mark (a group room on the Chats tab, the inbox, a person to invite): the mark, a title line,
-/// a one-line caption and a trailing slot (the unread dot, an Invite button), with the padding and hit shape every such
-/// row shares. The mark is the concrete `AvatarCircle` on purpose, not a generic slot: the row is defined as led by a
-/// medium avatar, and `AvatarRowDivider` offsets its divider by that size.
+/// A row led by a medium mark (a room on the Chats tab, the inbox, a person to invite): the mark, a title line, a
+/// one-line caption and a trailing slot (the unread dot, an Invite button), with the padding and hit shape every such
+/// row shares. The mark is a concrete `AvatarCircle`, not a generic slot: `AvatarRowDivider` offsets its divider by
+/// that size.
 struct ConversationRow<Title: View, Trailing: View>: View {
     let caption: String
     let avatar: AvatarCircle
@@ -31,7 +31,6 @@ struct ConversationRow<Title: View, Trailing: View>: View {
 }
 
 extension ConversationRow where Trailing == UnreadDot? {
-    /// A conversation's row: the trailing slot is the unread dot while `hasUnread`.
     init(caption: String,
          hasUnread: Bool,
          avatar: AvatarCircle,

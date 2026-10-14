@@ -2,10 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Connection lifecycle cases the main suite, at its 200-line body limit, cannot hold: the bounded reconnect when a
-/// forced token refresh answers nothing, a backoff timer made stale by a connect that landed meanwhile, every stream
-/// ending at once or finishing cleanly, a Mine reload that fails or is interrupted by a suspend during the resume
-/// protocol, the session state a changed user leaves behind, and the opened line naming the endpoint's host.
+/// Connection lifecycle cases that `RealtimeSessionControllerTests`, at SwiftLint's type-body limit, has no room for.
 @MainActor
 struct RealtimeReconnectTests {
     private let userChannel = RealtimeChannel.user(sub: TestFixtures.user.id)
@@ -178,9 +175,8 @@ struct RealtimeReconnectTests {
         #expect(harness.store.groups.map(\.id) == ["g1"], "the SingleFlight load still landed")
     }
 
-    /// The epochs noted, the expiry the renewal compares against, the backoff position and the "session expired" said
-    /// once are the signed-in user's: another user signing in starts every one over, so their refused token is reported
-    /// again. The epoch is noted while the connection is down, the way an open chat notes it.
+    /// Noted epochs, the expiry the renewal compares against, the backoff position and the "session expired" said once
+    /// are the signed-in user's: another user signing in starts every one over, so their refused token is reported again.
     @Test func aChangedUserForgetsTheExpiredSessionFlagAndTheEpochs() async {
         let tokens = FakeAuthTokenProvider(token: JWTFixtures.token(expiringAt: Date(timeIntervalSince1970: 1_800_003_600)))
         let harness = RealtimeHarness(tokens: tokens)

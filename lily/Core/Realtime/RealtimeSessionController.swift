@@ -41,7 +41,7 @@ final class RealtimeSessionController: SessionObserver {
     var pendingResubscribes: [String: Task<Void, Never>] = [:]
     var consumers: [UUID: Consumer] = [:]
     var lastExpiry: Date?
-    /// Where along the reconnect table the next wait falls; a good token starts it over.
+    /// The reconnect wait; a renewal scheduled from a good token starts it over.
     var backoff = Backoff()
     /// Forced refreshes that answered no token since a connect last had one; `maxReconnectsWithoutToken` bounds it.
     var reconnectsWithoutToken = 0
@@ -156,9 +156,9 @@ final class RealtimeSessionController: SessionObserver {
     }
 
     /// Makes sure the room is subscribed at `room.epoch` (or a newer one already known), waiting out every jittered
-    /// resubscribe pending for it, so a caller can catch up afterwards knowing nothing falls in between. Every one,
-    /// including a resubscribe that replaced the one the caller started waiting on: a second `member_left` with a newer
-    /// epoch cancels and re-arms the timer, and the first waiter must not return with the old epoch subscribed.
+    /// resubscribe pending for it, so a caller can catch up afterwards knowing nothing falls in between. A `member_left`
+    /// with a newer epoch re-arms the timer while a waiter sleeps on the old one, hence the loop: the waiter must not
+    /// return with the old epoch subscribed.
     func ensureSubscribed(_ room: RoomSubscription) async {
         noteEpoch(room.epoch, for: room.groupID)
         while let pending = pendingResubscribes[room.groupID] {

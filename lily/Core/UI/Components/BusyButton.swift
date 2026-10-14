@@ -11,7 +11,6 @@ struct BusyLabel<Content: View>: View {
         HStack(spacing: DesignTokens.Spacing.sm) {
             content()
             if isBusy {
-                // The button's `.large` control size would inflate the spinner past the text height.
                 ProgressView()
                     .controlSize(spinnerSize)
                     .accessibilityHidden(true)
@@ -26,8 +25,8 @@ extension BusyLabel where Content == Text {
     }
 }
 
-/// Action with a spinner beside its title while the request runs. Without an action it is disabled. The caller
-/// applies the button style, which also sets the full width and height (see the Buttons note in CLAUDE.md).
+/// A button with a spinner beside its label while its request runs; disabled without an action. The caller applies
+/// the button style, which also sets the width and height.
 struct BusyButton<Label: View>: View {
     let isBusy: Bool
     let action: (() async -> Void)?

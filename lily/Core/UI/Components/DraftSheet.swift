@@ -37,9 +37,9 @@ struct DraftSheet<Model: DraftSubmitting, Form: View>: View {
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            // The semantic placements get the native sheet treatment (a `.borderless` Cancel became an icon-sized
-            // circle, "Ca…"). The submit button keeps the toolbar's own glass and size: hiding that glass left the
-            // disabled prominent capsule as black text on nothing.
+            // Semantic placements get the native sheet treatment: a `.borderless` Cancel in an iOS 26 toolbar collapses to
+            // an icon-sized circle ("Ca…"), and a prominent capsule whose toolbar glass is hidden renders its disabled
+            // state as black text on nothing.
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(AppBranding.Forms.cancel, role: .cancel) { dismiss() }

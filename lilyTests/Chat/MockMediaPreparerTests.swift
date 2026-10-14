@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The fixtures the mock picker hands over under `-mock-attachment-picker` are in the asset catalog and are what they
-/// claim: the camera clip exports through the real video preparer with its hints, the photo and the document are there.
+/// The fixtures the mock picker hands over under `-mock-attachment-picker` are bundled and are what they claim.
 @MainActor
 struct MockMediaPreparerTests {
     private let preparer = MockMediaPreparer(logger: SpyLogger())

@@ -5,9 +5,8 @@ import UIKit
 import UniformTypeIdentifiers
 @testable import lily
 
-/// Pictures through the preparer: a big PNG comes out as a JPEG within the longest side, upright whatever its EXIF tag
-/// says, with a thumbnail that fits its cap, both as files; one over the byte cap is refused, as are bytes that are no
-/// picture; a thumbnail that cannot be made never refuses the picture.
+/// Pictures through the preparer: a big PNG leaves as an upright JPEG within the longest side with a thumbnail under its
+/// cap, both as files; too many bytes or no picture is refused; a thumbnail that cannot be made never refuses the picture.
 @MainActor
 struct ImagePreparerTests {
     private let logger = SpyLogger()
@@ -48,7 +47,6 @@ struct ImagePreparerTests {
         context.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: size.width, y: size.height), options: [])
     }
 
-    /// The "prepared" debug line for `id`, if one was logged.
     private func preparedLine(for id: String) -> String? {
         logger.messages(in: .chat, at: .debug).first { $0.hasPrefix("Attachment \(id) prepared:") }
     }
@@ -128,8 +126,7 @@ struct ImagePreparerTests {
         #expect(!draft.ref(attachmentID: "x").hasThumbnail)
     }
 
-    /// A thumbnail over its cap at the picture's quality is encoded again at the fallback quality and goes along when
-    /// that fits; only one that fits neither is left out.
+    /// Over its cap at the picture's quality, a thumbnail is encoded again at the fallback quality; one that fits neither is left out.
     @Test func aThumbnailOverTheCapIsReencodedAtTheFallbackQuality() async throws {
         let scale = UIGraphicsImageRendererFormat.default().scale
         let data = png(CGSize(width: 1600 / scale, height: 1200 / scale))
@@ -145,8 +142,8 @@ struct ImagePreparerTests {
         #expect(reencoded < size, "the fallback quality brings it under the cap")
     }
 
-    /// The API takes a draft without a thumbnail, so a thumbnail that cannot be written (here a directory sits on its
-    /// path) leaves the picture to go alone rather than refusing it; the debug line says what is missing.
+    /// The API takes a draft without a thumbnail, so a thumbnail that cannot be written leaves the picture to go alone
+    /// rather than refusing it; the debug line says what is missing.
     @Test func aFailedThumbnailStillSendsThePicture() async throws {
         let squatter = directory.appending(path: "p6.thumb.jpg")
         try FileManager.default.createDirectory(at: squatter, withIntermediateDirectories: true)

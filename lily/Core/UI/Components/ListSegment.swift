@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// The segment of a detail that draws a list view model's state inside the detail's margins: a spinner before the
-/// first answer, the cards whenever there are some, else the empty or the failed state the caller worded. The other
-/// spinner/empty/failed screens (Explore, Discover, Home, the inbox) branch differently and keep their own.
+/// A detail's list segment: a spinner before the first answer, the cards whenever there are some, else the empty or
+/// the failed state the caller worded.
 struct ListSegment<Content: View>: View {
     let state: ListState
     let empty: EmptyStateView

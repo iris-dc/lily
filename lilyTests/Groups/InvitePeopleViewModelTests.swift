@@ -40,7 +40,6 @@ struct InvitePeopleViewModelTests {
         #expect(harness.logs(.error).count == 1)
     }
 
-    /// One load at a time: a second call while the first is out returns at once and asks for nothing.
     @Test func aSecondLoadWhileOneIsOutIsDropped() async {
         harness.invites.holdsRequests = true
         let viewModel = harness.makeInvitePeopleViewModel(for: group)

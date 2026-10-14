@@ -89,7 +89,7 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
         }
     }
 
-    /// The store next to no pool session: a cached user is stale, a pending sign-out is complete, a guest choice stands.
+    /// No pool session: a cached user is stale and a pending sign-out is complete, so both go; a guest choice stands.
     private func dropStoreLeftWithoutAPoolSession() {
         switch store.load() {
         case .signedIn:
@@ -103,9 +103,9 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
         }
     }
 
-    /// A sign-out marker or a guest choice stored next to a pool session means a sign-out never reached Amplify's
-    /// keychain (or, for a guest, a sign-in was killed between the pool's acceptance and the user read): the pool
-    /// session is ended here and the stored choice stands, so a guest signs in again rather than waking up signed in.
+    /// A sign-out marker or a guest choice next to a pool session means a sign-out never reached Amplify's keychain, or
+    /// a sign-in was killed between the pool's acceptance and the user read. The pool session is ended and the stored
+    /// choice stands, so a guest signs in again rather than waking up signed in.
     private func endsLeftoverPoolSession() async -> Bool {
         switch store.load() {
         case .signingOut:

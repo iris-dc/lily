@@ -2,11 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The on-disk cache where the file system says no, each test in a tree of its own (`root/cache`, `root/previews`,
-/// never the process-wide folders): the end of a session sweeps the preview copies with the cache, a refused clear
-/// or eviction is a warning and never a "cleared" line or a count, a file another sweep already removed is neither,
-/// an unwritable directory fails the store, and the file work has an entry a detached task can call. `0o555` is what
-/// makes a removal or a create fail deterministically here, because the test process is not root.
+/// The on-disk cache where the file system says no, each test in a tree of its own, never the process-wide folders.
 @MainActor
 struct DiskAttachmentCacheFailureTests {
     private let root = FileManager.default.temporaryDirectory.appending(path: "attachment-cache-\(UUID().uuidString)")
@@ -31,7 +27,7 @@ struct DiskAttachmentCacheFailureTests {
         FileManager.default.fileExists(atPath: url.path())
     }
 
-    /// Nothing inside can be made or unlinked until `unlock`.
+    /// `0o555`: nothing inside can be made or unlinked until `unlock`, since the test process is not root.
     private func lock(_ folder: URL) throws {
         try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: folder.path())
     }
@@ -126,8 +122,8 @@ struct DiskAttachmentCacheFailureTests {
         #expect(cache.fileURL(for: "a", variant: .full) == nil)
     }
 
-    /// A scheduling assertion would be timing-based and is deliberately not written; this pins the IO entry the cache
-    /// hops to: `nonisolated` with Sendable inputs, so a detached task may call it, and a file it wrote is a hit.
+    /// A scheduling assertion would be timing-based, so this pins the IO entry the cache hops to instead: `nonisolated`
+    /// with Sendable inputs, callable from a detached task, and a file it wrote is a hit.
     @Test func aStoreRunsOffTheMainActor() async throws {
         let cache = makeCache()
         let url = directory.appending(path: "x")

@@ -6,7 +6,7 @@ import Testing
 /// path: a strong capture in app code, or a harness-owned collaborator holding the type.
 @MainActor
 struct ReleaseAfterCancelTests {
-    /// The live task ends with the consumer it registered; the harness stays, only the view model goes.
+    /// The harness stays alive on purpose; only the view model must go.
     @Test func chatViewModelIsReleasedAfterCancel() async {
         let group = SportGroup.fixture(id: "g", channelEpoch: 1, role: .member)
         let harness = RealtimeHarness()
@@ -27,9 +27,7 @@ struct ReleaseAfterCancelTests {
         #expect(released == nil, "the room's view model outlived its cancel")
     }
 
-    /// Sign-out closes the connection in a task of its own; once that task has run, the renewal, reconnect,
-    /// subscription and resubscribe tasks hold the controller weakly or not at all. The whole harness is built inside
-    /// the block and dropped with the controller, because the harness object holds it through `clearer`
+    /// The harness is built inside the block because it holds the controller through `clearer`
     /// (`ChatHistoryClearer.realtime` is a strong `let`).
     @Test func realtimeSessionControllerIsReleasedAfterSessionDidEnd() async {
         weak var released: RealtimeSessionController?
@@ -72,8 +70,8 @@ struct ReleaseAfterCancelTests {
         #expect(released == nil, "the Discover view model outlived its cancel")
     }
 
-    /// `syncProfile` captures `[profileRepository, logger]`, never the controller; the sign-out cancels the sync, whose
-    /// sleep ends the task before the harness goes.
+    /// `syncProfile` captures `[profileRepository, logger]`, never the controller; the cancelled sync is awaited so its
+    /// task ends before the harness goes.
     @Test func sessionControllerIsReleasedAfterSignOutCancelsTheProfileSync() async {
         weak var released: SessionController?
 

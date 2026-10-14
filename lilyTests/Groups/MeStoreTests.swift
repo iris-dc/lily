@@ -79,8 +79,6 @@ struct MeStoreTests {
         #expect(store.account == nil && !store.needsTerms && !store.isOperator)
     }
 
-    /// A second load for the same user reuses the account, said once under `.cache`; a new caller is a load, not
-    /// a reuse.
     @Test func aSecondLoadForTheSameUserReusesTheAccount() async {
         repository.meResult = .success(.fixture())
         let store = makeStore()

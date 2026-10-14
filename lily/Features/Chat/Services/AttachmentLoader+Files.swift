@@ -1,11 +1,10 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// The full object of an attachment as a named file, for QuickLook and the player: through the loader like any
-/// download, then given a name and an extension back under the temporary directory, because the cache keeps bytes under
-/// the attachment id alone and both QuickLook and `AVPlayer` decide what they are looking at from the name. The named
-/// copy is made off the main actor (its fallback writes up to 25 MB), and a copy the file system refuses is logged here,
-/// the one place the id and the error meet; the cards and the player stay silent by design.
+/// The full object of an attachment as a named file, for QuickLook and the player: the cache keeps bytes under the
+/// attachment id alone, and both QuickLook and `AVPlayer` decide what they are looking at from the name and extension.
+/// The copy is made off the main actor (the fallback to a hard link writes up to 25 MB), and a copy the file system
+/// refuses is logged here, where the id and the error meet; the cards and the player stay silent.
 extension AttachmentLoader {
     /// A file named after the attachment (its sender's name for it, else the id with the content type's extension)
     /// holding the full object, downloaded first when the cache has no copy, with `progress` along the way. A copy the
@@ -74,8 +73,8 @@ nonisolated enum PreviewFiles {
         try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
     }
 
-    /// Every preview copy, at the end of a session: the disk cache's sign-out hook sweeps them with the cache, because
-    /// a hard link keeps a cleared object's bytes alive until the link goes too. No directory is nothing to remove.
+    /// Every preview copy; the disk cache's sign-out sweep calls it, because a hard link keeps a cleared object's bytes
+    /// alive until the link goes too.
     static func removeAll(in directory: URL = PreviewFiles.directory) throws {
         try FileManager.default.removeItemIfPresent(at: directory)
     }

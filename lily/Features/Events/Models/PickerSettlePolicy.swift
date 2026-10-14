@@ -1,4 +1,4 @@
-/// Whether a settle of the location picker's map is the user's choice of a spot. Pure, so the rule is tested.
+/// Whether a settle of the location picker's map is the user's choice of a spot.
 nonisolated enum PickerSettlePolicy {
     /// Without a spot the first settle is the map arriving and is skipped; every later one counts, since there is
     /// nothing to measure a move against. With a spot the move is judged, not the count: a settle at least

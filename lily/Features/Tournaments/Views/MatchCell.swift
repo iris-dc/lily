@@ -64,7 +64,7 @@ struct MatchCell: View {
     private var hasDetails: Bool { match.status != .bye || match.hasSchedule }
 
     /// The status (an open dispute wins over it) and the schedule as one caption: a row while the three fit, else the
-    /// place wraps under the time, so a time and a long venue never truncate each other (seen in the sheet's cell).
+    /// place wraps under the time, so a time and a long venue never truncate each other.
     private var details: some View {
         FlowLayout(spacing: DesignTokens.Spacing.md, rowSpacing: DesignTokens.Spacing.xs) {
             if match.status != .bye {

@@ -95,8 +95,8 @@ final class AppDependencies {
     /// Production wiring: Cognito through Amplify, whose access token the API client sends, unless a launch argument
     /// asks for the mock. Launch arguments are read in debug builds only (`AppConfig.LaunchArguments.isHonored`); a
     /// release build ignores them, so nobody can start it as a guest or on mock data from the outside. `-reset-session`
-    /// is decided here once (`startsFresh`) and handed to the store factories, so the fresh start is logged once. `apply`
-    /// moves the process-wide `AppLocale`; the tests pass a spy so it stays untouched.
+    /// is judged here once and handed to the store factories as `startsFresh`. `apply` moves the process-wide
+    /// `AppLocale`; it is injectable so a test can build the default root without touching it.
     static func makeDefault(arguments: [String] = AppConfig.LaunchArguments.isHonored ? CommandLine.arguments : [],
                             defaults: UserDefaults = .standard,
                             apply: @escaping (AppLocale.Context) -> Void = AppLocale.set) -> AppDependencies {

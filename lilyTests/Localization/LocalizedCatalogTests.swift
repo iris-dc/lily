@@ -58,7 +58,7 @@ struct LocalizedCatalogTests {
         #expect(String(localized: "Any (price)", bundle: russian.bundle, locale: russian.locale) == "Любая")
     }
 
-    /// The split moved nothing: the composer's placeholder stays the noun and the distance menu the neuter.
+    /// The bare keys are the nouns: "Message" is the composer's placeholder, "Any" the distance menu's neuter.
     @Test func theNounKeysKeptTheirTranslations() {
         let russian = AppLocale.Context(language: .russian)
         #expect(String(localized: "Message", bundle: russian.bundle, locale: russian.locale) == "Сообщение")

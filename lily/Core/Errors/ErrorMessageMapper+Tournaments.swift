@@ -1,9 +1,9 @@
 import Foundation
 
-/// Copy for tournaments. The tournament cases reach `tournamentMessage(for:)` through `peopleMessage(for:)`'s `default`
-/// (`ErrorMessageMapper+People.swift`), because the main switch stands at the complexity limit (an eleventh arm fails
-/// strict lint) and its exhaustiveness is what makes a forgotten `AppError` case a compile error. Four switches, so none
-/// grows past the complexity limit: the tournament itself, entering it, its matches, then its invites.
+/// Copy for tournaments, reached through `peopleMessage(for:)`'s `default` (`ErrorMessageMapper+People.swift`): the main
+/// switch is at SwiftLint's complexity limit, and its exhaustiveness is what makes a forgotten `AppError` case a compile
+/// error. Four switches here, so none grows past that limit: the tournament itself, entering it, its matches, then its
+/// invites.
 nonisolated extension ErrorMessageMapper {
     static func tournamentMessage(for error: AppError) -> ErrorMessage {
         switch error {
@@ -38,6 +38,13 @@ nonisolated extension ErrorMessageMapper {
                             body: localized("You can run at most \(limit) open tournaments. Finish or cancel one first."))
     }
 
+    private static var tournamentMembershipLimitMessage: ErrorMessage {
+        let limit = AppConfig.Tournaments.maxPerUser
+        return ErrorMessage(
+            title: localized("Too many tournaments"),
+            body: localized("You can be in at most \(limit) tournaments. Leave one that hasn't started yet to enter another."))
+    }
+
     /// Entering, leaving and the start.
     private static func entryMessage(for error: AppError) -> ErrorMessage {
         switch error {
@@ -55,6 +62,8 @@ nonisolated extension ErrorMessageMapper {
         case .notEnoughEntries:
             ErrorMessage(title: localized("Not enough entries"),
                          body: localized("More teams or players need to enter before it can start."))
+        case .tournamentMembershipLimit:
+            tournamentMembershipLimitMessage
         default:
             matchMessage(for: error)
         }

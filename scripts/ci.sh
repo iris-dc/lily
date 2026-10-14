@@ -87,7 +87,7 @@ resolve_ipad_destination() {
 }
 
 # One xcodebuild run: the log and the result bundle land under RESULTS_DIR/<label>.*, tests run without simulator clones
-# (with them the unit suite took minutes on a loaded runner and a timing-based test failed), a failure is shown with
+# (clones make the unit suite take minutes on a loaded runner and a timing-based test flaky), a failure is shown with
 # the log's tail, and a test action must prove that it ran a test.
 run_logged() {
   local label="$1" action="$2"; shift 2
@@ -192,18 +192,17 @@ run_prebuilt_tests() {
 }
 
 # The UI test classes declared under the directory (lilyUITests/ by default), one per line: every class deriving from
-# LilyUITestCase or XCTestCase directly, whatever its name, except the base class. Today's declarations are all
-# `final class LilyXxxTests: LilyUITestCase` and the base is `class LilyUITestCase: XCTestCase` in
-# lilyUITests/LilyUITestCase.swift. -o lets the `final` and `@MainActor final` prefixes through; the trailing
-# [[:space:],{] keeps a `LilyUITestCaseProtocol`-style name out (no \b: BSD grep).
+# LilyUITestCase or XCTestCase directly, whatever its name, except the base class. -o lets the `final` and
+# `@MainActor final` prefixes through; the trailing [[:space:],{] keeps a `LilyUITestCaseProtocol`-style name out
+# (no \b: BSD grep).
 ui_test_classes() {
   local dir="${1:-lilyUITests}"
   grep -hoE "class [A-Za-z0-9_]+: *(${UI_BASE_CLASS}|XCTestCase)[[:space:],{]" "$dir"/*.swift \
     | sed -E 's/^class ([A-Za-z0-9_]+):.*/\1/' | grep -vx "$UI_BASE_CLASS" | sort
 }
 
-# The grep's own test, so a class named outside the LilyXxxTests scheme or deriving from XCTestCase directly can
-# never again be in no shard with lint green.
+# The grep's own test: a class named outside the LilyXxxTests scheme or deriving from XCTestCase directly must be
+# listed too, or it could sit in no shard with lint green.
 check_ui_test_classes_grep() {
   echo "==> ui test classes"
   local dir found
@@ -299,10 +298,9 @@ run_lint() {
   require_swiftlint
   swiftlint --strict --quiet --reporter emoji
   # Every localized("...") in the code must be a catalog key translated into every language the app ships, and the
-  # usage descriptions a Release build sets must be in InfoPlist.xcstrings. The checker's own tests run first,
-  # because `placeholders` and `values` can regress with the real catalog still passing (verified by the review
-  # with mutated copies). Both import only the standard library, so isolated mode costs nothing and keeps a planted
-  # module out.
+  # usage descriptions a Release build sets must be in InfoPlist.xcstrings. The checker's own tests run first:
+  # `placeholders` and `values` can regress with the real catalog still passing. Both import only the standard
+  # library, so isolated mode costs nothing and keeps a planted module out.
   echo "==> l10n"
   python3 -I scripts/test_l10n_check.py
   python3 -I scripts/l10n-check.py

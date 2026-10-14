@@ -26,8 +26,8 @@ nonisolated enum DesignTokens {
         /// Horizontal inset of screen content, equal to the leading margin of a large navigation title on iPhone,
         /// so text laid directly on a screen lines up with its title.
         static let screenMargin: CGFloat = Spacing.lg
-        /// Margin of the content details (event, group, tournament) around their column; the bracket undoes it to
-        /// scroll edge to edge, so its negation reads this and never a bare spacing.
+        /// Horizontal margin of the detail screens (event, group, tournament). The bracket negates it to scroll edge to
+        /// edge, so both must read this one token.
         static let detailMargin: CGFloat = Spacing.xl
         /// Minimum height of a glass text field: the height of a `.large` system button, so a field and the submit
         /// button under it read as one set. Buttons themselves take their size from `controlSize`, not from here.

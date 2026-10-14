@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// The one list of levels a host can ask for or a filter narrows to: "Any level" over the levels this build knows
-/// (`SkillLevel.known`, so a level a newer backend sends is never offered). Bare, it is a form row with its label; the
-/// filter panel styles it as a menu and hides the label, since `pickerStyle` and `labelsHidden` propagate through the
-/// environment.
+/// The one list of levels a host can ask for or a filter narrows to: "Any level" over `SkillLevel.known`, so an
+/// unknown level is never offered. Callers style it from outside (`pickerStyle` and `labelsHidden` propagate through
+/// the environment).
 struct SkillLevelPicker: View {
     @Binding var selection: SkillLevel?
 

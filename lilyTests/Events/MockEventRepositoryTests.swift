@@ -72,8 +72,8 @@ struct MockEventRepositoryTests {
         #expect(Set(titles).count == titles.count)
     }
 
-    /// Keeps the map's selected-pin card exercising the "Full" copy, which once read "0 spots left"; the full game must
-    /// be one Explore lists, since the private group's game is not.
+    /// The map's selected-pin card shows its "Full" copy only on a full game, which must be one Explore lists, since the
+    /// private group's game is not.
     @Test func feedSizedFixturesIncludeAFullEvent() {
         let events = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize).filter(\.isListed)
         #expect(events.contains { $0.isFull })

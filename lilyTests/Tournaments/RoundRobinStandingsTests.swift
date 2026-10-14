@@ -2,15 +2,13 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The mock's table, ranked as the backend ranks it: points, then score difference, then scored, then seed. The
-/// tie-break cases are Laurel's; the table always counts draws, so there is no draws-not-counted case here.
+/// The mock's table, ranked as Laurel ranks it: points, then score difference, then scored, then seed.
 struct RoundRobinStandingsTests {
-    /// Four entries `a` to `d`, seeded in that order.
     private static let entries = ["a", "b", "c", "d"].enumerated().map { index, letter in
         TournamentEntry.fixture(id: letter, name: "Team \(letter)", captainUserId: "cap-\(letter)", seed: index + 1)
     }
 
-    /// 3 / 1 / 0 points, ranked by points, difference, scored, then seed; a walkover counts as a win without goals.
+    /// Win 3, draw 1, loss 0; a walkover is a win without goals.
     @Test func standingsRankByPointsDifferenceScoredAndSeed() throws {
         let entries = (1...4).map { TournamentEntry.fixture(id: "e\($0)", name: "E\($0)", captainUserId: "u\($0)", seed: $0) }
         var matches = TournamentSchedule.pairings(format: .roundRobin, seeds: entries.map(\.id)).map {
@@ -33,8 +31,7 @@ struct RoundRobinStandingsTests {
         #expect(RoundRobinStandings.compute(entries: entries, matches: []).allSatisfy { $0.points == 0 && $0.played == 0 })
     }
 
-    /// Laurel's `byGoals`: a and b level on points and difference, a scored more; d and c level the same way, d scored
-    /// more.
+    /// Laurel's `byGoals` case.
     @Test func levelOnPointsAndDifferenceMoreScoredRanksFirst() {
         let matches = [Self.played("a", "d", 2, 1, position: 1),
                        Self.played("b", "c", 1, 0, position: 2),
@@ -49,7 +46,7 @@ struct RoundRobinStandingsTests {
         #expect(table.map(\.scored) == [2, 1, 2, 1])
     }
 
-    /// Laurel's `bySeed`: a and b level on everything, as are c and d; the better seed ranks first.
+    /// Laurel's `bySeed` case.
     @Test func levelOnEverythingTheBetterSeedRanksFirst() {
         let matches = [Self.played("a", "d", 1, 0, position: 1),
                        Self.played("b", "c", 1, 0, position: 2),
@@ -63,7 +60,6 @@ struct RoundRobinStandingsTests {
         #expect(table.map(\.scored) == [1, 1, 1, 1])
     }
 
-    /// Level on points, the score difference decides: a at +3 over b at +1, c at -1 over d at -3.
     @Test func levelOnPointsTheDifferenceDecides() {
         let matches = [Self.played("a", "d", 3, 0, position: 1),
                        Self.played("b", "c", 1, 0, position: 2)]
@@ -75,8 +71,6 @@ struct RoundRobinStandingsTests {
         #expect(table.map { $0.scored - $0.conceded } == [3, 1, -1, -3])
     }
 
-    /// A round-one match between `sideA` and `sideB` as the organiser recorded it: confirmed, the winner from the score
-    /// and none on a draw.
     private static func played(_ sideA: String,
                                _ sideB: String,
                                _ scoreA: Int,

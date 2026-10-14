@@ -76,8 +76,8 @@ struct ChatView: View {
         }
     }
 
-    /// A spinner while the first page loads; Try again when that page failed and the room is still the caller's; the
-    /// empty state for a room nobody has written in (or one just cleared).
+    /// Over an empty transcript: a spinner while the first page loads, Try again when it failed, else the empty state
+    /// (also for a room just cleared).
     @ViewBuilder private var placeholder: some View {
         if viewModel.rows.isEmpty {
             if viewModel.isLoadingHistory {

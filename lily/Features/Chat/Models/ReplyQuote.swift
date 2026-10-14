@@ -39,8 +39,8 @@ nonisolated struct ReplyQuote: Hashable, Codable, Sendable {
                   attachmentKind: message.attachments.first?.kind)
     }
 
-    /// Stands in for the excerpt of a media target without text: "Photo", "Video" or "File" (a kind this build does
-    /// not know reads as a file, as it draws).
+    /// Stands in for the excerpt of a media target without text: "Photo", "Video" or "File"; a kind this build does not
+    /// know is drawn as a file, so it reads as one here too.
     var placeholder: String? {
         switch attachmentKind {
         case .image: AppBranding.Chat.quotedPhoto

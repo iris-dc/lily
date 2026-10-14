@@ -27,9 +27,9 @@ extension ChatViewModel {
         room.isDeleted(id: quote.messageId)
     }
 
-    /// Brings the quoted original into the history held, loading the page before while it lies before the oldest
-    /// message here, at most `AppConfig.Chat.maxReplyLookupPages` of them asked for by this tap; a page the transcript
-    /// has in flight is waited for and looked past, not counted. Answers whether the original is here to scroll to.
+    /// Brings the quoted original into the history held, loading at most `AppConfig.Chat.maxReplyLookupPages` pages
+    /// before the oldest message here; a page the transcript already has in flight is awaited and not counted. Answers
+    /// whether the original is here to scroll to.
     func revealQuoted(id: String) async -> Bool {
         var pagesLoaded = 0
         while liesBeforeHistory(id), pagesLoaded < AppConfig.Chat.maxReplyLookupPages {

@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The sign-out against a registration in flight, the join of concurrent syncs and the clear of a kept tap; a sibling
-/// of `PushCoordinatorTests`, whose body is at the limit.
+/// `PushCoordinator` cases that `PushCoordinatorTests`, at SwiftLint's type-body limit, has no room for.
 @MainActor
 struct PushCoordinatorSignOutTests {
     private let harness = PushHarness()

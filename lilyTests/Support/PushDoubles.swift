@@ -126,7 +126,7 @@ final class PushHarness {
         logger.messages(in: .push, at: level)
     }
 
-    /// How many lines at `level` under `.push` contain `fragment`; one per key event is the rule.
+    /// Counts the `.push` lines at `level` containing `fragment`; a key event is logged exactly once.
     func logged(_ fragment: String, at level: LogLevel) -> Int {
         logs(level).filter { $0.contains(fragment) }.count
     }

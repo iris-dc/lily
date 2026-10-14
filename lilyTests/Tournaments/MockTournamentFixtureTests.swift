@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The fixtures L3 added to the mock: the private Padel Open the caller is invited into, and the caller's scheduled
-/// table-tennis match. The main mock suite sits at its type-body limit.
+/// The mock's invite-only Padel Open and the caller's scheduled table-tennis match.
 @MainActor
 struct MockTournamentFixtureTests {
     private static let clock = Date(timeIntervalSince1970: 1_800_000_000)

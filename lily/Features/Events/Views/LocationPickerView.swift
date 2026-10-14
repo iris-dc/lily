@@ -59,9 +59,8 @@ struct LocationPickerView: View {
         }
     }
 
-    /// A settle is stored only when `PickerSettlePolicy` calls it the user's choice: without a spot the first settle is the
-    /// map arriving and is skipped; with one, only a settle that moved the pin at least the tolerance counts, so opening
-    /// the picker on a chosen spot never rewrites it by the centimetres the arrival nudges and never turns Save on.
+    /// A settle is stored only when `PickerSettlePolicy` calls it the user's choice: the map's own arrival (the first
+    /// settle without a spot, or one that barely nudged a chosen spot) never rewrites the draft or turns Save on.
     private func settle(under proxy: MapProxy, fallback: CLLocationCoordinate2D) {
         defer { hasSettledOnce = true }
         let spot = spotUnderPin(proxy, fallback: fallback)

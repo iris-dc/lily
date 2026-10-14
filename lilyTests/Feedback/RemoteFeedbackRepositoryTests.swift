@@ -19,8 +19,6 @@ struct RemoteFeedbackRepositoryTests {
         #expect(request.body as? FeedbackPayload == payload)
     }
 
-    /// A failure with no case of its own takes the route's fallback; the shared mapping is proved once, in
-    /// `SendFailingWithTests`.
     @Test func failuresWithoutACodeBecomeFeedbackFailed() async {
         let payload = FeedbackDraft(message: "Hi").payload(in: .fixture)
 

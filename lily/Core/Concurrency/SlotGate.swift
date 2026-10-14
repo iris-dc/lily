@@ -7,7 +7,6 @@ final class SlotGate {
     private(set) var active = 0
     private var waiters: [(id: UUID, continuation: CheckedContinuation<Void, any Error>)] = []
 
-    /// How many are parked for a slot.
     var waiting: Int { waiters.count }
 
     init(limit: Int) {

@@ -76,12 +76,10 @@ nonisolated enum AppConfig {
         }
 
         /// What an edit is held to beyond `Creation`'s limits. The backend requires only the future, so a host fixing
-        /// the place of a game that starts in ten minutes is not told to move the start as well; the start only has to
-        /// lie `startMargin` ahead of the device clock, far enough that the backend still sees the future when the
-        /// request lands.
+        /// the place of a game that starts in ten minutes is not told to move the start as well.
         enum Editing {
-            /// An edit's start must lie this far ahead of the device clock: the margin covers the request's round trip
-            /// and clock skew, so a Save never earns the backend's 400 for a start the form could have warned about.
+            /// An edit's start must lie this far ahead of the device clock: enough for the round trip and clock skew,
+            /// so the backend still sees the future when the request lands and Save never earns its 400.
             static let startMargin: TimeInterval = 60
             /// What a tournament edit needs beyond the future: nothing. `TournamentDraft.Rules.editing` reads it, and
             /// its backend has no future check.
@@ -194,9 +192,9 @@ nonisolated enum AppConfig {
         /// A sign-out flushes what is buffered while the Bearer still goes out, and waits for it this long at most: a
         /// stalled network must not hold the sign-out (`API.requestTimeout` is 15 s).
         static let signOutFlushTimeout: Duration = .seconds(3)
-        /// The most type names a `filter_applied` carries: the backend's `FilterSummaryDto.MAX_TYPES`. A longer list is a
-        /// `400 VALIDATION_FAILED` for the whole batch, which the recorder drops without retry, so `EventType.known` must stay
-        /// within it; `InteractionTests` pins both, and a type list grown past the cap fails a unit test here instead.
+        /// The most type names a `filter_applied` carries, the backend's `FilterSummaryDto.MAX_TYPES`: a longer list is
+        /// a `400 VALIDATION_FAILED` for the whole batch, which the recorder drops without retry, so `EventType.known`
+        /// must stay within it.
         static let maxFilterTypes = 32
     }
 

@@ -1,12 +1,10 @@
 import XCTest
 
-/// Tournaments against the mock repositories: creating one from Explore's "+" and finding it on Home, entering the
-/// team tournament the caller organises by naming a team, the tournament room on Chats whose info button opens the
-/// tournament, a group's Tournaments segment, the organiser's start and the bracket it draws, a player confirming and
-/// reporting results, Noor's tournament invite in the inbox, the match reminder there that opens its match's sheet on
-/// the tournament, and the organiser's schedule for a match. Identifiers mirror `AccessibilityIdentifiers(+Tournaments,
-/// +Inbox)`; the mock ids mirror `MockTournamentFixtures` and `MockInboxFixtures`. Helpers in
-/// `LilyTournamentTests+Helpers.swift`.
+/// Tournaments against the mock repositories: creating one from Explore's "+", entering with a team, the room on Chats,
+/// a group's Tournaments segment, the start and the bracket it draws, results and standings, the inbox's invite and
+/// match reminder, the organiser's schedule for a match, and Discover. Identifiers mirror
+/// `AccessibilityIdentifiers(+Tournaments, +Inbox)`; the mock ids mirror `MockTournamentFixtures` and
+/// `MockInboxFixtures`. Helpers in `LilyTournamentTests+Helpers.swift`.
 final class LilyTournamentTests: LilyUITestCase {
     let kickersCupRow = "tournament-row-mock-tournament-kickers-cup"
     let tableTennisRow = "tournament-row-mock-tournament-table-tennis"
@@ -155,8 +153,7 @@ final class LilyTournamentTests: LilyUITestCase {
     }
 
     /// The match reminder in the inbox opens Tuesday Table Tennis on its Matches segment with the named match's sheet
-    /// up: the view model decides the linked match on the first successful load, so the sheet comes with the detail,
-    /// once; Done leaves the detail on Matches.
+    /// up, once; Done leaves the detail on Matches.
     @MainActor
     func testMatchReminderInTheInboxOpensTheMatchSheet() {
         tapSignInWithApple()

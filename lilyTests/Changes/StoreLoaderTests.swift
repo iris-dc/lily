@@ -161,9 +161,8 @@ struct StoreLoaderTests {
         #expect(script.fetches == 2, "the repeat recorded the moved version")
     }
 
-    /// A call made while a request is out for the same caller joins it instead of asking again. The second call is a
-    /// `loadIfStale`, whose "Reloading" line is written right before it reaches the single flight, so the test knows
-    /// it has joined before the first fetch is let through.
+    /// A call made while a request is out for the same caller joins it instead of asking again. `loadIfStale` writes its
+    /// "Reloading" line just before it reaches the single flight, which is how the test knows the second call has joined.
     @Test func aLoadWhileOneIsInFlightJoinsIt() async {
         script.hold.isEnabled = true
         let first = startReload()

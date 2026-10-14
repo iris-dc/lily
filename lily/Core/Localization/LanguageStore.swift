@@ -48,7 +48,6 @@ final class LanguageStore {
         logger.info(.localization, "Language changed to \(language.code) (\(Self.origin(of: preference)))")
     }
 
-    /// The one place a preference becomes the context `AppLocale` reads.
     private static func context(for preference: LanguagePreference) -> AppLocale.Context {
         AppLocale.Context(language: preference.fixedLanguage)
     }

@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The start and the results as `TournamentDetail` orchestrates them for the mock and the fake: the draw from the shared
-/// pairings, a bracket's winners advancing, a round robin's table recomputed, and the completion with its winner.
+/// `TournamentDetail.starting` and `settling` replay the backend's draw and results for the mock and the fake.
 struct TournamentDetailProgressTests {
     private let date = Date(timeIntervalSince1970: 1_800_000_600)
     private let organizer = "org"
@@ -109,7 +108,6 @@ struct TournamentDetailProgressTests {
     private static let bracket = detail(format: .singleElimination)
     private static let league = detail(format: .roundRobin)
 
-    /// Four players in a bracket, three in a league, seeded in id order, draws allowed; the organiser plays in none.
     private static func detail(format: TournamentFormat) -> TournamentDetail {
         let count = format == .singleElimination ? 4 : 3
         let entries = (1...count).map { seed in
@@ -119,7 +117,6 @@ struct TournamentDetailProgressTests {
         return .fixture(tournament: tournament, entries: entries)
     }
 
-    /// The match recorded by the organiser and settled, so a test reads as a sequence of results.
     private func settled(_ id: String,
                          _ scoreA: Int,
                          _ scoreB: Int,

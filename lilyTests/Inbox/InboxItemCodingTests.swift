@@ -75,9 +75,8 @@ struct InboxItemCodingTests {
         #expect(InboxItem.reminder().caption == "Game reminder · Sunset 5-a-side")
     }
 
-    /// The reminder's line is the shared time caption, every part judged against the given `now`: the day as the
-    /// chat's chips name it, the clock time, the countdown. A 24-hour locale, because `.shortened` puts a narrow
-    /// no-break space before AM/PM that no literal here could show.
+    /// The reminder's line is the shared time caption, judged against the given `now`. A 24-hour locale, because
+    /// `.shortened` puts a narrow no-break space before AM/PM that no literal here could show.
     @Test func theReminderCaptionIsTheSharedTimeCaption() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!

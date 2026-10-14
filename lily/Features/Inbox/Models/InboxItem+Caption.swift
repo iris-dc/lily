@@ -19,12 +19,10 @@ nonisolated extension InboxItem {
     }
 }
 
-/// When something starts, for a reminder card: the day as the chat's day chips name it, the clock time in the app's
-/// short time style, then how far off it is ("Today, 6:30 PM · in 1 hour"), so the reader has the time and the
-/// countdown in one line. Both the day label and the countdown are judged against `now`, never the wall clock (the
-/// view model's clock closure in production, a fixed date in a test, so the whole line is pinned). The clock time
-/// follows the calendar's zone and the calendar's locale when it has one (so a test can pin it), else the app's
-/// language.
+/// When something starts, for a reminder card: the day as the chat's day chips name it, the clock time in the short
+/// style, then how far off it is ("Today, 6:30 PM · in 1 hour"), so the reader has the time and the countdown in one
+/// line. Day and countdown are judged against `now`, never the wall clock; the clock time follows the calendar's zone
+/// and locale, falling back to the app's language, so the whole line is determined by its inputs.
 nonisolated enum InboxTimeCaption {
     static func text(for date: Date, now: Date, calendar: Calendar) -> String {
         let locale = calendar.locale ?? AppLocale.locale

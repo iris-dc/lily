@@ -59,7 +59,7 @@ final class MockTournamentRepository: TournamentRepository {
             logger.info(.tournaments, "Mock create replayed for tournament \(existing.id)")
             return resolved(existing)
         }
-        guard let coordinate = draft.coordinate else { throw AppError.tournamentCreationFailed }
+        guard let coordinate = draft.coordinate, meetsFormatFloor(draft) else { throw AppError.tournamentCreationFailed }
         if let groupID = draft.group?.id {
             guard let group = groups.find(groupID), group.isPublic || group.isMember else { throw AppError.groupNotFound }
             guard GroupAccess(group: group, userID: identity.currentUserID).canCreateEvents(in: group) else {
@@ -88,11 +88,18 @@ final class MockTournamentRepository: TournamentRepository {
                 throw AppError.tournamentLocked
             }
         }
+        guard meetsFormatFloor(draft) else { throw AppError.tournamentUpdateFailed }
         guard draft.maxEntries >= tournament.entryCount else { throw AppError.capacityTooLow }
         let updated = store(detail.replacing(tournament: tournament.updating(with: draft, at: now())))
         groups.syncRoom(for: updated.tournament, memberCount: MockTournamentFixtures.playerCount(of: updated))
         logger.info(.tournaments, "Mock tournament \(id) updated (\(updated.tournament.entriesDescription))")
         return resolved(updated)
+    }
+
+    /// Whether the cap reaches the format's minimum. The backend refuses less with a bare `VALIDATION_FAILED`, so each
+    /// route answers its own fallback.
+    private func meetsFormatFloor(_ draft: TournamentDraft) -> Bool {
+        draft.maxEntries >= AppConfig.Tournaments.minEntries(for: draft.format)
     }
 
     func cancel(id: String) async throws -> TournamentDetail {

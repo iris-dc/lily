@@ -142,13 +142,13 @@ func makeEventListViewModel(scope: EventScope = .upcoming,
                        filterStore: filterStore ?? NoOpEventFilterStore())
 }
 
-/// A `UserDefaults` suite of its own, whose values go with the last reference, so tests that build the composition
-/// root never share a stored session and unit runs leave no stored sessions, choices or filters in the simulator's
-/// container (cfprefsd keeps an empty plist per suite behind).
+/// A `UserDefaults` suite of its own, removed with its last reference: tests that build the composition root never
+/// share a stored session, and a unit run leaves no sessions, choices or filters in the simulator's container (cfprefsd
+/// keeps an empty plist per suite behind).
 final class TestDefaults: UserDefaults {
     let suiteName: String
 
-    /// Names the suite `lily.tests.<id>`. Not `init?()`: that would override `UserDefaults.init()`, which is not failable.
+    /// Not a parameterless `init?()`: it would override `UserDefaults.init()`, which is not failable.
     init?(id: UUID) {
         suiteName = "lily.tests.\(id.uuidString)"
         super.init(suiteName: suiteName)
@@ -192,8 +192,7 @@ func settle(until condition: () -> Bool, sourceLocation: SourceLocation = #_sour
     try? await settle(untilAsync: condition, sourceLocation: sourceLocation)
 }
 
-/// `settle(until:)` for a condition that has to be awaited, such as a page read from a repository; the one yield
-/// loop both helpers run.
+/// `settle(until:)` for a condition that has to be awaited, such as a page read from a repository.
 @MainActor
 func settle(untilAsync condition: () async throws -> Bool,
             sourceLocation: SourceLocation = #_sourceLocation) async throws {

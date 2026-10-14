@@ -22,9 +22,6 @@ struct AppDependenciesTermsTests {
         #expect(remote.meRepository is RemoteMeRepository, "the flag means nothing against a backend")
     }
 
-    /// The chain without a backend: a guest is never asked, a sign-in under the flag loads an account owing the
-    /// terms and the sheet is asked for, and the acceptance (the store's reload, the mock's PUT, the account replaced)
-    /// takes it down again.
     @Test func thePendingMockRaisesTheTermsSheetAfterSignInUntilAccepted() async {
         let dependencies = makeMockDependencies(extraArguments: [AppConfig.LaunchArguments.mockTermsPending])
         let terms = dependencies.makeTermsViewModel()

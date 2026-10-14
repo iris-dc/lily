@@ -1,9 +1,8 @@
 import Foundation
 
 /// Parks callers until released, so a test can act while a request is observably in flight. A fake owns one per
-/// operation it can hold; one that parks every request on a single hold conforms to `HoldsRequests` and gets its
-/// `holdsRequests`/`releaseRequests()` controls from the conformance. Two waits: `waitOrThrow()` for a double of a
-/// URLSession-backed collaborator, `wait()` for a non-throwing protocol or a double modelling detached work.
+/// operation it can hold, or conforms to `HoldsRequests` when a single hold parks everything. `waitOrThrow()` is for
+/// a double of a URLSession-backed collaborator, `wait()` for a non-throwing protocol or detached work.
 @MainActor
 final class RequestHold {
     /// While true, `wait()` suspends every caller until `release()`.
@@ -19,8 +18,7 @@ final class RequestHold {
         await withCheckedContinuation { pending.append($0) }
     }
 
-    /// The URLSession-shaped wait: a caller cancelled while held learns of it once the hold lifts, as a URLSession
-    /// task does.
+    /// A caller cancelled while held learns of it once the hold lifts, as a URLSession task does.
     func waitOrThrow() async throws {
         await wait()
         try Task.checkCancellation()
@@ -34,7 +32,7 @@ final class RequestHold {
     }
 }
 
-/// A fake that parks its requests on one hold; the conformance gives it the two controls a test uses.
+/// A fake that parks its requests on one hold; the conformance supplies `holdsRequests` and `releaseRequests()`.
 @MainActor
 protocol HoldsRequests: AnyObject {
     var hold: RequestHold { get }

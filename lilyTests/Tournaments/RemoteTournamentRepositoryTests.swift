@@ -4,8 +4,7 @@ import Testing
 
 @MainActor
 struct RemoteTournamentRepositoryTests {
-    /// One known code and the route's fallback: the shared mapping is proved once, in `SendFailingWithTests` and
-    /// `BackendErrorCodeTests.everyCodeMapsToItsCase`. `nonisolated`: `@Test(arguments:)` reads it off the main actor.
+    /// `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
         ("TOURNAMENT_NOT_FOUND", .tournamentNotFound), ("VALIDATION_FAILED", .tournamentActionFailed),
     ]
@@ -102,6 +101,16 @@ struct RemoteTournamentRepositoryTests {
     func backendCodesBecomeTheirErrors(testCase: (code: String, expected: AppError)) async {
         client.error = APIError.http(status: 409, body: APIErrorBody(code: testCase.code, message: "m"))
         await #expect(throws: testCase.expected) { try await repository.join(id: "t", teamName: nil) }
+    }
+
+    @Test func aMembershipLimitOnATournamentRouteIsTheTournamentsCap() async {
+        client.error = APIError.http(status: 409, body: APIErrorBody(code: "MEMBERSHIP_LIMIT", message: "m"))
+        await #expect(throws: AppError.tournamentMembershipLimit) { try await repository.join(id: "t", teamName: nil) }
+        await #expect(throws: AppError.tournamentMembershipLimit) { try await repository.joinTeam(id: "t", entryID: "e1") }
+        await #expect(throws: AppError.tournamentMembershipLimit) { try await repository.create(.fixture()) }
+
+        client.error = APIError.http(status: 404, body: APIErrorBody(code: "GROUP_NOT_FOUND", message: "m"))
+        await #expect(throws: AppError.groupNotFound) { try await repository.create(.fixture()) }
     }
 
     @Test func fallbacksFollowTheRequest() async {

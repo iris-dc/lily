@@ -69,9 +69,10 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
                   judgesSchedule: !isLocked)
         }
 
-        /// The entries the form's stepper offers under these rules for a format: from the floor to the format's cap.
+        /// The entries the form's stepper offers for a format under these rules.
         func entriesRange(for format: TournamentFormat) -> ClosedRange<Int> {
-            minimumEntries...max(minimumEntries, format.entriesRange.upperBound)
+            let floor = max(minimumEntries, format.entriesRange.lowerBound)
+            return floor...max(floor, format.entriesRange.upperBound)
         }
     }
 
@@ -103,11 +104,13 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
     /// A hosted tournament's visibility is its group's; the picker's choice applies to a standalone one.
     var effectiveVisibility: GroupVisibility { group?.visibility ?? visibility }
 
-    /// A format change pulls the entries back under its cap; nothing is raised. Only a create changes the format, and
-    /// the creation floor lies under every cap, so the format's own range is the one that applies.
+    /// A format change pulls the entries under the new cap and up to its floor; a number that fits the new format stays,
+    /// so switching back moves nothing. Only a create changes the format, and the creation floor lies under every
+    /// format's own, so the format's range is the one that applies.
     mutating func select(format: TournamentFormat) {
         self.format = format
-        maxEntries = min(maxEntries, format.entriesRange.upperBound)
+        let range = format.entriesRange
+        maxEntries = min(max(maxEntries, range.lowerBound), range.upperBound)
     }
 
     /// The earliest start the form accepts, relative to `now`.

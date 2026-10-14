@@ -14,10 +14,10 @@ extension ChatViewModel {
         return draft
     }
 
-    /// The stored message replaced the bubble of `clientMessageID`, from the answer, the live echo or a catch-up,
-    /// whichever came first: the bubble's local files go into the cache under the stored ids, then the bubble goes.
-    /// The order is the point, because the drafts' files are known only through the bubble; `seedCache` claims each id
-    /// before its first await, so a second settle of the same message copies and deletes nothing.
+    /// The stored message replaced the bubble of `clientMessageID` (the answer, the live echo or a catch-up, whichever
+    /// came first): the bubble's files go into the cache under the stored ids before the bubble goes, since they are
+    /// known only through it. `seedCache` claims each id before its first await, so a second settle copies and deletes
+    /// nothing.
     func confirmPending(clientMessageID: String, with message: ChatMessage) async {
         if message.hasAttachments, let sent = pending.first(where: { $0.clientMessageID == clientMessageID }) {
             await attachments.seedCache(sent.attachments, with: message.attachments)

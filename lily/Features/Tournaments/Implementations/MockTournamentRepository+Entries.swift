@@ -91,10 +91,9 @@ extension MockTournamentRepository {
         guard detail.entry(containing: MockTournamentFixtures.callerMarker) == nil else { throw AppError.alreadyEntered }
     }
 
-    /// The root after an entry write. `myEntryId` is left nil because the roster decides it on the way out (`resolved`
-    /// recomputes it from `entry(containing: callerMarker)`, and the marker is swapped per mock sign-in); the epoch
-    /// moves once per departure of someone other than the organiser, as the backend bumps room and root in the
-    /// departure transaction (the organiser stays in the room, so their own entry moves none).
+    /// The root after an entry write. `myEntryId` stays nil: `resolved` recomputes it from the roster on the way out,
+    /// so a swapped mock sign-in reads its own. The epoch moves once per departure of anyone but the organiser, as the
+    /// backend bumps room and root in that transaction (the organiser stays in the room, so their entry moves nothing).
     private func counting(_ detail: TournamentDetail, entries count: Int, departed: Bool = false) -> TournamentDetail {
         let tournament = detail.tournament
         return detail.replacing(tournament: tournament.updatingEntries(count: count,
@@ -110,7 +109,6 @@ extension MockTournamentRepository {
         logger.info(.tournaments, message)
     }
 
-    /// One store, every departed player out of the room, one sync and one line, however many members left at once.
     private func depart(_ detail: TournamentDetail, userIDs: [String], logging message: String) {
         store(detail)
         for userID in userIDs {

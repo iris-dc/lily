@@ -10,10 +10,7 @@ final class AttachmentLoader {
     private let repository: any ChatRepository
     private let cache: any AttachmentCache
     private let session: URLSession
-    /// Internal, not private, so `AttachmentLoader+Files.swift` can log the preview copy it makes and knows where.
     let logger: any Logging
-    /// Where the named preview copies go; the tests give every suite a folder of its own, because the disk cache sweeps
-    /// the default one at the end of a session.
     let previewDirectory: URL
     private let now: () -> Date
     private var inFlight: [String: Task<URL, any Error>] = [:]
@@ -36,11 +33,11 @@ final class AttachmentLoader {
     typealias ProgressHandler = @MainActor @Sendable (Double) -> Void
 
     /// The file holding `variant` of `attachment`, which belongs to `message` (the link route needs its room and id).
-    /// A picture stored without a thumbnail has one object, kept once under `.full` whichever variant is asked for
-    /// (`Attachment.url(for: .thumbnail)` falls back to the full link, so the gallery's thumbnail and the viewer's full
-    /// request would otherwise download and store the same bytes twice). A refused or failed download, or a cache that
-    /// cannot keep the bytes, is `.attachmentUnavailable`, a lost connection `.network`. `progress` follows the download
-    /// when there is one; a caller joining a download already running hears only its end.
+    /// A picture stored without a thumbnail is kept once under `.full` whichever variant is asked for, since
+    /// `Attachment.url(for: .thumbnail)` falls back to the full link and the gallery and the viewer would otherwise
+    /// store the same bytes twice. A refused or failed download, or a cache that cannot keep the bytes, is
+    /// `.attachmentUnavailable`, a lost connection `.network`; `progress` follows the download when there is one, and a
+    /// caller joining a download already running hears only its end.
     func file(for attachment: Attachment,
               variant: AttachmentVariant,
               in message: ChatMessage,
@@ -87,8 +84,7 @@ final class AttachmentLoader {
         return url
     }
 
-    /// The downloaded bytes kept by the cache; a cache that cannot keep them (the disk is full) fails the download,
-    /// logged with the id and never the link.
+    /// A cache that cannot keep the bytes (a full disk) fails the download; the log names the id, never the link.
     private func stored(_ data: Data, for attachment: Attachment, variant: AttachmentVariant) async throws -> URL {
         do {
             return try await cache.store(data, for: attachment.id, variant: variant)

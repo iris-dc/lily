@@ -139,8 +139,7 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
     }
 
     /// Empty or zero means free. The draft holds the text and reads it as an amount on every change, so Create never
-    /// races a pending commit of the decimal pad, which has no return key, and an edit opens with the game's price as
-    /// the draft seeded it.
+    /// races a pending commit of the decimal pad, which has no return key.
     private var priceRow: some View {
         HStack(spacing: DesignTokens.Spacing.xs) {
             Text(Copy.price)

@@ -4,8 +4,7 @@ import Testing
 
 @MainActor
 struct RemoteInviteRepositoryTests {
-    /// One known code and the route's fallback: the shared mapping is proved once, in `SendFailingWithTests` and
-    /// `BackendErrorCodeTests.everyCodeMapsToItsCase`. `nonisolated`: `@Test(arguments:)` reads it off the main actor.
+    /// One known code and the route's fallback; the shared mapping has its own tests. `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
         ("ALREADY_MEMBER", .alreadyMember), ("VALIDATION_FAILED", .inviteUnavailable),
     ]

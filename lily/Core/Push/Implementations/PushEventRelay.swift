@@ -16,7 +16,6 @@ final class PushEventRelay {
     }
     private var pendingTap: PushTap?
     private var waiters: [Waiter] = []
-    /// The pause a registration's timeout waits on; held in tests.
     private let sleep: Sleep
 
     /// Whether a registration is waiting for the system's answer.

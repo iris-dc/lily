@@ -1,14 +1,11 @@
 import Foundation
 
 /// The frame around one backend write a screen makes: a `TRY_AGAIN` is repeated once through `LostRace`, a
-/// cancellation (the screen was dismissed) stays quiet, any other failure is logged under `category` as
-/// "<what> failed: <error>" (at warning when `isExpected` names it a product state the screen shows, else at error)
-/// and handed to `report` (an `ErrorCenter` or a `GroupErrorReporter`, so `TERMS_REQUIRED` still raises the terms
-/// sheet). `run` answers whether the write went through, so a sheet can close on success. The busy flag stays at
-/// the call site: every screen has its own shape (a Bool, a set of ids) and some release it before a prompt.
-///
-/// Built once per view model in its `init`: SwiftLint caps a function at five non-defaulted parameters, and the
-/// four collaborators plus the work would be six.
+/// cancellation (the screen was dismissed) stays quiet, any other failure is logged under `category` (at warning when
+/// `isExpected` names it a product state the screen shows, else at error) and handed to `report` (an `ErrorCenter`, or
+/// a `GroupErrorReporter` so `TERMS_REQUIRED` still raises the terms sheet). `run` answers whether the write went
+/// through, so a sheet can close on success. The busy flag stays at the call site: every screen has its own shape and
+/// some release it before a prompt.
 struct WriteGate {
     let category: LogCategory
     let logger: any Logging

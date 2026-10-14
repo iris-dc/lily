@@ -131,6 +131,9 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case drawNotAllowed
     /// The organiser runs `AppConfig.Tournaments.maxOrganizedOpen` open tournaments already (`TOURNAMENT_LIMIT`).
     case tournamentLimit
+    /// `MEMBERSHIP_LIMIT` answered by a tournament route or a tournament invite: the caller is in
+    /// `AppConfig.Tournaments.maxPerUser` tournaments already, finished ones included.
+    case tournamentMembershipLimit
     /// The person invited into a tournament is in it already (`ALREADY_ENTERED` on an invite).
     case inviteeAlreadyEntered
     /// Only entrants and the organiser invite into a tournament (`FORBIDDEN` on an invite).

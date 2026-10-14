@@ -79,9 +79,8 @@ final class MeStore: SessionObserver {
         }
     }
 
-    /// Re-reads the account (joining a load in flight) and accepts the version it names now, so a version bumped
-    /// since the screen was opened is accepted rather than refused as stale. `false` when nothing was recorded; the
-    /// popup says why, unless the caller signed out meanwhile or left mid-request.
+    /// Re-reads the account first, so a version bumped since the sheet opened is accepted rather than refused as
+    /// stale. `false` when nothing was recorded; the popup says why, unless the caller signed out or left mid-request.
     func acceptTerms() async -> Bool {
         await reload()
         guard let account else {

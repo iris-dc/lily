@@ -22,9 +22,8 @@ struct AttachmentCodingTests {
         #expect(sent.message == message && sent.channelEpoch == 3)
     }
 
-    /// An attachment of a kind a newer backend sends keeps its name and leaves the message decoding with every other
-    /// field intact; it is no media, so it is a card under the bubble and reads as a file in a quote; and it goes back
-    /// out as it came, never rewritten to a kind this build knows.
+    /// An attachment kind from a newer backend decodes by name and re-encodes as it came, never rewritten to a kind this
+    /// build knows; it is no media, so it draws as a card under the bubble and quotes as a file.
     @Test func anUnknownAttachmentKindKeepsTheMessageDecodingAndDrawsAsAFile() throws {
         let message = try ContractSamples.decode(ChatMessage.self, from: audioKinded(ContractSamples.imageMessage))
 

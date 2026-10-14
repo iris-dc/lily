@@ -17,6 +17,9 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
     var transientErrors: [AppError] = []
     /// Thrown by `tournament(id:)` when set (a refetch that fails).
     var detailError: (any Error)?
+    /// Thrown once by a match write after it stored its result, as a commit whose answer never arrived; the refetch and
+    /// later writes answer normally.
+    var lostAnswerError: (any Error)?
     let hold = RequestHold()
     var organizerUserID = "host"
     private var entrySequence = 10
@@ -130,7 +133,7 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
         return remaining
     }
 
-    /// The organiser drops an entry; `myEntryId` goes only when the removed entry held the caller, as the backend's does.
+    /// `myEntryId` is cleared only when the removed entry held the caller, as the backend does.
     func removeEntry(id: String, entryID: String) async throws {
         removedEntries.append((id, entryID))
         try throwIfScripted()
@@ -141,7 +144,7 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
             .replacing(tournament: detail.tournament.updatingEntries(count: entries.count, myEntryId: myEntryId, at: .now)))
     }
 
-    /// Refuses a start under the format's minimum like the backend (`canStart`), and draws through the model.
+    /// Refuses a start under the format's minimum like the backend (`canStart`); `TournamentDetail.starting` draws the matches.
     func start(id: String) async throws -> TournamentDetail {
         startedIDs.append(id)
         try throwIfScripted()
@@ -158,6 +161,7 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
         guard let match = detail.match(id: matchID) else { throw AppError.matchNotFound }
         let scheduled = match.scheduling(schedule)
         store(detail.replacing(match: scheduled))
+        try throwLostAnswer()
         return scheduled
     }
 
@@ -176,6 +180,12 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
     func throwIfScripted() throws {
         if !transientErrors.isEmpty { throw transientErrors.removeFirst() }
         if let actionError { throw actionError }
+    }
+
+    func throwLostAnswer() throws {
+        guard let error = lostAnswerError else { return }
+        lostAnswerError = nil
+        throw error
     }
 
     func stored(_ id: String) throws -> TournamentDetail {

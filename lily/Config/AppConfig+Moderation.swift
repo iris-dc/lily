@@ -17,7 +17,7 @@ nonisolated extension AppConfig {
 }
 
 nonisolated extension AppConfig.API.Paths {
-    /// The app only posts here; the operator's per-report and suspension routes are Laurel's admin CLI's.
+    /// The app only files reports; the per-report and suspension routes belong to Laurel's admin CLI.
     static let reports = "/api/reports"
     static let blocks = "/api/blocks"
     static let me = "/api/me"

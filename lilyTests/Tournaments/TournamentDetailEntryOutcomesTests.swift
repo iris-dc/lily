@@ -2,16 +2,14 @@ import Foundation
 import Testing
 @testable import lily
 
-/// What the detail does with the refetch that follows an entry write. The write landed on the backend, so a refetch that
-/// fails must not leave the stale control on screen, and one that finds nothing means the tournament is gone for the
-/// caller.
+/// The refetch after an entry write. The write has landed, so a failed refetch must not leave a stale control on screen,
+/// and a 404 means the tournament is gone for the caller.
 @MainActor
 struct TournamentDetailEntryOutcomesTests {
     private let harness = TournamentHarness()
     private let destination = TournamentDestination(id: "t", name: "Tuesday Table Tennis")
 
-    /// The popup belongs to the write that landed. The recorded change makes the view's keyed task ask again and the
-    /// lists behind reload; that reload repairs the screen.
+    /// No popup: the write landed. The recorded change makes the view's keyed task reload, which repairs the screen.
     @Test func aFailedRefetchAfterALandedEntryWriteInvalidatesTheLists() async {
         let viewModel = await harness.loadedDetailViewModel(.fixture(entryCount: 1), for: destination)
         harness.repository.detailError = AppError.network
@@ -31,8 +29,7 @@ struct TournamentDetailEntryOutcomesTests {
         #expect(harness.repository.fetchedIDs.count == 3 && viewModel.participation == .leave)
     }
 
-    /// An entrant who lost the hosting group's membership, or an operator delete: the screen dismisses, the room leaves
-    /// Mine and the lists behind reload.
+    /// A 404 here means the caller lost the hosting group's membership or an operator deleted the tournament.
     @Test func aRefetchThatFindsNothingMarksGone() async {
         await harness.loadGroups([.tournamentRoomFixture(id: "t")])
         let entered = Tournament.fixture(entryCount: 1, myEntryId: "e1")
@@ -71,8 +68,7 @@ struct TournamentDetailEntryOutcomesTests {
         #expect(viewModel.participation == .leave)
     }
 
-    /// A lost connection on the write is reported as it is: unlike a game's join, the entry is not looked up afterwards,
-    /// so nothing is fetched, no room moves, no change is recorded and no reminder is offered.
+    /// Unlike a game's join, an entry write with an unknown outcome is not looked up afterwards.
     @Test func aNetworkFailureOnAnEntryWriteIsNotSecondGuessed() async {
         let spy = SpyPushOptIn()
         let viewModel = await harness.loadedDetailViewModel(.fixture(entryCount: 1), for: destination, pushOptIn: spy)
@@ -86,5 +82,19 @@ struct TournamentDetailEntryOutcomesTests {
         #expect(harness.logs(.error).contains { $0.contains("Join for tournament \(destination.id) failed") }, "not a refusal")
         #expect(harness.changes.version == version && harness.groupRepository.requestedScopes.isEmpty)
         #expect(spy.offerCount == 0)
+    }
+
+    @Test func theTournamentsCapOnAJoinIsAWarningNotAnError() async {
+        let viewModel = await harness.loadedDetailViewModel(.fixture(entryCount: 1), for: destination)
+        harness.repository.actionError = AppError.tournamentMembershipLimit
+        let version = harness.changes.version
+
+        await viewModel.join()
+
+        #expect(harness.presentedError == .tournamentMembershipLimit)
+        #expect(harness.logs(.warning).contains { $0.contains("Join for tournament \(destination.id) failed") })
+        #expect(harness.logs(.error).isEmpty)
+        #expect(harness.repository.joins.count == 1 && harness.repository.fetchedIDs.count == 1, "no refetch")
+        #expect(harness.changes.version == version)
     }
 }

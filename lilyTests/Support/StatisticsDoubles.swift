@@ -62,7 +62,7 @@ final class HeldSleep {
     }
 }
 
-/// Reads a held duration in seconds, for the Realtime suites' timing assertions over `HeldSleep.held`.
+/// Seconds as a `Double`, for assertions over `HeldSleep.held`.
 extension Duration {
     var seconds: Double {
         Double(components.seconds) + Double(components.attoseconds) / 1e18

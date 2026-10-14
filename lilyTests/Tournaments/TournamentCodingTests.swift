@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The wire shapes of the tournaments plan (section 2.1), decoded with the app's conventions.
+/// The tournament wire shapes, decoded with the app's conventions.
 struct TournamentCodingTests {
     @Test func tournamentDecodesEveryContractField() throws {
         let tournament = try ContractSamples.decode(Tournament.self, from: ContractSamples.tournament)

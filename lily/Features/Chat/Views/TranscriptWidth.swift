@@ -9,8 +9,7 @@ extension EnvironmentValues {
 
 /// A frame of `fraction` of the transcript's width, aligned to `alignment`. `containerRelativeFrame` was the first
 /// cut and still serves until the width is known, but it measures the scroll view's container, which beside the
-/// Chats sidebar is not the column the rows can use: 78 % of it overflowed the visible column on both sides (seen
-/// 2026-10-07).
+/// Chats sidebar is not the column the rows can use: 78 % of it overflowed the visible column on both sides.
 private struct TranscriptFraction: ViewModifier {
     let fraction: CGFloat
     let alignment: Alignment

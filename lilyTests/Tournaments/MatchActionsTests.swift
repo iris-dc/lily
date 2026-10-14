@@ -93,8 +93,7 @@ struct MatchActionsTests {
             .canSchedule)
     }
 
-    /// A dispute reopens the match (`pending`, or `scheduled` when it has a time) with the report dropped, so the
-    /// open-match offers return: a side reports afresh, the organiser records, gives a walkover or sets the time.
+    /// A dispute reopens the match, so a side may report afresh while the organiser may still decide it.
     @Test func aReopenedDisputedMatchMayBeReportedAgain() {
         let reopened = match().reporting(3, 1, by: "u-2", at: .now).disputing()
         #expect(reopened.isOpenDispute && reopened.status == .pending)

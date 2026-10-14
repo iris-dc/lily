@@ -1,8 +1,7 @@
 import XCTest
 
-/// The Chats rows' own actions, in their own file because `LilyChatTests.swift` is at the file-length limit and its
-/// class at the type-body limit; the test method carries `@objc`, without which XCTest does not discover a test
-/// declared in an extension.
+/// The Chats rows' own actions, split out because `LilyChatTests.swift` is at SwiftLint's file-length limit. A test
+/// declared in an extension is discovered by XCTest only when it is `@objc`.
 extension LilyChatTests {
     /// A clear asked from a room's row (its context menu) and confirmed there: the room is read at once, its row stays
     /// on the Chats tab (only a conversation's row leaves), and the room opens without its history.

@@ -2,12 +2,9 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The second half of the refusals suite: the score range, the scopes, the guest and the room's epoch, in a sibling
-/// file so each stays under the file limit.
 extension MockTournamentRefusalsTests {
     // MARK: Results
 
-    /// A score outside the backend's range is refused before the match is read, and the match stays open.
     @Test func reportRefusesAScoreOutsideTheRange() async throws {
         let id = MockTournamentFixtures.tableTennisID
         let matchID = MockTournamentFixtures.tableTennisScheduledMatchID
@@ -23,7 +20,6 @@ extension MockTournamentRefusalsTests {
         #expect(match.status.isOpen && match.scoreA == nil)
     }
 
-    /// A decided match takes no schedule; the organiser's own result decides it at once.
     @Test func scheduleRefusesADecidedMatch() async throws {
         let id = "league"
         repository.seedLeague(id: id)
@@ -37,7 +33,6 @@ extension MockTournamentRefusalsTests {
 
     // MARK: Scopes
 
-    /// A group's list leaves its cancelled tournaments out.
     @Test func theGroupScopeLeavesCancelledOnesOut() async throws {
         let runners = MockGroupFixtures.ref(for: MockGroupFixtures.runnersID)
         seed(.fixture(id: "live", group: runners))
@@ -46,7 +41,6 @@ extension MockTournamentRefusalsTests {
         #expect(listed.map(\.id) == ["live"])
     }
 
-    /// Explore lists what has not started: a start in the past is out, however fresh.
     @Test func upcomingLeavesAPastStartOut() async throws {
         seed(.fixture(id: "past", startsAt: now.addingTimeInterval(-60)))
         seed(.fixture(id: "soon", startsAt: now.addingTimeInterval(60)))
@@ -56,7 +50,7 @@ extension MockTournamentRefusalsTests {
 
     // MARK: The guest
 
-    /// Every organiser and match route answers the backend's 401 to a guest before any other check, and stores nothing.
+    /// The guest is refused before any other check, so even a nonsense winner id answers 401.
     @Test func aGuestIsRefusedOnOrganiserAndMatchRoutes() async throws {
         let (cup, giants) = try await kickersCup()
         let tableTennis = try await repository.tournament(id: MockTournamentFixtures.tableTennisID)
@@ -72,8 +66,6 @@ extension MockTournamentRefusalsTests {
         #expect(cupAfter == cup && tableTennisAfter == tableTennis)
     }
 
-    /// The writes a guest is refused: the organiser's five on the Kickers Cup and the five match routes on Tuesday Table
-    /// Tennis, each named for the failure message.
     private func guestWrites(cup: TournamentDetail,
                              giants: TournamentEntry,
                              tableTennis: TournamentDetail) -> [(route: String, write: @MainActor () async throws -> Void)] {
@@ -97,8 +89,7 @@ extension MockTournamentRefusalsTests {
 
     // MARK: The epoch
 
-    /// A departure other than the organiser's moves the room's epoch once, however many players left in it: the
-    /// tournament is the one source and the room follows it.
+    /// The tournament owns the epoch and the room follows it: one bump per departure, however many players left.
     @Test func aDepartureBumpsTheRoomEpochOnce() async throws {
         let (cup, giants) = try await kickersCup()
         let roomBefore = try await groups.group(id: cup.id)
@@ -120,5 +111,40 @@ extension MockTournamentRefusalsTests {
         let detail = try await repository.tournament(id: id)
         let room = try await groups.group(id: id)
         #expect(detail.tournament.channelEpoch == 1 && room.channelEpoch == 1 && detail.tournament.entryCount == 4)
+    }
+
+    // MARK: The format's floor
+
+    /// The backend refuses this with a bare 400 (no code), so each route answers its own fallback.
+    @Test func aCapBelowTheFormatsMinimumIsRefusedLikeTheBackend() async throws {
+        var draft = TournamentDraft.fixture(now: now)
+        draft.format = .roundRobin
+        draft.maxEntries = 2
+        await #expect(throws: AppError.tournamentCreationFailed) { try await repository.create(draft) }
+        draft.maxEntries = 3
+        let created = try await repository.create(draft)
+        #expect(created.tournament.maxEntries == 3)
+
+        seed(.fixture(id: "league",
+                      maxEntries: 4,
+                      entryCount: 0,
+                      startsAt: tomorrow,
+                      organizerUserId: MockTournamentFixtures.callerMarker))
+        let league = try await repository.tournament(id: "league")
+        var edit = TournamentDraft(editing: league.tournament)
+        edit.maxEntries = 2
+        await #expect(throws: AppError.tournamentUpdateFailed) { try await repository.update(id: "league", edit) }
+        edit.maxEntries = 3
+        let updated = try await repository.update(id: "league", edit)
+        #expect(updated.tournament.maxEntries == 3)
+    }
+
+    @Test func theFormatsFloorIsJudgedBeforeTheEntriesAlreadyIn() async throws {
+        let (cup, _) = try await kickersCup()
+        var draft = TournamentDraft(editing: cup.tournament)
+        draft.maxEntries = 2
+        await #expect(throws: AppError.capacityTooLow) { try await repository.update(id: cup.id, draft) }
+        draft.format = .roundRobin
+        await #expect(throws: AppError.tournamentUpdateFailed) { try await repository.update(id: cup.id, draft) }
     }
 }

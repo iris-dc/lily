@@ -5,9 +5,8 @@ import Foundation
 
 // Renders iskra's app icon at 1024x1024 with CoreGraphics (no dependencies): a lowercase "i" set in SF Pro Rounded Black
 // in cream on the dark field (ink black with a maroon drift from the top left), its dot a ball with red seams; the
-// letter of the name, the ball for the sport. Chosen on 2026-10-09 from a grid of nine typefaces by four colourways on
-// the dark field (the user's pick: the rounded face, cream on cream with red seams), after a glowing spark and a flat
-// spark (2026-10-08) were rejected. The shipped files are `final-any/dark/tinted.png`, copied into
+// letter of the name, the ball for the sport (picked from a grid of typefaces and colourways; the spark marks tried
+// before it read as a card-suit diamond or a glow). The shipped files are `final-any/dark/tinted.png`, copied into
 // `lily/Assets.xcassets/AppIcon.appiconset` as `AppIcon.png`, `AppIcon-Dark.png`, `AppIcon-Tinted.png` (opaque, as the
 // App Store requires); `final-layer-*.png` are the same icon as two layers for Icon Composer; `preview-strip.png` shows
 // the three appearances at home-screen sizes. The typeface is read from the Mac at render time; the PNGs ship.

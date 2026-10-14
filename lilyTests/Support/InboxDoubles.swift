@@ -17,8 +17,8 @@ final class FakeInboxRepository: InboxRepository, HoldsRequests {
     var pageError: (any Error)?
     /// What accept and decline answer from; an id not held is refused with `.inviteNotPending`, the backend's `INBOX_ITEM_NOT_FOUND`.
     var items: [InboxItem] = []
-    /// The group an accept of a group invite answers, membership included; `nil` answers an acceptance naming neither
-    /// a group nor a tournament, the drift case.
+    /// The group an accept of a group invite answers, membership included; `nil` answers an acceptance that names
+    /// neither a group nor a tournament (a backend drift).
     var acceptedGroup: SportGroup? = .fixture(id: "g3", name: "Climbing Buddies", visibility: .private, role: .member)
     /// The tournament an accept of a tournament invite answers; one named after the invite's id when not set.
     var acceptedTournament: Tournament?

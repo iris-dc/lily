@@ -2,9 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The lifecycle of one open room: what `appear()` subscribes at, where it stops when the first page marks the room
-/// gone or the screen left meanwhile, a second appear after a pop, a group deleted under the open room, and what a
-/// failed first page leaves on the screen (Try again, the gone state, or nothing after a cancellation).
+/// The lifecycle of one open room: what `appear()` subscribes at and where it stops, a second appear after a pop, a group
+/// deleted under the open room, and what a failed first page leaves on the screen.
 @MainActor
 struct ChatViewModelLifecycleTests {
     private let group = SportGroup.fixture(id: "g", channelEpoch: 1, role: .member)
@@ -37,7 +36,6 @@ struct ChatViewModelLifecycleTests {
         #expect(epochLines.count == 1, "the controller's line on the event; the view model adds none")
     }
 
-    /// A room the cache holds is a hit: the catch-up from the watermark, said under `.cache` once per appear.
     @Test func aCachedRoomIsACacheHitOnAppear() async {
         let (harness, viewModel) = await makeHarness(cached: [first])
 
@@ -48,7 +46,6 @@ struct ChatViewModelLifecycleTests {
         #expect(!harness.logger.messages(in: .cache).contains { $0.hasPrefix("Room cache miss") })
     }
 
-    /// A room not cached yet is a miss: the newest page, never the catch-up line.
     @Test func anUncachedRoomIsACacheMissOnAppear() async {
         let (harness, viewModel) = await makeHarness()
         harness.chat.newestPages = [.fixture([first])]

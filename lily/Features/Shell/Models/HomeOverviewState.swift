@@ -1,7 +1,7 @@
 import Foundation
 
-/// What one of Home's lists looks like at a glance: the shape `HomeOverviewState.resolve` judges, taken from a view
-/// model or store without the screen reading their flags itself.
+/// One of Home's lists at a glance: the shape `HomeOverviewState.resolve` judges, so the screen never reads a view
+/// model's or store's flags itself.
 nonisolated struct HomeListSnapshot: Equatable, Sendable {
     let isEmpty: Bool
     /// A load answered (content, empty or a failure) since the last reset; until then the list is still out.
@@ -21,10 +21,10 @@ nonisolated enum HomeSectionState: Equatable, Sendable {
     case content
 }
 
-/// What the signed-in Home shows, decided from a snapshot of its three lists in one place rather than from eight flags
-/// composed in the view. The rule that matters: while any list the screen waits for has not answered, the screen
-/// shows its spinner and never "Nothing here yet"; a caller whose only content was a tournament used to read that
-/// line until the last of three loads landed. A list behind a feature flag that is off is passed as `nil` and ignored.
+/// What the signed-in Home shows, decided from a snapshot of its three lists. The rule that matters: while any list
+/// the screen waits for has not answered, the screen shows its spinner and never "Nothing here yet", or a caller whose
+/// only content is a tournament would read that line until the last load landed. A list behind a feature flag that is
+/// off is passed as `nil` and ignored.
 nonisolated enum HomeOverviewState: Equatable, Sendable {
     /// Nothing is there yet and at least one list is still out: one spinner for the screen.
     case loading
@@ -47,15 +47,14 @@ nonisolated enum HomeOverviewState: Equatable, Sendable {
         return .empty(loadFailed: events.loadFailed || groups?.loadFailed == true)
     }
 
-    /// Games and groups: content first, then the spinner while the list is out, then the failure, else nothing there.
     private static func sectionState(of list: HomeListSnapshot) -> HomeSectionState {
         if !list.isEmpty { return .content }
         if !list.hasAnswered { return .loading }
         return list.loadFailed ? .failed : .empty
     }
 
-    /// Tournaments: the section shows only while the caller organises or plays in something, or its load failed; most
-    /// callers have none, and while it still loads behind other content it stays hidden rather than spinning.
+    /// Tournaments: shown only while the caller organises or plays in something, or the load failed. Most callers have
+    /// none, so while it still loads behind other content the section stays hidden rather than spinning.
     private static func tournamentsSectionState(of list: HomeListSnapshot) -> HomeSectionState? {
         if !list.isEmpty { return .content }
         return list.loadFailed ? .failed : nil

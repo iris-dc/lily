@@ -50,9 +50,8 @@ struct AppRootView: View {
         }
     }
 
-    /// Read-only, because the sheet cannot be dismissed: `isPresented` follows `MeStore.needsTerms` for a signed-in
-    /// caller, so the sheet comes up once the account loaded owing the terms or a write answered `TERMS_REQUIRED`, and
-    /// goes once the acceptance is recorded or the session ends.
+    /// The setter is empty on purpose: the sheet cannot be swiped away. It follows `MeStore.needsTerms` and goes only
+    /// once the acceptance is recorded or the session ends.
     private var termsPresented: Binding<Bool> {
         Binding(get: { terms.isPresented }, set: { _ in })
     }

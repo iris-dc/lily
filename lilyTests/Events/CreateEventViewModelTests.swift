@@ -206,8 +206,7 @@ struct CreateEventViewModelTests {
         #expect(checkLines.filter { $0.contains("Could not check whether event \(clientId) landed") }.count == 1)
     }
 
-    /// Nothing under the draft's id is the check's answer, not a fault of the check: the popup shows the create's
-    /// failure and the log notes the miss below warning.
+    /// Nothing under the draft's id is the check's answer, not its fault, so the miss is logged below warning.
     @Test func aCreateThatDidNotLandIsReportedWithoutAWarning() async {
         let harness = CreateEventHarness()
         harness.completeDraft()

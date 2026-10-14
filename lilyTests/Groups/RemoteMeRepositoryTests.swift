@@ -27,8 +27,7 @@ struct RemoteMeRepositoryTests {
         #expect(request.body as? TermsAcceptancePayload == TermsAcceptancePayload(version: 2))
     }
 
-    /// The shared mapping (401, 429, transport, cancellation) is proved once, in `SendFailingWithTests`; this route
-    /// has no fallback of its own, so a code it does not know is `.unknown`.
+    /// This route has no fallback of its own, so a code it does not know is `.unknown`; the shared mapping has its own tests.
     @Test func unnamedFailuresFallBackToUnknown() async {
         client.error = APIError.http(status: 400, body: APIErrorBody(code: "VALIDATION_FAILED", message: "m"))
         await #expect(throws: AppError.unknown) { try await repository.acceptTerms(version: 1) }

@@ -1,7 +1,7 @@
 import CoreGraphics
 
-/// The wrapping arithmetic behind `FlowLayout`, pure so it is testable without `LayoutSubviews` (the AX5 chip that ran
-/// past its card, 2026-09-25, lived in exactly this code and no test could have caught it).
+/// The wrapping arithmetic behind `FlowLayout`, kept pure because `LayoutSubviews` cannot be built in a test and a chip
+/// running past its card at accessibility sizes is the kind of bug that hides in exactly this code.
 nonisolated enum FlowArrangement {
     struct Row: Equatable, Sendable {
         var indices: [Int] = []

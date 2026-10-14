@@ -1,9 +1,9 @@
 import Foundation
 
 /// Runs work against a deadline: the first outcome wins, the loser is cancelled but not awaited. A task group would
-/// wait for the loser, and a request that ignores cancellation (`RequestHold.wait()` in tests, a stalled socket) must
-/// not hold a sign-out. Not for races whose loser must finish: `CoreLocationService` races in a structured group on
-/// purpose, so its stream is closed before it answers.
+/// wait for the loser, and a request that ignores cancellation (a stalled socket) must not hold a sign-out. Not for
+/// races whose loser must finish: `CoreLocationService` races in a structured group on purpose, so its stream is closed
+/// before it answers.
 enum Deadline {
     /// Thrown when the deadline wins and the caller named no error of its own.
     nonisolated struct Expired: Error {}

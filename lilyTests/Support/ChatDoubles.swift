@@ -2,9 +2,8 @@ import Foundation
 @testable import lily
 
 /// Scriptable `ChatRepository`: pages answer from queues (an empty page once a queue runs dry), sends from `sendErrors`,
-/// then `sentMessages`, then a `sent-N` fixture, and every call is recorded in order. `holdsRequests` parks page, send
-/// and clear requests until released (every other write answers at once); each is recorded before it waits, so a test
-/// can see it in flight.
+/// then `sentMessages`, then a `sent-N` fixture; every call is recorded in order. `holdsRequests` parks page, send and
+/// clear requests until released, each recorded before it waits so a test can see it in flight.
 @MainActor
 final class FakeChatRepository: ChatRepository, HoldsRequests {
     var epoch = 1

@@ -33,8 +33,6 @@ private struct GroupDestinations: ViewModifier {
             }
     }
 
-    /// The detail's answer goes to the root's `onTournamentChange`: Home's Mine list replaces its row with it, every
-    /// other root records the change for the lists to reload on.
     private func tournamentDetail(for destination: TournamentDestination) -> some View {
         TournamentDetailView(viewModel: dependencies.makeTournamentDetailViewModel(for: destination,
                                                                                    onChange: onTournamentChange),

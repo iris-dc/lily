@@ -1,9 +1,8 @@
 import Foundation
 
 /// What a list screen shows: the spinner before the first answer, the content whenever there is some, else why there
-/// is none. Shared by the list view models (`listState`), so a segment drawing one branches on a single value. The
-/// view models' own `isInitialLoad` rules are not identical (the events list also requires a load in flight), so the
-/// first-load decision comes in as an input rather than being restated here.
+/// is none. The first-load rule differs per list (the events list also requires a load in flight), so it comes in as an
+/// input.
 nonisolated enum ListState: Equatable, Sendable {
     case loading
     case empty

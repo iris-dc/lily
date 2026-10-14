@@ -4,7 +4,7 @@ import Testing
 @MainActor
 struct PickerSettlePolicyTests {
     private let spot = Coordinate(latitude: 52.52, longitude: 13.405)
-    /// The settle the map's own arrival produced on the simulator for `spot`: 6.5 cm away.
+    /// The settle the map's own arrival produces for `spot` on the simulator: 6.5 cm away.
     private let arrivalNudge = Coordinate(latitude: 52.520000582795696, longitude: 13.405000000000005)
     /// One point of drag at the picker's 1.5 km span, about 4.4 m.
     private let oneDragPoint = Coordinate(latitude: 52.52004, longitude: 13.405)

@@ -7,7 +7,7 @@ import Testing
 struct TranscriptScrollPolicyTests {
     typealias Snapshot = TranscriptScrollPolicy.Snapshot
 
-    /// The oldest message held while nothing is prepended, and the one the older page puts before it.
+    /// The oldest row before and after an older page is prepended.
     private let oldest = "m10"
     private let older = "m1"
 
@@ -81,8 +81,8 @@ struct TranscriptScrollPolicyTests {
                 == .loadOlder)
     }
 
-    /// A live message or a system row's game landing below the reader during the round trip grows the content without
-    /// moving the oldest message; that growth becomes the baseline and only the page itself is compensated.
+    /// Content growing below the reader during the round trip (a live line) is no prepend: it becomes the baseline and
+    /// only the page is compensated.
     @Test func bottomGrowthWhileAnOlderPageIsPendingIsNotAPrepend() {
         var policy = settled()
         let waiting = snapshot(offsetY: 10, isAtBottom: false, isNearTop: true)
@@ -109,7 +109,6 @@ struct TranscriptScrollPolicyTests {
                 == .scrollTo(y: 1_525))
     }
 
-    /// A failed or empty page never moves the oldest message, so the restore is dropped and later growth is not compensated.
     @Test func aFailedPageDropsTheRestoreAndBottomGrowthIsThenPlainGeometry() {
         var policy = settled()
         policy.willLoadOlder(at: snapshot(offsetY: 300, isAtBottom: false, isNearTop: true), oldestID: oldest)
@@ -135,9 +134,7 @@ struct TranscriptScrollPolicyTests {
                 == .none)
     }
 
-    /// Rows a block hid (or a tombstone shorter than its bubble) shrink the content under the reader: at the bottom the
-    /// newest row is pinned above the composer again, higher up the reader's place is left alone, and growth at the
-    /// bottom stays `rowAppended`'s to follow.
+    /// A block hiding rows, or a tombstone shorter than its bubble, shrinks the content; growth stays `rowAppended`'s.
     @Test func followsAContentShrinkOnlyWhileAtTheBottom() {
         var policy = settled()
         let shrunk = snapshot(contentHeight: 1_700)
@@ -152,8 +149,6 @@ struct TranscriptScrollPolicyTests {
                 == .none)
     }
 
-    /// The caller's rows (unsent or sent) follow to the bottom whatever the reader does; any other row only while the
-    /// reader is there, so reading older messages is never interrupted; no row, nothing.
     @Test func ownRowsFollowOthersOnlyAtTheBottom() {
         let unsent = ChatRow.pending(PendingMessage(draft: MessageDraft(clientMessageID: "c-1"), sentAt: .now))
         #expect(TranscriptScrollPolicy.rowAppended(unsent, isAtBottom: false) == .scrollToBottom)
@@ -167,8 +162,8 @@ struct TranscriptScrollPolicyTests {
         #expect(TranscriptScrollPolicy.rowAppended(nil, isAtBottom: true) == .none)
     }
 
-    /// The thresholds turn the scroll view's geometry into the flags: within `atBottomThreshold` of the content end is
-    /// at the bottom, within `olderPageTriggerDistance` of the top (the top inset included) is near it.
+    /// Within `atBottomThreshold` of the content end is at the bottom; within `olderPageTriggerDistance` of the top,
+    /// the top inset included, is near it.
     @Test func thresholdsMapGeometryToTheFlags() {
         var geometry = ScrollGeometry(contentOffset: CGPoint(x: 0, y: 1_180),
                                       contentSize: CGSize(width: 390, height: 2_000),

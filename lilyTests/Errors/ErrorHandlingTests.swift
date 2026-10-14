@@ -3,10 +3,8 @@ import Testing
 @testable import lily
 
 struct ErrorMessageMapperTests {
-    /// The list lives in `AppErrorCases.all`, hand-kept with an exhaustive switch as the reminder to extend it; every
-    /// backend code is checked from `BackendErrorCode.allCases` in `BackendErrorCodeTests`. The event branch of the
-    /// mapper ends in a generic default, so a case missing from it would read "Something went wrong" and still pass a
-    /// non-empty check; only `.unknown` may carry that copy.
+    /// The mapper's leaf switches end in the generic copy, so a case missing from them would read "Something went wrong"
+    /// and still pass a non-empty check; only `.unknown` may carry that copy.
     @Test(arguments: AppErrorCases.all)
     func everyErrorHasCopy(error: AppError) {
         let message = ErrorMessageMapper.message(for: error)
@@ -99,11 +97,14 @@ struct ErrorMessageMapperTests {
         #expect(ErrorMessageMapper.message(for: .attachmentUnavailable).title == "Couldn't load the attachment")
     }
 
-    /// Pinned like the rest: a profile that would not load and a conversation that would not start each say so, and the
-    /// conversation cap names the number from config.
-    @Test func tournamentInviteRefusalsHaveTheirOwnTitles() {
+    /// The backend answers both caps with one code; the tournaments cap names its own number, never the groups' copy.
+    @Test func tournamentInviteAndCapRefusalsHaveTheirOwnTitles() {
         #expect(ErrorMessageMapper.message(for: .inviteeAlreadyEntered).title == "They're already in this tournament")
         #expect(ErrorMessageMapper.message(for: .cannotInviteToTournament).title == "Only players can invite")
+        #expect(ErrorMessageMapper.message(for: .tournamentMembershipLimit).title == "Too many tournaments")
+        let cap = ErrorMessageMapper.message(for: .tournamentMembershipLimit).body
+        #expect(cap.contains("\(AppConfig.Tournaments.maxPerUser)"))
+        #expect(!cap.contains("group"))
     }
 
     @Test func peopleErrorsHaveTheirOwnTitles() {
@@ -201,7 +202,6 @@ struct ErrorCenterTests {
         #expect(center.isTopPresenter(root))
     }
 
-    /// A `URLError` or any other foreign error is wrapped into its `AppError` before it is shown and logged.
     @Test func aForeignErrorIsMappedBeforePresentation() {
         let logger = SpyLogger()
         let center = ErrorCenter(logger: logger)
@@ -213,8 +213,8 @@ struct ErrorCenterTests {
         #expect(logger.hasLine(in: .ui, at: .info, mentioning: "network"))
     }
 
-    /// A mount that comes back (a root reappearing over the sheet it was under) moves to the top once, so the list never
-    /// holds it twice and ending it leaves the others as they were: the invariant `beginPresenting` ends before it appends.
+    /// A mount that comes back (a root reappearing over the sheet it was under) must not be held twice, or ending it would
+    /// leave a stale copy on top: `beginPresenting` ends before it appends.
     @Test func aPresenterThatComesBackMovesToTheTopOnce() {
         let center = ErrorCenter(logger: SpyLogger())
         let root = UUID()
@@ -232,9 +232,8 @@ struct ErrorCenterTests {
     }
 }
 
-/// Every code the backend can answer with has a case of its own that reads copy of its own, never the generic one; the
-/// fallback is the caller's, never `.unknown`. A case that lands in a leaf switch's `default:` fails here even when
-/// `AppErrorCases.all` does not list it.
+/// Every code the backend can answer with has a case of its own with copy of its own, never the generic one; the fallback
+/// is the caller's, never `.unknown`.
 struct BackendErrorCodeTests {
     @Test(arguments: BackendErrorCode.allCases)
     func everyCodeHasItsOwnCopy(code: BackendErrorCode) {
@@ -243,8 +242,6 @@ struct BackendErrorCodeTests {
                 "\(code.rawValue) reads the generic copy")
     }
 
-    /// The one code -> case table: every raw value the backend can answer and the `AppError` it becomes. The remote
-    /// repository suites prove only their route's fallback on the strength of it.
     @Test func everyCodeMapsToItsCase() {
         let expected: [String: AppError] = [
             "EVENT_NOT_FOUND": .eventNotFound, "EVENT_FULL": .eventFull, "ALREADY_JOINED": .alreadyJoined,

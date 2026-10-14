@@ -37,9 +37,8 @@ struct DiscoverGroupsStalenessTests {
         #expect(harness.repository.requestedCursors.count == 2)
     }
 
-    /// A browse sends the user's position (coarse, as the backend receives it) so the page is the groups around them;
-    /// one searched without it, or for another position, is searched again once the position is known, and the same
-    /// coarse position never twice.
+    /// A browse carries the coarse position so the page is the groups around the user; a page searched for another
+    /// position (or none) is searched again once the position is known, never twice for one coarse position.
     @Test func aBrowseSendsThePositionAndSearchesAgainWhenItArrives() async {
         harness.repository.result = .success([.fixture(id: "a")])
         let viewModel = makeDiscover()
@@ -62,8 +61,8 @@ struct DiscoverGroupsStalenessTests {
         #expect(harness.logger.messages(in: .cache, at: .debug).contains { $0.contains("another position") })
     }
 
-    /// A position that arrives while the first search is out does not start a second one over it: the search in
-    /// flight notices the position when it answers and asks once more with it, and that page is then fresh.
+    /// A position arriving mid-search starts no second search over the first: the one in flight notices it when it
+    /// answers and asks once more with it.
     @Test func aPositionArrivingMidSearchEarnsOneSearchWithIt() async {
         harness.repository.result = .success([.fixture(id: "a")])
         harness.repository.holdsRequests = true
@@ -86,8 +85,8 @@ struct DiscoverGroupsStalenessTests {
         #expect(harness.repository.requestedPositions.count == 2, "the page is the one around the user")
     }
 
-    /// A search cancelled on the way out (the tab was left) takes nothing: the page on screen and the position it was
-    /// searched for stay as they were, nothing is reported, and the next appearance searches for the position.
+    /// A search cancelled on the way out (the tab was left) changes nothing, not even the position the page is held
+    /// for, so the next appearance still searches for the new position.
     @Test func aCancelledSearchLeavesTheNextAppearanceToSearchForThePosition() async {
         harness.repository.result = .success([.fixture(id: "a")])
         let viewModel = makeDiscover()
@@ -107,8 +106,7 @@ struct DiscoverGroupsStalenessTests {
         #expect(harness.repository.requestedPositions == [nil, Self.coarseBerlin, Self.coarseBerlin])
     }
 
-    /// A failed search for the position is not repeated at once (a backend that is down is not asked in a loop); the
-    /// page on screen stays, and the next appearance tries again.
+    /// A failed search is not repeated at once (a backend that is down is not asked in a loop); the next appearance tries again.
     @Test func aFailedSearchForThePositionWaitsForTheNextAppearance() async {
         harness.repository.result = .success([.fixture(id: "a")])
         let viewModel = makeDiscover()

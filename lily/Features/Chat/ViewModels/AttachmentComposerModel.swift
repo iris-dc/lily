@@ -1,12 +1,11 @@
 import Foundation
 import Observation
 
-/// The pictures, videos and files picked for the message being composed, owned by `ChatViewModel`: each goes from
-/// preparing (the preparer re-encodes, exports or copies it) to uploading (a ticket, then the PUTs, at most
-/// `maxConcurrentUploads` at a time) to uploaded, or to failed, where Retry asks for a new ticket. An item the
-/// preparer refuses (too large, not something the device can send) is dropped with a popup: there is nothing a retry
-/// could change. The entries from the pickers live in `AttachmentComposerModel+Picking.swift`, an item's way through
-/// the preparer and the upload in `+Upload.swift`; the send takes `drafts` with it and `reset()` starts over.
+/// The pictures, videos and files picked for the message being composed: each goes from preparing (re-encoded,
+/// exported or copied by the preparer) to uploading (a ticket, then the PUTs, at most `maxConcurrentUploads` at a time)
+/// to uploaded, or to failed, where Retry asks for a new ticket. An item the preparer refuses (too large, not something
+/// the device can send) is dropped with a popup, since nothing a retry could change; the send takes `drafts` with it and
+/// `reset()` starts over.
 @Observable
 final class AttachmentComposerModel {
     private(set) var drafts: [AttachmentDraft] = []
@@ -17,7 +16,6 @@ final class AttachmentComposerModel {
     let preparer: any MediaPreparer
     let logger: any Logging
     let maxPerMessage: Int
-    /// Internal, not private, so the pipeline in `+Upload.swift` is built from them.
     let repository: any ChatRepository
     let uploader: any AttachmentUploader
     let slots: SlotGate
@@ -51,8 +49,8 @@ final class AttachmentComposerModel {
     }
 
     /// A room left with items in the strip: nothing will send them, so the PUTs stop and the files go. The pipeline
-    /// holds this model weakly, which is what lets this run while work is in flight; `reset()` empties `drafts` before
-    /// a send, so a sent message's files are never touched here.
+    /// holds this model weakly, so this runs while work is in flight; `reset()` empties `drafts` before a send, so a
+    /// sent message's files are never deleted here.
     deinit {
         for task in tasks.values { task.cancel() }
         for draft in drafts { draft.deleteLocalFiles() }

@@ -22,7 +22,6 @@ final class PushCoordinator: SessionObserver, PushOptIn {
     /// The language the app shows, read at each registration so the backend's reminder follows a change.
     private let languageCode: () -> String
     private let unregisterTimeout: Duration
-    /// The pause the sign-out's deadline waits on; held in tests.
     private let sleep: Sleep
     private let logger: any Logging
     private let now: () -> Date
@@ -95,10 +94,10 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         }
     }
 
-    /// The Bearer is still sent here, so the backend stops pushing to this device before the session is gone. A
-    /// registration in flight is awaited first, since its PUT would otherwise leave this device registered to an
-    /// account that is gone; a sign-out waits `unregisterTimeout` at most for the whole, since the row expires on its
-    /// own and the backend takes the token from this account the moment another one registers it.
+    /// Runs while the Bearer is still sent, so the backend stops pushing to this device before the session is gone. A
+    /// registration in flight is awaited first, or its PUT could leave the device registered to the departed account.
+    /// The whole waits `unregisterTimeout` at most: the row expires on its own, and another account registering the
+    /// token takes it over.
     func sessionWillEnd() async {
         guard registered != nil || registration != nil else { return }
         let tokenBefore = registered?.token
@@ -114,8 +113,8 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         store(nil)
     }
 
-    /// Every token this device may hold on the backend: the one known before the sign-out and, when a registration
-    /// landed meanwhile, the one it stored (two when the token rotated). Nothing is sent and nothing logged for none.
+    /// Every token this device may still hold on the backend: the one known before the sign-out and the one a
+    /// registration that landed meanwhile stored (two when the token rotated).
     private func unregister(tokens: [String]) async throws {
         for token in Set(tokens) { _ = try await devices.unregister(token: token) }
         if !tokens.isEmpty { logger.info(.push, "Device unregistered for push") }

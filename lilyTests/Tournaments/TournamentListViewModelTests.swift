@@ -76,7 +76,6 @@ struct TournamentListViewModelTests {
         #expect(harness.repository.requestedScopes == [.upcoming] && mine.tournaments.isEmpty)
     }
 
-    /// Discover asks for the position before its one request: the spinner spans that wait and ends with the answer.
     @Test func discoverTournamentsShowsASpinnerUntilTheListAnswered() async {
         harness.repository.result = .success([.fixture()])
         let location = FakeLocationService()
@@ -106,7 +105,6 @@ struct TournamentListViewModelTests {
         #expect(!viewModel.isInitialLoad && viewModel.loadFailed && viewModel.tournaments.isEmpty, "a failure is an answer")
     }
 
-    /// A guest's Mine is answered empty without a request, so no spinner; the sign-in is a change of caller.
     @Test func aGuestsMineIsNoInitialLoadAndASignInMakesItStale() async {
         harness.identity.currentUserID = nil
         harness.repository.result = .success([.fixture(organizerUserId: TestFixtures.user.id)])

@@ -154,8 +154,8 @@ struct MockTournamentRepositoryTests {
         await #expect(throws: AppError.drawNotAllowed, "a knockout needs a winner whatever allowsDraws says") {
             try await repository.report(id: id, matchID: "r01p002", scoreA: 1, scoreB: 1)
         }
-        await #expect(throws: AppError.matchNotReady) {
-            try await repository.report(id: id, matchID: semi.id, scoreA: 2, scoreB: 1)
+        await #expect(throws: AppError.matchNotReady, "a decided match takes no other score; the same one is a repeat") {
+            try await repository.report(id: id, matchID: semi.id, scoreA: 3, scoreB: 1)
         }
     }
 

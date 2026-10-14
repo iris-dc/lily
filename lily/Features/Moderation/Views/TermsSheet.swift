@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Asks a signed-in caller to agree to the current terms before they take part. The root presents it while
 /// `TermsViewModel.isPresented` holds, and it closes only through an acceptance the backend recorded or through
-/// "Sign out", never by a swipe. Mounts its own popup, since a sheet is drawn above the root's.
+/// "Sign out", never by a swipe.
 struct TermsSheet: View {
     let viewModel: TermsViewModel
     let errorCenter: ErrorCenter

@@ -2,9 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Blocking from a bubble's menu: the sender's lines leave the transcript at once because the block list feeds `rows`,
-/// their live lines stay hidden, a list the shell's sync loaded hides them without a block here, and a refused block
-/// keeps every row.
+/// Blocking from a bubble's menu: the block list feeds `rows`, so the sender's lines leave the transcript at once and
+/// their live lines stay hidden; a refused block keeps every row.
 @MainActor
 struct ChatViewModelModerationTests {
     private let group = SportGroup.fixture(id: "g", channelEpoch: 1, role: .member)
@@ -13,8 +12,7 @@ struct ChatViewModelModerationTests {
     private let m2 = ChatMessage.fixture(id: "m2", senderUserID: "u-3", senderName: "Jonas")
     private let m3 = ChatMessage.fixture(id: "m3", senderUserID: "u-2")
 
-    /// A connected controller, Mine holding the group, its room cached with the three lines, the chat open; `prepare`
-    /// runs before the chat opens, for what the shell would have done first.
+    /// The room open with the three lines cached; `prepare` runs before the chat opens, for what the shell would have done first.
     private func makeOpenChat(prepare: (RealtimeHarness) async -> Void = { _ in }) async -> (RealtimeHarness, ChatViewModel) {
         let harness = RealtimeHarness()
         harness.groups.result = .success([group])
@@ -27,7 +25,6 @@ struct ChatViewModelModerationTests {
         return (harness, viewModel)
     }
 
-    /// The ids of the message rows, in transcript order; the day chip is left out.
     private func messageIDs(in rows: [ChatRow]) -> [String] {
         rows.compactMap { if case .message(let row) = $0 { row.message.id } else { nil } }
     }

@@ -20,7 +20,6 @@ struct AttachmentGallery: View {
         }
     }
 
-    /// The grid's tile for `attachment` at the grid's `index`; its tap hands the selection up.
     @ViewBuilder private func tile(_ attachment: Attachment, at index: Int) -> some View {
         switch attachment.kind {
         case .image:
@@ -54,10 +53,10 @@ struct DraftGallery: View {
     }
 }
 
-/// The one column both galleries draw: the pictures and videos in a `GalleryGrid`, the file cards under it, both at the
-/// gallery's width. The pending bubble is swapped for the stored one when a send settles, so one shared rule is what
-/// keeps that swap from moving anything. `tileIndex` is the grid's index (what `AttachmentSelection(tappedTile:)`
-/// takes), not the attachment's position among all of them.
+/// The one column both galleries draw: the pictures and videos in a `GalleryGrid`, the file cards under it. The pending
+/// bubble is swapped for the stored one when a send settles, and sharing the layout is what keeps that swap from moving
+/// anything. `tileIndex` is the grid's index, which `AttachmentSelection(tappedTile:)` takes, not the item's position
+/// among all attachments.
 struct AttachmentColumn<Item: GalleryItem, Tile: View, Card: View>: View {
     let items: [Item]
     let alignment: Alignment

@@ -3,9 +3,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Videos through the preparer, over the two-second `tiny.mp4` fixture: exported as an MP4 within the cap with a
-/// thumbnail frame and the hints; refused when longer than allowed, when the export is over the byte cap, and when
-/// the file is no video at all; a thumbnail that cannot be made never refuses the clip.
+/// The preparer over the two-second, 320x180 `tiny.mp4` fixture.
 @MainActor
 struct VideoPreparerTests {
     private let logger = SpyLogger()
@@ -19,7 +17,6 @@ struct VideoPreparerTests {
         VideoPreparer(limits: limits, directory: directory, logger: logger)
     }
 
-    /// The "prepared" debug line for `id`, if one was logged.
     private func preparedLine(for id: String) -> String? {
         logger.messages(in: .chat, at: .debug).first { $0.hasPrefix("Attachment \(id) prepared:") }
     }
@@ -66,8 +63,7 @@ struct VideoPreparerTests {
         #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "v3.mp4").path()))
     }
 
-    /// The API takes a draft without a thumbnail, so a thumbnail that cannot be written (here a directory sits on its
-    /// path) leaves the clip to go alone rather than refusing it; the debug line says what is missing.
+    /// The wire takes a video without a thumbnail, so a thumbnail that cannot be written never refuses the clip.
     @Test func aFailedThumbnailStillSendsTheClip() async throws {
         let squatter = directory.appending(path: "v6.thumb.jpg")
         try FileManager.default.createDirectory(at: squatter, withIntermediateDirectories: true)
@@ -80,8 +76,7 @@ struct VideoPreparerTests {
         #expect(preparedLine(for: "v6")?.hasSuffix("no thumbnail") == true)
     }
 
-    /// A composer slot removed while its clip is being prepared takes the export down with it: the work dies with the
-    /// caller as a cancellation, not a verdict, and leaves no file behind.
+    /// A cancelled prepare dies as a cancellation, never as a verdict, and leaves no file behind.
     @Test func removingAVideoMidPrepareCancelsTheExport() async {
         let preparer = makePreparer()
         let task = Task { try await preparer.prepareVideo(at: TestFixtureFiles.tinyVideo, id: "v9", caps: .group) }

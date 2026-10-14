@@ -8,7 +8,6 @@ import Testing
 struct TournamentDetailEntriesTests {
     private let harness = TournamentHarness()
     private let destination = TournamentDestination(id: "t", name: "Tuesday Table Tennis")
-    /// The organiser who also plays, as `e1`, next to one other entry.
     private let organiserPlaying = Tournament.fixture(entryCount: 2, organizerUserId: TestFixtures.user.id, myEntryId: "e1")
     private let ownEntry = TournamentEntry.fixture(id: "e1", captainUserId: TestFixtures.user.id)
     private let otherEntry = TournamentEntry.fixture(id: "e2", name: "Dev", captainUserId: "u-2", seed: 2)
@@ -148,7 +147,7 @@ struct TournamentDetailEntriesTests {
         #expect(viewModel.participation == .join)
     }
 
-    /// A refusal is an expected product state: the popup explains it, the log stays at warning, nothing is fetched again.
+    /// A refusal is an expected product state, not an error.
     @Test func refusalsLogAtWarning() async {
         harness.repository.actionError = AppError.tournamentFull
         let viewModel = await loaded(.fixture())

@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// A team's name against the backend's limits (`AppConfig.Tournaments.teamNameLength`, 2...40 UTF-16 units), so a
-/// name the sheet lets through never earns a 400.
+/// The limits mirror the backend's, in UTF-16 units, so a name the sheet lets through never earns a 400.
 struct TeamNameIssueTests {
     private static let limits = AppConfig.Tournaments.teamNameLength
 

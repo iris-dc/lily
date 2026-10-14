@@ -2,8 +2,8 @@ import Foundation
 @testable import lily
 
 /// Scriptable `GroupRepository`: lists answer from `result`, writes from the stored groups, and every call is recorded.
-/// `holdsRequests` parks the list, create and join requests; a single group read, the other writes, the roster and
-/// the bans answer at once.
+/// `holdsRequests` parks the list, create and join requests; `group(id:)`, the other writes, the roster and the bans
+/// answer at once.
 @MainActor
 final class FakeGroupRepository: GroupRepository, HoldsRequests {
     var result: Result<[SportGroup], AppError> = .success([])
@@ -24,9 +24,7 @@ final class FakeGroupRepository: GroupRepository, HoldsRequests {
     /// The position each list request carried (`nil` for none), in call order.
     private(set) var requestedPositions: [Coordinate?] = []
     private(set) var fetchedGroupIDs: [String] = []
-    /// The group each roster read was for, in call order.
     private(set) var rosterRequests: [String] = []
-    /// The group each banned-list read was for, in call order.
     private(set) var bansRequests: [String] = []
     private(set) var createdDrafts: [GroupDraft] = []
     private(set) var updatedDrafts: [(id: String, draft: GroupDraft)] = []
@@ -164,8 +162,8 @@ final class FakeInviteRepository: InviteRepository, HoldsRequests {
     }
 }
 
-/// Scriptable `MeRepository`: `me()` answers from `meResult` (or throws `thrownError`), `acceptTerms` records the
-/// version and refuses with `acceptError`; `holdsRequests` parks `me()` until `releaseRequests()`.
+/// Scriptable `MeRepository`: `me()` answers from `meResult`, `acceptTerms` refuses with `acceptError`;
+/// `holdsRequests` parks `me()` only.
 @MainActor
 final class FakeMeRepository: MeRepository, HoldsRequests {
     var meResult: Result<Account, AppError> = .success(.fixture())
@@ -190,12 +188,11 @@ final class FakeMeRepository: MeRepository, HoldsRequests {
     }
 }
 
-/// Scriptable `ModerationRepository`: every request is recorded, then refused with `error` when set;
-/// `holdsRequests` parks every request until `releaseRequests()`.
+/// Scriptable `ModerationRepository`: every request is recorded, parked while `holdsRequests`, and refused once
+/// `error` is set.
 @MainActor
 final class FakeModerationRepository: ModerationRepository, HoldsRequests {
     var blocked: Set<String> = []
-    /// Thrown by every request once it is recorded and, when held, released.
     var error: (any Error)?
     let hold = RequestHold()
     private(set) var reports: [ReportPayload] = []
@@ -227,7 +224,6 @@ final class FakeModerationRepository: ModerationRepository, HoldsRequests {
         return blocked
     }
 
-    /// Every request's tail once recorded: the hold, then the scripted error.
     private func answer() async throws {
         try await hold.waitOrThrow()
         if let error { throw error }

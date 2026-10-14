@@ -31,9 +31,9 @@ final class FakeLocationUpdateSource: LocationUpdateSource, Sendable {
     }
 }
 
-/// Counts requests and can hold them open until released, to test coalescing of concurrent callers. Observes
-/// cancellation like the real stream, so a test can tell a shared request that outlived a caller's cancellation
-/// from one cancelled with it. While `holdsRequests`, `currentLocation()` suspends until `releaseRequests()`.
+/// Counts requests and, while `holdsRequests`, parks `currentLocation()` until `releaseRequests()`, to test coalescing
+/// of concurrent callers. Observes cancellation like the real stream, so a test can tell a shared request that outlived
+/// a caller's cancellation from one cancelled with it.
 @MainActor
 final class FakeLocationService: LocationService, HoldsRequests {
     var result: Coordinate?

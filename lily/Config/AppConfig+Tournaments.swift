@@ -9,13 +9,17 @@ nonisolated extension AppConfig {
         static let teamSizeRange = 1...11
         /// A team's name, required when `teamSize` is above one.
         static let teamNameLength = 2...40
-        /// The entries a single-elimination bracket takes; a round robin is capped lower (`maxEntriesRoundRobin`).
+        /// The entries a single-elimination bracket takes; a round robin starts higher (`minEntriesRoundRobin`) and is
+        /// capped lower (`maxEntriesRoundRobin`).
         static let entriesRange = 2...64
         static let maxEntriesRoundRobin = 12
         static let minEntriesSingleElimination = 2
         static let minEntriesRoundRobin = 3
         /// Open tournaments one may organise; the backend's cap.
         static let maxOrganizedOpen = 10
+        /// Tournaments one may be in, finished ones included: the backend's `tournaments.max-per-user`, answered as
+        /// `MEMBERSHIP_LIMIT` on the entry routes.
+        static let maxPerUser = 20
         static let scoreRange = 0...999
         static let defaultMaxEntries = 8
         static let defaultTeamSize = 1
@@ -32,6 +36,7 @@ nonisolated extension AppConfig {
             }
         }
 
+        /// The fewest entries a format starts with, and the least its cap may be set to.
         static func minEntries(for format: TournamentFormat) -> Int {
             switch format {
             case .singleElimination: minEntriesSingleElimination
@@ -39,8 +44,9 @@ nonisolated extension AppConfig {
             }
         }
 
+        /// A format's range runs from its start minimum to its cap, as the backend validates a create and an edit.
         static func entriesRange(for format: TournamentFormat) -> ClosedRange<Int> {
-            entriesRange.lowerBound...maxEntries(for: format)
+            minEntries(for: format)...maxEntries(for: format)
         }
     }
 }

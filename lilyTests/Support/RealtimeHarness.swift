@@ -90,7 +90,7 @@ final class RealtimeHarness {
         await controller.setDesired(active: true, user: TestFixtures.user)
     }
 
-    /// Mine as `count` member groups g1...gN, the shape every realtime suite seeds the store with.
+    /// Mine as `count` member groups g1...gN.
     static func mine(_ count: Int) -> [SportGroup] {
         (1...count).map { .fixture(id: "g\($0)", role: .member) }
     }
@@ -158,7 +158,6 @@ final class EnvelopeSink {
     private(set) var received: [RealtimeEnvelope] = []
     private var reader: Task<Void, Never>?
 
-    /// The ids of the messages among `received`, in order.
     var messageIDs: [String] {
         received.compactMap { envelope in
             if case .message(let message) = envelope { message.id } else { nil }

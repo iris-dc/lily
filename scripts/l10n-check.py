@@ -27,7 +27,7 @@ MULTILINE = re.compile(r'localized\("""\n(.*?)\n[ \t]*"""', re.DOTALL)
 INTERPOLATION = re.compile(r"\\\((?:[^()]|\([^()]*\))*\)")
 PLACEHOLDER = re.compile(r"%(?:\d+\$)?(?:lld|ld|d|@|lf|f|s)")
 USAGE_KEY = re.compile(r"INFOPLIST_KEY_(NS\w+UsageDescription)")
-# One XCBuildConfiguration's settings with the configuration they belong to (eight blocks in the project).
+# One XCBuildConfiguration's settings with the configuration they belong to.
 BUILD_CONFIGURATION = re.compile(r"buildSettings = \{(.*?)\};\s*name = (Debug|Release);", re.DOTALL)
 
 

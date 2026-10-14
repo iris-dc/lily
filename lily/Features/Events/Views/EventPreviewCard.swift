@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// Compact one-row summary of an event: the card under the map's selected pin (`EventsMapView`, its one caller since
-/// the landing deck went). At accessibility type sizes the row becomes a column, so the title and caption get the full
-/// width instead of one truncated line.
+/// Compact one-row summary of an event: the card under the map's selected pin. At accessibility type sizes the row
+/// becomes a column, so the title and caption get the full width instead of one truncated line.
 struct EventPreviewCard: View {
     let event: SportEvent
     /// Optional trailing detail such as distance.
@@ -26,7 +25,7 @@ struct EventPreviewCard: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(isRow ? 1 : DesignTokens.Layout.accessibilityPreviewLines)
                 // The group gets a line of its own: in the caption it would truncate the spots, and in the trailing slot
-                // it squeezed the title (seen on the landing deck this card once served; the map card is as narrow).
+                // it squeezes the title on a card this narrow.
                 if let group = event.group {
                     Label(group.name, systemImage: DesignTokens.Symbols.groups)
                         .font(LilyTheme.Fonts.caption)

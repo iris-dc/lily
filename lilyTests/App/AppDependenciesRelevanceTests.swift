@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The relevance wiring (2026-10-07): Explore's filter comes back from the defaults and `-reset-session` forgets it;
+/// The relevance wiring: Explore's filter comes back from the defaults and `-reset-session` forgets it;
 /// Discover and the group form get the location service. In a file of its own, the main suite being at its limit.
 @MainActor
 struct AppDependenciesRelevanceTests {
@@ -45,7 +45,6 @@ struct AppDependenciesRelevanceTests {
         #expect(AppDependencies.makeMock().eventFilterStore is NoOpEventFilterStore, "previews store nothing")
     }
 
-    /// The factory test above passes `startsFresh` itself; this one proves the launch argument reaches the store.
     @Test func theCompositionRootForgetsTheStoredFilterOnAResetSessionLaunch() {
         stored.save(Self.makeFilter())
 

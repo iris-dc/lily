@@ -130,8 +130,8 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
         return copy
     }
 
-    /// The mock stores the caller as a marker: the organiser's seat read as the caller of the moment where the marker
-    /// holds it, and the caller's entry set. A `nil` caller keeps the marker, as the mock's answer to a guest does.
+    /// The mock stores the caller as a marker: the organiser's seat is read as the signed-in user where the marker holds
+    /// it, and the caller's entry is set. A `nil` caller keeps the marker, as the mock's answer to a guest does.
     func replacingOrganizer(_ marker: String, with userID: String?, myEntryId: String?) -> Tournament {
         var copy = self
         if organizerUserId == marker, let userID { copy.organizerUserId = userID }

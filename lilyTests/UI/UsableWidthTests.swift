@@ -4,8 +4,8 @@ import Testing
 
 /// The width a transcript may use: its frame minus the part of it the window's safe-area insets actually cover.
 struct UsableWidthTests {
-    /// The iPad mini's detail column beside the floating sidebar (seen 2026-10-08: width 434 at x 310 with a leading
-    /// inset of 310): the frame starts where the inset region ends, so none of it is covered.
+    /// The iPad mini's detail column beside the floating sidebar: the frame starts where the inset region ends, so none
+    /// of it is covered.
     @Test func aViewBesideTheInsetRegionKeepsItsWholeWidth() {
         let frame = CGRect(x: 310, y: 0, width: 434, height: 1000)
         #expect(UsableWidth.of(leading: 310, trailing: 0, frameInWindow: frame, windowWidth: 744) == 434)
@@ -24,8 +24,7 @@ struct UsableWidthTests {
         #expect(UsableWidth.of(leading: 0, trailing: 200, frameInWindow: beside, windowWidth: 800) == 600)
     }
 
-    /// A frame that starts under the inset region and ends beside it loses the covered part only: a beside-or-under
-    /// implementation would take the whole inset off.
+    /// A frame that starts under the inset region and ends beside it loses only the covered part, never the whole inset.
     @Test func aPartialOverlapSubtractsOnlyTheOverlap() {
         let frame = CGRect(x: 100, y: 0, width: 600, height: 600)
         #expect(UsableWidth.of(leading: 310, trailing: 0, frameInWindow: frame, windowWidth: 800) == 390)

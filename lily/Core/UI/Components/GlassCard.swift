@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Liquid Glass surface used by every card in the app. The whole rectangle is the hit shape: a card is often a
 /// `.plain` `NavigationLink`'s label, whose taps otherwise land only where the content draws, so a tap in the gap
-/// between two lines did nothing (seen on the tournament card, 2026-10-04).
+/// between two lines did nothing on the tournament card.
 struct GlassCard<Content: View>: View {
     @ViewBuilder var content: () -> Content
 

@@ -4,16 +4,13 @@ import SwiftUI
 /// roster. The diameter comes from `DesignTokens.Layout.avatarSmall` / `avatarMedium` / `avatarSize`. A glyph that is
 /// a mark rather than an avatar (`GlassGlyph`) brings its own font and colour; the initials' metrics in ink otherwise.
 ///
-/// The tint says what the circle stands for: an accent circle is a person (profiles, rosters, invitees), a secondary
-/// one is a mark (groups, event types, tournaments, the inbox's invite cards, another sender's avatar in a room). Every
-/// amber mark sits at `DesignTokens.Opacity.secondaryGlassTint`, `GlassGlyph` and the intro room's header included,
-/// the strength of the `EventTypeChip` drawn on the same cards.
+/// The tint is a meaning: accent for a person (profiles, rosters, invitees), secondary for a mark (groups, event types,
+/// tournaments, the inbox's cards) and for another sender's avatar in a room. Every amber mark sits at
+/// `DesignTokens.Opacity.secondaryGlassTint`, the strength of the `EventTypeChip` drawn on the same cards.
 struct AvatarCircle: View {
     /// What the circle stands for; the glass colour and its strength follow.
     enum Tint {
-        /// A person: `Color.lilyAccent` at `DesignTokens.Opacity.glassTint`.
         case accent
-        /// A mark: `Color.lilySecondary` at `DesignTokens.Opacity.secondaryGlassTint`.
         case secondary
     }
 
@@ -50,8 +47,8 @@ struct AvatarCircle: View {
 }
 
 extension AvatarCircle {
-    /// A glyph alone, for a mark that has no name to take initials from (the inbox, a tournament's sport, the map card's
-    /// event type). Declared in an extension so the memberwise initializer stays for the initials.
+    /// A glyph alone, for a mark with no name to take initials from. In an extension so the memberwise initializer
+    /// survives.
     init(systemImage: String,
          size: CGFloat = DesignTokens.Layout.avatarSize,
          tint: Tint = .accent,

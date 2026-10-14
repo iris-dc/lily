@@ -2,13 +2,12 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The reminder prompt follows a create: once, after the game was handed on, whether the backend answered directly or
-/// the create landed although its answer was lost; a failure that stays a failure offers nothing.
+/// The reminder prompt follows a create that landed, answered directly or found afterwards, and never a failure.
 @MainActor
 struct CreateEventPushOptInTests {
     private let spy = SpyPushOptIn()
 
-    /// The sheet dismisses on `createdEvent` and the list behind has the game before the permission prompt comes up.
+    /// The sheet dismisses on `createdEvent`, so the game must be handed on before the permission prompt comes up.
     @Test func aCreateOffersRemindersOnceAfterTheGameWasHandedOn() async {
         let harness = CreateEventHarness(pushOptIn: spy)
         harness.completeDraft()
@@ -21,8 +20,7 @@ struct CreateEventPushOptInTests {
         #expect(handedOnAtOffer)
     }
 
-    /// The backend commits before it answers: a game found under the draft's id and hosted by the caller is a create
-    /// that landed, and it earns the prompt like a direct answer.
+    /// The backend commits before it answers, so a game found under the draft's id and hosted by the caller did land.
     @Test func aCreateThatLandedDespiteAFailureOffersRemindersOnce() async {
         let harness = CreateEventHarness(pushOptIn: spy)
         harness.completeDraft()
@@ -37,8 +35,6 @@ struct CreateEventPushOptInTests {
         #expect(spy.offerCount == 1)
     }
 
-    /// The lookup fails as well, so the failure stands: the popup is what the user sees, and there is no game to be
-    /// reminded of.
     @Test func aCreateThatFailedForGoodNeverOffersReminders() async {
         let harness = CreateEventHarness(pushOptIn: spy)
         harness.completeDraft()

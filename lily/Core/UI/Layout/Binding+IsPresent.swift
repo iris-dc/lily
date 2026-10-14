@@ -24,8 +24,8 @@ extension View {
                            actions: actions)
     }
 
-    /// The same with a message under the title. A separate overload, so a dialog without one keeps calling SwiftUI's
-    /// message-less form and renders as before.
+    /// The same with a message under the title. A separate overload, so a dialog without one still calls SwiftUI's
+    /// message-less form.
     func confirmationDialog<Item, Actions: View, Message: View>(
         item: Binding<Item?>,
         title: (Item) -> String,

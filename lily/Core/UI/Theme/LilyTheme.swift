@@ -3,8 +3,7 @@ import SwiftUI
 /// Semantic styling that isn't a plain color asset. Colors live in `Assets.xcassets` (`Color.lily*`).
 enum LilyTheme {
     enum Fonts {
-        /// The launch screen's wordmark (`Wordmark`, its one caller). SF Pro with tight tracking is the design language
-        /// every font here follows.
+        /// The launch screen's wordmark. SF Pro with tight tracking is the design language every font here follows.
         static func wordmark(size: CGFloat) -> Font {
             .system(size: size, weight: .semibold)
         }

@@ -2,8 +2,6 @@ import SwiftUI
 import Testing
 @testable import lily
 
-/// The optional-to-Bool bridge a confirmation dialog is driven by: true while the item is set, cleared by a
-/// dismissal, never set by anything else.
 @MainActor
 struct BindingIsPresentTests {
     @MainActor private final class OptionalBox {

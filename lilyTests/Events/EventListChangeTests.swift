@@ -164,8 +164,7 @@ struct EventListChangeTests {
     }
 
     /// A join applied while a refresh was out may be missing from its answer, so the refresh asks once more on its own
-    /// instead of showing that answer until the next appearance. The fake answers both requests from one snapshot, so
-    /// the proof is the second request and that nothing stays stale after it.
+    /// instead of showing that answer until the next appearance.
     @Test func aRefreshInFlightReloadsOnceWhenAChangeLandedMeanwhile() async {
         let repository = makeRepository()
         let viewModel = makeEventListViewModel(repository: repository)

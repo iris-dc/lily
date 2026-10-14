@@ -77,9 +77,8 @@ final class UserProfileViewModel {
         }
     }
 
-    /// One request at a time; the gate repeats a `TRY_AGAIN` once (one id per pair, so a repeat answers the same room)
-    /// and sends a failure to the popup. The conversation goes into Mine before its chat opens, so the Chats tab lists
-    /// it on the way back.
+    /// A `TRY_AGAIN` is safe to repeat: the backend keeps one conversation per pair, so a repeat answers the same room.
+    /// The conversation goes into Mine before its chat opens, so the Chats tab lists it on the way back.
     func message() async {
         guard canMessage, !isStartingConversation else { return }
         isStartingConversation = true

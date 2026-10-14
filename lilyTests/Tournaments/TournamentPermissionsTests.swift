@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Who may do what on the tournament detail, for every status and every kind of caller.
 struct TournamentPermissionsTests {
     private let me = TestFixtures.user.id
     private let now = Date(timeIntervalSince1970: 1_799_000_000)
@@ -69,7 +68,6 @@ struct TournamentPermissionsTests {
         #expect(permissions(for: .fixture(organizerUserId: me), as: me).organizerProfile == nil)
     }
 
-    /// A knockout of teams of five, which starts at two entries.
     private func knockout(entryCount: Int, organizerUserId: String = "seed-marta", myEntryId: String? = nil) -> Tournament {
         .fixture(format: .singleElimination,
                  teamSize: 5,
@@ -114,7 +112,6 @@ struct TournamentPermissionsTests {
     }
 }
 
-/// The view model's `permissions` is the rule over the loaded detail and the caller.
 @MainActor
 struct TournamentDetailPermissionsTests {
     private let harness = TournamentHarness()

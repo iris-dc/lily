@@ -53,8 +53,8 @@ struct UserProfileViewModelTests {
         #expect(harness.logs(.error).count == 1)
     }
 
-    /// Try again after a failure: the spinner replaces the failed state while the request runs (a profile already on
-    /// screen would stay instead), and the profile follows; the first failure's popup and log line stand alone.
+    /// Unlike a reload over a loaded profile, a retry from the failed state has nothing to keep on screen, so the spinner
+    /// shows until the profile answers.
     @Test func aRetryAfterAFailedProfileLoadShowsTheSpinnerThenTheProfile() async {
         users.profileResult = .failure(.profileUnavailable)
         let viewModel = makeViewModel()

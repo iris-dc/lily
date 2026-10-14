@@ -7,10 +7,8 @@ private let document = URL(fileURLWithPath: "/tmp/Documents/training-plan.pdf")
 /// One source of each kind, for the refusal that is a verdict whatever the kind.
 private let refusableSources: [MediaSource] = [.image(Data(repeating: 7, count: 1000)), .video(clip), .file(document)]
 
-/// The composer with videos and files: each entry opens a slot of its kind and routes to its preparer, a file's slot
-/// already shows its name, the importer's pick is cut to the free slots, the mock fixtures stand in for the pickers, a
-/// refusal of any kind drops the slot with the popup, and of the sources only a picked movie's copy is the composer's
-/// to remove.
+/// The composer with videos and files: each source opens a slot of its kind and goes to its preparer, a refusal of any
+/// kind drops the slot with the popup, and of the picked files only a movie's copy is the composer's to remove.
 @MainActor
 struct AttachmentComposerModelKindTests {
     private let harness = RealtimeHarness()

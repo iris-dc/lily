@@ -50,8 +50,8 @@ final class EditTournamentViewModel {
     var lockedGroup: EventGroupRef? { original.group }
     var showsGroupRow: Bool { lockedGroup != nil }
 
-    /// Saves the draft; a call while one is in flight is dropped. The gate repeats a `TRY_AGAIN` once, keeps a
-    /// dismissed sheet quiet and sends a failure to the popup.
+    /// Saves the draft through the gate: a `TRY_AGAIN` is repeated once, a dismissed sheet stays quiet, a failure
+    /// reaches the popup.
     func submit() async {
         guard canSubmit else { return }
         isSubmitting = true

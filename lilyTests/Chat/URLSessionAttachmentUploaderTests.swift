@@ -38,7 +38,7 @@ struct URLSessionAttachmentUploaderTests {
             #expect(request.value(forHTTPHeaderField: AppConfig.API.Headers.appVersion) == nil, "a bucket gets no app headers")
         }
         await settle(until: { progress.last == 1 })
-        // A stubbed URLProtocol reports no intermediate didSendBodyData; UploadProgressTests pins the share arithmetic.
+        // A stubbed URLProtocol reports no intermediate didSendBodyData, so only the final share can be checked here.
     }
 
     @Test func aTicketWithoutAThumbnailPutsTheFileAlone() async throws {

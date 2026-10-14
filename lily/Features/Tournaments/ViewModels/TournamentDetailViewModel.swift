@@ -126,12 +126,11 @@ final class TournamentDetailViewModel {
         await load()
     }
 
-    /// Fetches the detail. The view's task, its pull-to-refresh and Try again report a failure (the popup; `.failed`
-    /// only while nothing was loaded yet, so coming back from a pushed profile never blanks the screen). The refetch
-    /// after an entry write passes `reportingFailures: false`: the fresh detail goes on to the lists through `accept`,
-    /// and a failure leaves a change recorded for the view's task to reload on, because the write landed and the screen
-    /// must not keep showing the stale control. A 404 marks the tournament gone either way. An answer older than a
-    /// write accepted meanwhile is dropped, and so is its failure: no popup over a fresher detail.
+    /// Fetches the detail. With `reportingFailures` a failure reaches the popup and sets `.failed` only while nothing
+    /// was loaded yet, so coming back from a pushed profile never blanks the screen. The refetch after an entry write
+    /// passes `false`: the fresh detail goes on to the lists through `accept`, and a failure records a change for the
+    /// view's task to reload on, because the write landed and the stale control must not stay. A 404 marks the
+    /// tournament gone either way; an answer older than a write accepted meanwhile is dropped, its failure too.
     func load(reportingFailures: Bool = true) async {
         if detail == nil { state = .loading }
         loadGeneration += 1
@@ -249,7 +248,7 @@ private extension AppError {
         switch self {
         case .tournamentNotFound, .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound,
              .notOrganizer, .tournamentLocked, .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound,
-             .drawNotAllowed, .tournamentLimit, .tryAgain, .termsRequired:
+             .drawNotAllowed, .tournamentLimit, .tournamentMembershipLimit, .tryAgain, .termsRequired:
             true
         default:
             false

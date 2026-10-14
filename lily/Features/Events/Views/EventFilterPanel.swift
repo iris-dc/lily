@@ -87,9 +87,7 @@ struct EventFilterPanel: View {
     }
 
     /// Drawn like the compact date pickers' capsule, so the trailing controls read as one family. The text is the
-    /// source while typing: a text that reads as a number sets the cap, an empty one clears it, an unreadable one (a
-    /// symbol, a foreign separator) changes nothing until it reads again; only a value set elsewhere (Reset, the chip)
-    /// rewrites the text.
+    /// source while typing (`applyTypedCap`); only a value set elsewhere (Reset, the chip) rewrites it.
     private var priceField: some View {
         HStack(spacing: DesignTokens.Spacing.xs) {
             TextField(Copy.anyPrice, text: $priceText)

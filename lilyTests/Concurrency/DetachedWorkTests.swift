@@ -1,8 +1,7 @@
 import Testing
 @testable import lily
 
-/// Work handed off the main actor through `DetachedWork` answers like a plain call, and a caller that is cancelled
-/// takes the detached task down with it instead of leaving it to finish on its own.
+/// `DetachedWork` answers like a plain call, and a cancelled caller takes the detached task down with it.
 struct DetachedWorkTests {
     @Test func theValueComesBackWhenNothingIsCancelled() async throws {
         let value = try await DetachedWork.run { 41 + 1 }
@@ -16,8 +15,7 @@ struct DetachedWorkTests {
         }
     }
 
-    /// The caller is cancelled only once the work is running, so the early check cannot answer for it: a severed
-    /// cancellation would let the work sleep its full ten seconds; a propagated one ends it at once.
+    /// Cancelled only once the work is running, or `Task.sleep`'s early check would answer for the propagation.
     @Test func cancellingTheCallerCancelsTheDetachedWork() async {
         let (started, begun) = AsyncStream<Void>.makeStream()
         let clock = ContinuousClock()

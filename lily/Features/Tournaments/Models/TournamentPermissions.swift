@@ -1,12 +1,11 @@
 import Foundation
 
 /// Who may do what on the tournament detail besides the matches (`MatchActions`) and the entry control
-/// (`TournamentParticipation`), decided in one place so the menu, the header, the entries segment and the tests agree.
-/// Guests get nothing. The organiser edits and cancels until the tournament is over, removes entries and is offered
-/// Start while registration is open; the organiser and every entrant chat (while the flag is on) and invite until the
-/// deadline; anyone signed in but the organiser reports and opens the organiser's profile; anyone signed in and not yet
-/// in may join a team while registration is open on a team tournament, whatever the entry count, because joining a
-/// team adds no entry.
+/// (`TournamentParticipation`), decided in one place so the menu, the header and the entries segment agree. Guests get
+/// nothing. The organiser edits and cancels until the tournament is over, removes entries and is offered Start while
+/// registration is open; the organiser and every entrant chat (while the flag is on) and invite until the deadline;
+/// anyone signed in but the organiser reports and opens the organiser's profile; anyone signed in and not yet in may
+/// join a team while registration is open, whatever the entry count, because joining a team adds no entry.
 nonisolated struct TournamentPermissions: Equatable, Sendable {
     let canEdit: Bool
     let canCancel: Bool

@@ -48,9 +48,9 @@ extension RealtimeSessionController {
             return wantsConnection
         }
         state = .connected
-        // A backoff timer armed by an earlier failure is stale once a connect landed (an .active <-> .inactive flip
-        // re-runs resume() while one is pending) and would later tear this healthy socket down. The timer running
-        // this very connect nils its own slot before calling reconnect, so it is never the one cancelled here.
+        // A reconnect timer armed by an earlier failure is stale once a connect landed and would later tear this healthy
+        // socket down (an .active <-> .inactive flip re-runs resume() while one is pending). The timer that ran this very
+        // connect let go of its slot first, so it is never the one cancelled here.
         reconnectTask?.cancel()
         reconnectTask = nil
         logger.info(.chat, "Chat connection opened to \(endpoint.host() ?? endpoint.absoluteString)")
@@ -116,8 +116,7 @@ extension RealtimeSessionController {
         scheduleReconnect(reason: "no token")
     }
 
-    /// Renews when `RenewalDelay` says: at the expiry-bound moment for a good token, after a backoff wait for one
-    /// that would renew at once and loop (stale, or already inside the renewal margin).
+    /// Renews at the moment `RenewalDelay` decides: the expiry-bound one for a good token, after a backoff wait otherwise.
     func scheduleRenewal(for token: String?, fresh: Bool) {
         renewalTask?.cancel()
         let expiry = token.flatMap(JWTClaims.expiration)
@@ -178,8 +177,8 @@ extension RealtimeSessionController {
         logger.info(.chat, "Chat connection closed (\(reason))")
     }
 
-    /// Plan 4.5: subscribe first (done by the caller), then one Mine load, then catch up only the open room and the
-    /// cached rooms whose newest message moved past their watermark, a few at a time.
+    /// The resume protocol: subscribe first (done by the caller), then one Mine load, then catch up only the open room
+    /// and the cached rooms whose newest message moved past their watermark, a few at a time.
     private func runResumeProtocol() async {
         await store.reload()
         guard state == .connected else { return }

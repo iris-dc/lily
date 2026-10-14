@@ -1,16 +1,13 @@
 import Foundation
 
 /// How experienced the host wants participants to be. Absent on an event means any level is welcome. A level this
-/// build does not know keeps its name and counts as none (`ifKnown`): the detail says nothing of it, the filter lets
-/// it pass every choice, no picker offers it, and it goes back out as it came, so an event from a newer backend still
-/// decodes instead of failing the payload.
+/// build does not know keeps its name, counts as none (`ifKnown`) and goes back out as it came, so an event from a
+/// newer backend still decodes instead of failing the payload.
 nonisolated enum SkillLevel: WireNamedKind {
     case beginner, intermediate, advanced
-    /// A level this build does not know, kept by name.
     case unknown(String)
 
-    /// The levels this build offers in the form's and the filter's pickers; a level a newer backend sends is never
-    /// among them.
+    /// The levels the pickers offer; an unknown one is never among them.
     static let known: [SkillLevel] = [.beginner, .intermediate, .advanced]
 
     private static let beginnerName = "beginner"
@@ -40,11 +37,11 @@ nonisolated enum SkillLevel: WireNamedKind {
         return false
     }
 
-    /// `self` when this build can name the level, `nil` for one it does not know, so a site that treats such a level
-    /// like none (the filter, the facts card, a restored filter) reads one optional.
+    /// `self` for a level this build can name, `nil` for an unknown one, so a site that treats such a level like none
+    /// reads one optional.
     var ifKnown: SkillLevel? { isUnknown ? nil : self }
 
-    /// Should a site name an unknown level, it reads as any level: all this build knows is that it is none it can name.
+    /// An unknown level reads as any level: all this build knows is that it is none it can name.
     var displayName: String {
         switch self {
         case .beginner: localized("Beginner")

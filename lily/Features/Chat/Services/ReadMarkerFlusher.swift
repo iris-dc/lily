@@ -1,12 +1,10 @@
 import Foundation
 
-/// The read marker of one room: what the caller has seen reaches the badge at once and the backend at a pace. The
-/// shown id is read from the `ChatHistoryCache` (the truth every room reads, moved by live envelopes and REST alike),
-/// the dot goes through `UnreadCenter` the moment a line is read, and `PUT .../read` goes out at once on opening,
-/// leaving or backgrounding and at most once per `interval` while the room is open. A refused flush is bookkeeping (a
-/// warning, never the popup): the id is given back so the next attempt carries it, and the interval keeps its pace so a
-/// backend that refuses is not asked again at once. The backend's answer carries the room's epoch; a newer one is handed
-/// to `onEpoch`, the room's to adopt (resubscribe, catch up).
+/// The read marker of one room: what the caller has seen reaches the badge at once and the backend at a pace. The shown
+/// id is the cache's `displayMaxID`, the dot goes through `UnreadCenter` the moment a line is read, and `PUT .../read`
+/// goes out at once on opening, leaving or backgrounding, and at most once per `interval` while the room is open. A
+/// refused flush is a warning, never the popup: the id is given back so the next attempt carries it, and the interval
+/// keeps its pace so a refusing backend is not asked again at once.
 final class ReadMarkerFlusher {
     /// The newest id the backend was told of; given back to the previous value when the request fails.
     private(set) var lastFlushedID: String?

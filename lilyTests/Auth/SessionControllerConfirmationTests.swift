@@ -75,8 +75,8 @@ struct SessionControllerConfirmationTests {
         #expect(harness.logger.messages(in: .auth).contains { $0.contains("Email confirmed") })
     }
 
-    /// The pool accepted the code, so a second confirm would be refused as "not authorized"; only the sign-in after it
-    /// failed, which showed its own popup, and the answer sends the form back to sign-in.
+    /// The pool accepted the code, so a second confirm would be refused as "not authorized": the answer sends the form
+    /// back to sign-in, and the failed sign-in has already shown its own popup.
     @Test func confirmSucceedsButTheSignInAfterItAnswersConfirmedButSignInFailed() async {
         let harness = SessionHarness()
         let credentials = TestFixtures.credentials

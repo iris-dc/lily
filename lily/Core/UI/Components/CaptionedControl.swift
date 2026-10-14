@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// A caption over a control that draws no label of its own inside a `Form` or a panel: segmented pickers and chip rows
-/// ("Allowed | Not allowed" alone said nothing about draws).
+/// A caption over a control that draws no label of its own inside a `Form` or a panel, such as a segmented `Picker` or
+/// a chip row: "Allowed | Not allowed" alone says nothing about draws.
 struct CaptionedControl<Content: View>: View {
     let title: String
     @ViewBuilder var content: () -> Content

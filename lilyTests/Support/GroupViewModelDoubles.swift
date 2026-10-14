@@ -98,7 +98,7 @@ final class GroupHarness {
                        tryAgainDelay: .zero)
     }
 
-    /// A view model over an inbox holding `items`, opened once: the page queued, the fake told what it holds, `appear()` run.
+    /// An `InboxViewModel` over an inbox holding `items`, already appeared.
     func openInbox(_ items: [InboxItem]) async -> InboxViewModel {
         inboxRepository.pages = [.fixture(items)]
         inboxRepository.items = items
@@ -144,7 +144,6 @@ final class GroupHarness {
         InvitePeopleViewModel(target: target, repository: invites, reporter: reporter, logger: logger, tryAgainDelay: .zero)
     }
 
-    /// Discover searches the repository and reloads on `changes`; the position comes from `location`.
     func makeDiscoverGroupsViewModel() -> DiscoverGroupsViewModel {
         DiscoverGroupsViewModel(changes: changes,
                                 repository: repository,

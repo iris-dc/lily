@@ -1,9 +1,7 @@
 import SwiftUI
 
-/// Draws the items `MessageMenuItems` decided for a long press on a bubble: reply, copy the text, delete when the
-/// caller may, and for another member's live message Report (the report sheet over the message) and Block (after a
-/// confirmation), both handed up to the transcript, which presents them. The transcript attaches the menu only when the
-/// items hold something to tap.
+/// The long-press menu of a bubble, drawing what `MessageMenuItems` decided: Reply, Copy, Delete, and for another
+/// member's live message Report and Block, which the transcript presents through `onReport` and `onBlock`.
 struct MessageContextMenu: View {
     let items: MessageMenuItems
     let row: MessageRow

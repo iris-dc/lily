@@ -1,10 +1,9 @@
 import Foundation
 
-/// What kind of activity an event, group or tournament is. `other` covers anything the list does not name yet.
-/// Multi-word types travel in the backend's snake_case (Laurel lower-cases its constant names), so `tableTennis` is
-/// `table_tennis` on the wire. A type this build does not know keeps its name: it draws as Other, is never offered in
-/// a chip or picker and goes back out as it came, so an event, group, tournament, profile or invite from a newer
-/// backend still decodes instead of failing the whole payload.
+/// What kind of activity an event, group or tournament is; `other` covers anything the list does not name yet. Wire
+/// names are the backend's lower-cased constant names, so a multi-word type travels in snake_case (`table_tennis`). A
+/// type this build does not know is kept by name: it draws as Other, is never offered in a chip or picker and goes back
+/// out as it came, so a payload from a newer backend still decodes.
 nonisolated enum EventType: WireNamedKind {
     case football, basketball, tennis, padel, running, volleyball, cycling, climbing, yoga, swimming
     case tableTennis, badminton, martialArts, fitness, skiing, hiking, travel, esports, boardGames
@@ -24,8 +23,7 @@ nonisolated enum EventType: WireNamedKind {
         self = Self.byWireName[wireName] ?? .unknown(wireName)
     }
 
-    /// The name on the wire, the lower-cased constant name of the backend's EventType (table_tennis, martial_arts,
-    /// board_games for the multi-word ones); an unknown type's is the one it came with.
+    /// The backend's lower-cased constant name; an unknown type's is the one it came with.
     var wireName: String {
         switch self {
         case .football: "football"

@@ -1,8 +1,8 @@
 import Foundation
 
-/// One attachment's way through the pipeline, apart from the model: it holds the collaborators and the owner weakly,
-/// so no suspended prepare, ticket, slot wait or PUT keeps the model alive. The owner is re-resolved only for the
-/// state writes; what answers once it is gone is dropped and its files deleted (`deinit` cancels the tasks first).
+/// One attachment's way through the pipeline, holding the collaborators and the owner weakly so that no suspended
+/// prepare, ticket, slot wait or PUT keeps the model alive. The owner is resolved only for the state writes; what
+/// answers once it is gone is dropped and its files deleted.
 extension AttachmentComposerModel {
     struct AttachmentWork {
         let id: String
@@ -15,9 +15,6 @@ extension AttachmentComposerModel {
         let logger: any Logging
         weak var owner: AttachmentComposerModel?
 
-        /// The slot's way from the picked source to uploaded: the preparer's answer replaces the slot and uploads; one
-        /// for a slot removed meanwhile (or an owner gone) is deleted; a refusal drops the slot with a popup; a
-        /// cancellation is nothing.
         func prepareAndUpload(from source: MediaSource) async {
             do {
                 let prepared = try await prepared(from: source)
@@ -56,8 +53,8 @@ extension AttachmentComposerModel {
             }
         }
 
-        /// The preparer's answer for the source. The picker's movie copy is the composer's and goes once the preparer
-        /// is done with it, whatever the outcome.
+        /// The picker's movie copy (`MediaSource.ownedFile`) is removed once the preparer is done with it, whatever the
+        /// outcome.
         private func prepared(from source: MediaSource) async throws -> AttachmentDraft {
             defer {
                 if let owned = source.ownedFile { try? FileManager.default.removeItem(at: owned) }
@@ -70,7 +67,6 @@ extension AttachmentComposerModel {
         }
     }
 
-    /// The pipeline for the slot of `id`, built from this model's collaborators and holding the model weakly.
     func makeWork(for id: String) -> AttachmentWork {
         AttachmentWork(id: id,
                        groupID: groupID,

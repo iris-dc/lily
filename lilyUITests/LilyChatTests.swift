@@ -1,11 +1,9 @@
 import XCTest
 
-/// The Chats tab against the mock repositories: the pinned inbox row over the caller's rooms, the inbox itself with
-/// Noor's invite into Climbing Buddies and the reminder for the first fixture game, deleting the conversation with
-/// Marta from the room's menu, replying, attaching a photo and a file through the mock picker, and paging through five
-/// pictures in the viewer (helpers in `LilyChatTests+Attachments.swift`). Identifiers mirror
-/// `AccessibilityIdentifiers(+Inbox, +Attachments)`; the item ids mirror `MockInboxFixtures` (the tournament invite
-/// and the match reminder, ids 1 and 3, are `LilyTournamentTests`').
+/// The Chats tab against the mock repositories: the inbox row over the caller's rooms, the inbox's invite and reminder
+/// cards, deleting a conversation, replying, attachments and the picture viewer (helpers in
+/// `LilyChatTests+Attachments.swift`). Identifiers mirror `AccessibilityIdentifiers(+Inbox, +Attachments)`; the item
+/// ids mirror `MockInboxFixtures` (the tournament invite and the match reminder, ids 1 and 3, are `LilyTournamentTests`').
 final class LilyChatTests: LilyUITestCase {
     let inviteID = "01J8MOCKNB0000000000000004"
     let reminderID = "01J8MOCKNB0000000000000002"
@@ -112,8 +110,8 @@ final class LilyChatTests: LilyUITestCase {
         let original = "Anyone up for a game this week?"
         let line = app.staticTexts[original]
         XCTAssertTrue(line.waitForExistence(timeout: 10))
-        // The room's first row: the transcript opens at the bottom, so bring it on screen before the long press, and
-        // press again when the runner turned the press into a scroll (a CI runner did, 2026-10-09).
+        // The room's first row: the transcript opens at the bottom, so bring the row on screen before the long press, and
+        // press again when a slow runner turns the press into a scroll.
         scrollUntilHittable(line, direction: .down, maxSwipes: 6)
         let reply = app.buttons["Reply"]
         var presses = 0
@@ -209,8 +207,8 @@ final class LilyChatTests: LilyUITestCase {
     }
 }
 
-/// The Chats root's helpers: the inbox push, and the tab's badge, read through the tab button's accessibility value
-/// (`AppBranding.Chats.unreadChats`) because the badge itself is not in the accessibility tree.
+/// The badge is read through the tab button's accessibility value (`AppBranding.Chats.unreadChats`): the badge itself
+/// is not in the accessibility tree.
 private extension LilyChatTests {
     /// Waits for the tab's value to read `expected`, naming what it read instead when it never does.
     @MainActor
@@ -220,7 +218,6 @@ private extension LilyChatTests {
         XCTAssertEqual(outcome, .completed, "the Chats badge reads \(tab.value as? String ?? "nothing"), not \(expected)")
     }
 
-    /// Opens the room behind `rowID` from the Chats root and pops back to the root.
     @MainActor
     func openRoomAndComeBack(_ rowID: String) {
         app.buttons[rowID].tap()

@@ -111,7 +111,7 @@ nonisolated extension AppBranding {
         enum Create {
             static var title: String { localized("New tournament") }
             static var editTitle: String { localized("Edit tournament") }
-            /// The bar button: one word, so the inline title beside it is not squeezed to "New to…" (seen 2026-10-04).
+            /// The bar button: one word, so the inline title beside it is not squeezed to "New to…".
             static var submit: String { Events.Create.menu }
             /// The group detail's menu item.
             static var menuItem: String { localized("Create tournament") }

@@ -55,8 +55,7 @@ struct TournamentMatchTransitionTests {
         #expect(walkover.confirmedBy == "org" && walkover.confirmedAt == noon)
     }
 
-    /// A time set on a reported match leaves the report where it is (Laurel's `MatchWrites.openStatus`): only an open
-    /// match takes `pending` or `scheduled` from its time.
+    /// Only an open match takes `pending` or `scheduled` from its time (Laurel's `MatchWrites.openStatus`); a report stays put.
     @Test func schedulingAReportedMatchKeepsTheReport() {
         let timed = match.reporting(3, 1, by: "u1", at: noon).scheduling(MatchSchedule(scheduledAt: noon))
         #expect(timed.status == .reported && timed.scheduledAt == noon)
@@ -75,8 +74,7 @@ struct TournamentMatchTransitionTests {
         #expect(!Tournament.fixture(format: .roundRobin, allowsDraws: false).permitsDraws)
     }
 
-    /// A confirmed draw is neither side's loss (the cell used to fade both), a winner's side won and the other lost, a bye
-    /// is its one entry's win, and only a side of a decided match is judged at all.
+    /// A draw is neither side's loss, so a cell that fades the loser must fade neither.
     @Test func aDrawnMatchHasNoLoser() {
         let drawn = match.recording(2, 2, by: "org", at: noon)
         #expect(drawn.outcome(for: "e1") == .drew && drawn.outcome(for: "e2") == .drew)
@@ -97,8 +95,7 @@ struct TournamentMatchTransitionTests {
         #expect(bye.outcome(for: "e3") == .won && bye.outcome(for: nil) == .undecided)
     }
 
-    /// `hasSchedule` on a match and `isEmpty` on a schedule are one rule read from both ends: a time or a place alone
-    /// counts, and an empty schedule sent to a scheduled match clears it.
+    /// One rule read from both ends: a time or a place alone counts as a schedule.
     @Test func hasScheduleAndIsEmptyAgree() {
         #expect(MatchSchedule().isEmpty && !match.hasSchedule)
 

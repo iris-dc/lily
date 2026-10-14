@@ -2,9 +2,7 @@ import Testing
 import UIKit
 @testable import lily
 
-/// `AttachmentImageLoad` is the state of one picture a view brings through the loader: the decoded picture from the
-/// cache or a download, failed for a refusal, bytes that are no picture or an object that is not there, and untouched
-/// when the caller left before a refusal came back.
+/// `AttachmentImageLoad` is the state of one picture a view brings through the loader.
 @MainActor
 struct AttachmentImageLoadTests {
     private let chat = FakeChatRepository()
@@ -13,7 +11,7 @@ struct AttachmentImageLoadTests {
     private let clock = DateClock()
     private let message = ChatMessage.fixture(id: "m1", groupID: "g1")
     private let box = AttachmentImageLoad()
-    /// A preview folder per test, never the process-wide one, as in `AttachmentLoaderTests`.
+    /// A preview folder per test, never the process-wide one: the disk cache sweeps that one on every sign-out.
     private let previewDirectory = FileManager.default.temporaryDirectory
         .appending(path: "image-load-previews-\(UUID().uuidString)")
 
@@ -84,9 +82,8 @@ struct AttachmentImageLoadTests {
         #expect(backend.requests.isEmpty, "never the whole clip for a frame")
     }
 
-    /// The loader shares one download with every caller, so a cancelled caller's refusal is where cancellation shows:
-    /// the box stays as it was instead of reading failed. Deterministic: the task inherits the main actor and cannot
-    /// start before the test yields, so it is cancelled before the loader throws.
+    /// A cancelled caller's refusal leaves the box as it was, never failed. Deterministic: the task inherits the main actor
+    /// and cannot start before the test yields, so it is cancelled before the loader throws.
     @Test func aCancelledLoadStaysLoading() async {
         let backend = StubBackend(status: 404)
         let loader = makeLoader(backend)

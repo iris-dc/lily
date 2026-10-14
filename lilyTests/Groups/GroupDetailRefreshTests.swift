@@ -93,8 +93,7 @@ struct GroupDetailRefreshTests {
         #expect(!ownerDetail.canReport && ownerDetail.showsMenu)
     }
 
-    /// A signed-in reader of a public group has no chat and gets the menu for "Report group" alone; an outsider of a
-    /// private group gets none, and neither does a guest.
+    /// A signed-in reader of a public group has no chat yet gets the menu, for "Report group" alone; an outsider of a private group and a guest get none.
     @Test func theMenuShowsForSignedInReadersOfAPublicGroupAndNeverForGuests() {
         let publicDetail = harness.makeGroupDetailViewModel(.fixture(id: "g"))
         #expect(!publicDetail.access.canChat && publicDetail.canReport && publicDetail.showsMenu)

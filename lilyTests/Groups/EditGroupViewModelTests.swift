@@ -15,7 +15,6 @@ struct EditGroupViewModelTests {
         viewModel = Self.makeViewModel(editing: group, in: harness, onChange: harness.sink.record)
     }
 
-    /// The sheet's view model over the harness, with the lost-race pause removed.
     private static func makeViewModel(editing group: SportGroup,
                                       in harness: GroupHarness,
                                       onChange: @escaping @MainActor (SportGroup) -> Void) -> EditGroupViewModel {
@@ -49,8 +48,7 @@ struct EditGroupViewModelTests {
         #expect(harness.logs(.info).contains("Group g updated"))
     }
 
-    /// The sheet is opened from the detail, whose `accept` is the one Mine write per save: one `groupChanges` bump and
-    /// one "sibling screens invalidated" line, not two.
+    /// A save writes Mine once, through the detail's `accept`: one `groupChanges` bump and one invalidation line, not two.
     @Test func oneEditWritesMineOnce() async {
         let detail = harness.makeGroupDetailViewModel(group)
         let editor = Self.makeViewModel(editing: group, in: harness, onChange: detail.accept)
@@ -71,7 +69,7 @@ struct EditGroupViewModelTests {
         harness.logger.messages(in: .cache, at: .debug).filter { $0.contains("Mine") }
     }
 
-    /// A public group from before places existed asks for one the first time it is edited; a private one does not.
+    /// A public group stored without a place asks for one the first time it is edited; a private one is reached by invite and needs none.
     @Test func anOldPublicGroupWithoutAPlaceAsksForOneOnEdit() {
         let old = SportGroup.fixture(id: "old", name: "Old name", role: .owner)
         let viewModel = Self.makeViewModel(editing: old, in: harness, onChange: harness.sink.record)

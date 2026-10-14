@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The one date-and-time style of the facts cards and match rows follows the app language, not the device.
 @MainActor
 struct DateStylesTests {
     /// 2027-01-15 08:00 UTC: January in every time zone.

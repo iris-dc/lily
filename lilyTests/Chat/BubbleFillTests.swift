@@ -1,8 +1,7 @@
 import Testing
 @testable import lily
 
-/// When a bubble's attachments are the bubble (pictures and videos alone, with no words and no quote) and when they sit
-/// on the fill (a file card, a caption, a quote, a kind this build does not know, or no attachment at all).
+/// Pictures and videos alone are the bubble; a file card, a caption, a quote or an unknown kind puts them on the fill.
 struct BubbleFillTests {
     @Test func aPictureAloneIsTheBubble() {
         #expect(BubbleFill.standsAlone(kinds: [.image], hasText: false, hasQuote: false))

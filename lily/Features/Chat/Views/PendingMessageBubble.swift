@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// The caller's message before the backend confirmed it: faded with a spinner, or marked failed with the hint and a
-/// Retry / Delete menu. Its pictures, videos and files show from their files on the device. Tapping a failed bubble
-/// (the bubble and its glyph, never the row's empty space beside it) retries; tapping its quote finds the original
-/// like any bubble's; a long press on a bubble still sending opens nothing.
+/// Retry / Delete menu (attached only then; an empty menu would still open on a long press). Its attachments show from
+/// their files on the device. A tap on a failed bubble or its glyph retries, never one on the row's empty space beside
+/// it; its quote finds the original like any bubble's.
 struct PendingMessageBubble: View {
     let message: PendingMessage
     let viewModel: ChatViewModel

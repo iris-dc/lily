@@ -40,7 +40,7 @@ struct MainTabView: View {
             }
         }
         // iPadOS draws the tabs as a top bar on its own; the iPhone keeps its floating bar. `.sidebarAdaptable` was tried
-        // (2026-10-07) and dropped: its sidebar only repeated the four tabs and iPadOS opened it by itself in landscape,
+        // and dropped: its sidebar only repeated the four tabs and iPadOS opened it by itself in landscape,
         // taking 280 pt from the content column.
         .tabBarMinimizeBehavior(.onScrollDown)
         // The navigation model stays ignorant of size classes; the shell tells it which Chats layout is on screen.

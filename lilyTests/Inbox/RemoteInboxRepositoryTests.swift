@@ -4,8 +4,8 @@ import Testing
 
 @MainActor
 struct RemoteInboxRepositoryTests {
-    /// The route's own alias (a gone item reads as an answered invite) and its fallback: the shared mapping is proved
-    /// once, in `SendFailingWithTests` and `BackendErrorCodeTests.everyCodeMapsToItsCase`.
+    /// Only what this route adds: a gone item reads as an invite that is not pending, the rest as its own fallback.
+    /// The shared mapping belongs to `send(_:failingWith:)` and is proved there.
     /// `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
         ("INBOX_ITEM_NOT_FOUND", .inviteNotPending), ("VALIDATION_FAILED", .inviteActionFailed),

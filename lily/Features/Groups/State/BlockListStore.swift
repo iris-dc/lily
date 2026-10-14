@@ -58,9 +58,9 @@ final class BlockListStore: SessionObserver {
         }
     }
 
-    /// Blocks the user and takes the backend's answer as the list. A refusal rethrows for the caller to report (a
-    /// guest's write comes back as `.sessionExpired` from the client, like every write); an answer that arrives after
-    /// the caller signed out or changed is dropped.
+    /// Takes the backend's answer as the new list. A refusal rethrows for the caller to report (a guest needs no guard
+    /// here: the client refuses every write of theirs as `.sessionExpired`); an answer that arrives after the caller
+    /// signed out or changed is dropped.
     func block(userID: String) async throws {
         let caller = identity.currentUserID
         let list = try await repository.block(userID: userID)

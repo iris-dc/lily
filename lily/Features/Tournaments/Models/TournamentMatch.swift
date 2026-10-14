@@ -85,7 +85,6 @@ nonisolated struct TournamentMatch: Identifiable, Hashable, Codable, Sendable {
     var isOpenDispute: Bool { isDisputed && status.isOpen }
     /// Whether a result may be taken: both sides known, not decided, the tournament's state being the caller's check.
     var isReadyForResult: Bool { hasBothSides && (status.isOpen || status == .reported) }
-    /// A time or a place was set.
     var hasSchedule: Bool { scheduledAt != nil || location != nil }
 
     /// What one side reads off this match; only a side of a decided match is judged, anyone else reads `undecided`.

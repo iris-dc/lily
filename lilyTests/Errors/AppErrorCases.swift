@@ -1,7 +1,7 @@
 import Testing
 @testable import lily
 
-/// Every `AppError` once, the four with payloads sampled; `listed(_:)` is the reminder that a new case belongs here.
+/// Every `AppError` once, payload cases sampled.
 enum AppErrorCases {
     static let all: [AppError] = [
         .authCancelled, .authFailed(provider: .apple), .providerUnavailable(provider: .apple), .invalidCredentials,
@@ -21,11 +21,11 @@ enum AppErrorCases {
         .tournamentsUnavailable, .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed,
         .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked,
         .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit,
-        .inviteeAlreadyEntered, .cannotInviteToTournament, .feedbackFailed,
+        .tournamentMembershipLimit, .inviteeAlreadyEntered, .cannotInviteToTournament, .feedbackFailed,
         .unknown,
     ]
 
-    /// Names every case with no `default`: a case added to `AppError` fails to compile here until `all` lists it too.
+    /// Exhaustive on purpose: a new `AppError` case fails to compile here, the reminder to add it to `all` too.
     static func listed(_ error: AppError) {
         switch error {
         case .authCancelled, .authFailed, .providerUnavailable, .invalidCredentials, .emailTaken, .emailNotConfirmed,
@@ -42,15 +42,15 @@ enum AppErrorCases {
              .conversationLimit, .tournamentsUnavailable, .tournamentNotFound, .tournamentCreationFailed,
              .tournamentUpdateFailed, .tournamentActionFailed, .registrationClosed, .tournamentFull, .alreadyEntered,
              .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked, .notEnoughEntries, .notInMatch,
-             .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit, .inviteeAlreadyEntered,
-             .cannotInviteToTournament, .feedbackFailed, .unknown:
+             .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit, .tournamentMembershipLimit,
+             .inviteeAlreadyEntered, .cannotInviteToTournament, .feedbackFailed, .unknown:
             break
         }
     }
 }
 
 struct AppErrorCasesTests {
-    /// A case listed twice would stand in for one left out, so the list is as long as the set of its cases.
+    /// A case listed twice would stand in for one left out.
     @Test func everyCaseIsListedOnce() {
         #expect(Set(AppErrorCases.all.map { "\($0)" }).count == AppErrorCases.all.count)
     }

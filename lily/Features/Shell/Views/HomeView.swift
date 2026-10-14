@@ -56,8 +56,8 @@ struct HomeView: View {
     }
 
     /// The caller's games and groups are theirs alone, so a guest asks for nothing. The three lists load at once, so
-    /// the screen's spinner lasts one round trip and not three; the position follows the lists, as before. The child
-    /// tasks capture the main-actor collaborators (`Sendable`), never the view.
+    /// the screen's spinner lasts one round trip and not three. The locals keep the child tasks from capturing the
+    /// view: they capture the main-actor collaborators, which are `Sendable`.
     private func loadIfStale() async {
         guard content == .overview else { return }
         let events = events

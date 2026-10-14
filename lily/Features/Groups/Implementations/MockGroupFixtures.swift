@@ -52,8 +52,8 @@ nonisolated enum MockGroupFixtures {
             description: "Two courts booked most Sundays. Rackets to borrow.",
             visibility: .private,
             type: .padel,
-            // Resolved once per process (a static let), so after a language change in a -mock-events run the header
-            // keeps the first language while the roster's "You" row (read per call) follows it; accepted debug-only quirk.
+            // A static let resolves this once per process: after a language change in a -mock-events run the header
+            // keeps the first language while the roster's "You" row (read per call) follows it. Debug-only, accepted.
             ownerName: AppBranding.Groups.Create.mockOwnerName,
             memberCount: 6,
             role: .owner,

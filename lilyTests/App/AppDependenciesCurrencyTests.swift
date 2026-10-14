@@ -28,7 +28,6 @@ struct AppDependenciesCurrencyTests {
         #expect(currency.preference == .system && stored.load() == .system)
     }
 
-    /// The factory test above passes `startsFresh` itself; this one proves the launch argument reaches the store.
     @Test func theCompositionRootForgetsTheStoredCurrencyOnAResetSessionLaunch() {
         stored.save(.fixed("PLN"))
 

@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The query encoding and the log lines of `URLSessionAPIClient`; a sibling of `URLSessionAPIClientTests`, whose
-/// body is at the SwiftLint limit.
 @MainActor
 struct URLSessionAPIClientQueryAndLogTests {
     private let logger = SpyLogger()

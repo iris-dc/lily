@@ -2,17 +2,11 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The per-room rules of the mock: a line written in a run sorts after every fixture row of its room and after every
-/// earlier line of the run, and a clear's floor hides them all, whatever the room's id code, and reads the room; a
-/// delete is idempotent and open to admins, and a replay by another sender is refused. In a sibling file because
-/// the main suite's body is near the limit.
+/// The mock's per-room rules: sent lines' order, the clear's floor and marker, deletes, replays by another sender.
 extension MockChatRepositoryTests {
-    /// Every room the caller is in: Kickers, Runners, Padel, the conversation with Marta, the Kickers Cup's room and
-    /// the table-tennis room. `nonisolated`: `@Test(arguments:)` reads it off the main actor.
+    /// Every room the caller is in. `nonisolated`: `@Test(arguments:)` reads it off the main actor.
     nonisolated private static let joinedRoomIDs: [String] = MockGroupFixtures.make(now: .now).filter(\.isMember).map(\.id)
 
-    /// The sent line is the room's newest, the fixtures are all that lies before it and it alone lies after them, in a
-    /// room whose id code sorts before the old shared one as in one that sorts after it.
     @Test(arguments: joinedRoomIDs)
     func aSentMessageSortsAfterEveryFixtureRowInEveryRoom(room: String) async throws {
         let repository = makeRepository()
@@ -31,8 +25,6 @@ extension MockChatRepositoryTests {
         #expect(after == [sent.message])
     }
 
-    /// In every joined room, the table-tennis one (whose id code sorts after the old shared one) included: two sends
-    /// keep their order, a clear hides them with the fixtures, and a send after the clear is all that is left to see.
     @Test(arguments: joinedRoomIDs)
     func consecutiveSendsKeepTheirOrder(room: String) async throws {
         let repository = makeRepository()
@@ -60,10 +52,8 @@ extension MockChatRepositoryTests {
         #expect(belowThird.isEmpty, "the floor hides the fixtures and the two earlier sends")
     }
 
-    /// The two fixture rooms that start unread. A clear parks the caller's marker at the floor, above every row the
-    /// room held, so the group mock reads the room as read and the next Mine load shows no dot for it (Kickers listed
-    /// and read, the conversation hidden), and a later mark below the floor never reopens it. The marker alone is not
-    /// what reads the room: a mark at the fixture's own marker, before the clear, leaves it unread.
+    /// A clear parks the caller's marker at the floor, above every row the room held, so the room reads as read and a
+    /// later mark below the floor never reopens it.
     @Test(arguments: [MockGroupFixtures.kickersID, MockGroupFixtures.martaConversationID])
     func clearingReadsTheRoomAsRead(room: String) async throws {
         let repository = makeRepository()
@@ -86,9 +76,6 @@ extension MockChatRepositoryTests {
         #expect(marker.lastReadMessageId == cleared.historyFloor, "a mark below the floor never reopens the room")
     }
 
-    /// A delete answers the tombstone and a repeated delete the same tombstone without a second publish, so the bus
-    /// hears one `messageDeleted` and the row stays as a tombstone; an admin may delete another sender's line, which
-    /// the member's refusal in the main suite complements.
     @Test func deleteIsIdempotentAndAdminsMayDelete() async throws {
         let repository = makeRepository()
         try await deletingTwiceTombstonesOnceAndPublishesOnce(in: repository)
@@ -130,8 +117,7 @@ extension MockChatRepositoryTests {
         #expect(after.first { $0.id == others.id }?.isDeleted == true)
     }
 
-    /// The same client id from another sender is refused as the backend refuses it, and the room is left as it was:
-    /// no new row, the stored row keeps its sender. A fresh id from her is stored under her id (positive control).
+    /// Like the backend, a client id already stored under another sender is refused and the room is left as it was.
     @Test func aReplayByAnotherSenderIsRefused() async throws {
         let repository = makeRepository()
         let mine = draft("mine", clientID: "c-9")

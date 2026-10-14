@@ -146,10 +146,9 @@ nonisolated enum AttachmentCacheFiles {
         evict(cachedFiles(in: directory), limitBytes: limitBytes)
     }
 
-    /// The sweep over a listing. A file that will not go is counted as failed and keeps its bytes in the total, so one
-    /// stuck file neither stops the sweep nor passes for gone; one already gone (another store's sweep running at the
-    /// same time, or the system purging Caches) left without this sweep, so its bytes come off the total and it counts
-    /// neither as removed nor as failed.
+    /// The sweep over a listing. A file that will not go counts as failed and keeps its bytes in the total, so one
+    /// stuck file neither stops the sweep nor passes for gone; a file already gone (a concurrent sweep, or the system
+    /// purging Caches) comes off the total and counts as neither.
     static func evict(_ listing: [Entry], limitBytes: Int) -> Eviction {
         var entries = listing
         var total = entries.reduce(0) { $0 + $1.size }

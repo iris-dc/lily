@@ -1,14 +1,10 @@
 import SwiftUI
 
 /// The scrolling list of a chat: day chips, bubbles, system rows and the caller's unsent messages, anchored to the
-/// bottom. Every scroll rule is `TranscriptScrollPolicy`'s, judged on the geometry as a `Snapshot`: the caller's own
-/// messages always scroll into view, others' only while the list is at the bottom, so reading older messages is never
-/// interrupted; scrolling near the top loads the page before and keeps what was on screen where it was. A tap on a
-/// reply's quote scrolls to the original (loading older pages when it lies before the history held) and washes it in
-/// the accent for a moment; a tap on a picture or a video opens the message's pictures and videos full screen, paged
-/// from the tapped one (`AttachmentViewerSheet`), a tap on a file opens it in QuickLook once it is on the device. A long
-/// press on another member's bubble also offers Report, which opens the report sheet over that message, and Block, which
-/// asks first and then hides the sender's lines in every room.
+/// bottom. Every scroll rule is `TranscriptScrollPolicy`'s, judged on each geometry report as a `Snapshot`. A tapped
+/// quote scrolls to the original (loading older pages when it lies before the history held) and washes it in the accent
+/// for a moment; pictures and videos open in `AttachmentViewerSheet`, a file in QuickLook once it is on the device; a
+/// long press on another member's bubble also offers Report and Block.
 struct ChatTranscript: View {
     let viewModel: ChatViewModel
     let dependencies: AppDependencies
@@ -18,11 +14,11 @@ struct ChatTranscript: View {
     @State private var highlightedMessageID: String?
     /// The list's usable width, for the rows' fractions (`\.transcriptWidth`); `nil` before the first layout.
     @State private var transcriptWidth: CGFloat?
-    /// The tapped picture or video open full screen, as the selection its tile handed up.
+    /// The picture or video open full screen.
     @State private var viewing: AttachmentSelection?
     /// The file open in QuickLook, as the preview copy the loader named.
     @State private var previewURL: URL?
-    /// The message whose report sheet is open, as the target the view model framed.
+    /// The message whose report sheet is open.
     @State private var reporting: ReportTarget?
     /// The row whose sender awaits the caller's word on a block.
     @State private var blocking: MessageRow?
@@ -83,9 +79,8 @@ struct ChatTranscript: View {
         }
     }
 
-    /// The bubble with its context menu, attached only when `MessageMenuItems` holds something to tap, so a long press
-    /// on a tombstone opens nothing (the caller's own has no item, another member's tombstone offers neither Report nor
-    /// Block). Report frames the message as the sheet's target, Block holds the row until the caller confirms.
+    /// The bubble, with a context menu only when `MessageMenuItems` offers something: an empty menu would still open on
+    /// a long press, and a tombstone offers nothing.
     @ViewBuilder private func messageBubble(for messageRow: MessageRow) -> some View {
         let message = messageRow.message
         let items = MessageMenuItems.items(for: message,

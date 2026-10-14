@@ -33,9 +33,8 @@ struct PushModelsTests {
         #expect(!registration.isCurrent(token: "t", userID: "u", locale: "ru", now: now, within: 3_600))
     }
 
-    /// `PushCoordinator` keeps the registration in `UserDefaults` through a plain `JSONEncoder`/`JSONDecoder`, whose
-    /// default writes a `Date` as seconds since the reference date; a row written before the app spoke more than one
-    /// language is that shape without a `locale`.
+    /// The coordinator stores the row with a plain `JSONEncoder`, so `registeredAt` is seconds since the reference date;
+    /// rows stored by older builds have no `locale` and must still decode.
     @Test func aRegistrationStoredBeforeTheAppSpokeLanguagesReadsWithoutOneAndIsNotCurrent() throws {
         let stored = try JSONDecoder().decode(LastDeviceRegistration.self, from: Data("""
         {"token":"t","userID":"u","registeredAt":780000000}

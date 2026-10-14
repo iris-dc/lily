@@ -17,8 +17,8 @@ protocol DraftSubmitting: AnyObject, Observable {
 }
 
 extension DraftSubmitting {
-    // Listed in the protocol body so that a conforming type's own `prepare()` is the one the sheet calls; as an
-    // extension method alone, `DraftSheet`'s call on `Model` would resolve statically to this empty default.
+    // Also a protocol requirement, so a conformer's own `prepare()` is dispatched dynamically; as an extension method
+    // alone, `DraftSheet`'s call on `Model` would bind statically to this empty default.
     func prepare() async {}
 
     /// The first of `candidates` the draft has, for the hint under the section they concern.

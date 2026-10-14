@@ -1,9 +1,8 @@
 import XCTest
 
-/// Helpers of `LilyChatTests` for the attachment cases, in their own file so the test class stays under the type-body
-/// limit; helpers only, since a test method in an extension is not discovered without `@objc`.
+/// Attachment helpers of `LilyChatTests`, split out to keep the class under SwiftLint's type-body limit. Helpers only:
+/// XCTest does not discover a test declared in an extension unless it is `@objc`.
 extension LilyChatTests {
-    /// Which way the viewer is swiped.
     enum Swipe {
         case left
         case right
@@ -91,7 +90,7 @@ extension LilyChatTests {
     }
 
     /// Waits out the cover's presentation or the page scroll the last swipe started: XCUITest's idle wait covers
-    /// neither, and a swipe during either is lost (seen 2026-10-13).
+    /// neither, and a swipe during either is lost.
     @MainActor
     private func letTheViewerSettle() {
         _ = app.staticTexts["never-there"].waitForExistence(timeout: 1)

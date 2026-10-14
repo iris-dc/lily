@@ -2,8 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Which pictures a tap on a gallery tile opens and where the pages start: at the tapped picture, at the first hidden one
-/// from the "+N" tile, never at a file; and nothing for a message of files alone or a tile the grid does not draw.
+/// What a tap on a gallery tile opens: the message's pictures and videos as pages, never its files, starting at the tapped
+/// one or at the first hidden behind the "+N" tile.
 struct AttachmentSelectionTests {
     private let pictures = (1...5).map { Self.picture("p\($0)") }
 

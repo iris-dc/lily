@@ -1,8 +1,7 @@
 import Testing
 @testable import lily
 
-/// Which items a long press on a bubble offers, decided from the message and the view model's reply and delete
-/// verdicts, so the transcript attaches a menu only when something can be tapped.
+/// Which items a long press on a bubble offers, so the transcript attaches a menu only when something can be tapped.
 struct MessageMenuItemsTests {
     private static let tombstone = ChatMessage.fixture(id: "m1", text: nil, isDeleted: true)
 

@@ -3,7 +3,7 @@ import Testing
 @testable import lily
 
 /// Who is in, on the detail: loaded for signed-in callers on appear and again after every join, leave or refetch; the
-/// host line links to the host's profile when the caller may open it. The main detail suite is at its file limit.
+/// host line links to the host's profile when the caller may open it.
 @MainActor
 struct EventDetailParticipantsTests {
     private let repository = FakeEventRepository()
@@ -97,7 +97,7 @@ struct EventDetailParticipantsTests {
         #expect(logger.messages(in: .events, at: .warning).contains { $0.contains("Loading participants of event e failed") })
     }
 
-    /// A load cut short by the view's task going away is nobody's failure: no popup, no warning, the list kept.
+    /// The view's task going away cancels the load; a cancellation is nobody's failure.
     @Test func aCancelledParticipantsLoadReportsNothingAndKeepsTheLastList() async {
         repository.participantsResult = .success([host])
         let viewModel = makeViewModel()

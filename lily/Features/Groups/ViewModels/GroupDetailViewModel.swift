@@ -79,7 +79,6 @@ final class GroupDetailViewModel {
         access.canReport(in: group)
     }
 
-    /// What the detail's "Report group" files, like `TournamentDetailViewModel.reportTarget`.
     var reportTarget: ReportTarget {
         .group(id: group.id)
     }

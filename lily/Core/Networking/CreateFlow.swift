@@ -1,15 +1,11 @@
 import Foundation
 
-/// What the event, group and tournament forms share when they send a new thing once. `clientID` travels with every
-/// attempt, so a retry after a lost answer finds what the backend already stored instead of creating a second one; a
-/// failure that leaves the outcome unknown (`leavesOutcomeUnknown`: a 500 or a lost connection, because the backend
-/// commits before it answers) is settled by looking the thing up under that id: ours (`isOurs`: hosted, owned or
-/// organised by the caller) means the create landed and nothing is shown; `notFound` is the check's answer (the create
-/// did not land, a debug line, never a warning); anyone else's or a failed lookup keeps the failure. Every kept
-/// failure goes to `report`; a cancellation (the sheet was dismissed) stays quiet.
-///
-/// Built once per view model in its `init`, like `WriteGate`: SwiftLint caps a function at five non-defaulted
-/// parameters, and the collaborators plus the work would be more.
+/// The one send of a new event, group or tournament. `clientID` travels with every attempt, so a retry after a lost
+/// answer finds what the backend already stored instead of creating a second one. A failure that leaves the outcome
+/// unknown (`leavesOutcomeUnknown`: a 500 or a lost connection; the backend commits before it answers) is settled by
+/// looking the thing up under that id: ours (`isOurs`) means the create landed and nothing is shown, `notFound` means it
+/// did not, anyone else's or a failed lookup keeps the failure. Every kept failure goes to `report`; a cancellation (the
+/// sheet was dismissed) stays quiet.
 struct CreateFlow<Created: Identifiable> where Created.ID == String {
     /// The thing in log lines, lower-case ("event").
     let noun: String

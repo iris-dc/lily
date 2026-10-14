@@ -2,9 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The content behind the system rows of one room, apart from the screen: the game or tournament a row names is fetched
-/// once and worded in, a gone one is remembered, where a tap leads is answered and never reported, and a live row bumps
-/// the counter of its kind.
+/// The game or tournament a system row names is fetched once and worded in, a gone one is remembered, and where a tap
+/// leads is answered to the room, never reported.
 @MainActor
 struct SystemRowContentTests {
     private let events: FakeEventRepository
@@ -140,7 +139,6 @@ struct SystemRowContentTests {
         #expect(eventChanges.version == 1 && tournamentChanges.version == 1)
     }
 
-    /// The destination of a row whose answer is expected to succeed; a failure is recorded as the test's.
     private func opened(_ message: ChatMessage) async -> SystemRowDestination? {
         switch await content.destination(for: message, roomName: roomName) {
         case .success(let destination):

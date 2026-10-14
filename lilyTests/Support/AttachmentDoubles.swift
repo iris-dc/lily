@@ -26,12 +26,10 @@ final class FakeAttachmentUploader: AttachmentUploader, HoldsRequests {
     }
 }
 
-/// Prepares by writing the picked bytes to a file of their own (and a small thumbnail next to it), so the drafts it
-/// answers have real files to copy and read; a video or a file is answered over a copy of its own in tmp (`<id>.mp4`
-/// with a thumbnail, `<id>.<ext>`), as the real preparers do, because the composer removes a picked movie once the
-/// preparer is done with it. `error` refuses everything; `photo`, `video` and `file` are what the mock picker hands over.
-/// Like the real preparers' detached work, a prepare of any kind cancelled while held still delivers its files, so the
-/// model's handling of a late answer for a removed slot can be tested.
+/// Answers drafts over real files in tmp, as the real preparers do: a picture's bytes with a small thumbnail, a video or
+/// file as a copy of its own (`<id>.mp4` plus thumbnail, `<id>.<ext>`), because the composer removes a picked movie once
+/// the preparer is done with it. `error` refuses everything; `photo`, `video` and `file` are what the mock picker hands
+/// over. A prepare cancelled while held still delivers its files, like the real preparers' detached work.
 @MainActor
 final class FakeMediaPreparer: MediaPreparer, HoldsRequests {
     var error: (any Error)?
@@ -74,8 +72,7 @@ final class FakeMediaPreparer: MediaPreparer, HoldsRequests {
         return .fixture(id: id, kind: .file, fileURL: own, fileName: url.lastPathComponent, state: .preparing)
     }
 
-    /// The source's bytes (a few stand-in bytes when no file is behind the URL) written under `name` in tmp: the file
-    /// of the draft's own that the real preparers leave.
+    /// A copy under `name` in tmp, with stand-in bytes when nothing is behind `url`, so a test may hand over any URL.
     private static func copy(_ url: URL, to name: String) throws -> URL {
         let own = FileManager.default.temporaryDirectory.appending(path: name)
         try ((try? Data(contentsOf: url)) ?? Data("clip".utf8)).write(to: own)
@@ -89,9 +86,8 @@ final class FakeMediaPreparer: MediaPreparer, HoldsRequests {
     func fileWithoutPicker() -> URL? { file }
 }
 
-/// An attachment cache in memory: downloaded bytes go to a file in a directory of the instance's own (removed by
-/// `clear()`), copies are recorded and answered as the source itself (nothing is copied), `evict()` has nothing to do,
-/// and a `storeError` is what both stores refuse with (a full disk), before anything is written or recorded.
+/// An attachment cache in memory: bytes go to a directory of the instance's own (removed by `clear()`), copies are
+/// recorded and answered as the source itself, `evict()` does nothing, and `storeError` (a full disk) refuses both stores.
 @MainActor
 final class FakeAttachmentCache: AttachmentCache {
     struct Copy: Equatable {
@@ -137,10 +133,9 @@ final class FakeAttachmentCache: AttachmentCache {
 }
 
 extension AttachmentDraft {
-    /// A draft without files on disk, for the model tests; `state` says where it stands. A picture by default; a video
-    /// carries a thumbnail and a duration, a file its name and no thumbnail, and anything that is no picture or video
-    /// takes the file shape. With a `fileURL` the thumbnail sits next to it as `<name>.thumb.jpg`, so a test that
-    /// writes both can.
+    /// A draft without files on disk, for the model tests. A picture by default; a video carries a thumbnail and a
+    /// duration, a file its name and no thumbnail, and any other kind takes the file shape. With a `fileURL` the
+    /// thumbnail sits next to it as `<name>.thumb.jpg`, so a test that writes both can.
     static func fixture(id: String = "d1",
                         kind: AttachmentKind = .image,
                         fileURL: URL? = nil,
@@ -213,7 +208,7 @@ extension AttachmentRef {
     }
 }
 
-/// The attachment JSON exactly as Laurel's `AttachmentControllerIt` / `ChatControllerIt` pin it (B-C hand-over).
+/// The attachment JSON exactly as Laurel's `AttachmentControllerIt` / `ChatControllerIt` pin it.
 extension ContractSamples {
     static let attachment = """
     {"id":"01ARYZ6S41TSV4RRFFQ69G5FB0","kind":"image","contentType":"image/jpeg","sizeBytes":812345,"width":2048,"height":1536,\

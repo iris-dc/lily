@@ -3,8 +3,7 @@ import Observation
 
 /// Discover: pages through the public groups on its own, sends the user's position so the backend answers the groups
 /// around it, works for guests too, and searches again after a group changed anywhere (`changes` moves on a join, a
-/// leave or a create; "Joined" and the member counts on the cards are the server's answer). Mine is `MyGroupsStore`'s,
-/// which Home reads directly. One file, so the search state stays `private(set)`.
+/// leave or a create; "Joined" and the member counts on the cards are the server's answer). Mine is `MyGroupsStore`'s.
 @Observable
 final class DiscoverGroupsViewModel {
     /// Typed into the search bar; the search restarts `AppConfig.Groups.searchDebounce` after the last change.
@@ -150,9 +149,8 @@ final class DiscoverGroupsViewModel {
     }
 
     /// One request and its bookkeeping; answers whether this generation's page was taken. The caller and the
-    /// group-changes version stamped on the page are the ones taken before the request, as `ContentFreshness` and
-    /// `MyGroupsStore` do, so a `group_updated`, a join or a sign-in landing while the page was out leaves it stale and
-    /// the next appearance searches again.
+    /// group-changes version stamped on the page are read before the request, so a `group_updated`, a join or a sign-in
+    /// landing while the page was out leaves it stale and the next appearance searches again.
     private func performSearch(near position: Coordinate?, generation: Int) async -> Bool {
         let userID = identity.currentUserID
         let version = changes.version

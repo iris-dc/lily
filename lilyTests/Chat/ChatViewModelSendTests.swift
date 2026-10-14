@@ -161,8 +161,7 @@ struct ChatViewModelSendTests {
         #expect(viewModel.cooldownSeconds == Int(AppConfig.Chat.rateLimitCooldownFallback))
     }
 
-    /// A cooldown is a state the room expects, so its line is a warning; a fault (`messageSendFailed` above) stays an
-    /// error.
+    /// A cooldown is a state the room expects, so its line is a warning, never an error.
     @Test func aRateLimitIsARefusalLoggedAtWarning() async {
         let (harness, viewModel) = await makeOpenChat()
         harness.chat.sendErrors = [AppError.rateLimited(retryAfter: 7)]

@@ -9,8 +9,7 @@ extension EventDraftTests {
     /// not a refused amount but unreadable text: the decimal pad has none.
     static let acceptedPrices: [String?] = [nil, "0", "5", "7.5", "12.99", "9999999.99"]
     static let refusedPrices = ["0.001", "10000000"]
-    /// Text the parser cannot read in the draft's locale (en_US here): a minus, a symbol, a code, a foreign or a
-    /// stray separator, letters.
+    /// Unreadable in the draft's locale, en_US here, so "5,50" is a foreign separator rather than a grouping one.
     private static let unreadablePrices = ["-1", "€5", "$5", "5 EUR", "5,50", "5..5", "5.5.5", "abc"]
 
     /// One place turns a draft's amount into a `Price`: free (nothing or zero) is no price at all.
@@ -47,8 +46,8 @@ extension EventDraftTests {
         #expect(issues(of: draft) == [.priceOutOfRange])
     }
 
-    /// Unreadable text holds the submit instead of making the game free or misreading the amount ("5,50" once
-    /// read as 550 in en_US).
+    /// Unreadable text holds the submit instead of making the game free or misreading the amount (a lenient parse
+    /// reads "5,50" as 550 in en_US).
     @Test(arguments: unreadablePrices)
     func aPriceTheParserCannotReadHoldsTheSubmit(text: String) {
         var draft = Self.makeValidDraft()

@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// Chips and the relative time in one row while they fit whole; otherwise the chips wrap over as many lines as
-/// they need and the time goes under them, which a long group name and large Dynamic Type both call for. The event
-/// and tournament cards draw their chip sets through it; `badgeCapped` tells the chips whether the group badge has to
-/// give way (the one-row form) or may take its whole width (the wrapped form).
+/// Chips and the relative time on one row while they fit whole, else the chips wrapped over as many lines as they need
+/// with the time underneath (a long group name, large Dynamic Type). `badgeCapped` tells the chips whether the group
+/// badge must give way (the one-row form) or may take its whole width (the wrapped form).
 struct CardHeader<Chips: View>: View {
     let startsAt: Date
     @ViewBuilder let chips: (_ badgeCapped: Bool) -> Chips

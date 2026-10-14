@@ -70,8 +70,7 @@ struct RemoteUserRepositoryTests {
         #expect(!conversation.membersCanCreateEvents && !conversation.membersCanInvite)
     }
 
-    /// One known code and the route's fallback: the shared mapping is proved once, in `SendFailingWithTests` and
-    /// `BackendErrorCodeTests.everyCodeMapsToItsCase`; the profile route answers a 404 with a code of its own.
+    /// Only the codes this route maps itself; the shared mapping of `send(_:failingWith:)` has tests of its own.
     @Test func backendCodesMapToAppErrors() async {
         let cases: [(code: String, expected: AppError)] = [
             ("CONVERSATION_LIMIT", .conversationLimit), ("VALIDATION_FAILED", .conversationFailed),

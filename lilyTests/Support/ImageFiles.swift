@@ -2,7 +2,7 @@ import Foundation
 import ImageIO
 import Testing
 
-/// What the preparer suites read off a picture file they were handed.
+/// Facts a test reads off a picture file.
 enum ImageFiles {
     /// The pixel size the file reports, read through ImageIO without decoding it.
     static func dimensions(of url: URL) throws -> (width: Int, height: Int) {

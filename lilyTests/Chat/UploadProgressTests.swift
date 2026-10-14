@@ -1,9 +1,7 @@
 import Testing
 @testable import lily
 
-/// The share the strip's ring shows while an attachment uploads: the file and its thumbnail as one total, so the
-/// second PUT continues where the first ended. Pinned here because a stubbed `URLSession` reports no intermediate
-/// bytes, so the session test can only see the final 1.
+/// The file and its thumbnail upload as one total, so the second PUT's share continues where the first ended.
 struct UploadProgressTests {
     private let progress = UploadProgress(fileBytes: 750, thumbnailBytes: 250)
 

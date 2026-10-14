@@ -78,7 +78,7 @@ extension EventListView {
         }
     }
 
-    /// Each state inside its own `refreshableScroll`, so a state change starts the scroll afresh as it always did.
+    /// Each state in a `refreshableScroll` of its own, so a state change starts the scroll afresh.
     @ViewBuilder
     var listContent: some View {
         switch screenState {
@@ -130,9 +130,9 @@ extension EventListView {
     }
 
     /// A spinner or an empty state centred in what the screen leaves under the header, so it reads as the screen's
-    /// state with the header in view and clear of the tab bar at rest (a fixed share of the screen ran under the bar
-    /// once the header grew a second carousel, 2026-10-14). The clear colour is the floor: a state taller than the
-    /// room left (a tall header on a short phone) keeps its own height and scrolls into view.
+    /// state with the header in view and clear of the tab bar at rest (a fixed share of the screen runs under the bar
+    /// once the header is tall). The clear colour is the floor: a state taller than the room left (a tall header on a
+    /// short phone) keeps its own height and scrolls into view.
     func stateSlot(@ViewBuilder _ state: () -> some View) -> some View {
         ZStack {
             Color.clear.containerRelativeFrame(.vertical) { length, _ in max(0, length - headerFootprint) }

@@ -48,10 +48,10 @@ final class InboxViewModel {
     var hasOlder: Bool { store.hasOlder }
     var isLoadingOlder: Bool { store.isLoadingOlder }
     var loadFailed: Bool { store.loadFailed }
-    /// True until the first page answered or failed, whether or not the view's `.task` has entered `appear()` yet:
-    /// until then the store is not loading, and judging by `isLoading` composed "Nothing here yet" for one commit
-    /// before the spinner (most visible in the iPad split view's unanimated swap). Safe to wait on because `appear()`
-    /// always starts a load, a guest never reaches the screen, and every load ends in a success or a failure record.
+    /// True until the first page answered or failed. Judging by `isLoading` instead shows "Nothing here yet" for one
+    /// commit before the spinner, because the body renders before the view's `.task` has entered `appear()`. Safe to
+    /// wait on: `appear()` always starts a load, a guest never reaches the screen, and every load ends in a success or
+    /// a failure record.
     var isInitialLoad: Bool { !store.hasLoaded && !store.loadFailed }
     /// The newest item's id; the screen watches it to mark a live arrival read while open.
     var newestID: String? { store.newest?.id }
@@ -83,11 +83,10 @@ final class InboxViewModel {
     }
 
     /// Accepts: the item shows as accepted; a group goes into Mine at once and its chat opens; a tournament's lists
-    /// reload and its detail opens (with the caller entered, so Mine is reloaded for the room they are now in, or, for
-    /// a team tournament, ready to pick or name a team). An acceptance naming neither (a known kind answered
-    /// differently, contract drift) admitted the caller somewhere this build cannot name: the item already shows the
-    /// backend's answer, and Mine, the Chats tab's one source, is reloaded as the one recovery that can reveal a room;
-    /// nothing opens and no popup shows.
+    /// reload and its detail opens (Mine reloaded first when the accept entered the caller, so their new room is
+    /// listed; a team tournament leaves them to pick or name a team). An acceptance naming neither (contract drift)
+    /// still admitted the caller somewhere, so Mine is reloaded, the one place a new room can surface; nothing opens
+    /// and no popup shows.
     func accept(_ item: InboxItem) async {
         await answer(item, verb: "accept") {
             let acceptance = try await repository.accept(itemID: item.id)
@@ -116,8 +115,7 @@ final class InboxViewModel {
         }
     }
 
-    /// The game a reminder points at, pushed on the Chats stack; a game that is gone or unreachable reaches the popup,
-    /// and a game that opened is logged, as `openTournament` logs its match.
+    /// The game a reminder points at, pushed on the Chats stack; a game that is gone or unreachable reaches the popup.
     func openEvent(for item: InboxItem) async {
         guard let reminder = item.reminder, openingItemID == nil else { return }
         openingItemID = item.id
@@ -135,8 +133,8 @@ final class InboxViewModel {
     }
 
     /// One answer per invite at a time; `TRY_AGAIN` is repeated once. A verdict on the invite (answered already,
-    /// expired) is a stale card, not a fault: logged at warning, and the inbox is reloaded after the popup, so the card
-    /// shows the invite as the backend now has it. Anything else is logged at error and shown.
+    /// expired) is a stale card, not a fault: a warning, and the inbox is reloaded after the popup so the card shows
+    /// the invite as the backend now has it.
     private func answer(_ item: InboxItem, verb: String, _ attempt: () async throws -> Void) async {
         guard !busyItemIDs.contains(item.id) else { return }
         busyItemIDs.insert(item.id)
@@ -149,11 +147,18 @@ final class InboxViewModel {
                                             attempt)
         } catch {
             guard !AppError.isCancellation(error) else { return }
-            let isVerdict = (error as? AppError)?.isInviteVerdict == true
-            logger.log(isVerdict ? .warning : .error, .inbox, "Invite \(item.id) \(verb) failed: \(error)")
-            reporter.report(error)
+            let failure = Self.restated(error, for: item)
+            let isVerdict = (failure as? AppError)?.isInviteVerdict == true
+            logger.log(isVerdict ? .warning : .error, .inbox, "Invite \(item.id) \(verb) failed: \(failure)")
+            reporter.report(failure)
             if isVerdict { await store.reload() }
         }
+    }
+
+    /// The inbox route answers the groups cap and the tournaments cap under one code; the card knows which it is.
+    private static func restated(_ error: any Error, for item: InboxItem) -> any Error {
+        guard item.kind == .tournamentInvite, error as? AppError == .membershipLimitReached else { return error }
+        return AppError.tournamentMembershipLimit
     }
 }
 

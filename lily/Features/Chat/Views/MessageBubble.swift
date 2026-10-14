@@ -1,14 +1,10 @@
 import SwiftUI
 
-/// One member's message as a bubble: the caller's in the accent, trailing; everyone else's on the surface colour,
-/// leading, with the sender's avatar and current name on the first bubble of a run (both open `profile`, the sender's,
-/// as the view model frames it for this room) and the time under the last. A reply shows the quoted original above
-/// its text; tapping the quote asks `onTapQuote` to find it. Pictures and videos show as a gallery above the words (or
-/// as the bubble itself when there are no words and no quote, `BubbleFill`) and files as cards under it; tapping a tile
-/// asks `onTapAttachment` to open its `AttachmentSelection` (the tapped picture, or the first hidden one from the "+N"
-/// tile), tapping a card downloads the file and asks `onOpenFile` to preview it. Plain fills,
-/// never glass: a chat scrolls dozens of these at once. The row is an accessibility container, so what is inside keeps
-/// its own identifier.
+/// One member's message as a bubble: the caller's in the accent, trailing; everyone else's on the surface, leading,
+/// with the sender's avatar and name on the first bubble of a run (both open `profile`) and the time under the last.
+/// A quote sits above the words, pictures and videos as a gallery (the bubble itself when there is nothing else), files
+/// as cards; taps go up through `onTapQuote`, `onTapAttachment` and `onOpenFile`. Plain fills, never glass: a chat
+/// scrolls dozens of these at once. An accessibility container, so what is inside keeps its own identifier.
 struct MessageBubble: View {
     let row: MessageRow
     let profile: UserProfileDestination
@@ -95,9 +91,8 @@ struct MessageBubble: View {
             .foregroundStyle(.secondary)
     }
 
-    /// Keyed by the client id when the message carries one: the caller's always (stable across the optimistic ->
-    /// stored swap) and, from the backend, every member's, since Laurel sends clientMessageId on every member message;
-    /// the mock's other senders have none and fall back to the server id.
+    /// The client id when the message has one (Laurel sends `clientMessageId` on every member's message, and the
+    /// caller's keeps a bubble's identity across the optimistic-to-stored swap), else the server id.
     private var identifier: String {
         row.message.clientMessageId.map(AccessibilityIdentifiers.message(clientID:))
             ?? AccessibilityIdentifiers.message(id: row.message.id)

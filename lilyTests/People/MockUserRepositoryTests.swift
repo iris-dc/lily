@@ -50,9 +50,7 @@ struct MockUserRepositoryTests {
     }
 
     /// One conversation per pair: a direct group named after the person, the same one on every call, in Mine, its
-    /// roster naming the person, and never a group in common. The fixed shape of a direct group (private, two of two,
-    /// member, both permissions off) is pinned on the Marta fixture in `MockGroupRepositoryTests`
-    /// (`theMartaConversationIsAFixtureThatStartDirectReplays`).
+    /// roster naming the person, and never a group in common.
     @Test func startConversationCreatesTheDirectGroupOnceAndAnswersItAgain() async throws {
         let conversation = try await repository.startConversation(with: jonas)
 

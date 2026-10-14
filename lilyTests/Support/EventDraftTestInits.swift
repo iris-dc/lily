@@ -2,8 +2,7 @@ import Foundation
 @testable import lily
 
 /// The production inits take the user's currency and locale, which most tests do not care about: these fix them to the
-/// fixtures' euro and to `en_US`, so a test that is not about money reads as before and price literals like "7.5" read
-/// the same on every simulator.
+/// fixtures' euro and to `en_US`, so price literals like "7.5" parse the same on every simulator.
 extension EventDraft {
     static let testCurrencyCode = "EUR"
     static let testLocale = Locale(identifier: "en_US")

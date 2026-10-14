@@ -2,9 +2,9 @@ import Foundation
 
 /// The language the app shows, settled from the stored choice and the launch arguments before anything else is built.
 extension AppDependencies {
-    /// The stored language choice, forgotten on a fresh start (`-reset-session`, decided and logged once by
-    /// `makeDefault`) and overridden for this run alone by `-app-language <code>`. `apply` moves the process-wide
-    /// `AppLocale`; the tests pass a spy, so none of them changes the language every other suite reads its copy in.
+    /// The stored language choice, forgotten on a fresh start (`-reset-session`, judged once in `makeDefault`) and
+    /// overridden for this run alone by `-app-language <code>`. `apply` moves the process-wide `AppLocale`; it is
+    /// injectable so a test can build a store without touching it.
     static func makeLanguageStore(arguments: [String],
                                   startsFresh: Bool,
                                   defaults: UserDefaults,
@@ -17,8 +17,7 @@ extension AppDependencies {
         return LanguageStore(store: store, launchChoice: launchChoice, apply: apply, logger: logger)
     }
 
-    /// What `-app-language` asked for: a shipped language, a code the catalog does not carry, or no value at all (the
-    /// flag last or followed by another flag). A language code is neither a secret nor PII, so the line names it.
+    /// A language code is neither a secret nor PII, so the line may name it.
     private static func logLanguageArgument(_ launchChoice: AppLanguage?, in arguments: [String], logger: any Logging) {
         let flag = AppConfig.LaunchArguments.appLanguage
         if let launchChoice {

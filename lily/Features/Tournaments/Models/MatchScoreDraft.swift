@@ -1,8 +1,7 @@
 import Foundation
 
-/// The two typed scores of the match sheet and what keeps Report or Record disabled, as `MatchScheduleDraft` is for the
-/// schedule form: both must parse within `AppConfig.Tournaments.scoreRange`, and a tied score passes only where the
-/// tournament permits draws. Pure, so the rules are tested without the view.
+/// The two typed scores of the match sheet and what keeps Report or Record disabled: both must parse within
+/// `AppConfig.Tournaments.scoreRange`, and a tied score passes only where the tournament permits draws.
 nonisolated struct MatchScoreDraft: Equatable, Sendable {
     var scoreA: String
     var scoreB: String

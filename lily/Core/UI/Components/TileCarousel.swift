@@ -1,10 +1,9 @@
 import SwiftUI
 
-/// A titled row of tiles on Explore, Meetup-style: a heading with "See all", and `rows` rows of tiles that scroll
-/// together sideways; on a regular width a wrapping grid of the first few instead (`TileGrid`), since a sideways scroll
-/// on a screen that wide would leave most of it empty. Nothing at all until the list has answered with at least one
-/// item, so the content it sits above gains no gap meanwhile. The groups and the tournaments carousels both draw
-/// through it; each decides what a tile is and where it leads.
+/// A titled row of tiles on Explore, Meetup-style: a heading with "See all" and `rows` rows of tiles scrolling together
+/// sideways; on a regular width a wrapping grid of the first few instead (`TileGrid`), since a sideways scroll on a
+/// screen that wide leaves most of it empty. Draws nothing until there is at least one item, so the content below gains
+/// no gap meanwhile.
 struct TileCarousel<Item: Identifiable, SeeAll: Hashable, Tile: View>: View {
     let items: [Item]
     let title: String

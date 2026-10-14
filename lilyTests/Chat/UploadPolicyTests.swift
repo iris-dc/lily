@@ -23,7 +23,6 @@ struct UploadPolicyTests {
         }
     }
 
-    /// The boundary of the cap per kind, read from `AttachmentCaps`, whose own tests pin the numbers.
     @Test func aRequestAtTheCapPassesAndOneByteOverIsRefused() throws {
         let videoCap = AttachmentCaps.group.maxBytes(for: .video)
         let fileCap = AttachmentCaps.group.maxBytes(for: .file)
@@ -71,8 +70,7 @@ struct UploadPolicyTests {
         }
     }
 
-    /// The thumbnail check runs before the type check, as in the backend, so a thumbnail on a kind this build does not
-    /// know is refused the way one on a file is.
+    /// The thumbnail check runs before the type check, as in the backend.
     @Test func aThumbnailOnAnUnknownKindIsRefusedLikeOnAFile() {
         #expect(throws: AppError.attachmentUploadFailed) {
             try UploadPolicy.check(request(kind: .unknown("audio"),

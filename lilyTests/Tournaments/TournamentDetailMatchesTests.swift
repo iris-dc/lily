@@ -52,7 +52,6 @@ struct TournamentDetailMatchesTests {
         #expect(!player.permissions.showsStart && !player.permissions.canStart && player.permissions.startBlockedReason == nil)
     }
 
-    /// A start under the minimum is the backend's refusal: reported, nothing drawn, the tournament still in registration.
     @Test func aStartOnTooFewEntriesIsRefusedNotCrashed() async {
         let few = await loaded(oneTeam, entries: [teams[0]])
 
@@ -99,8 +98,7 @@ struct TournamentDetailMatchesTests {
         #expect(harness.sink.tournaments.count == 4, "the start and every result reached the lists")
     }
 
-    /// Report, dispute, re-report and confirm reach the repository and each answer replaces the detail; who may do what
-    /// is owned by `MatchActionsTests` and `MockTournamentRepositoryRulesTests`, so one caller walks every route.
+    /// One caller walks every route; who may do what is not judged here.
     @Test func everyResultRouteReachesTheRepositoryAndItsAnswerReplacesTheDetail() async throws {
         let players = (1...3).map { seed in
             TournamentEntry.fixture(id: "p\(seed)", name: "P\(seed)", captainUserId: Self.captain(seed), seed: seed)

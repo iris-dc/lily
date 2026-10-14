@@ -20,7 +20,6 @@ struct ChatViewModelOutboxTests {
         return (harness, viewModel)
     }
 
-    /// A send parked at the backend, its bubble on screen; the test decides how it ends.
     private func startHeldSend(_ viewModel: ChatViewModel,
                                in harness: RealtimeHarness) async throws -> (send: Task<Void, Never>, clientID: String) {
         harness.chat.holdsRequests = true

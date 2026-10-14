@@ -2,9 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The reminder cards' time line ("Today, 12:00 · in 1 hour"), pinned on a fixed `now` over a UTC, 24-hour calendar:
-/// the day as the chat's chips name it, the clock time, and a countdown judged against the given `now`, never the
-/// wall clock.
+/// The reminder cards' time line ("Today, 12:00 · in 1 hour"), judged against the given `now`, never the wall clock.
+/// A 24-hour locale, because `.shortened` puts a narrow no-break space before AM/PM that no literal here could show.
 @MainActor
 struct InboxTimeCaptionTests {
     private static let calendar: Calendar = {
@@ -13,7 +12,6 @@ struct InboxTimeCaptionTests {
         calendar.locale = Locale(identifier: "en_GB")
         return calendar
     }()
-    /// 2026-03-10 11:00 UTC.
     private static let now = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 11))!
 
     private func caption(for game: Date, now: Date) -> String {

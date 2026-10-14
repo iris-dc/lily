@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The match sheet's score fields, as `MatchScoreDraft` holds them: what they open with, what parses, and what keeps
-/// Report or Record disabled.
 struct MatchScoreDraftTests {
     private let noon = Date(timeIntervalSince1970: 1_800_014_400)
     private let match = TournamentMatch(id: "r01p001",

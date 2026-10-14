@@ -35,7 +35,8 @@ nonisolated enum ErrorMessageMapper {
         case .profileUnavailable, .conversationFailed, .conversationLimit, .tournamentsUnavailable, .tournamentNotFound,
              .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed, .registrationClosed, .tournamentFull,
              .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked, .notEnoughEntries, .notInMatch,
-             .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit, .inviteeAlreadyEntered, .cannotInviteToTournament:
+             .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit, .tournamentMembershipLimit,
+             .inviteeAlreadyEntered, .cannotInviteToTournament:
             peopleMessage(for: error)
         case .unknown:
             unknownMessage

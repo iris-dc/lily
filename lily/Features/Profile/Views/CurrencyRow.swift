@@ -4,7 +4,7 @@ import SwiftUI
 /// "System (<the region's code>)" and the currencies of `AppConfig.Currency.offered`, each with its name in the app's
 /// language. A pick applies at once to the forms' price fields and the filter's cap. The menu holds a `Picker`, so its
 /// items carry the checkmark, but the button is drawn here: a `Picker` button repeats the chosen item's full text, and
-/// "PLN · Polish Zloty" wrapped the row to two lines (seen 2026-10-09), so the button shows the code alone.
+/// "PLN · Polish Zloty" wrapped the row to two lines, so the button shows the code alone.
 struct CurrencyRow: View {
     let currency: CurrencyStore
 

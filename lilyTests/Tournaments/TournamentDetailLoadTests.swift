@@ -3,14 +3,12 @@ import SwiftUI
 import Testing
 @testable import lily
 
-/// How the detail loads: an answer older than a write accepted meanwhile is dropped, a cancellation stays quiet, the
-/// match a reminder or a system row named is decided once, and a failed chat open reaches the popup.
 @MainActor
 struct TournamentDetailLoadTests {
     private let harness = TournamentHarness()
     private let destination = TournamentDestination(id: "t", name: "Tuesday Table Tennis")
 
-    /// A pull-to-refresh runs outside the keyed task and a write does not wait for it: the write's answer stays.
+    /// A pull-to-refresh runs outside the keyed task, so a write can be accepted while it is in flight.
     @Test func aStaleRefreshAnswerNeverOvertakesAnAcceptedWrite() async {
         let (viewModel, refresh) = await loadedWithARefreshHeld()
         let fresh = TournamentDetail.fixture(tournament: .fixture(entryCount: 5))
@@ -63,7 +61,6 @@ struct TournamentDetailLoadTests {
         #expect(harness.groupRepository.requestedScopes.isEmpty, "Mine is not reloaded")
     }
 
-    /// Try again after an offline first load still raises the reminder's match; a reload or an own write never does.
     @Test func theLinkedMatchShowsAfterTheFirstSuccessfulLoad() async {
         let linked = TournamentDestination(id: "t", name: "Kickers Cup", matchID: "r01p001")
         harness.repository.thrownError = AppError.network
@@ -86,7 +83,6 @@ struct TournamentDetailLoadTests {
         #expect(viewModel.linkedMatchToShow == nil, "an own write never raises it again")
     }
 
-    /// Decided once, on the first successful load: a match that is not there then is never raised.
     @Test func noLinkedMatchWithoutADestinationMatchOrForAnUnknownOne() async {
         harness.repository.details["t"] = .fixture(tournament: .fixture(status: .inProgress), matches: [matchFixture("r01p001")])
         let plain = harness.makeDetailViewModel(for: destination)
@@ -103,7 +99,6 @@ struct TournamentDetailLoadTests {
         #expect(unknown.linkedMatchToShow == nil, "decided on the first successful load")
     }
 
-    /// The room fetch failed: the popup says so, nothing is pushed.
     @Test func openChatFailureReachesThePopup() async {
         let entered = Tournament.fixture(entryCount: 1, myEntryId: "e1")
         let mine = TournamentEntry.fixture(id: "e1", captainUserId: TestFixtures.user.id)
@@ -117,7 +112,6 @@ struct TournamentDetailLoadTests {
         #expect(harness.logs(.error).contains { $0.contains("Open chat for tournament \(destination.id) failed") })
     }
 
-    /// A loaded detail with a second load held in flight, as a pull-to-refresh that is slow to answer.
     private func loadedWithARefreshHeld() async -> (viewModel: TournamentDetailViewModel, refresh: Task<Void, Never>) {
         harness.repository.details["t"] = .fixture(tournament: .fixture(entryCount: 2))
         let viewModel = harness.makeDetailViewModel(for: destination)

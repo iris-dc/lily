@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The detail model's derived rules: what `TournamentDetail` answers from its tournament, entries and matches. The
-/// `TournamentDetail*Tests` suites next to this one are the view model's.
 struct TournamentDetailModelTests {
     @Test func registeredEntriesComeInSeedOrder() {
         let entries: [TournamentEntry] = [

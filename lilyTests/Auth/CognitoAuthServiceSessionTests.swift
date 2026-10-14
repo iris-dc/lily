@@ -46,7 +46,7 @@ extension CognitoAuthServiceTests {
         #expect(harness.client.signOutCount == 1)
     }
 
-    /// The load's error goes up as before; the sign-out's own failure gets the one line that explains a later
+    /// The load's error is the one the caller sees; the sign-out's own failure gets the one line that explains a later
     /// launch's silent sign-in.
     @Test func aFailedUserLoadWhosePoolSignOutAlsoFailsIsLogged() async {
         let harness = Harness()

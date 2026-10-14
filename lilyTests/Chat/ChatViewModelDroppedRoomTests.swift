@@ -2,9 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// A room the caller lost. A page that lands after the room left the cache, because the caller was removed from the
-/// group or signed out while the request was in flight, must not bring the room back; and a page the backend refused
-/// because the caller is out of the group drops the group everywhere, not from the cache alone.
+/// A room the caller lost: a page that lands after the room left the cache (the caller removed or signed out meanwhile)
+/// must not bring it back, and a page refused because the caller is out of the group drops the group everywhere.
 @MainActor
 struct ChatViewModelDroppedRoomTests {
     private let group = SportGroup.fixture(id: "g", channelEpoch: 1, role: .member)
@@ -59,8 +58,8 @@ struct ChatViewModelDroppedRoomTests {
         #expect(harness.cache.cachedGroupIDs.isEmpty)
     }
 
-    /// `NOT_A_MEMBER` on the page: Mine (so the screens behind learn of the change), the cache, the dot, the
-    /// subscription and the open room go at once, as they do when a `member_left` names the caller.
+    /// `NOT_A_MEMBER` on a page drops the group everywhere at once (Mine, cache, dot, subscription, open room), as a
+    /// `member_left` naming the caller does.
     @Test func aChatRefusalDropsTheGroupEverywhere() async {
         let (harness, viewModel) = await makeHarnessWithTheRoomCached()
         let version = harness.changes.version

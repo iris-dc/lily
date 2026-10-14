@@ -64,8 +64,8 @@ final class LilyRosterTests: LilyUITestCase {
     }
 
     /// A plain member's long press on a row offers nothing: no menu is attached where the caller has no action, so
-    /// the press is a tap and opens the person's profile (seen on the simulator 2026-10-11); pressed again when the
-    /// runner turned it into a scroll.
+    /// the press is a tap and opens the person's profile. Pressed up to three times, since a slow runner can turn a
+    /// press into a scroll.
     @MainActor
     func testAPlainMemberGetsNoActionsOnTheRoster() {
         tapSignInWithApple()
@@ -129,7 +129,6 @@ final class LilyRosterTests: LilyUITestCase {
 
     // MARK: - Helpers
 
-    /// Picks the Members segment of the open detail.
     @MainActor
     private func openMembers() {
         let picker = app.segmentedControls["group-section"]
@@ -137,8 +136,7 @@ final class LilyRosterTests: LilyUITestCase {
         picker.buttons["Members"].tap()
     }
 
-    /// Long-presses `row` until its menu offers `item`, up to three times: the GitHub runner has turned one press into
-    /// a scroll (2026-10-09).
+    /// Long-presses `row` until its menu offers `item`, up to three times: a slow runner can turn one press into a scroll.
     @MainActor
     private func openMenu(on row: XCUIElement, until item: XCUIElement) {
         scrollUntilHittable(row)

@@ -83,7 +83,7 @@ final class LilyIPadTests: LilyUITestCase {
     }
 
     /// Home on a regular width draws the caller's groups as tiles, each captioned with its place and the distance from
-    /// the mock position (the games section's position; Home never asked for one of its own before).
+    /// the mock position.
     @MainActor
     func testHomeTilesShowTheDistanceToEachGroup() {
         tapSignInWithApple()

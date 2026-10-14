@@ -3,8 +3,7 @@ import Testing
 
 @MainActor
 struct RemoteTournamentInviteRepositoryTests {
-    /// The two entry codes this route re-reads as invite refusals, and its fallback: the shared mapping is proved
-    /// once, in `SendFailingWithTests` and `BackendErrorCodeTests.everyCodeMapsToItsCase`.
+    /// The two codes this route reads as invite refusals and one that falls to its fallback; the rest keep the shared mapping.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
         ("ALREADY_ENTERED", .inviteeAlreadyEntered), ("FORBIDDEN", .cannotInviteToTournament),
         ("VALIDATION_FAILED", .inviteUnavailable),

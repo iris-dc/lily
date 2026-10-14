@@ -25,8 +25,7 @@ final class TermsViewModel {
     var privacyURL: URL { AppConfig.Moderation.privacyURL }
     var supportURL: URL { AppConfig.Moderation.supportURL }
 
-    /// Drops a second tap while one accept is in flight. `MeStore.acceptTerms` reports a failure to the popup and logs
-    /// the success, so this only brackets `isAccepting`.
+    /// `MeStore.acceptTerms` reports a failure to the popup and logs a success itself, so this only brackets `isAccepting`.
     func accept() async {
         guard !isAccepting else { return }
         isAccepting = true

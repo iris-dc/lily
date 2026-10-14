@@ -4,10 +4,9 @@ import Foundation
 /// after `AppConfig.Chat.mockEchoDelay`, and, when asked (`-mock-chat-replies`), rooms of `mockLongRoomMessages`
 /// rows and a fixture member who answers after `mockAutoReplyDelay`. A clear moves the caller's floor past every
 /// stored row (`floors`), and hides a conversation from Mine until any new line, the caller's included, brings it back.
-/// Every id minted here (a send, a reply, a floor) is `MockChatFixtures.sentMessageID` in its room's own id space, so
-/// it sorts after the room's fixture rows and after every earlier one of the run, as the backend's ULIDs do; pages,
-/// floors and the stores compare ids as strings within a room. Attachments live in `MockAttachmentStore`
-/// (`MockChatRepository+Attachments.swift`).
+/// Every id minted here (a send, a reply, a floor) comes from `MockChatFixtures.sentMessageID`, so it sorts after the
+/// room's fixture rows and after every earlier id of the run, as the backend's ULIDs do: pages, floors and the stores
+/// compare ids as strings. Attachments live in `MockAttachmentStore` (`MockChatRepository+Attachments.swift`).
 final class MockChatRepository: ChatRepository {
     /// Stored state is internal, not private, so `MockChatRepository+Attachments.swift` can reach it.
     var rooms: [String: [ChatMessage]] = [:]
@@ -113,10 +112,9 @@ final class MockChatRepository: ChatRepository {
     }
 
     /// Like the backend: the caller's floor moves to now, so every row stored so far drops out of their pages while
-    /// everyone else keeps it, and parks the caller's read marker at the floor (the backend reads unread against the
-    /// later of the marker and the floor), so the room reads as read on the next Mine load, a clear from the Chats
-    /// row's menu on a room never opened included; a conversation also leaves Mine until a new line (either side's)
-    /// brings it back.
+    /// everyone else keeps it; the read marker is parked at the floor (the backend judges unread against the later of
+    /// the two), so a room cleared from the Chats row's menu reads as read on the next Mine load even if it was never
+    /// opened; a conversation also leaves Mine until a new line from either side brings it back.
     func clearHistory(groupID: String) async throws -> ClearedHistory {
         let (group, _) = try await room(groupID)
         let floor = nextID(in: groupID)

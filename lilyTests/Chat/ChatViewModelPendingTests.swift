@@ -2,9 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The optimistic bubbles: whichever of the answer, the live echo or a catch-up brings the stored message, the bubble's
-/// files seed the cache before the bubble goes; a discarded bubble takes its files with it; Retry finds a bubble by its
-/// client id and sends the bubble's own draft.
+/// The optimistic bubbles: the bubble's files seed the cache before the bubble goes, whichever of the answer, the live
+/// echo or a catch-up brings the stored message; a discarded bubble takes its files with it.
 @MainActor
 struct ChatViewModelPendingTests {
     private let group = SportGroup.fixture(id: "g", channelEpoch: 1, role: .member)
@@ -87,9 +86,8 @@ struct ChatViewModelPendingTests {
         #expect(files.allSatisfy { !FileManager.default.fileExists(atPath: $0.path()) })
     }
 
-    /// The view hands Retry the bubble it drew, which still quotes the original after `REPLY_TARGET_NOT_FOUND` stripped
-    /// the stored bubble's quote; the stale copy still names the bubble by its client id, and the stored bubble's plain
-    /// draft is what goes out, not the copy's.
+    /// The view hands Retry the bubble it drew, a stale copy that still quotes the original after `REPLY_TARGET_NOT_FOUND`
+    /// stripped the stored bubble's quote; the client id finds the stored bubble, and its plain draft is what goes out.
     @Test func retryHandedAStaleCopySendsTheStoredBubblesDraft() async throws {
         let (harness, viewModel) = await makeOpenChat()
         viewModel.draft.replyTo = ReplyQuote(quoting: first, senderName: "Marta")

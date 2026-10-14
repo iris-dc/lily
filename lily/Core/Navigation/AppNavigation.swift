@@ -84,9 +84,8 @@ final class AppNavigation: SessionObserver {
         state.isSignedIn ? .home : .explore
     }
 
-    /// A screen a notification or the inbox asked for lands on the Chats stack, where the inbox lives, and on Home
-    /// while chat is switched off, so the push still lands somewhere. The one place that fallback is spelled for
-    /// `EventOpener` and `TournamentOpener`.
+    /// A screen a notification or the inbox asked for lands on the Chats stack, where the inbox lives, or on Home while
+    /// chat is switched off, so the push still lands somewhere.
     func openFromNotification(_ destination: some Hashable) {
         if AppConfig.FeatureFlags.chat {
             openInChat(destination)

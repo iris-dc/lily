@@ -1,8 +1,8 @@
 import Foundation
 
-/// The non-Swift fixtures of the test bundle (`lilyTests/Fixtures`, copied in by the synchronized group, which has
-/// flattened the `pairings/` folder, hence the root lookup first). Swift Testing suites are structs, so the private class
-/// carries the bundle.
+/// The non-Swift fixtures of the test bundle (`lilyTests/Fixtures`). The synchronized group copies them in flat, so a
+/// file from a subfolder is looked up at the root first; Swift Testing suites are structs, so a private class carries
+/// the bundle.
 enum TestFixtureFiles {
     private final class BundleToken {}
 

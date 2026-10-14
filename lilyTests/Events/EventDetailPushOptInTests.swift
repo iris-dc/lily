@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The reminder prompt is bought by a join alone: it comes once, after the control is released, and never after a
-/// leave, a refusal or an unknown outcome whose refetch shows the caller still out.
+/// Only a join that landed earns the reminder prompt, once, after the control is released.
 @MainActor
 struct EventDetailPushOptInTests {
     private let spy = SpyPushOptIn()
@@ -44,7 +43,6 @@ struct EventDetailPushOptInTests {
         #expect(spy.offerCount == 0)
     }
 
-    /// The refetch still shows the caller out: the popup stays, and there is no game to be reminded of.
     @Test func aJoinWhoseOutcomeIsUnknownAndDidNotLandNeverOffersReminders() async {
         let harness = makeHarness()
         harness.repository.participationError = AppError.network

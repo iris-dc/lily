@@ -1,10 +1,9 @@
 import SwiftUI
 
-/// The pictures and videos of one message over black, paged in the gallery's order from the tapped one, so the pictures
-/// behind a "+N" tile are a swipe away: a picture page zooms (`ImageViewerPage`), a video page plays only while it is
-/// the one on screen (`VideoPlayerPage`); files stay cards that open in QuickLook. Close, the "n / m" position and
-/// Share (of the picture on screen, once it loaded) sit in glass at the top. A container for the UI tests
-/// (`attachment-viewer`), so Close keeps its own identifier.
+/// One message's pictures and videos over black, paged from the tapped one in the gallery's order, so the ones behind a
+/// "+N" tile are a swipe away; files stay cards that open in QuickLook. A picture page zooms (`ImageViewerPage`), a
+/// video page plays only while it is on screen (`VideoPlayerPage`); Close, the "n / m" position and Share sit in glass
+/// at the top. An accessibility container (`attachment-viewer`), so Close keeps its own identifier.
 struct AttachmentViewerSheet: View {
     let selection: AttachmentSelection
     let loader: AttachmentLoader
@@ -89,10 +88,9 @@ struct AttachmentViewerSheet: View {
     }
 }
 
-/// The pictures the pages loaded, by attachment id, so Share offers the one on screen. A reference the pages write
-/// and `ShareControl` alone reads, so a picture loading as its page comes on screen re-renders that control and never
-/// the pager: a `TabView` re-rendered while its page controller settled was seen stuck a third of the way between two
-/// pictures (2026-10-13).
+/// The pictures the pages loaded, by attachment id, so Share offers the one on screen. A reference that the pages write
+/// and only `ShareControl` reads, so a picture finishing its load re-renders that control and never the pager: a
+/// `TabView` re-rendered while its page controller is still settling can stick between two pages.
 @Observable @MainActor
 private final class LoadedPictures {
     var byID: [String: UIImage] = [:]

@@ -64,8 +64,8 @@ extension AttachmentComposerModel {
         add(fileAt: url)
     }
 
-    /// The files importer failed before it named a file; nothing is shown, and the log says why by domain and code
-    /// alone, because a file error's description carries the file's name.
+    /// The files importer failed before it named a file; nothing is shown. The log carries domain and code alone,
+    /// because a file error's description names the file.
     func noteFileImportFailure(_ error: any Error) {
         let failure = error as NSError
         logger.warning(.chat, "The files importer failed: \(failure.domain) \(failure.code)")

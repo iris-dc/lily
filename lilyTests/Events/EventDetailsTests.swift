@@ -33,8 +33,8 @@ struct EventDetailsTests {
         #expect(Price.symbol(for: "PLN", locale: Locale(identifier: "pl_PL")) == "zł")
     }
 
-    /// A code the locale cannot name shows as itself; ISO's own "no currency" code XXX is named, so it is no test of
-    /// the fallback, only the contrast.
+    /// A code the locale cannot name shows as itself. ISO's own "no currency" code XXX is named, so only ZZZ exercises
+    /// the fallback.
     @Test func anUnassignedCurrencyCodeNamesItself() {
         #expect(Price.name(for: "ZZZ", locale: us) == "ZZZ")
         #expect(Price.name(for: "XXX", locale: us) == "Unknown Currency")
@@ -76,8 +76,8 @@ struct EventDetailsTests {
         }
     }
 
-    /// A separator of another locale is refused, never read as a grouping one: en_US "5,50" was 550 and a French app
-    /// on an en_CA device turned "7.50" into 750 under the lenient strategy.
+    /// A separator of another locale is refused, never read as a grouping one: a lenient parse makes en_US "5,50" into
+    /// 550, and "7.50" into 750 for a French app on an en_CA device.
     @Test func aForeignSeparatorIsNeverAHundredfold() {
         let frenchCanada = Locale(identifier: "fr_CA")
         #expect(Price.parseAmount("5,50", locale: us) == nil)

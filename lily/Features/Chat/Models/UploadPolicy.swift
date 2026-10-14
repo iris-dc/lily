@@ -17,8 +17,8 @@ nonisolated enum UploadPolicy {
         guard allows(request.contentType, for: request.kind) else { throw AppError.attachmentTypeNotAllowed }
     }
 
-    /// Images and videos are on their lists; a file may be anything. The device never asks for a ticket of a kind it
-    /// does not know, and the backend would refuse one.
+    /// Images and videos are on their lists, a file may be anything, and a kind this build does not know is refused as
+    /// the backend would.
     static func allows(_ contentType: String, for kind: AttachmentKind) -> Bool {
         switch kind {
         case .image: AppConfig.Chat.Attachments.imageContentTypes.contains(contentType)

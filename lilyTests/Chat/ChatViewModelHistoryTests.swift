@@ -8,7 +8,6 @@ import Testing
 struct ChatViewModelHistoryTests {
     private let group = SportGroup.fixture(id: "g", channelEpoch: 1, role: .member)
 
-    /// A connected controller, the room cached as given and the chat open.
     private func makeOpenChat(room: ChatRoomState) async -> (RealtimeHarness, ChatViewModel) {
         let harness = RealtimeHarness()
         harness.groups.result = .success([group])
@@ -31,7 +30,6 @@ struct ChatViewModelHistoryTests {
         indices.map { .fixture(id: String(format: "m%04d", $0)) }
     }
 
-    /// The request for the page before "m0001" ("m0000" alone) is held in flight; the load to await comes back.
     private func holdOlderPage(of viewModel: ChatViewModel, in harness: RealtimeHarness) async -> Task<Bool, Never> {
         harness.chat.olderPages = [.fixture(messages(0...0), hasMore: true)]
         harness.chat.holdsRequests = true

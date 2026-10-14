@@ -1,15 +1,12 @@
 import Foundation
 import Observation
 
-/// What the system rows of one room show and open: the game behind an `event_created` row and the tournament behind a
-/// tournament note (the wire carries ids, and for a result or a winner the server-rendered text; the title of a game and
-/// the format of a tournament are fetched once per screen). Observable because a row (`SystemMessageRow`) re-renders
-/// when the game or tournament behind it arrives; held by `ChatViewModel` as one object.
+/// What the system rows of one room show and open: the wire carries ids (plus the server-rendered text of a result or a
+/// winner), so a game's title and a started tournament's format are fetched once per screen. Observable so a row
+/// re-renders when the game or tournament behind it arrives.
 @Observable
 final class SystemRowContent {
-    /// The repositories behind the rows and the change counters a live row bumps.
     let links: SystemRowLinks
-    /// The games and tournaments fetched once each, or known to be gone.
     private(set) var linked = LinkedContent()
     private let groupID: String
     private let logger: any Logging
@@ -38,9 +35,8 @@ final class SystemRowContent {
         }
     }
 
-    /// Fetches what a system row needs to word itself (a game's title, a started tournament's format); quiet when it
-    /// cannot, the row keeps its fallback. One the backend says is gone is never asked for again; a transient failure
-    /// is asked again the next time the row appears.
+    /// Fetches what a row needs to word itself (a game's title, a started tournament's format). Quiet on failure: the
+    /// row keeps its fallback, a 404 is never asked again, a transient failure is retried the next time the row appears.
     func load(for message: ChatMessage) async {
         if let eventID = message.eventId, linked.needsEvent(eventID) {
             if case .failure(let error) = await fetchEvent(id: eventID), !AppError.isCancellation(error) {
@@ -53,9 +49,9 @@ final class SystemRowContent {
         }
     }
 
-    /// Where a row leads: `.success(nil)` for a row that opens nothing (a text row); a tournament note needs no fetch
-    /// (the room is the tournament, `roomName` names it until the detail loaded) and carries the match the row names;
-    /// a game is fetched, and a failure is answered, never reported, so the room decides what the caller sees.
+    /// Where a row leads, `.success(nil)` when nowhere. A tournament note needs no fetch: the room is the tournament and
+    /// `roomName` names it until the detail loads. A game is fetched; a failure is answered, not reported, so the room
+    /// decides what the caller sees.
     func destination(for message: ChatMessage, roomName: String) async -> Result<SystemRowDestination?, any Error> {
         if message.kind.isTournamentNote, let tournamentID = message.tournamentId {
             let name = linked.tournaments[tournamentID]?.name ?? roomName
@@ -68,7 +64,6 @@ final class SystemRowContent {
         }
     }
 
-    /// A live row arrived: the lists behind the chat reload for its kind (see `SystemRowLinks.recordChange(for:)`).
     func recordChange(for kind: MessageKind) {
         links.recordChange(for: kind)
     }
@@ -103,12 +98,11 @@ final class SystemRowContent {
 struct LinkedContent {
     var events: [String: SportEvent] = [:]
     var tournaments: [String: Tournament] = [:]
-    /// Ids the backend answered not found for: a system row's load asks for them no more (a deleted game earned a GET
-    /// and a warning on every scroll-in of its row), while a transient failure leaves the row to ask again.
+    /// Ids the backend answered not found for, so a deleted game's row costs no GET and no warning on every scroll-in;
+    /// a transient failure leaves the row to ask again.
     var unavailableEventIDs: Set<String> = []
     var unavailableTournamentIDs: Set<String> = []
 
-    /// Whether a row's load should ask for the game: not known yet and not known to be gone.
     func needsEvent(_ id: String) -> Bool {
         events[id] == nil && !unavailableEventIDs.contains(id)
     }

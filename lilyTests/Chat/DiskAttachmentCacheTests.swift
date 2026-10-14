@@ -2,9 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The on-disk cache in directories of its own per test (the cache and the preview copies, so no test touches the
-/// process-wide preview folder): files keyed by id and variant, the least recently used out first once over the budget,
-/// a hit counting as a use, and nothing left after the session ends.
+/// The on-disk cache in directories of its own per test, never the process-wide preview folder: files keyed by id and
+/// variant, the least recently used out first once over the budget, a hit counting as a use, nothing left after the session.
 @MainActor
 struct DiskAttachmentCacheTests {
     private let directory = FileManager.default.temporaryDirectory.appending(path: "attachment-cache-\(UUID().uuidString)")

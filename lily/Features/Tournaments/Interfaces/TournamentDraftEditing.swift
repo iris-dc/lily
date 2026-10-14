@@ -22,8 +22,7 @@ protocol TournamentDraftEditing: DraftSubmitting where Issue == TournamentDraft.
 }
 
 extension TournamentDraftEditing {
-    /// An edit offers no group choice: the tournament's group cannot change, so there is nothing to list and nothing
-    /// to explain; only a create fills these.
+    /// Only a create fills these: an edit offers no group choice, since the tournament's group cannot change.
     var eligibleGroups: [EventGroupRef] { [] }
 
     var explainsNoEligibleGroups: Bool { false }

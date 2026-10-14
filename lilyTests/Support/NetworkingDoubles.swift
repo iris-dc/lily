@@ -12,9 +12,8 @@ struct RecordedRequest {
 }
 
 /// Scripted `APIClient`: records every request and answers from a queue of responses, or throws `error`; while it
-/// `holdsRequests`, a recorded request is parked until `releaseRequests()`, like the other fakes' holds.
-/// A cancelled task gets `CancellationError` before anything is recorded, as it would from `URLSession`, and a parked
-/// request whose task was cancelled meanwhile gets it once released.
+/// `holdsRequests`, a recorded request is parked until `releaseRequests()`. A cancelled task gets `CancellationError`
+/// before anything is recorded, as it would from `URLSession`; a parked one cancelled meanwhile gets it once released.
 @MainActor
 final class FakeAPIClient: APIClient, HoldsRequests {
     /// Dequeued one per `send`; each must have the request's `Response` type.
@@ -96,8 +95,7 @@ final class StubURLProtocol: URLProtocol {
 }
 
 /// A stubbed backend on a host of its own. Records what it received, with the body materialised into `httpBody`.
-/// The handler goes with the backend: the host is unregistered when the test's last reference is gone, so the
-/// backends built over a run do not stay registered for the process lifetime.
+/// `deinit` unregisters the host, so a run's backends do not pile up in the process-wide handler registry.
 final class StubBackend: Sendable {
     let host: String
     let baseURL: URL

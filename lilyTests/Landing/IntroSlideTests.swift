@@ -37,7 +37,6 @@ struct IntroSlideTests {
         #expect(IntroContent(events: [full, open]).events == [full, open])
     }
 
-    /// The Explore miniature shows as many cards as the live preview it stands in for.
     @Test func theMiniatureShowsAsManyCardsAsTheLivePreview() {
         #expect(IntroFixtures.events(now: .now).count == AppConfig.Events.landingPreviewCount)
     }

@@ -2,8 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The read marker of one room, apart from the screen: the dot goes the moment a line is read, the backend hears at
-/// once on opening and leaving and at the interval's pace in between, and a refusal is bookkeeping, never the popup.
+/// The dot goes the moment a line is read; the backend hears at once on opening and leaving and at the interval's pace
+/// in between, and a refusal is bookkeeping, never the popup.
 @MainActor
 struct ReadMarkerFlusherTests {
     private let interval = AppConfig.Chat.readMarkFlushInterval
@@ -60,7 +60,6 @@ struct ReadMarkerFlusherTests {
         #expect(!unread.hasUnread(groupID: "g"))
     }
 
-    /// Lines read within the interval of the last request share one flush, which carries whatever is newest when it goes.
     @Test func aReadWithinTheIntervalWaitsAndOneFlushCarriesTheNewestID() async {
         seedRoom(with: "m1")
         await flusher.opened()
@@ -117,8 +116,7 @@ struct ReadMarkerFlusherTests {
         #expect(chat.readMarks.count == 2, "the waiting attempt went with the flush and sends nothing more")
     }
 
-    /// A refused marker gives its id back for the next attempt and keeps the interval's pace: the backend that refused
-    /// is not asked again at once, and nothing reaches the room's epoch.
+    /// A refused flush keeps the interval's pace, so a backend that refused is not asked again at once.
     @Test func aFailedFlushKeepsTheIntervalAndTheIDForTheNextAttempt() async {
         seedRoom(with: "m1")
         chat.readMarkerError = AppError.network
@@ -168,12 +166,10 @@ struct ReadMarkerFlusherTests {
         #expect(sleep.requested.isEmpty)
     }
 
-    /// Room "g" as a cache holds it after its first page, ending at `id`.
     private func seedRoom(with id: String) {
         cache.store(.fixture(groupID: "g", messages: [.fixture(id: id, groupID: "g")]), for: "g")
     }
 
-    /// A line landing in the cached room, as a live envelope or a page would put it there.
     private func insert(_ id: String) {
         cache.update(groupID: "g") { $0.insert(.fixture(id: id, groupID: "g")) }
     }

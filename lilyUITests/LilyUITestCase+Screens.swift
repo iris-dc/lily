@@ -42,8 +42,8 @@ extension LilyUITestCase {
         element.tap()
     }
 
-    /// Opens the card titled `title` from Home. `@nonobjc` because the two overloads would otherwise share the
-    /// Objective-C selector `openFromHome:` (the `relaunch(appending:)` clash again); helpers need no selector.
+    /// Opens the card titled `title` from Home. `@nonobjc`: the two overloads would otherwise share the Objective-C
+    /// selector `openFromHome:`, and a helper needs no selector.
     @MainActor
     @nonobjc
     func openFromHome(_ title: String) {

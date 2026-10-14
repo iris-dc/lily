@@ -2,12 +2,10 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Laurel B3's strict JSON (`LaurelTournamentInboxJSON`) decoded with the app's conventions: the two inbox kinds, the
-/// two accept answers (no `group` key in either), the invite routes and the room events; plus what the screens read
-/// off them.
+/// Laurel's strict JSON (`LaurelTournamentInboxJSON`) decoded with the app's conventions, and what the screens read off it.
 struct TournamentInboxContractTests {
     private typealias Laurel = LaurelTournamentInboxJSON
-    /// 2026-09-21, before the B3 invite expires (2026-10-09), so it is still open.
+    /// Before the fixture invite expires (2026-10-09), so it is still open.
     private static let now = Date(timeIntervalSince1970: 1_790_000_000)
 
     @Test func theTournamentInviteDecodesEveryField() throws {
@@ -130,7 +128,6 @@ struct TournamentInboxContractTests {
         #expect(InboxItem.matchReminder().caption == "Match reminder · Tuesday Table Tennis")
     }
 
-    /// The match reminder's line is the shared time caption the game reminder draws, judged against the given `now`.
     @Test func theMatchReminderCaptionIsTheSharedTimeCaption() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!

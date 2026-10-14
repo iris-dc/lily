@@ -192,8 +192,6 @@ extension AppDependencies {
     var blocks: BlockListStore { groups.blocks }
     var groupChanges: ChangeTracker { groups.groupChanges }
 
-    /// Discover searches the group repository around the shared location service's position and searches again when
-    /// `groupChanges` moved.
     func makeDiscoverGroupsViewModel() -> DiscoverGroupsViewModel {
         DiscoverGroupsViewModel(changes: groupChanges,
                                 repository: groupRepository,

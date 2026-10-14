@@ -13,7 +13,6 @@ struct AttachmentCapsTests {
         #expect(AttachmentCaps.direct.maxBytes(for: .file) == 5 * 1024 * 1024)
     }
 
-    /// A kind this build does not know is capped like a file, in a group and in a conversation alike.
     @Test func anUnknownKindIsCappedLikeAFile() {
         #expect(AttachmentCaps.group.maxBytes(for: .unknown("audio")) == AttachmentCaps.group.maxBytes(for: .file))
         #expect(AttachmentCaps.direct.maxBytes(for: .unknown("audio")) == 5 * 1024 * 1024)

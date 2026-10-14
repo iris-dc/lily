@@ -1,10 +1,10 @@
 import Foundation
 import Observation
 
-/// The unsent and failed messages of every room, kept while the screen is away. Every open of a room builds a new
-/// `ChatViewModel`, so a send that fails after Back is still a failed bubble with Retry on the next open, not a mark on
-/// a screen nobody shows. A room's are discarded when its history is cleared, everyone's on sign-out (one account's
-/// unsent pictures must not stay on the device for the next). The view model logs the send failures itself.
+/// The unsent and failed messages of every room, kept while the screen is away: every open builds a new `ChatViewModel`,
+/// so a send that fails after Back is still a failed bubble with Retry on the next open. A room's are discarded when its
+/// history is cleared, everyone's on sign-out, because one account's unsent pictures must not stay on the device for the
+/// next.
 @Observable
 final class ChatOutbox: SessionObserver {
     private var rooms: [String: [PendingMessage]] = [:]

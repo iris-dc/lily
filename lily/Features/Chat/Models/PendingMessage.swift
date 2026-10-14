@@ -38,7 +38,6 @@ nonisolated struct PendingMessage: Identifiable, Hashable, Sendable {
         return draft
     }
 
-    /// Removes the bubble's files from the device: a bubble discarded or cleared away keeps nothing behind in tmp.
     func deleteLocalFiles() {
         attachments.forEach { $0.deleteLocalFiles() }
     }

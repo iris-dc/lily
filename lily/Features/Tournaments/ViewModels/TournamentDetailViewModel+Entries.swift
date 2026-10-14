@@ -1,15 +1,11 @@
 import Foundation
 
-/// Entering and leaving from the detail. Every write answers an entry alone, so the detail is fetched again after it
-/// (`load(reportingFailures: false)`): the backend's count and the caller's entry are the authority, the lists behind
-/// learn of the change through `onChange`, a refetch that fails leaves a change recorded for the view's task to reload
-/// on, and one that finds nothing marks the tournament gone. Entering and leaving also move the caller's room (the
-/// backend joins or leaves it in the same transaction), so Mine is reloaded and the Chats tab lists or drops the room at
-/// once, as an accepted invite does. A join also offers the reminder permission, as a join of a game does.
+/// Entering and leaving from the detail. Every write answers an entry alone, so the detail is fetched again
+/// (`load(reportingFailures: false)`): the backend's count and the caller's entry are the authority. The backend moves
+/// the caller's room in the same transaction, so Mine is reloaded and the Chats tab lists or drops the room at once.
 extension TournamentDetailViewModel {
-    /// Whether the caller may join this team: they may still enter (signed in, not in, registration open, a team
-    /// tournament) and the team has a seat. The tournament's own entry count does not matter, because joining a team
-    /// adds no entry (the backend's `joinTeamRoot` checks registration and not-entered only).
+    /// Whether the caller may join this team: they may still enter and the team has a seat. A full tournament is no bar:
+    /// joining a team adds no entry, and the backend's `joinTeamRoot` checks registration and not-entered only.
     func canJoin(_ entry: TournamentEntry) -> Bool {
         guard permissions.canJoinTeams, let tournament else { return false }
         return entry.isRegistered && !entry.isFull(teamSize: tournament.teamSize)
@@ -57,8 +53,7 @@ extension TournamentDetailViewModel {
             await load(reportingFailures: false)
             await myGroups.reload()
         }
-        // The control is released before the permission prompt, as `EventDetailViewModel.update` does, so Join never
-        // spins behind the alert through the token wait and the device POST.
+        // Outside `perform`, so Join is not left spinning behind the system prompt through the token wait and the device POST.
         if entered { await pushOptIn.offerReminders() }
     }
 }

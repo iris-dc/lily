@@ -44,11 +44,32 @@ struct TournamentDraftTests {
         #expect(draft.issues(now: Self.now).isEmpty)
         draft.maxEntries = 65
         #expect(draft.issues(now: Self.now) == [.maxEntriesOutOfRange])
-        #expect(TournamentDraft.Rules.creation.entriesRange(for: .roundRobin) == 2...12)
+        #expect(TournamentDraft.Rules.creation.entriesRange(for: .roundRobin) == 3...12)
         #expect(TournamentDraft.Rules.editing(entryCount: 5).entriesRange(for: .singleElimination) == 5...64)
     }
 
-    /// A format change pulls the entries back under the new cap and raises nothing: switching back keeps the number.
+    @Test func aRoundRobinDraftNeedsAtLeastThreeEntries() {
+        var draft = TournamentDraft.fixture(now: Self.now)
+        draft.format = .roundRobin
+        draft.maxEntries = 2
+        #expect(draft.issues(now: Self.now) == [.maxEntriesOutOfRange])
+        let hint = AppBranding.Tournaments.Create.message(for: .maxEntriesOutOfRange, format: .roundRobin)
+        #expect(hint.contains("3") && hint.contains("12"), "the hint names the round robin's bounds: \(hint)")
+        draft.format = .singleElimination
+        #expect(draft.issues(now: Self.now).isEmpty, "a bracket starts at two")
+        #expect(TournamentDraft.Rules.editing(entryCount: 1).entriesRange(for: .roundRobin) == 3...12)
+        #expect(TournamentDraft.Rules.editing(entryCount: 5).entriesRange(for: .roundRobin) == 5...12)
+    }
+
+    @Test func switchingToARoundRobinRaisesTwoEntriesToItsFloor() {
+        var draft = TournamentDraft.fixture(now: Self.now)
+        draft.maxEntries = 2
+        draft.select(format: .roundRobin)
+        #expect(draft.maxEntries == 3 && !draft.issues(now: Self.now).contains(.maxEntriesOutOfRange))
+        draft.select(format: .singleElimination)
+        #expect(draft.maxEntries == 3, "switching back lowers nothing")
+    }
+
     @Test func changingTheFormatClampsTheEntries() {
         var draft = TournamentDraft.fixture(now: Self.now)
         draft.maxEntries = 64

@@ -38,8 +38,7 @@ struct ChatHistoryClearerTests {
         #expect(!cacheLines.contains("Room cache dropped for group g (history cleared)"), "seated at the floor, never dropped")
     }
 
-    /// A room whose newest line is below the floor has nothing to fetch after a clear; the same call before the clear
-    /// does fetch, so the skip is the floor's doing.
+    /// After a clear the watermark sits at the floor, so a group whose newest line is below it has nothing to catch up.
     @Test func aClearedRoomKeepsItsWatermark() async {
         harness.groups.result = .success([group])
         await harness.store.reload()
@@ -118,8 +117,7 @@ struct ChatHistoryClearerTests {
         #expect(harness.termsRequiredCount == 1, "a terms gate raises the terms sheet as on the groups screens")
     }
 
-    /// The terms gate is a refusal the room expects: a warning, never an error, and the terms sheet as on the groups
-    /// screens; `aRefusedClearChangesNothingAndReachesThePopup` keeps a fault at error.
+    /// The terms gate is a refusal the room expects: a warning, never an error, and the terms sheet as on the groups screens.
     @Test func aRefusedClearIsAWarningNotAnError() async {
         await seed(group)
         harness.chat.clearError = AppError.termsRequired
@@ -141,8 +139,8 @@ struct ChatHistoryClearerTests {
         #expect(harness.cache.room(for: "g")?.messages.count == 2)
     }
 
-    /// The verdict `hidden` takes the room off the realtime side with Mine and the cache: the subscription, the open
-    /// room and the known epoch go at once through the controller's one departure, while the connection stays up.
+    /// A `hidden` verdict takes the room off the realtime side too: subscription, open room and known epoch go through the
+    /// controller's one departure while the connection stays up.
     @Test func deletingAConversationUnsubscribesItsRoomAtOnce() async {
         await seed(conversation)
         await harness.connect()
