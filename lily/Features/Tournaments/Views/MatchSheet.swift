@@ -53,7 +53,9 @@ struct MatchSheet: View {
     private func content(_ match: TournamentMatch, actions: MatchActions) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                MatchCell(match: match, viewModel: viewModel, showsDetails: true)
+                if let detail = viewModel.detail {
+                    MatchCell(match: match, detail: detail, showsDetails: true)
+                }
                 if let notice = notice(for: match, actions: actions) {
                     Text(notice)
                         .font(.subheadline)

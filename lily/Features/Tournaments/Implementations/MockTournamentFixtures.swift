@@ -91,7 +91,10 @@ nonisolated enum MockTournamentFixtures {
         return detail.entry(containing: detail.tournament.organizerUserId) == nil ? players + 1 : players
     }
 
-    private static func kickersCup(now: Date) -> TournamentDetail {
+    /// The cup as the mock holds it, organised by the caller; the intro's miniature names a person instead.
+    static func kickersCup(now: Date,
+                           organizerUserID: String = callerMarker,
+                           organizerName: String = AppBranding.Tournaments.Create.mockOrganizerName) -> TournamentDetail {
         let createdAt = now.addingTimeInterval(-kickersCreatedDaysAgo * secondsPerDay)
         let entries = kickersTeams.enumerated().map { index, team in
             TournamentEntry(id: entryID(tournamentID: kickersCupID, index: index),
@@ -118,8 +121,8 @@ nonisolated enum MockTournamentFixtures {
                                     registrationClosesAt: now.addingTimeInterval(kickersDeadlineInDays * secondsPerDay),
                                     location: EventLocation(name: "Görlitzer Park pitch",
                                                             coordinate: coordinate(offset: (0.4, -0.5))),
-                                    organizerUserId: callerMarker,
-                                    organizerName: AppBranding.Tournaments.Create.mockOrganizerName,
+                                    organizerUserId: organizerUserID,
+                                    organizerName: organizerName,
                                     group: MockGroupFixtures.ref(for: MockGroupFixtures.kickersID),
                                     createdAt: createdAt)
         return TournamentDetail(tournament: tournament, entries: entries)

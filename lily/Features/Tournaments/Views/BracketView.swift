@@ -4,7 +4,6 @@ import SwiftUI
 /// edge; a later round's cell is centred on the two cells that feed it. Each cell opens the match sheet.
 struct BracketView: View {
     let detail: TournamentDetail
-    let viewModel: TournamentDetailViewModel
     let onSelect: (TournamentMatch) -> Void
     /// Where the first column starts and the last ends: the detail's margin, or the readable column's edge on a wide
     /// screen, so the bracket lines up with the text above it and still scrolls under both screen edges.
@@ -34,7 +33,7 @@ struct BracketView: View {
         VStack(alignment: .leading, spacing: Layout.bracketCellSpacing) {
             RoundTitle(round: round, rounds: rounds, format: detail.tournament.format)
             ForEach(matches) { match in
-                MatchButton(match: match, viewModel: viewModel, height: Layout.matchCellHeight, onSelect: onSelect)
+                MatchButton(match: match, detail: detail, height: Layout.matchCellHeight, onSelect: onSelect)
                     .frame(height: BracketLayout.slotHeight(round: round,
                                                             cellHeight: Layout.matchCellHeight,
                                                             spacing: Layout.bracketCellSpacing))

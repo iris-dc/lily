@@ -53,9 +53,11 @@ struct LocalizedCatalogTests {
         let english = AppLocale.Context(language: .english)
         #expect(String(localized: "Message (verb)", bundle: english.bundle, locale: english.locale) == "Message")
         #expect(String(localized: "Any (price)", bundle: english.bundle, locale: english.locale) == "Any")
+        #expect(String(localized: "Not allowed (draws)", bundle: english.bundle, locale: english.locale) == "Not allowed")
         let russian = AppLocale.Context(language: .russian)
         #expect(String(localized: "Message (verb)", bundle: russian.bundle, locale: russian.locale) == "Написать")
         #expect(String(localized: "Any (price)", bundle: russian.bundle, locale: russian.locale) == "Любая")
+        #expect(String(localized: "Not allowed (draws)", bundle: russian.bundle, locale: russian.locale) == "Не разрешены")
     }
 
     /// The bare keys are the nouns: "Message" is the composer's placeholder, "Any" the distance menu's neuter.

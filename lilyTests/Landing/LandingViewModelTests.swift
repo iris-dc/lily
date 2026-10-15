@@ -58,11 +58,13 @@ struct LandingViewModelTests {
         let viewModel = makeViewModel(repository, harness: harness)
 
         #expect(viewModel.introContent.events == viewModel.sampleEvents)
+        #expect(viewModel.introContent.tournament == viewModel.sampleTournament)
         #expect(viewModel.sampleEvents.count == AppConfig.Events.landingPreviewCount)
 
         await viewModel.loadPreview()
 
         #expect(viewModel.introContent.events == live)
+        #expect(viewModel.introContent.tournament == viewModel.sampleTournament, "the bracket is always the fixture")
     }
 
     @Test func aFailedPreviewKeepsTheSamplesOnTheSlides() async {
@@ -78,7 +80,7 @@ struct LandingViewModelTests {
 
     @Test func theIntroStartsOnTheFirstSlideWithTheHint() {
         let viewModel = makeViewModel(FakeEventRepository(), harness: SessionHarness())
-        #expect(viewModel.slides == IntroSlide.allCases)
+        #expect(viewModel.slides == IntroSlide.shown())
         #expect(viewModel.currentSlide == .first)
         #expect(viewModel.showsSwipeHint)
     }
@@ -93,9 +95,9 @@ struct LandingViewModelTests {
         #expect(!viewModel.showsSwipeHint)
         #expect(harness.logger.messages(in: .ui, at: .debug).contains { $0.contains("join") })
 
-        viewModel.slideShown(.discover)
+        viewModel.slideShown(.events)
 
-        #expect(viewModel.currentSlide == .discover)
+        #expect(viewModel.currentSlide == .events)
         #expect(!viewModel.showsSwipeHint, "the hint is for the first swipe only")
     }
 

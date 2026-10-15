@@ -224,6 +224,9 @@ nonisolated enum AppConfig {
         /// With the mock events, the first list load fails with a network error and every later one answers, so the
         /// root error popup and the list's failed state can be walked without a backend.
         static let mockEventsFail = "-mock-events-fail"
+        /// Keeps every error popup up until it is dismissed instead of letting it fade after `ErrorPopup.autoDismissDelay`,
+        /// so a UI test on a slow runner finds the popup it provoked rather than the place it just left.
+        static let holdPopups = "-hold-popups"
         /// Takes the next argument as its value, e.g. `-api-base-url http://<mac-name>.local:8080`.
         static let apiBaseURL = "-api-base-url"
         /// An argument with this prefix is a flag, never a value.

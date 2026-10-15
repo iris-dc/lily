@@ -3,32 +3,35 @@ import XCTest
 /// End-to-end smoke tests against the real app in the simulator: landing, Explore, map, filters, joining, creating.
 /// Sign-in flows are in `LilySignInTests`; both share `LilyUITestCase`.
 final class LilySmokeTests: LilyUITestCase {
-    /// The landing is a vertical feed of three slides (what this is, how to join, what else it offers) with the two
-    /// ways in under every one of them.
+    /// The landing is a vertical feed of four slides (the events to find, how to join one, the groups, the tournaments)
+    /// with the two ways in under every one of them.
     @MainActor
-    func testLandingIntroSwipesThroughThreeSlidesAndKeepsTheWaysIn() {
-        XCTAssertTrue(app.staticTexts["Play tonight."].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Find a game near you"].exists)
+    func testLandingIntroSwipesThroughTheSlidesAndKeepsTheWaysIn() {
+        XCTAssertTrue(app.staticTexts["near you."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Explore events"].exists)
         XCTAssertTrue(app.buttons["Sign in"].exists)
 
         // Every slide is in the tree from the start (a plain VStack), so hittability is what tells the page on screen.
         let pager = app.scrollViews["intro-pager"]
         XCTAssertTrue(pager.exists)
-        XCTAssertTrue(app.staticTexts["Play tonight."].isHittable)
-        XCTAssertFalse(app.staticTexts["Join in one tap."].isHittable)
+        XCTAssertTrue(app.staticTexts["near you."].isHittable)
+        XCTAssertFalse(app.staticTexts["in one tap."].isHittable)
         pager.swipeUp()
-        XCTAssertTrue(app.staticTexts["Join in one tap."].wait(for: \.isHittable, toEqual: true, timeout: 5))
-        XCTAssertFalse(app.staticTexts["Play tonight."].isHittable)
-        XCTAssertFalse(app.staticTexts["Bring your people."].isHittable, "one swipe must move one page")
+        XCTAssertTrue(app.staticTexts["in one tap."].wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertFalse(app.staticTexts["near you."].isHittable)
+        XCTAssertFalse(app.staticTexts["or start one."].isHittable, "one swipe must move one page")
         pager.swipeUp()
-        XCTAssertTrue(app.staticTexts["Bring your people."].wait(for: \.isHittable, toEqual: true, timeout: 5))
-        XCTAssertTrue(app.buttons["Find a game near you"].isHittable)
+        XCTAssertTrue(app.staticTexts["or start one."].wait(for: \.isHittable, toEqual: true, timeout: 5))
+        pager.swipeUp()
+        XCTAssertTrue(app.staticTexts["or set one up."].wait(for: \.isHittable, toEqual: true, timeout: 5))
+        XCTAssertFalse(app.staticTexts["or start one."].isHittable)
+        XCTAssertTrue(app.buttons["Explore events"].isHittable)
         XCTAssertTrue(app.buttons["Sign in"].isHittable)
     }
 
     @MainActor
     func testPrimaryActionReachesExploreFeed() {
-        let enter = app.buttons["Find a game near you"]
+        let enter = app.buttons["Explore events"]
         XCTAssertTrue(enter.waitForExistence(timeout: 5))
         enter.tap()
 

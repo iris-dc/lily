@@ -31,6 +31,21 @@ nonisolated struct TournamentDetail: Identifiable, Hashable, Codable, Sendable {
         matches.first { $0.id == id }
     }
 
+    /// One side of a match; `nil` for a side no feeder match has decided yet.
+    func entry(_ entryID: String?) -> TournamentEntry? {
+        entryID.flatMap(entry(id:))
+    }
+
+    /// The name on a cell; a side no feeder match has decided yet reads "TBD".
+    func entryName(_ entryID: String?) -> String {
+        entry(entryID)?.name ?? AppBranding.Tournaments.toBeDecided
+    }
+
+    /// Whether the caller's entry is one side of the match.
+    func isMine(_ match: TournamentMatch) -> Bool {
+        match.contains(entryID: tournament.myEntryId)
+    }
+
     /// The entry the caller is in, from the roster rather than `myEntryId` (the mock's lists carry no caller).
     func entry(containing userID: String?) -> TournamentEntry? {
         entries.first { $0.contains(userID: userID) }
@@ -40,7 +55,7 @@ nonisolated struct TournamentDetail: Identifiable, Hashable, Codable, Sendable {
     /// decided or a match of other people's.
     func opponent(in match: TournamentMatch, of userID: String?) -> TournamentEntry? {
         guard let mine = entry(containing: userID), match.contains(entryID: mine.id) else { return nil }
-        return [match.entryAId, match.entryBId].compactMap { $0.flatMap(entry(id:)) }.first { $0.id != mine.id }
+        return [match.entryAId, match.entryBId].compactMap { entry($0) }.first { $0.id != mine.id }
     }
 
     func replacing(tournament: Tournament) -> TournamentDetail {

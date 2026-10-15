@@ -181,8 +181,40 @@ class LilyUITestCase: XCTestCase {
     @MainActor
     func enter(_ text: String, into field: XCUIElement) {
         if !field.waitForExistence(timeout: 5) { dragUpUntilExists(field) }
-        if !field.hasKeyboardFocus { field.tap() }
+        if !field.hasKeyboardFocus {
+            field.tap()
+            // On the runner the focus arrives after the tap has returned, and a `typeText` before it fails with "Neither
+            // element nor any descendant has keyboard focus"; a tap that scrolled the row instead of focusing it is
+            // repeated once.
+            if !waitForKeyboardFocus(field) {
+                field.tap()
+                XCTAssertTrue(waitForKeyboardFocus(field), "the field must take the keyboard focus before typing")
+            }
+        }
         field.typeText(text)
+    }
+
+    /// Whether `field` takes the keyboard focus within `timeout`; the focus is a private attribute, so it is polled.
+    @MainActor
+    @discardableResult
+    func waitForKeyboardFocus(_ field: XCUIElement, timeout: TimeInterval = 5) -> Bool {
+        let focused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: field)
+        return XCTWaiter().wait(for: [focused], timeout: timeout) == .completed
+    }
+
+    /// Long-presses `row` until its context menu offers `item`, up to three times: the runner turned one press into a
+    /// scroll, and waited longer for the menu than a Mac does (a second press while the menu was still opening found no
+    /// row under it, so each press is given a long wait before the next).
+    @MainActor
+    func openContextMenu(on row: XCUIElement, until item: XCUIElement) {
+        scrollUntilHittable(row)
+        var presses = 0
+        while !item.exists && presses < 3 {
+            row.press(forDuration: 1.2)
+            _ = item.waitForExistence(timeout: 8)
+            presses += 1
+        }
+        XCTAssertTrue(item.exists, "the row's menu must offer the action")
     }
 
     /// Opens the sign-in sheet from whatever screen shows "Sign in": the landing, Home's guest prompt or Profile.

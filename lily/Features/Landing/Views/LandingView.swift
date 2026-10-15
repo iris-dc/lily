@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// First screen: a swipeable intro of three full-page slides (what this is, how to join, what else it offers), each a
-/// framed miniature of a real screen over the aurora, with the two ways into the app pinned under every slide.
+/// First screen: a swipeable intro of full-page slides (the events to find, how to join one, the groups, the
+/// tournaments), each a framed miniature of a real screen over the aurora, with the two ways into the app pinned under
+/// every slide.
 struct LandingView: View {
     @State private var viewModel: LandingViewModel
     @State private var visibleSlide: IntroSlide? = .first
@@ -80,8 +81,8 @@ struct LandingHeadline: View {
 }
 
 /// One headline line, never truncated: on one line at full size when it fits, shrunk to `headlineMinimumScale` when
-/// that is enough ("Real games near you." on the SE's 375 pt), wrapped otherwise (the French and Spanish lines are
-/// half again as wide as the English; a `lineLimit(1)` cut them to "De vrais matchs près de…" on every phone).
+/// that is enough (a line that just overflows the SE's 375 pt), wrapped otherwise (a translation half again as wide
+/// as the English; a bare `lineLimit(1)` cut such lines to "…" on every phone).
 private struct HeadlineLine: View {
     let text: String
     let color: Color

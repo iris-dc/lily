@@ -15,10 +15,13 @@ final class ErrorCenter {
     /// Popup mounts currently on screen, in presentation order. Only the last one draws, so an error raised while a
     /// sheet is up shows once above the sheet instead of twice (again, dimmed, on the root behind it).
     private(set) var presenters: [UUID] = []
+    /// How long a popup stays before it dismisses itself; `nil` keeps it up until the user dismisses it (`-hold-popups`).
+    let autoDismissDelay: Duration?
     private let logger: any Logging
 
-    init(logger: any Logging) {
+    init(logger: any Logging, autoDismissDelay: Duration? = AppConfig.ErrorPopup.autoDismissDelay) {
         self.logger = logger
+        self.autoDismissDelay = autoDismissDelay
     }
 
     /// Every presented error leaves an info line under `.ui`: the fault itself is logged where it happened, at its own

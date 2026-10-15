@@ -16,13 +16,7 @@ extension LilyChatTests {
 
         waitUntilHittableAndStill(kickers)
         let clear = app.buttons["chat-clear"]
-        var presses = 0
-        while !clear.exists && presses < 3 {
-            kickers.press(forDuration: 1)
-            _ = clear.waitForExistence(timeout: 3)
-            presses += 1
-        }
-        XCTAssertTrue(clear.exists, "the row's menu offers Clear chat")
+        openContextMenu(on: kickers, until: clear)
         clear.tap()
         let confirmation = app.sheets.firstMatch
         XCTAssertTrue(confirmation.waitForExistence(timeout: 5), "the confirmation asks first")

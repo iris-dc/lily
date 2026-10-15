@@ -71,7 +71,7 @@ struct IntroSlideView: View {
     }
 
     private func frame(width: CGFloat) -> some View {
-        IntroScreenFrame(fadesBottom: slide == .discover, alignment: slide == .discover ? .top : .bottom, width: width) {
+        IntroScreenFrame(fadesBottom: slide == .events, alignment: slide == .events ? .top : .bottom, width: width) {
             screen
         }
     }
@@ -79,14 +79,16 @@ struct IntroSlideView: View {
     @ViewBuilder
     private var screen: some View {
         switch slide {
-        case .discover:
+        case .events:
             IntroExploreScreen(events: content.events)
         case .join:
             if let event = content.joinEvent {
                 IntroDetailScreen(event: event)
             }
-        case .create:
+        case .groups:
             IntroChatScreen(eventTitle: content.joinEvent?.title ?? "")
+        case .tournaments:
+            IntroTournamentScreen(detail: content.tournament)
         }
     }
 }
@@ -115,6 +117,9 @@ private struct SwipeHint: View {
 #Preview("Slide") {
     ZStack {
         AuroraBackground(intensity: DesignTokens.Aurora.landingIntensity)
-        IntroSlideView(slide: .join, content: IntroContent(events: IntroFixtures.events(now: .now)), showsSwipeHint: false)
+        IntroSlideView(slide: .join,
+                       content: IntroContent(events: IntroFixtures.events(now: .now),
+                                             tournament: IntroFixtures.tournament(now: .now)),
+                       showsSwipeHint: false)
     }
 }

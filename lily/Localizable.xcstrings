@@ -6,7 +6,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Участвуют: %@. Регистрация закроется, и матчи будут составлены."
+            "value": "%@. Регистрация закроется, и будут определены пары соперников."
           }
         },
         "es": {
@@ -286,7 +286,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ побеждает из-за неявки"
+            "value": "Техническая победа: %@"
           }
         },
         "es": {
@@ -409,25 +409,25 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Присоединился %lld"
+                  "value": "Участников: %lld"
                 }
               },
               "few": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Присоединились %lld"
+                  "value": "Участников: %lld"
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Присоединились %lld"
+                  "value": "Участников: %lld"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Присоединились %lld"
+                  "value": "Участников: %lld"
                 }
               }
             }
@@ -2280,7 +2280,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Администратор удалил вас из этой группы."
+            "value": "Администратор исключил вас из группы."
           }
         },
         "es": {
@@ -2486,7 +2486,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Сколько угодно"
+            "value": "Без ограничений"
           }
         },
         "es": {
@@ -2566,7 +2566,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Любой может найти и вступить"
+            "value": "Найти и присоединиться может любой желающий"
           }
         },
         "es": {
@@ -2606,7 +2606,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Когда столько наберётся, присоединяться можно и дальше."
+            "value": "Присоединяться можно и после того, как наберётся нужное число игроков."
           }
         },
         "es": {
@@ -2686,7 +2686,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Что ещё нам стоит знать? (необязательно)"
+            "value": "Хотите что-то добавить? (необязательно)"
           }
         },
         "es": {
@@ -3074,7 +3074,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Сейчас вложения отправить нельзя. Попробуйте позже."
+            "value": "Отправка вложений сейчас недоступна. Попробуйте позже."
           }
         },
         "es": {
@@ -3114,7 +3114,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Назад ко входу"
+            "value": "Вернуться ко входу"
           }
         },
         "es": {
@@ -3234,7 +3234,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заблокировать %@? Вернуться в группу будет нельзя."
+            "value": "Заблокировать %@? Этот участник больше не сможет вернуться в группу."
           }
         },
         "es": {
@@ -3789,42 +3789,522 @@
         }
       }
     },
-    "Bring your people.": {
+    "Find sports events": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Собери своих."
+            "value": "Спортивные события"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reúne a tu gente."
+            "value": "Eventos deportivos"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rassemblez votre équipe."
+            "value": "Trouvez du sport"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Збери своїх."
+            "value": "Спортивні події"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zbierz swoich ludzi."
+            "value": "Wydarzenia sportowe"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Junte a sua gente."
+            "value": "Eventos desportivos"
+          }
+        }
+      }
+    },
+    "near you.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "рядом с вами."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cerca de ti."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "près de vous."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "поруч із тобою."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "w Twojej okolicy."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "perto de si."
+          }
+        }
+      }
+    },
+    "Football, running, padel, yoga and more, set up by people around you. Filter by sport, distance and date, or create your own.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Футбол, бег, падел, йога и не только — события, которые создают люди рядом с вами. Фильтруйте по виду спорта, расстоянию и дате или создайте своё событие."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fútbol, running, pádel, yoga y más, organizados por gente de tu zona. Filtra por deporte, distancia y fecha, o crea el tuyo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Football, course à pied, padel, yoga et bien d’autres, organisés par des gens autour de vous. Filtrez par sport, distance et date, ou créez votre propre événement."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Футбол, біг, падел, йога і не тільки — усе це організовують люди навколо тебе. Фільтруй за видом спорту, відстанню та датою або створи свою подію."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piłka nożna, bieganie, padel, joga i inne, organizowane przez ludzi wokół Ciebie. Filtruj według sportu, odległości i terminu albo utwórz własne."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Futebol, corrida, padel, ioga e outros desportos, organizados por pessoas à sua volta. Filtre por desporto, distância e data, ou crie o seu próprio evento."
+          }
+        }
+      }
+    },
+    "Join an event": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Присоединяйтесь"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Únete a un evento"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Participez"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Приєднуйся до події"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dołącz do wydarzenia"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Participe num evento"
+          }
+        }
+      }
+    },
+    "in one tap.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "в одно касание."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "con un toque."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en un seul geste."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "одним дотиком."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "jednym dotknięciem."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "com um toque."
+          }
+        }
+      }
+    },
+    "See the time, the place, the host and how many have joined. Tap Join and you're in.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сразу видно время, место, организатора и сколько человек уже записалось. Нажмите «Присоединиться» — и вы в игре."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consulta la hora, el lugar, el organizador y cuántos se han apuntado. Toca Unirse y ya estás dentro."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consultez l’heure, le lieu, l’organisateur et le nombre de participants. Touchez Rejoindre et c’est fait."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подивись, коли й де, хто організовує та скільки людей уже приєдналося. Натисни «Приєднатися» — і ти серед учасників."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zobacz termin, miejsce, organizatora i ile osób już dołączyło. Dotknij „Dołącz” i jesteś na liście."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veja a hora, o local, o organizador e quantos já estão inscritos. Toque em Participar e está dentro."
+          }
+        }
+      }
+    },
+    "Join a group": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вступайте в группу"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Únete a un grupo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rejoignez un groupe"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Приєднуйся до групи"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dołącz do grupy"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entre num grupo"
+          }
+        }
+      }
+    },
+    "or start one.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "или создайте свою."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "o crea uno."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ou créez le vôtre."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "або створи свою."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "albo załóż własną."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ou crie um."
+          }
+        }
+      }
+    },
+    "Groups for a sport or a place, public or invite-only, each with its own chat. Members create events together.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Группы по виду спорта или месту, открытые или только по приглашению — у каждой свой чат. Участники вместе создают события."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grupos de un deporte o de un lugar, públicos o solo con invitación, cada uno con su propio chat. Los miembros crean eventos juntos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Des groupes pour un sport ou un lieu, publics ou sur invitation, chacun avec sa propre discussion. Les membres créent des événements ensemble."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Групи за видом спорту чи місцем, відкриті або лише за запрошенням, кожна зі своїм чатом. Учасники разом створюють події."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grupy wokół sportu lub miejsca, publiczne albo tylko na zaproszenie, każda z własnym czatem. Członkowie razem tworzą wydarzenia."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grupos de um desporto ou de um local, públicos ou só por convite, cada um com o seu próprio chat. Os membros criam eventos em conjunto."
+          }
+        }
+      }
+    },
+    "Enter a tournament": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Участвуйте в турнире"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Únete a un torneo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jouez un tournoi"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вступай у турнір"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dołącz do turnieju"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entre num torneio"
+          }
+        }
+      }
+    },
+    "or set one up.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "или создайте свой."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "u organiza uno."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ou organisez-en un."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "або створи свій."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "albo stwórz własny."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ou organize um."
+          }
+        }
+      }
+    },
+    "Knockout or round robin, solo or in teams. Players report results, and the bracket or standings update for everyone.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Олимпийская или круговая система, в одиночку или командами. Игроки сообщают результаты, а сетка или таблица обновляется у всех."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminación directa o todos contra todos, en solitario o por equipos. Los jugadores reportan sus resultados, y el cuadro o la clasificación se actualiza para todos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Élimination directe ou championnat, en solo ou en équipe. Les joueurs déclarent leurs résultats, et le tableau ou le classement se met à jour pour tous."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Олімпійська або кругова система, поодинці чи командами. Гравці повідомляють результати, а сітка або таблиця оновлюється для всіх."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System pucharowy albo każdy z każdym, solo lub w drużynach. Gracze zgłaszają wyniki, a drabinka lub tabela aktualizuje się u wszystkich."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminatórias ou todos contra todos, a solo ou em equipas. Os jogadores reportam os resultados, e o quadro ou a classificação atualiza-se para todos."
+          }
+        }
+      }
+    },
+    "Explore events": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Смотреть события"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explorar eventos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explorer"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переглянути події"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odkryj wydarzenia"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explorar eventos"
           }
         }
       }
@@ -3834,7 +4314,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Пропуск круга"
+            "value": "Без соперника"
           }
         },
         "es": {
@@ -4674,7 +5154,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Скоро"
+            "value": "Скоро будет доступно"
           }
         },
         "es": {
@@ -4954,7 +5434,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Копировать"
+            "value": "Скопировать"
           }
         },
         "es": {
@@ -5274,7 +5754,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не удалось загрузить людей"
+            "value": "Не удалось загрузить список"
           }
         },
         "es": {
@@ -5434,7 +5914,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не удалось загрузить ваши игры. Потяните вниз, чтобы повторить."
+            "value": "Не удалось загрузить игры. Потяните вниз, чтобы повторить."
           }
         },
         "es": {
@@ -5474,7 +5954,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не удалось загрузить ваши группы и игры"
+            "value": "Не удалось загрузить группы и игры"
           }
         },
         "es": {
@@ -5514,7 +5994,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не удалось загрузить ваши группы. Потяните вниз, чтобы повторить."
+            "value": "Не удалось загрузить группы. Потяните вниз, чтобы повторить."
           }
         },
         "es": {
@@ -5594,7 +6074,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не удалось загрузить ваши турниры. Потяните вниз, чтобы повторить."
+            "value": "Не удалось загрузить турниры. Потяните вниз, чтобы повторить."
           }
         },
         "es": {
@@ -5794,7 +6274,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не удалось начать беседу"
+            "value": "Не удалось начать чат"
           }
         },
         "es": {
@@ -5914,7 +6394,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не удалось обновить ваше место"
+            "value": "Не удалось изменить участие"
           }
         },
         "es": {
@@ -6714,7 +7194,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Личное сообщение"
+            "value": "Личная переписка"
           }
         },
         "es": {
@@ -6754,7 +7234,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Найти"
+            "value": "Поиск"
           }
         },
         "es": {
@@ -6794,7 +7274,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Найти группы"
+            "value": "Поиск групп"
           }
         },
         "es": {
@@ -6834,7 +7314,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Найти турниры"
+            "value": "Все турниры"
           }
         },
         "es": {
@@ -7074,7 +7554,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Для расстояния нужна геопозиция"
+            "value": "Для фильтра по расстоянию нужна геопозиция"
           }
         },
         "es": {
@@ -7554,7 +8034,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Укажите цену не более чем с двумя знаками после запятой"
+            "value": "Цена: не больше двух знаков после запятой"
           }
         },
         "es": {
@@ -7674,7 +8154,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Сначала вступите в турнир или попросите организатора отправить приглашение."
+            "value": "Сначала зарегистрируйтесь в турнире или попросите организатора отправить приглашение."
           }
         },
         "es": {
@@ -8149,46 +8629,6 @@
         }
       }
     },
-    "Filter by sport, distance and time. Tap Join and you're in, chat included.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Фильтруй по виду спорта, расстоянию и времени. Нажми «Присоединиться» — и ты в игре, чат уже открыт."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Filtra por deporte, distancia y hora. Toca Unirse y ya estás dentro, chat incluido."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Filtrez par sport, distance et horaire. Touchez Rejoindre et c’est fait, discussion incluse."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Фільтруй за видом спорту, відстанню та часом. Натисни «Приєднатися» — і ти в грі, чат уже відкрито."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Filtruj według sportu, odległości i czasu. Dotknij Dołącz i jesteś w grze, razem z czatem."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Filtre por desporto, distância e hora. Toque em Participar e está dentro, com chat incluído."
-          }
-        }
-      }
-    },
     "Filters": {
       "localizations": {
         "ru": {
@@ -8269,46 +8709,6 @@
         }
       }
     },
-    "Find a game near you": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Найти игру рядом"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Encuentra un partido cerca de ti"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trouver un match près de vous"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Знайти гру поруч"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Znajdź grę w pobliżu"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Encontrar um jogo perto de si"
-          }
-        }
-      }
-    },
     "Fitness": {
       "localizations": {
         "ru": {
@@ -8385,46 +8785,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Futebol"
-          }
-        }
-      }
-    },
-    "Football, padel, running and more, set up by people like you.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Футбол, падел, бег и не только — их организуют такие же люди, как ты."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fútbol, pádel, running y más, organizados por gente como tú."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Football, padel, course à pied et plus encore, organisés par des gens comme vous."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Футбол, падел, біг і не тільки — їх організовують такі ж люди, як ти."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Piłka nożna, padel, bieganie i więcej — organizowane przez ludzi takich jak Ty."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Futebol, padel, corrida e muito mais, organizados por pessoas como nós."
           }
         }
       }
@@ -8794,7 +9154,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Здесь появятся игры, в которых вы участвуете или которые организуете, и ваши группы."
+            "value": "Здесь появятся ваши группы и игры, в которых вы участвуете или которые организуете."
           }
         },
         "es": {
@@ -8874,7 +9234,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Дайте игре название"
+            "value": "Укажите название игры"
           }
         },
         "es": {
@@ -9182,7 +9542,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Группа заполнена"
+            "value": "Мест в группе нет"
           }
         },
         "es": {
@@ -9382,7 +9742,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Травля или ненависть"
+            "value": "Травля или разжигание ненависти"
           }
         },
         "es": {
@@ -9422,7 +9782,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Хайкинг"
+            "value": "Походы"
           }
         },
         "es": {
@@ -9533,46 +9893,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Organizador"
-          }
-        }
-      }
-    },
-    "Host a game, build a group with its own chat, or run a whole tournament.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Организуй игру, создай группу со своим чатом или проведи целый турнир."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Organiza un partido, crea un grupo con su propio chat o monta un torneo entero."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Organisez un match, créez un groupe avec sa propre discussion ou lancez un tournoi entier."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Організуй гру, створи групу зі своїм чатом або проведи цілий турнір."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zorganizuj grę, załóż grupę z własnym czatem albo poprowadź cały turniej."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Organize um jogo, crie um grupo com o seu próprio chat ou faça um torneio inteiro."
           }
         }
       }
@@ -9862,7 +10182,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Одиночный"
+            "value": "Личный зачёт"
           }
         },
         "es": {
@@ -10377,46 +10697,6 @@
         }
       }
     },
-    "Join in one tap.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Вступай в игру."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Únete con un toque."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Un geste suffit."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Вступай у гру."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dołącz w sekundę."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entre com um toque."
-          }
-        }
-      }
-    },
     "Join team": {
       "localizations": {
         "ru": {
@@ -10622,7 +10902,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Мест не меньше, чем присоединившихся игроков"
+            "value": "Оставьте не меньше мест, чем уже присоединилось игроков"
           }
         },
         "es": {
@@ -11722,7 +12002,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Оставьте место пустым, чтобы задать только время."
+            "value": "Оставьте поле пустым, чтобы задать только время."
           }
         },
         "es": {
@@ -11882,7 +12162,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Показать более ранние"
+            "value": "Показать предыдущие"
           }
         },
         "es": {
@@ -11962,7 +12242,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Сделать админом"
+            "value": "Назначить администратором"
           }
         },
         "es": {
@@ -12848,7 +13128,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Как назвать команду?"
+            "value": "Назовите команду"
           }
         },
         "es": {
@@ -13420,7 +13700,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ничьих здесь нет"
+            "value": "Ничья не допускается"
           }
         },
         "es": {
@@ -13540,7 +13820,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Групповых чатов пока нет. Вступите в группу, чтобы начать."
+            "value": "Групповых чатов пока нет. Они появятся, когда вы вступите в группу."
           }
         },
         "es": {
@@ -13700,7 +13980,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Без ограничения: присоединиться может любой."
+            "value": "Без ограничений: присоединиться может любой желающий."
           }
         },
         "es": {
@@ -13980,7 +14260,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вы не участник"
+            "value": "Вы не участник группы"
           }
         },
         "es": {
@@ -14055,6 +14335,52 @@
         }
       }
     },
+    "Not allowed (draws)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not allowed"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не разрешены"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No permitidos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non autorisés"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не дозволені"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niedozwolone"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não permitidos"
+          }
+        }
+      }
+    },
     "Not enough entries": {
       "localizations": {
         "ru": {
@@ -14100,7 +14426,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вы не в этой игре"
+            "value": "Вы не участник этой игры"
           }
         },
         "es": {
@@ -14220,7 +14546,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не задано"
+            "value": "Не указано"
           }
         },
         "es": {
@@ -14460,7 +14786,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ничего не подходит"
+            "value": "Нет подходящих событий"
           }
         },
         "es": {
@@ -14500,7 +14826,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Пока ничего"
+            "value": "Пока пусто"
           }
         },
         "es": {
@@ -14620,7 +14946,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "В этой группе это могут делать только администраторы."
+            "value": "Это доступно только администраторам группы."
           }
         },
         "es": {
@@ -14660,7 +14986,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вступить могут только приглашённые"
+            "value": "Присоединиться могут только приглашённые"
           }
         },
         "es": {
@@ -15180,7 +15506,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Владелец не может покинуть свою группу. Вместо этого удалите её."
+            "value": "Владелец не может покинуть группу — её можно только удалить."
           }
         },
         "es": {
@@ -15340,7 +15666,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заблокированные люди исчезают из ваших чатов."
+            "value": "Заблокированные пользователи исчезнут из ваших чатов."
           }
         },
         "es": {
@@ -15420,7 +15746,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Человек не найден"
+            "value": "Пользователь не найден"
           }
         },
         "es": {
@@ -15500,7 +15826,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Галерея"
+            "value": "Медиатека"
           }
         },
         "es": {
@@ -15531,46 +15857,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fototeca"
-          }
-        }
-      }
-    },
-    "Pick a sport.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Выбери спорт."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Elige un deporte."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Un sport au choix."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Обери спорт."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wybierz sport."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Escolha um desporto."
           }
         }
       }
@@ -15728,7 +16014,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Фото до %lld МБ, видео до %lld МБ и %lld минут, файлы до %lld МБ."
+            "value": "Фото до %lld МБ, видео до %lld МБ и %lld мин., файлы до %lld МБ."
           }
         },
         "es": {
@@ -15799,46 +16085,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nome do local"
-          }
-        }
-      }
-    },
-    "Play tonight.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Играй сегодня."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Juega esta noche."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jouez ce soir."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Грай сьогодні."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zagraj dziś wieczorem."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jogue hoje à noite."
           }
         }
       }
@@ -16008,7 +16254,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Перефразируйте"
+            "value": "Измените текст"
           }
         },
         "es": {
@@ -16528,7 +16774,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Четвертьфиналы"
+            "value": "Четвертьфинал"
           }
         },
         "es": {
@@ -16599,46 +16845,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dúvidas? Escreva para %@"
-          }
-        }
-      }
-    },
-    "Real games near you.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Настоящие игры рядом."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partidos reales cerca de ti."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "De vrais matchs près de vous."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Справжні ігри поруч."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prawdziwe gry w pobliżu."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jogos reais perto de si."
           }
         }
       }
@@ -17008,7 +17214,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Снять с админа"
+            "value": "Снять права администратора"
           }
         },
         "es": {
@@ -17368,7 +17574,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Заявлен"
+            "value": "Ожидает подтверждения"
           }
         },
         "es": {
@@ -17648,7 +17854,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Раунд %lld"
+            "value": "Раунд с %lld участниками"
           }
         },
         "es": {
@@ -17928,7 +18134,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Запланирован"
+            "value": "Назначен"
           }
         },
         "es": {
@@ -18128,7 +18334,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Полуфиналы"
+            "value": "Полуфинал"
           }
         },
         "es": {
@@ -18448,7 +18654,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Войдите, чтобы создавать игры, присоединяться и общаться."
+            "value": "Войдите, чтобы создавать игры, присоединяться к ним и общаться."
           }
         },
         "es": {
@@ -18568,7 +18774,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вход через %@ пока недоступен. Пока используйте email."
+            "value": "Вход через %@ пока недоступен. Войдите по email."
           }
         },
         "es": {
@@ -18928,7 +19134,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Кто-то внёс изменение в тот же момент. Нажмите ещё раз."
+            "value": "Кто-то внёс изменения одновременно с вами. Нажмите ещё раз."
           }
         },
         "es": {
@@ -18968,7 +19174,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Последнее место уже занято. Попробуйте другую игру рядом."
+            "value": "Последнее место уже занято. Выберите другую игру рядом."
           }
         },
         "es": {
@@ -19283,46 +19489,6 @@
         }
       }
     },
-    "Start your own.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Создай свою."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Crea el tuyo."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lancez le vôtre."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Створи свою."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stwórz własną."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Crie o seu."
-          }
-        }
-      }
-    },
     "Starts": {
       "localizations": {
         "ru": {
@@ -19488,7 +19654,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Смахни вверх"
+            "value": "Смахните вверх"
           }
         },
         "es": {
@@ -19648,7 +19814,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Нажмите, чтобы повторить."
+            "value": "Нажмите на вложение, чтобы повторить."
           }
         },
         "es": {
@@ -19688,7 +19854,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Команда заполнена"
+            "value": "Мест в команде нет"
           }
         },
         "es": {
@@ -19768,7 +19934,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Состав"
+            "value": "Размер команды"
           }
         },
         "es": {
@@ -20048,7 +20214,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Код не подошёл"
+            "value": "Неверный код"
           }
         },
         "es": {
@@ -20128,7 +20294,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "В тексте есть слова или ссылки, которые у нас запрещены."
+            "value": "В тексте есть запрещённые слова или ссылки."
           }
         },
         "es": {
@@ -20248,7 +20414,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Чат исчезнет у вас. Если %@ напишет снова, он вернётся без старых сообщений."
+            "value": "Чат исчезнет только у вас. Если %@ напишет снова, он вернётся, но уже без старых сообщений."
           }
         },
         "es": {
@@ -20328,7 +20494,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Матчи будут составлены, когда организатор начнёт турнир."
+            "value": "Матчи определятся, когда организатор начнёт турнир."
           }
         },
         "es": {
@@ -20568,7 +20734,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Здесь больше ничего делать не нужно."
+            "value": "Больше ничего делать не нужно."
           }
         },
         "es": {
@@ -20608,7 +20774,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "С этим email уже есть аккаунт. Просто войдите."
+            "value": "Аккаунт с этим email уже есть. Просто войдите."
           }
         },
         "es": {
@@ -20848,7 +21014,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Этой игры больше нет. Потяните, чтобы обновить список."
+            "value": "Этой игры больше нет. Потяните вниз, чтобы обновить список."
           }
         },
         "es": {
@@ -21048,7 +21214,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "У этого матча ещё нет результата для подтверждения, или он уже решён."
+            "value": "Результат этого матча ещё нельзя внести, либо он уже определён."
           }
         },
         "es": {
@@ -21248,7 +21414,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "В этой команде уже все игроки. Выберите другую или создайте свою."
+            "value": "В этой команде уже нет мест. Присоединитесь к другой или создайте свою."
           }
         },
         "es": {
@@ -22248,7 +22414,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Попробуйте фото, видео или другой файл."
+            "value": "Попробуйте прикрепить фото, видео или другой файл."
           }
         },
         "es": {
@@ -22368,7 +22534,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Попробуйте другой вид активности."
+            "value": "Попробуйте другой тип события."
           }
         },
         "es": {
@@ -22488,7 +22654,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Уберите часть фильтров или покажите все события."
+            "value": "Попробуйте убрать часть фильтров или показать все события."
           }
         },
         "es": {
@@ -22688,7 +22854,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "До"
+            "value": "Не больше"
           }
         },
         "es": {
@@ -23392,7 +23558,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не удалось загрузить турниры. Потяните вниз чуть позже."
+            "value": "Не удалось загрузить турниры. Чуть позже потяните, чтобы обновить."
           }
         },
         "es": {
@@ -23472,7 +23638,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Мы отправили код на %@"
+            "value": "Код отправлен на %@"
           }
         },
         "es": {
@@ -23592,7 +23758,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Что ожидать"
+            "value": "Чего ожидать"
           }
         },
         "es": {
@@ -23712,7 +23878,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Где это?"
+            "value": "Место на карте"
           }
         },
         "es": {
@@ -23792,7 +23958,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Кто может вступить"
+            "value": "Кто может присоединиться"
           }
         },
         "es": {
@@ -23872,7 +24038,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Почему вы жалуетесь?"
+            "value": "Причина жалобы"
           }
         },
         "es": {
@@ -24075,25 +24241,25 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно состоять не больше чем в %lld группе. Покиньте одну, чтобы вступить в другую."
+                  "value": "Можно состоять не более чем в %lld группе. Покиньте одну, чтобы вступить в другую."
                 }
               },
               "few": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно состоять не больше чем в %lld группах. Покиньте одну, чтобы вступить в другую."
+                  "value": "Можно состоять не более чем в %lld группах. Покиньте одну, чтобы вступить в другую."
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно состоять не больше чем в %lld группах. Покиньте одну, чтобы вступить в другую."
+                  "value": "Можно состоять не более чем в %lld группах. Покиньте одну, чтобы вступить в другую."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно состоять не больше чем в %lld группах. Покиньте одну, чтобы вступить в другую."
+                  "value": "Можно состоять не более чем в %lld группах. Покиньте одну, чтобы вступить в другую."
                 }
               }
             }
@@ -24223,25 +24389,25 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно участвовать не больше чем в %lld турнире. Покиньте один, который ещё не начался, чтобы вступить в другой."
+                  "value": "Можно участвовать не более чем в %lld турнире. Покиньте турнир, который ещё не начался, чтобы участвовать в другом."
                 }
               },
               "few": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно участвовать не больше чем в %lld турнирах. Покиньте один, который ещё не начался, чтобы вступить в другой."
+                  "value": "Можно участвовать не более чем в %lld турнирах. Покиньте турнир, который ещё не начался, чтобы участвовать в другом."
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно участвовать не больше чем в %lld турнирах. Покиньте один, который ещё не начался, чтобы вступить в другой."
+                  "value": "Можно участвовать не более чем в %lld турнирах. Покиньте турнир, который ещё не начался, чтобы участвовать в другом."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно участвовать не больше чем в %lld турнирах. Покиньте один, который ещё не начался, чтобы вступить в другой."
+                  "value": "Можно участвовать не более чем в %lld турнирах. Покиньте турнир, который ещё не начался, чтобы участвовать в другом."
                 }
               }
             }
@@ -24371,25 +24537,25 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно вести не больше %lld беседы."
+                  "value": "Можно вести не более %lld чата."
                 }
               },
               "few": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно вести не больше %lld бесед."
+                  "value": "Можно вести не более %lld чатов."
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно вести не больше %lld бесед."
+                  "value": "Можно вести не более %lld чатов."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Можно вести не больше %lld бесед."
+                  "value": "Можно вести не более %lld чатов."
                 }
               }
             }
@@ -24516,7 +24682,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Можно вести не больше %lld открытых турниров. Сначала завершите или отмените один."
+            "value": "Одновременно можно проводить не более %lld турниров. Сначала завершите или отмените один."
           }
         },
         "es": {
@@ -24556,7 +24722,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вы не можете вступить в эту группу"
+            "value": "В эту группу нельзя вступить"
           }
         },
         "es": {
@@ -24676,7 +24842,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "У вас слишком много бесед"
+            "value": "У вас слишком много чатов"
           }
         },
         "es": {
@@ -24756,7 +24922,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вы вступили"
+            "value": "Принято"
           }
         },
         "es": {
@@ -24916,7 +25082,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вы просматриваете как гость"
+            "value": "Вы авторизованы как гость"
           }
         },
         "es": {
@@ -24996,7 +25162,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вы не в этой группе. Сначала вступите в неё."
+            "value": "Вы не состоите в этой группе. Сначала вступите в неё."
           }
         },
         "es": {
@@ -25036,7 +25202,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вас нет в списке этой игры, так что покидать нечего."
+            "value": "Вы не участвуете в этой игре — покидать нечего."
           }
         },
         "es": {
@@ -25156,7 +25322,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вы заблокировали максимальное число людей. Сначала разблокируйте кого-нибудь."
+            "value": "Достигнут лимит заблокированных пользователей. Сначала разблокируйте кого-нибудь."
           }
         },
         "es": {
@@ -25396,7 +25562,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "игру"
+            "value": "игра"
           }
         },
         "es": {
@@ -25476,7 +25642,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Люди рядом находят группу по месту, где она играет."
+            "value": "Люди поблизости найдут группу по месту, где она играет."
           }
         },
         "es": {
@@ -25596,7 +25762,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Связь и отзывы"
+            "value": "Обратная связь"
           }
         },
         "es": {
@@ -25916,7 +26082,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Чем мы можем помочь?"
+            "value": "Чем можем помочь?"
           }
         },
         "es": {
@@ -26076,7 +26242,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Необязательно. Сюда мы напишем, если вы ждёте ответа."
+            "value": "Необязательно. Укажите, если хотите получить ответ."
           }
         },
         "es": {
@@ -26116,7 +26282,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Чтобы мы могли воспроизвести проблему, мы прикладываем версию приложения, версию iOS и модель устройства: %@"
+            "value": "Чтобы нам было проще воспроизвести проблему, к сообщению прилагаются версия приложения, версия iOS и модель устройства: %@"
           }
         },
         "es": {
@@ -26156,7 +26322,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Этот email выглядит неверно"
+            "value": "Проверьте адрес email"
           }
         },
         "es": {
@@ -26276,7 +26442,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выберите беседу"
+            "value": "Чат не выбран"
           }
         },
         "es": {
@@ -26316,7 +26482,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выберите чат слева, чтобы читать его здесь."
+            "value": "Выберите чат слева — он откроется здесь."
           }
         },
         "es": {

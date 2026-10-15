@@ -46,7 +46,8 @@ private struct ErrorPopupModifier: ViewModifier {
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .gesture(dismissSwipe(for: presented))
                     .task(id: presented.id) {
-                        try? await Task.sleep(for: AppConfig.ErrorPopup.autoDismissDelay)
+                        guard let delay = errorCenter.autoDismissDelay else { return }
+                        try? await Task.sleep(for: delay)
                         guard !Task.isCancelled else { return }
                         errorCenter.dismiss(presented.id)
                     }

@@ -9,9 +9,11 @@ final class LilySignInTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
     }
 
+    /// The popup is held open for the run: it fades after four seconds on its own, which on the runner was before the
+    /// test had looked.
     @MainActor
     func testSignInFailureShowsThePopupAboveTheSheet() {
-        relaunch(appending: "-mock-auth-fail")
+        relaunch(appendingArguments: ["-mock-auth-fail", "-hold-popups"])
         let apple = tapSignInWithApple()
 
         // The popup combines its children into one element, so match on the label.

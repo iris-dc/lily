@@ -18,6 +18,10 @@ nonisolated extension DesignTokens.Layout {
     static let introScreenAccessibilityHeight: CGFloat = 320
     /// The share of the miniature's height that fades out at the bottom, so the screen reads as continuing below.
     static let introScreenFadeFraction: CGFloat = 0.3
+    /// How much of a bottom-aligned miniature fades out at the top once its screen is taller than the frame, and how
+    /// much taller it must be for that to count (sub-point layout rounding is not a crop).
+    static let introScreenTopFadeLength: CGFloat = 40
+    static let introScreenOverflowTolerance: CGFloat = 1
     /// The miniature draws its text at this size whatever the user's, as a screenshot would.
     static let introScreenTypeSize: DynamicTypeSize = .xSmall
     /// The ring pulsing over the Join button of the second slide: how far it grows, its stroke, and how much of its

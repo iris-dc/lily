@@ -147,11 +147,11 @@ final class LilyIPadTests: LilyUITestCase {
     /// (on a phone it starts at the margin).
     @MainActor
     func testLandingPlacesTheMiniatureBesideTheCopyOnIPad() {
-        let headline = app.staticTexts["Play tonight."]
+        let headline = app.staticTexts["near you."]
         XCTAssertTrue(headline.waitForExistence(timeout: 10))
         let window = app.windows.firstMatch.frame
         XCTAssertGreaterThan(headline.frame.minX, window.width * 0.3, "the caption sits right of the miniature")
-        XCTAssertTrue(app.buttons["Find a game near you"].isHittable)
-        XCTAssertLessThan(app.buttons["Find a game near you"].frame.width, window.width - 200, "the capsules are capped")
+        XCTAssertTrue(app.buttons["Explore events"].isHittable)
+        XCTAssertLessThan(app.buttons["Explore events"].frame.width, window.width - 200, "the capsules are capped")
     }
 }

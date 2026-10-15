@@ -77,7 +77,7 @@ struct TournamentDetailMatchesTests {
         let viewModel = await loaded(cup, entries: teams)
         await viewModel.start()
         let semi = try #require(viewModel.detail?.match(id: "r01p001"))
-        #expect(viewModel.actions(for: semi).canRecord && viewModel.isMine(semi), "the organiser captains Team 1")
+        #expect(viewModel.actions(for: semi).canRecord && viewModel.detail?.isMine(semi) == true, "the organiser captains Team 1")
 
         #expect(await viewModel.report(semi, scoreA: 2, scoreB: 1))
         #expect(viewModel.detail?.match(id: "r01p001")?.status == .confirmed)
@@ -112,7 +112,7 @@ struct TournamentDetailMatchesTests {
         harness.repository.details["t"] = try await harness.repository.start(id: "t")
         await viewModel.load()
         let mine = try #require(viewModel.detail?.matches.first { $0.contains(entryID: "p1") })
-        #expect(viewModel.isMine(mine) && viewModel.actions(for: mine).canReport)
+        #expect(viewModel.detail?.isMine(mine) == true && viewModel.actions(for: mine).canReport)
 
         #expect(await viewModel.report(mine, scoreA: 3, scoreB: 1))
         let reported = try #require(viewModel.detail?.match(id: mine.id))

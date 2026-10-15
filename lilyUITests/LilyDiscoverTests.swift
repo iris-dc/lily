@@ -48,8 +48,8 @@ final class LilyDiscoverTests: LilyUITestCase {
 
         XCTAssertTrue(app.navigationBars["New group"].waitForNonExistence(timeout: 10), "the sheet must close once created")
         XCTAssertTrue(app.buttons["group-open-chat"].waitForExistence(timeout: 10), "the founder must land in the new group")
-        XCTAssertTrue(labelled(name).exists, "the detail must be the new group's")
-        XCTAssertTrue(labelled(place).exists, "the detail must show where the group plays")
+        XCTAssertTrue(labelled(name).waitForExistence(timeout: 5), "the detail must be the new group's")
+        XCTAssertTrue(labelled(place).waitForExistence(timeout: 5), "the detail must show where the group plays")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
         XCTAssertTrue(labelled(name).waitForExistence(timeout: 10), "the new group must be listed on Home")

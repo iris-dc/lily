@@ -163,7 +163,7 @@ nonisolated enum AppBranding {
 
     /// The landing's slides are `AppBranding.Intro`; under them the primary button and the glass "Sign in"
     /// (`signInAction`, which is also the email form's submit).
-    static var landingPrimaryAction: String { localized("Find a game near you") }
+    static var landingPrimaryAction: String { localized("Explore events") }
     static var signInAction: String { localized("Sign in") }
 
     static var guestProfileTitle: String { localized("You're browsing as a guest") }

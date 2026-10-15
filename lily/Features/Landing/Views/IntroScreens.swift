@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The first slide's screen: the top of Explore, drawn with the real cards over the games the view model holds (the
+/// The events slide's screen: the top of Explore, drawn with the real cards over the events the view model holds (the
 /// live preview, or the fixtures while none arrived).
 struct IntroExploreScreen: View {
     let events: [SportEvent]
@@ -15,7 +15,7 @@ struct IntroExploreScreen: View {
     }
 }
 
-/// The second slide's screen: a game's detail down to its Join button, with a ring pulsing where the finger goes.
+/// The join slide's screen: an event's detail down to its Join button, with a ring pulsing where the finger goes.
 struct IntroDetailScreen: View {
     let event: SportEvent
 
@@ -31,7 +31,7 @@ struct IntroDetailScreen: View {
     }
 }
 
-/// The third slide's screen: a group's room where a question, the caller's answer, the game it turned into and a last
+/// The groups slide's screen: a group's room where a question, the caller's answer, the game it turned into and a last
 /// word lead down to the composer, each drawn the way the chat draws it, the composer at the bottom as in a room.
 struct IntroChatScreen: View {
     let eventTitle: String
@@ -45,6 +45,7 @@ struct IntroChatScreen: View {
                   systemImage: DesignTokens.Symbols.game)
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity)
             line(AppBranding.Intro.Chat.followUp, own: false)
             Spacer(minLength: 0)
@@ -67,6 +68,8 @@ struct IntroChatScreen: View {
     }
 
     /// One bubble as `MessageBubble` draws the first of a run: another sender's with avatar and name, the caller's alone.
+    /// The text keeps its lines: squeezed by a frame shorter than the room, a wrapped bubble would otherwise fold to one
+    /// line with an ellipsis instead of the frame cropping the header above it.
     private func line(_ text: String, own: Bool) -> some View {
         HStack(alignment: .top, spacing: DesignTokens.Spacing.sm) {
             if !own {
@@ -80,7 +83,9 @@ struct IntroChatScreen: View {
                         .font(LilyTheme.Fonts.caption)
                         .foregroundStyle(.secondary)
                 }
-                Text(verbatim: text).bubbleFill(own: own)
+                Text(verbatim: text)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .bubbleFill(own: own)
             }
         }
         .frame(maxWidth: .infinity, alignment: own ? .trailing : .leading)
@@ -98,8 +103,27 @@ struct IntroChatScreen: View {
     }
 }
 
+/// The tournaments slide's screen: the top of a tournament's detail and its bracket, drawn the way the detail draws it
+/// (the first round in full, the next column peeking in at the edge as on a phone). Two chips rather than the detail's
+/// three and no segment picker: the frame crops at the top, and both took the chips over its edge on a 6.3-inch phone.
+struct IntroTournamentScreen: View {
+    let detail: TournamentDetail
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+            HStack(spacing: DesignTokens.Spacing.sm) {
+                EventTypeChip(type: detail.tournament.type)
+                TournamentStatusChip(status: detail.tournament.status)
+            }
+            ScreenTitle(text: detail.tournament.name,
+                        subtitle: AppBranding.Tournaments.organizedBy(name: detail.tournament.organizerName))
+            BracketView(detail: detail) { _ in }
+        }
+    }
+}
+
 /// A ring growing out of the Join button and fading, over and over, while its slide is on screen: the "tap here" of
-/// the second slide. The pager holds every slide, so the animation follows scroll visibility, not `onAppear`. Nothing
+/// the join slide. The pager holds every slide, so the animation follows scroll visibility, not `onAppear`. Nothing
 /// under Reduce Motion.
 private struct TapPulse: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -137,6 +161,7 @@ private struct TapPulse: View {
             IntroScreenFrame { IntroExploreScreen(events: events) }.frame(height: 400)
             IntroScreenFrame { IntroDetailScreen(event: events[0]) }.frame(height: 400)
             IntroScreenFrame { IntroChatScreen(eventTitle: events[0].title) }.frame(height: 400)
+            IntroScreenFrame { IntroTournamentScreen(detail: IntroFixtures.tournament(now: .now)) }.frame(height: 400)
         }
     }
     .background(Color.lilySurface)

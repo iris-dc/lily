@@ -110,17 +110,10 @@ final class LilyChatTests: LilyUITestCase {
         let original = "Anyone up for a game this week?"
         let line = app.staticTexts[original]
         XCTAssertTrue(line.waitForExistence(timeout: 10))
-        // The room's first row: the transcript opens at the bottom, so bring the row on screen before the long press, and
-        // press again when a slow runner turns the press into a scroll.
+        // The room's first row: the transcript opens at the bottom, so bring the row on screen before the long press.
         scrollUntilHittable(line, direction: .down, maxSwipes: 6)
         let reply = app.buttons["Reply"]
-        var presses = 0
-        while !reply.exists && presses < 3 {
-            line.press(forDuration: 1.2)
-            _ = reply.waitForExistence(timeout: 5)
-            presses += 1
-        }
-        XCTAssertTrue(reply.exists, "the bubble's menu offers Reply")
+        openContextMenu(on: line, until: reply)
         reply.tap()
 
         let preview = app.descendants(matching: .any)["chat-reply-preview"]

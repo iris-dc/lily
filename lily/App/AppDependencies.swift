@@ -49,6 +49,7 @@ final class AppDependencies {
          language: LanguageStore? = nil,
          currency: CurrencyStore? = nil,
          eventFilterStore: any EventFilterStore = NoOpEventFilterStore(),
+         errorCenter: ErrorCenter? = nil,
          defaults: UserDefaults = .standard) {
         self.logger = logger
         self.eventFilterStore = eventFilterStore
@@ -56,7 +57,8 @@ final class AppDependencies {
         let language = language ?? Self.makeLanguageStore(arguments: [], startsFresh: false, defaults: defaults, logger: logger)
         self.language = language
         self.currency = currency ?? Self.makeCurrencyStore(startsFresh: false, defaults: defaults, logger: logger)
-        self.errorCenter = ErrorCenter(logger: logger)
+        let errorCenter = errorCenter ?? ErrorCenter(logger: logger)
+        self.errorCenter = errorCenter
         self.sessionStore = sessionStore
         self.authService = authService
         self.tokenProvider = tokenProvider
@@ -135,6 +137,7 @@ final class AppDependencies {
                                eventFilterStore: makeEventFilterStore(startsFresh: startsFresh,
                                                                       defaults: defaults,
                                                                       logger: logger),
+                               errorCenter: makeErrorCenter(arguments: arguments, logger: logger),
                                defaults: defaults)
     }
 

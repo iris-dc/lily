@@ -127,7 +127,9 @@ nonisolated extension AppBranding {
             static var entries: String { localized("Entries") }
             static var draws: String { localized("Draws") }
             static var drawsAllowed: String { localized("Allowed") }
-            static var drawsNotAllowed: String { localized("Not allowed") }
+            /// A role key: the segment pairs with "Allowed" as a plural adjective in most languages, while the bare
+            /// "Not allowed" is the group permission error's title.
+            static var drawsNotAllowed: String { localized("Not allowed (draws)") }
             static var registration: String { localized("Registration") }
             static var deadlineAtStart: String { localized("Until the start") }
             static var deadlineEarlier: String { localized("Earlier") }

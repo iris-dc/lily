@@ -82,7 +82,7 @@ final class LilyProfileTests: LilyUITestCase {
         XCTAssertTrue(signOut.waitForExistence(timeout: 5))
         scrollUntilHittable(signOut)
         signOut.tap()
-        let enter = app.buttons["Find a game near you"]
+        let enter = app.buttons["Explore events"]
         XCTAssertTrue(enter.waitForExistence(timeout: 10), "a sign-out returns to the landing")
         XCTAssertFalse(app.tabBars.firstMatch.exists, "the shell is gone")
 

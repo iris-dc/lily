@@ -8,7 +8,8 @@ import SwiftUI
 /// saying it twice.
 struct MatchCell: View {
     let match: TournamentMatch
-    let viewModel: TournamentDetailViewModel
+    /// The detail the match belongs to: the names and seeds of its sides, and whose entry the caller's is.
+    let detail: TournamentDetail
     /// The Matches list shows the status and the schedule; a bracket cell has no room for them.
     var showsDetails = false
 
@@ -26,7 +27,7 @@ struct MatchCell: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.lilySurface, in: .rect(cornerRadius: DesignTokens.Radius.md))
         .overlay {
-            if viewModel.isMine(match) {
+            if detail.isMine(match) {
                 RoundedRectangle(cornerRadius: DesignTokens.Radius.md)
                     .strokeBorder(Color.lilyAccent.opacity(DesignTokens.Opacity.ownMatchStroke))
             }
@@ -37,7 +38,7 @@ struct MatchCell: View {
     private func side(_ entryID: String?, score: Int?, flagged: Bool) -> some View {
         let outcome = match.outcome(for: entryID)
         return HStack(spacing: DesignTokens.Spacing.sm) {
-            if let seed = viewModel.entry(entryID)?.seed {
+            if let seed = detail.entry(entryID)?.seed {
                 Text(String(seed))
                     .font(LilyTheme.Fonts.caption)
                     .foregroundStyle(.secondary)
@@ -90,7 +91,7 @@ struct MatchCell: View {
 
     private func name(of entryID: String?) -> String {
         if entryID == nil, match.status == .bye { return Copy.bye }
-        return viewModel.entryName(entryID)
+        return detail.entryName(entryID)
     }
 }
 
@@ -98,7 +99,7 @@ struct MatchCell: View {
 /// lets it grow with the details.
 struct MatchButton: View {
     let match: TournamentMatch
-    let viewModel: TournamentDetailViewModel
+    let detail: TournamentDetail
     var showsDetails = false
     var height: CGFloat?
     let onSelect: (TournamentMatch) -> Void
@@ -107,7 +108,7 @@ struct MatchButton: View {
         Button {
             onSelect(match)
         } label: {
-            MatchCell(match: match, viewModel: viewModel, showsDetails: showsDetails)
+            MatchCell(match: match, detail: detail, showsDetails: showsDetails)
                 .frame(height: height)
         }
         .buttonStyle(.plain)

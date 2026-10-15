@@ -40,10 +40,11 @@ final class LilyStateTests: LilyUITestCase {
 
     /// The mock's first list load fails: the error reaches the popup mounted on the root, Explore shows its failed
     /// state under the carousels and clear of the floating tab bar, keeps it (a failed load waits before it asks again
-    /// on its own), and a pull-to-refresh asks at once.
+    /// on its own), and a pull-to-refresh asks at once. The popup is held open for the run (it fades after four
+    /// seconds on its own, which on the runner was before the test had looked) and dismissed with the swipe up.
     @MainActor
     func testAFailedExploreLoadShowsThePopupAndRecoversOnRefresh() {
-        relaunch(appendingArguments: ["-mock-events-fail", "-start-as-guest"])
+        relaunch(appendingArguments: ["-mock-events-fail", "-start-as-guest", "-hold-popups"])
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
 
         // The popup combines its children into one element, so its Dismiss is not tappable apart.
@@ -59,7 +60,8 @@ final class LilyStateTests: LilyUITestCase {
                                  app.tabBars.firstMatch.frame.minY,
                                  "the failed state is readable above the floating tab bar at rest")
         XCTAssertFalse(app.staticTexts["Sunset 5-a-side"].exists)
-        XCTAssertTrue(popup.waitForNonExistence(timeout: 10), "the popup dismisses itself")
+        popup.swipeUp()
+        XCTAssertTrue(popup.waitForNonExistence(timeout: 5), "a swipe up dismisses the popup")
 
         pullToRefresh()
         XCTAssertTrue(app.staticTexts["Sunset 5-a-side"].waitForExistence(timeout: 10),
@@ -72,15 +74,15 @@ final class LilyStateTests: LilyUITestCase {
     @MainActor
     func testTheLandingAtAccessibilitySizeReachesEveryButton() {
         relaunch(appendingArguments: Self.accessibilitySizeArguments)
-        XCTAssertTrue(app.staticTexts["Play tonight."].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["near you."].waitForExistence(timeout: 10))
 
         let signIn = app.buttons["Sign in"]
         XCTAssertTrue(signIn.waitForExistence(timeout: 5))
         XCTAssertGreaterThan(signIn.frame.height, Self.grownCapsuleHeight, "the launch runs at the accessibility size")
         XCTAssertTrue(signIn.isHittable, "the ways in are reachable without a scroll")
-        XCTAssertTrue(app.buttons["Find a game near you"].isHittable)
+        XCTAssertTrue(app.buttons["Explore events"].isHittable)
         attachScreenshot(named: "landing-ax5")
-        scrollUntilHittable(app.staticTexts["Bring your people."], maxSwipes: 6)
+        scrollUntilHittable(app.staticTexts["or set one up."], maxSwipes: 8)
         XCTAssertTrue(signIn.isHittable, "the buttons sit outside the scroll")
 
         openSignInSheet()

@@ -176,7 +176,6 @@ struct TournamentDetailView: View {
     private func results(_ detail: TournamentDetail, bracketInset: CGFloat) -> some View {
         TournamentResultsSegment(showsMatches: section == .matches,
                                  detail: detail,
-                                 viewModel: viewModel,
                                  onSelect: { presentedSheet = .match(id: $0.id) },
                                  bracketInset: bracketInset)
     }

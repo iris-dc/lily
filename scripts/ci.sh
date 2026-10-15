@@ -26,6 +26,9 @@ DERIVED_DATA="${DERIVED_DATA:-build/DerivedData}"
 PRODUCTS_DIR="$DERIVED_DATA/Build/Products"
 # What the build job hands the UI shard jobs (the simulator products and the .xctestrun), relative to the repository root.
 PRODUCTS_ARCHIVE="${PRODUCTS_ARCHIVE:-build/products.tgz}"
+# The app the UI stages warm the simulator up with, and how long its one launch is given before it is terminated.
+APP_BUNDLE_ID="iris.lily"
+WARM_UP_SECONDS=5
 # What of xcodebuild's output reaches the console (errors, the app's warnings, test and build verdicts); the whole of it goes to the log.
 CONSOLE_FILTER="error:|/lily/.*: warning:|Test Suite .* (passed|failed)|Test Case .* (passed|failed)|Executed|Test case .* (passed|failed)|\*\* .* (SUCCEEDED|FAILED) \*\*"
 XCODE_VERSION_SHOWN=0
@@ -83,6 +86,30 @@ resolve_ipad_destination() {
     device=$(pick_device iPad "iPad Pro 13-inch")
     IPAD_DESTINATION="platform=iOS Simulator,name=${device}"
     echo "iPad destination: ${IPAD_DESTINATION}"
+  fi
+}
+
+# Boots the simulator and runs the built app once before a UI stage. On a cold GitHub runner the first XCTest launch of
+# a shard timed out at 60 s before any assertion (the language test) and the iPad's first accessibility queries timed
+# out the same way; one warm launch, with the mock arguments so it reaches no network, takes that cost off the first
+# test. Best effort: every step is allowed to fail, and the app is only launched when the products are there.
+warm_up_simulator() {
+  local name="$1" udid
+  udid=$(xcrun simctl list devices available | grep -m1 -F "${name} (" | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/' || true)
+  if [[ -z "$udid" ]]; then
+    echo "warm-up: no simulator named ${name}" >&2
+    return 0
+  fi
+  echo "==> warm-up (${name})"
+  # bootstatus -b boots the device when it is not booted and waits until it is.
+  xcrun simctl bootstatus "$udid" -b >/dev/null 2>&1 || true
+  local app="$PRODUCTS_DIR/Debug-iphonesimulator/${SCHEME}.app"
+  if [[ -d "$app" ]]; then
+    xcrun simctl install "$udid" "$app" >/dev/null 2>&1 || true
+    xcrun simctl launch "$udid" "$APP_BUNDLE_ID" -reset-session -mock-location -mock-auth -mock-events -app-language en \
+      >/dev/null 2>&1 || true
+    sleep "$WARM_UP_SECONDS"
+    xcrun simctl terminate "$udid" "$APP_BUNDLE_ID" >/dev/null 2>&1 || true
   fi
 }
 
@@ -188,6 +215,7 @@ run_prebuilt_tests() {
     echo "No .xctestrun under $PRODUCTS_DIR; run './scripts/ci.sh build-and-unit' (or restore the build products) first" >&2
     exit 1
   fi
+  warm_up_simulator "${destination#*name=}"
   run_logged "$label" test-without-building "$@" -xctestrun "$xctestrun" -destination "$destination"
 }
 
@@ -323,12 +351,15 @@ run_unit_tests() {
 
 run_ui_tests() {
   use_software_keyboard
+  resolve_iphone_destination
+  warm_up_simulator "${DESTINATION#*name=}"
   run_xcodebuild ui-tests "$1" -only-testing:"$UI_TARGET"
 }
 
 run_ipad_ui_tests() {
   use_software_keyboard
   resolve_ipad_destination
+  warm_up_simulator "${IPAD_DESTINATION#*name=}"
   XCODEBUILD_DESTINATION="$IPAD_DESTINATION" run_xcodebuild ui-ipad-tests "$1" -only-testing:"$IPAD_UI_TESTS"
 }
 

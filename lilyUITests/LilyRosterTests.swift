@@ -38,7 +38,7 @@ final class LilyRosterTests: LilyUITestCase {
         openFromHome(app.buttons[padelRow])
         openMembers()
         let makeAdmin = app.buttons["Make admin"]
-        openMenu(on: app.buttons["member-row-mock-user-ines"], until: makeAdmin)
+        openContextMenu(on: app.buttons["member-row-mock-user-ines"], until: makeAdmin)
         makeAdmin.tap()
 
         let promoted = app.buttons.matching(identifier: "member-row-mock-user-ines")
@@ -55,7 +55,7 @@ final class LilyRosterTests: LilyUITestCase {
         openMembers()
         let luca = app.buttons["member-row-mock-user-luca"]
         let remove = app.buttons["Remove"]
-        openMenu(on: luca, until: remove)
+        openContextMenu(on: luca, until: remove)
         remove.tap()
         confirm("Remove")
 
@@ -134,19 +134,6 @@ final class LilyRosterTests: LilyUITestCase {
         let picker = app.segmentedControls["group-section"]
         XCTAssertTrue(picker.waitForExistence(timeout: 10))
         picker.buttons["Members"].tap()
-    }
-
-    /// Long-presses `row` until its menu offers `item`, up to three times: a slow runner can turn one press into a scroll.
-    @MainActor
-    private func openMenu(on row: XCUIElement, until item: XCUIElement) {
-        scrollUntilHittable(row)
-        var presses = 0
-        while !item.exists && presses < 3 {
-            row.press(forDuration: 1.2)
-            _ = item.waitForExistence(timeout: 5)
-            presses += 1
-        }
-        XCTAssertTrue(item.exists, "the row's menu must offer the action")
     }
 
     /// Taps `title` in the confirmation a destructive action raised; a popover on iPhone, still a sheet to XCUITest.

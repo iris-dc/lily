@@ -5,7 +5,6 @@ import SwiftUI
 /// one accessibility element, so VoiceOver and the UI tests read a line at a time.
 struct StandingsTable: View {
     let detail: TournamentDetail
-    let viewModel: TournamentDetailViewModel
 
     private typealias Copy = AppBranding.Tournaments.Standings
     private typealias Layout = DesignTokens.Layout
@@ -47,7 +46,7 @@ struct StandingsTable: View {
             Text(String(standing.rank))
                 .foregroundStyle(.secondary)
                 .frame(width: Layout.standingsRankWidth, alignment: .leading)
-            Text(viewModel.entryName(standing.entryId))
+            Text(detail.entryName(standing.entryId))
                 .fontWeight(isMine ? .semibold : .regular)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)

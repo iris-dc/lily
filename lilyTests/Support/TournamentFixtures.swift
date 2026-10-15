@@ -65,7 +65,7 @@ extension TournamentEntry {
 
 extension TournamentDetail {
     /// The caller's entry by `myEntryId`; nothing in the app reads it, so it lives with the tests.
-    var myEntry: TournamentEntry? { tournament.myEntryId.flatMap(entry(id:)) }
+    var myEntry: TournamentEntry? { entry(tournament.myEntryId) }
 
     static func fixture(tournament: Tournament = .fixture(),
                         entries: [TournamentEntry] = [.fixture()],

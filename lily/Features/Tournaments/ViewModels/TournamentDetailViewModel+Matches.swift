@@ -13,18 +13,10 @@ extension TournamentDetailViewModel {
         return MatchActions(detail: detail, match: match, userID: identity.currentUserID)
     }
 
-    /// Whether the caller's entry is one side of the match.
-    func isMine(_ match: TournamentMatch) -> Bool {
-        match.contains(entryID: tournament?.myEntryId)
-    }
-
-    func entry(_ entryID: String?) -> TournamentEntry? {
-        entryID.flatMap { detail?.entry(id: $0) }
-    }
-
-    /// The name on a cell; a side no feeder match has decided yet reads "TBD".
+    /// The name in the match sheet; a side no feeder match has decided yet reads "TBD", as does any side before the
+    /// detail loaded.
     func entryName(_ entryID: String?) -> String {
-        entry(entryID)?.name ?? AppBranding.Tournaments.toBeDecided
+        detail?.entryName(entryID) ?? AppBranding.Tournaments.toBeDecided
     }
 
     /// The organiser draws the matches; registration closes with it.

@@ -4,7 +4,6 @@ import SwiftUI
 /// match sheet.
 struct MatchList: View {
     let detail: TournamentDetail
-    let viewModel: TournamentDetailViewModel
     let onSelect: (TournamentMatch) -> Void
 
     var body: some View {
@@ -14,7 +13,7 @@ struct MatchList: View {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
                     RoundTitle(round: index + 1, rounds: columns.count, format: detail.tournament.format)
                     ForEach(matches) { match in
-                        MatchButton(match: match, viewModel: viewModel, showsDetails: true, onSelect: onSelect)
+                        MatchButton(match: match, detail: detail, showsDetails: true, onSelect: onSelect)
                     }
                 }
             }

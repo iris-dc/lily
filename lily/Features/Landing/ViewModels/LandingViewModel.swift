@@ -1,14 +1,16 @@
 import Foundation
 import Observation
 
-/// Drives the landing screen: the intro slides, the games their miniature screens show (real upcoming ones once the
-/// preview arrived), and the two ways into the app.
+/// Drives the landing screen: the intro slides, the events their miniature screens show (real upcoming ones once the
+/// preview arrived), the tournament whose bracket the last slide draws, and the two ways into the app.
 @Observable
 final class LandingViewModel {
-    let slides = IntroSlide.allCases
+    let slides = IntroSlide.shown()
     private(set) var previewEvents: [SportEvent] = []
-    /// The games the miniatures show until the live preview arrives: the mock feed's first ones, like a screenshot.
+    /// The events the miniatures show until the live preview arrives: the mock feed's first ones, like a screenshot.
     let sampleEvents: [SportEvent]
+    /// The tournament the bracket miniature shows: always the fixture, since a live one may be in any state.
+    let sampleTournament: TournamentDetail
     /// The slide on screen, as the pager last reported one.
     private(set) var currentSlide: IntroSlide = .first
     /// "Swipe up" shows under the first slide until the user has swiped once.
@@ -24,11 +26,12 @@ final class LandingViewModel {
         self.repository = repository
         self.logger = logger
         sampleEvents = IntroFixtures.events(now: now)
+        sampleTournament = IntroFixtures.tournament(now: now)
     }
 
-    /// What the slides' screens draw: the live games once loaded, the samples before and when the load failed.
+    /// What the slides' screens draw: the live events once loaded, the samples before and when the load failed.
     var introContent: IntroContent {
-        IntroContent(events: previewEvents.isEmpty ? sampleEvents : previewEvents)
+        IntroContent(events: previewEvents.isEmpty ? sampleEvents : previewEvents, tournament: sampleTournament)
     }
 
     /// Preview is decorative: on failure the landing still works, so nothing is shown to the user. Leaving the
