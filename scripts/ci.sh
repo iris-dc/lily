@@ -28,7 +28,11 @@ PRODUCTS_DIR="$DERIVED_DATA/Build/Products"
 PRODUCTS_ARCHIVE="${PRODUCTS_ARCHIVE:-build/products.tgz}"
 # The app the UI stages warm the simulator up with, and how long its one launch is given before it is terminated.
 APP_BUNDLE_ID="iris.lily"
-WARM_UP_SECONDS=5
+WARM_UP_SECONDS=8
+# How often a failing test of a CI shard is run before the shard fails (xcodebuild -retry-tests-on-failure): a second
+# attempt for the launch and query timeouts a cold GitHub runner produces, which no test can guard against. Every test
+# that passed only on a retry is named in the log, so a flake never passes unseen.
+CI_TEST_ITERATIONS=2
 # What of xcodebuild's output reaches the console (errors, the app's warnings, test and build verdicts); the whole of it goes to the log.
 CONSOLE_FILTER="error:|/lily/.*: warning:|Test Suite .* (passed|failed)|Test Case .* (passed|failed)|Executed|Test case .* (passed|failed)|\*\* .* (SUCCEEDED|FAILED) \*\*"
 XCODE_VERSION_SHOWN=0
@@ -37,23 +41,41 @@ SHARD="${2:-}"
 
 cd "$(dirname "$0")/.."
 
-# The first available simulator of a family, the preferred model when present (the Pro iPhone; the 13-inch iPad Pro
-# as the widest layout).
+# The simulator of a family to run on, as its UDID: the preferred model when present (the Pro iPhone; the 13-inch iPad
+# Pro as the widest layout), else the family's last listed device; of two runtimes carrying the same device name the
+# newest, which simctl lists last and which xcodebuild would also pick by name. The warm-up and xcodebuild are both
+# given this one UDID: resolved twice by name, they once booted two iPads of the same name on a runner with two
+# runtimes, and the shard ran at a third of its speed.
 pick_device() {
   local family="$1" preferred="$2"
   local list
   list=$(xcrun simctl list devices available | grep -E "^[[:space:]]+${family}" || true)
-  local name
-  name=$(echo "$list" | grep -m1 "$preferred" | sed -E 's/^[[:space:]]+(.*) \([0-9A-F-]+\).*/\1/' || true)
-  if [[ -z "$name" ]]; then
-    name=$(echo "$list" | head -1 | sed -E 's/^[[:space:]]+(.*) \([0-9A-F-]+\).*/\1/')
+  local line
+  line=$(echo "$list" | grep -F "$preferred" | tail -1 || true)
+  if [[ -z "$line" ]]; then
+    line=$(echo "$list" | tail -1)
   fi
-  if [[ -z "$name" ]]; then
+  if [[ -z "$line" ]]; then
     echo "No ${family} simulator available" >&2
     xcrun simctl list devices available >&2
     exit 1
   fi
-  echo "$name"
+  echo "$line" | sed -E 's/^.*\(([0-9A-F-]+)\) \([A-Za-z]+\).*$/\1/'
+}
+
+# The name of the simulator with the given UDID, for the log.
+device_name() {
+  xcrun simctl list devices available | grep -F "($1)" | head -1 | sed -E 's/^[[:space:]]+(.*) \([0-9A-F-]+\).*/\1/'
+}
+
+# The UDID behind a destination string: its id, or the newest device of its name (XCODEBUILD_DESTINATION may name one).
+destination_udid() {
+  local destination="$1"
+  case "$destination" in
+    *id=*) echo "${destination#*id=}" | cut -d, -f1 ;;
+    *name=*) xcrun simctl list devices available | grep -F "${destination#*name=} (" | tail -1 \
+      | sed -E 's/^.*\(([0-9A-F-]+)\) \([A-Za-z]+\).*$/\1/' ;;
+  esac
 }
 
 mkdir -p "$RESULTS_DIR"
@@ -71,10 +93,10 @@ show_xcode_version() {
 # statement, never inside $(...).
 resolve_iphone_destination() {
   if [[ -z "${DESTINATION:-}" ]]; then
-    local device
-    device=$(pick_device iPhone "iPhone 17 Pro (")
-    DESTINATION="platform=iOS Simulator,name=${device}"
-    echo "Destination: ${DESTINATION}"
+    local udid
+    udid=$(pick_device iPhone "iPhone 17 Pro (")
+    DESTINATION="platform=iOS Simulator,id=${udid}"
+    echo "Destination: ${DESTINATION} ($(device_name "$udid"))"
   fi
 }
 
@@ -82,10 +104,10 @@ resolve_iphone_destination() {
 # Sets the global IPAD_DESTINATION: call it as a plain statement, never inside $(...).
 resolve_ipad_destination() {
   if [[ -z "${IPAD_DESTINATION:-}" ]]; then
-    local device
-    device=$(pick_device iPad "iPad Pro 13-inch")
-    IPAD_DESTINATION="platform=iOS Simulator,name=${device}"
-    echo "iPad destination: ${IPAD_DESTINATION}"
+    local udid
+    udid=$(pick_device iPad "iPad Pro 13-inch")
+    IPAD_DESTINATION="platform=iOS Simulator,id=${udid}"
+    echo "iPad destination: ${IPAD_DESTINATION} ($(device_name "$udid"))"
   fi
 }
 
@@ -94,13 +116,12 @@ resolve_ipad_destination() {
 # out the same way; one warm launch, with the mock arguments so it reaches no network, takes that cost off the first
 # test. Best effort: every step is allowed to fail, and the app is only launched when the products are there.
 warm_up_simulator() {
-  local name="$1" udid
-  udid=$(xcrun simctl list devices available | grep -m1 -F "${name} (" | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/' || true)
+  local udid="$1"
   if [[ -z "$udid" ]]; then
-    echo "warm-up: no simulator named ${name}" >&2
+    echo "warm-up: no simulator to warm up" >&2
     return 0
   fi
-  echo "==> warm-up (${name})"
+  echo "==> warm-up ($(device_name "$udid"))"
   # bootstatus -b boots the device when it is not booted and waits until it is.
   xcrun simctl bootstatus "$udid" -b >/dev/null 2>&1 || true
   local app="$PRODUCTS_DIR/Debug-iphonesimulator/${SCHEME}.app"
@@ -139,7 +160,15 @@ run_logged() {
     tail -n 40 "$log" >&2
     exit "$status"
   fi
-  [[ $is_test -eq 0 ]] || require_executed_tests "$label" "$log"
+  [[ $is_test -eq 0 ]] || { require_executed_tests "$label" "$log"; report_retried_tests "$label" "$log"; }
+}
+
+# Names every test that failed and then passed within one run (a CI retry), so the log shows the flake.
+report_retried_tests() {
+  local label="$1" log="$2" retried
+  retried=$(grep -oE "Test Case '[^']+' failed" "$log" | sed -E "s/Test Case '([^']+)' failed/\1/" | sort -u \
+    | while IFS= read -r name; do grep -qF "Test Case '${name}' passed" "$log" && echo "$name"; done || true)
+  [[ -z "$retried" ]] || echo "==> ${label}: passed only on a retry: ${retried//$'\n'/, }"
 }
 
 # The destination is the iPhone unless XCODEBUILD_DESTINATION says otherwise (the iPad stage sets it).
@@ -201,6 +230,15 @@ check_executed_tests_gate() {
   message=$( (require_executed_tests skipped "$dir/skipped.log") 2>&1 || true)
   [[ "$message" == *"every test was skipped"* ]] \
     || { echo "require_executed_tests must say 'every test was skipped' for skipped.log" >&2; ok=0; }
+  # A retried test (failed, then passed, in one log) is named; a log without one prints nothing.
+  printf '%s\n' "Test Case '-[lilyUITests.LilyIPadTests testSplit]' failed (185.6 seconds)." \
+    "Test Case '-[lilyUITests.LilyIPadTests testSplit]' passed (27.1 seconds)." \
+    "Test Case '-[lilyUITests.LilyIPadTests testGrid]' passed (14.0 seconds)." > "$dir/retried.log"
+  message=$(report_retried_tests retried "$dir/retried.log")
+  [[ "$message" == *"passed only on a retry: -[lilyUITests.LilyIPadTests testSplit]" ]] \
+    || { echo "report_retried_tests must name testSplit alone for retried.log; it printed: ${message}" >&2; ok=0; }
+  message=$(report_retried_tests clean "$dir/xctest.log")
+  [[ -z "$message" ]] || { echo "report_retried_tests must print nothing for xctest.log; it printed: ${message}" >&2; ok=0; }
   rm -rf "$dir"
   [[ $ok -eq 1 ]] || exit 1
 }
@@ -215,8 +253,9 @@ run_prebuilt_tests() {
     echo "No .xctestrun under $PRODUCTS_DIR; run './scripts/ci.sh build-and-unit' (or restore the build products) first" >&2
     exit 1
   fi
-  warm_up_simulator "${destination#*name=}"
-  run_logged "$label" test-without-building "$@" -xctestrun "$xctestrun" -destination "$destination"
+  warm_up_simulator "$(destination_udid "$destination")"
+  run_logged "$label" test-without-building "$@" -xctestrun "$xctestrun" -destination "$destination" \
+    -retry-tests-on-failure -test-iterations "$CI_TEST_ITERATIONS"
 }
 
 # The UI test classes declared under the directory (lilyUITests/ by default), one per line: every class deriving from
@@ -352,14 +391,14 @@ run_unit_tests() {
 run_ui_tests() {
   use_software_keyboard
   resolve_iphone_destination
-  warm_up_simulator "${DESTINATION#*name=}"
+  warm_up_simulator "$(destination_udid "${XCODEBUILD_DESTINATION:-$DESTINATION}")"
   run_xcodebuild ui-tests "$1" -only-testing:"$UI_TARGET"
 }
 
 run_ipad_ui_tests() {
   use_software_keyboard
   resolve_ipad_destination
-  warm_up_simulator "${IPAD_DESTINATION#*name=}"
+  warm_up_simulator "$(destination_udid "$IPAD_DESTINATION")"
   XCODEBUILD_DESTINATION="$IPAD_DESTINATION" run_xcodebuild ui-ipad-tests "$1" -only-testing:"$IPAD_UI_TESTS"
 }
 
