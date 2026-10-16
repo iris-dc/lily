@@ -85,7 +85,8 @@ jobs:
     name: UI tests (${{ matrix.shard }})
     needs: build-and-unit
     runs-on: macos-26
-    timeout-minutes: 45
+    # A shard carries about 18 minutes of tests on the runner plus the setup; the margin is for a constrained runner.
+    timeout-minutes: 60
     # xcodebuild and xcrun honour DEVELOPER_DIR without xcode-select, so a shard never runs products built under
     # another 26.x when runner images differ within one run.
     env:
@@ -94,7 +95,7 @@ jobs:
       fail-fast: false
       matrix:
         # 1..N are the iPhone shards of UI_SHARDS in scripts/ci.sh; ipad is LilyIPadTests on an iPad simulator.
-        shard: [1, 2, 3, ipad]
+        shard: [1, 2, 3, 4, ipad]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

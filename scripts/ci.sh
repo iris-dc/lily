@@ -13,13 +13,17 @@ IPAD_UI_TEST_CLASS="LilyIPadTests"
 IPAD_UI_TESTS="$UI_TARGET/$IPAD_UI_TEST_CLASS"
 # What every UI test class derives from (the base itself derives from XCTestCase); lint lists the classes by it.
 UI_BASE_CLASS="LilyUITestCase"
-# The iPhone UI classes grouped into shards of roughly equal running time, so CI runs them side by side and no job
-# nears its timeout as the suite grows. Lint checks that every test class under lilyUITests/ (whatever its name, see
-# ui_test_classes) is in exactly one shard and that the iPad class is in none.
+# The iPhone UI classes grouped into shards of roughly equal running time on the GitHub runner (about 18 minutes of
+# tests each, measured there: Chat 751 s, Tournament 732, EventEdit 718, Smoke 409, Groups 409, Roster 289, SignIn 200,
+# Profile 182, People 156, Discover 150, State 143, Language 73), so no job nears its timeout as the suite grows; three
+# shards had put 34 minutes of tests in one job, which a slow runner took past the limit. Lint checks that every test
+# class under lilyUITests/ (whatever its name, see ui_test_classes) is in exactly one shard, that the iPad class is in
+# none, and that the workflow's matrix lists every shard.
 UI_SHARDS=(
-  "LilyTournamentTests LilyPeopleTests LilyLanguageTests"
-  "LilyChatTests LilySmokeTests LilyDiscoverTests LilyStateTests"
-  "LilyGroupsTests LilyEventEditTests LilySignInTests LilyProfileTests LilyRosterTests"
+  "LilyChatTests LilyProfileTests LilyDiscoverTests"
+  "LilyTournamentTests LilySignInTests LilyStateTests"
+  "LilyEventEditTests LilyRosterTests LilyLanguageTests"
+  "LilySmokeTests LilyGroupsTests LilyPeopleTests"
 )
 RESULTS_DIR="${RESULTS_DIR:-build/results}"
 DERIVED_DATA="${DERIVED_DATA:-build/DerivedData}"
