@@ -131,8 +131,8 @@ warm_up_simulator() {
   local app="$PRODUCTS_DIR/Debug-iphonesimulator/${SCHEME}.app"
   if [[ -d "$app" ]]; then
     xcrun simctl install "$udid" "$app" >/dev/null 2>&1 || true
-    xcrun simctl launch "$udid" "$APP_BUNDLE_ID" -reset-session -mock-location -mock-auth -mock-events -app-language en \
-      >/dev/null 2>&1 || true
+    xcrun simctl launch "$udid" "$APP_BUNDLE_ID" -reset-session -mock-location -mock-auth -mock-events -freeze-aurora \
+      -app-language en >/dev/null 2>&1 || true
     sleep "$WARM_UP_SECONDS"
     xcrun simctl terminate "$udid" "$APP_BUNDLE_ID" >/dev/null 2>&1 || true
   fi

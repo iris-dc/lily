@@ -20,6 +20,8 @@ final class AppDependencies {
     let locationService: any LocationService
     /// Explore's filter between launches; see `AppDependencies+Events.swift`.
     let eventFilterStore: any EventFilterStore
+    /// `-freeze-aurora`: every aurora stays on its first frame; see `AppDependencies+Knobs.swift`.
+    let freezesAurora: Bool
     /// The language the copy is in and the user's choice behind it; the root view re-renders from it.
     let language: LanguageStore
     /// The currency prices are typed in and the price cap is judged in; see `AppDependencies+Currency.swift`.
@@ -50,9 +52,11 @@ final class AppDependencies {
          currency: CurrencyStore? = nil,
          eventFilterStore: any EventFilterStore = NoOpEventFilterStore(),
          errorCenter: ErrorCenter? = nil,
+         freezesAurora: Bool = false,
          defaults: UserDefaults = .standard) {
         self.logger = logger
         self.eventFilterStore = eventFilterStore
+        self.freezesAurora = freezesAurora
         // The stored choices as they are: launch arguments are `makeDefault`'s to read.
         let language = language ?? Self.makeLanguageStore(arguments: [], startsFresh: false, defaults: defaults, logger: logger)
         self.language = language
@@ -138,28 +142,7 @@ final class AppDependencies {
                                                                       defaults: defaults,
                                                                       logger: logger),
                                errorCenter: makeErrorCenter(arguments: arguments, logger: logger),
-                               defaults: defaults)
-    }
-
-    /// Isolated in-memory wiring for previews and tests.
-    static func makeMock(authBehavior: MockAuthBehavior = .succeed) -> AppDependencies {
-        let logger = OSLogLogger()
-        let defaults = UserDefaults(suiteName: AppConfig.Storage.previewSuitePrefix + UUID().uuidString) ?? .standard
-        let store = UserDefaultsSessionStore(defaults: defaults, logger: logger)
-        let identity = SessionIdentityProvider()
-        let repositories = Repositories.mock(identity: identity, logger: logger)
-        return AppDependencies(logger: logger,
-                               sessionStore: store,
-                               authService: MockAuthService(behavior: authBehavior, delay: .zero, store: store),
-                               identity: identity,
-                               eventRepository: repositories.events,
-                               profileRepository: repositories.profile,
-                               feedbackRepository: repositories.feedback,
-                               interactionRecorder: repositories.interactions,
-                               locationService: MockLocationService(),
-                               groupRepositories: repositories.groups,
-                               pushRegistrar: repositories.pushRegistrar,
-                               deviceRepository: repositories.devices,
+                               freezesAurora: freezesAurora(arguments: arguments, logger: logger),
                                defaults: defaults)
     }
 
@@ -240,7 +223,8 @@ private struct Auth {
 
 /// The data layer comes as a set: everything talks to the same backend, or everything stays in memory, so a mock run
 /// (previews, UI tests, `-mock-events`) never posts a statistic, registers a device or meets the permission alert.
-private struct Repositories {
+/// Internal, not private: `makeMock` (`AppDependencies+Mock.swift`) wires the mock set.
+struct Repositories {
     let events: any EventRepository
     let profile: any ProfileRepository
     let feedback: any FeedbackRepository

@@ -4,13 +4,19 @@ import XCTest
 /// location, mock auth and mock events (mirroring `AppConfig.LaunchArguments`; the test target cannot import the app
 /// module), so no run depends on the Cognito pool or a running backend. The app is pinned to English, which keeps the
 /// copy assertions independent of the Mac's language list, which the simulator inherits (`AppleLanguages`); the region
-/// stays the simulator's, so distances and currency symbols follow it.
+/// stays the simulator's, so distances and currency symbols follow it. The aurora is frozen on its first frame: its
+/// 30 fps redraw kept the simulator's compositor at two fifths of a core on a Mac and starved the GitHub runner, which
+/// renders in software, into launch and snapshot timeouts.
 class LilyUITestCase: XCTestCase {
     let app = XCUIApplication()
 
+    /// What every launch passes; a relaunch that replaces the arguments starts from here.
+    static let launchArguments = ["-reset-session", "-mock-location", "-mock-auth", "-mock-events", "-freeze-aurora",
+                                  "-app-language", "en"]
+
     override func setUpWithError() throws {
         continueAfterFailure = false
-        app.launchArguments = ["-reset-session", "-mock-location", "-mock-auth", "-mock-events", "-app-language", "en"]
+        app.launchArguments = Self.launchArguments
         app.launch()
     }
 

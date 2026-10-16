@@ -227,6 +227,9 @@ nonisolated enum AppConfig {
         /// Keeps every error popup up until it is dismissed instead of letting it fade after `ErrorPopup.autoDismissDelay`,
         /// so a UI test on a slow runner finds the popup it provoked rather than the place it just left.
         static let holdPopups = "-hold-popups"
+        /// Freezes the aurora on its first frame, as Reduce Motion does: the 30 fps mesh and grain keep the simulator's
+        /// compositor at two fifths of a core on a Mac and starve a runner that renders in software.
+        static let freezeAurora = "-freeze-aurora"
         /// Takes the next argument as its value, e.g. `-api-base-url http://<mac-name>.local:8080`.
         static let apiBaseURL = "-api-base-url"
         /// An argument with this prefix is a flag, never a value.
