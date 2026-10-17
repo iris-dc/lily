@@ -55,7 +55,7 @@ struct EmailSignInViewModelTests {
         await viewModel.submitTask?.value
 
         #expect(viewModel.mode == .confirm)
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(harness.errorCenter.current == nil)
     }
 
@@ -160,7 +160,7 @@ struct EmailSignInViewModelTests {
         viewModel.submit()
         await viewModel.submitTask?.value
 
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(harness.errorCenter.current?.error == .invalidCredentials)
         #expect(!viewModel.isSubmitting)
     }
@@ -190,7 +190,7 @@ struct EmailSignInViewModelTests {
         viewModel.cancel()
         await task?.value
 
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(harness.errorCenter.current == nil)
         #expect(!viewModel.isSubmitting)
         #expect(viewModel.submitTask == nil)
@@ -207,7 +207,7 @@ struct EmailSignInViewModelTests {
         viewModel.cancel()
         await task?.value
 
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(harness.auth.signInProviders.isEmpty)
         #expect(harness.errorCenter.current == nil)
         #expect(harness.logger.messages(in: .auth).contains { $0.contains("cancelled") })
@@ -243,7 +243,7 @@ struct SignInViewModelTests {
         viewModel.cancel()
         await task?.value
 
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(harness.controller.authenticatingProvider == nil)
         #expect(harness.errorCenter.current == nil)
         #expect(viewModel.signInTask == nil)

@@ -4,65 +4,6 @@ import Testing
 
 @MainActor
 struct SessionControllerTests {
-    @Test func restoreWithValidSessionSignsIn() async {
-        let harness = SessionHarness()
-        harness.auth.restoreResult = .success(TestFixtures.session)
-
-        await harness.controller.restore()
-
-        #expect(harness.controller.state == .signedIn(TestFixtures.user))
-    }
-
-    @Test func restoreWithGuestChoiceEntersGuestMode() async {
-        let harness = SessionHarness()
-        harness.store.stored = .guest
-
-        await harness.controller.restore()
-
-        #expect(harness.controller.state == .guest)
-    }
-
-    @Test func restoreWithNothingStoredSignsOut() async {
-        let harness = SessionHarness()
-
-        await harness.controller.restore()
-
-        #expect(harness.controller.state == .signedOut)
-    }
-
-    /// The store is a hint: a stale `.signedIn` the auth service no longer recognises must not sign the user in.
-    @Test func restoreIgnoresStaleStoredSignInWhenAuthServiceHasNoSession() async {
-        let harness = SessionHarness()
-        harness.auth.restoreResult = .success(nil)
-        harness.store.stored = .signedIn(TestFixtures.session)
-
-        await harness.controller.restore()
-
-        #expect(harness.controller.state == .signedOut)
-    }
-
-    @Test func restoreFailureFallsBackToStoredChoice() async {
-        let harness = SessionHarness()
-        harness.auth.restoreResult = .failure(.network)
-        harness.store.stored = .guest
-
-        await harness.controller.restore()
-
-        #expect(harness.controller.state == .guest)
-        #expect(harness.errorCenter.current == nil)
-    }
-
-    @Test func restoreFailureWithNothingStoredSignsOut() async {
-        let harness = SessionHarness()
-        harness.auth.restoreResult = .failure(.network)
-
-        await harness.controller.restore()
-
-        #expect(harness.controller.state == .signedOut)
-        #expect(harness.errorCenter.current == nil)
-        #expect(harness.logger.messages(in: .auth).contains { $0.contains("restore failed") })
-    }
-
     @Test func signInSuccessUpdatesStateAndLogs() async {
         let harness = SessionHarness()
 
@@ -82,7 +23,7 @@ struct SessionControllerTests {
         let success = await harness.controller.signIn(with: .google)
 
         #expect(!success)
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(harness.errorCenter.current?.error == .authFailed(provider: .google))
     }
 

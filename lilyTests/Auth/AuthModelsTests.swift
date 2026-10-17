@@ -21,11 +21,10 @@ struct SessionStateTests {
         #expect(SessionState.guest.user == nil)
     }
 
-    /// The tabs are on screen for a guest or a user; a launch or the landing is never the shell.
+    /// The tabs are on screen for a guest or a user; the landing is never the shell.
     @Test func showsShellForGuestsAndUsersOnly() {
         #expect(SessionState.guest.showsShell)
         #expect(SessionState.signedIn(TestFixtures.user).showsShell)
-        #expect(!SessionState.loading.showsShell)
         #expect(!SessionState.signedOut.showsShell)
     }
 
@@ -34,7 +33,6 @@ struct SessionStateTests {
         #expect(SessionState.signedIn(TestFixtures.user).isSignedIn)
         #expect(!SessionState.guest.isSignedIn)
         #expect(!SessionState.signedOut.isSignedIn)
-        #expect(!SessionState.loading.isSignedIn)
     }
 }
 

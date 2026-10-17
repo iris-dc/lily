@@ -81,7 +81,7 @@ lily/
                  (UTF-16 length, as the backend counts text), Collection+FirstOf (the one first-present-issue rule of the forms)
     UI/          Theme (fonts, aurora role-to-color mapping), Effects (aurora geometry, roles, film grain: pure, testable math),
                  Components (aurora background, content-screen scaffold, glass cards, button modifiers, provider buttons, error popup,
-                 wordmark, ScreenTitle + ScreenSubtitle, AvatarCircle, String+Initials (the one initials rule, beside AvatarCircle),
+                 ScreenTitle + ScreenSubtitle, AvatarCircle, String+Initials (the one initials rule, beside AvatarCircle),
                  UnreadDot, ConversationRow (avatar + title + caption + dot, shared by the Chats rows and the
                  inbox row) and AvatarRowDivider (the divider that starts at their text column), EventTypeChips (the one
                  type-chip flow of the filter, the event form and the group form), EntriesBar (the one "how full" bar; CapacityBar

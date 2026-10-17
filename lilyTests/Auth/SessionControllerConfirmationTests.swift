@@ -14,7 +14,7 @@ struct SessionControllerConfirmationTests {
 
         #expect(result == .confirmationRequired)
         #expect(harness.auth.signInProviders.isEmpty)
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(harness.controller.authenticatingProvider == nil)
         #expect(harness.errorCenter.current == nil)
         #expect(harness.logger.messages(in: .auth).contains { $0.contains("needs email confirmation") })
@@ -27,7 +27,7 @@ struct SessionControllerConfirmationTests {
         let result = await harness.controller.signIn(withEmail: TestFixtures.credentials)
 
         #expect(result == .confirmationRequired)
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(harness.errorCenter.current == nil)
         #expect(harness.logger.messages(in: .auth).contains { $0.contains("needs email confirmation") })
     }
@@ -54,7 +54,7 @@ struct SessionControllerConfirmationTests {
         #expect(result == .failed)
         #expect(harness.errorCenter.current?.error == .network)
         #expect(harness.logger.messages(in: .auth, at: .error).count == 1, "the sign-in's line alone")
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(harness.controller.authenticatingProvider == nil)
         #expect(harness.auth.signInProviders == [.email(credentials)])
     }
@@ -90,7 +90,7 @@ struct SessionControllerConfirmationTests {
         #expect(harness.auth.confirmations == [FakeAuthService.ConfirmationRequest(email: credentials.email, code: "123456")])
         #expect(harness.auth.signInProviders == [.email(credentials)])
         #expect(harness.errorCenter.current?.error == .network)
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(harness.controller.authenticatingProvider == nil)
         #expect(harness.logger.messages(in: .auth, at: .info).contains { $0.contains("returns to sign-in") })
     }
@@ -105,7 +105,7 @@ struct SessionControllerConfirmationTests {
 
         #expect(outcome == .confirmedButSignInFailed)
         #expect(harness.errorCenter.current == nil)
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
     }
 
     /// A refused code is `.failed`, never `.confirmedButSignInFailed`: the form keeps the code step, no sign-in is tried.
@@ -117,7 +117,7 @@ struct SessionControllerConfirmationTests {
 
         #expect(outcome == .failed)
         #expect(harness.auth.signInProviders.isEmpty)
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(harness.controller.authenticatingProvider == nil)
         #expect(harness.errorCenter.current?.error == .invalidConfirmationCode)
     }

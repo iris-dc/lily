@@ -71,11 +71,11 @@ nonisolated enum DesignTokens {
         static let secondaryGlassTint: Double = 0.28
     }
 
-    /// The ember mesh behind every screen (full strength on launch, `landingIntensity` and `contentIntensity` elsewhere): a 4x4
+    /// The ember mesh behind every screen (`landingIntensity` on the landing, `contentIntensity` elsewhere): a 4x4
     /// `MeshGradient` whose points drift and whose red carries a slow travelling brightness ripple, under live film grain.
     /// Slow but plainly visible: the user should see the red flow within a few seconds without it fighting the headline.
     enum Aurora {
-        /// Mesh strength on the landing screen, calmer than the full-strength launch screen.
+        /// Mesh strength on the landing screen, calmer than full strength.
         static let landingIntensity: Double = 0.85
         /// Mesh strength behind content screens (lists, details, profile, sign-in), where text and cards sit on top.
         static let contentIntensity: Double = 0.55
@@ -133,8 +133,6 @@ nonisolated enum DesignTokens {
     }
 
     enum Typography {
-        /// Tracking per point of font size for the wordmark; tuned as -1.2 at the 28pt design reference.
-        static let wordmarkTrackingPerPoint: CGFloat = -1.2 / 28
         static let headlineSize: CGFloat = 44
         static let headlineTracking: CGFloat = -1.8
         static let headlineLineSpacing: CGFloat = -4

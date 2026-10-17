@@ -55,11 +55,13 @@ struct HomeView: View {
         .task(id: loadKey) { await loadIfStale() }
     }
 
-    /// The caller's games and groups are theirs alone, so a guest asks for nothing. The three lists load at once, so
-    /// the screen's spinner lasts one round trip and not three. The locals keep the child tasks from capturing the
+    /// The caller's games and groups are theirs alone, so a guest asks for nothing, and nothing is asked before the pool
+    /// confirmed the cached user (the requests need the token that check obtains anyway). The three lists load at once,
+    /// so the screen's spinner lasts one round trip and not three. The locals keep the child tasks from capturing the
     /// view: they capture the main-actor collaborators, which are `Sendable`.
     private func loadIfStale() async {
-        guard content == .overview else { return }
+        await dependencies.sessionController.restore()
+        guard !Task.isCancelled, content == .overview else { return }
         let events = events
         let tournaments = tournaments
         let myGroups = dependencies.myGroups

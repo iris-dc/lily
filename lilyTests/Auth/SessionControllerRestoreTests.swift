@@ -2,19 +2,67 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Restore over what the store may hold after an interrupted sign-out.
+/// `restore()` over an empty store, a guest choice, a check that could not be made and a sign-out marker. The cached
+/// user's cases are in `SessionControllerCachedRestoreTests`.
 @MainActor
 struct SessionControllerRestoreTests {
-    /// A sign-out the pool never confirmed leaves `.signingOut` in the store; the controller lands on the landing,
-    /// never in guest mode and never signed in.
-    @Test func aPendingSignOutMarkerRestoresToSignedOut() async {
+    @Test func restoreWithNothingStoredSignsOut() async {
         let harness = SessionHarness()
-        harness.auth.restoreResult = .success(nil)
-        harness.store.stored = .signingOut
 
         await harness.controller.restore()
 
         #expect(harness.controller.state == .signedOut)
+        #expect(harness.logger.messages(in: .auth).contains { $0.contains("No stored session") })
+    }
+
+    @Test func aGuestChoiceStandsWhenThePoolHasNoSession() async {
+        let harness = SessionHarness()
+        harness.store.stored = .guest
+        let controller = harness.makeController()
+
+        await controller.restore()
+
+        #expect(controller.state == .guest)
+        #expect(harness.store.stored == .guest)
+        #expect(harness.logger.messages(in: .auth).contains { $0.contains("Restored guest mode") })
+    }
+
+    /// A check that could not be made keeps the cached choice; a guest stays a guest, nothing is shown.
+    @Test func restoreFailureKeepsTheCachedChoice() async {
+        let harness = SessionHarness()
+        harness.auth.restoreResult = .failure(.network)
+        harness.store.stored = .guest
+        let controller = harness.makeController()
+
+        await controller.restore()
+
+        #expect(controller.state == .guest)
+        #expect(harness.errorCenter.current == nil)
+    }
+
+    @Test func restoreFailureWithNothingStoredSignsOut() async {
+        let harness = SessionHarness()
+        harness.auth.restoreResult = .failure(.network)
+
+        await harness.controller.restore()
+
+        #expect(harness.controller.state == .signedOut)
+        #expect(harness.errorCenter.current == nil)
+        #expect(harness.logger.messages(in: .auth).contains { $0.contains("Could not verify") })
+    }
+
+    /// A sign-out the pool never confirmed leaves `.signingOut` in the store; the first frame is the landing, and the
+    /// check (which finishes the sign-out at the pool) leaves it there.
+    @Test func aPendingSignOutMarkerRestoresToSignedOut() async {
+        let harness = SessionHarness()
+        harness.auth.restoreResult = .success(nil)
+        harness.store.stored = .signingOut
+        let controller = harness.makeController()
+        #expect(controller.state == .signedOut)
+
+        await controller.restore()
+
+        #expect(controller.state == .signedOut)
         #expect(harness.logger.messages(in: .auth).contains { $0.contains("No stored session") })
     }
 
@@ -23,9 +71,10 @@ struct SessionControllerRestoreTests {
         let harness = SessionHarness()
         harness.auth.restoreResult = .success(TestFixtures.session)
         harness.store.stored = .signingOut
+        let controller = harness.makeController()
 
-        await harness.controller.restore()
+        await controller.restore()
 
-        #expect(harness.controller.state == .signedIn(TestFixtures.user))
+        #expect(controller.state == .signedIn(TestFixtures.user))
     }
 }

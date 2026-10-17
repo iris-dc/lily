@@ -23,6 +23,51 @@ struct ShellSyncTests {
                          push: push.coordinator)
     }
 
+    /// Nothing loads for a user the pool has not confirmed: a run joins the restore's check and starts after it.
+    @Test func aRunWaitsForTheSessionCheck() async {
+        session.auth.holdsRequests = true
+        let run = startActiveRun()
+        await settle(until: { session.auth.restoreCount == 1 })
+
+        #expect(realtime.meRepository.meCallCount == 0)
+        #expect(realtime.transport.connectCount == 0)
+
+        session.auth.releaseRequests()
+        await run.value
+        #expect(realtime.meRepository.meCallCount == 1)
+    }
+
+    /// A run cancelled while the check is out (the state flipped, a new key took over) loads nothing afterwards.
+    @Test func aRunCancelledWhileTheSessionCheckRunsLoadsNothing() async {
+        session.auth.holdsRequests = true
+        let run = startActiveRun()
+        await settle(until: { session.auth.restoreCount == 1 })
+
+        run.cancel()
+        session.auth.releaseRequests()
+        await run.value
+
+        #expect(realtime.meRepository.meCallCount == 0)
+        #expect(realtime.transport.connectCount == 0)
+    }
+
+    /// The tab was picked from the cache when the root was built; the restore moves it only when the check changed the
+    /// state: a pool session over an empty cache lands on Home, a dropped cached user on Explore.
+    @Test func restoreMovesTheTabOnlyWhenTheCheckChangedTheState() async {
+        session.auth.restoreResult = .success(TestFixtures.session)
+        await sync.restore()
+        #expect(push.navigation.selectedTab == .home)
+
+        let cached = SessionHarness()
+        cached.store.stored = .signedIn(TestFixtures.session)
+        let controller = cached.makeController()
+        cached.auth.restoreResult = .success(nil)
+        let navigation = AppNavigation()
+        navigation.selectedTab = .home
+        await makeSync(session: controller, navigation: navigation).restore()
+        #expect(navigation.selectedTab == .explore)
+    }
+
     @Test func theConnectionWaitsForTheAccount() async {
         realtime.meRepository.holdsRequests = true
         let run = startActiveRun()
@@ -141,6 +186,17 @@ struct ShellSyncTests {
 
         #expect(push.navigation.selectedTab == .explore && push.navigation.chatPath.isEmpty)
         #expect(push.coordinator.pendingTap == .event(id: "e1"))
+    }
+
+    private func makeSync(session: SessionController, navigation: AppNavigation) -> ShellSync {
+        ShellSync(session: session,
+                  navigation: navigation,
+                  me: realtime.me,
+                  realtime: realtime.controller,
+                  myGroups: realtime.store,
+                  inbox: realtime.inbox,
+                  blocks: realtime.blocks,
+                  push: push.coordinator)
     }
 
     /// An active run for the test user, in a task of its own so the test can act while a request is held.

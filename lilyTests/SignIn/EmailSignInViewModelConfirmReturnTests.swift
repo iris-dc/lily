@@ -18,7 +18,7 @@ extension EmailSignInViewModelTests {
         #expect(viewModel.email == credentials.email)
         #expect(viewModel.password == credentials.password)
         #expect(harness.errorCenter.current?.error == .network)
-        #expect(harness.controller.state == .loading)
+        #expect(harness.controller.state == .signedOut)
         #expect(!viewModel.isSubmitting)
     }
 

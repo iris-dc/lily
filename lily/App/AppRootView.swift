@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Switches between launch, welcome and the main shell based on session state, ties `ShellSync` to the scene phase
-/// and the user (the restore once, a run whenever either changes), and presents the terms sheet while a signed-in
-/// caller owes the current terms. Wiring only: what a run does, and in which order, is `ShellSync`'s.
+/// Switches between the landing and the main shell on the session state (which starts from the cache, so the first
+/// frame is already one of the two), ties `ShellSync` to the scene phase and the user (the restore once, a run
+/// whenever either changes), and presents the terms sheet while a signed-in caller owes the current terms. Wiring only:
+/// what a run does, and in which order, is `ShellSync`'s.
 struct AppRootView: View {
     let dependencies: AppDependencies
     @State private var terms: TermsViewModel
@@ -21,8 +22,6 @@ struct AppRootView: View {
     var body: some View {
         Group {
             switch session.state {
-            case .loading:
-                LaunchView()
             case .signedOut:
                 LandingView(dependencies: dependencies)
             case .guest, .signedIn:
@@ -57,17 +56,16 @@ struct AppRootView: View {
         Binding(get: { terms.isPresented }, set: { _ in })
     }
 
-    /// Which root is on screen; a change crossfades, so launch -> landing is as soft as landing -> shell.
+    /// Which root is on screen; a change crossfades between the two.
     private var rootScreen: RootScreen {
         switch session.state {
-        case .loading: .launch
         case .signedOut: .landing
         case .guest, .signedIn: .shell
         }
     }
 
     private enum RootScreen {
-        case launch, landing, shell
+        case landing, shell
     }
 
     /// What one run of the sync is for; a new key cancels the run still going for the old one. The language is part of
@@ -76,16 +74,6 @@ struct AppRootView: View {
         let phase: ScenePhase
         let userID: String?
         let language: AppLanguage
-    }
-}
-
-/// Shown only while the session is being restored.
-private struct LaunchView: View {
-    var body: some View {
-        ZStack {
-            AuroraBackground()
-            Wordmark(size: DesignTokens.Typography.headlineSize)
-        }
     }
 }
 

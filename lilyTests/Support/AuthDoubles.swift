@@ -121,10 +121,20 @@ final class SpySessionObserver: SessionObserver {
     private(set) var endCount = 0
     var onSessionWillEnd: () -> Void = {}
     var onSessionEnd: () -> Void = {}
+    /// While true, `sessionWillEnd()` parks after recording the call until `releaseWillEnd()`, as a device unregistration
+    /// that waits for the network would.
+    var holdsWillEnd: Bool {
+        get { willEndHold.isEnabled }
+        set { willEndHold.isEnabled = newValue }
+    }
+    private let willEndHold = RequestHold()
+
+    func releaseWillEnd() { willEndHold.release() }
 
     func sessionWillEnd() async {
         willEndCount += 1
         onSessionWillEnd()
+        await willEndHold.wait()
     }
 
     func sessionDidEnd() {

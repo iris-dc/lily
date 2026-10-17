@@ -7,8 +7,10 @@ import Foundation
 /// inbox follows Mine, the block list the inbox (every room's rows read it), and the push offer and registration come
 /// last. A run stops at the first await after it was cancelled, so the phase it read is never applied over a newer one;
 /// the check before `setDesired` matters most, since `resume()` sets `isActive` unconditionally and a stale run must
-/// never reopen a connection the background run closed. The restore picks the start tab before it opens a pending
-/// notification tap, or the tab would overwrite the screen the tap opened.
+/// never reopen a connection the background run closed. Every run first joins the session's check against the pool,
+/// so nothing loads for a user the pool has not confirmed (the loads need the token that check obtains anyway). The
+/// start tab is picked from the cached session when the root is built; the restore moves it only when the check changed
+/// the state, and before it opens a pending notification tap, or the tab would overwrite the screen the tap opened.
 final class ShellSync {
     private let session: SessionController
     private let navigation: AppNavigation
@@ -37,16 +39,22 @@ final class ShellSync {
         self.push = push
     }
 
-    /// Restores the session, lands on the start tab for it, then opens a notification tapped before the restore.
+    /// Verifies the cached session with the pool, moves the start tab when that changed the state, then opens a
+    /// notification tapped before the restore.
     func restore() async {
+        let cached = session.state
         await session.restore()
-        navigation.selectedTab = AppNavigation.startTab(for: session.state)
+        if session.state != cached {
+            navigation.selectedTab = AppNavigation.startTab(for: session.state)
+        }
         await push.openPendingTap()
     }
 
     /// In the background only the connection is told to close. A guest needs no guard here: every store and coordinator
     /// guards on the identity itself and clears when the session ends.
     func run(active: Bool, user: AuthUser?) async {
+        await session.restore()
+        guard !Task.isCancelled else { return }
         if active { await me.loadIfNeeded() }
         guard !Task.isCancelled else { return }
         await realtime.setDesired(active: active, user: user)

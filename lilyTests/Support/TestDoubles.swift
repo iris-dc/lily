@@ -12,8 +12,10 @@ final class InMemorySessionStore: SessionStore {
 
 /// Scripted auth service with call recording.
 @MainActor
-final class FakeAuthService: AuthService {
+final class FakeAuthService: AuthService, HoldsRequests {
+    let hold = RequestHold()
     var restoreResult: Result<AuthSession?, AppError> = .success(nil)
+    private(set) var restoreCount = 0
     var signInResult: Result<AuthSession, AppError> = .success(TestFixtures.session)
     var signUpOutcome: SignUpOutcome = .signedUp
     var signUpError: AppError?
@@ -33,7 +35,11 @@ final class FakeAuthService: AuthService {
         let code: String
     }
 
-    func restoreSession() async throws -> AuthSession? { try restoreResult.get() }
+    func restoreSession() async throws -> AuthSession? {
+        restoreCount += 1
+        await hold.wait()
+        return try restoreResult.get()
+    }
 
     func signIn(with provider: AuthProvider) async throws -> AuthSession {
         signInProviders.append(provider)
@@ -110,6 +116,15 @@ struct SessionHarness {
                                        profileRepository: profile,
                                        errorCenter: errorCenter,
                                        logger: logger)
+    }
+
+    /// A second controller over the same doubles, for a test that seeds the store before the controller reads it.
+    func makeController() -> SessionController {
+        SessionController(authService: auth,
+                          sessionStore: store,
+                          profileRepository: profile,
+                          errorCenter: errorCenter,
+                          logger: logger)
     }
 }
 

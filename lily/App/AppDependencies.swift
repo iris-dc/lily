@@ -92,6 +92,8 @@ final class AppDependencies {
                                                    profileRepository: profileRepository,
                                                    errorCenter: errorCenter,
                                                    logger: logger)
+        // The start tab follows the cached session, so the shell's first frame is already on it.
+        navigation.selectedTab = AppNavigation.startTab(for: sessionController.state)
         // The repositories were built around `identity` before the controller existed; close the loop. The recorder
         // flushes before the session ends, the rest clear after it.
         identity.session = sessionController

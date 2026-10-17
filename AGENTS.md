@@ -134,8 +134,12 @@ undo your own edit in a dirty tree: it drops the user's uncommitted work on that
 - `scripts/`: `ci.sh`, `l10n-check.py` (+ its unittest), `make-app-icon.swift`.
 - The full tree with one line per file group: `docs/notes/folder-layout.md`.
 
-**Who owns what.** `SessionController` owns the session state machine (`SessionState`: loading, signedOut, guest,
-signedIn); `SessionStore` is a hint, Cognito is the truth. `ErrorCenter` is the one funnel for errors.
+**Who owns what.** `SessionController` owns the session state machine (`SessionState`: signedOut, guest, signedIn).
+The first frame shows the cached choice from `SessionStore`, no network answer awaited; `restore()` then verifies it
+with Cognito once per process and settles a disagreement (a pool without a session ends the cached one like a
+sign-out, a pool session the cache missed signs in, an unreachable pool keeps the cache and the backend's 401 decides).
+`ShellSync.run`, Home's and Chats' loads join that check first, so nothing loads for a user the pool has not confirmed;
+the start tab is picked from the cached state in `AppDependencies.init`. `ErrorCenter` is the one funnel for errors.
 `EventListViewModel` owns a list (scopes `upcoming`, `joined`, `group`) and reloads on `ContentFreshness` rules and
 `ChangeTracker` bumps; `EventDetailViewModel` owns the event on screen and the join/leave rules (`Participation`).
 `MyGroupsStore` is the one source of the caller's groups (rooms and conversations are groups of kind `tournament` and
@@ -189,7 +193,8 @@ how every adaptive view decides, never the device.
 ## UI and design rules
 
 - Every content screen starts with `ContentScreen { ... }` (the aurora at content strength under the content); the
-  landing and launch screens draw `AuroraBackground` themselves. Never put one aurora behind the `TabView` with
+  landing draws `AuroraBackground` itself. There is no launch screen of our own: the system's generated one covers the
+  process start and the first frame is the landing or the shell. Never put one aurora behind the `TabView` with
   transparent screens. The aurora, the grain and the fade-in follow the wall clock (`AuroraGeometry`, `FilmGrain`,
   `AuroraReveal`); phases are reduced modulo their period in `Double` before becoming `Float`.
 - Design language: SF Pro only with tight tracking, accent `#B72734` (`LilyAccent`) over maroon `#5E0C26`, the aurora

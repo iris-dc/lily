@@ -84,12 +84,11 @@ struct AppNavigationTests {
         #expect(navigation.selectedTab == .explore && navigation.pendingCreate == .group)
     }
 
-    /// A restored user lands on their groups and games; a guest (or nobody yet) on the games the landing promised.
+    /// A restored user lands on their groups and games; a guest or nobody on the games the landing promised.
     @Test func aLaunchStartsSignedInUsersOnHomeAndEveryoneElseOnExplore() {
         #expect(AppNavigation.startTab(for: .signedIn(TestFixtures.user)) == .home)
         #expect(AppNavigation.startTab(for: .guest) == .explore)
         #expect(AppNavigation.startTab(for: .signedOut) == .explore)
-        #expect(AppNavigation.startTab(for: .loading) == .explore)
     }
 
     /// What a notification or the inbox opens lands on the Chats stack, and on Home while chat is switched off.

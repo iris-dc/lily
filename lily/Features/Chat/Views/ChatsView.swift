@@ -57,7 +57,9 @@ extension View {
         let key = ConversationLoadKey(userID: dependencies.sessionController.state.user?.id,
                                       groupsVersion: dependencies.groupChanges.version)
         return task(id: key) {
-            guard HomeContent(for: dependencies.sessionController.state) == .overview else { return }
+            // Nothing is asked before the pool confirmed the cached user; the requests need its token anyway.
+            await dependencies.sessionController.restore()
+            guard !Task.isCancelled, HomeContent(for: dependencies.sessionController.state) == .overview else { return }
             await dependencies.myGroups.loadIfStale()
             await dependencies.inbox.loadIfStale()
         }
