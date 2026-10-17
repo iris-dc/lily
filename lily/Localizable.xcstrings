@@ -3869,46 +3869,6 @@
         }
       }
     },
-    "Football, running, padel, yoga and more, set up by people around you. Filter by sport, distance and date, or create your own.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Футбол, бег, падел, йога и не только — события, которые создают люди рядом с вами. Фильтруйте по виду спорта, расстоянию и дате или создайте своё событие."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fútbol, running, pádel, yoga y más, organizados por gente de tu zona. Filtra por deporte, distancia y fecha, o crea el tuyo."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Football, course à pied, padel, yoga et bien d’autres, organisés par des gens autour de vous. Filtrez par sport, distance et date, ou créez votre propre événement."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Футбол, біг, падел, йога і не тільки — усе це організовують люди навколо тебе. Фільтруй за видом спорту, відстанню та датою або створи свою подію."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Piłka nożna, bieganie, padel, joga i inne, organizowane przez ludzi wokół Ciebie. Filtruj według sportu, odległości i terminu albo utwórz własne."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Futebol, corrida, padel, ioga e outros desportos, organizados por pessoas à sua volta. Filtre por desporto, distância e data, ou crie o seu próprio evento."
-          }
-        }
-      }
-    },
     "Join an event": {
       "localizations": {
         "ru": {
@@ -3985,46 +3945,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "com um toque."
-          }
-        }
-      }
-    },
-    "See the time, the place, the host and how many have joined. Tap Join and you're in.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сразу видно время, место, организатора и сколько человек уже записалось. Нажмите «Присоединиться» — и вы в игре."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Consulta la hora, el lugar, el organizador y cuántos se han apuntado. Toca Unirse y ya estás dentro."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Consultez l’heure, le lieu, l’organisateur et le nombre de participants. Touchez Rejoindre et c’est fait."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подивись, коли й де, хто організовує та скільки людей уже приєдналося. Натисни «Приєднатися» — і ти серед учасників."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zobacz termin, miejsce, organizatora i ile osób już dołączyło. Dotknij „Dołącz” i jesteś na liście."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Veja a hora, o local, o organizador e quantos já estão inscritos. Toque em Participar e está dentro."
           }
         }
       }
@@ -4109,46 +4029,6 @@
         }
       }
     },
-    "Groups for a sport or a place, public or invite-only, each with its own chat. Members create events together.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Группы по виду спорта или месту, открытые или только по приглашению — у каждой свой чат. Участники вместе создают события."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Grupos de un deporte o de un lugar, públicos o solo con invitación, cada uno con su propio chat. Los miembros crean eventos juntos."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Des groupes pour un sport ou un lieu, publics ou sur invitation, chacun avec sa propre discussion. Les membres créent des événements ensemble."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Групи за видом спорту чи місцем, відкриті або лише за запрошенням, кожна зі своїм чатом. Учасники разом створюють події."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Grupy wokół sportu lub miejsca, publiczne albo tylko na zaproszenie, każda z własnym czatem. Członkowie razem tworzą wydarzenia."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Grupos de um desporto ou de um local, públicos ou só por convite, cada um com o seu próprio chat. Os membros criam eventos em conjunto."
-          }
-        }
-      }
-    },
     "Enter a tournament": {
       "localizations": {
         "ru": {
@@ -4225,46 +4105,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "ou organize um."
-          }
-        }
-      }
-    },
-    "Knockout or round robin, solo or in teams. Players report results, and the bracket or standings update for everyone.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Олимпийская или круговая система, в одиночку или командами. Игроки сообщают результаты, а сетка или таблица обновляется у всех."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eliminación directa o todos contra todos, en solitario o por equipos. Los jugadores reportan sus resultados, y el cuadro o la clasificación se actualiza para todos."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Élimination directe ou championnat, en solo ou en équipe. Les joueurs déclarent leurs résultats, et le tableau ou le classement se met à jour pour tous."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Олімпійська або кругова система, поодинці чи командами. Гравці повідомляють результати, а сітка або таблиця оновлюється для всіх."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "System pucharowy albo każdy z każdym, solo lub w drużynach. Gracze zgłaszają wyniki, a drabinka lub tabela aktualizuje się u wszystkich."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eliminatórias ou todos contra todos, a solo ou em equipas. Os jogadores reportam os resultados, e o quadro ou a classificação atualiza-se para todos."
           }
         }
       }

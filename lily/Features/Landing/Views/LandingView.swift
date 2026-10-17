@@ -54,23 +54,16 @@ struct LandingView: View {
     }
 }
 
-/// A slide's caption: two headline lines, the last in the accent colour, and the message under them.
+/// A slide's caption: two headline lines, the last in the accent colour.
 struct LandingHeadline: View {
     let lines: [String]
-    let subtitle: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Each line is its own Text, so the tight line gap is the stack spacing, not `lineSpacing`.
-            VStack(alignment: .leading, spacing: DesignTokens.Typography.headlineLineSpacing) {
-                ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
-                    HeadlineLine(text: line, color: index == lines.indices.last ? Color.lilyAccent : Color.lilyInk)
-                }
+        // Each line is its own Text, so the tight line gap is the stack spacing, not `lineSpacing`.
+        VStack(alignment: .leading, spacing: DesignTokens.Typography.headlineLineSpacing) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                HeadlineLine(text: line, color: index == lines.indices.last ? Color.lilyAccent : Color.lilyInk)
             }
-            Text(subtitle)
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .padding(.top, DesignTokens.Spacing.md)
         }
         // The lines take the height they need: on a short page (the SE) the slide's stack proposes the caption about
         // one line, and a wrapped line would truncate to "De vrais matchs…" instead; the miniature gives way.

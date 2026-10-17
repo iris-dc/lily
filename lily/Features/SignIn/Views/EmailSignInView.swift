@@ -14,6 +14,8 @@ struct EmailSignInView: View {
 
     /// A scroll view, not a fixed column: at accessibility type sizes the form with the keyboard up outgrows the sheet,
     /// and a fixed `VStack` gets compressed instead (the title rides up under the back button, both header lines truncate).
+    /// No field takes focus on appearance: the keyboard would arrive a beat after the push and lift the half sheet with
+    /// it, which read as a stutter; the user's tap on a field brings the keyboard and the room for it in one motion.
     var body: some View {
         ContentScreen {
             ScrollView {
@@ -36,7 +38,6 @@ struct EmailSignInView: View {
             .scrollBounceBehavior(.basedOnSize)
         }
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { focusedField = .email }
         .onChange(of: viewModel.mode) { _, mode in focusedField = mode == .confirm ? .code : .email }
         // The sheet cannot reach this view model, so the form stops its own submit when it goes away.
         .onDisappear { viewModel.cancel() }

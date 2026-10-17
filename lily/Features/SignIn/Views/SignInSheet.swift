@@ -30,7 +30,8 @@ struct SignInSheet: View {
         }
         .presentationDetents([.medium, .large])
         .lilyFormSheet()
-        .presentationDragIndicator(.visible)
+        // No grabber over the email form: it sat right above the glass back button in the sheet's corner.
+        .presentationDragIndicator(viewModel.isEmailFormPresented ? .hidden : .visible)
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
         .errorPopup(errorCenter)
         // Guests are already inside the app, so watch for a user rather than for entering the app.

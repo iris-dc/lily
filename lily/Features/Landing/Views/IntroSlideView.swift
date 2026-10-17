@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// One page of the intro: a framed miniature of a real screen and the caption (two headline lines, a message, the hint
-/// row). On a compact width the miniature sits above the caption, which stays at the bottom, so every slide reads like
-/// a post in a feed and the captions sit at one height from slide to slide; the miniature fills whatever the page
-/// leaves over. On a regular width the miniature stands beside the caption, both vertically centred, the composition
-/// capped at a readable width. At accessibility type sizes, where the pager has no page height, the miniature takes a
-/// fixed one.
+/// One page of the intro: a framed miniature of a real screen and the caption (two headline lines and the hint row;
+/// the miniature says the rest). On a compact width the miniature sits above the caption and takes what the page
+/// leaves, up to `introScreenMaxAspect` times its width; what is left over splits above the frame and under the
+/// caption, so every slide reads like a post in a feed and the captions sit at one height from slide to slide. On a
+/// regular width the miniature stands beside the caption, both vertically centred, the composition capped at a readable
+/// width. At accessibility type sizes, where the pager has no page height, the miniature takes a fixed one.
 struct IntroSlideView: View {
     let slide: IntroSlide
     let content: IntroContent
@@ -31,15 +31,15 @@ struct IntroSlideView: View {
 
     private var stacked: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // The caption is laid out first; the frame takes what the page leaves, or it would push the caption off.
-            // The list crops at its bottom; the detail and the room at their top, so a tall caption (French) never
-            // takes the Join or the composer, which are the point.
+            // The caption is laid out first; the frame takes what the page leaves, up to a phone's proportion, or it would
+            // push the caption off or show an empty screen. The list and the bracket crop at their bottom; the detail
+            // and the room at their top, so a tall caption (French) never takes the Join or the composer, which are the point.
             frame(width: Layout.introScreenWidth)
-                .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, minHeight: 0, maxHeight: Layout.introScreenWidth * Layout.introScreenMaxAspect)
                 .frame(height: accessibilityHeight)
                 .layoutPriority(-1)
                 .padding(.top, DesignTokens.Spacing.lg)
-            LandingHeadline(lines: slide.headline, subtitle: slide.message)
+            LandingHeadline(lines: slide.headline)
                 .padding(.top, DesignTokens.Spacing.xl)
             SwipeHint(isShown: showsSwipeHint)
                 .padding(.top, DesignTokens.Spacing.lg)
@@ -55,7 +55,7 @@ struct IntroSlideView: View {
                 .frame(height: accessibilityHeight)
                 .layoutPriority(-1)
             VStack(alignment: .leading, spacing: 0) {
-                LandingHeadline(lines: slide.headline, subtitle: slide.message)
+                LandingHeadline(lines: slide.headline)
                 SwipeHint(isShown: showsSwipeHint)
                     .padding(.top, DesignTokens.Spacing.lg)
             }
@@ -71,7 +71,7 @@ struct IntroSlideView: View {
     }
 
     private func frame(width: CGFloat) -> some View {
-        IntroScreenFrame(fadesBottom: slide == .events, alignment: slide == .events ? .top : .bottom, width: width) {
+        IntroScreenFrame(fadesBottom: !slide.keepsBottom, alignment: slide.keepsBottom ? .bottom : .top, width: width) {
             screen
         }
     }

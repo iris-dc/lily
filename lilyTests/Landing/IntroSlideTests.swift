@@ -19,14 +19,19 @@ struct IntroSlideTests {
         #expect(IntroSlide.shown().contains(.tournaments) == AppConfig.FeatureFlags.tournaments)
     }
 
-    /// Every slide draws two headline lines (the second in the accent) and a message; an empty one would be a
-    /// catalog key gone missing.
-    @Test func everySlideHasTwoHeadlineLinesAndAMessage() {
+    /// Every slide draws two headline lines (the second in the accent) and nothing else under the miniature; an
+    /// empty line would be a catalog key gone missing.
+    @Test func everySlideHasTwoHeadlineLines() {
         for slide in IntroSlide.allCases {
             #expect(slide.headline.count == 2)
             #expect(slide.headline.allSatisfy { !$0.isEmpty })
-            #expect(!slide.message.isEmpty)
         }
+    }
+
+    /// The detail's Join and the room's composer are what their slides are about, so a short frame keeps their bottom;
+    /// the list and the bracket go on below and fade there instead.
+    @Test func theJoinAndTheRoomKeepTheirBottom() {
+        #expect(IntroSlide.allCases.filter(\.keepsBottom) == [.join, .groups])
     }
 
     /// A misspelt SF Symbol draws nothing, so the hint's glyph is checked here instead of by eye.

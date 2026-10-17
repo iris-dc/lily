@@ -124,10 +124,10 @@ nonisolated enum DesignTokens {
         static let grainPixelSize: CGFloat = 2
         /// Pre-generated grain tiles cycled while animating; random noise at this count never reads as a loop.
         static let grainFrameCount = 12
-        /// How often the grain changes tile: film-like flicker, under the mesh's own redraw rate.
-        static let grainFrameRate: Double = 24
+        /// How often the grain changes tile: a slow shimmer rather than a boil, well under the mesh's own redraw rate.
+        static let grainFrameRate: Double = 12
         /// Film grain strength; the noise adds light (`plusLighter`) onto the near-black surface, a whisper, not dirt.
-        static let grainOpacity: Double = 0.08
+        static let grainOpacity: Double = 0.05
         /// Seed of the deterministic grain noise, so every launch and every test sees the same texture.
         static let grainSeed: UInt64 = 0x4C69_6C79
     }

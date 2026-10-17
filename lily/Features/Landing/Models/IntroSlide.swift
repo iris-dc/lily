@@ -1,6 +1,6 @@
 import Foundation
 
-/// The intro's pages in swipe order, one statement each: the events to find, how to join one, the groups, the
+/// The intro's pages in swipe order, one headline each: the events to find, how to join one, the groups, the
 /// tournaments. Groups and tournaments show only while their features are on, so the intro never promises a screen the
 /// build has no way to; the groups slide shows a room and speaks of the chat, so it needs the chat as well.
 nonisolated enum IntroSlide: String, CaseIterable, Identifiable, Sendable {
@@ -22,9 +22,18 @@ nonisolated enum IntroSlide: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    /// Two short lines; the slide draws the second in the accent colour.
+    /// Two short lines, the whole of a slide's caption; the slide draws the second in the accent colour.
     var headline: [String] { AppBranding.Intro.headline(for: self) }
-    var message: String { AppBranding.Intro.message(for: self) }
+
+    /// Whether the miniature's last control is the point (the detail's Join, the room's composer), so a frame too short
+    /// for the screen keeps its bottom and crops the top; the list and the bracket keep their top and fade out below,
+    /// where the screen goes on.
+    var keepsBottom: Bool {
+        switch self {
+        case .join, .groups: true
+        case .events, .tournaments: false
+        }
+    }
 }
 
 /// What the slides' miniature screens show: the events of the first slide, the one the second slide's detail opens

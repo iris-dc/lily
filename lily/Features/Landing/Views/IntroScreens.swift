@@ -15,7 +15,10 @@ struct IntroExploreScreen: View {
     }
 }
 
-/// The join slide's screen: an event's detail down to its Join button, with a ring pulsing where the finger goes.
+/// The join slide's screen: an event's detail down to its Join button, with a ring pulsing where the finger goes. The
+/// Join sits at the bottom of the frame as on the real detail: the facts card takes whatever height is left (a live
+/// event without a price or a level is shorter than the fixture), through a flexible frame rather than a `Spacer`, which
+/// would add a stack gap of its own; a frame too short for the screen crops the top instead.
 struct IntroDetailScreen: View {
     let event: SportEvent
 
@@ -24,6 +27,7 @@ struct IntroDetailScreen: View {
             EventTypeChip(type: event.type)
             ScreenTitle(text: event.title, subtitle: AppBranding.hostedByTitle(for: event.hostName))
             EventFactsCard(event: event)
+                .frame(maxHeight: .infinity, alignment: .top)
             Button(AppBranding.joinAction) {}
                 .lilyProminentButton()
                 .overlay { TapPulse() }
@@ -105,7 +109,8 @@ struct IntroChatScreen: View {
 
 /// The tournaments slide's screen: the top of a tournament's detail and its bracket, drawn the way the detail draws it
 /// (the first round in full, the next column peeking in at the edge as on a phone). Two chips rather than the detail's
-/// three and no segment picker: the frame crops at the top, and both took the chips over its edge on a 6.3-inch phone.
+/// three and no segment picker, so the bracket stays within the frame on a 6.3-inch phone; a shorter phone fades the
+/// bracket's bottom like the list's.
 struct IntroTournamentScreen: View {
     let detail: TournamentDetail
 
@@ -122,35 +127,34 @@ struct IntroTournamentScreen: View {
     }
 }
 
-/// A ring growing out of the Join button and fading, over and over, while its slide is on screen: the "tap here" of
-/// the join slide. The pager holds every slide, so the animation follows scroll visibility, not `onAppear`. Nothing
-/// under Reduce Motion.
+/// A ring growing out of the Join button and fading, resting, and again, while its slide is on screen: the "tap here"
+/// of the join slide. Every frame is read off a clock through `TapPulseCurve`, at the aurora's cadence, so the ring's
+/// growth and fade cannot drift apart: a `repeatForever` animation here had its scale stall while the opacity kept
+/// cycling. The pager holds every slide, so the clock starts when the ring itself scrolls into view, not on
+/// `onAppear`. Nothing under Reduce Motion or with the aurora frozen.
 private struct TapPulse: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var isExpanded = false
+    @Environment(\.auroraFrozen) private var auroraFrozen
+    /// When the ring scrolled into view; `nil` while it is off screen, which also pauses the clock.
+    @State private var startedAt: Date?
 
     var body: some View {
-        if !reduceMotion {
-            Circle()
-                .strokeBorder(Color.white.opacity(DesignTokens.Opacity.introPulse),
-                              lineWidth: DesignTokens.Layout.introPulseLineWidth)
-                .frame(width: DesignTokens.Layout.controlHeight, height: DesignTokens.Layout.controlHeight)
-                .scaleEffect(isExpanded ? DesignTokens.Layout.introPulseScale : 1)
-                .opacity(isExpanded ? 0 : 1)
-                .onScrollVisibilityChange(threshold: DesignTokens.Layout.introPulseVisibilityThreshold) { isVisible in
-                    setPulsing(isVisible)
-                }
+        if !reduceMotion && !auroraFrozen {
+            TimelineView(.animation(minimumInterval: DesignTokens.Aurora.frameInterval, paused: startedAt == nil)) { context in
+                ring(TapPulseCurve.intro.frame(elapsed: startedAt.map(context.date.timeIntervalSince) ?? 0))
+            }
+            .onScrollVisibilityChange(threshold: DesignTokens.Layout.introPulseVisibilityThreshold) { isVisible in
+                startedAt = isVisible ? .now : nil
+            }
         }
     }
 
-    private func setPulsing(_ pulsing: Bool) {
-        if pulsing {
-            withAnimation(.easeOut(duration: DesignTokens.Duration.introPulsePeriod).repeatForever(autoreverses: false)) {
-                isExpanded = true
-            }
-        } else {
-            withAnimation(nil) { isExpanded = false }
-        }
+    private func ring(_ frame: TapPulseCurve.Frame) -> some View {
+        Circle()
+            .strokeBorder(Color.white, lineWidth: DesignTokens.Layout.introPulseLineWidth)
+            .frame(width: DesignTokens.Layout.controlHeight, height: DesignTokens.Layout.controlHeight)
+            .scaleEffect(frame.scale)
+            .opacity(frame.opacity)
     }
 }
 

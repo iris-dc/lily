@@ -42,7 +42,8 @@ struct AuroraBackground: View {
 }
 
 extension EnvironmentValues {
-    /// Whether every aurora shows its first frame and never redraws; the root sets it from the launch argument.
+    /// Whether every aurora shows its first frame and never redraws (and the intro's Join ring rests); the root sets
+    /// it from the launch argument.
     @Entry var auroraFrozen = false
 }
 
