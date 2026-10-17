@@ -124,7 +124,9 @@ nonisolated enum AppConfig {
         /// Plain HTTP needs no ATS exception here: ATS exempts unqualified host names.
         static let localBaseURL = URL(string: "http://localhost:8080")!
         static let productionBaseURL = URL(string: "https://api.iskra.red")!
-        #if DEBUG
+        /// The simulator reaches a Laurel on the Mac through its loopback; a phone's loopback is the phone, so a debug
+        /// build on a device talks to production like a release build, unless `-api-base-url` names a Laurel to reach.
+        #if DEBUG && targetEnvironment(simulator)
         static let baseURL = localBaseURL
         #else
         static let baseURL = productionBaseURL
