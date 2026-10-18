@@ -10,6 +10,7 @@ struct HomeTab: View {
         NavigationStack(path: $navigation.homePath) {
             HomeView(dependencies: dependencies)
         }
+        .animatesTabBar(depth: navigation.homePath.count)
     }
 }
 

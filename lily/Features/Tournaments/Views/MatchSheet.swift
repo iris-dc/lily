@@ -34,16 +34,11 @@ struct MatchSheet: View {
             }
             .navigationTitle(Copy.title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(AppBranding.Groups.Invite.done) { dismiss() }
-                        .disabled(viewModel.isBusy)
-                }
-            }
             .tint(Color.lilyAccent)
         }
         .presentationDetents([.medium, .large])
         .lilyFormSheet()
+        // No Done button: the sheet closes by a swipe down (the grabber says so) or when an action lands.
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(viewModel.isBusy)
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.

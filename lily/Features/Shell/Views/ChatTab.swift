@@ -20,6 +20,7 @@ struct ChatTab: View {
             NavigationStack(path: $navigation.chatPath) {
                 ChatsView(dependencies: dependencies)
             }
+            .animatesTabBar(depth: navigation.chatPath.count)
         }
     }
 }

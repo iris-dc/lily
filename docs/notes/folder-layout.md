@@ -95,7 +95,8 @@ lily/
                  (FilterDropdownButton + DropdownPanel, the dropdown scaffold of the event and type filters), ...), Interfaces
                  (DraftSubmitting: what DraftSheet reads from a form's view model), Layout (LayoutMode, ReadableColumn, AdaptiveCardGrid,
                  TileGrid, FormSheet, UsableWidth, FlowArrangement (the pure wrapping arithmetic behind FlowLayout), Binding+IsPresent
-                 (confirmationDialog(item:)), HidesTabBarOnCompact)
+                 (confirmationDialog(item:)), HidesTabBarOnCompact + TabBarHiding (the stack root's animated tab-bar
+                 visibility, by the hiding screen's depth))
   Features/
     Landing/     First screen: the intro pager (IntroPager, IntroSlideView, IntroPageIndicator, IntroScreenFrame, IntroScreens),
                  the slides and their content (Models/IntroSlide, IntroContent, IntroFixtures, TapPulseCurve), LandingViewModel and the two

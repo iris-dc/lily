@@ -153,7 +153,7 @@ final class LilyTournamentTests: LilyUITestCase {
     }
 
     /// The match reminder in the inbox opens Tuesday Table Tennis on its Matches segment with the named match's sheet
-    /// up, once; Done leaves the detail on Matches.
+    /// up, once; swiping the sheet down leaves the detail on Matches.
     @MainActor
     func testMatchReminderInTheInboxOpensTheMatchSheet() {
         tapSignInWithApple()
@@ -166,7 +166,9 @@ final class LilyTournamentTests: LilyUITestCase {
         XCTAssertTrue(sheetBar.waitForExistence(timeout: 10), "the linked match's sheet is up")
         XCTAssertTrue(app.buttons["match-report"].waitForExistence(timeout: 5),
                       "the caller's scheduled match takes a result")
-        app.buttons["Done"].tap()
+        XCTAssertFalse(app.buttons["Done"].exists, "the sheet has no Done; a swipe closes it")
+        sheetBar.swipeDown()
+        XCTAssertTrue(sheetBar.waitForNonExistence(timeout: 5), "the swipe closed the sheet")
         XCTAssertTrue(app.navigationBars["Tuesday Table Tennis"].waitForExistence(timeout: 5),
                       "the detail is the reminder's tournament")
         XCTAssertTrue(app.segmentedControls["tournament-section"].buttons["Matches"].isSelected,
