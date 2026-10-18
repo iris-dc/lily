@@ -1,14 +1,17 @@
 import Foundation
 import Observation
 
-/// Owns the tournament shown on the detail screen: fetched by id (a card, a tile, a chat's info button or a room row
-/// name only the id), kept on a failed reload, and changed through the entry actions in the `+Entries` file and the
-/// start and the results in the `+Matches` file. Who sees the menu, its items, the entries segment and the organiser's
-/// profile is `TournamentPermissions`, decided from the loaded tournament and the caller.
+/// Owns the tournament shown on the detail screen: fetched by id; a card or a tile hands its copy over and the screen
+/// draws it until the fetch answers (a chat's info button or a room row know the id and the name alone). A loaded
+/// detail is kept on a failed reload, and changed through the entry actions in the `+Entries` file and the start and the
+/// results in the `+Matches` file. Who sees the menu, its items, the entries segment and the organiser's profile is
+/// `TournamentPermissions`, decided from the tournament on screen (loaded, else the opener's copy) and the caller.
 @Observable
 final class TournamentDetailViewModel {
     enum State: Equatable {
         case loading
+        /// The opener's copy, drawn while the detail loads; its entries and matches are not known yet.
+        case previewing(Tournament)
         case loaded(TournamentDetail)
         /// Gone, or private and the caller may not see it: "This tournament is no longer available".
         case notFound
@@ -17,7 +20,9 @@ final class TournamentDetailViewModel {
     }
 
     let destination: TournamentDestination
-    private(set) var state: State = .loading
+    private(set) var state: State
+    /// A load that failed while the opener's copy is on screen: the copy stays, the segment slot offers Try again.
+    private(set) var previewLoadFailed = false
     private(set) var isBusy = false
     /// The tournament was there and is gone now (an operator deleted it): the screen dismisses, as a gone group's does.
     private(set) var isGone = false
@@ -63,6 +68,7 @@ final class TournamentDetailViewModel {
          pushOptIn: any PushOptIn = NoPushOptIn(),
          onChange: @escaping @MainActor (Tournament) -> Void) {
         self.destination = destination
+        state = Self.initialState(for: destination)
         self.repository = repository
         self.groupRepository = groupRepository
         self.myGroups = myGroups
@@ -86,7 +92,17 @@ final class TournamentDetailViewModel {
         if case .loaded(let detail) = state { return detail }
         return nil
     }
-    var tournament: Tournament? { detail?.tournament }
+    /// The opener's copy while the detail is still loading.
+    var preview: Tournament? {
+        if case .previewing(let tournament) = state { return tournament }
+        return nil
+    }
+    /// The loaded tournament, else the opener's copy, so the header, the facts and the control never wait for the fetch.
+    var tournament: Tournament? { detail?.tournament ?? preview }
+    /// What the screen draws: the loaded detail, else the opener's copy with nothing under it yet; `nil` while nothing
+    /// is known. One value for both, so the screen keeps its scroll view across the switch.
+    var shownDetail: TournamentDetail? { detail ?? preview.map { TournamentDetail(tournament: $0) } }
+    var isPreviewing: Bool { preview != nil }
     /// The name shows until the detail answers.
     var name: String { tournament?.name ?? destination.name }
     var role: TournamentRole {
@@ -95,7 +111,8 @@ final class TournamentDetailViewModel {
     var participation: TournamentParticipation {
         tournament.map { TournamentParticipation(tournament: $0, userID: identity.currentUserID, now: now()) } ?? .hidden
     }
-    /// Who may do what on this detail, from the loaded tournament and the caller; `.none` until the detail answers.
+    /// Who may do what on this detail, from the tournament on screen (loaded, else the opener's copy) and the caller;
+    /// `.none` while neither is known.
     var permissions: TournamentPermissions {
         tournament.map {
             TournamentPermissions(tournament: $0,
@@ -132,7 +149,8 @@ final class TournamentDetailViewModel {
     /// view's task to reload on, because the write landed and the stale control must not stay. A 404 marks the
     /// tournament gone either way; an answer older than a write accepted meanwhile is dropped, its failure too.
     func load(reportingFailures: Bool = true) async {
-        if detail == nil { state = .loading }
+        if detail == nil { state = Self.initialState(for: destination) }
+        previewLoadFailed = false
         loadGeneration += 1
         let generation = loadGeneration
         do {
@@ -151,10 +169,20 @@ final class TournamentDetailViewModel {
         }
     }
 
+    /// The opener's copy stays on screen with a Try again under it; the failed state is for a screen with nothing to show.
     private func reportLoadFailure(_ error: any Error) {
         logger.error(.tournaments, "Loading tournament \(destination.id) failed: \(error)")
-        if detail == nil { state = .failed }
+        if preview != nil {
+            previewLoadFailed = true
+        } else if detail == nil {
+            state = .failed
+        }
         reporter.report(error)
+    }
+
+    /// The opener's copy when it handed one over, else the spinner.
+    private static func initialState(for destination: TournamentDestination) -> State {
+        destination.preview.map(State.previewing) ?? .loading
     }
 
     /// The popup stays with the write that did land. The change is recorded without being acknowledged, so the view's

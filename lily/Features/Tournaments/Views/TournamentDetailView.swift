@@ -1,9 +1,10 @@
 import SwiftUI
 
 /// A tournament: chips, name and organiser, the winner once it is over, where it is hosted, its facts, the entries,
-/// the bracket or the standings and the matches once it started, and the control the caller has. Fetched by id, so a
-/// tile, a card, a room row, a chat's info button and a match reminder all open it the same way; a system row or a
-/// reminder about a match opens it with that match's sheet up. The view model decides what the caller may do; this
+/// the bracket or the standings and the matches once it started, and the control the caller has. Fetched by id; an
+/// opener that holds the tournament (a card, a tile) hands it over as the preview and the header, facts and control
+/// draw at once, the rest (a room row, the chat's info button, a match reminder) shows the name until the detail
+/// answers; a system row or a reminder about a match opens it with that match's sheet up. The view model decides what the caller may do; this
 /// draws it and hosts the sheets (edit, team name, match, invite, report) and confirmations.
 struct TournamentDetailView: View {
     @State private var viewModel: TournamentDetailViewModel
@@ -31,22 +32,12 @@ struct TournamentDetailView: View {
 
     var body: some View {
         ContentScreen {
-            switch viewModel.state {
-            case .loading:
-                ProgressView()
-            case .loaded(let detail):
-                content(detail)
-            case .notFound:
-                EmptyStateView(symbolName: DesignTokens.Symbols.tournament,
-                               title: Copy.unavailable,
-                               message: AppBranding.Groups.unavailableMessage)
-            case .failed:
-                EmptyStateView(symbolName: DesignTokens.Symbols.error,
-                               title: Copy.loadFailedTitle,
-                               message: AppBranding.Groups.loadFailedMessage,
-                               actionTitle: AppBranding.Groups.tryAgain) {
-                    Task { await viewModel.load() }
-                }
+            // One branch for the previewed and the loaded detail, so the scroll view keeps its identity (and its
+            // offset) when the fetch answers.
+            if let shown = viewModel.shownDetail {
+                content(shown, isPreview: viewModel.isPreviewing)
+            } else {
+                emptyState
             }
         }
         .navigationTitle(viewModel.name)
@@ -73,8 +64,11 @@ struct TournamentDetailView: View {
         // offline first load still raises it, and the sheet never pops up at a later version bump.
         .onChange(of: viewModel.linkedMatchToShow, initial: true) { _, matchID in
             guard let matchID else { return }
-            section = .matches
-            presentedSheet = .match(id: matchID)
+            // A sheet the user opened from the preview meanwhile is not taken from under them.
+            if presentedSheet == nil {
+                section = .matches
+                presentedSheet = .match(id: matchID)
+            }
             viewModel.consumeLinkedMatch()
         }
         // Deleted while on screen: there is nothing left to show here (a first load's 404 keeps its empty state).
@@ -112,8 +106,9 @@ struct TournamentDetailView: View {
     }
 
     /// Everything sits in the readable column except a bracket, which keeps the whole width and scrolls under both
-    /// screen edges, its first column lined up with the text above it.
-    private func content(_ detail: TournamentDetail) -> some View {
+    /// screen edges, its first column lined up with the text above it. A preview (the opener's copy, the fetch still
+    /// out) draws the header, the facts and the control, and a spinner where the entries and matches will be.
+    private func content(_ detail: TournamentDetail, isPreview: Bool) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
@@ -130,7 +125,11 @@ struct TournamentDetailView: View {
                 }
                 .inReadableColumn()
                 if viewModel.permissions.showsEntries {
-                    segment(detail)
+                    if isPreview {
+                        loadingSlot
+                    } else {
+                        segment(detail)
+                    }
                 }
                 TournamentParticipationControl(viewModel: viewModel,
                                                onCreateTeam: { presentedSheet = .teamName },
@@ -141,6 +140,43 @@ struct TournamentDetailView: View {
         }
         .onGeometryChange(for: CGFloat.self, of: \.size.width) { contentWidth = $0 }
         .refreshable { await viewModel.load() }
+    }
+
+    /// The states with nothing to draw yet: the spinner before an id-only open answers, "no longer available" and the
+    /// failed first load with its Try again.
+    @ViewBuilder private var emptyState: some View {
+        switch viewModel.state {
+        case .loading:
+            ProgressView()
+        case .notFound:
+            EmptyStateView(symbolName: DesignTokens.Symbols.tournament,
+                           title: Copy.unavailable,
+                           message: AppBranding.Groups.unavailableMessage)
+        case .failed:
+            EmptyStateView(symbolName: DesignTokens.Symbols.error,
+                           title: Copy.loadFailedTitle,
+                           message: AppBranding.Groups.loadFailedMessage,
+                           actionTitle: AppBranding.Groups.tryAgain) {
+                Task { await viewModel.load() }
+            }
+        case .previewing, .loaded:
+            EmptyView()
+        }
+    }
+
+    /// Where the entries and matches will be while the fetch is out: a spinner, or Try again once the fetch failed.
+    @ViewBuilder private var loadingSlot: some View {
+        Group {
+            if viewModel.previewLoadFailed {
+                Button(AppBranding.Groups.tryAgain) { Task { await viewModel.load() } }
+                    .lilyGlassButton(sizing: .fitted)
+            } else {
+                ProgressView()
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DesignTokens.Spacing.xl)
+        .accessibilityIdentifier(AccessibilityIdentifiers.tournamentLoading)
     }
 
     /// The bracket's columns start where the readable column does: the detail's margin on a phone, further in on a

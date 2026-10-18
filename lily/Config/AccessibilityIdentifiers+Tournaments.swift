@@ -8,6 +8,8 @@ nonisolated extension AccessibilityIdentifiers {
     static let tournamentsTypeFilter = "tournaments-type-filter"
     /// The detail: its Players | Bracket | Matches picker, the organiser line, the participation control and the menu.
     static let tournamentSection = "tournament-section"
+    /// The spinner standing in for the entries and matches while a previewed detail loads.
+    static let tournamentLoading = "tournament-loading"
     static let tournamentOrganizer = "tournament-organizer"
     static let tournamentWinner = "tournament-winner"
     static let tournamentJoin = "tournament-join"

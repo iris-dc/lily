@@ -21,7 +21,10 @@ final class TournamentOpener {
     func open(tournamentID: String, matchID: String?, from source: String) async -> Bool {
         do {
             let detail = try await tournaments.tournament(id: tournamentID)
-            let destination = TournamentDestination(id: tournamentID, name: detail.tournament.name, matchID: matchID)
+            let destination = TournamentDestination(id: tournamentID,
+                                                    name: detail.tournament.name,
+                                                    matchID: matchID,
+                                                    preview: detail.tournament)
             navigation.openFromNotification(destination)
             return true
         } catch {

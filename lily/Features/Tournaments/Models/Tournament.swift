@@ -104,7 +104,8 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
     var entriesDescription: String {
         isTeam ? "\(entryCount) of \(maxEntries) teams of \(teamSize)" : "\(entryCount) of \(maxEntries) players"
     }
-    var destination: TournamentDestination { TournamentDestination(id: id, name: name) }
+    /// Carries this copy as the preview, so the detail draws it the moment it is pushed and fetches behind it.
+    var destination: TournamentDestination { TournamentDestination(id: id, name: name, preview: self) }
 
     func isOrganized(by userID: String?) -> Bool {
         userID != nil && organizerUserId == userID
@@ -197,17 +198,22 @@ nonisolated enum TournamentScope: Hashable, Sendable {
     }
 }
 
-/// A tournament's detail, pushed from a card, a tile, a chat's info button or a room row. The name shows until the
-/// detail answers, like `UserProfileDestination`; a system row about a match names it, and the detail opens it.
+/// A tournament's detail, pushed from a card, a tile, a chat's info button or a room row. An opener that holds the
+/// tournament hands it over as `preview`, and the detail draws its header and facts at once while the entries and
+/// matches load; one that knows the id and the name alone shows the name until the detail answers, like
+/// `UserProfileDestination`. A system row about a match names it, and the detail opens it.
 nonisolated struct TournamentDestination: Hashable, Sendable {
     let id: String
     let name: String
     let matchID: String?
+    /// The opener's copy of the tournament, as fresh as the list it came from.
+    let preview: Tournament?
 
-    init(id: String, name: String, matchID: String? = nil) {
+    init(id: String, name: String, matchID: String? = nil, preview: Tournament? = nil) {
         self.id = id
         self.name = name
         self.matchID = matchID
+        self.preview = preview
     }
 }
 

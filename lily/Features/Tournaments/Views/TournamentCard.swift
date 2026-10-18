@@ -38,8 +38,8 @@ struct TournamentStatusChip: View {
     }
 }
 
-/// The card list alone: one `NavigationLink` per tournament, to its detail by id. The list sits at the screen margin
-/// unless the container pads its content itself (a group's detail passes `horizontalPadding: 0`).
+/// The card list alone: one `NavigationLink` per tournament, to its detail with the card's copy as the preview. The
+/// list sits at the screen margin unless the container pads its content itself (a group's detail passes `horizontalPadding: 0`).
 struct TournamentCardList: View {
     let tournaments: [Tournament]
     let distance: (Tournament) -> String?
