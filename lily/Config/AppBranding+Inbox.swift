@@ -8,7 +8,7 @@ nonisolated extension AppBranding {
     enum Chats {
         static var noRooms: String { localized("No group chats yet. Join a group to start one.") }
         static var noRoomsAction: String { AppBranding.exploreTitle }
-        static var guestMessage: String { localized("Sign in to see your chats, invites and game reminders.") }
+        static var guestMessage: String { localized("Sign in to see your chats, invites and event reminders.") }
         /// The split view's detail before a conversation is chosen (regular widths).
         static var pickConversationTitle: String { localized("Pick a conversation") }
         static var pickConversationMessage: String { localized("Choose a chat on the left to read it here.") }
@@ -22,19 +22,19 @@ nonisolated extension AppBranding {
     enum Inbox {
         static let title = AppBranding.name
         /// Caption of the Chats row while the inbox is empty.
-        static var emptyCaption: String { localized("Invites and game reminders") }
+        static var emptyCaption: String { localized("Invites and event reminders") }
         static var accept: String { localized("Accept") }
         static var decline: String { localized("Decline") }
         static var joined: String { localized("You joined") }
         static var declined: String { localized("Declined") }
         static var expired: String { localized("Expired") }
-        static var reminderTitle: String { localized("Game reminder") }
+        static var reminderTitle: String { localized("Event reminder") }
         static var matchReminderTitle: String { localized("Match reminder") }
         /// VoiceOver names of the reminder cards' chevrons.
-        static var openGame: String { localized("Open game") }
+        static var openGame: String { localized("Open event") }
         static var openTournament: String { localized("Open tournament") }
         static var emptyTitle: String { Home.emptyTitle }
-        static var emptyMessage: String { localized("Invites and reminders for your games show up here.") }
+        static var emptyMessage: String { localized("Invites and reminders for your events show up here.") }
         static var loadFailedTitle: String { localized("Couldn't load your notifications") }
         static var loadEarlier: String { localized("Load earlier") }
         /// The inviter and the group; the card draws both names in bold through `inviteText(inviter:group:)`.

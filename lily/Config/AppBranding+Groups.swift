@@ -20,7 +20,7 @@ nonisolated extension AppBranding {
         static var unavailable: String { localized("This group is no longer available") }
         static var discoverEmptyTitle: String { localized("Nothing found") }
         static var discoverEmptyMessage: String { localized("Try another name or event type.") }
-        static var eventsEmptyTitle: String { localized("No games yet") }
+        static var eventsEmptyTitle: String { localized("No events yet") }
         static var eventsSection: String { AppBranding.Events.eventsSection }
         static var membersSection: String { localized("Members") }
         static var bannedSection: String { localized("Banned") }
@@ -30,7 +30,7 @@ nonisolated extension AppBranding {
         /// Under "Hosted in" for a private group's game: the link is withheld, the name stays.
         static var membersOnly: String { localized("Members only") }
         static var unread: String { localized("Unread messages") }
-        static var eventsEmptyMessage: String { localized("Games created in this group show up here.") }
+        static var eventsEmptyMessage: String { localized("Events created in this group show up here.") }
         static var unavailableMessage: String { localized("It may have been deleted, or it is private.") }
         static var loadFailedTitle: String { localized("Couldn't load group") }
         static var loadFailedMessage: String { localized("Check your connection and try again.") }
@@ -101,7 +101,7 @@ nonisolated extension AppBranding {
             static var save: String { AppBranding.Events.Edit.save }
             static var groupSection: String { AppBranding.Events.Create.group }
             static var permissionsSection: String { localized("Members may") }
-            static var membersCanCreateEvents: String { localized("Create games") }
+            static var membersCanCreateEvents: String { localized("Create events") }
             static var membersCanInvite: String { Groups.Invite.title }
             static var anyType: String { AppBranding.Events.Filter.anyType }
             static var nameField: String { localized("Name") }
@@ -139,7 +139,7 @@ nonisolated extension AppBranding {
             static var send: String { Groups.invite }
             static var sent: String { localized("Invited") }
             static var emptyTitle: String { localized("Nobody to invite yet") }
-            static var emptyMessage: String { localized("People you share a group or a game with show up here.") }
+            static var emptyMessage: String { localized("People you share a group or an event with show up here.") }
             static var noMatchesTitle: String { localized("Nobody found") }
             static var noMatchesMessage: String { localized("Try another name.") }
             static var loadFailedTitle: String { localized("Couldn't load people") }
@@ -161,5 +161,5 @@ nonisolated extension AppBranding.Events.Create {
     static var group: String { localized("Group") }
     static var noGroup: String { localized("No group") }
     /// Footer under a read-only "No group" row: the caller is in groups, but none lets them host.
-    static var noEligibleGroups: String { localized("Your groups let only their admins host games.") }
+    static var noEligibleGroups: String { localized("Your groups let only their admins host events.") }
 }

@@ -45,7 +45,7 @@ struct LocalizedCatalogTests {
     @Test func aReorderedTranslationFormatsItsArgumentsInPlace() {
         let russian = AppLocale.Context(language: .russian)
         let line = String(localized: "\("Marta") created \("Sunset 5-a-side")", bundle: russian.bundle, locale: russian.locale)
-        #expect(line == "Новая игра от Marta: Sunset 5-a-side")
+        #expect(line == "Новое событие от Marta: Sunset 5-a-side")
     }
 
     /// A key that names a role carries the English it shows, so the lookup never answers the key itself.

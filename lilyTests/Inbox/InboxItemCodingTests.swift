@@ -72,7 +72,7 @@ struct InboxItemCodingTests {
 
     @Test func captionsNameTheInviterAndTheGame() {
         #expect(InboxItem.invite().caption == "Noor invited you to Climbing Buddies")
-        #expect(InboxItem.reminder().caption == "Game reminder · Sunset 5-a-side")
+        #expect(InboxItem.reminder().caption == "Event reminder · Sunset 5-a-side")
     }
 
     /// The reminder's line is the shared time caption, judged against the given `now`. A 24-hour locale, because

@@ -1,7 +1,7 @@
 import Foundation
 
 nonisolated extension InboxItem {
-    /// One line for the Chats row: "Noor invited you to Climbing Buddies", "Game reminder · Sunset 5-a-side",
+    /// One line for the Chats row: "Noor invited you to Climbing Buddies", "Event reminder · Sunset 5-a-side",
     /// "Match reminder · Tuesday Table Tennis"; `nil` for a kind this build cannot draw.
     var caption: String? {
         switch kind {

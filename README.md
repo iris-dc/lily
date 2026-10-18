@@ -1,6 +1,6 @@
 # iskra
 
-A meetup-style iOS app for sport events: find a game near you, join it in a tap, run a group with its own chat, enter
+A meetup-style iOS app for sport events: find an event near you, join it in a tap, run a group with its own chat, enter
 or set up a tournament. iOS 26+, SwiftUI, Liquid Glass, dark. The code name is **lily**: the Xcode project, scheme,
 module and bundle id (`iris.lily`) keep it; the home screen says iskra.
 
@@ -11,7 +11,7 @@ module and bundle id (`iris.lily`) keep it; the home screen says iskra.
 - **Events**: create one from the "+" (sport, time, place on a map, how many players, optional price and level), join
   or leave, edit your own. Signed-in users see who is in.
 - **Groups and chat** (debug builds): public or invite-only groups for a sport or a place, each with a chat room, a
-  roster with roles, direct invites, and games hosted inside the group.
+  roster with roles, direct invites, and events hosted inside the group.
 - **Tournaments** (debug builds): single elimination or round robin, players or teams, self-reported results that the
   other side confirms, schedules and reminders.
 - **People**: profiles, direct conversations, an inbox for invites and reminders, push notifications once the Apple

@@ -88,18 +88,18 @@ nonisolated enum ErrorMessageMapper {
             ErrorMessage(title: localized("Events unavailable"),
                          body: localized("We couldn't load events right now. Pull to refresh in a moment."))
         case .eventNotFound:
-            ErrorMessage(title: localized("Game not found"),
-                         body: localized("This game no longer exists. Pull to refresh the list."))
+            ErrorMessage(title: localized("Event not found"),
+                         body: localized("This event no longer exists. Pull to refresh the list."))
         case .eventFull:
             ErrorMessage(title: localized("Event is full"),
-                         body: localized("Someone took the last spot. Try another game nearby."))
+                         body: localized("Someone took the last spot. Try another event nearby."))
         case .alreadyJoined:
-            ErrorMessage(title: localized("You're already in"), body: localized("You have already joined this game."))
+            ErrorMessage(title: localized("You're already in"), body: localized("You have already joined this event."))
         case .notAParticipant:
-            ErrorMessage(title: localized("Not in this game"),
-                         body: localized("You're not on the list for this game, so there is nothing to leave."))
+            ErrorMessage(title: localized("Not in this event"),
+                         body: localized("You're not on the list for this event, so there is nothing to leave."))
         case .hostCannotLeave:
-            ErrorMessage(title: localized("You're the host"), body: localized("Hosts can't leave their own game."))
+            ErrorMessage(title: localized("You're the host"), body: localized("Hosts can't leave their own event."))
         case .tryAgain:
             ErrorMessage(title: localized("Please try again"),
                          body: localized("Someone made a change at the same moment. Give it another tap."))

@@ -17,7 +17,7 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(labelled("Tempelhof Runners").exists)
         XCTAssertTrue(labelled("Sunday Padel Crew").exists)
         XCTAssertFalse(app.buttons[basketballRow].exists, "Home lists the caller's groups only")
-        XCTAssertTrue(app.staticTexts["Your games"].waitForExistence(timeout: 5), "the caller's games follow their groups")
+        XCTAssertTrue(app.staticTexts["Your events"].waitForExistence(timeout: 5), "the caller's games follow their groups")
     }
 
     @MainActor
@@ -89,18 +89,18 @@ final class LilyGroupsTests: LilyUITestCase {
         tapSignInWithApple()
         openKickersDetail()
         app.buttons["group-create-event"].tap()
-        XCTAssertTrue(app.navigationBars["New game"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["New event"].waitForExistence(timeout: 5))
 
         let locked = app.descendants(matching: .any)["create-group"]
         XCTAssertTrue(locked.waitForExistence(timeout: 5))
         XCTAssertTrue(text(of: locked).contains("Kreuzberg Kickers"), "the group must be preset: \(text(of: locked))")
         app.buttons["create-cancel"].tap()
-        XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 5))
 
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
         tapCreateButton()
-        XCTAssertTrue(app.navigationBars["New game"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["New event"].waitForExistence(timeout: 5))
         let picker = app.descendants(matching: .any)["create-group"]
         XCTAssertTrue(picker.waitForExistence(timeout: 5), "a member of groups gets the Group row")
         XCTAssertTrue(text(of: picker).contains("No group"), "nothing is preselected from Explore: \(text(of: picker))")

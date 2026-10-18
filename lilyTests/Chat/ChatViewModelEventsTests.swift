@@ -21,7 +21,7 @@ struct ChatViewModelEventsTests {
     @Test func aSystemRowNamesTheGameOnceItIsLoadedAndFetchesItOnce() async {
         let (harness, viewModel) = await makeChat()
         harness.events.result = .success([game])
-        #expect(viewModel.systemText(for: systemRow) == "Marta created a game")
+        #expect(viewModel.systemText(for: systemRow) == "Marta created an event")
 
         await viewModel.loadLinkedContent(for: systemRow)
         await viewModel.loadLinkedContent(for: systemRow)
@@ -35,7 +35,7 @@ struct ChatViewModelEventsTests {
         let (harness, viewModel) = await makeChat()
 
         await viewModel.loadLinkedContent(for: systemRow)
-        #expect(viewModel.systemText(for: systemRow) == "Marta created a game")
+        #expect(viewModel.systemText(for: systemRow) == "Marta created an event")
         #expect(harness.errorCenter.current == nil)
         #expect(harness.logger.messages(in: .chat, at: .warning).contains { $0.hasPrefix("Event e behind a system row") })
 
@@ -52,7 +52,7 @@ struct ChatViewModelEventsTests {
 
         #expect(harness.events.fetchedEventIDs == ["e"])
         #expect(harness.chatLogs(.warning).filter { $0.hasPrefix("Event e behind a system row") }.count == 1)
-        #expect(viewModel.systemText(for: systemRow) == "Marta created a game")
+        #expect(viewModel.systemText(for: systemRow) == "Marta created an event")
         #expect(viewModel.systemRows.linked.unavailableEventIDs == ["e"])
 
         #expect(await viewModel.destination(for: systemRow) == nil)

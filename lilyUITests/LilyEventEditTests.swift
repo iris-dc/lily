@@ -9,7 +9,7 @@ final class LilyEventEditTests: LilyUITestCase {
     func testHostEditsTheirGameFromTheDetail() {
         startCreating("Thursday five-a-side")
         app.buttons["create-submit"].tap()
-        XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
 
         openFromHome("Thursday five-a-side")
         openEditSheet()
@@ -20,7 +20,7 @@ final class LilyEventEditTests: LilyUITestCase {
         replaceText(in: app.textFields["create-title"], with: "Friday five-a-side")
         assertBecomesEnabled(save, "a changed title is something to save")
         save.tap()
-        XCTAssertTrue(app.navigationBars["Edit game"].waitForNonExistence(timeout: 10), "the sheet must close once saved")
+        XCTAssertTrue(app.navigationBars["Edit event"].waitForNonExistence(timeout: 10), "the sheet must close once saved")
         XCTAssertTrue(app.staticTexts["Friday five-a-side"].waitForExistence(timeout: 5), "the detail must show the new title")
 
         app.navigationBars.buttons.firstMatch.tap()
@@ -35,7 +35,7 @@ final class LilyEventEditTests: LilyUITestCase {
     func testOpeningTheMapOnAnEditedGameTurnsSaveOnOnlyAfterADrag() {
         startCreating("Map check")
         app.buttons["create-submit"].tap()
-        XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
         openFromHome("Map check")
         openEditSheet()
         let save = app.buttons["create-submit"]
@@ -70,7 +70,7 @@ final class LilyEventEditTests: LilyUITestCase {
         choosePlayerLimit("At least")
         XCTAssertTrue(app.staticTexts["10 players needed"].waitForExistence(timeout: 5), "the stepper names the number needed")
         app.buttons["create-submit"].tap()
-        XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
 
         openFromHome("Open run")
         XCTAssertTrue(app.staticTexts["1 joined · 10 needed"].waitForExistence(timeout: 5), "the bar counts towards the number")
@@ -85,7 +85,7 @@ final class LilyEventEditTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["10 players"].waitForNonExistence(timeout: 5), "there is no number to step")
         XCTAssertTrue(app.staticTexts["No limit: anyone can join."].exists, "the footer explains the choice")
         app.buttons["create-submit"].tap()
-        XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
 
         openFromHome("Open walk")
         XCTAssertTrue(app.staticTexts["1 joined"].waitForExistence(timeout: 5), "the count stands alone")
@@ -97,7 +97,7 @@ final class LilyEventEditTests: LilyUITestCase {
     private func startCreating(_ title: String) {
         tapSignInWithApple()
         tapCreateButton()
-        XCTAssertTrue(app.navigationBars["New game"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["New event"].waitForExistence(timeout: 5))
         enter(title, into: app.textFields["create-title"])
         let locationName = app.textFields["create-location-name"]
         dragUpUntilExists(locationName)
@@ -132,7 +132,7 @@ final class LilyEventEditTests: LilyUITestCase {
         let edit = app.buttons["event-edit"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5), "the host must see Edit")
         edit.tap()
-        XCTAssertTrue(app.navigationBars["Edit game"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Edit event"].waitForExistence(timeout: 5))
     }
 
     /// Pushes the location picker from the form's map row and returns its map once it is still.
@@ -150,7 +150,7 @@ final class LilyEventEditTests: LilyUITestCase {
     @MainActor
     private func leaveSpotPicker() {
         app.buttons["create-map-done"].tap()
-        XCTAssertTrue(app.navigationBars["Edit game"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Edit event"].waitForExistence(timeout: 5))
     }
 
     /// What the map row reads, label and value together, so the coordinate counts wherever the link exposes it.

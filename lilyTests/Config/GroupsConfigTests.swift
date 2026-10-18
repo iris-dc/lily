@@ -45,7 +45,7 @@ struct GroupsConfigTests {
         #expect(AppBranding.Inbox.title == AppBranding.name)
         let invited = AppBranding.Inbox.invitedYou(inviter: "Noor", group: "Climbing Buddies")
         #expect(invited == "Noor invited you to Climbing Buddies")
-        #expect(AppBranding.Inbox.reminderTitle == "Game reminder")
+        #expect(AppBranding.Inbox.reminderTitle == "Event reminder")
     }
 
     @Test func inviteCopyNamesWhatIsShared() {

@@ -161,13 +161,13 @@ class LilyUITestCase: XCTestCase {
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
     }
 
-    /// Opens the floating "+" menu on Explore (AccessibilityIdentifiers.eventsCreate) and picks "New game".
+    /// Opens the floating "+" menu on Explore (AccessibilityIdentifiers.eventsCreate) and picks "New event".
     @MainActor
     func tapCreateButton() {
-        tapCreateMenuItem("New game")
+        tapCreateMenuItem("New event")
     }
 
-    /// Opens the floating "+" menu on Explore and picks one of its items by title ("New game", "New group").
+    /// Opens the floating "+" menu on Explore and picks one of its items by title ("New event", "New group").
     @MainActor
     func tapCreateMenuItem(_ title: String) {
         let create = app.buttons["events-create"]

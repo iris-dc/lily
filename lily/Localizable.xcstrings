@@ -46,7 +46,7 @@
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Новая игра от %1$@: %2$@"
+            "value": "Новое событие от %1$@: %2$@"
           }
         },
         "es": {
@@ -64,13 +64,13 @@
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Нова гра від %1$@: %2$@"
+            "value": "Нова подія від %1$@: %2$@"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nowa gra od %1$@: %2$@"
+            "value": "Nowe wydarzenie od %1$@: %2$@"
           }
         },
         "pt": {
@@ -5349,42 +5349,42 @@
         }
       }
     },
-    "Couldn't create your game": {
+    "Couldn't create your event": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не удалось создать игру"
+            "value": "Не удалось создать событие"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No se pudo crear el partido"
+            "value": "No se pudo crear el evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Impossible de créer le match"
+            "value": "Impossible de créer l’événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не вдалося створити гру"
+            "value": "Не вдалося створити подію"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nie udało się utworzyć gry"
+            "value": "Nie udało się utworzyć wydarzenia"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Não foi possível criar o jogo"
+            "value": "Não foi possível criar o evento"
           }
         }
       }
@@ -5749,82 +5749,82 @@
         }
       }
     },
-    "Couldn't load your games. Pull down to try again.": {
+    "Couldn't load your events. Pull down to try again.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не удалось загрузить игры. Потяните вниз, чтобы повторить."
+            "value": "Не удалось загрузить события. Потяните вниз, чтобы повторить."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No se pudieron cargar tus partidos. Desliza hacia abajo para reintentar."
+            "value": "No se pudieron cargar tus eventos. Desliza hacia abajo para reintentar."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Impossible de charger vos matchs. Tirez vers le bas pour réessayer."
+            "value": "Impossible de charger vos événements. Tirez vers le bas pour réessayer."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не вдалося завантажити ваші ігри. Потягніть униз, щоб повторити."
+            "value": "Не вдалося завантажити ваші події. Потягніть униз, щоб повторити."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nie udało się wczytać Twoich gier. Pociągnij w dół, aby spróbować ponownie."
+            "value": "Nie udało się wczytać Twoich wydarzeń. Pociągnij w dół, aby spróbować ponownie."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Não foi possível carregar os seus jogos. Puxe para baixo para tentar novamente."
+            "value": "Não foi possível carregar os seus eventos. Puxe para baixo para tentar novamente."
           }
         }
       }
     },
-    "Couldn't load your groups and games": {
+    "Couldn't load your groups and events": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не удалось загрузить группы и игры"
+            "value": "Не удалось загрузить группы и события"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No se pudieron cargar tus grupos y partidos"
+            "value": "No se pudieron cargar tus grupos y eventos"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Impossible de charger vos groupes et matchs"
+            "value": "Impossible de charger vos groupes et événements"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Не вдалося завантажити ваші групи та ігри"
+            "value": "Не вдалося завантажити ваші групи та події"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nie udało się wczytać Twoich grup i gier"
+            "value": "Nie udało się wczytać Twoich grup i wydarzeń"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Não foi possível carregar os seus grupos e jogos"
+            "value": "Não foi possível carregar os seus grupos e eventos"
           }
         }
       }
@@ -6389,82 +6389,82 @@
         }
       }
     },
-    "Create game": {
+    "Create event": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Создать игру"
+            "value": "Создать событие"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Crear partido"
+            "value": "Crear evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Créer un match"
+            "value": "Créer un événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Створити гру"
+            "value": "Створити подію"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Utwórz grę"
+            "value": "Utwórz wydarzenie"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Criar jogo"
+            "value": "Criar evento"
           }
         }
       }
     },
-    "Create games": {
+    "Create events": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Создавать игры"
+            "value": "Создавать события"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Crear partidos"
+            "value": "Crear eventos"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Créer des matchs"
+            "value": "Créer des événements"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Створювати ігри"
+            "value": "Створювати події"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tworzyć gry"
+            "value": "Tworzyć wydarzenia"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Criar jogos"
+            "value": "Criar eventos"
           }
         }
       }
@@ -7669,42 +7669,42 @@
         }
       }
     },
-    "Edit game": {
+    "Edit event": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Изменить игру"
+            "value": "Изменить событие"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Editar partido"
+            "value": "Editar evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Modifier le match"
+            "value": "Modifier l’événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Змінити гру"
+            "value": "Змінити подію"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Edytuj grę"
+            "value": "Edytuj wydarzenie"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Editar jogo"
+            "value": "Editar evento"
           }
         }
       }
@@ -8829,282 +8829,282 @@
         }
       }
     },
-    "Game": {
+    "Event": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Игра"
+            "value": "Событие"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Partido"
+            "value": "Evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Match"
+            "value": "Événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Гра"
+            "value": "Подія"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gra"
+            "value": "Wydarzenie"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jogo"
+            "value": "Evento"
           }
         }
       }
     },
-    "Game not found": {
+    "Event not found": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Игра не найдена"
+            "value": "Событие не найдено"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Partido no encontrado"
+            "value": "Evento no encontrado"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Match introuvable"
+            "value": "Événement introuvable"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Гру не знайдено"
+            "value": "Подію не знайдено"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nie znaleziono gry"
+            "value": "Nie znaleziono wydarzenia"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jogo não encontrado"
+            "value": "Evento não encontrado"
           }
         }
       }
     },
-    "Game reminder": {
+    "Event reminder": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Напоминание об игре"
+            "value": "Напоминание о событии"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recordatorio de partido"
+            "value": "Recordatorio de evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rappel de match"
+            "value": "Rappel d’événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Нагадування про гру"
+            "value": "Нагадування про подію"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Przypomnienie o grze"
+            "value": "Przypomnienie o wydarzeniu"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lembrete de jogo"
+            "value": "Lembrete de evento"
           }
         }
       }
     },
-    "Games created in this group show up here.": {
+    "Events created in this group show up here.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Здесь появятся игры, созданные в этой группе."
+            "value": "Здесь появятся события, созданные в этой группе."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aquí aparecerán los partidos creados en este grupo."
+            "value": "Aquí aparecerán los eventos creados en este grupo."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les matchs créés dans ce groupe apparaîtront ici."
+            "value": "Les événements créés dans ce groupe apparaîtront ici."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Тут з’являтимуться ігри, створені в цій групі."
+            "value": "Тут з’являтимуться події, створені в цій групі."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tutaj pojawią się gry utworzone w tej grupie."
+            "value": "Tutaj pojawią się wydarzenia utworzone w tej grupie."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Os jogos criados neste grupo aparecem aqui."
+            "value": "Os eventos criados neste grupo aparecem aqui."
           }
         }
       }
     },
-    "Games you join or host and groups you belong to appear here.": {
+    "Events you join or host and groups you belong to appear here.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Здесь появятся ваши группы и игры, в которых вы участвуете или которые организуете."
+            "value": "Здесь появятся ваши группы и события, в которых вы участвуете или которые организуете."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aquí aparecen los partidos a los que te unes u organizas y los grupos a los que perteneces."
+            "value": "Aquí aparecen los eventos a los que te unes u organizas y los grupos a los que perteneces."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les matchs que vous rejoignez ou organisez et vos groupes apparaissent ici."
+            "value": "Les événements que vous rejoignez ou organisez et vos groupes apparaissent ici."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Тут з’являтимуться ігри, у яких ви берете участь або які організовуєте, і ваші групи."
+            "value": "Тут з’являтимуться події, у яких ви берете участь або які організовуєте, і ваші групи."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tutaj pojawią się gry, do których dołączasz lub które organizujesz, oraz Twoje grupy."
+            "value": "Tutaj pojawią się wydarzenia, do których dołączasz lub które organizujesz, oraz Twoje grupy."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Os jogos em que participa ou organiza e os grupos a que pertence aparecem aqui."
+            "value": "Os eventos em que participa ou organiza e os grupos a que pertence aparecem aqui."
           }
         }
       }
     },
-    "Games you join or host will appear here.": {
+    "Events you join or host will appear here.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Здесь появятся игры, в которых вы участвуете или которые организуете."
+            "value": "Здесь появятся события, в которых вы участвуете или которые организуете."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aquí aparecerán los partidos a los que te unes u organizas."
+            "value": "Aquí aparecerán los eventos a los que te unes u organizas."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les matchs que vous rejoignez ou organisez apparaîtront ici."
+            "value": "Les événements que vous rejoignez ou organisez apparaîtront ici."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Тут з’являтимуться ігри, у яких ви берете участь або які організовуєте."
+            "value": "Тут з’являтимуться події, у яких ви берете участь або які організовуєте."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tutaj pojawią się gry, do których dołączasz lub które organizujesz."
+            "value": "Tutaj pojawią się wydarzenia, do których dołączasz lub które organizujesz."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Os jogos em que participa ou organiza aparecerão aqui."
+            "value": "Os eventos em que participa ou organiza aparecerão aqui."
           }
         }
       }
     },
-    "Give the game a title": {
+    "Give the event a title": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Укажите название игры"
+            "value": "Укажите название события"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ponle título al partido"
+            "value": "Ponle título al evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Donnez un titre au match"
+            "value": "Donnez un titre à l’événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Дайте грі назву"
+            "value": "Дайте події назву"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nadaj grze tytuł"
+            "value": "Nadaj wydarzeniu tytuł"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dê um título ao jogo"
+            "value": "Dê um título ao evento"
           }
         }
       }
@@ -9817,42 +9817,42 @@
         }
       }
     },
-    "Hosts can't leave their own game.": {
+    "Hosts can't leave their own event.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Организатор не может покинуть свою игру."
+            "value": "Организатор не может покинуть своё событие."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "El organizador no puede abandonar su propio partido."
+            "value": "El organizador no puede abandonar su propio evento."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L’organisateur ne peut pas quitter son propre match."
+            "value": "L’organisateur ne peut pas quitter son propre événement."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Організатор не може покинути свою гру."
+            "value": "Організатор не може покинути свою подію."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Organizator nie może opuścić własnej gry."
+            "value": "Organizator nie może opuścić własnego wydarzenia."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "O organizador não pode sair do seu próprio jogo."
+            "value": "O organizador não pode sair do seu próprio evento."
           }
         }
       }
@@ -10297,82 +10297,82 @@
         }
       }
     },
-    "Invites and game reminders": {
+    "Invites and event reminders": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Приглашения и напоминания об играх"
+            "value": "Приглашения и напоминания о событиях"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Invitaciones y recordatorios de partidos"
+            "value": "Invitaciones y recordatorios de eventos"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Invitations et rappels de match"
+            "value": "Invitations et rappels d’événements"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Запрошення та нагадування про ігри"
+            "value": "Запрошення та нагадування про події"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zaproszenia i przypomnienia o grach"
+            "value": "Zaproszenia i przypomnienia o wydarzeniach"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Convites e lembretes de jogos"
+            "value": "Convites e lembretes de eventos"
           }
         }
       }
     },
-    "Invites and reminders for your games show up here.": {
+    "Invites and reminders for your events show up here.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Здесь появятся приглашения и напоминания о ваших играх."
+            "value": "Здесь появятся приглашения и напоминания о ваших событиях."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aquí aparecerán las invitaciones y los recordatorios de tus partidos."
+            "value": "Aquí aparecerán las invitaciones y los recordatorios de tus eventos."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les invitations et les rappels de vos matchs apparaîtront ici."
+            "value": "Les invitations et les rappels de vos événements apparaîtront ici."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Тут з’являтимуться запрошення та нагадування про ваші ігри."
+            "value": "Тут з’являтимуться запрошення та нагадування про ваші події."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tutaj pojawią się zaproszenia i przypomnienia o Twoich grach."
+            "value": "Tutaj pojawią się zaproszenia i przypomnienia o Twoich wydarzeniach."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Os convites e lembretes dos seus jogos aparecem aqui."
+            "value": "Os convites e lembretes dos seus eventos aparecem aqui."
           }
         }
       }
@@ -13335,82 +13335,82 @@
         }
       }
     },
-    "New game": {
+    "New event": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Новая игра"
+            "value": "Новое событие"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nuevo partido"
+            "value": "Nuevo evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nouveau match"
+            "value": "Nouvel événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Нова гра"
+            "value": "Нова подія"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nowa gra"
+            "value": "Nowe wydarzenie"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Novo jogo"
+            "value": "Novo evento"
           }
         }
       }
     },
-    "New games show up here as people create them.": {
+    "New events show up here as people create them.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Новые игры появятся здесь, как только их кто-то создаст."
+            "value": "Новые события появятся здесь, как только их кто-то создаст."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los nuevos partidos aparecerán aquí a medida que la gente los cree."
+            "value": "Los nuevos eventos aparecerán aquí a medida que la gente los cree."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les nouveaux matchs apparaissent ici au fil de leur création."
+            "value": "Les nouveaux événements apparaissent ici au fil de leur création."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Нові ігри з’являтимуться тут, щойно їх хтось створить."
+            "value": "Нові події з’являтимуться тут, щойно їх хтось створить."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nowe gry pojawią się tutaj, gdy ktoś je utworzy."
+            "value": "Nowe wydarzenia pojawią się tutaj, gdy ktoś je utworzy."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Os novos jogos aparecem aqui à medida que são criados."
+            "value": "Os novos eventos aparecem aqui à medida que são criados."
           }
         }
       }
@@ -13575,42 +13575,42 @@
         }
       }
     },
-    "No games yet": {
+    "No events yet": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Игр пока нет"
+            "value": "Событий пока нет"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aún no hay partidos"
+            "value": "Aún no hay eventos"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pas encore de match"
+            "value": "Pas encore d’événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ігор поки немає"
+            "value": "Подій поки немає"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nie ma jeszcze gier"
+            "value": "Nie ma jeszcze wydarzeń"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ainda não há jogos"
+            "value": "Ainda não há eventos"
           }
         }
       }
@@ -14261,42 +14261,42 @@
         }
       }
     },
-    "Not in this game": {
+    "Not in this event": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вы не участник этой игры"
+            "value": "Вы не участник этого события"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No estás en este partido"
+            "value": "No estás en este evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous n’êtes pas dans ce match"
+            "value": "Vous n’êtes pas dans cet événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ви не в цій грі"
+            "value": "Ви не учасник цієї події"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nie jesteś w tej grze"
+            "value": "Nie jesteś w tym wydarzeniu"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Não está neste jogo"
+            "value": "Não está neste evento"
           }
         }
       }
@@ -14421,42 +14421,42 @@
         }
       }
     },
-    "Not your game": {
+    "Not your event": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Это не ваша игра"
+            "value": "Это не ваше событие"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No es tu partido"
+            "value": "No es tu evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ce n’est pas votre match"
+            "value": "Ce n’est pas votre événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Це не ваша гра"
+            "value": "Це не ваша подія"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "To nie Twoja gra"
+            "value": "To nie Twoje wydarzenie"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Não é o seu jogo"
+            "value": "Não é o seu evento"
           }
         }
       }
@@ -14901,42 +14901,42 @@
         }
       }
     },
-    "Only the host can change a game.": {
+    "Only the host can change an event.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Изменять игру может только организатор."
+            "value": "Изменять событие может только организатор."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Solo el organizador puede modificar un partido."
+            "value": "Solo el organizador puede modificar un evento."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seul l’organisateur peut modifier un match."
+            "value": "Seul l’organisateur peut modifier un événement."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Змінювати гру може лише організатор."
+            "value": "Змінювати подію може лише організатор."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tylko organizator może zmienić grę."
+            "value": "Tylko organizator może zmienić wydarzenie."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Só o organizador pode alterar um jogo."
+            "value": "Só o organizador pode alterar um evento."
           }
         }
       }
@@ -15101,42 +15101,42 @@
         }
       }
     },
-    "Open game": {
+    "Open event": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Открыть игру"
+            "value": "Открыть событие"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abrir partido"
+            "value": "Abrir evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ouvrir le match"
+            "value": "Ouvrir l’événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Відкрити гру"
+            "value": "Відкрити подію"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Otwórz grę"
+            "value": "Otwórz wydarzenie"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abrir jogo"
+            "value": "Abrir evento"
           }
         }
       }
@@ -15541,42 +15541,42 @@
         }
       }
     },
-    "People you share a group or a game with show up here.": {
+    "People you share a group or an event with show up here.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Здесь появятся люди из ваших групп и игр."
+            "value": "Здесь появятся люди из ваших групп и событий."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aquí aparecen las personas con las que compartes un grupo o un partido."
+            "value": "Aquí aparecen las personas con las que compartes un grupo o un evento."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les personnes avec qui vous partagez un groupe ou un match apparaissent ici."
+            "value": "Les personnes avec qui vous partagez un groupe ou un événement apparaissent ici."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Тут з’являтимуться люди з ваших груп та ігор."
+            "value": "Тут з’являтимуться люди з ваших груп та подій."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tutaj pojawią się osoby, z którymi masz wspólną grupę lub grę."
+            "value": "Tutaj pojawią się osoby, z którymi masz wspólną grupę lub wydarzenie."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "As pessoas com quem partilha um grupo ou um jogo aparecem aqui."
+            "value": "As pessoas com quem partilha um grupo ou um evento aparecem aqui."
           }
         }
       }
@@ -18449,162 +18449,162 @@
         }
       }
     },
-    "Sign in to create events, join games and chat with players.": {
+    "Sign in to create events, join them and chat with players.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Войдите, чтобы создавать события, присоединяться к играм и общаться с игроками."
+            "value": "Войдите, чтобы создавать события, присоединяться к ним и общаться с игроками."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Inicia sesión para crear eventos, unirte a partidos y chatear con los jugadores."
+            "value": "Inicia sesión para crear eventos, unirte a ellos y chatear con los jugadores."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connectez-vous pour créer des événements, rejoindre des matchs et discuter avec les joueurs."
+            "value": "Connectez-vous pour créer des événements, les rejoindre et discuter avec les joueurs."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Увійдіть, щоб створювати події, приєднуватися до ігор і спілкуватися з гравцями."
+            "value": "Увійдіть, щоб створювати події, приєднуватися до них і спілкуватися з гравцями."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zaloguj się, aby tworzyć wydarzenia, dołączać do gier i czatować z graczami."
+            "value": "Zaloguj się, aby tworzyć wydarzenia, dołączać do nich i czatować z graczami."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entre para criar eventos, participar em jogos e conversar com os jogadores."
+            "value": "Entre para criar eventos, participar neles e conversar com os jogadores."
           }
         }
       }
     },
-    "Sign in to create games, join and chat.": {
+    "Sign in to create events, join and chat.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Войдите, чтобы создавать игры, присоединяться к ним и общаться."
+            "value": "Войдите, чтобы создавать события, присоединяться к ним и общаться."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Inicia sesión para crear partidos, unirte y chatear."
+            "value": "Inicia sesión para crear eventos, unirte y chatear."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connectez-vous pour créer des matchs, rejoindre et discuter."
+            "value": "Connectez-vous pour créer des événements, rejoindre et discuter."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Увійдіть, щоб створювати ігри, приєднуватися й спілкуватися."
+            "value": "Увійдіть, щоб створювати події, приєднуватися й спілкуватися."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zaloguj się, aby tworzyć gry, dołączać i czatować."
+            "value": "Zaloguj się, aby tworzyć wydarzenia, dołączać i czatować."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entre para criar jogos, participar e conversar."
+            "value": "Entre para criar eventos, participar e conversar."
           }
         }
       }
     },
-    "Sign in to see your chats, invites and game reminders.": {
+    "Sign in to see your chats, invites and event reminders.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Войдите, чтобы видеть свои чаты, приглашения и напоминания об играх."
+            "value": "Войдите, чтобы видеть свои чаты, приглашения и напоминания о событиях."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Inicia sesión para ver tus chats, invitaciones y recordatorios de partidos."
+            "value": "Inicia sesión para ver tus chats, invitaciones y recordatorios de eventos."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connectez-vous pour voir vos discussions, invitations et rappels de match."
+            "value": "Connectez-vous pour voir vos discussions, invitations et rappels d’événements."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Увійдіть, щоб бачити свої чати, запрошення та нагадування про ігри."
+            "value": "Увійдіть, щоб бачити свої чати, запрошення та нагадування про події."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zaloguj się, aby zobaczyć swoje czaty, zaproszenia i przypomnienia o grach."
+            "value": "Zaloguj się, aby zobaczyć swoje czaty, zaproszenia i przypomnienia o wydarzeniach."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entre para ver as suas conversas, convites e lembretes de jogos."
+            "value": "Entre para ver as suas conversas, convites e lembretes de eventos."
           }
         }
       }
     },
-    "Sign in to see your groups and the games you join or host.": {
+    "Sign in to see your groups and the events you join or host.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Войдите, чтобы видеть свои группы и игры, в которых вы участвуете или которые организуете."
+            "value": "Войдите, чтобы видеть свои группы и события, в которых вы участвуете или которые организуете."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Inicia sesión para ver tus grupos y los partidos a los que te unes u organizas."
+            "value": "Inicia sesión para ver tus grupos y los eventos a los que te unes u organizas."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connectez-vous pour voir vos groupes et les matchs que vous rejoignez ou organisez."
+            "value": "Connectez-vous pour voir vos groupes et les événements que vous rejoignez ou organisez."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Увійдіть, щоб бачити свої групи та ігри, у яких ви берете участь або які організовуєте."
+            "value": "Увійдіть, щоб бачити свої групи та події, у яких ви берете участь або які організовуєте."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Zaloguj się, aby zobaczyć swoje grupy oraz gry, do których dołączasz lub które organizujesz."
+            "value": "Zaloguj się, aby zobaczyć swoje grupy oraz wydarzenia, do których dołączasz lub które organizujesz."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entre para ver os seus grupos e os jogos em que participa ou organiza."
+            "value": "Entre para ver os seus grupos e os eventos em que participa ou organiza."
           }
         }
       }
@@ -19009,42 +19009,42 @@
         }
       }
     },
-    "Someone took the last spot. Try another game nearby.": {
+    "Someone took the last spot. Try another event nearby.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Последнее место уже занято. Выберите другую игру рядом."
+            "value": "Последнее место уже занято. Выберите другое событие рядом."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alguien ocupó la última plaza. Prueba otro partido cercano."
+            "value": "Alguien ocupó la última plaza. Prueba otro evento cercano."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quelqu’un a pris la dernière place. Essayez un autre match à proximité."
+            "value": "Quelqu’un a pris la dernière place. Essayez un autre événement à proximité."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Останнє місце вже зайнято. Спробуйте іншу гру поруч."
+            "value": "Останнє місце вже зайнято. Спробуйте іншу подію поруч."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ktoś zajął ostatnie miejsce. Spróbuj innej gry w pobliżu."
+            "value": "Ktoś zajął ostatnie miejsce. Spróbuj innego wydarzenia w pobliżu."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alguém ficou com a última vaga. Tente outro jogo por perto."
+            "value": "Alguém ficou com a última vaga. Tente outro evento por perto."
           }
         }
       }
@@ -19369,42 +19369,42 @@
         }
       }
     },
-    "Sunset 5-a-side": {
+    "Event name": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Футбол 5 на 5 на закате"
+            "value": "Название события"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fútbol 5 al atardecer"
+            "value": "Nombre del evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Foot à 5 au coucher du soleil"
+            "value": "Nom de l’événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Футбол 5 на 5 на заході сонця"
+            "value": "Назва події"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Piątki o zachodzie słońca"
+            "value": "Nazwa wydarzenia"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Futebol de 5 ao pôr do sol"
+            "value": "Nome do evento"
           }
         }
       }
@@ -20849,42 +20849,42 @@
         }
       }
     },
-    "This game no longer exists. Pull to refresh the list.": {
+    "This event no longer exists. Pull to refresh the list.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Этой игры больше нет. Потяните вниз, чтобы обновить список."
+            "value": "Этого события больше нет. Потяните вниз, чтобы обновить список."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Este partido ya no existe. Desliza para actualizar la lista."
+            "value": "Este evento ya no existe. Desliza para actualizar la lista."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ce match n’existe plus. Tirez pour actualiser la liste."
+            "value": "Cet événement n’existe plus. Tirez pour actualiser la liste."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Цієї гри більше немає. Потягніть, щоб оновити список."
+            "value": "Цієї події більше немає. Потягніть, щоб оновити список."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ta gra już nie istnieje. Pociągnij, aby odświeżyć listę."
+            "value": "To wydarzenie już nie istnieje. Pociągnij, aby odświeżyć listę."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Este jogo já não existe. Puxe para atualizar a lista."
+            "value": "Este evento já não existe. Puxe para atualizar a lista."
           }
         }
       }
@@ -24637,42 +24637,42 @@
         }
       }
     },
-    "You have already joined this game.": {
+    "You have already joined this event.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вы уже участвуете в этой игре."
+            "value": "Вы уже участвуете в этом событии."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ya te has unido a este partido."
+            "value": "Ya te has unido a este evento."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous avez déjà rejoint ce match."
+            "value": "Vous avez déjà rejoint cet événement."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ви вже берете участь у цій грі."
+            "value": "Ви вже берете участь у цій події."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Już dołączyłeś do tej gry."
+            "value": "Już jesteś na liście tego wydarzenia."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Já participa neste jogo."
+            "value": "Já participa neste evento."
           }
         }
       }
@@ -24717,42 +24717,42 @@
         }
       }
     },
-    "You host this game": {
+    "You host this event": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вы организатор этой игры"
+            "value": "Вы организатор этого события"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Organizas este partido"
+            "value": "Organizas este evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous organisez ce match"
+            "value": "Vous organisez cet événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ви організатор цієї гри"
+            "value": "Ви організатор цієї події"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Organizujesz tę grę"
+            "value": "Organizujesz to wydarzenie"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Você organiza este jogo"
+            "value": "Você organiza este evento"
           }
         }
       }
@@ -24906,7 +24906,7 @@
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Już jesteś w grze"
+            "value": "Już jesteś na liście"
           }
         },
         "pt": {
@@ -25037,42 +25037,42 @@
         }
       }
     },
-    "You're not on the list for this game, so there is nothing to leave.": {
+    "You're not on the list for this event, so there is nothing to leave.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вы не участвуете в этой игре — покидать нечего."
+            "value": "Вы не участвуете в этом событии — покидать нечего."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No estás en la lista de este partido, así que no hay nada que abandonar."
+            "value": "No estás en la lista de este evento, así que no hay nada que abandonar."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous n’êtes pas inscrit à ce match, il n’y a donc rien à quitter."
+            "value": "Vous n’êtes pas inscrit à cet événement, il n’y a donc rien à quitter."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вас немає у списку цієї гри, тож покидати нічого."
+            "value": "Вас немає у списку цієї події, тож покидати нічого."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nie ma Cię na liście tej gry, więc nie ma czego opuszczać."
+            "value": "Nie ma Cię na liście tego wydarzenia, więc nie ma czego opuszczać."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Não está na lista deste jogo, por isso não há nada de que sair."
+            "value": "Não está na lista deste evento, por isso não há nada de que sair."
           }
         }
       }
@@ -25197,42 +25197,42 @@
         }
       }
     },
-    "Your games": {
+    "Your events": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ваши игры"
+            "value": "Ваши события"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tus partidos"
+            "value": "Tus eventos"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vos matchs"
+            "value": "Vos événements"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ваші ігри"
+            "value": "Ваші події"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Twoje gry"
+            "value": "Twoje wydarzenia"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Os seus jogos"
+            "value": "Os seus eventos"
           }
         }
       }
@@ -25277,42 +25277,42 @@
         }
       }
     },
-    "Your groups let only their admins host games.": {
+    "Your groups let only their admins host events.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "В ваших группах создавать игры могут только администраторы."
+            "value": "В ваших группах создавать события могут только администраторы."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tus grupos solo permiten a sus administradores organizar partidos."
+            "value": "Tus grupos solo permiten a sus administradores organizar eventos."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dans vos groupes, seuls les admins peuvent organiser des matchs."
+            "value": "Dans vos groupes, seuls les admins peuvent organiser des événements."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "У ваших групах створювати ігри можуть лише адміністратори."
+            "value": "У ваших групах створювати події можуть лише адміністратори."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "W Twoich grupach gry mogą organizować tylko administratorzy."
+            "value": "W Twoich grupach wydarzenia mogą organizować tylko administratorzy."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nos seus grupos só os administradores podem organizar jogos."
+            "value": "Nos seus grupos só os administradores podem organizar eventos."
           }
         }
       }
@@ -25397,42 +25397,42 @@
         }
       }
     },
-    "a game": {
+    "an event": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "игра"
+            "value": "событие"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "un partido"
+            "value": "un evento"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "un match"
+            "value": "un événement"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "гру"
+            "value": "подія"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "grę"
+            "value": "wydarzenie"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "um jogo"
+            "value": "um evento"
           }
         }
       }

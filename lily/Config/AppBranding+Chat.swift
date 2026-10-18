@@ -14,7 +14,7 @@ nonisolated extension AppBranding {
         /// VoiceOver name of the send button (its label is a glyph).
         static var send: String { localized("Send") }
         /// Stands in for the game's title while it loads, or when the game is gone.
-        static var eventCreatedFallbackTitle: String { localized("a game") }
+        static var eventCreatedFallbackTitle: String { localized("an event") }
         static var emptyTitle: String { localized("No messages yet") }
         static var emptyMessage: String { localized("Say hello to the group.") }
         /// Over the empty transcript when the first page failed; the message and Try again are the groups' shared ones.

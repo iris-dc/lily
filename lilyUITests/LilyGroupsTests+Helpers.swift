@@ -25,13 +25,13 @@ extension LilyGroupsTests {
     @MainActor
     func createGame(titled title: String) {
         app.buttons["group-create-event"].tap()
-        XCTAssertTrue(app.navigationBars["New game"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["New event"].waitForExistence(timeout: 5))
         enter(title, into: app.textFields["create-title"])
         enter("Görli Pitch", into: app.textFields["create-location-name"])
         let submit = app.buttons["create-submit"]
         assertBecomesEnabled(submit, "title, place and the mock position complete the draft")
         submit.tap()
-        XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
     }
 
     /// Label and value of a row, since a form row may expose its text as either.

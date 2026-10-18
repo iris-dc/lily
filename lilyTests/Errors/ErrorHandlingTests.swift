@@ -40,13 +40,13 @@ struct ErrorMessageMapperTests {
     /// An edit's refusals and failures read as the host's, not like a join that failed.
     @Test func hostFailuresHaveTheirOwnTitles() {
         #expect(ErrorMessageMapper.message(for: .eventUpdateFailed).title == "Couldn't save your changes")
-        #expect(ErrorMessageMapper.message(for: .notHost).title == "Not your game")
+        #expect(ErrorMessageMapper.message(for: .notHost).title == "Not your event")
         #expect(ErrorMessageMapper.message(for: .capacityTooLow).title == "Too few spots")
     }
 
     /// A create that fails for no named reason must not read like a join that failed.
     @Test func creationFailureHasItsOwnTitle() {
-        #expect(ErrorMessageMapper.message(for: .eventCreationFailed).title == "Couldn't create your game")
+        #expect(ErrorMessageMapper.message(for: .eventCreationFailed).title == "Couldn't create your event")
     }
 
     /// Being throttled is not being offline; the copy asks for a pause, not for a connection check, whatever the wait.

@@ -39,7 +39,7 @@ struct SystemRowContentTests {
 
     @Test func anEventRowReadsTheFallbackUntilTheGameLoadedAndAsksOnce() async {
         events.result = .success([game])
-        #expect(content.text(for: eventRow) == "Marta created a game")
+        #expect(content.text(for: eventRow) == "Marta created an event")
 
         await content.load(for: eventRow)
         await content.load(for: eventRow)
@@ -57,7 +57,7 @@ struct SystemRowContentTests {
         #expect(events.fetchedEventIDs == ["e"])
         #expect(content.linked.unavailableEventIDs == ["e"])
         #expect(warnings(prefixed: "Event e behind a system row in group g is unavailable").count == 1)
-        #expect(content.text(for: eventRow) == "Marta created a game")
+        #expect(content.text(for: eventRow) == "Marta created an event")
     }
 
     @Test func aTransientFailureLeavesTheRowToAskAgain() async {

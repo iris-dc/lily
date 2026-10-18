@@ -150,7 +150,7 @@ final class LilySmokeTests: LilyUITestCase {
         tapCreateButton()
 
         XCTAssertTrue(app.buttons["Continue with Apple"].waitForExistence(timeout: 5), "a guest must be asked to sign in first")
-        XCTAssertFalse(app.navigationBars["New game"].exists, "the form must not open for a guest")
+        XCTAssertFalse(app.navigationBars["New event"].exists, "the form must not open for a guest")
     }
 
     @MainActor
@@ -170,7 +170,7 @@ final class LilySmokeTests: LilyUITestCase {
     func testCreatingAGameShowsItOnHome() {
         tapSignInWithApple()
         tapCreateButton()
-        XCTAssertTrue(app.navigationBars["New game"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["New event"].waitForExistence(timeout: 5))
 
         let title = "Thursday five-a-side"
         enter(title, into: app.textFields["create-title"])
@@ -180,9 +180,9 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertTrue(submit.waitForExistence(timeout: 5))
         assertBecomesEnabled(submit, "title, place and the mock position complete the draft")
         submit.tap()
-        XCTAssertTrue(app.navigationBars["New game"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
 
         openFromHome(title)
-        XCTAssertTrue(app.staticTexts["You host this game"].waitForExistence(timeout: 5), "the host must see the hosting notice")
+        XCTAssertTrue(app.staticTexts["You host this event"].waitForExistence(timeout: 5), "the host must see the hosting notice")
     }
 }

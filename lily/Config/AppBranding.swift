@@ -64,12 +64,12 @@ nonisolated enum AppBranding {
         enum Create {
             /// VoiceOver label of the floating "+", a menu with a game and a group.
             static var menu: String { localized("Create") }
-            static var title: String { localized("New game") }
-            static var submit: String { localized("Create game") }
+            static var title: String { localized("New event") }
+            static var submit: String { localized("Create event") }
             static var cancel: String { Forms.cancel }
-            static var gameSection: String { localized("Game") }
+            static var gameSection: String { localized("Event") }
             static var titleField: String { localized("Title") }
-            static var titlePlaceholder: String { localized("Sunset 5-a-side") }
+            static var titlePlaceholder: String { localized("Event name") }
             static var eventType: String { Filter.eventType }
             static var startsAt: String { localized("When") }
             static var whereSection: String { localized("Where") }
@@ -110,7 +110,7 @@ nonisolated enum AppBranding {
             private static func textMessage(for issue: EventDraft.Issue) -> String? {
                 let limits = AppConfig.Events.Creation.self
                 return switch issue {
-                case .titleMissing: localized("Give the game a title")
+                case .titleMissing: localized("Give the event a title")
                 case .titleTooLong: localized("Keep the title under \(limits.titleMaxLength) characters")
                 case .locationNameMissing: localized("Name the place")
                 case .locationNameTooLong: localized("Keep the place name under \(limits.locationNameMaxLength) characters")
@@ -167,10 +167,10 @@ nonisolated enum AppBranding {
     static var signInAction: String { localized("Sign in") }
 
     static var guestProfileTitle: String { localized("You're browsing as a guest") }
-    static var guestProfileMessage: String { localized("Sign in to create events, join games and chat with players.") }
+    static var guestProfileMessage: String { localized("Sign in to create events, join them and chat with players.") }
 
     static var signInSheetTitle: String { localized("Welcome back") }
-    static var signInSheetSubtitle: String { localized("Sign in to create games, join and chat.") }
+    static var signInSheetSubtitle: String { localized("Sign in to create events, join and chat.") }
 
     /// Sign-in buttons: `providerName` is the provider's display name.
     static func signInButtonTitle(for providerName: String) -> String {
@@ -215,28 +215,28 @@ nonisolated enum AppBranding {
     static var profileTitle: String { localized("Profile") }
 
     static var exploreEmptyTitle: String { localized("Nothing yet") }
-    static var exploreEmptyMessage: String { localized("New games show up here as people create them.") }
+    static var exploreEmptyMessage: String { localized("New events show up here as people create them.") }
 
     /// The Home tab: the caller's groups and games, and the states around them.
     enum Home {
         static var groupsSection: String { localized("Your groups") }
-        static var gamesSection: String { localized("Your games") }
+        static var gamesSection: String { localized("Your events") }
         static var noGroups: String { localized("No groups yet. Find one on Explore, or create your own.") }
-        static var noGames: String { localized("Games you join or host will appear here.") }
+        static var noGames: String { localized("Events you join or host will appear here.") }
         static var emptyTitle: String { localized("Nothing here yet") }
-        static var emptyMessage: String { localized("Games you join or host and groups you belong to appear here.") }
+        static var emptyMessage: String { localized("Events you join or host and groups you belong to appear here.") }
         static var exploreAction: String { AppBranding.exploreTitle }
-        static var loadFailedTitle: String { localized("Couldn't load your groups and games") }
-        static var guestMessage: String { localized("Sign in to see your groups and the games you join or host.") }
+        static var loadFailedTitle: String { localized("Couldn't load your groups and events") }
+        static var guestMessage: String { localized("Sign in to see your groups and the events you join or host.") }
         static var groupsLoadFailed: String { localized("Couldn't load your groups. Pull down to try again.") }
-        static var gamesLoadFailed: String { localized("Couldn't load your games. Pull down to try again.") }
+        static var gamesLoadFailed: String { localized("Couldn't load your events. Pull down to try again.") }
     }
 
     /// Event detail.
     static var joinAction: String { localized("Join") }
     static var leaveAction: String { localized("Leave") }
     static var eventFullAction: String { localized("Event is full") }
-    static var hostingNotice: String { localized("You host this game") }
+    static var hostingNotice: String { localized("You host this event") }
 
     static func hostedByTitle(for hostName: String) -> String {
         localized("Hosted by \(hostName)")

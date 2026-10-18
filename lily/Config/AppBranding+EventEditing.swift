@@ -5,7 +5,7 @@ nonisolated extension AppBranding.Events {
     enum Edit {
         /// The detail's toolbar button.
         static var action: String { localized("Edit") }
-        static var title: String { localized("Edit game") }
+        static var title: String { localized("Edit event") }
         static var save: String { localized("Save") }
     }
 }
