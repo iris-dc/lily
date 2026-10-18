@@ -38,7 +38,9 @@ nonisolated enum ChatTimeline {
             }
             previous = message
         }
-        rows += input.pending.map(ChatRow.pending)
+        // A catch-up may hold the stored message before the send's answer confirms the bubble: one row, not two.
+        let landed = Set(visible.compactMap(\.clientMessageId))
+        rows += input.pending.filter { !landed.contains($0.clientMessageID) }.map(ChatRow.pending)
         return rows
     }
 

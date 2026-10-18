@@ -78,3 +78,13 @@ nonisolated extension DesignTokens.Duration {
     /// How long the message a quote scrolled to stays washed in the accent.
     static let messageHighlight: TimeInterval = 1.2
 }
+
+nonisolated extension DesignTokens {
+    /// How a row arriving in a transcript moves: a spring up from the bottom with a little bounce, grown from the
+    /// sender's corner, as if it left the composer; what leaves (a discarded bubble) only fades and shrinks.
+    enum MessageArrival {
+        static let duration: TimeInterval = Duration.normal
+        static let bounce: Double = 0.25
+        static let scale: CGFloat = 0.8
+    }
+}

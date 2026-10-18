@@ -9,12 +9,23 @@ nonisolated enum ChatRow: Identifiable, Hashable, Sendable {
     case system(ChatMessage)
     case pending(PendingMessage)
 
+    /// A sent message keeps the id of the unsent bubble it replaces (the client id), so the transcript sees one row
+    /// change rather than a row leave and another arrive.
     var id: String {
         switch self {
         case .day(let date): "day-\(Int(date.timeIntervalSince1970))"
-        case .message(let row): row.message.id
+        case .message(let row): row.message.clientMessageId ?? row.message.id
         case .system(let message): message.id
         case .pending(let pending): pending.id
+        }
+    }
+
+    /// The stored message's id, what a quote names; `nil` for a day chip or an unsent message.
+    var messageID: String? {
+        switch self {
+        case .message(let row): row.message.id
+        case .system(let message): message.id
+        case .day, .pending: nil
         }
     }
 

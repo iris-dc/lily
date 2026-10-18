@@ -132,9 +132,12 @@ struct TranscriptScrollPolicyTests {
         let readingAfter = snapshot(offsetY: 500, bottomInset: 380, isAtBottom: false)
         #expect(policy.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
                 == .none)
+        // A shrinking inset (the keyboard going, the composer back to one line) uncovers content; nothing to pin.
+        #expect(policy.geometryChanged(from: keyboardUp, to: before, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
     }
 
-    /// A block hiding rows, or a tombstone shorter than its bubble, shrinks the content; growth stays `rowAppended`'s.
+    /// A block hiding rows, or a tombstone shorter than its bubble, shrinks the content.
     @Test func followsAContentShrinkOnlyWhileAtTheBottom() {
         var policy = settled()
         let shrunk = snapshot(contentHeight: 1_700)
@@ -144,22 +147,61 @@ struct TranscriptScrollPolicyTests {
         let readingAfter = snapshot(offsetY: 500, contentHeight: 1_700, isAtBottom: false)
         #expect(policy.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
                 == .none)
-        let grown = snapshot(contentHeight: 2_300)
-        #expect(policy.geometryChanged(from: snapshot(), to: grown, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .none)
     }
 
-    @Test func ownRowsFollowOthersOnlyAtTheBottom() {
+    /// An appended row grows the content below the fold (the transcript lifts the anchor for it): the reader who was at
+    /// the bottom slides down to it, also when the anchor kept the bottom (the slide then has nowhere to go); growth
+    /// under a reader who scrolled away moves nothing.
+    @Test func slidesToGrowthOnlyWhenTheReaderWasAtTheBottom() {
+        var policy = settled()
+        let grown = snapshot(contentHeight: 2_300, isAtBottom: false)
+        #expect(policy.geometryChanged(from: snapshot(), to: grown, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .animateToBottom)
+        let anchored = snapshot(offsetY: 300, contentHeight: 2_300)
+        #expect(policy.geometryChanged(from: snapshot(), to: anchored, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .animateToBottom)
+        let readingBefore = snapshot(offsetY: 500, isAtBottom: false)
+        let readingAfter = snapshot(offsetY: 500, contentHeight: 2_300, isAtBottom: false)
+        #expect(policy.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        // A send clears the composer: the inset shrinks in the report that grew the content, and the slide still wins.
+        let shorterComposer = snapshot(contentHeight: 2_300, bottomInset: 60, isAtBottom: false)
+        #expect(policy.geometryChanged(from: snapshot(),
+                                       to: shorterComposer,
+                                       hasRows: true,
+                                       canLoadOlder: true,
+                                       oldestID: oldest) == .animateToBottom)
+    }
+
+    /// Only the caller's own row fetches a reader who scrolled away, once its growth is laid out; another member's row
+    /// or a note leaves them reading. The follow is spent by that growth, and an own row appended at the bottom sets none.
+    @Test func ownRowsBringAReaderWhoScrolledAwayBack() {
+        let readingBefore = snapshot(offsetY: 500, isAtBottom: false)
+        let readingAfter = snapshot(offsetY: 500, contentHeight: 2_300, isAtBottom: false)
+        let later = snapshot(offsetY: 500, contentHeight: 2_600, isAtBottom: false)
         let unsent = ChatRow.pending(PendingMessage(draft: MessageDraft(clientMessageID: "c-1"), sentAt: .now))
-        #expect(TranscriptScrollPolicy.rowAppended(unsent, isAtBottom: false) == .scrollToBottom)
-        #expect(TranscriptScrollPolicy.rowAppended(bubble(isOwn: true), isAtBottom: false) == .scrollToBottom)
-        #expect(TranscriptScrollPolicy.rowAppended(bubble(isOwn: false), isAtBottom: true) == .scrollToBottom)
-        #expect(TranscriptScrollPolicy.rowAppended(bubble(isOwn: false), isAtBottom: false) == .none)
         let note = ChatRow.system(.fixture(id: "s1", kind: .eventCreated))
-        #expect(TranscriptScrollPolicy.rowAppended(note, isAtBottom: true) == .scrollToBottom)
-        #expect(TranscriptScrollPolicy.rowAppended(note, isAtBottom: false) == .none)
-        #expect(TranscriptScrollPolicy.rowAppended(.day(Date()), isAtBottom: false) == .none)
-        #expect(TranscriptScrollPolicy.rowAppended(nil, isAtBottom: true) == .none)
+        let cases: [(ChatRow?, Bool)] = [(unsent, true), (bubble(isOwn: true), true), (bubble(isOwn: false), false),
+                                         (note, false), (.day(Date()), false), (nil, false)]
+        for (row, follows) in cases {
+            var policy = settled()
+            policy.rowAppended(row, isAtBottom: false)
+            let action = policy.geometryChanged(from: readingBefore,
+                                                to: readingAfter,
+                                                hasRows: true,
+                                                canLoadOlder: true,
+                                                oldestID: oldest)
+            #expect(action == (follows ? .animateToBottom : .none), "\(row?.id ?? "nil")")
+            #expect(policy.geometryChanged(from: readingAfter, to: later, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                    == .none, "nothing left to follow")
+        }
+        var atBottom = settled()
+        atBottom.rowAppended(bubble(isOwn: true), isAtBottom: true)
+        #expect(atBottom.geometryChanged(from: readingBefore,
+                                         to: readingAfter,
+                                         hasRows: true,
+                                         canLoadOlder: true,
+                                         oldestID: oldest) == .none)
     }
 
     /// Within `atBottomThreshold` of the content end is at the bottom; within `olderPageTriggerDistance` of the top,

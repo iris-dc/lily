@@ -174,7 +174,7 @@ lily/
                  (ChatViewModel + History + Send + Live + Events + Conversation + Clear + Reply + Attachments + Moderation, AttachmentComposerModel
                  (+ Picking: the items picked for one message and every way in; + Upload: AttachmentWork, one item's prepare, ticket and
                  PUTs, holding the model weakly so a closed room cancels and cleans up)), Views (ChatsView (the Chats root:
-                 the inbox row over the rooms), ChatView over ChatTranscript (the anchored list), MessageBubble + PendingMessageBubble over
+                 the inbox row over the rooms), ChatView over ChatTranscript (the anchored list) + MessageArrival (the row's arrival transition), MessageBubble + PendingMessageBubble over
                  BubbleContent (quote, gallery and words on the fill), QuoteBlock + QuoteBar + QuoteStack (the quote inside a bubble and
                  the layout that keeps the bubble hugging its words), ReplyPreviewBar (the composer's reply preview), AttachmentMenuButton
                  + CameraPicker, AttachmentStrip (the picked items above the field), AttachmentGallery + DraftGallery + GalleryGrid,

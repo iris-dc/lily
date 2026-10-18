@@ -14,12 +14,14 @@ struct ChatTimelineTests {
                          from sender: String = "u-2",
                          name: String = "Marta",
                          after offset: TimeInterval,
-                         kind: MessageKind = .text) -> ChatMessage {
+                         kind: MessageKind = .text,
+                         clientMessageID: String? = nil) -> ChatMessage {
         .fixture(id: id,
                  senderUserID: sender,
                  senderName: name,
                  kind: kind,
                  eventID: "e",
+                 clientMessageID: clientMessageID,
                  sentAt: Self.noon.addingTimeInterval(offset))
     }
 
@@ -111,6 +113,23 @@ struct ChatTimelineTests {
     @Test func rowIdsAreStable() {
         let rows = rows([message("m1", after: 0)])
         #expect(rows.map(\.id) == ["day-1799971200", "m1"], "the day's id is its UTC midnight")
+    }
+
+    /// The stored message takes over the unsent bubble's row, so the transcript animates nothing at the confirmation.
+    @Test func aStoredMessageKeepsTheIdOfTheBubbleItReplaces() {
+        let rows = rows([message("m1", from: "u-1", after: 0, clientMessageID: "c-1")])
+        #expect(rows.map(\.id) == ["day-1799971200", "c-1"])
+        #expect(rows.last?.messageID == "m1", "a quote still finds the row by the stored id")
+    }
+
+    @Test func aBubbleWhoseMessageIsAlreadyHeldIsLeftOut() {
+        let unsent = PendingMessage(draft: MessageDraft(clientMessageID: "c-1"), sentAt: Self.noon)
+        let other = PendingMessage(draft: MessageDraft(clientMessageID: "c-2"), sentAt: Self.noon)
+
+        let rows = rows([message("m1", from: "u-1", after: 0, clientMessageID: "c-1")], pending: [unsent, other])
+
+        #expect(rows.map(\.id) == ["day-1799971200", "c-1", "c-2"], "the landed bubble is gone, the other stays")
+        guard case .message = rows[1] else { Issue.record("expected the stored message"); return }
     }
 
     /// The follow rule reads whose a row is: the caller's unsent and sent messages are theirs, a chip or a note nobody's.

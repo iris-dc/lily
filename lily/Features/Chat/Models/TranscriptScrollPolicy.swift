@@ -3,9 +3,10 @@ import Foundation
 /// What the chat transcript's scroll position does after each geometry report and each appended row; pure, so the rules
 /// can be checked without a view. The newest row is pinned above the composer once the first page has laid out (the
 /// default bottom anchor ignores the composer's safe-area inset), an older page keeps what was on screen where it was,
-/// an inset change or a shrink of the content while at the bottom re-pins it (the keyboard, a block hiding a sender's
-/// rows), and the page before is requested only once the reader has scrolled near the top after that first settle,
-/// never during the initial layout.
+/// a grown inset or a shrink of the content while at the bottom re-pins it (the keyboard, a block hiding a sender's
+/// rows), growth below the fold while the reader was at the bottom (an appended row, which the transcript lets grow
+/// unanchored) is followed with the arrival's animation, and the page before is requested only once the reader has
+/// scrolled near the top after that first settle, never during the initial layout.
 nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     struct Snapshot: Equatable, Sendable {
         var offsetY: CGFloat
@@ -25,12 +26,17 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
 
     enum Action: Equatable, Sendable {
         case none
+        /// Pin the bottom at once.
         case scrollToBottom
+        /// Slide to the bottom with the arrival's animation: rows above make room for the one that came.
+        case animateToBottom
         case scrollTo(y: CGFloat)
         case loadOlder
     }
 
     private(set) var hasSettled = false
+    /// The caller's own row was appended while they had scrolled away: the growth that lays it out is followed.
+    private var followsNextGrowth = false
     /// The older page being prepended; cleared when the taller content has been laid out or the page brought nothing.
     private(set) var pendingRestore: PendingRestore?
 
@@ -44,11 +50,13 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
         pendingRestore = nil
     }
 
-    /// The caller's own row always scrolls to the bottom; another member's or a system row only while the reader is
-    /// there, so reading older messages is never interrupted.
-    static func rowAppended(_ row: ChatRow?, isAtBottom: Bool) -> Action {
-        guard let row, row.isOwn || isAtBottom else { return .none }
-        return .scrollToBottom
+    /// The caller's own row brings a reader who scrolled away back to the bottom once it is laid out; another member's
+    /// or a system row never does, so reading older messages is never interrupted. A reader at the bottom is followed
+    /// by the growth itself.
+    mutating func rowAppended(_ row: ChatRow?, isAtBottom: Bool) {
+        if let row, row.isOwn, !isAtBottom {
+            followsNextGrowth = true
+        }
     }
 
     mutating func geometryChanged(from previous: Snapshot,
@@ -64,7 +72,17 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
             hasSettled = true
             return .scrollToBottom
         }
-        if current.isAtBottom, previous.bottomInset != current.bottomInset || current.contentHeight < previous.contentHeight {
+        // Growth under a reader at the bottom is the appended row, laid out below the fold while the transcript lifts
+        // its anchor; growth the anchor did follow (a bubble made taller by its picture) slides nowhere. Judged before
+        // the inset rule: a send clears the composer, and a shorter composer in the same report must not pin the row at
+        // once.
+        if current.contentHeight > previous.contentHeight, previous.isAtBottom || followsNextGrowth {
+            followsNextGrowth = false
+            return .animateToBottom
+        }
+        // A grown inset (the keyboard, a composer growing a line) covers the newest row; a shrunk one uncovers content
+        // and the scroll view settles on the new bottom by itself, so pinning it would also cut a slide short.
+        if current.isAtBottom, previous.bottomInset < current.bottomInset || current.contentHeight < previous.contentHeight {
             return .scrollToBottom
         }
         if current.isNearTop, canLoadOlder {
