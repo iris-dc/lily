@@ -1,35 +1,42 @@
 import AppKit
 import CoreGraphics
+import CoreImage
 import CoreText
 import Foundation
 
-// Renders iskra's app icon at 1024x1024 with CoreGraphics (no dependencies): a lowercase "i" set in SF Pro Rounded Black
-// in cream on the dark field (ink black with a maroon drift from the top left), its dot a ball with red seams; the
-// letter of the name, the ball for the sport (picked from a grid of typefaces and colourways; the spark marks tried
-// before it read as a card-suit diamond or a glow). The shipped files are `final-any/dark/tinted.png`, copied into
+// Renders iskra's app icon at 1024x1024 with CoreGraphics and CoreImage's Gaussian blur (no dependencies): a lowercase "i"
+// whose stem is a drawn rounded rectangle (nine tenths the width of SF Pro Rounded Heavy's "ı", corners at 42 % of
+// the width, so it reads a shade slimmer and squarer than the type) and whose dot is a ball with red seams, both
+// shaded cream to rose and drawn at 85 % so the glow shows through, centred on a warm graphite field with the accent
+// red glowing out of the letter into it. The shipped files are `final-any/dark/tinted.png`, copied into
 // `lily/Assets.xcassets/AppIcon.appiconset` as `AppIcon.png`, `AppIcon-Dark.png`, `AppIcon-Tinted.png` (opaque, as the
-// App Store requires); `final-layer-*.png` are the same icon as two layers for Icon Composer; `preview-strip.png` shows
-// the three appearances at home-screen sizes. The typeface is read from the Mac at render time; the PNGs ship.
+// App Store requires); `final-layer-*.png` are the same icon as two layers for Icon Composer (the field with its glow,
+// and the letter); `preview-strip.png` shows the three appearances at home-screen sizes. The typeface is read from the
+// Mac at render time (for the stem's reference width); the PNGs ship.
 // Usage: swift scripts/make-app-icon.swift <output directory>
 
 let size: CGFloat = 1024
 let outDir = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "/tmp/icon/out"
 try? FileManager.default.createDirectory(atPath: outDir, withIntermediateDirectories: true)
+let space = CGColorSpace(name: CGColorSpace.sRGB)!
+let canvas = CGRect(x: 0, y: 0, width: size, height: size)
 
 func rgb(_ hex: UInt32, _ alpha: CGFloat = 1) -> CGColor {
     CGColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
             blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
 }
 
-// Brand colours (dark variants of the colorsets) and the cream the letter is set in.
-let accent: UInt32 = 0xB72734, inkBlack: UInt32 = 0x0E0407, cream: UInt32 = 0xFFF4EE
-let fieldMaroon: UInt32 = 0x3A0617, fieldMid: UInt32 = 0x1E040D
+// Brand colours: the accent, the letter's cream and the rose it shades into, and the warm graphite of the field.
+let accent: UInt32 = 0xB72734
+let letterTop: UInt32 = 0xFFF7F2, letterBottom: UInt32 = 0xF2B8BE
+let fieldTop: UInt32 = 0x2A2224, fieldBottom: UInt32 = 0x161112
+let darkFieldTop: UInt32 = 0x221B1D, darkFieldBottom: UInt32 = 0x100C0D
 let tintedSeam: UInt32 = 0x8A8A8A
 
 func makeContext(width: CGFloat = size, height: CGFloat = size, opaque: Bool = false) -> CGContext {
     let alpha: CGImageAlphaInfo = opaque ? .noneSkipLast : .premultipliedLast
     return CGContext(data: nil, width: Int(width), height: Int(height), bitsPerComponent: 8, bytesPerRow: 0,
-                     space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: alpha.rawValue)!
+                     space: space, bitmapInfo: alpha.rawValue)!
 }
 
 func write(_ context: CGContext, _ name: String) {
@@ -39,22 +46,30 @@ func write(_ context: CGContext, _ name: String) {
 }
 
 func gradient(_ colors: [CGColor], _ locations: [CGFloat]) -> CGGradient {
-    CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB)!, colors: colors as CFArray, locations: locations)!
+    CGGradient(colorsSpace: space, colors: colors as CFArray, locations: locations)!
 }
 
 enum Appearance: String { case any, dark, tinted }
 
-/// The geometry of the icon, shared by the appearances and the layers.
+/// The letter's geometry and finish, shared by the appearances and the layers.
 enum Letter {
-    /// The stem is the dotless "ı", so the dot can be drawn as a ball; its height on the canvas, and where it sits.
+    /// The stem's height, its width as a fraction of SF Pro Rounded Heavy's "ı" at that height, and its corner radius
+    /// as a fraction of its width (the type's own is one half).
     static let stemHeight: CGFloat = 500
-    static let stemCenter = CGPoint(x: 512, y: 350)
-    /// The ball's radius follows the stem's width, kept within bounds; the gap is the space between stem and ball.
-    static let ballRadiusRange: ClosedRange<CGFloat> = 118...160
-    static let ballRadiusPerStemWidth: CGFloat = 0.72
+    static let stemWidthPerGlyph: CGFloat = 0.90
+    static let cornerPerWidth: CGFloat = 0.42
+    /// The ball's radius per stem width, and the gap between stem and ball.
+    static let ballRadiusPerStemWidth: CGFloat = 0.64
     static let gap: CGFloat = 56
     static let seamWidthPerRadius: CGFloat = 0.17
-    static let shadowOffset = CGSize(width: 0, height: -18), shadowBlur: CGFloat = 50
+    static let opacity: CGFloat = 0.85
+    static let shadowOffset = CGSize(width: 0, height: -14), shadowBlur: CGFloat = 40, shadowAlpha: CGFloat = 0.55
+}
+
+/// The glow: the accent blurred out of the letter's own shape, a tight bright one over a wide faint one.
+enum Glow {
+    static let blur: CGFloat = 70, alpha: CGFloat = 0.85
+    static let haloBlur: CGFloat = 220, haloAlpha: CGFloat = 0.7
 }
 
 /// SF Pro Rounded at the given weight, as CoreText sees it (the system font with the rounded design).
@@ -72,37 +87,53 @@ func glyphPath(_ character: Character, _ font: CTFont) -> CGPath {
     return CTFontCreatePathForGlyph(font, glyphs[0], &identity)!
 }
 
-/// `path` scaled and moved so its bounding box is centred on `center` with the given height.
-func fit(_ path: CGPath, height: CGFloat, center: CGPoint) -> CGPath {
-    let box = path.boundingBox
-    let scale = height / box.height
-    var t = CGAffineTransform(translationX: center.x - box.midX * scale, y: center.y - box.midY * scale).scaledBy(x: scale, y: scale)
-    return path.copy(using: &t)!
+/// The stem's width: a fraction of the type's, so the letter keeps the type's proportions while reading slimmer.
+let stemWidth: CGFloat = {
+    let glyph = glyphPath("ı", roundedSystemFont(weight: .heavy, size: 800)).boundingBox
+    return glyph.width * (Letter.stemHeight / glyph.height) * Letter.stemWidthPerGlyph
+}()
+let ballRadius = stemWidth * Letter.ballRadiusPerStemWidth
+/// The stem and the ball, the whole letter centred on the canvas from the foot of the stem to the top of the ball.
+let stemRect: CGRect = {
+    let letterHeight = Letter.stemHeight + Letter.gap + 2 * ballRadius
+    return CGRect(x: (size - stemWidth) / 2, y: (size - letterHeight) / 2, width: stemWidth, height: Letter.stemHeight)
+}()
+let stemPath = CGPath(roundedRect: stemRect, cornerWidth: stemWidth * Letter.cornerPerWidth,
+                      cornerHeight: stemWidth * Letter.cornerPerWidth, transform: nil)
+let ballCenter = CGPoint(x: stemRect.midX, y: stemRect.maxY + Letter.gap + ballRadius)
+let ballRect = CGRect(x: ballCenter.x - ballRadius, y: ballCenter.y - ballRadius, width: 2 * ballRadius, height: 2 * ballRadius)
+let letterPath: CGPath = { let p = CGMutablePath(); p.addPath(stemPath); p.addEllipse(in: ballRect); return p }()
+
+/// `path` filled with `color` and blurred by `radius`, on a transparent canvas.
+func blurred(_ path: CGPath, color: CGColor, radius: CGFloat) -> CGImage {
+    let c = makeContext()
+    c.setFillColor(color); c.addPath(path); c.fillPath()
+    let blur = CIFilter(name: "CIGaussianBlur")!
+    blur.setValue(CIImage(cgImage: c.makeImage()!), forKey: kCIInputImageKey)
+    blur.setValue(radius, forKey: kCIInputRadiusKey)
+    let output = blur.outputImage!.cropped(to: canvas)
+    return CIContext(options: [.workingColorSpace: space]).createCGImage(output, from: output.extent)!
 }
 
-/// The stem on the canvas, and the ball's centre and radius derived from it.
-let stemPath = fit(glyphPath("ı", roundedSystemFont(weight: .black, size: 800)), height: Letter.stemHeight, center: Letter.stemCenter)
-let ballRadius = min(max(stemPath.boundingBox.width * Letter.ballRadiusPerStemWidth, Letter.ballRadiusRange.lowerBound),
-                     Letter.ballRadiusRange.upperBound)
-let ballCenter = CGPoint(x: stemPath.boundingBox.midX, y: stemPath.boundingBox.maxY + Letter.gap + ballRadius)
-
-/// The field: ink black with a maroon drift from the top left; the dark appearance drifts less; tinted is plain black.
+/// The field: warm graphite, lighter at the top, with the accent glowing out of the letter; the dark appearance a shade
+/// darker; tinted is plain black without a glow, since the system paints it in one colour.
 func drawBackground(_ c: CGContext, appearance: Appearance) {
-    let rect = CGRect(x: 0, y: 0, width: size, height: size)
-    c.setFillColor(rgb(appearance == .tinted ? 0x000000 : inkBlack)); c.fill(rect)
-    guard appearance != .tinted else { return }
-    let top: UInt32 = appearance == .dark ? 0x2A0511 : fieldMaroon
-    c.drawLinearGradient(gradient([rgb(top), rgb(fieldMid), rgb(inkBlack)], [0, 0.55, 1]),
-                         start: CGPoint(x: 0, y: size), end: CGPoint(x: size, y: 0),
-                         options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+    guard appearance != .tinted else { c.setFillColor(rgb(0x000000)); c.fill(canvas); return }
+    let (top, bottom) = appearance == .dark ? (darkFieldTop, darkFieldBottom) : (fieldTop, fieldBottom)
+    c.drawLinearGradient(gradient([rgb(top), rgb(bottom)], [0, 1]),
+                         start: CGPoint(x: 0, y: size), end: CGPoint(x: 0, y: 0), options: [])
+    for (blur, alpha) in [(Glow.haloBlur, Glow.haloAlpha), (Glow.blur, Glow.alpha)] {
+        c.saveGState(); c.setAlpha(alpha)
+        c.draw(blurred(letterPath, color: rgb(accent), radius: blur), in: canvas)
+        c.restoreGState()
+    }
 }
 
-/// A ball: a disc with two seam curves, the tennis-ball reading that stands for any sport.
-func drawBall(_ c: CGContext, center p: CGPoint, radius r: CGFloat, fill: CGColor, seam: CGColor) {
+/// The two seam curves on the ball, the tennis-ball reading that stands for any sport.
+func drawSeams(_ c: CGContext, seam: CGColor) {
+    let p = ballCenter, r = ballRadius
     c.saveGState()
-    c.setFillColor(fill)
-    c.fillEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: 2 * r, height: 2 * r))
-    c.addEllipse(in: CGRect(x: p.x - r, y: p.y - r, width: 2 * r, height: 2 * r)); c.clip()
+    c.addEllipse(in: ballRect); c.clip()
     c.setStrokeColor(seam); c.setLineWidth(r * Letter.seamWidthPerRadius); c.setLineCap(.round)
     let first = CGMutablePath()
     first.move(to: CGPoint(x: p.x - r * 1.05, y: p.y + r * 0.35))
@@ -114,17 +145,27 @@ func drawBall(_ c: CGContext, center p: CGPoint, radius r: CGFloat, fill: CGColo
     c.restoreGState()
 }
 
-/// The letter: the stem and the ball, each lifted by a soft shadow; white on black with grey seams when tinted.
+/// The letter: stem and ball seated by one soft shadow, shaded cream to rose from the ball down, drawn at 85 % so the
+/// glow warms it; white on black with grey seams and opaque when tinted.
 func drawLetter(_ c: CGContext, appearance: Appearance) {
-    let ink = rgb(appearance == .tinted ? 0xFFFFFF : cream)
-    let seam = rgb(appearance == .tinted ? tintedSeam : accent)
+    let tinted = appearance == .tinted
     c.saveGState()
-    if appearance != .tinted { c.setShadow(offset: Letter.shadowOffset, blur: Letter.shadowBlur, color: rgb(0x000000, 0.5)) }
-    c.addPath(stemPath); c.setFillColor(ink); c.fillPath()
+    c.setAlpha(tinted ? 1 : Letter.opacity)
+    c.beginTransparencyLayer(auxiliaryInfo: nil)
+    // The flat fill is what casts the shadow: a gradient drawn inside a clip casts none.
+    c.saveGState()
+    if !tinted { c.setShadow(offset: Letter.shadowOffset, blur: Letter.shadowBlur, color: rgb(0x000000, Letter.shadowAlpha)) }
+    c.setFillColor(rgb(tinted ? 0xFFFFFF : letterTop)); c.addPath(letterPath); c.fillPath()
     c.restoreGState()
-    c.saveGState()
-    if appearance != .tinted { c.setShadow(offset: Letter.shadowOffset, blur: Letter.shadowBlur, color: rgb(0x000000, 0.5)) }
-    drawBall(c, center: ballCenter, radius: ballRadius, fill: ink, seam: seam)
+    if !tinted {
+        c.saveGState()
+        c.addPath(letterPath); c.clip()
+        c.drawLinearGradient(gradient([rgb(letterTop), rgb(letterBottom)], [0, 1]),
+                             start: CGPoint(x: 0, y: ballRect.maxY), end: CGPoint(x: 0, y: stemRect.minY), options: [])
+        c.restoreGState()
+    }
+    drawSeams(c, seam: rgb(tinted ? tintedSeam : accent))
+    c.endTransparencyLayer()
     c.restoreGState()
 }
 
@@ -143,7 +184,7 @@ for appearance in [Appearance.any, .dark, .tinted] {
     finals.append(c.makeImage()!)
 }
 
-// Layers for Icon Composer: the background alone and the letter alone (transparent).
+// Layers for Icon Composer: the field with its glow, and the letter alone (transparent).
 do {
     let b = makeContext(); drawBackground(b, appearance: .any); write(b, "final-layer-background")
     let l = makeContext(); drawLetter(l, appearance: .any); write(l, "final-layer-letter")
