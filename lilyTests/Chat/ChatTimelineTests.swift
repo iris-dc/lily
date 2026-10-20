@@ -110,6 +110,45 @@ struct ChatTimelineTests {
         #expect(row.text == "on my way" && !row.hasFailed)
     }
 
+    /// The caller's newest message runs on into their unsent one as it will once that is stored, so the confirmation
+    /// moves the time to the new bubble and changes no row's height.
+    @Test func theCallersNewestMessageRunsOnIntoTheirUnsentOne() {
+        let unsent = PendingMessage(draft: MessageDraft(clientMessageID: "c-1"), sentAt: Self.noon.addingTimeInterval(60))
+        let mine = message("m1", from: "u-1", name: "Me", after: 0)
+
+        let rows = rows([mine], pending: [unsent])
+
+        guard case .message(let row) = rows[1] else { Issue.record("expected my message"); return }
+        #expect(!row.isLastInRun)
+        let stored = message("m2", from: "u-1", name: "Me", after: 60, clientMessageID: "c-1")
+        let confirmed = self.rows([mine, stored]).compactMap { if case .message(let row) = $0 { row.isLastInRun } else { nil } }
+        #expect(confirmed == [false, true], "the same runs once the bubble is stored")
+    }
+
+    @Test func anotherSendersMessageOrAGapEndsTheRunBeforeTheUnsentOne() {
+        let unsent = PendingMessage(draft: MessageDraft(clientMessageID: "c-1"),
+                                    sentAt: Self.noon.addingTimeInterval(AppConfig.Chat.groupingWindow + 60))
+        let lasts = rows([message("m1", after: 0), message("m2", from: "u-1", name: "Me", after: 60)], pending: [unsent])
+            .compactMap { if case .message(let row) = $0 { row.isLastInRun } else { nil } }
+        #expect(lasts == [true, true])
+
+        let soon = PendingMessage(draft: MessageDraft(clientMessageID: "c-2"), sentAt: Self.noon.addingTimeInterval(30))
+        let marta = rows([message("m1", after: 0)], pending: [soon])
+            .compactMap { if case .message(let row) = $0 { row.isLastInRun } else { nil } }
+        #expect(marta == [true], "Marta's run ends where my unsent message starts")
+    }
+
+    /// A failed bubble shows its hint, not a time, so the message before it keeps its own.
+    @Test func aFailedUnsentMessageLeavesTheCallersRunEnded() {
+        var failed = PendingMessage(draft: MessageDraft(clientMessageID: "c-1"), sentAt: Self.noon.addingTimeInterval(60))
+        failed.state = .failed
+
+        let rows = rows([message("m1", from: "u-1", name: "Me", after: 0)], pending: [failed])
+
+        guard case .message(let row) = rows[1] else { Issue.record("expected my message"); return }
+        #expect(row.isLastInRun)
+    }
+
     @Test func rowIdsAreStable() {
         let rows = rows([message("m1", after: 0)])
         #expect(rows.map(\.id) == ["day-1799971200", "m1"], "the day's id is its UTC midnight")

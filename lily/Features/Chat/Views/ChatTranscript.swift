@@ -6,14 +6,15 @@ import SwiftUI
 /// for a moment; pictures and videos open in `AttachmentViewerSheet`, a file in QuickLook once it is on the device; a
 /// long press on another member's bubble also offers Report and Block. A row appended at the bottom lands below the
 /// fold (the anchor that keeps the bottom pinned through every other size change is lifted for that one layout) and the
-/// transcript slides down to it with the arrival's spring while the row fades and scales in (`MessageArrivalTransition`);
-/// a sent message keeps its bubble's row (`ChatRow.id`), so the confirmation changes the bubble in place and moves
-/// nothing.
+/// transcript slides down to it with the arrival's spring while the row fades and scales in (`TranscriptArrivals` says
+/// which rows arrived, `ChatRowView` draws them from a clock); a sent message keeps its bubble's row (`ChatRow.id`) and
+/// its height, so the confirmation swaps the bubble in place, moves nothing and leaves the arrival running.
 struct ChatTranscript: View {
     let viewModel: ChatViewModel
     let dependencies: AppDependencies
     @State private var position = ScrollPosition(edge: .bottom)
     @State private var tracker = ScrollTracker()
+    @State private var arrivals = ArrivalTracker()
     /// The last row of the layout the anchor last pinned; a different last row is an append in progress.
     @State private var pinnedLastRowID: String?
     /// The message a tapped quote led to, while its wash shows.
@@ -31,18 +32,31 @@ struct ChatTranscript: View {
 
     var body: some View {
         let rows = viewModel.rows
+        let arrived = arrivals.update(to: rows,
+                                      history: .init(isInFlight: viewModel.isLoadingHistory,
+                                                     finished: viewModel.historyLoadsFinished))
         let isAppending = tracker.policy.hasSettled && rows.last?.id != pinnedLastRowID
         ScrollView {
             LazyVStack(spacing: DesignTokens.Spacing.xs) {
                 olderPageSlot
                 ForEach(rows) { row in
-                    view(for: row)
-                        .transition(MessageArrivalTransition(for: row))
+                    ChatRowView(row: row,
+                                viewModel: viewModel,
+                                dependencies: dependencies,
+                                highlightedMessageID: highlightedMessageID,
+                                onTapQuote: reveal,
+                                onTapAttachment: { viewing = $0 },
+                                onOpenFile: { previewURL = $0 },
+                                onReport: { reporting = $0 },
+                                onBlock: { blocking = $0 },
+                                arrivedAt: arrived.start(of: row.id))
+                        .transition(MessageRemovalTransition(for: row))
                 }
             }
             .scrollTargetLayout()
-            // Only an appended row animates: a prepended page or the first load keep the restore and the first pin
-            // exact, and both leave the last row alone.
+            // Animates a change of the last row only (a discarded bubble shrinking out, the layout around an appended
+            // one): a prepended page or the first load keep the restore and the first pin exact, and both leave the last
+            // row alone.
             .animation(tracker.policy.hasSettled ? .messageArrival : nil, value: rows.last?.id)
             .padding(.horizontal, DesignTokens.Layout.screenMargin)
             .padding(.vertical, DesignTokens.Spacing.md)
@@ -94,49 +108,6 @@ struct ChatTranscript: View {
                             title: { AppBranding.Moderation.blockConfirmationTitle(name: $0.senderName) },
                             actions: blockButton(for:),
                             message: { _ in Text(AppBranding.Moderation.blockConfirmationMessage) })
-    }
-
-    @ViewBuilder private func view(for row: ChatRow) -> some View {
-        switch row {
-        case .day(let day):
-            DaySeparator(day: day, now: viewModel.now())
-        case .message(let messageRow):
-            messageBubble(for: messageRow)
-        case .system(let message):
-            // Every chat is on the Chats stack, which registers the game and the tournament destinations.
-            SystemMessageRow(message: message, viewModel: viewModel) { $0.open(through: dependencies.navigation) }
-        case .pending(let pending):
-            PendingMessageBubble(message: pending, viewModel: viewModel, onTapQuote: reveal)
-        }
-    }
-
-    /// The bubble, with a context menu only when `MessageMenuItems` offers something: an empty menu would still open on
-    /// a long press, and a tombstone offers nothing.
-    @ViewBuilder private func messageBubble(for messageRow: MessageRow) -> some View {
-        let message = messageRow.message
-        let items = MessageMenuItems.items(for: message,
-                                           isOwn: messageRow.isOwn,
-                                           canReply: viewModel.canReply(to: message),
-                                           canDelete: viewModel.canDelete(message))
-        let bubble = MessageBubble(row: messageRow,
-                                   profile: viewModel.profile(of: messageRow),
-                                   loader: viewModel.attachmentLoader,
-                                   isQuoteDeleted: message.replyTo.map(viewModel.quoteIsDeleted) ?? false,
-                                   onTapQuote: reveal,
-                                   onTapAttachment: { viewing = $0 },
-                                   onOpenFile: { previewURL = $0 })
-            .messageHighlight(highlightedMessageID == message.id)
-        if items.hasEnabledItems {
-            bubble.contextMenu {
-                MessageContextMenu(items: items,
-                                   row: messageRow,
-                                   viewModel: viewModel,
-                                   onReport: { reporting = viewModel.reportTarget(for: message) },
-                                   onBlock: { blocking = messageRow })
-            }
-        } else {
-            bubble
-        }
     }
 
     /// The block confirmation's one action: blocks the row's sender for the caller, in every room at once.
@@ -195,15 +166,6 @@ struct ChatTranscript: View {
     }
 }
 
-private extension View {
-    /// The accent wash on the message a quote led to; animated in and out.
-    func messageHighlight(_ isOn: Bool) -> some View {
-        background(Color.lilyAccent.opacity(isOn ? DesignTokens.Opacity.messageHighlight : 0),
-                   in: .rect(cornerRadius: DesignTokens.Radius.md))
-            .animation(.easeOut(duration: DesignTokens.Duration.normal), value: isOn)
-    }
-}
-
 extension TranscriptScrollPolicy.Snapshot {
     /// The geometry the policy judges, with the thresholds applied: within `atBottomThreshold` of the content end is at
     /// the bottom, within `olderPageTriggerDistance` of the top (insets included) is near the top.
@@ -223,4 +185,19 @@ extension TranscriptScrollPolicy.Snapshot {
 @MainActor private final class ScrollTracker {
     var policy = TranscriptScrollPolicy()
     var geometry = TranscriptScrollPolicy.Snapshot.empty
+}
+
+/// The arrivals, held by reference and brought up to date while body runs: the first frame that draws an appended row
+/// must already know when it arrived, and an `onChange` would run only after that frame, so the row would flash at full
+/// strength before its fade. Unchanged rows leave the log as it is, so a second run of body changes nothing.
+@MainActor private final class ArrivalTracker {
+    private var log = TranscriptArrivals()
+
+    func update(to rows: [ChatRow], history: TranscriptArrivals.HistoryLoads) -> TranscriptArrivals {
+        log.update(to: rows.map(\.id),
+                   at: .now,
+                   history: history,
+                   lasting: MessageArrivalCurve.standard.settlingDuration)
+        return log
+    }
 }

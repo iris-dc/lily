@@ -74,3 +74,14 @@ extension View {
             .frame(maxWidth: .infinity, alignment: side)
     }
 }
+
+/// The time under the last bubble of a sender's run; an unsent bubble keeps its line, hidden, for the stored one.
+struct MessageTimestamp: View {
+    let date: Date
+
+    var body: some View {
+        Text(date, format: .dateTime.hour().minute())
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+    }
+}

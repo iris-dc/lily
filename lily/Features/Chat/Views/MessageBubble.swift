@@ -21,7 +21,7 @@ struct MessageBubble: View {
             VStack(alignment: side.horizontal, spacing: DesignTokens.Spacing.xs) {
                 if row.isFirstInRun, !row.isOwn { senderName }
                 bubble
-                if row.isLastInRun { timestamp }
+                if row.isLastInRun { MessageTimestamp(date: row.message.sentAt) }
             }
         }
         .bubbleRow(side: side)
@@ -83,12 +83,6 @@ struct MessageBubble: View {
                                   onOpenFile: onOpenFile)
             }
         }
-    }
-
-    private var timestamp: some View {
-        Text(row.message.sentAt, format: .dateTime.hour().minute())
-            .font(.caption2)
-            .foregroundStyle(.secondary)
     }
 
     /// The client id when the message has one (Laurel sends `clientMessageId` on every member's message, and the

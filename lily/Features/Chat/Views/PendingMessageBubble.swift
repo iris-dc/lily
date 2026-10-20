@@ -3,7 +3,8 @@ import SwiftUI
 /// The caller's message before the backend confirmed it: faded with a spinner, or marked failed with the hint and a
 /// Retry / Delete menu (attached only then; an empty menu would still open on a long press). Its attachments show from
 /// their files on the device. A tap on a failed bubble or its glyph retries, never one on the row's empty space beside
-/// it; its quote finds the original like any bubble's.
+/// it; its quote finds the original like any bubble's. While it is sending it keeps the line the stored bubble's time
+/// will take, empty, so the confirmation changes no height and the transcript's slide runs on through it.
 struct PendingMessageBubble: View {
     let message: PendingMessage
     let viewModel: ChatViewModel
@@ -18,6 +19,9 @@ struct PendingMessageBubble: View {
                 Text(Copy.failedHint)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+            } else {
+                MessageTimestamp(date: message.sentAt)
+                    .hidden()
             }
         }
         .bubbleRow(side: .trailing)

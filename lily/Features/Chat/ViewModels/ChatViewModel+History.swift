@@ -9,7 +9,10 @@ extension ChatViewModel {
     func loadHistory() async {
         isLoadingHistory = true
         historyLoadFailed = false
-        defer { isLoadingHistory = false }
+        defer {
+            isLoadingHistory = false
+            historyLoadsFinished += 1
+        }
         do {
             if room.hasHistory {
                 logger.debug(.cache, "Room cache hit for group \(group.id); catching up from the watermark")

@@ -131,6 +131,7 @@ struct ChatViewModelLifecycleTests {
 
         #expect(viewModel.rows.isEmpty && viewModel.historyLoadFailed)
         #expect(!viewModel.isLoadingHistory && !viewModel.isGone)
+        #expect(viewModel.historyLoadsFinished == 1, "a failed load ends too, for the transcript's arrivals")
         #expect(harness.errorCenter.current?.error == .chatUnavailable)
         #expect(harness.cache.room(for: "g")?.hasHistory == false, "the stub stays cached, so a live line has a room")
         #expect(viewModel.liveTask != nil, "the live task started after the failed page; Try again needs the history alone")

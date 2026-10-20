@@ -153,7 +153,7 @@ lily/
     Chat/        Interfaces (ChatRepository, ChatHistoryCache, AttachmentUploader, AttachmentCache, MediaPreparer, GalleryItem), Models (ChatMessage,
                  MessageKind (text, event_created, the four tournament notes; an unknown kind decodes as `unknown(name)` and the
                  transcript hides it), MessagePage/SentMessage/ReadMarker/ClearedHistory, MessageDraft, PendingMessage, ReplyQuote (the quote a
-                 reply carries), AttachmentKind (image, video, file, or an unknown kind drawn as a file), Attachment + AttachmentVariant (a stored attachment and its presigned links), AttachmentDraft
+                 reply carries), MessageArrivalCurve + TranscriptArrivals (a row's arrival from a clock, and which rows arrived), AttachmentKind (image, video, file, or an unknown kind drawn as a file), Attachment + AttachmentVariant (a stored attachment and its presigned links), AttachmentDraft
                  (an item on its way: preparing / uploading / uploaded / failed), MediaSource (what a picker handed over), PickedMovie
                  (a video from the Photos picker as a file), UploadTicket + UploadRequestPayload + AttachmentRef + AttachmentLink (the
                  upload and link routes), UploadPolicy (the backend's ticket checks, applied by the mock), UploadProgress (the ring's share of file and thumbnail bytes), GalleryLayout (pure: how a bubble
@@ -174,7 +174,7 @@ lily/
                  (ChatViewModel + History + Send + Live + Events + Conversation + Clear + Reply + Attachments + Moderation, AttachmentComposerModel
                  (+ Picking: the items picked for one message and every way in; + Upload: AttachmentWork, one item's prepare, ticket and
                  PUTs, holding the model weakly so a closed room cancels and cleans up)), Views (ChatsView (the Chats root:
-                 the inbox row over the rooms), ChatView over ChatTranscript (the anchored list) + MessageArrival (the row's arrival transition), MessageBubble + PendingMessageBubble over
+                 the inbox row over the rooms), ChatView over ChatTranscript (the anchored list) over ChatRowView (one row, drawing its arrival) + MessageArrival (a row's removal transition), MessageBubble + PendingMessageBubble over
                  BubbleContent (quote, gallery and words on the fill), QuoteBlock + QuoteBar + QuoteStack (the quote inside a bubble and
                  the layout that keeps the bubble hugging its words), ReplyPreviewBar (the composer's reply preview), AttachmentMenuButton
                  + CameraPicker, AttachmentStrip (the picked items above the field), AttachmentGallery + DraftGallery + GalleryGrid,
