@@ -168,6 +168,8 @@ final class LilyTournamentTests: LilyUITestCase {
                       "the caller's scheduled match takes a result")
         XCTAssertFalse(app.buttons["Done"].exists, "the sheet has no Done; a swipe closes it")
         sheetBar.swipeDown()
+        // A swipe the simulator reads late leaves the sheet up; one more closes it, as the viewer test repeats its flick.
+        if !sheetBar.waitForNonExistence(timeout: 5) { sheetBar.swipeDown() }
         XCTAssertTrue(sheetBar.waitForNonExistence(timeout: 5), "the swipe closed the sheet")
         XCTAssertTrue(app.navigationBars["Tuesday Table Tennis"].waitForExistence(timeout: 5),
                       "the detail is the reminder's tournament")

@@ -8,14 +8,14 @@ struct TranscriptScrollPolicyTests {
     typealias Snapshot = TranscriptScrollPolicy.Snapshot
 
     /// The oldest row before and after an older page is prepended.
-    private let oldest = "m10"
+    let oldest = "m10"
     private let older = "m1"
 
-    private func snapshot(offsetY: CGFloat = 0,
-                          contentHeight: CGFloat = 2_000,
-                          bottomInset: CGFloat = 80,
-                          isAtBottom: Bool = true,
-                          isNearTop: Bool = false) -> Snapshot {
+    func snapshot(offsetY: CGFloat = 0,
+                  contentHeight: CGFloat = 2_000,
+                  bottomInset: CGFloat = 80,
+                  isAtBottom: Bool = true,
+                  isNearTop: Bool = false) -> Snapshot {
         Snapshot(offsetY: offsetY,
                  contentHeight: contentHeight,
                  bottomInset: bottomInset,
@@ -231,7 +231,7 @@ struct TranscriptScrollPolicyTests {
                             isLastInRun: true))
     }
 
-    private func settled() -> TranscriptScrollPolicy {
+    func settled() -> TranscriptScrollPolicy {
         var policy = TranscriptScrollPolicy()
         _ = policy.geometryChanged(from: .empty, to: snapshot(), hasRows: true, canLoadOlder: true, oldestID: oldest)
         return policy

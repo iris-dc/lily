@@ -37,6 +37,10 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     private(set) var hasSettled = false
     /// The caller's own row was appended while they had scrolled away: the growth that lays it out is followed.
     private var followsNextGrowth = false
+    /// A slide was just asked for: the report after it may shrink the content without a pin, since the lazy stack lays
+    /// the appended row out below the fold at an estimated height first and corrects it a frame later, and a pin then
+    /// would snap the slide to its end.
+    private var slideJustStarted = false
     /// The older page being prepended; cleared when the taller content has been laid out or the page brought nothing.
     private(set) var pendingRestore: PendingRestore?
 
@@ -78,11 +82,15 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
         // once.
         if current.contentHeight > previous.contentHeight, previous.isAtBottom || followsNextGrowth {
             followsNextGrowth = false
+            slideJustStarted = true
             return .animateToBottom
         }
+        let correctsTheAppendedRow = slideJustStarted && current.contentHeight < previous.contentHeight
+        slideJustStarted = false
         // A grown inset (the keyboard, a composer growing a line) covers the newest row; a shrunk one uncovers content
         // and the scroll view settles on the new bottom by itself, so pinning it would also cut a slide short.
-        if current.isAtBottom, previous.bottomInset < current.bottomInset || current.contentHeight < previous.contentHeight {
+        if current.isAtBottom, !correctsTheAppendedRow,
+           previous.bottomInset < current.bottomInset || current.contentHeight < previous.contentHeight {
             return .scrollToBottom
         }
         if current.isNearTop, canLoadOlder {

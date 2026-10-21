@@ -81,12 +81,7 @@ struct ChatTranscript: View {
                                                         canLoadOlder: viewModel.hasOlder && !viewModel.isLoadingOlder,
                                                         oldestID: viewModel.oldestID)
             apply(action)
-            // A pin leaves the position bound to the bottom edge, which would hold the bottom through the next append's
-            // layout; once the pin has landed, a position bound to nothing leaves the appended row below the fold, where
-            // the policy's slide reaches it.
-            if action == .none, current.isAtBottom, position.edge != nil {
-                position = ScrollPosition()
-            }
+            if action == .none { unbindLandedPin() }
         }
         .scrollDismissesKeyboard(.interactively)
         .accessibilityIdentifier(AccessibilityIdentifiers.chatList)
@@ -132,6 +127,10 @@ struct ChatTranscript: View {
             break
         case .scrollToBottom:
             position.scrollTo(edge: .bottom)
+            // A pin that moved nothing (the anchor had the bottom already) brings no report to unbind it. Set from a
+            // geometry report, the pin is applied by this frame's follow-up layout, so a turn later is after it; the
+            // slide's scroll is issued from a Task, and an unbind the turn after that one cancelled it.
+            Task { @MainActor in unbindLandedPin() }
         case .animateToBottom:
             // Asked for from the geometry report of the layout that grew the content, where a scroll lands at once; a
             // turn later it is a change of its own and the spring applies.
@@ -143,6 +142,15 @@ struct ChatTranscript: View {
         case .loadOlder:
             tracker.policy.willLoadOlder(at: tracker.geometry, oldestID: viewModel.oldestID)
             Task { await loadOlder() }
+        }
+    }
+
+    /// A pin leaves the position bound to the bottom edge, which would hold the bottom through the next append's layout;
+    /// once the pin has landed, a position bound to nothing leaves the appended row below the fold, where the policy's
+    /// slide reaches it.
+    private func unbindLandedPin() {
+        if tracker.geometry.isAtBottom, position.edge != nil {
+            position = ScrollPosition()
         }
     }
 
