@@ -49,6 +49,9 @@ struct MessageComposer: View {
         .onChange(of: viewModel.replyTarget) {
             if viewModel.replyTarget != nil { isFieldFocused = true }
         }
+        // A send starts a new draft; the field is emptied by hand too, since a field showing the keyboard's inline
+        // prediction keeps its text when only the binding changes.
+        .onChange(of: viewModel.draft.clientMessageID) { FocusedTextInput.clear() }
     }
 
     /// A hardware Return: `.ignored` lets the field insert its newline; `.handled` keeps it out of the text.
@@ -57,17 +60,19 @@ struct MessageComposer: View {
         case .newline:
             return .ignored
         case .send:
-            Task { await viewModel.send() }
+            send()
             return .handled
         case .nothing:
             return .handled
         }
     }
 
+    private func send() {
+        Task { await viewModel.send() }
+    }
+
     private var sendButton: some View {
-        Button {
-            Task { await viewModel.send() }
-        } label: {
+        Button(action: send) {
             Image(systemName: DesignTokens.Symbols.send)
         }
         .lilyIconButton()

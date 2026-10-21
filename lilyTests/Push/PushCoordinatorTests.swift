@@ -91,6 +91,20 @@ struct PushCoordinatorTests {
         #expect(harness.errorCenter.current == nil && harness.coordinator.registered == nil)
     }
 
+    /// A build without the push entitlement is refused on every launch; one warning, then the system is left alone
+    /// until the next launch, which asks again.
+    @Test func aRefusedTokenIsNotAskedForAgainThisLaunch() async {
+        harness.registrar.tokenError = .refused("no entitlement")
+        await harness.coordinator.sync()
+        await harness.coordinator.sync()
+        #expect(harness.registrar.tokenRequestCount == 1)
+        #expect(harness.logs(.warning).count == 1 && harness.logged("refused a token this launch", at: .debug) == 1)
+
+        harness.registrar.tokenError = nil
+        await harness.makeCoordinator().sync()
+        #expect(harness.registrar.tokenRequestCount == 2 && harness.devices.registrations.count == 1)
+    }
+
     @Test func aRegistrationForAUserWhoSignedOutMeanwhileIsDropped() async {
         let coordinator = harness.makeCoordinator(devices: FakeDeviceRepositoryThatSignsOut(identity: harness.identity))
 

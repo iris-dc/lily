@@ -10,6 +10,9 @@ final class PushCoordinator: SessionObserver, PushOptIn {
     private(set) var pendingTap: PushTap?
     /// A registration in flight; a `sync()` made meanwhile joins it, and a sign-out waits for it before it unregisters.
     private var registration: Task<Void, Never>?
+    /// The system handed over no token (a build without the push entitlement, a simulator). It would answer every
+    /// foreground the same way, so this process asks no more; the next launch asks again.
+    private var tokenRefused = false
 
     private let registrar: any PushRegistrar
     private let devices: any DeviceRepository
@@ -61,6 +64,10 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         guard let userID = identity.currentUserID else { return }
         guard await registrar.authorization() == .authorized else {
             logger.debug(.push, "Device not registered: notifications not authorized")
+            return
+        }
+        guard !tokenRefused else {
+            logger.debug(.push, "Device not registered: the system refused a token this launch")
             return
         }
         await register(for: userID)
@@ -154,6 +161,7 @@ final class PushCoordinator: SessionObserver, PushOptIn {
             logger.info(.push, "Device registered for push (\(registration.environment.rawValue), \(locale))")
         } catch {
             guard !AppError.isCancellation(error) else { return }
+            if case PushRegistrationError.refused = error { tokenRefused = true }
             logger.warning(.push, "Device registration failed: \(error)")
         }
     }

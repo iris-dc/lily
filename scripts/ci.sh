@@ -37,6 +37,14 @@ WARM_UP_SECONDS=8
 # attempt for the launch and query timeouts a cold GitHub runner produces, which no test can guard against. Every test
 # that passed only on a retry is named in the log, so a flake never passes unseen.
 CI_TEST_ITERATIONS=2
+# The test a CI shard runs and forgets before its real run: a cold runner's first XCUITest session pays for the
+# automation session and the first accessibility snapshot, and when the shard's first test paid it, a query timeout of
+# about 230 seconds left the app unkillable for its retry. The landing alone, the cheapest test of each family; lint
+# checks that both methods exist, since a renamed one would only print "no test ran".
+WARM_UP_TEST_IPHONE="$UI_TARGET/LilySmokeTests/testPrimaryActionReachesExploreFeed"
+WARM_UP_TEST_IPAD="$UI_TARGET/$IPAD_UI_TEST_CLASS/testLandingPlacesTheMiniatureBesideTheCopyOnIPad"
+# How long the warm-up session's one test may run before XCTest ends it, so a hang costs minutes, not the job.
+WARM_UP_TEST_SECONDS=300
 # What of xcodebuild's output reaches the console (errors, the app's warnings, test and build verdicts); the whole of it goes to the log.
 CONSOLE_FILTER="error:|/lily/.*: warning:|Test Suite .* (passed|failed)|Test Case .* (passed|failed)|Executed|Test case .* (passed|failed)|\*\* .* (SUCCEEDED|FAILED) \*\*"
 XCODE_VERSION_SHOWN=0
@@ -250,7 +258,7 @@ check_executed_tests_gate() {
 # The UI tests of one shard, run from the products of an earlier build-for-testing through its .xctestrun (no scheme,
 # no project, no package resolution), so a runner that only downloaded the products can run them.
 run_prebuilt_tests() {
-  local label="$1" destination="$2"; shift 2
+  local label="$1" destination="$2" warm_up_test="$3"; shift 3
   local xctestrun
   xctestrun=$(find "$PRODUCTS_DIR" -maxdepth 1 -name '*.xctestrun' 2>/dev/null | head -1 || true)
   if [[ -z "$xctestrun" ]]; then
@@ -258,8 +266,33 @@ run_prebuilt_tests() {
     exit 1
   fi
   warm_up_simulator "$(destination_udid "$destination")"
+  warm_up_test_session "$label" "$destination" "$xctestrun" "$warm_up_test"
   run_logged "$label" test-without-building "$@" -xctestrun "$xctestrun" -destination "$destination" \
     -retry-tests-on-failure -test-iterations "$CI_TEST_ITERATIONS"
+}
+
+# One throwaway XCUITest session before a shard's real run (WARM_UP_TEST_IPHONE / WARM_UP_TEST_IPAD): its verdict is
+# printed and ignored, its log kept beside the shard's, and the app it leaves behind is terminated so the real run
+# starts clean even after a hang.
+warm_up_test_session() {
+  local label="$1" destination="$2" xctestrun="$3" test="$4"
+  local log="$RESULTS_DIR/${label}-warm-up.log"
+  echo "==> warm-up test session (${test##*/})"
+  xcodebuild test-without-building -xctestrun "$xctestrun" -destination "$destination" -only-testing:"$test" \
+    -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance "$WARM_UP_TEST_SECONDS" \
+    -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO > "$log" 2>&1 || true
+  xcrun simctl terminate "$(destination_udid "$destination")" "$APP_BUNDLE_ID" >/dev/null 2>&1 || true
+  grep -E "Test Case .* (passed|failed)" "$log" | sed 's/^/warm-up: /' || echo "warm-up: no test ran (see $log)"
+}
+
+# The warm-up tests must exist, or every CI warm-up would print "no test ran" and warm nothing.
+check_warm_up_tests() {
+  echo "==> warm-up tests"
+  local test
+  for test in "$WARM_UP_TEST_IPHONE" "$WARM_UP_TEST_IPAD"; do
+    grep -q "func ${test##*/}()" lilyUITests/*.swift \
+      || { echo "warm-up test ${test##*/} is not declared under lilyUITests/" >&2; exit 1; }
+  done
 }
 
 # The UI test classes declared under the directory (lilyUITests/ by default), one per line: every class deriving from
@@ -377,6 +410,7 @@ run_lint() {
   python3 -I scripts/l10n-check.py
   check_ui_test_classes_grep
   check_ui_shards
+  check_warm_up_tests
   check_executed_tests_gate
 }
 
@@ -444,13 +478,13 @@ case "$STAGE" in
     use_software_keyboard
     if [[ "$SHARD" == "ipad" ]]; then
       resolve_ipad_destination
-      run_prebuilt_tests ui-ipad-tests "$IPAD_DESTINATION" -only-testing:"$IPAD_UI_TESTS"
+      run_prebuilt_tests ui-ipad-tests "$IPAD_DESTINATION" "$WARM_UP_TEST_IPAD" -only-testing:"$IPAD_UI_TESTS"
     else
       # Assigned first: a failed substitution inside an argument list would not stop the script, and the
       # test run without -only-testing flags would be the whole UI target.
       ONLY_TESTING=$(ui_shard_only_testing "$SHARD")
       resolve_iphone_destination
-      run_prebuilt_tests "ui-shard-${SHARD}" "$DESTINATION" $ONLY_TESTING
+      run_prebuilt_tests "ui-shard-${SHARD}" "$DESTINATION" "$WARM_UP_TEST_IPHONE" $ONLY_TESTING
     fi
     ;;
   all)

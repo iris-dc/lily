@@ -181,6 +181,41 @@ struct ChatViewModelTests {
         #expect(harness.logger.messages(in: .chat, at: .info).contains("Message m1 deleted in group g"))
     }
 
+    /// The tombstone shows as the bubble's menu closes, not when the answer lands.
+    @Test func deletingAMessageShowsTheTombstoneBeforeTheAnswer() async {
+        let (harness, viewModel) = await makeHarness(cached: [first, second])
+        harness.chat.holdsRequests = true
+
+        let deleting = Task { await viewModel.delete(first) }
+        await settle(until: { harness.chat.deletedMessageIDs == ["m1"] })
+
+        #expect(viewModel.room.messages.map(\.isDeleted) == [true, false], "shown deleted while the request is out")
+        harness.chat.releaseRequests()
+        await deleting.value
+        #expect(viewModel.room.messages.map(\.isDeleted) == [true, false])
+    }
+
+    /// A refusal puts the message back as it was.
+    @Test func aRefusedDeleteBringsTheMessageBack() async {
+        let (harness, viewModel) = await makeHarness(cached: [first, second])
+        harness.chat.deleteError = AppError.insufficientRole
+
+        await viewModel.delete(first)
+
+        #expect(viewModel.room.messages == [first, second])
+        #expect(harness.errorCenter.current?.error == .insufficientRole)
+    }
+
+    /// Gone on the backend already (an admin was first): the tombstone stays.
+    @Test func aDeleteOfAMessageAlreadyGoneKeepsTheTombstone() async {
+        let (harness, viewModel) = await makeHarness(cached: [first, second])
+        harness.chat.deleteError = AppError.messageNotFound
+
+        await viewModel.delete(first)
+
+        #expect(viewModel.room.messages.map(\.isDeleted) == [true, false])
+    }
+
     /// The backend gates deletes behind the current terms like every other write: the terms sheet must follow the popup.
     @Test func aTermsRequiredOnDeleteRaisesTheTermsSheet() async {
         let (harness, viewModel) = await makeHarness(cached: [first])

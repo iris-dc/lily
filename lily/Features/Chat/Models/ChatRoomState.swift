@@ -56,6 +56,14 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
         }
     }
 
+    /// Puts back a message this device tombstoned ahead of a delete the backend then refused.
+    mutating func restore(_ message: ChatMessage) {
+        tombstonedIDs.remove(message.id)
+        if let index = messages.firstIndex(where: { $0.id == message.id }) {
+            messages[index] = message
+        }
+    }
+
     /// The first page of a room: the newest messages, and the watermark at the newest of them.
     mutating func applyNewest(_ page: MessagePage) {
         insert(contentsOf: page.items)

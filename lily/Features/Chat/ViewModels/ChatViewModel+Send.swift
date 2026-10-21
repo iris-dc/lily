@@ -30,12 +30,18 @@ extension ChatViewModel {
         message.deleteLocalFiles()
     }
 
+    /// The tombstone shows at once, as the bubble's menu closes: landing with the answer, it moved the rows above it
+    /// while the keyboard was returning. A failure brings the message back, unless the backend has no such message;
+    /// an unknown outcome too, since Delete can be tapped again and an already deleted message keeps the tombstone.
     func delete(_ message: ChatMessage) async {
+        mutateRoom { $0.markDeleted(id: message.id) }
         do {
             _ = try await repository.delete(groupID: group.id, messageID: message.id)
-            mutateRoom { $0.markDeleted(id: message.id) }
             logger.info(.chat, "Message \(message.id) deleted in group \(group.id)")
         } catch {
+            if error as? AppError != .messageNotFound {
+                mutateRoom { $0.restore(message) }
+            }
             report(error, during: "Deleting a message")
         }
     }

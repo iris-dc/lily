@@ -2,7 +2,7 @@ import Foundation
 @testable import lily
 
 /// Scriptable `ChatRepository`: pages answer from queues (an empty page once a queue runs dry), sends from `sendErrors`,
-/// then `sentMessages`, then a `sent-N` fixture; every call is recorded in order. `holdsRequests` parks page, send and
+/// then `sentMessages`, then a `sent-N` fixture; every call is recorded in order. `holdsRequests` parks page, send, delete and
 /// clear requests until released, each recorded before it waits so a test can see it in flight.
 @MainActor
 final class FakeChatRepository: ChatRepository, HoldsRequests {
@@ -104,6 +104,7 @@ final class FakeChatRepository: ChatRepository, HoldsRequests {
 
     func delete(groupID: String, messageID: String) async throws -> ChatMessage {
         deletedMessageIDs.append(messageID)
+        try await hold.waitOrThrow()
         if let deleteError { throw deleteError }
         return ChatMessage.fixture(id: messageID, groupID: groupID).markingDeleted()
     }

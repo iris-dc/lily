@@ -68,6 +68,17 @@ struct ChatRoomStateTests {
         #expect(replaced && room.messages.first?.isDeleted == true)
     }
 
+    /// A delete shown ahead of the answer and refused by the backend: the message comes back whole.
+    @Test func restorePutsBackAMessageTombstonedAhead() {
+        var room = ChatRoomState(groupID: "g", channelEpoch: 1)
+        room.insert(first)
+        room.markDeleted(id: "m1")
+
+        room.restore(first)
+
+        #expect(room.messages == [first] && !room.isDeleted(id: "m1") && room.tombstonedIDs.isEmpty)
+    }
+
     /// AppSync delivers unordered: a page may bring the tombstone before the live form arrives; the held row alone says
     /// it is gone, and it stays so.
     @Test func aLiveFormAfterAPageTombstoneKeepsTheTombstone() {

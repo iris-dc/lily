@@ -228,7 +228,8 @@ how every adaptive view decides, never the device.
   through `openContextMenu(on:until:)`; a `Form` row below the fold is not in the accessibility tree
   (`scrollUntilHittable`, `dragUpUntilExists`); a `confirmationDialog` is `app.sheets.firstMatch`; menu items are
   found by identifier; the iPad's tabs are plain buttons (`openTab(titled:)` handles both); map annotations are queried
-  from `app`, not `app.maps`; a `Toggle` in a `Form` is one element whose `tap()` lands on the label.
+  from `app`, not `app.maps`; a `Toggle` in a `Form` is one element whose `tap()` lands on the label; `typeText`
+  bypasses autocorrect and inline predictions, so a test that needs them taps `app.keys[...]`.
 - Screenshots from a test: a throwaway `@objc` test writes `XCUIScreen.main.screenshot().pngRepresentation` to the
   directory in `TEST_RUNNER_SHOT_DIR`, set as a prefix of the command (`TEST_RUNNER_SHOT_DIR=/tmp/x xcodebuild test
   ...`; written after the action it becomes a build setting and never reaches the runner), with a hardcoded fallback
