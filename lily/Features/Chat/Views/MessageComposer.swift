@@ -9,7 +9,8 @@ struct MessageComposer: View {
     @Bindable var viewModel: ChatViewModel
     /// Advanced once a second while the cooldown runs, so the caption and the button follow the clock.
     @State private var tick = 0
-    @FocusState private var isFieldFocused: Bool
+    /// Whether the field holds the keyboard; the field writes it, a reply sets it.
+    @State private var isFieldFocused = false
 
     private typealias Copy = AppBranding.Chat
 
@@ -27,12 +28,13 @@ struct MessageComposer: View {
                         if viewModel.attachmentsEnabled {
                             AttachmentMenuButton(attachments: viewModel.attachments)
                         }
-                        TextField(Copy.placeholder, text: $viewModel.draft.text, axis: .vertical)
-                            .lineLimit(DesignTokens.Layout.multilineFieldLines)
+                        GrowingTextView(text: $viewModel.draft.text,
+                                        isFocused: $isFieldFocused,
+                                        placeholder: Copy.placeholder,
+                                        maxLines: DesignTokens.Layout.multilineFieldLines.upperBound,
+                                        accessibilityIdentifier: AccessibilityIdentifiers.chatComposer,
+                                        onReturn: handleReturn)
                             .lilyMultilineField()
-                            .focused($isFieldFocused)
-                            .onKeyPress(keys: [.return], action: handleReturn)
-                            .accessibilityIdentifier(AccessibilityIdentifiers.chatComposer)
                         sendButton
                     }
                 }
@@ -49,14 +51,11 @@ struct MessageComposer: View {
         .onChange(of: viewModel.replyTarget) {
             if viewModel.replyTarget != nil { isFieldFocused = true }
         }
-        // A send starts a new draft; the field is emptied by hand too, since a field showing the keyboard's inline
-        // prediction keeps its text when only the binding changes.
-        .onChange(of: viewModel.draft.clientMessageID) { FocusedTextInput.clear() }
     }
 
     /// A hardware Return: `.ignored` lets the field insert its newline; `.handled` keeps it out of the text.
-    private func handleReturn(_ press: KeyPress) -> KeyPress.Result {
-        switch ReturnKeyPolicy.action(modifiers: press.modifiers, canSend: viewModel.canSend) {
+    private func handleReturn(modifiers: EventModifiers) -> KeyPress.Result {
+        switch ReturnKeyPolicy.action(modifiers: modifiers, canSend: viewModel.canSend) {
         case .newline:
             return .ignored
         case .send:

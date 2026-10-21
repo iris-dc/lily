@@ -82,7 +82,7 @@ lily/
     UI/          Theme (fonts, aurora role-to-color mapping), Effects (aurora geometry, roles, film grain: pure, testable math),
                  Components (aurora background, content-screen scaffold, glass cards, button modifiers, provider buttons, error popup,
                  ScreenTitle + ScreenSubtitle, AvatarCircle, String+Initials (the one initials rule, beside AvatarCircle),
-                 UnreadDot, FocusedTextInput (the field holding the keyboard, emptied by hand after a chat send), ConversationRow (avatar + title + caption + dot, shared by the Chats rows and the
+                 UnreadDot, GrowingTextView (the multi-line field the chat composer owns, over a UIKit text view), ConversationRow (avatar + title + caption + dot, shared by the Chats rows and the
                  inbox row) and AvatarRowDivider (the divider that starts at their text column), EventTypeChips (the one
                  type-chip flow of the filter, the event form and the group form), EntriesBar (the one "how full" bar; CapacityBar
                  draws an event through it), TypeFilterButton + TypeFilterPanel (the type dropdown of both Discover screens), GlassGlyph (a symbol as a mark in the
