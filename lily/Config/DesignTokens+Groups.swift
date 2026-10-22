@@ -66,8 +66,6 @@ nonisolated extension DesignTokens.Radius {
 }
 
 nonisolated extension DesignTokens.Opacity {
-    /// A message that is still on its way to the backend.
-    static let pendingMessage: Double = 0.6
     /// The quote block's fill inside a bubble (white on the accent, ink on the surface), faint so the bubble stays one.
     static let quoteFill: Double = 0.16
     /// The accent wash on a message a tapped quote scrolled to.
