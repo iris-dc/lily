@@ -44,6 +44,12 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     /// The older page being prepended; cleared when the taller content has been laid out or the page brought nothing.
     private(set) var pendingRestore: PendingRestore?
 
+    /// Whether two consecutive reports show the same layout (the content's height and the inset): an appended row is
+    /// laid out in more than one pass, and the transcript puts its bottom anchor back only once they are over.
+    static func layoutHasSettled(from previous: Snapshot, to current: Snapshot) -> Bool {
+        current.contentHeight == previous.contentHeight && current.bottomInset == previous.bottomInset
+    }
+
     /// Called before an older page is requested, with the geometry the reader currently sees and the oldest message held.
     mutating func willLoadOlder(at snapshot: Snapshot, oldestID: String?) {
         pendingRestore = PendingRestore(geometry: snapshot, oldestID: oldestID)

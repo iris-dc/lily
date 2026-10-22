@@ -4,6 +4,18 @@ import Testing
 
 /// What the policy does around an appended row's slide.
 extension TranscriptScrollPolicyTests {
+    /// The anchor goes back only once two reports agree on the layout; a height or inset still changing is not settled.
+    @Test func theLayoutHasSettledWhenTwoReportsAgree() {
+        let first = snapshot(contentHeight: 2_083)
+        #expect(!TranscriptScrollPolicy.layoutHasSettled(from: snapshot(), to: first))
+        #expect(!TranscriptScrollPolicy.layoutHasSettled(from: first, to: snapshot(contentHeight: 2_057)))
+        let corrected = snapshot(contentHeight: 2_057)
+        let moved = snapshot(offsetY: 20, contentHeight: 2_057)
+        let shorterComposer = snapshot(offsetY: 20, contentHeight: 2_057, bottomInset: 60)
+        #expect(TranscriptScrollPolicy.layoutHasSettled(from: corrected, to: moved), "a scroll alone is settled")
+        #expect(!TranscriptScrollPolicy.layoutHasSettled(from: moved, to: shorterComposer))
+    }
+
     /// The lazy stack lays an appended row out at an estimated height first and corrects it a report later: that shrink
     /// is the slide's to absorb, not a pin's, which would snap the slide to its end; a later shrink pins as ever.
     @Test func theReportAfterASlideMayShrinkWithoutAPin() {

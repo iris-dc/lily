@@ -5,10 +5,11 @@ import SwiftUI
 /// quote scrolls to the original (loading older pages when it lies before the history held) and washes it in the accent
 /// for a moment; pictures and videos open in `AttachmentViewerSheet`, a file in QuickLook once it is on the device; a
 /// long press on another member's bubble also offers Report and Block. A row appended at the bottom lands below the
-/// fold (the anchor that keeps the bottom pinned through every other size change is lifted for that one layout) and the
-/// transcript slides down to it with the arrival's spring while the row fades and scales in (`TranscriptArrivals` says
-/// which rows arrived, `ChatRowView` draws them from a clock); a sent message keeps its bubble's row (`ChatRow.id`) and
-/// its height, so the confirmation swaps the bubble in place, moves nothing and leaves the arrival running.
+/// fold (the anchor that keeps the bottom pinned through every other size change is lifted until the row's layout has
+/// settled) and the transcript slides down to it with the arrival's spring while the row fades and scales in
+/// (`TranscriptArrivals` says which rows arrived, `ChatRowView` draws them from a clock); a sent message keeps its
+/// bubble's row (`ChatRow.id`) and its height, so the confirmation swaps the bubble in place, moves nothing and leaves
+/// the arrival running.
 struct ChatTranscript: View {
     let viewModel: ChatViewModel
     let dependencies: AppDependencies
@@ -69,17 +70,23 @@ struct ChatTranscript: View {
         .onScrollGeometryChange(for: TranscriptScrollPolicy.Snapshot.self,
                                 of: TranscriptScrollPolicy.Snapshot.init) { previous, current in
             tracker.geometry = current
-            // The report after the append's layout: the row landed unanchored, the anchor may hold the bottom again. A
-            // turn later: a state change here runs another layout in the same frame, and when the composer's inset
-            // changed with the send (its text cleared), that layout would anchor the grown content to the bottom at once.
-            if isAppending {
-                Task { @MainActor in pinnedLastRowID = rows.last?.id }
+            // The appended row landed unanchored and the anchor may hold the bottom again, but only once its layout has
+            // settled: the row is laid out in two passes a few milliseconds apart, and an anchor back between them pins
+            // the second pass's content to the bottom at once, before the slide has started.
+            if isAppending, TranscriptScrollPolicy.layoutHasSettled(from: previous, to: current) {
+                pinnedLastRowID = rows.last?.id
+                viewModel.logger.debug(.chat, "Transcript re-anchored after the append in group \(viewModel.group.id)")
             }
             let action = tracker.policy.geometryChanged(from: previous,
                                                         to: current,
                                                         hasRows: !rows.isEmpty,
                                                         canLoadOlder: viewModel.hasOlder && !viewModel.isLoadingOlder,
                                                         oldestID: viewModel.oldestID)
+            if action != .none {
+                let height = Int(current.contentHeight), offset = Int(current.offsetY), inset = Int(current.bottomInset)
+                let geometry = "height \(height), offset \(offset), inset \(inset)"
+                viewModel.logger.debug(.chat, "Transcript \(action) at \(geometry) in group \(viewModel.group.id)")
+            }
             apply(action)
             if action == .none { unbindLandedPin() }
         }
