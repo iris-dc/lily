@@ -5,8 +5,8 @@ import SwiftUI
 /// quote scrolls to the original (loading older pages when it lies before the history held) and washes it in the accent
 /// for a moment; pictures and videos open in `AttachmentViewerSheet`, a file in QuickLook once it is on the device; a
 /// long press on another member's bubble also offers Report and Block. A row appended at the bottom lands below the
-/// fold (the anchor that keeps the bottom pinned through every other size change is lifted until the row's layout has
-/// settled) and the transcript slides down to it with the arrival's spring while the row fades and scales in
+/// fold (the anchor that keeps the bottom pinned through every other size change is lifted while the row arrives) and
+/// the transcript slides down to it with the arrival's spring while the row fades and scales in
 /// (`TranscriptArrivals` says which rows arrived, `ChatRowView` draws them from a clock); a sent message keeps its
 /// bubble's row (`ChatRow.id`) and its height, so the confirmation swaps the bubble in place, moves nothing and leaves
 /// the arrival running.
@@ -70,18 +70,13 @@ struct ChatTranscript: View {
         .onScrollGeometryChange(for: TranscriptScrollPolicy.Snapshot.self,
                                 of: TranscriptScrollPolicy.Snapshot.init) { previous, current in
             tracker.geometry = current
-            // The appended row landed unanchored and the anchor may hold the bottom again, but only once its layout has
-            // settled: the row is laid out in two passes a few milliseconds apart, and an anchor back between them pins
-            // the second pass's content to the bottom at once, before the slide has started.
-            if isAppending, TranscriptScrollPolicy.layoutHasSettled(from: previous, to: current) {
-                pinnedLastRowID = rows.last?.id
-                viewModel.logger.debug(.chat, "Transcript re-anchored after the append in group \(viewModel.group.id)")
-            }
             let action = tracker.policy.geometryChanged(from: previous,
                                                         to: current,
                                                         hasRows: !rows.isEmpty,
                                                         canLoadOlder: viewModel.hasOlder && !viewModel.isLoadingOlder,
                                                         oldestID: viewModel.oldestID)
+            // A pin puts the bottom where the anchor would hold it, so the anchor comes back with it.
+            if action == .scrollToBottom { reanchor("by the pin") }
             if action != .none {
                 let height = Int(current.contentHeight), offset = Int(current.offsetY), inset = Int(current.bottomInset)
                 let geometry = "height \(height), offset \(offset), inset \(inset)"
@@ -92,11 +87,14 @@ struct ChatTranscript: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .accessibilityIdentifier(AccessibilityIdentifiers.chatList)
-        // Re-pinned here only before the first settle; an append's re-pin waits for its layout (a state change here
-        // would run body again before the layout and put the anchor back too early).
-        .onChange(of: rows.last?.id, initial: true) { _, id in
-            if !tracker.policy.hasSettled { pinnedLastRowID = id }
+        .onChange(of: rows.last?.id, initial: true) { _, _ in
             tracker.policy.rowAppended(rows.last, isAtBottom: tracker.geometry.isAtBottom)
+        }
+        // The anchor is off while the newest row arrives and back once the arrival has settled, or sooner with a pin: a
+        // size change in between must not pin the row before the slide reaches it.
+        .task(id: rows.last?.id) {
+            guard (try? await Task.sleep(for: .seconds(MessageArrivalCurve.standard.settlingDuration))) != nil else { return }
+            reanchor("after the arrival")
         }
         .fullScreenCover(item: $viewing) { selection in
             AttachmentViewerSheet(selection: selection, loader: viewModel.attachmentLoader)
@@ -150,6 +148,16 @@ struct ChatTranscript: View {
             tracker.policy.willLoadOlder(at: tracker.geometry, oldestID: viewModel.oldestID)
             Task { await loadOlder() }
         }
+    }
+
+    /// Puts the anchor back on the newest row, from a pin (the first settle's, one during an arrival) or the arrival's
+    /// end; nothing to do when it is there already.
+    private func reanchor(_ occasion: String) {
+        let id = viewModel.rows.last?.id
+        guard pinnedLastRowID != id else { return }
+        pinnedLastRowID = id
+        tracker.policy.anchorReturned()
+        viewModel.logger.debug(.chat, "Transcript re-anchored \(occasion) in group \(viewModel.group.id)")
     }
 
     /// A pin leaves the position bound to the bottom edge, which would hold the bottom through the next append's layout;

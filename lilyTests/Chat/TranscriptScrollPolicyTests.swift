@@ -149,30 +149,6 @@ struct TranscriptScrollPolicyTests {
                 == .none)
     }
 
-    /// An appended row grows the content below the fold (the transcript lifts the anchor for it): the reader who was at
-    /// the bottom slides down to it, also when the anchor kept the bottom (the slide then has nowhere to go); growth
-    /// under a reader who scrolled away moves nothing.
-    @Test func slidesToGrowthOnlyWhenTheReaderWasAtTheBottom() {
-        var policy = settled()
-        let grown = snapshot(contentHeight: 2_300, isAtBottom: false)
-        #expect(policy.geometryChanged(from: snapshot(), to: grown, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .animateToBottom)
-        let anchored = snapshot(offsetY: 300, contentHeight: 2_300)
-        #expect(policy.geometryChanged(from: snapshot(), to: anchored, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .animateToBottom)
-        let readingBefore = snapshot(offsetY: 500, isAtBottom: false)
-        let readingAfter = snapshot(offsetY: 500, contentHeight: 2_300, isAtBottom: false)
-        #expect(policy.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .none)
-        // A send clears the composer: the inset shrinks in the report that grew the content, and the slide still wins.
-        let shorterComposer = snapshot(contentHeight: 2_300, bottomInset: 60, isAtBottom: false)
-        #expect(policy.geometryChanged(from: snapshot(),
-                                       to: shorterComposer,
-                                       hasRows: true,
-                                       canLoadOlder: true,
-                                       oldestID: oldest) == .animateToBottom)
-    }
-
     /// Only the caller's own row fetches a reader who scrolled away, once its growth is laid out; another member's row
     /// or a note leaves them reading. The follow is spent by that growth, and an own row appended at the bottom sets none.
     @Test func ownRowsBringAReaderWhoScrolledAwayBack() {

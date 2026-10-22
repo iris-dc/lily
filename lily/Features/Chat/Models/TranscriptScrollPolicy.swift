@@ -37,18 +37,13 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     private(set) var hasSettled = false
     /// The caller's own row was appended while they had scrolled away: the growth that lays it out is followed.
     private var followsNextGrowth = false
-    /// A slide was just asked for: the report after it may shrink the content without a pin, since the lazy stack lays
-    /// the appended row out below the fold at an estimated height first and corrects it a frame later, and a pin then
-    /// would snap the slide to its end.
-    private var slideJustStarted = false
+    /// A slide was asked for and the anchor is still off: the first shrink before the anchor is back is the appended
+    /// row's layout correction (the bubble before loses its time line a pass after the row lands) and gets no pin, which
+    /// would snap the slide to its end. Reports of the scroll alone or of the composer's inset, which a fast display
+    /// delivers between the row's passes, leave the allowance standing.
+    private var awaitsSlideLayout = false
     /// The older page being prepended; cleared when the taller content has been laid out or the page brought nothing.
     private(set) var pendingRestore: PendingRestore?
-
-    /// Whether two consecutive reports show the same layout (the content's height and the inset): an appended row is
-    /// laid out in more than one pass, and the transcript puts its bottom anchor back only once they are over.
-    static func layoutHasSettled(from previous: Snapshot, to current: Snapshot) -> Bool {
-        current.contentHeight == previous.contentHeight && current.bottomInset == previous.bottomInset
-    }
 
     /// Called before an older page is requested, with the geometry the reader currently sees and the oldest message held.
     mutating func willLoadOlder(at snapshot: Snapshot, oldestID: String?) {
@@ -69,6 +64,12 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
         }
     }
 
+    /// Called when the transcript's bottom anchor is back (a pin or the end of the arrival): what the appended row's
+    /// layout still does moves nothing the anchor does not hold, so a shrink pins as ever.
+    mutating func anchorReturned() {
+        awaitsSlideLayout = false
+    }
+
     mutating func geometryChanged(from previous: Snapshot,
                                   to current: Snapshot,
                                   hasRows: Bool,
@@ -82,21 +83,24 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
             hasSettled = true
             return .scrollToBottom
         }
-        // Growth under a reader at the bottom is the appended row, laid out below the fold while the transcript lifts
-        // its anchor; growth the anchor did follow (a bubble made taller by its picture) slides nowhere. Judged before
-        // the inset rule: a send clears the composer, and a shorter composer in the same report must not pin the row at
-        // once.
-        if current.contentHeight > previous.contentHeight, previous.isAtBottom || followsNextGrowth {
+        let grew = current.contentHeight > previous.contentHeight
+        let shrank = current.contentHeight < previous.contentHeight
+        // Growth under a reader at the bottom is the appended row, laid out below the fold while the transcript holds
+        // its anchor off; growth the anchor did follow (a bubble made taller by its picture) slides nowhere. Judged
+        // before the inset rule: a send clears the composer, and a shorter composer in the same report must not pin the
+        // row at once.
+        if grew, previous.isAtBottom || followsNextGrowth {
             followsNextGrowth = false
-            slideJustStarted = true
+            awaitsSlideLayout = true
             return .animateToBottom
         }
-        let correctsTheAppendedRow = slideJustStarted && current.contentHeight < previous.contentHeight
-        slideJustStarted = false
+        let correctsTheAppendedRow = awaitsSlideLayout && shrank
+        if shrank {
+            awaitsSlideLayout = false
+        }
         // A grown inset (the keyboard, a composer growing a line) covers the newest row; a shrunk one uncovers content
         // and the scroll view settles on the new bottom by itself, so pinning it would also cut a slide short.
-        if current.isAtBottom, !correctsTheAppendedRow,
-           previous.bottomInset < current.bottomInset || current.contentHeight < previous.contentHeight {
+        if current.isAtBottom, !correctsTheAppendedRow, previous.bottomInset < current.bottomInset || shrank {
             return .scrollToBottom
         }
         if current.isNearTop, canLoadOlder {
