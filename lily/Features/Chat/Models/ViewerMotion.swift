@@ -1,10 +1,10 @@
 import Foundation
 
 /// The attachment viewer's phases and which of its moves may still finish, as rules. Every move that starts (the way
-/// in, a spring back, the way out) is numbered, and only the latest one's completion counts, so a spring cut short
-/// never ends a newer one. Only an open picture takes the finger: one springing back or on its way out ignores it, and
-/// a close taken over from a drag (Close or VoiceOver's escape with a finger down) is never undone by that finger.
-/// Pure, so the races are checked without a view.
+/// in, the way back to the middle, the way out) is numbered, and only the latest one's completion counts, so a move cut
+/// short never ends a newer one. A picture on its way in or open takes the finger at once (the way in carries on under
+/// the drag); one going back to the middle or on its way out ignores it, and a close taken over from a drag (Close or VoiceOver's escape with a
+/// finger down) is never undone by that finger. Pure, so the races are checked without a view.
 nonisolated struct ViewerMotion: Equatable, Sendable {
     enum Phase: Equatable, Sendable {
         case opening, open, dragging, settling, closing
@@ -14,7 +14,7 @@ nonisolated struct ViewerMotion: Equatable, Sendable {
     private var latestMove = 0
 
     /// Whether a drag moves the picture now.
-    var takesDrag: Bool { phase == .open || phase == .dragging }
+    var takesDrag: Bool { phase == .opening || phase == .open || phase == .dragging }
 
     /// The way in; answers the move's number for its completion.
     mutating func startOpening() -> Int {

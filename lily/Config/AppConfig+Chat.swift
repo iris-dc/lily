@@ -24,6 +24,12 @@ nonisolated extension AppConfig {
         /// How long after the transcript appears every geometry report is logged at debug: the open, when the lazy stack
         /// corrects its estimates and the composer's inset arrives.
         static let transcriptOpeningLogWindow: TimeInterval = 2
+        /// How long a tapped picture waits for its full version before the viewer opens on the thumbnail: a picture on
+        /// the device decodes well within it, so the viewer opens sharp; a download past it lands in the open viewer.
+        static let viewerPreloadWait: Duration = .milliseconds(500)
+        /// How long a tapped picture waits for the keyboard to finish going down, so the viewer opens from where the
+        /// tile ends up rather than from a tile still moving.
+        static let viewerKeyboardWait: Duration = .milliseconds(400)
         static let readMarkFlushInterval: TimeInterval = 60
         static let mockEchoDelay: Duration = .milliseconds(200)
         static let mockAutoReplyDelay: Duration = .seconds(1.5)

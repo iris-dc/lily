@@ -1,14 +1,17 @@
 import SwiftUI
 
-/// One page of `AttachmentViewerSheet`: the full picture through the `AttachmentLoader`, the thumbnail until it lands
-/// (the tile's, or loaded here for a picture behind "+N" and handed up through `onPreview`), fitted to the page; pinch
-/// to zoom up to `viewerMaxZoom`, double-tap to reset. `onLoaded` hands the full picture up so the pager can offer it to
+/// One page of `AttachmentViewerSheet`: the full picture, decoded before the viewer opened or through the
+/// `AttachmentLoader` here, over the thumbnail until it lands, when it fades in (the tile's thumbnail, or one loaded
+/// here for a picture behind "+N" and handed up through `onPreview`), fitted to the whole screen; pinch to zoom up to
+/// `viewerMaxZoom`, double-tap to reset. `onLoaded` hands the full picture up so the pager can offer it to
 /// Share, and `onZoomed` tells it whether the picture is zoomed in or being pinched, when a drag does not close the
 /// viewer. No identifier of its own: the pager is the container the UI tests find.
 struct ImageViewerPage: View {
     let attachment: Attachment
     let message: ChatMessage
     let loader: AttachmentLoader
+    /// The full picture, when the chat decoded it before the viewer opened.
+    var preloaded: UIImage?
     /// The tile's thumbnail, when the chat had it on screen.
     var thumbnail: UIImage?
     var onPreview: (UIImage) -> Void = { _ in }
@@ -27,12 +30,14 @@ struct ImageViewerPage: View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .task {
-                if let loaded = await picture.load(attachment, variant: .full, in: message, through: loader) {
+                if let preloaded {
+                    onLoaded(preloaded)
+                } else if let loaded = await picture.load(attachment, variant: .full, in: message, through: loader) {
                     onLoaded(loaded)
                 }
             }
             .task {
-                guard thumbnail == nil else { return }
+                guard thumbnail == nil, preloaded == nil else { return }
                 if let loaded = await preview.load(attachment, variant: .thumbnail, in: message, through: loader) {
                     onPreview(loaded)
                 }
@@ -44,21 +49,38 @@ struct ImageViewerPage: View {
             }
     }
 
+    /// The full picture, once there is one.
+    private var full: UIImage? { preloaded ?? picture.image }
+
+    /// What stands in for it until then.
+    private var standIn: UIImage? { thumbnail ?? preview.image }
+
     @ViewBuilder private var content: some View {
-        if let image = picture.image ?? preview.image ?? thumbnail {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .scaleEffect(zoom)
-                .gesture(magnify)
-                .onTapGesture(count: 2) { settle(to: 1) }
-                .overlay {
-                    if picture.isLoading {
-                        ProgressView()
-                            .tint(.white)
-                    }
+        if full != nil || standIn != nil {
+            ZStack {
+                if let standIn, full == nil {
+                    // Leaves only once the full picture has faded in over it.
+                    fitted(standIn)
+                        .transition(.asymmetric(insertion: .identity, removal: .opacity.animation(sharpened)))
                 }
-                .accessibilityLabel(Copy.photo)
+                if let full {
+                    fitted(full)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeOut(duration: DesignTokens.Duration.viewerSharpen), value: full != nil)
+            .scaleEffect(zoom)
+            .gesture(magnify)
+            .onTapGesture(count: 2) { settle(to: 1) }
+            .overlay {
+                if full == nil, picture.isLoading {
+                    ProgressView()
+                        .tint(.white)
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Copy.photo)
+            .accessibilityAddTraits(.isImage)
         } else if picture.failed {
             Image(systemName: DesignTokens.Symbols.photoLibrary)
                 .font(.largeTitle)
@@ -67,6 +89,17 @@ struct ImageViewerPage: View {
             ProgressView()
                 .tint(.white)
         }
+    }
+
+    /// The stand-in's going: after the full picture's fade, in no time.
+    private var sharpened: Animation {
+        .linear(duration: 0).delay(DesignTokens.Duration.viewerSharpen)
+    }
+
+    private func fitted(_ image: UIImage) -> some View {
+        Image(uiImage: image)
+            .resizable()
+            .scaledToFit()
     }
 
     private var magnify: some Gesture {

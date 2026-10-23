@@ -28,13 +28,21 @@ struct ChatTranscript: View {
     /// The picture or video open full screen.
     @State private var viewing: AttachmentSelection?
     /// The tiles' places and thumbnails, which the viewer opens out of and closes into.
-    @State private var hero = ViewerHero()
+    @State private var hero: ViewerHero
+    /// A tapped picture's full version on its way, before the viewer opens.
+    @State private var opening: Task<Void, Never>?
     /// The file open in QuickLook, as the preview copy the loader named.
     @State private var previewURL: URL?
     /// The message whose report sheet is open.
     @State private var reporting: ReportTarget?
     /// The row whose sender awaits the caller's word on a block.
     @State private var blocking: MessageRow?
+
+    init(viewModel: ChatViewModel, dependencies: AppDependencies) {
+        self.viewModel = viewModel
+        self.dependencies = dependencies
+        _hero = State(initialValue: ViewerHero(logger: viewModel.logger))
+    }
 
     var body: some View {
         let rows = viewModel.rows
@@ -93,6 +101,7 @@ struct ChatTranscript: View {
             log("back on screen at the bottom, pinned")
             apply(.scrollToBottom)
         }
+        .onDisappear { opening?.cancel() }
         .scrollDismissesKeyboard(.interactively)
         .accessibilityIdentifier(AccessibilityIdentifiers.chatList)
         .onChange(of: rows.count) { old, new in
@@ -128,11 +137,24 @@ struct ChatTranscript: View {
         return arrived
     }
 
-    /// Opens the viewer without the cover's slide: the viewer draws its own appearance over the chat.
+    /// Opens the viewer once the picture's full version is decoded (or `viewerPreloadWait` has passed), so it opens
+    /// sharp, and without the cover's slide: the viewer draws its own appearance over the chat. The composer gives the
+    /// keyboard up first and the viewer waits for it to be gone: a cover only hides it, and it came back as the cover
+    /// went, moving the whole chat under the picture that had just landed.
     private func openViewer(_ selection: AttachmentSelection) {
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-        withTransaction(transaction) { viewing = selection }
+        opening?.cancel()
+        opening = Task {
+            let started = Date.now
+            async let keyboard: Void = KeyboardDismissal.dismissAndWait(atMost: AppConfig.Chat.viewerKeyboardWait)
+            await hero.preload(selection.current, in: selection.message, through: viewModel.attachmentLoader)
+            await keyboard
+            guard !Task.isCancelled else { return }
+            opening = nil
+            hero.log("presents \(selection.current.id) after \(Int(Date.now.timeIntervalSince(started) * 1000)) ms")
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { viewing = selection }
+        }
     }
 
     /// The block confirmation's one action: blocks the row's sender for the caller, in every room at once.

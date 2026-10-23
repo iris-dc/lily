@@ -20,17 +20,19 @@ struct AttachmentViewerSheet: View {
     let selection: AttachmentSelection
     let loader: AttachmentLoader
     let hero: ViewerHero
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) var dismiss
     @State private var index: Int
     @State private var pictures = LoadedPictures()
-    @State private var motion = ViewerMotion()
+    @State var motion = ViewerMotion()
     /// 0 with the picture fitted to the screen, 1 with it on its tile in the chat.
-    @State private var progress: CGFloat = 1
+    @State var progress: CGFloat = 1
     /// How far up or down the picture is dragged.
-    @State private var drag: CGFloat = 0
+    @State var drag: CGFloat = 0
     /// The pictures zoomed in or being pinched, which a drag does not close.
     @State private var zoomedIDs: Set<String> = []
-    @State private var layout = PageLayout()
+    @State var layout = ViewerPageLayout()
+    /// The tile the way out aims at, in the window; it follows the tile if the chat moved under the closing picture.
+    @State var landing: CGRect?
 
     private typealias Copy = AppBranding.Chat.Attachments
 
@@ -70,20 +72,22 @@ struct AttachmentViewerSheet: View {
         .onAppear(perform: open)
         .onDisappear {
             if selection.media.contains(where: { $0.id == hero.shownID }) { hero.shownID = nil }
+            hero.forgetPreloaded()
         }
         .onChange(of: index) { hero.shownID = current.id }
     }
 
     private var isOpen: Bool { motion.phase == .open }
 
-    /// The picture on screen at its best: the full one once its page has it, else the tile's thumbnail, else the one
-    /// the page loaded for a picture behind "+N".
+    /// The picture on screen at its best: the full one decoded before the viewer opened or by its page, else the
+    /// tile's thumbnail, else the one the page loaded for a picture behind "+N".
     private var picture: UIImage? {
-        layout.pictures[current.id] ?? hero.thumbnail(for: current.id) ?? layout.previews[current.id]
+        hero.preloaded[current.id] ?? layout.pictures[current.id] ?? hero.thumbnail(for: current.id)
+            ?? layout.previews[current.id]
     }
 
     /// The tile to land on; none for a zoomed picture, which fades instead.
-    private var tile: TileGeometry? {
+    var tile: TileGeometry? {
         zoomedIDs.contains(current.id) ? nil : hero.tiles[current.id]
     }
 
@@ -94,7 +98,7 @@ struct AttachmentViewerSheet: View {
             let toLocal = { (rect: CGRect) in rect.offsetBy(dx: -space.minX, dy: -space.minY) }
             let frame = ViewerGeometry(page: toLocal(layout.frames[current.id] ?? space),
                                        aspectRatio: picture.size.height > 0 ? picture.size.width / picture.size.height : nil,
-                                       tile: TileGeometry(frame: toLocal(tile.frame), radii: tile.radii),
+                                       tile: TileGeometry(frame: toLocal(landing ?? tile.frame), radii: tile.radii),
                                        progress: progress,
                                        drag: drag)
             Image(uiImage: picture)
@@ -111,76 +115,13 @@ struct AttachmentViewerSheet: View {
         motion.takesDrag && !zoomedIDs.contains(current.id)
     }
 
-    /// The way in, back and out. Each hands over to the pager or the chat only once it is removed: a spring is
-    /// logically complete a few pixels short, which showed as a jump at the swap.
-    private var transition: Animation {
-        .spring(duration: DesignTokens.Duration.normal, bounce: 0)
-    }
-
-    /// Out of the tile: the first frame draws the picture on it, then it grows to fill the screen, a turn later, once
-    /// the page has laid out where it will end.
-    private func open() {
-        hero.shownID = current.id
-        let move = motion.startOpening()
-        Task { @MainActor in
-            withAnimation(transition, completionCriteria: .removed) {
-                progress = 0
-            } completion: {
-                _ = motion.finish(move)
-            }
-        }
-    }
-
-    private func dragged(_ translation: CGSize) {
-        guard motion.drag() else { return }
-        drag = translation.height
-    }
-
-    /// Far or fast enough closes; short of it the picture springs back to the middle.
-    private func letGo(at translation: CGSize, velocity: CGSize, wasCancelled: Bool) {
-        if !wasCancelled, ViewerDismissal.closes(drag: translation.height, velocity: velocity.height) {
-            close()
-        } else {
-            settle()
-        }
-    }
-
-    private func settle() {
-        guard let move = motion.startSettling() else { return }
-        withAnimation(transition, completionCriteria: .removed) {
-            drag = 0
-        } completion: {
-            _ = motion.finish(move)
-        }
-    }
-
-    /// Back onto the tile of the page on screen; once there the tile shows its picture again, under this one, and the
-    /// cover goes on the next turn, so no frame shows the accent or an empty tile.
-    private func close() {
-        guard let move = motion.startClosing() else { return }
-        withAnimation(transition, completionCriteria: .removed) {
-            progress = 1
-            drag = 0
-        } completion: {
-            guard motion.finish(move) else { return }
-            hero.shownID = nil
-            Task { @MainActor in leave() }
-        }
-    }
-
-    /// Takes the cover away without its slide: the viewer has already drawn its going.
-    private func leave() {
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-        withTransaction(transaction) { dismiss() }
-    }
-
-    private var current: Attachment { selection.media[index] }
+    var current: Attachment { selection.media[index] }
 
     private var pages: some View {
         TabView(selection: $index) {
             ForEach(Array(selection.media.enumerated()), id: \.element.id) { offset, attachment in
                 page(attachment, isCurrent: offset == index)
+                    .ignoresSafeArea()
                     .tag(offset)
             }
         }
@@ -206,6 +147,7 @@ struct AttachmentViewerSheet: View {
             ImageViewerPage(attachment: attachment,
                             message: selection.message,
                             loader: loader,
+                            preloaded: hero.preloaded[attachment.id],
                             thumbnail: hero.thumbnail(for: attachment.id),
                             onPreview: { layout.previews[attachment.id] = $0 },
                             onLoaded: { loaded in
@@ -254,7 +196,7 @@ struct AttachmentViewerSheet: View {
 /// Where each page lays its picture out and the full pictures the pages loaded, for the picture the viewer draws on its
 /// way in and out. Written on every layout and load, so kept out of observation: nothing redraws for them, and the
 /// viewer reads them when its own state moves.
-private final class PageLayout {
+final class ViewerPageLayout {
     var frames: [String: CGRect] = [:]
     var pictures: [String: UIImage] = [:]
     var previews: [String: UIImage] = [:]

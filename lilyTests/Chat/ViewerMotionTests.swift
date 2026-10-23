@@ -1,12 +1,12 @@
 import Testing
 @testable import lily
 
-/// The viewer's phases: only the latest move finishes, only an open picture takes the finger, and a close is final.
+/// The viewer's phases: only the latest move finishes, a picture on its way in or open takes the finger, and a close is
+/// final.
 struct ViewerMotionTests {
     @Test func theWayInEndsOpenAndADragSpringsBack() {
         var motion = ViewerMotion()
         let opening = motion.startOpening()
-        #expect(!motion.takesDrag, "the picture is on its way in")
         let opened = motion.finish(opening)
         #expect(opened && motion.phase == .open)
 
@@ -17,6 +17,18 @@ struct ViewerMotionTests {
         #expect(settling != nil && !draggedWhileSettling, "a spring back ignores the finger")
         let settled = settling.map { motion.finish($0) } ?? false
         #expect(settled && motion.phase == .open)
+    }
+
+    /// A drag taken up on the way in carries on when the way in ends: the picture is the finger's, not open.
+    @Test func aDragOnTheWayInIsTheFingers() {
+        var motion = ViewerMotion()
+        let opening = motion.startOpening()
+        let dragged = motion.drag()
+        let finished = motion.finish(opening)
+
+        #expect(dragged && finished && motion.phase == .dragging)
+        let settling = motion.startSettling()
+        #expect(settling != nil)
     }
 
     /// A move cut short by a newer one does not end it: its completion comes late and is stale.
