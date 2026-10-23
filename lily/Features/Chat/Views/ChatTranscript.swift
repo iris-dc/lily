@@ -77,12 +77,21 @@ struct ChatTranscript: View {
                                                         oldestID: viewModel.oldestID)
             // A pin puts the bottom where the anchor would hold it, so the anchor comes back with it.
             if action == .scrollToBottom { reanchor("by the pin") }
-            if action != .none {
+            // Every report of an arrival, and every action: a phone's log tells in which order the row's layout, the
+            // slide's frames and the anchor's return came.
+            if action != .none || isAppending {
                 let height = Int(current.contentHeight), offset = Int(current.offsetY), inset = Int(current.bottomInset)
-                let geometry = "height \(height), offset \(offset), inset \(inset)"
+                let geometry = "height \(height), offset \(offset), inset \(inset), position \(positionState)"
                 viewModel.logger.debug(.chat, "Transcript \(action) at \(geometry) in group \(viewModel.group.id)")
             }
             apply(action, lastRow: rows.last?.id)
+        }
+        // Covered by another screen, the scroll view takes the keyboard's going without settling on the new bottom until
+        // it is back on screen, in a frame the user sees: a transcript that left at the bottom comes back pinned to it.
+        .onAppear {
+            guard tracker.policy.hasSettled, tracker.geometry.isAtBottom else { return }
+            viewModel.logger.debug(.chat, "Transcript back on screen at the bottom, pinned in group \(viewModel.group.id)")
+            apply(.scrollToBottom, lastRow: rows.last?.id)
         }
         .scrollDismissesKeyboard(.interactively)
         .accessibilityIdentifier(AccessibilityIdentifiers.chatList)
@@ -168,12 +177,22 @@ struct ChatTranscript: View {
         }
         tracker.slidingRowID = row
         Task { @MainActor in
+            let group = viewModel.group.id
+            viewModel.logger.debug(.chat, "Transcript slide issued with the position \(positionState) in group \(group)")
             withAnimation(.messageArrival, completionCriteria: .logicallyComplete) {
                 position.scrollTo(edge: .bottom)
             } completion: {
-                if tracker.slidingRowID == row { releaseLandedPosition() }
+                let own = tracker.slidingRowID == row
+                let whose = own ? "its own" : "a newer row's"
+                viewModel.logger.debug(.chat, "Transcript slide completed, \(whose) in group \(group)")
+                if own { releaseLandedPosition() }
             }
         }
+    }
+
+    /// The position's binding, for the log: `bound` to the bottom edge, else `free`.
+    private var positionState: String {
+        position.edge == nil ? "free" : "bound"
     }
 
     /// A pin or a slide binds the position to the bottom edge, which would hold the bottom through the next appended
@@ -182,9 +201,14 @@ struct ChatTranscript: View {
     /// release cancels before its first frame, and never in the update that appends a row, after which the slide did
     /// not animate.
     private func releaseLandedPosition() {
-        if tracker.geometry.isAtBottom, position.edge != nil {
-            position = ScrollPosition()
+        guard position.edge != nil else { return }
+        guard tracker.geometry.isAtBottom else {
+            viewModel.logger.debug(.chat, "Transcript position kept bound, not at the bottom, in group \(viewModel.group.id)")
+            return
         }
+        position = ScrollPosition()
+        let offset = Int(tracker.geometry.offsetY)
+        viewModel.logger.debug(.chat, "Transcript position released at offset \(offset) in group \(viewModel.group.id)")
     }
 
     private func loadOlder() async {
