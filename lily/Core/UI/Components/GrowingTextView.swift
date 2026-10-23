@@ -51,7 +51,7 @@ struct GrowingTextView: UIViewRepresentable {
     /// update) and gives it up when it turns false; the coordinator writes the user's own changes back.
     private func syncFocus(of view: PlaceholderTextView) {
         if isFocused, !view.isFirstResponder {
-            Task { @MainActor in view.becomeFirstResponder() }
+            Task { @MainActor in view.takeFocus() }
         } else if !isFocused, view.isFirstResponder {
             view.resignFirstResponder()
         }
@@ -98,8 +98,9 @@ struct GrowingTextView: UIViewRepresentable {
 }
 
 /// The text view behind `GrowingTextView`: a placeholder label while the text is empty, the placeholder as the
-/// accessibility value then, and a hardware Return routed through `onReturn` (as key commands, which take the key
-/// before the text system inserts it; the software keyboard's Return never passes here and keeps inserting newlines).
+/// accessibility value then, a hardware Return routed through `onReturn` (as key commands, which take the key before
+/// the text system inserts it; the software keyboard's Return never passes here and keeps inserting newlines), and a
+/// keyboard that does not come back by itself after the field left the window.
 final class PlaceholderTextView: UITextView {
     var placeholder = "" {
         didSet { placeholderLabel.text = placeholder }
@@ -138,6 +139,37 @@ final class PlaceholderTextView: UITextView {
     override var accessibilityValue: String? {
         get { text.isEmpty ? placeholder : text }
         set { super.accessibilityValue = newValue }
+    }
+
+    /// Whether the field may take the keyboard. UIKit hands a field that was editing the keyboard back as its screen
+    /// returns, before SwiftUI has laid the screen out around it: a field that left the window takes the keyboard again
+    /// only at a touch (or a pointer over it), an accessibility activation, or its owner's word.
+    private var acceptsFocus = true
+
+    override var canBecomeFirstResponder: Bool {
+        acceptsFocus && super.canBecomeFirstResponder
+    }
+
+    override func willMove(toWindow newWindow: UIWindow?) {
+        if newWindow == nil { acceptsFocus = false }
+        super.willMove(toWindow: newWindow)
+    }
+
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        let hit = super.hitTest(point, with: event)
+        if hit != nil { acceptsFocus = true }
+        return hit
+    }
+
+    override func accessibilityActivate() -> Bool {
+        acceptsFocus = true
+        return super.accessibilityActivate()
+    }
+
+    /// The owner's word: the keyboard asked for through `GrowingTextView.isFocused`.
+    func takeFocus() {
+        acceptsFocus = true
+        becomeFirstResponder()
     }
 
     override func layoutSubviews() {

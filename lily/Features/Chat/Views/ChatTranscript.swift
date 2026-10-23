@@ -82,8 +82,7 @@ struct ChatTranscript: View {
                 let geometry = "height \(height), offset \(offset), inset \(inset)"
                 viewModel.logger.debug(.chat, "Transcript \(action) at \(geometry) in group \(viewModel.group.id)")
             }
-            apply(action)
-            if action == .none { unbindLandedPin() }
+            apply(action, lastRow: rows.last?.id)
         }
         .scrollDismissesKeyboard(.interactively)
         .accessibilityIdentifier(AccessibilityIdentifiers.chatList)
@@ -91,9 +90,11 @@ struct ChatTranscript: View {
             tracker.policy.rowAppended(rows.last, isAtBottom: tracker.geometry.isAtBottom)
         }
         // The anchor is off while the newest row arrives and back once the arrival has settled, or sooner with a pin: a
-        // size change in between must not pin the row before the slide reaches it.
-        .task(id: rows.last?.id) {
-            guard (try? await Task.sleep(for: .seconds(MessageArrivalCurve.standard.settlingDuration))) != nil else { return }
+        // size change in between must not pin the row before the slide reaches it. A task that wakes as a newer row
+        // is appended leaves that row to its own task.
+        .task(id: rows.last?.id) { [id = rows.last?.id] in
+            guard (try? await Task.sleep(for: .seconds(MessageArrivalCurve.standard.settlingDuration))) != nil,
+                  viewModel.rows.last?.id == id else { return }
             reanchor("after the arrival")
         }
         .fullScreenCover(item: $viewing) { selection in
@@ -126,22 +127,17 @@ struct ChatTranscript: View {
         }
     }
 
-    private func apply(_ action: TranscriptScrollPolicy.Action) {
+    private func apply(_ action: TranscriptScrollPolicy.Action, lastRow: String?) {
         switch action {
         case .none:
             break
         case .scrollToBottom:
             position.scrollTo(edge: .bottom)
-            // A pin that moved nothing (the anchor had the bottom already) brings no report to unbind it. Set from a
-            // geometry report, the pin is applied by this frame's follow-up layout, so a turn later is after it; the
-            // slide's scroll is issued from a Task, and an unbind the turn after that one cancelled it.
-            Task { @MainActor in unbindLandedPin() }
+            // A pin that moved nothing (the anchor had the bottom already) brings no report to release it. Set from a
+            // geometry report, the pin is applied by this frame's follow-up layout, so a turn later is after it.
+            Task { @MainActor in releaseLandedPosition() }
         case .animateToBottom:
-            // Asked for from the geometry report of the layout that grew the content, where a scroll lands at once; a
-            // turn later it is a change of its own and the spring applies.
-            Task { @MainActor in
-                withAnimation(.messageArrival) { position.scrollTo(edge: .bottom) }
-            }
+            slide(to: lastRow)
         case .scrollTo(let y):
             position.scrollTo(y: y)
         case .loadOlder:
@@ -160,10 +156,32 @@ struct ChatTranscript: View {
         viewModel.logger.debug(.chat, "Transcript re-anchored \(occasion) in group \(viewModel.group.id)")
     }
 
-    /// A pin leaves the position bound to the bottom edge, which would hold the bottom through the next append's layout;
-    /// once the pin has landed, a position bound to nothing leaves the appended row below the fold, where the policy's
-    /// slide reaches it.
-    private func unbindLandedPin() {
+    /// One slide per row, issued a turn after the geometry report that asked for it, where a scroll would land at once.
+    /// On a position still bound to the bottom edge a scroll to that edge has no change to animate: a new row's slide
+    /// frees the position first (cutting a slide still running short), while a later layout change of the same row (its
+    /// second pass, a picture that loaded) rides on the binding, which keeps the bottom. The slide's completion releases
+    /// the binding unless a newer row's slide owns it by then.
+    private func slide(to row: String?) {
+        if position.edge != nil {
+            guard tracker.slidingRowID != row else { return }
+            releaseLandedPosition()
+        }
+        tracker.slidingRowID = row
+        Task { @MainActor in
+            withAnimation(.messageArrival, completionCriteria: .logicallyComplete) {
+                position.scrollTo(edge: .bottom)
+            } completion: {
+                if tracker.slidingRowID == row { releaseLandedPosition() }
+            }
+        }
+    }
+
+    /// A pin or a slide binds the position to the bottom edge, which would hold the bottom through the next appended
+    /// row's layout; released once it has landed (a turn after a pin, at a slide's completion), a position bound to
+    /// nothing leaves that row below the fold, where the policy's slide reaches it. Never while a slide runs, which a
+    /// release cancels before its first frame, and never in the update that appends a row, after which the slide did
+    /// not animate.
+    private func releaseLandedPosition() {
         if tracker.geometry.isAtBottom, position.edge != nil {
             position = ScrollPosition()
         }
@@ -208,6 +226,8 @@ extension TranscriptScrollPolicy.Snapshot {
 @MainActor private final class ScrollTracker {
     var policy = TranscriptScrollPolicy()
     var geometry = TranscriptScrollPolicy.Snapshot.empty
+    /// The row the latest slide was issued for.
+    var slidingRowID: String?
 }
 
 /// The arrivals, held by reference and brought up to date while body runs: the first frame that draws an appended row
