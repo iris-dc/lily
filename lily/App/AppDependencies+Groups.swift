@@ -152,7 +152,7 @@ struct GroupDependencies {
         self.inbox = inbox
         blocks = BlockListStore(repository: repositories.moderation, identity: identity, logger: logger)
         errorReporter = GroupErrorReporter(errorCenter: errorCenter) { me.noteTermsRequired() }
-        let chatHistory = InMemoryChatHistoryCache(logger: logger)
+        let chatHistory = InMemoryChatHistoryCache(activity: myGroups, logger: logger)
         self.chatHistory = chatHistory
         let unreadCenter = UnreadCenter()
         self.unreadCenter = unreadCenter

@@ -18,8 +18,8 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     private(set) var channelEpoch: Int
     private(set) var membersCanCreateEvents: Bool
     private(set) var membersCanInvite: Bool
-    let lastMessageId: String?
-    let lastMessageAt: Date?
+    private(set) var lastMessageId: String?
+    private(set) var lastMessageAt: Date?
     let createdAt: Date
     /// Soft delete marker; the group is gone for every purpose but its events' badge.
     private(set) var deletedAt: Date?
@@ -121,10 +121,11 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     var hasUnread: Bool { membership?.hasUnread ?? false }
     /// The moment the group was last active, for the Mine order; a silent group counts from its creation.
     var lastActivityAt: Date { lastMessageAt ?? createdAt }
-    /// Mine's order, the contract with the backend's `MINE_ORDER`: most recently active first, ties by name. Every Mine
-    /// insertion and the mock go through it.
+    /// Mine's order, the contract with the backend's `MINE_ORDER`: most recently active first, ties by name, then id.
+    /// Every Mine insertion, a moved room and the mock go through it.
     static func mineOrder(_ lhs: SportGroup, _ rhs: SportGroup) -> Bool {
-        lhs.lastActivityAt != rhs.lastActivityAt ? lhs.lastActivityAt > rhs.lastActivityAt : lhs.name < rhs.name
+        if lhs.lastActivityAt != rhs.lastActivityAt { return lhs.lastActivityAt > rhs.lastActivityAt }
+        return lhs.name != rhs.name ? lhs.name < rhs.name : lhs.id < rhs.id
     }
     /// Whether the group's last activity falls on the calendar day of `day`: the row's "Active today".
     func isActive(on day: Date, calendar: Calendar = .current) -> Bool {
@@ -177,6 +178,26 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     func markingDeleted(at date: Date) -> SportGroup {
         var copy = self
         copy.deletedAt = date
+        return copy
+    }
+
+    /// The group with `message` as its last one, as the backend's bookkeeping will have it; `nil` when the group
+    /// already knows a message as late, so an older or repeated one changes nothing.
+    func noting(_ message: ChatMessage) -> SportGroup? {
+        guard lastMessageAt.map({ message.sentAt > $0 }) ?? true else { return nil }
+        var copy = self
+        copy.lastMessageId = message.id
+        copy.lastMessageAt = message.sentAt
+        return copy
+    }
+
+    /// The fresh copy from a load, keeping this one's last message where it is later: a line noted here after the
+    /// request went out is newer than its answer.
+    func keepingLaterLastMessage(of held: SportGroup) -> SportGroup {
+        guard let heldAt = held.lastMessageAt, heldAt > lastMessageAt ?? .distantPast else { return self }
+        var copy = self
+        copy.lastMessageId = held.lastMessageId
+        copy.lastMessageAt = heldAt
         return copy
     }
 }

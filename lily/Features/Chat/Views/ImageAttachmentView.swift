@@ -8,6 +8,7 @@ struct ImageAttachmentView: View {
     let loader: AttachmentLoader
     let onTap: () -> Void
     @State private var picture = AttachmentImageLoad()
+    @Environment(\.viewerHero) private var hero
 
     var body: some View {
         Button(action: onTap) {
@@ -15,6 +16,7 @@ struct ImageAttachmentView: View {
         }
         .buttonStyle(.plain)
         .task(id: attachment.id) { await picture.load(attachment, variant: .thumbnail, in: message, through: loader) }
+        .onChange(of: picture.image, initial: true) { _, image in hero?.noteThumbnail(image, for: attachment.id) }
         .accessibilityLabel(AppBranding.Chat.Attachments.photo)
         .accessibilityIdentifier(AccessibilityIdentifiers.messageAttachmentImage(id: attachment.id))
     }

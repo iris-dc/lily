@@ -50,4 +50,28 @@ nonisolated struct GalleryLayout: Equatable, Sendable {
     func showsOverflow(at index: Int) -> Bool {
         hiddenCount > 0 && index == shownCount - 1
     }
+
+    /// The corners of the tile at `index` that are the gallery's own, rounded like its frame; the others meet another
+    /// tile.
+    func outerCorners(of index: Int) -> TileCorners {
+        guard let rowIndex = rows.firstIndex(where: { $0.contains(index) }) else { return [] }
+        let row = rows[rowIndex]
+        var corners: TileCorners = []
+        if rowIndex == 0, row.first == index { corners.insert(.topLeading) }
+        if rowIndex == 0, row.last == index { corners.insert(.topTrailing) }
+        if rowIndex == rows.count - 1, row.first == index { corners.insert(.bottomLeading) }
+        if rowIndex == rows.count - 1, row.last == index { corners.insert(.bottomTrailing) }
+        return corners
+    }
+}
+
+/// A tile's corners, as `GalleryLayout.outerCorners` names them.
+nonisolated struct TileCorners: OptionSet, Sendable {
+    let rawValue: Int
+
+    static let topLeading = TileCorners(rawValue: 1 << 0)
+    static let topTrailing = TileCorners(rawValue: 1 << 1)
+    static let bottomLeading = TileCorners(rawValue: 1 << 2)
+    static let bottomTrailing = TileCorners(rawValue: 1 << 3)
+    static let all: TileCorners = [.topLeading, .topTrailing, .bottomLeading, .bottomTrailing]
 }

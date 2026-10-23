@@ -21,6 +21,21 @@ extension MockGroupRepositoryTests {
         #expect(lastWithMessage < silentFixture, "the silent fixture follows every row with a message")
     }
 
+    /// A line posted in a room moves the room's last message, as the backend's bookkeeping does, so a reload keeps it
+    /// where the Chats list put it; an older line changes nothing.
+    @Test func aPostedLineMovesTheRoomsLastMessage() async throws {
+        let repository = makeRepository()
+        let line = ChatMessage.fixture(id: "z1", groupID: MockGroupFixtures.padelID, sentAt: .now + 60)
+
+        repository.noteMessage(line, in: MockGroupFixtures.padelID)
+        repository.noteMessage(.fixture(id: "a1", groupID: MockGroupFixtures.padelID, sentAt: .distantPast),
+                               in: MockGroupFixtures.padelID)
+
+        let mine = try await repository.groups(in: .mine, cursor: nil, near: nil).items
+        #expect(mine.first?.id == MockGroupFixtures.padelID)
+        #expect(mine.first?.lastMessageId == "z1")
+    }
+
     /// The backend reads a blank query as none and trims the rest: the mock browses on a blank one and the remote sends
     /// the position without `q`; a typed one goes out trimmed and without the position.
     @Test func aBlankQueryIsABrowseOnBothSides() async throws {

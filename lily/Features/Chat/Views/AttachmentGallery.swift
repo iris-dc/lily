@@ -2,8 +2,9 @@ import SwiftUI
 
 /// The attachments of a stored message: pictures and videos as `GalleryLayout` lays them out, each a thumbnail loaded
 /// through the `AttachmentLoader`, and files as cards under the grid; a tap on a tile hands its `AttachmentSelection` up
-/// (the tapped picture, or the first hidden one from the "+N" tile) and the transcript opens the viewer or the player,
-/// and a tap on a card downloads the file and hands its preview up.
+/// (the tapped picture, or the first hidden one from the "+N" tile) and the transcript opens the viewer, which opens out
+/// of the tile and closes back into it (`viewerHeroSource`), and a tap on a card downloads the file and hands its
+/// preview up.
 struct AttachmentGallery: View {
     let message: ChatMessage
     let loader: AttachmentLoader
@@ -11,21 +12,29 @@ struct AttachmentGallery: View {
     let alignment: Alignment
     let onTap: (AttachmentSelection) -> Void
     let onOpenFile: (URL) -> Void
+    @Environment(\.galleryCornerRadius) private var cornerRadius
 
     var body: some View {
+        let media = GalleryLayout.partition(message.attachments.map(\.kind)).media.map { message.attachments[$0] }
         AttachmentColumn(items: message.attachments, alignment: alignment) { index, attachment in
-            tile(attachment, at: index)
+            tile(attachment, at: index, among: media)
         } card: { attachment in
             FileAttachmentCard(attachment: attachment, message: message, loader: loader, own: own, onOpen: onOpenFile)
         }
     }
 
-    @ViewBuilder private func tile(_ attachment: Attachment, at index: Int) -> some View {
+    @ViewBuilder private func tile(_ attachment: Attachment, at index: Int, among media: [Attachment]) -> some View {
+        let layout = GalleryLayout(count: media.count)
+        let radii = GalleryTileShape.radii(at: index, in: layout, galleryRadius: cornerRadius)
+        // The "+N" tile stands for every hidden picture too.
+        let heroIDs = media[index...].prefix(layout.showsOverflow(at: index) ? media.count : 1).map(\.id)
         switch attachment.kind {
         case .image:
             ImageAttachmentView(attachment: attachment, message: message, loader: loader) { select(tile: index) }
+                .viewerHeroSource(for: heroIDs, radii: radii)
         case .video:
             VideoAttachmentView(attachment: attachment, message: message, loader: loader) { select(tile: index) }
+                .viewerHeroSource(for: heroIDs, radii: radii)
         case .file, .unknown:
             EmptyView()
         }
@@ -95,13 +104,16 @@ struct DraftMediaTile: View {
 
 /// Lays tiles out as `GalleryLayout` says, at `galleryWidthFraction` of the list: one picture fits its own aspect
 /// ratio within `galleryMaxHeight` (a tall one gets narrower and keeps to `alignment`), the rest are squares in a
-/// two-column `Grid`, a lone last tile spanning both columns, and the last tile of a longer gallery carries "+N".
+/// two-column `Grid`, a lone last tile spanning both columns, and the last tile of a longer gallery carries "+N". The
+/// tiles sit in an accent frame `galleryOutlineWidth` wide that also fills the gaps between them, rounded to
+/// `\.galleryCornerRadius`; each tile is rounded to match (`GalleryTileShape`).
 struct GalleryGrid<Tile: View>: View {
     let layout: GalleryLayout
     /// Width over height of the one picture a single-tile gallery shows; square when unknown.
     let singleAspectRatio: CGFloat?
     let alignment: Alignment
     @ViewBuilder let tile: (Int) -> Tile
+    @Environment(\.galleryCornerRadius) private var cornerRadius
 
     private typealias Layout = DesignTokens.Layout
 
@@ -113,6 +125,8 @@ struct GalleryGrid<Tile: View>: View {
                 grid
             }
         }
+        .padding(Layout.galleryOutlineWidth)
+        .background(Color.lilyAccent, in: .rect(cornerRadius: cornerRadius))
         .galleryWidth(alignment: alignment)
     }
 
@@ -120,6 +134,7 @@ struct GalleryGrid<Tile: View>: View {
         tile(0)
             .aspectRatio(singleAspectRatio ?? 1, contentMode: .fit)
             .frame(maxHeight: Layout.galleryMaxHeight)
+            .clipShape(shape(of: 0))
     }
 
     private var grid: some View {
@@ -129,12 +144,17 @@ struct GalleryGrid<Tile: View>: View {
                     ForEach(row, id: \.self) { index in
                         tile(index)
                             .aspectRatio(layout.spansRow(index) ? CGFloat(GalleryLayout.columns) : 1, contentMode: .fit)
-                            .gridCellColumns(layout.spansRow(index) ? GalleryLayout.columns : 1)
                             .overlay { if layout.showsOverflow(at: index) { overflow } }
+                            .clipShape(shape(of: index))
+                            .gridCellColumns(layout.spansRow(index) ? GalleryLayout.columns : 1)
                     }
                 }
             }
         }
+    }
+
+    private func shape(of index: Int) -> UnevenRoundedRectangle {
+        UnevenRoundedRectangle(cornerRadii: GalleryTileShape.radii(at: index, in: layout, galleryRadius: cornerRadius))
     }
 
     private var overflow: some View {
@@ -146,6 +166,12 @@ struct GalleryGrid<Tile: View>: View {
             }
             .allowsHitTesting(false)
     }
+}
+
+extension EnvironmentValues {
+    /// The corner radius of a gallery's frame: the bubble's when the pictures are the bubble, the quote's inside a
+    /// bubble with words.
+    @Entry var galleryCornerRadius: CGFloat = DesignTokens.Radius.bubble
 }
 
 extension View {
@@ -164,7 +190,6 @@ extension View {
                 GalleryGrid(layout: GalleryLayout(count: count), singleAspectRatio: 4 / 3, alignment: .trailing) { index in
                     Color.lilyAccent.opacity(0.3 + Double(index) * 0.15)
                 }
-                .clipShape(.rect(cornerRadius: DesignTokens.Radius.bubble))
             }
         }
         .padding()

@@ -27,6 +27,27 @@ final class LilyChatTests: LilyUITestCase {
         expectBadge(of: chats, toRead: "2 unread chats")
     }
 
+    /// A line sent in a room lower in the list brings the room to the top of Chats, under the pinned inbox.
+    @MainActor
+    func testSendingInARoomMovesItToTheTopOfChats() {
+        tapSignInWithApple()
+        let rooms = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'group-row-'"))
+        chatsRow("group-row-mock-group-runners")
+        XCTAssertEqual(rooms.firstMatch.identifier, "group-row-mock-group-kickers", "the busiest room comes first")
+
+        openRoom("group-row-mock-group-runners", titled: "Tempelhof Runners")
+        enter("Anyone running Sunday?", into: app.descendants(matching: .any)["chat-composer"])
+        app.buttons["chat-send"].tap()
+        XCTAssertTrue(app.staticTexts["Anyone running Sunday?"].waitForExistence(timeout: 10))
+        app.navigationBars.buttons.firstMatch.tap()
+
+        XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 5))
+        let first = NSPredicate(format: "identifier == %@", "group-row-mock-group-runners")
+        XCTAssertEqual(XCTWaiter().wait(for: [expectation(for: first, evaluatedWith: rooms.firstMatch)], timeout: 5),
+                       .completed,
+                       "the room with the latest line is first, not \(rooms.firstMatch.identifier)")
+    }
+
     /// Accepting joins the group and opens its chat on the Chats stack; on the way back the card says "You joined",
     /// and Home lists the group.
     @MainActor

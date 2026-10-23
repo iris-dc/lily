@@ -2,15 +2,18 @@ import Foundation
 import Observation
 
 /// Room states keyed by group id, observable so the open chat redraws when the realtime controller inserts a
-/// message; cleared on sign-out through `SessionObserver`. Nothing is written to disk.
+/// message; cleared on sign-out through `SessionObserver`. Nothing is written to disk. A room stored with a newer last
+/// message tells `activity`, whoever wrote it: a send, a live line, a catch-up.
 @Observable
 final class InMemoryChatHistoryCache: ChatHistoryCache, SessionObserver {
     private var rooms: [String: ChatRoomState] = [:]
     private let limit: Int
+    private let activity: (any RoomActivityRecorder)?
     private let logger: any Logging
 
-    init(limit: Int = AppConfig.Chat.roomCacheLimit, logger: any Logging) {
+    init(limit: Int = AppConfig.Chat.roomCacheLimit, activity: (any RoomActivityRecorder)? = nil, logger: any Logging) {
         self.limit = limit
+        self.activity = activity
         self.logger = logger
     }
 
@@ -21,7 +24,9 @@ final class InMemoryChatHistoryCache: ChatHistoryCache, SessionObserver {
     }
 
     func store(_ room: ChatRoomState, for groupID: String) {
+        let previousLast = rooms[groupID]?.messages.last?.id
         rooms[groupID] = room
+        if let last = room.messages.last, last.id != previousLast { activity?.noteMessage(last, in: groupID) }
     }
 
     func drop(groupID: String, reason: String) {

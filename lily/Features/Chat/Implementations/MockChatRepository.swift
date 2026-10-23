@@ -135,6 +135,7 @@ final class MockChatRepository: ChatRepository {
                                                        callerID: identity.currentUserID ?? "",
                                                        callerName: AppBranding.Groups.Create.mockOwnerName,
                                                        now: now(),
+                                                       lastMessageAt: group.lastMessageAt ?? group.createdAt,
                                                        count: autoReplies ? AppConfig.Chat.mockLongRoomMessages : nil)
         }
         return (group, rooms[groupID] ?? [])
@@ -161,6 +162,7 @@ final class MockChatRepository: ChatRepository {
     /// conversation is back in Mine with it, as the backend's floor rule implies.
     private func post(_ message: ChatMessage, in group: SportGroup, echoAfter delay: Duration) {
         rooms[group.id, default: []].append(message)
+        groups.noteMessage(message, in: group.id)
         if group.isDirect { groups.unhideConversation(id: group.id) }
         publish(.message(message), to: group, after: delay)
     }

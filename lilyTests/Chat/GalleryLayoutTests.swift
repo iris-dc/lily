@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 import Testing
 @testable import lily
 
@@ -45,5 +45,30 @@ struct GalleryLayoutTests {
         #expect(mixed == GalleryLayout.Partition(media: [0, 2], files: [1]))
         #expect(GalleryLayout.partition([.unknown("audio")]) == GalleryLayout.Partition(media: [], files: [0]))
         #expect(!AttachmentKind.unknown("audio").isMedia)
+    }
+
+    /// The gallery's own corners are each tile's that lie on its edge: all four of one picture, the outer two of each of
+    /// two side by side, and a spanning last tile's two bottom ones.
+    @Test func eachTileRoundsOnlyTheCornersOnTheGallerysEdge() {
+        #expect(GalleryLayout(count: 1).outerCorners(of: 0) == .all)
+        #expect(GalleryLayout(count: 2).outerCorners(of: 0) == [.topLeading, .bottomLeading])
+        #expect(GalleryLayout(count: 2).outerCorners(of: 1) == [.topTrailing, .bottomTrailing])
+        let three = GalleryLayout(count: 3)
+        #expect(three.outerCorners(of: 0) == [.topLeading])
+        #expect(three.outerCorners(of: 1) == [.topTrailing])
+        #expect(three.outerCorners(of: 2) == [.bottomLeading, .bottomTrailing])
+        let seven = GalleryLayout(count: 7)
+        #expect(seven.outerCorners(of: 3) == [.bottomTrailing], "the \"+N\" tile is the last corner")
+        #expect(seven.outerCorners(of: 4).isEmpty, "no tile is drawn past the fourth")
+    }
+
+    /// Outer corners follow the frame's radius less its width; the rest meet another tile.
+    @Test func aTilesRadiiFollowTheFrameOnItsOuterCorners() {
+        let frame = DesignTokens.Radius.bubble
+        let outer = frame - DesignTokens.Layout.galleryOutlineWidth
+        let inner = DesignTokens.Layout.galleryInnerCornerRadius
+        let radii = GalleryTileShape.radii(of: [.topLeading], galleryRadius: frame)
+        #expect(radii == RectangleCornerRadii(topLeading: outer, bottomLeading: inner, bottomTrailing: inner, topTrailing: inner))
+        #expect(GalleryTileShape.radii(of: .all, galleryRadius: 1).topLeading == 0, "never below zero")
     }
 }

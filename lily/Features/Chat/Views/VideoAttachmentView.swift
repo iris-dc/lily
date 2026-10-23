@@ -10,6 +10,7 @@ struct VideoAttachmentView: View {
     let loader: AttachmentLoader
     let onTap: () -> Void
     @State private var picture = AttachmentImageLoad()
+    @Environment(\.viewerHero) private var hero
 
     var body: some View {
         Button(action: onTap) {
@@ -29,6 +30,7 @@ struct VideoAttachmentView: View {
                                through: loader,
                                available: attachment.thumbnailUrl != nil)
         }
+        .onChange(of: picture.image, initial: true) { _, image in hero?.noteThumbnail(image, for: attachment.id) }
         .accessibilityLabel(AppBranding.Chat.Attachments.video)
         .accessibilityIdentifier(AccessibilityIdentifiers.messageAttachmentVideo(id: attachment.id))
     }

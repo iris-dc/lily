@@ -12,6 +12,8 @@ struct VideoPlayerPage: View {
     let message: ChatMessage
     let loader: AttachmentLoader
     let isCurrent: Bool
+    /// The tile's thumbnail, drawn where the clip will play until it does.
+    var poster: UIImage?
     @State private var player: AVPlayer?
     @State private var previewURL: URL?
     @State private var progress = 0.0
@@ -34,12 +36,22 @@ struct VideoPlayerPage: View {
             VideoPlayer(player: player)
                 .ignoresSafeArea()
                 .accessibilityLabel(AppBranding.Chat.Attachments.video)
-        } else if failed {
-            Image(systemName: DesignTokens.Symbols.videoPlaceholder)
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
         } else {
-            ProgressRing(progress: progress, size: DesignTokens.Layout.downloadRingSize)
+            ZStack {
+                if let poster {
+                    Image(uiImage: poster)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                if failed {
+                    Image(systemName: DesignTokens.Symbols.videoPlaceholder)
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ProgressRing(progress: progress, size: DesignTokens.Layout.downloadRingSize)
+                }
+            }
         }
     }
 

@@ -154,6 +154,12 @@ final class MockGroupRepository: GroupRepository {
         return marker
     }
 
+    /// A new line in the room: the group's last message moves to it, as the backend's bookkeeping does after a send.
+    func noteMessage(_ message: ChatMessage, in groupID: String) {
+        guard let moved = find(groupID)?.noting(message) else { return }
+        _ = store(moved)
+    }
+
     private func admit(_ group: SportGroup, via: String) throws -> SportGroup {
         if group.isMember { return group }
         guard !group.isFull else { throw AppError.groupFull }

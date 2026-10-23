@@ -7,7 +7,7 @@ import Observation
 /// rules, one request at a time, judged against the group-changes version), so a tab that reappears reuses what it
 /// already has.
 @Observable
-final class MyGroupsStore: SessionObserver {
+final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
     /// Most recently active first, as the backend orders Mine.
     private(set) var groups: [SportGroup] = []
     /// Counts the loads that answered. The unread set follows this, not `groups`: a local `add` or `replace` carries
@@ -87,9 +87,17 @@ final class MyGroupsStore: SessionObserver {
         try await repository.groups(in: .mine, cursor: nil, near: nil).items
     }
 
-    /// The answer replaces what is held; `loadVersion` tells the unread set a load, not a local change, did it.
+    /// The answer replaces what is held, in the backend's order, but for a room with a last message noted here after the
+    /// request went out: it keeps that message and its place; `loadVersion` tells the unread set a load, not a local
+    /// change, did it.
     private func applyMine(_ loaded: [SportGroup]) {
+        let held = groups
         groups = loaded
+        for stored in held {
+            guard let index = groups.firstIndex(where: { $0.id == stored.id }) else { continue }
+            let kept = groups[index].keepingLaterLastMessage(of: stored)
+            if kept != groups[index] { move(kept, from: index) }
+        }
         loadVersion += 1
         logger.info(.groups, "Loaded \(groups.count) groups")
     }
@@ -123,6 +131,21 @@ final class MyGroupsStore: SessionObserver {
     func apply(_ update: SportGroup) {
         guard let stored = groups.first(where: { $0.id == update.id }) else { return }
         replace(update.keepingMembership(of: stored))
+    }
+
+    /// A message landed in a room: a later one than the room knows moves it to where Mine's order puts it, at the top
+    /// for the newest line. Nothing else learns of it, since only the order changed.
+    func noteMessage(_ message: ChatMessage, in groupID: String) {
+        guard let index = groups.firstIndex(where: { $0.id == groupID }),
+              let moved = groups[index].noting(message) else { return }
+        move(moved, from: index)
+        logger.debug(.groups, "Group \(groupID) moved by message \(message.id)")
+    }
+
+    /// Puts the group at `index` back where Mine's order puts its new copy.
+    private func move(_ group: SportGroup, from index: Int) {
+        groups.remove(at: index)
+        groups.insert(group, at: groups.firstIndex { SportGroup.mineOrder(group, $0) } ?? groups.endIndex)
     }
 
     func remove(id: String) {

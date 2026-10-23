@@ -34,6 +34,10 @@ nonisolated extension DesignTokens.Layout {
     static let attachmentThumb: CGFloat = 72
     /// Gap between the tiles of a gallery in a bubble.
     static let gallerySpacing: CGFloat = 2
+    /// The accent frame around a message's pictures and videos, which also fills the gaps between its tiles.
+    static let galleryOutlineWidth: CGFloat = 3
+    /// The corners of a tile that meet another tile; the gallery's own corners follow its frame.
+    static let galleryInnerCornerRadius: CGFloat = 4
     /// A single picture in a bubble is never taller than this; a tall one gets narrower instead.
     static let galleryMaxHeight: CGFloat = 320
     /// Width of a gallery as a share of the list: with the bubble's padding and another sender's avatar column it
@@ -45,11 +49,10 @@ nonisolated extension DesignTokens.Layout {
     static let stripBadgeSize: CGFloat = 22
     /// How far a picture in the viewer may be zoomed in.
     static let viewerMaxZoom: CGFloat = 4
-    /// How far up or down the viewer is dragged, the throw included, before letting go closes it; also where its fade
-    /// and shrink end.
+    /// How far up or down the viewer is dragged, the throw included, before letting go closes it.
     static let viewerDismissDistance: CGFloat = 140
-    /// The size the page shrinks to as it is dragged the whole dismiss distance, and grows from as the viewer opens.
-    static let viewerDragMinimumScale: CGFloat = 0.9
+    /// How far up or down the dragged picture has gone when the black behind it has faded out, showing the chat.
+    static let viewerFadeDistance: CGFloat = 280
     /// The play badge over a video tile in a bubble, and its smaller sibling on a strip tile.
     static let playBadgeSize: CGFloat = 44
     static let stripPlayBadgeSize: CGFloat = 24
@@ -80,7 +83,4 @@ nonisolated extension DesignTokens.Opacity {
 nonisolated extension DesignTokens.Duration {
     /// How long a throw in the viewer is projected forward at the speed it was let go with, to count it in the distance.
     static let viewerThrowProjection: TimeInterval = 0.15
-    /// How long the viewer's closing page takes to fly off the screen: as long as it needs to leave at the speed it was
-    /// let go with, within these bounds.
-    static let viewerFlyOutDuration: ClosedRange<TimeInterval> = 0.15 ... 0.35
 }

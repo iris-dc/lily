@@ -26,6 +26,7 @@ struct BubbleContent<Media: View>: View {
                 }
                 if hasAttachments {
                     media()
+                        .environment(\.galleryCornerRadius, DesignTokens.Radius.quote)
                         .clipShape(.rect(cornerRadius: DesignTokens.Radius.quote))
                 }
                 if !text.isEmpty {

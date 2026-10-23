@@ -150,6 +150,8 @@ extension RealtimeSessionController {
     /// room, keeps just the cache's newest rows.
     private func applyMessage(_ message: ChatMessage, groupID: String) {
         cache.update(groupID: groupID) { $0.insert(message) }
+        // A room not cached never reaches the cache's own note.
+        store.noteMessage(message, in: groupID)
         guard openRoom?.groupID != groupID else { return }
         cache.compact(groupID: groupID)
         if !message.isSent(by: identity.currentUserID) { unread.markUnread(groupID: groupID, messageID: message.id) }

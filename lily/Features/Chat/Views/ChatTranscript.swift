@@ -3,7 +3,7 @@ import SwiftUI
 /// The scrolling list of a chat: day chips, bubbles, system rows and the caller's unsent messages, anchored to the
 /// bottom. Every scroll rule is `TranscriptScrollPolicy`'s, judged on each geometry report as a `Snapshot`. A tapped
 /// quote scrolls to the original (loading older pages when it lies before the history held) and washes it in the accent
-/// for a moment; pictures and videos open in `AttachmentViewerSheet`, a file in QuickLook
+/// for a moment; pictures and videos open in `AttachmentViewerSheet` out of their tile, a file in QuickLook
 /// once it is on the device; a long press on another member's bubble also offers Report and Block. While the reader
 /// follows the bottom (the policy's state, which only the reader's own scroll ends), every report that changes the
 /// content or the inset pins the end marker to the bottom; a reader of older messages is left where they are. A row
@@ -27,6 +27,8 @@ struct ChatTranscript: View {
     @State private var transcriptWidth: CGFloat?
     /// The picture or video open full screen.
     @State private var viewing: AttachmentSelection?
+    /// The tiles' places and thumbnails, which the viewer opens out of and closes into.
+    @State private var hero = ViewerHero()
     /// The file open in QuickLook, as the preview copy the loader named.
     @State private var previewURL: URL?
     /// The message whose report sheet is open.
@@ -70,6 +72,7 @@ struct ChatTranscript: View {
                                       action: { tracker.endMarkerY = $0 })
             }
         }
+        .environment(\.viewerHero, hero)
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .alignment)
         .scrollPosition($position)
@@ -99,7 +102,7 @@ struct ChatTranscript: View {
             await summarizeArrival(of: id)
         }
         .fullScreenCover(item: $viewing) { selection in
-            AttachmentViewerSheet(selection: selection, loader: viewModel.attachmentLoader)
+            AttachmentViewerSheet(selection: selection, loader: viewModel.attachmentLoader, hero: hero)
         }
         .attachmentQuickLook($previewURL)
         .sheet(item: $reporting) { target in

@@ -106,8 +106,15 @@ nonisolated enum MockChatFixtures {
     }
 
     /// The room as it stands when first opened; the caller wrote every fourth message. `count` deepens a room past
-    /// its fixture size (a demo of paging and scrolling); the system row keeps its place.
-    static func messages(groupID: String, callerID: String, callerName: String, now: Date, count: Int? = nil) -> [ChatMessage] {
+    /// its fixture size (a demo of paging and scrolling); the system row keeps its place. A room's last row is at
+    /// `lastMessageAt`, the moment its group says, so opening it never moves it in Mine; a silent group's rows end at its
+    /// creation, which Mine's order counts the same.
+    static func messages(groupID: String,
+                         callerID: String,
+                         callerName: String,
+                         now: Date,
+                         lastMessageAt: Date? = nil,
+                         count: Int? = nil) -> [ChatMessage] {
         if groupID == MockGroupFixtures.martaConversationID {
             return conversationMessages(callerID: callerID, callerName: callerName, now: now)
         }
@@ -115,7 +122,7 @@ nonisolated enum MockChatFixtures {
             return tournamentMessages(now: now)
         }
         let count = count ?? rowCount(for: groupID)
-        let start = now.addingTimeInterval(-Double(count) * secondsBetweenMessages)
+        let start = (lastMessageAt ?? now).addingTimeInterval(-Double(count - 1) * secondsBetweenMessages)
         var rows: [ChatMessage] = []
         var lineIndex = 0
         for index in 0..<count {

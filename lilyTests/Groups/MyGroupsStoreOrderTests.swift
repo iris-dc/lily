@@ -38,4 +38,39 @@ extension MyGroupsStoreTests {
 
         #expect(store.groups.map(\.id) == ["a", "k", "p", "z"])
     }
+
+    /// A line later than the room knows puts the room first; an older or repeated one, or a room not held, changes
+    /// nothing.
+    @Test func aLaterMessageMovesItsRoomToTheTop() async {
+        repository.result = .success(mine)
+        let store = makeStore()
+        await store.reload()
+
+        store.noteMessage(.fixture(id: "m9", groupID: "b", sentAt: Self.start + 10), in: "b")
+        #expect(store.groups.map(\.id) == ["b", "a"])
+        #expect(store.groups.first?.lastMessageId == "m9" && store.groups.first?.lastMessageAt == Self.start + 10)
+
+        store.noteMessage(.fixture(id: "m1", groupID: "a", sentAt: Self.start - 50), in: "a")
+        store.noteMessage(.fixture(id: "m9", groupID: "b", sentAt: Self.start + 10), in: "b")
+        store.noteMessage(.fixture(id: "x1", groupID: "x", sentAt: Self.start + 99), in: "x")
+        #expect(store.groups.map(\.id) == ["b", "a"])
+        #expect(store.groups.last?.lastMessageAt == Self.start, "an older line leaves the room's own")
+    }
+
+    /// An answer that left before a line was noted keeps the noted line and its place; a later line in the answer wins.
+    @Test func aLoadKeepsALaterMessageNotedWhileItWasOut() async {
+        repository.result = .success(mine)
+        let store = makeStore()
+        await store.reload()
+        store.noteMessage(.fixture(id: "m9", groupID: "b", sentAt: Self.start + 10), in: "b")
+
+        await store.reload()
+        #expect(store.groups.map(\.id) == ["b", "a"])
+        #expect(store.groups.first?.lastMessageId == "m9")
+
+        repository.result = .success([.fixture(id: "a", lastMessageId: "m20", lastMessageAt: Self.start + 20, role: .member),
+                                      .fixture(id: "b", createdAt: Self.start.addingTimeInterval(-100), role: .admin)])
+        await store.reload()
+        #expect(store.groups.map(\.id) == ["a", "b"])
+    }
 }
