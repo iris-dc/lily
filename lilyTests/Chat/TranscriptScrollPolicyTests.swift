@@ -19,6 +19,7 @@ struct TranscriptScrollPolicyTests {
         Snapshot(offsetY: offsetY,
                  contentHeight: contentHeight,
                  bottomInset: bottomInset,
+                 visibleHeight: 800 - bottomInset,
                  isAtBottom: isAtBottom,
                  isNearTop: isNearTop)
     }
@@ -58,7 +59,7 @@ struct TranscriptScrollPolicyTests {
 
     /// The prepend is compensated by the height it added, measured against the reader's latest offset.
     @Test func restoresThePlaceAfterAnOlderPageWasPrepended() {
-        var policy = settled()
+        var policy = reading()
         policy.willLoadOlder(at: snapshot(offsetY: 10, isAtBottom: false, isNearTop: true), oldestID: oldest)
         let stillWaiting = snapshot(offsetY: 40, isAtBottom: false, isNearTop: true)
         #expect(policy.geometryChanged(from: snapshot(), to: stillWaiting, hasRows: true, canLoadOlder: true, oldestID: oldest)
@@ -71,7 +72,7 @@ struct TranscriptScrollPolicyTests {
 
     /// While a page is pending, nothing else (not even another load) is asked for.
     @Test func holdsOtherActionsWhileAPageIsPending() {
-        var policy = settled()
+        var policy = reading()
         policy.willLoadOlder(at: snapshot(offsetY: 0, isAtBottom: false, isNearTop: true), oldestID: oldest)
         let nearTop = snapshot(offsetY: 0, isAtBottom: false, isNearTop: true)
         #expect(policy.geometryChanged(from: snapshot(), to: nearTop, hasRows: true, canLoadOlder: true, oldestID: oldest)
@@ -84,7 +85,7 @@ struct TranscriptScrollPolicyTests {
     /// Content growing below the reader during the round trip (a live line) is no prepend: it becomes the baseline and
     /// only the page is compensated.
     @Test func bottomGrowthWhileAnOlderPageIsPendingIsNotAPrepend() {
-        var policy = settled()
+        var policy = reading()
         let waiting = snapshot(offsetY: 10, isAtBottom: false, isNearTop: true)
         policy.willLoadOlder(at: waiting, oldestID: oldest)
         let grewBelow = snapshot(offsetY: 10, contentHeight: 2_060, isAtBottom: false, isNearTop: true)
@@ -99,7 +100,7 @@ struct TranscriptScrollPolicyTests {
 
     /// The model holds the page before the layout grows; a report in between keeps the restore and follows the reader.
     @Test func aPageHeldButNotYetLaidOutKeepsTheRestoreWaiting() {
-        var policy = settled()
+        var policy = reading()
         policy.willLoadOlder(at: snapshot(offsetY: 10, isAtBottom: false, isNearTop: true), oldestID: oldest)
         let held = snapshot(offsetY: 25, isAtBottom: false, isNearTop: true)
         #expect(policy.geometryChanged(from: snapshot(), to: held, hasRows: true, canLoadOlder: true, oldestID: older) == .none)
@@ -110,7 +111,7 @@ struct TranscriptScrollPolicyTests {
     }
 
     @Test func aFailedPageDropsTheRestoreAndBottomGrowthIsThenPlainGeometry() {
-        var policy = settled()
+        var policy = reading()
         policy.willLoadOlder(at: snapshot(offsetY: 300, isAtBottom: false, isNearTop: true), oldestID: oldest)
         policy.didNotLoadOlder()
         #expect(policy.pendingRestore == nil)
@@ -121,36 +122,41 @@ struct TranscriptScrollPolicyTests {
         #expect(policy.pendingRestore == nil)
     }
 
-    /// The keyboard or a growing composer changes the bottom inset; a list at the bottom stays at the bottom.
-    @Test func followsAnInsetChangeOnlyWhileAtTheBottom() {
+    /// The keyboard or a growing composer changes the bottom inset; a reader following the bottom stays at it, both
+    /// ways, and a reader of older messages is left alone.
+    @Test func followsAnInsetChangeOnlyWhileFollowing() {
         var policy = settled()
         let before = snapshot(bottomInset: 80)
         let keyboardUp = snapshot(bottomInset: 380)
         #expect(policy.geometryChanged(from: before, to: keyboardUp, hasRows: true, canLoadOlder: true, oldestID: oldest)
                 == .scrollToBottom)
+        var reader = reading()
         let readingBefore = snapshot(offsetY: 500, isAtBottom: false)
         let readingAfter = snapshot(offsetY: 500, bottomInset: 380, isAtBottom: false)
-        #expect(policy.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
+        #expect(reader.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
                 == .none)
-        // A shrinking inset (the keyboard going, the composer back to one line) uncovers content; nothing to pin.
+        // A shrinking inset (the keyboard going, the composer back to one line) moves the bottom too: a pin holds its
+        // offset, so nothing else settles it.
         #expect(policy.geometryChanged(from: keyboardUp, to: before, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .none)
+                == .scrollToBottom)
     }
 
     /// A block hiding rows, or a tombstone shorter than its bubble, shrinks the content.
-    @Test func followsAContentShrinkOnlyWhileAtTheBottom() {
+    @Test func followsAContentShrinkOnlyWhileFollowing() {
         var policy = settled()
         let shrunk = snapshot(contentHeight: 1_700)
         #expect(policy.geometryChanged(from: snapshot(), to: shrunk, hasRows: true, canLoadOlder: true, oldestID: oldest)
                 == .scrollToBottom)
+        var reader = reading()
         let readingBefore = snapshot(offsetY: 500, isAtBottom: false)
         let readingAfter = snapshot(offsetY: 500, contentHeight: 1_700, isAtBottom: false)
-        #expect(policy.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
+        #expect(reader.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
                 == .none)
     }
 
-    /// Only the caller's own row fetches a reader who scrolled away, once its growth is laid out; another member's row
-    /// or a note leaves them reading. The follow is spent by that growth, and an own row appended at the bottom sets none.
+    /// Only the caller's own row fetches a reader who scrolled away, once its growth is laid out, and they follow the
+    /// bottom once the slide rests there; another member's row or a note leaves them reading. An own row arriving for
+    /// a reader who follows is pinned like any growth.
     @Test func ownRowsBringAReaderWhoScrolledAwayBack() {
         let readingBefore = snapshot(offsetY: 500, isAtBottom: false)
         let readingAfter = snapshot(offsetY: 500, contentHeight: 2_300, isAtBottom: false)
@@ -160,8 +166,8 @@ struct TranscriptScrollPolicyTests {
         let cases: [(ChatRow?, Bool)] = [(unsent, true), (bubble(isOwn: true), true), (bubble(isOwn: false), false),
                                          (note, false), (.day(Date()), false), (nil, false)]
         for (row, follows) in cases {
-            var policy = settled()
-            policy.rowAppended(row, isAtBottom: false)
+            var policy = reading()
+            policy.rowArrived(row)
             let action = policy.geometryChanged(from: readingBefore,
                                                 to: readingAfter,
                                                 hasRows: true,
@@ -169,37 +175,35 @@ struct TranscriptScrollPolicyTests {
                                                 oldestID: oldest)
             #expect(action == (follows ? .animateToBottom : .none), "\(row?.id ?? "nil")")
             #expect(policy.geometryChanged(from: readingAfter, to: later, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                    == .none, "nothing left to follow")
+                    == .none, "no pin cuts the slide short")
+            policy.scrollPhaseChanged(to: .resting, at: snapshot(contentHeight: 2_600, isAtBottom: follows))
+            #expect(policy.isFollowing == follows, "fetched back, the reader follows once the slide rests")
         }
-        var atBottom = settled()
-        atBottom.rowAppended(bubble(isOwn: true), isAtBottom: true)
-        #expect(atBottom.geometryChanged(from: readingBefore,
-                                         to: readingAfter,
-                                         hasRows: true,
-                                         canLoadOlder: true,
-                                         oldestID: oldest) == .none)
+        var following = settled()
+        following.rowArrived(bubble(isOwn: true))
+        let grown = snapshot(contentHeight: 2_300)
+        #expect(following.geometryChanged(from: snapshot(), to: grown, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
     }
 
-    /// Within `atBottomThreshold` of the content end is at the bottom; within `olderPageTriggerDistance` of the top,
-    /// the top inset included, is near it.
+    /// Within `olderPageTriggerDistance` of the top, the top inset included, is near it.
     @Test func thresholdsMapGeometryToTheFlags() {
         var geometry = ScrollGeometry(contentOffset: CGPoint(x: 0, y: 1_180),
                                       contentSize: CGSize(width: 390, height: 2_000),
                                       contentInsets: EdgeInsets(top: 50, leading: 0, bottom: 80, trailing: 0),
                                       containerSize: CGSize(width: 390, height: 800))
         let reading = Snapshot(geometry)
-        #expect(reading.isAtBottom, "the visible bottom is 20 pt above the end")
         #expect(!reading.isNearTop)
         #expect(reading.offsetY == 1_180 && reading.contentHeight == 2_000 && reading.bottomInset == 80)
-        geometry.contentOffset.y = 1_170
-        #expect(!Snapshot(geometry).isAtBottom, "30 pt short of the end")
+        #expect(reading.visibleHeight == 800)
+        #expect(!reading.isAtBottom, "the end marker says where the bottom is, never the reported height")
         geometry.contentOffset.y = -50
         #expect(Snapshot(geometry).isNearTop, "the top inset exactly")
         geometry.contentOffset.y = 151
         #expect(!Snapshot(geometry).isNearTop, "201 pt past the top")
     }
 
-    private func bubble(isOwn: Bool) -> ChatRow {
+    func bubble(isOwn: Bool) -> ChatRow {
         .message(MessageRow(message: .fixture(id: "m1", senderUserID: isOwn ? "me" : "u-2"),
                             isOwn: isOwn,
                             senderName: isOwn ? "You" : "Marta",
@@ -210,6 +214,14 @@ struct TranscriptScrollPolicyTests {
     func settled() -> TranscriptScrollPolicy {
         var policy = TranscriptScrollPolicy()
         _ = policy.geometryChanged(from: .empty, to: snapshot(), hasRows: true, canLoadOlder: true, oldestID: oldest)
+        return policy
+    }
+
+    /// A settled policy whose reader scrolled up and let go there: they read older messages.
+    func reading() -> TranscriptScrollPolicy {
+        var policy = settled()
+        policy.scrollPhaseChanged(to: .touched, at: snapshot())
+        policy.scrollPhaseChanged(to: .resting, at: snapshot(offsetY: 500, isAtBottom: false))
         return policy
     }
 }

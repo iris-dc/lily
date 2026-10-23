@@ -3,21 +3,24 @@ import SwiftUI
 /// The scrolling list of a chat: day chips, bubbles, system rows and the caller's unsent messages, anchored to the
 /// bottom. Every scroll rule is `TranscriptScrollPolicy`'s, judged on each geometry report as a `Snapshot`. A tapped
 /// quote scrolls to the original (loading older pages when it lies before the history held) and washes it in the accent
-/// for a moment; pictures and videos open in `AttachmentViewerSheet`, a file in QuickLook once it is on the device; a
-/// long press on another member's bubble also offers Report and Block. A row appended at the bottom lands below the
-/// fold (the anchor that keeps the bottom pinned through every other size change is lifted while the row arrives) and
-/// the transcript slides down to it with the arrival's spring while the row fades and scales in
-/// (`TranscriptArrivals` says which rows arrived, `ChatRowView` draws them from a clock); a sent message keeps its
-/// bubble's row (`ChatRow.id`) and its height, so the confirmation swaps the bubble in place, moves nothing and leaves
-/// the arrival running.
+/// for a moment; pictures and videos open in `AttachmentViewerSheet`, zooming out of their tile, a file in QuickLook
+/// once it is on the device; a long press on another member's bubble also offers Report and Block. While the reader
+/// follows the bottom (the policy's state, which only the reader's own scroll ends), every report that changes the
+/// content or the inset pins the end marker to the bottom; a reader of older messages is left where they are. A row
+/// that arrives (`TranscriptArrivals`) grows from no height to its own on the arrival clock (`ChatRowView`), so with
+/// each frame pinned the rows above move up with it, and nothing slides on its own; a sent message keeps its bubble's
+/// row (`ChatRow.id`) and its height, so the confirmation swaps the bubble in place and moves nothing. Every report while
+/// a row arrives, and in the first moments on screen, is logged at debug, and a line per arrival sums the motion up
+/// (`ArrivalMotion`).
 struct ChatTranscript: View {
     let viewModel: ChatViewModel
     let dependencies: AppDependencies
-    @State private var position = ScrollPosition(edge: .bottom)
-    @State private var tracker = ScrollTracker()
+    /// The id of the zero-height view after the rows, which a pin brings to the bottom.
+    static let endMarkerID = "transcript-end"
+    /// Bound to the bottom edge until the first pin; a pin binds it to the end marker.
+    @State var position = ScrollPosition(edge: .bottom)
+    @State var tracker = ScrollTracker()
     @State private var arrivals = ArrivalTracker()
-    /// The last row of the layout the anchor last pinned; a different last row is an append in progress.
-    @State private var pinnedLastRowID: String?
     /// The message a tapped quote led to, while its wash shows.
     @State private var highlightedMessageID: String?
     /// The list's usable width, for the rows' fractions (`\.transcriptWidth`); `nil` before the first layout.
@@ -30,84 +33,76 @@ struct ChatTranscript: View {
     @State private var reporting: ReportTarget?
     /// The row whose sender awaits the caller's word on a block.
     @State private var blocking: MessageRow?
+    /// The namespace the viewer zooms out of a tile in.
+    @Namespace private var attachmentZoom
 
     var body: some View {
         let rows = viewModel.rows
-        let arrived = arrivals.update(to: rows,
-                                      history: .init(isInFlight: viewModel.isLoadingHistory,
-                                                     finished: viewModel.historyLoadsFinished))
-        let isAppending = tracker.policy.hasSettled && rows.last?.id != pinnedLastRowID
+        let arrived = noteArrivals(in: rows)
+        let lastRowArrived = rows.last.map { arrived.start(of: $0.id) != nil } ?? false
         ScrollView {
-            LazyVStack(spacing: DesignTokens.Spacing.xs) {
-                olderPageSlot
-                ForEach(rows) { row in
-                    ChatRowView(row: row,
-                                viewModel: viewModel,
-                                dependencies: dependencies,
-                                highlightedMessageID: highlightedMessageID,
-                                onTapQuote: reveal,
-                                onTapAttachment: { viewing = $0 },
-                                onOpenFile: { previewURL = $0 },
-                                onReport: { reporting = $0 },
-                                onBlock: { blocking = $0 },
-                                arrivedAt: arrived.start(of: row.id))
-                        .transition(MessageRemovalTransition(for: row))
+            // No spacing, so the end marker is the content's end and pins leave the last row where the padding puts it.
+            VStack(spacing: 0) {
+                LazyVStack(spacing: DesignTokens.Spacing.xs) {
+                    olderPageSlot
+                    ForEach(rows) { row in
+                        ChatRowView(row: row,
+                                    viewModel: viewModel,
+                                    dependencies: dependencies,
+                                    highlightedMessageID: highlightedMessageID,
+                                    onTapQuote: reveal,
+                                    onTapAttachment: { viewing = $0 },
+                                    onOpenFile: { previewURL = $0 },
+                                    onReport: { reporting = $0 },
+                                    onBlock: { blocking = $0 },
+                                    arrivedAt: arrived.start(of: row.id))
+                            .transition(MessageRemovalTransition(for: row))
+                    }
                 }
+                .scrollTargetLayout()
+                .environment(\.attachmentZoom, attachmentZoom)
+                .padding(.horizontal, DesignTokens.Layout.screenMargin)
+                .padding(.vertical, DesignTokens.Spacing.md)
+                // The content's end, which pins bring to the bottom and whose place says whether the reader is there:
+                // never lazy, so the scroll view always knows where it is.
+                Color.clear
+                    .frame(height: 0)
+                    .id(Self.endMarkerID)
+                    .onGeometryChange(for: CGFloat.self,
+                                      of: { $0.frame(in: .scrollView).minY },
+                                      action: { tracker.endMarkerY = $0 })
             }
-            .scrollTargetLayout()
-            // Animates a change of the last row only (a discarded bubble shrinking out, the layout around an appended
-            // one): a prepended page or the first load keep the restore and the first pin exact, and both leave the last
-            // row alone.
-            .animation(tracker.policy.hasSettled ? .messageArrival : nil, value: rows.last?.id)
-            .padding(.horizontal, DesignTokens.Layout.screenMargin)
-            .padding(.vertical, DesignTokens.Spacing.md)
         }
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .alignment)
-        .defaultScrollAnchor(isAppending ? nil : .bottom, for: .sizeChanges)
         .scrollPosition($position)
         .measuringTranscriptWidth($transcriptWidth)
         .onScrollGeometryChange(for: TranscriptScrollPolicy.Snapshot.self,
-                                of: TranscriptScrollPolicy.Snapshot.init) { previous, current in
-            tracker.geometry = current
-            let action = tracker.policy.geometryChanged(from: previous,
-                                                        to: current,
-                                                        hasRows: !rows.isEmpty,
-                                                        canLoadOlder: viewModel.hasOlder && !viewModel.isLoadingOlder,
-                                                        oldestID: viewModel.oldestID)
-            // A pin puts the bottom where the anchor would hold it, so the anchor comes back with it.
-            if action == .scrollToBottom { reanchor("by the pin") }
-            // Every report of an arrival, and every action: a phone's log tells in which order the row's layout, the
-            // slide's frames and the anchor's return came.
-            if action != .none || isAppending {
-                let height = Int(current.contentHeight), offset = Int(current.offsetY), inset = Int(current.bottomInset)
-                let geometry = "height \(height), offset \(offset), inset \(inset), position \(positionState)"
-                viewModel.logger.debug(.chat, "Transcript \(action) at \(geometry) in group \(viewModel.group.id)")
-            }
-            apply(action, lastRow: rows.last?.id)
+                                of: TranscriptScrollPolicy.Snapshot.init) { _, current in
+            geometryChanged(to: current, laidOutRows: rows.count)
         }
+        .onScrollGeometryChange(for: CGFloat.self,
+                                of: { $0.containerSize.height + $0.contentInsets.top },
+                                action: { _, line in tracker.composerLine = line })
+        .onScrollPhaseChange { old, new in scrollPhaseChanged(from: old, to: new) }
         // Covered by another screen, the scroll view takes the keyboard's going without settling on the new bottom until
         // it is back on screen, in a frame the user sees: a transcript that left at the bottom comes back pinned to it.
         .onAppear {
-            guard tracker.policy.hasSettled, tracker.geometry.isAtBottom else { return }
-            viewModel.logger.debug(.chat, "Transcript back on screen at the bottom, pinned in group \(viewModel.group.id)")
-            apply(.scrollToBottom, lastRow: rows.last?.id)
+            tracker.logsEveryReport(for: AppConfig.Chat.transcriptOpeningLogWindow)
+            guard tracker.policy.isFollowing else { return }
+            log("back on screen at the bottom, pinned")
+            apply(.scrollToBottom)
         }
         .scrollDismissesKeyboard(.interactively)
         .accessibilityIdentifier(AccessibilityIdentifiers.chatList)
-        .onChange(of: rows.last?.id, initial: true) { _, _ in
-            tracker.policy.rowAppended(rows.last, isAtBottom: tracker.geometry.isAtBottom)
+        .onChange(of: rows.count) { old, new in
+            log("rows \(old) to \(new), the last \(lastRowArrived ? "arrived" : "loaded"), \(describe(tracker.geometry))")
         }
-        // The anchor is off while the newest row arrives and back once the arrival has settled, or sooner with a pin: a
-        // size change in between must not pin the row before the slide reaches it. A task that wakes as a newer row
-        // is appended leaves that row to its own task.
         .task(id: rows.last?.id) { [id = rows.last?.id] in
-            guard (try? await Task.sleep(for: .seconds(MessageArrivalCurve.standard.settlingDuration))) != nil,
-                  viewModel.rows.last?.id == id else { return }
-            reanchor("after the arrival")
+            await summarizeArrival(of: id)
         }
         .fullScreenCover(item: $viewing) { selection in
-            AttachmentViewerSheet(selection: selection, loader: viewModel.attachmentLoader)
+            AttachmentViewerSheet(selection: selection, loader: viewModel.attachmentLoader, zoom: attachmentZoom)
         }
         .attachmentQuickLook($previewURL)
         .sheet(item: $reporting) { target in
@@ -118,6 +113,19 @@ struct ChatTranscript: View {
                             title: { AppBranding.Moderation.blockConfirmationTitle(name: $0.senderName) },
                             actions: blockButton(for:),
                             message: { _ in Text(AppBranding.Moderation.blockConfirmationMessage) })
+    }
+
+    /// The arrivals among `rows`, brought up to date while body runs (the first frame that draws an arriving row must
+    /// know when it arrived), and the newest one watched for the log from the geometry last reported.
+    /// The policy hears of the arrival here too, before the row's first layout.
+    private func noteArrivals(in rows: [ChatRow]) -> TranscriptArrivals {
+        let arrived = arrivals.update(to: rows,
+                                      history: .init(isInFlight: viewModel.isLoadingHistory,
+                                                     finished: viewModel.historyLoadsFinished))
+        if let last = rows.last, arrived.start(of: last.id) != nil, tracker.watch(last.id) {
+            tracker.policy.rowArrived(last)
+        }
+        return arrived
     }
 
     /// The block confirmation's one action: blocks the row's sender for the caller, in every room at once.
@@ -136,82 +144,7 @@ struct ChatTranscript: View {
         }
     }
 
-    private func apply(_ action: TranscriptScrollPolicy.Action, lastRow: String?) {
-        switch action {
-        case .none:
-            break
-        case .scrollToBottom:
-            position.scrollTo(edge: .bottom)
-            // A pin that moved nothing (the anchor had the bottom already) brings no report to release it. Set from a
-            // geometry report, the pin is applied by this frame's follow-up layout, so a turn later is after it.
-            Task { @MainActor in releaseLandedPosition() }
-        case .animateToBottom:
-            slide(to: lastRow)
-        case .scrollTo(let y):
-            position.scrollTo(y: y)
-        case .loadOlder:
-            tracker.policy.willLoadOlder(at: tracker.geometry, oldestID: viewModel.oldestID)
-            Task { await loadOlder() }
-        }
-    }
-
-    /// Puts the anchor back on the newest row, from a pin (the first settle's, one during an arrival) or the arrival's
-    /// end; nothing to do when it is there already.
-    private func reanchor(_ occasion: String) {
-        let id = viewModel.rows.last?.id
-        guard pinnedLastRowID != id else { return }
-        pinnedLastRowID = id
-        tracker.policy.anchorReturned()
-        viewModel.logger.debug(.chat, "Transcript re-anchored \(occasion) in group \(viewModel.group.id)")
-    }
-
-    /// One slide per row, issued a turn after the geometry report that asked for it, where a scroll would land at once.
-    /// On a position still bound to the bottom edge a scroll to that edge has no change to animate: a new row's slide
-    /// frees the position first (cutting a slide still running short), while a later layout change of the same row (its
-    /// second pass, a picture that loaded) rides on the binding, which keeps the bottom. The slide's completion releases
-    /// the binding unless a newer row's slide owns it by then.
-    private func slide(to row: String?) {
-        if position.edge != nil {
-            guard tracker.slidingRowID != row else { return }
-            releaseLandedPosition()
-        }
-        tracker.slidingRowID = row
-        Task { @MainActor in
-            let group = viewModel.group.id
-            viewModel.logger.debug(.chat, "Transcript slide issued with the position \(positionState) in group \(group)")
-            withAnimation(.messageArrival, completionCriteria: .logicallyComplete) {
-                position.scrollTo(edge: .bottom)
-            } completion: {
-                let own = tracker.slidingRowID == row
-                let whose = own ? "its own" : "a newer row's"
-                viewModel.logger.debug(.chat, "Transcript slide completed, \(whose) in group \(group)")
-                if own { releaseLandedPosition() }
-            }
-        }
-    }
-
-    /// The position's binding, for the log: `bound` to the bottom edge, else `free`.
-    private var positionState: String {
-        position.edge == nil ? "free" : "bound"
-    }
-
-    /// A pin or a slide binds the position to the bottom edge, which would hold the bottom through the next appended
-    /// row's layout; released once it has landed (a turn after a pin, at a slide's completion), a position bound to
-    /// nothing leaves that row below the fold, where the policy's slide reaches it. Never while a slide runs, which a
-    /// release cancels before its first frame, and never in the update that appends a row, after which the slide did
-    /// not animate.
-    private func releaseLandedPosition() {
-        guard position.edge != nil else { return }
-        guard tracker.geometry.isAtBottom else {
-            viewModel.logger.debug(.chat, "Transcript position kept bound, not at the bottom, in group \(viewModel.group.id)")
-            return
-        }
-        position = ScrollPosition()
-        let offset = Int(tracker.geometry.offsetY)
-        viewModel.logger.debug(.chat, "Transcript position released at offset \(offset) in group \(viewModel.group.id)")
-    }
-
-    private func loadOlder() async {
+    func loadOlderPage() async {
         let loaded = await viewModel.loadOlder()
         if !loaded { tracker.policy.didNotLoadOlder() }
     }
@@ -220,6 +153,7 @@ struct ChatTranscript: View {
     private func reveal(_ quote: ReplyQuote) {
         Task {
             guard await viewModel.revealQuoted(id: quote.messageId) else { return }
+            log("scrolls to a quoted message")
             let rowID = viewModel.rows.first { $0.messageID == quote.messageId }?.id ?? quote.messageId
             withAnimation(.smooth(duration: DesignTokens.Duration.fast)) {
                 position.scrollTo(id: rowID, anchor: .center)
@@ -232,26 +166,71 @@ struct ChatTranscript: View {
 }
 
 extension TranscriptScrollPolicy.Snapshot {
-    /// The geometry the policy judges, with the thresholds applied: within `atBottomThreshold` of the content end is at
-    /// the bottom, within `olderPageTriggerDistance` of the top (insets included) is near the top.
+    /// The geometry the policy judges: within `olderPageTriggerDistance` of the top (insets included) is near the top.
+    /// Whether it is at the bottom is the end marker's to say (`ChatTranscript` sets it), never the reported height's.
     nonisolated init(_ geometry: ScrollGeometry) {
-        let visibleBottom = geometry.visibleRect.maxY
         let distanceFromTop = geometry.contentOffset.y + geometry.contentInsets.top
         self.init(offsetY: geometry.contentOffset.y,
                   contentHeight: geometry.contentSize.height,
                   bottomInset: geometry.contentInsets.bottom,
-                  isAtBottom: visibleBottom >= geometry.contentSize.height - DesignTokens.Layout.atBottomThreshold,
+                  visibleHeight: geometry.containerSize.height,
+                  isAtBottom: false,
                   isNearTop: distanceFromTop <= DesignTokens.Layout.olderPageTriggerDistance)
     }
 }
 
 /// The scroll state every geometry report mutates, held by reference so a tick never re-runs body (a value in `@State`
-/// would).
-@MainActor private final class ScrollTracker {
+/// would), and the motion of the rows arriving, for the log.
+@MainActor final class ScrollTracker {
     var policy = TranscriptScrollPolicy()
     var geometry = TranscriptScrollPolicy.Snapshot.empty
-    /// The row the latest slide was issued for.
-    var slidingRowID: String?
+    /// The top of the end marker and of the composer, in the scroll view's frame: the content's end is on the composer
+    /// when the marker is no lower than the composer's top.
+    var endMarkerY: CGFloat = 0
+    var composerLine: CGFloat = 0
+
+    /// Whether the content's end is on screen above the composer, within `atBottomThreshold`.
+    var endIsOnComposer: Bool {
+        endMarkerY <= composerLine + DesignTokens.Layout.atBottomThreshold
+    }
+    /// The arrivals being watched, by row id; at most the newest and one it cut short.
+    private(set) var motions: [String: ArrivalMotion] = [:]
+    /// The newest row watched, so a later run of body does not watch it again once its summary is out.
+    private var watchedRowID: String?
+    /// Every report until then is logged: the transcript's first moments on screen, when estimates and insets settle.
+    private var logsEveryReportUntil = Date.distantPast
+
+    func logsEveryReport(for window: TimeInterval) {
+        logsEveryReportUntil = .now + window
+    }
+
+    /// Whether this report goes to the log in full: a row is arriving, or the transcript has only just appeared.
+    var logsThisReport: Bool {
+        !motions.isEmpty || Date.now < logsEveryReportUntil
+    }
+
+    /// Starts watching the newest row's arrival from the geometry the transcript last reported. Called from body, which
+    /// is the first to know a row arrived (the geometry report of its first layout may come before any `onChange`);
+    /// repeated runs change nothing.
+    /// Whether the row is new to the watch.
+    @discardableResult
+    func watch(_ rowID: String?) -> Bool {
+        guard let rowID, rowID != watchedRowID else { return false }
+        watchedRowID = rowID
+        motions[rowID] = ArrivalMotion(rowID: rowID, offset: geometry.offsetY, contentHeight: geometry.contentHeight)
+        return true
+    }
+
+    func record(_ snapshot: TranscriptScrollPolicy.Snapshot) {
+        let now = Date.now
+        for id in motions.keys {
+            motions[id]?.record(offset: snapshot.offsetY, contentHeight: snapshot.contentHeight, at: now)
+        }
+    }
+
+    func finishWatching(_ rowID: String) -> ArrivalMotion? {
+        motions.removeValue(forKey: rowID)
+    }
 }
 
 /// The arrivals, held by reference and brought up to date while body runs: the first frame that draws an appended row

@@ -5,10 +5,22 @@ import Testing
 struct MessageArrivalCurveTests {
     private let curve = MessageArrivalCurve(duration: 0.35, bounce: 0.25, startScale: 0.8)
 
-    /// Nothing shows before the row arrived or at its first instant, so an appended row never flashes at full strength.
-    @Test func aRowStartsInvisibleAtItsStartScale() {
-        #expect(curve.frame(elapsed: -1) == MessageArrivalCurve.Frame(opacity: 0, scale: 0.8))
-        #expect(curve.frame(elapsed: 0) == MessageArrivalCurve.Frame(opacity: 0, scale: 0.8))
+    /// Nothing shows and nothing is taken before the row arrived or at its first instant, so an appended row never
+    /// flashes at full strength and the rows above start from where they were.
+    @Test func aRowStartsInvisibleAtItsStartScaleWithNoHeight() {
+        #expect(curve.frame(elapsed: -1) == MessageArrivalCurve.Frame(opacity: 0, scale: 0.8, reveal: 0))
+        #expect(curve.frame(elapsed: 0) == MessageArrivalCurve.Frame(opacity: 0, scale: 0.8, reveal: 0))
+    }
+
+    /// The height the row takes only ever grows, from nothing to all of it, so the rows above move up and never back.
+    @Test func theRowTakesItsHeightWithoutOvershoot() {
+        let frames = stride(from: 0.0, to: curve.settlingDuration, by: 1.0 / 120).map { curve.frame(elapsed: $0) }
+        for (earlier, later) in zip(frames, frames.dropFirst()) {
+            #expect(later.reveal >= earlier.reveal)
+        }
+        #expect(frames.allSatisfy { (0 ... 1).contains($0.reveal) })
+        #expect(curve.frame(elapsed: curve.duration).reveal > 0.9)
+        #expect(curve.frame(elapsed: curve.settlingDuration).reveal == 1)
     }
 
     @Test func aRowRestsOnceTheSpringHasSettled() {

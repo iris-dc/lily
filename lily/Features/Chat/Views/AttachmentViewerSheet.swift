@@ -3,33 +3,81 @@ import SwiftUI
 /// One message's pictures and videos over black, paged from the tapped one in the gallery's order, so the ones behind a
 /// "+N" tile are a swipe away; files stay cards that open in QuickLook. A picture page zooms (`ImageViewerPage`), a
 /// video page plays only while it is on screen (`VideoPlayerPage`); Close, the "n / m" position and Share sit in glass
-/// at the top. An accessibility container (`attachment-viewer`), so Close keeps its own identifier.
+/// at the top. It opens with the system's zoom out of the tapped tile and closes back into the tile of the page on
+/// screen. A drag closes it as in Photos (`ViewerDismissal`): the page follows the finger, fading the black and the
+/// controls, up or down, and sideways too for a single picture; sideways is the pager's or a video's scrubber's
+/// otherwise, which is why the zoom transition's own drag, which takes every direction, is off. A zoomed picture does
+/// not close on a drag (a double tap returns it to size first), nor does one being pinched. An accessibility container
+/// (`attachment-viewer`), so Close keeps its own identifier; VoiceOver's escape closes it too.
 struct AttachmentViewerSheet: View {
     let selection: AttachmentSelection
     let loader: AttachmentLoader
+    /// The tiles' namespace, which the zoom comes out of; `nil` opens it plainly.
+    var zoom: Namespace.ID?
     @Environment(\.dismiss) private var dismiss
     @State private var index: Int
     @State private var pictures = LoadedPictures()
+    /// The drag to close as it goes; reset when it ends or is cancelled, settling the page back.
+    @GestureState(resetTransaction: Transaction(animation: .smooth(duration: DesignTokens.Duration.fast)))
+    private var drag = ViewerDismissal.Drag()
+    /// Where the page was let go when the drag closes the viewer: it closes from there.
+    @State private var releasedAt: CGSize?
+    /// The pictures zoomed in or being pinched, which a drag does not close.
+    @State private var zoomedIDs: Set<String> = []
 
     private typealias Copy = AppBranding.Chat.Attachments
 
-    init(selection: AttachmentSelection, loader: AttachmentLoader) {
+    init(selection: AttachmentSelection, loader: AttachmentLoader, zoom: Namespace.ID? = nil) {
         self.selection = selection
         self.loader = loader
+        self.zoom = zoom
         _index = State(initialValue: selection.start)
     }
 
     var body: some View {
+        let shown = releasedAt ?? drag.carried
+        let progress = ViewerDismissal.progress(of: shown)
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color.black
+                .opacity(1 - progress)
+                .ignoresSafeArea()
             pages
+                .scaleEffect(1 - progress * (1 - DesignTokens.Layout.viewerDragMinimumScale))
+                .offset(shown)
             VStack {
                 controls
                 Spacer()
             }
+            .opacity(1 - progress)
         }
+        .simultaneousGesture(dismissDrag, isEnabled: !zoomedIDs.contains(current.id))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AccessibilityIdentifiers.attachmentViewer)
+        .accessibilityAction(.escape) { dismiss() }
+        .presentationBackground(.clear)
+        .interactiveDismissDisabled()
+        .zoomsFromAttachment(current.id, in: zoom)
+    }
+
+    private var carriesHorizontally: Bool {
+        ViewerDismissal.carriesHorizontally(pages: selection.media.count, isPicture: current.kind != .video)
+    }
+
+    /// The drag to close: carries the page while it carries, and on letting go closes from where the page is or lets the
+    /// gesture state settle it back.
+    private var dismissDrag: some Gesture {
+        DragGesture()
+            .updating($drag) { value, drag, _ in
+                drag.follow(value.translation, carriesHorizontally: carriesHorizontally)
+            }
+            .onEnded { value in
+                let whole = ViewerDismissal.Drag.reading(value.translation, carriesHorizontally: carriesHorizontally)
+                guard whole.carried != .zero,
+                      ViewerDismissal.closes(translation: value.translation, predictedEnd: value.predictedEndTranslation)
+                else { return }
+                releasedAt = whole.carried
+                dismiss()
+            }
     }
 
     private var current: Attachment { selection.media[index] }
@@ -49,9 +97,13 @@ struct AttachmentViewerSheet: View {
         if attachment.kind == .video {
             VideoPlayerPage(attachment: attachment, message: selection.message, loader: loader, isCurrent: isCurrent)
         } else {
-            ImageViewerPage(attachment: attachment, message: selection.message, loader: loader) {
-                pictures.byID[attachment.id] = $0
-            }
+            ImageViewerPage(attachment: attachment,
+                            message: selection.message,
+                            loader: loader,
+                            onLoaded: { pictures.byID[attachment.id] = $0 },
+                            onZoomed: { isZoomed in
+                                if isZoomed { zoomedIDs.insert(attachment.id) } else { zoomedIDs.remove(attachment.id) }
+                            })
         }
     }
 

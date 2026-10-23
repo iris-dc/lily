@@ -1,21 +1,43 @@
 import Foundation
 
-/// What the chat transcript's scroll position does after each geometry report and each appended row; pure, so the rules
-/// can be checked without a view. The newest row is pinned above the composer once the first page has laid out (the
-/// default bottom anchor ignores the composer's safe-area inset), an older page keeps what was on screen where it was,
-/// a grown inset or a shrink of the content while at the bottom re-pins it (the keyboard, a block hiding a sender's
-/// rows), growth below the fold while the reader was at the bottom (an appended row, which the transcript lets grow
-/// unanchored) is followed with the arrival's animation, and the page before is requested only once the reader has
-/// scrolled near the top after that first settle, never during the initial layout.
+/// What the chat transcript's scroll position does after each geometry report, each scroll phase and each appended row;
+/// pure, so the rules can be checked without a view. Following the bottom is a state, not a reading of the geometry: it
+/// starts with the first page's pin, any scroll that comes to rest away from the bottom ends it (the reader's, a tapped
+/// quote's, VoiceOver's), and any rest at the bottom resumes it. While the reader follows, every change of the content's
+/// height, of the bottom inset or of the visible height pins the bottom (a row growing in on the arrival clock, a lazy
+/// stack correcting its estimates, a picture loading, the keyboard, a window resized), so the newest row stays on the
+/// composer frame by frame and the rows above glide up with a row growing in. A report taken mid-layout, between a
+/// safe-area change and the inset that follows it, may read as away from the bottom; it changes nothing, since only a
+/// rest moves the state. A reader of older messages is left where they are, an older page keeps what was on screen
+/// where it was, and the page before is requested only once the reader has scrolled near the top after the first
+/// settle. The caller's own row, sent while they read older messages, slides them back down; the slide's rest resumes
+/// following and pins, wherever the growing row left it.
 nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     struct Snapshot: Equatable, Sendable {
         var offsetY: CGFloat
+        /// The content's height as SwiftUI reports it: in a lazy stack it includes estimates of rows not measured yet,
+        /// so it tells that the content changed, not where its end is.
         var contentHeight: CGFloat
         var bottomInset: CGFloat
+        /// The scroll view's height less its insets.
+        var visibleHeight: CGFloat
+        /// Whether the content's end is on the composer, within `atBottomThreshold`, as the transcript reads it from
+        /// where the end actually is on screen.
         var isAtBottom: Bool
         var isNearTop: Bool
 
-        static let empty = Snapshot(offsetY: 0, contentHeight: 0, bottomInset: 0, isAtBottom: true, isNearTop: false)
+        static let empty = Snapshot(offsetY: 0,
+                                    contentHeight: 0,
+                                    bottomInset: 0,
+                                    visibleHeight: 0,
+                                    isAtBottom: true,
+                                    isNearTop: false)
+
+        /// Whether the layout moved the bottom: the content, the inset or the visible height changed.
+        func movesTheBottom(from previous: Snapshot) -> Bool {
+            contentHeight != previous.contentHeight || bottomInset != previous.bottomInset
+                || visibleHeight != previous.visibleHeight
+        }
     }
 
     /// An older page on its way: the geometry the page is prepended to and the oldest message held when it was asked for.
@@ -24,24 +46,31 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
         let oldestID: String?
     }
 
+    /// The scroll's phase as the rules need it: the reader's finger on it, at rest, or anything else (a fling running
+    /// out, an animated scroll).
+    enum Phase: Equatable, Sendable {
+        case touched
+        case resting
+        case moving
+    }
+
     enum Action: Equatable, Sendable {
         case none
         /// Pin the bottom at once.
         case scrollToBottom
-        /// Slide to the bottom with the arrival's animation: rows above make room for the one that came.
+        /// Slide to the bottom with the arrival's animation: the caller's own row fetches a reader of older messages.
         case animateToBottom
         case scrollTo(y: CGFloat)
         case loadOlder
     }
 
     private(set) var hasSettled = false
-    /// The caller's own row was appended while they had scrolled away: the growth that lays it out is followed.
+    /// Whether the reader follows the bottom.
+    private(set) var isFollowing = false
+    /// The caller's own row arrived while they read older messages: the growth that lays it out is followed.
     private var followsNextGrowth = false
-    /// A slide was asked for and the anchor is still off: the first shrink before the anchor is back is the appended
-    /// row's layout correction (the bubble before loses its time line a pass after the row lands) and gets no pin, which
-    /// would snap the slide to its end. Reports of the scroll alone or of the composer's inset, which a fast display
-    /// delivers between the row's passes, leave the allowance standing.
-    private var awaitsSlideLayout = false
+    /// The slide that fetches the reader is under way: its rest is the bottom, wherever the row's growth left it.
+    private var isSliding = false
     /// The older page being prepended; cleared when the taller content has been laid out or the page brought nothing.
     private(set) var pendingRestore: PendingRestore?
 
@@ -55,19 +84,37 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
         pendingRestore = nil
     }
 
-    /// The caller's own row brings a reader who scrolled away back to the bottom once it is laid out; another member's
-    /// or a system row never does, so reading older messages is never interrupted. A reader at the bottom is followed
-    /// by the growth itself.
-    mutating func rowAppended(_ row: ChatRow?, isAtBottom: Bool) {
-        if let row, row.isOwn, !isAtBottom {
-            followsNextGrowth = true
-        }
+    /// A row arrived at the end. The caller's own brings a reader of older messages back to the bottom once it is laid
+    /// out; another member's or a system row never does, so reading older messages is never interrupted.
+    mutating func rowArrived(_ row: ChatRow?) {
+        guard hasSettled, !isFollowing, let row, row.isOwn else { return }
+        followsNextGrowth = true
     }
 
-    /// Called when the transcript's bottom anchor is back (a pin or the end of the arrival): what the appended row's
-    /// layout still does moves nothing the anchor does not hold, so a shrink pins as ever.
-    mutating func anchorReturned() {
-        awaitsSlideLayout = false
+    /// The reader's touch suspends following and takes over a slide; a rest decides. Answers the pin a slide's rest
+    /// needs: the row kept growing after the slide was aimed.
+    @discardableResult
+    mutating func scrollPhaseChanged(to phase: Phase, at snapshot: Snapshot) -> Action {
+        switch phase {
+        case .touched:
+            isFollowing = false
+            isSliding = false
+            followsNextGrowth = false
+        case .resting:
+            if isSliding {
+                isSliding = false
+                follow()
+                return .scrollToBottom
+            }
+            if snapshot.isAtBottom, hasSettled {
+                follow()
+            } else {
+                isFollowing = false
+            }
+        case .moving:
+            break
+        }
+        return .none
     }
 
     mutating func geometryChanged(from previous: Snapshot,
@@ -75,38 +122,35 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
                                   hasRows: Bool,
                                   canLoadOlder: Bool,
                                   oldestID: String?) -> Action {
+        // A reader who follows does not care where older rows land: the bottom is pinned as ever.
+        if isFollowing { pendingRestore = nil }
         if let restore = pendingRestore {
+            followsNextGrowth = false
             return restoring(restore, at: current, oldestID: oldestID)
         }
         guard hasSettled else {
             guard hasRows, current.contentHeight > 0 else { return .none }
             hasSettled = true
+            follow()
             return .scrollToBottom
         }
-        let grew = current.contentHeight > previous.contentHeight
-        let shrank = current.contentHeight < previous.contentHeight
-        // Growth under a reader at the bottom is the appended row, laid out below the fold while the transcript holds
-        // its anchor off; growth the anchor did follow (a bubble made taller by its picture) slides nowhere. Judged
-        // before the inset rule: a send clears the composer, and a shorter composer in the same report must not pin the
-        // row at once.
-        if grew, previous.isAtBottom || followsNextGrowth {
+        if followsNextGrowth, current.contentHeight > previous.contentHeight {
             followsNextGrowth = false
-            awaitsSlideLayout = true
+            isSliding = true
             return .animateToBottom
         }
-        let correctsTheAppendedRow = awaitsSlideLayout && shrank
-        if shrank {
-            awaitsSlideLayout = false
-        }
-        // A grown inset (the keyboard, a composer growing a line) covers the newest row; a shrunk one uncovers content
-        // and the scroll view settles on the new bottom by itself, so pinning it would also cut a slide short.
-        if current.isAtBottom, !correctsTheAppendedRow, previous.bottomInset < current.bottomInset || shrank {
+        if isFollowing, current.movesTheBottom(from: previous) {
             return .scrollToBottom
         }
         if current.isNearTop, canLoadOlder {
             return .loadOlder
         }
         return .none
+    }
+
+    private mutating func follow() {
+        isFollowing = true
+        followsNextGrowth = false
     }
 
     /// While an older page is pending: growth with the same oldest message is below the reader and becomes the new

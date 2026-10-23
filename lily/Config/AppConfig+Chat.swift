@@ -18,6 +18,12 @@ nonisolated extension AppConfig {
         static let roomCacheLimit = 300
         /// One sender's messages within this window are drawn as one run.
         static let groupingWindow: TimeInterval = 300
+        /// Geometry reports this close to the first of a frame are one frame's layout passes (`ArrivalMotion`): the
+        /// screen shows only the last, and a 120 Hz frame lasts 8 ms.
+        static let transcriptFrameWindow: TimeInterval = 0.004
+        /// How long after the transcript appears every geometry report is logged at debug: the open, when the lazy stack
+        /// corrects its estimates and the composer's inset arrives.
+        static let transcriptOpeningLogWindow: TimeInterval = 2
         static let readMarkFlushInterval: TimeInterval = 60
         static let mockEchoDelay: Duration = .milliseconds(200)
         static let mockAutoReplyDelay: Duration = .seconds(1.5)

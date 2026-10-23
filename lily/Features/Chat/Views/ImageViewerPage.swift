@@ -1,13 +1,15 @@
 import SwiftUI
 
 /// One page of `AttachmentViewerSheet`: the full picture through the `AttachmentLoader`, pinch to zoom up to
-/// `viewerMaxZoom`, double-tap to reset; `onLoaded` hands the picture up so the pager can offer it to Share. No
+/// `viewerMaxZoom`, double-tap to reset; `onLoaded` hands the picture up so the pager can offer it to Share, and
+/// `onZoomed` tells it whether the picture is zoomed in or being pinched, when a drag does not close the viewer. No
 /// identifier of its own: the pager is the container the UI tests find.
 struct ImageViewerPage: View {
     let attachment: Attachment
     let message: ChatMessage
     let loader: AttachmentLoader
     var onLoaded: (UIImage) -> Void = { _ in }
+    var onZoomed: (Bool) -> Void = { _ in }
     @State private var picture = AttachmentImageLoad()
     @State private var zoom: CGFloat = 1
     @State private var settledZoom: CGFloat = 1
@@ -44,12 +46,16 @@ struct ImageViewerPage: View {
 
     private var magnify: some Gesture {
         MagnifyGesture()
-            .onChanged { zoom = settledZoom * $0.magnification }
+            .onChanged {
+                zoom = settledZoom * $0.magnification
+                onZoomed(true)
+            }
             .onEnded { _ in settle(to: min(max(zoom, 1), DesignTokens.Layout.viewerMaxZoom)) }
     }
 
     private func settle(to scale: CGFloat) {
         settledZoom = scale
+        onZoomed(scale > 1)
         withAnimation(.smooth(duration: DesignTokens.Duration.fast)) { zoom = scale }
     }
 }

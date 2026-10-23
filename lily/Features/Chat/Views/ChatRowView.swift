@@ -1,10 +1,11 @@
 import SwiftUI
 
 /// One row of the transcript: a day chip, a member's bubble, a system note or one of the caller's unsent messages. A row
-/// that arrived (`arrivedAt`) fades in and grows from its sender's corner, drawn from a clock (`MessageArrivalCurve`)
-/// while the arrival lasts, so neither the lazy stack laying the row out late nor the unsent bubble turning into the
-/// stored message mid-way cuts it short. The timeline wraps every row, paused when nothing arrives, because a row that
-/// changed its structure when its arrival ended would rebuild its bubble and reload its pictures.
+/// that arrived (`arrivedAt`) takes its height from nothing (`RowReveal`), fades in and grows from its sender's corner,
+/// drawn from a clock (`MessageArrivalCurve`) while the arrival lasts, so the unsent bubble turning into the stored
+/// message mid-way cuts nothing short. The timeline and the reveal wrap every row, paused and at full height when
+/// nothing arrives, because a row that changed its structure when its arrival ended would rebuild its bubble and reload
+/// its pictures.
 struct ChatRowView: View {
     let row: ChatRow
     let viewModel: ChatViewModel
@@ -26,9 +27,11 @@ struct ChatRowView: View {
     var body: some View {
         TimelineView(.animation(paused: !isArriving)) { context in
             let frame = arrivedAt.map { curve.frame(elapsed: context.date.timeIntervalSince($0)) } ?? .resting
-            content
-                .opacity(frame.opacity)
-                .scaleEffect(frame.scale, anchor: row.arrivalCorner)
+            RowReveal(fraction: frame.reveal) {
+                content
+                    .opacity(frame.opacity)
+                    .scaleEffect(frame.scale, anchor: row.arrivalCorner)
+            }
         }
         .task(id: arrivedAt) { await waitForTheArrival() }
     }

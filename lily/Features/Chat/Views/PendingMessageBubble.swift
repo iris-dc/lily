@@ -61,7 +61,8 @@ struct PendingMessageBubble: View {
     @ViewBuilder private var failedMenu: some View {
         Button(Copy.retry, systemImage: DesignTokens.Symbols.send) { Task { await viewModel.retry(message) } }
         Button(Copy.deleteMessage, systemImage: DesignTokens.Symbols.delete, role: .destructive) {
-            viewModel.discard(message)
+            // Animated, so the bubble's removal transition plays and the rows below close up.
+            withAnimation(.messageArrival) { viewModel.discard(message) }
         }
     }
 }

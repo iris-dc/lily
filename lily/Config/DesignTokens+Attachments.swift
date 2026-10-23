@@ -45,6 +45,14 @@ nonisolated extension DesignTokens.Layout {
     static let stripBadgeSize: CGFloat = 22
     /// How far a picture in the viewer may be zoomed in.
     static let viewerMaxZoom: CGFloat = 4
+    /// How far a drag on the viewer moves before its axis is read: vertical closes, horizontal pages.
+    static let viewerDragLockDistance: CGFloat = 12
+    /// How far the viewer is dragged before letting go closes it; also where its fade and shrink end.
+    static let viewerDismissDistance: CGFloat = 140
+    /// How far a thrown drag would have carried it (SwiftUI's predicted end) to close it without the distance.
+    static let viewerThrowDistance: CGFloat = 420
+    /// The size the page shrinks to as it is dragged the whole dismiss distance.
+    static let viewerDragMinimumScale: CGFloat = 0.85
     /// The play badge over a video tile in a bubble, and its smaller sibling on a strip tile.
     static let playBadgeSize: CGFloat = 44
     static let stripPlayBadgeSize: CGFloat = 24

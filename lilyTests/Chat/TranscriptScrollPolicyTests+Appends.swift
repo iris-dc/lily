@@ -2,92 +2,123 @@ import Foundation
 import Testing
 @testable import lily
 
-/// What the policy does around an appended row's slide.
+/// Following the bottom as the reader's state, and what it pins while rows arrive.
 extension TranscriptScrollPolicyTests {
-    /// An appended row grows the content below the fold (the transcript lifts the anchor for it): the reader who was at
-    /// the bottom slides down to it, also when the anchor kept the bottom (the slide then has nowhere to go); growth
-    /// under a reader who scrolled away moves nothing.
-    @Test func slidesToGrowthOnlyWhenTheReaderWasAtTheBottom() {
+    /// An arriving row grows the content frame by frame under a reader who follows: each frame is pinned, the lazy
+    /// stack's correction and the previous bubble losing its time line too; a report of the scroll alone asks for
+    /// nothing, and a reader of older messages is left alone.
+    @Test func everyFrameOfARowGrowingInIsPinnedWhileFollowing() {
         var policy = settled()
-        let grown = snapshot(contentHeight: 2_300, isAtBottom: false)
-        #expect(policy.geometryChanged(from: snapshot(), to: grown, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .animateToBottom)
-        let anchored = snapshot(offsetY: 300, contentHeight: 2_300)
-        #expect(policy.geometryChanged(from: snapshot(), to: anchored, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .animateToBottom)
-        let readingBefore = snapshot(offsetY: 500, isAtBottom: false)
-        let readingAfter = snapshot(offsetY: 500, contentHeight: 2_300, isAtBottom: false)
-        #expect(policy.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
+        var previous = snapshot()
+        for height in [2_077.0, 2_000, 2_005, 2_020, 2_041, 2_057] {
+            let frame = snapshot(offsetY: height - 2_000, contentHeight: height)
+            #expect(policy.geometryChanged(from: previous, to: frame, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                    == .scrollToBottom)
+            previous = frame
+        }
+        let still = snapshot(offsetY: 58, contentHeight: 2_057)
+        #expect(policy.geometryChanged(from: previous, to: still, hasRows: true, canLoadOlder: true, oldestID: oldest)
                 == .none)
-        // A send clears the composer: the inset shrinks in the report that grew the content, and the slide still wins.
-        let shorterComposer = snapshot(contentHeight: 2_300, bottomInset: 60, isAtBottom: false)
-        #expect(policy.geometryChanged(from: snapshot(),
-                                       to: shorterComposer,
+        var reader = reading()
+        let readingBefore = snapshot(offsetY: 300, isAtBottom: false)
+        let grewBelow = snapshot(offsetY: 300, contentHeight: 2_057, isAtBottom: false)
+        #expect(reader.geometryChanged(from: readingBefore, to: grewBelow, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+    }
+
+    /// A report taken mid-layout (the safe area already changed, its inset not yet) reads as away from the bottom: the
+    /// reader still follows, and the change in it is pinned; a visible height that changes alone is pinned too.
+    @Test func aReportThatReadsAwayDoesNotEndFollowing() {
+        var policy = settled()
+        let midLayout = snapshot(offsetY: 0, contentHeight: 2_300, isAtBottom: false)
+        #expect(policy.geometryChanged(from: snapshot(), to: midLayout, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
+        #expect(policy.isFollowing, "only a rest moves the state")
+        var resized = midLayout
+        resized.visibleHeight = 500
+        #expect(policy.geometryChanged(from: midLayout, to: resized, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom, "a window resized")
+    }
+
+    /// Any scroll that rests away from the bottom ends following, a tapped quote's or VoiceOver's as much as the
+    /// reader's: nothing pulls them back down while they read.
+    @Test func aProgrammaticScrollRestingAwayEndsFollowing() {
+        var policy = settled()
+        policy.scrollPhaseChanged(to: .moving, at: snapshot())
+        policy.scrollPhaseChanged(to: .resting, at: snapshot(offsetY: 400, isAtBottom: false))
+        #expect(!policy.isFollowing)
+        let reading = snapshot(offsetY: 400, isAtBottom: false)
+        let corrected = snapshot(offsetY: 400, contentHeight: 2_100, isAtBottom: false)
+        #expect(policy.geometryChanged(from: reading, to: corrected, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+    }
+
+    /// The slide that fetches the reader is aimed before the row has grown in: its rest resumes following and pins,
+    /// wherever the row left it; the reader's touch during it takes over.
+    @Test func theSlidesRestResumesFollowingAndPins() {
+        var policy = reading()
+        policy.rowArrived(bubble(isOwn: true))
+        let before = snapshot(offsetY: 300, isAtBottom: false)
+        let grown = snapshot(offsetY: 300, contentHeight: 2_010, isAtBottom: false)
+        #expect(policy.geometryChanged(from: before, to: grown, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .animateToBottom)
+        #expect(policy.scrollPhaseChanged(to: .resting, at: snapshot(contentHeight: 2_060, isAtBottom: false))
+                == .scrollToBottom)
+        #expect(policy.isFollowing)
+        var touched = reading()
+        touched.rowArrived(bubble(isOwn: true))
+        touched.scrollPhaseChanged(to: .touched, at: before)
+        #expect(touched.geometryChanged(from: before, to: grown, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none, "the reader's touch cancels the fetch")
+    }
+
+    /// A reader who follows is pinned while an older page loads (a short room loads it from the bottom), and the page
+    /// is no restore for them.
+    @Test func aFollowingReaderIsPinnedWhileAnOlderPageLoads() {
+        var policy = settled()
+        policy.willLoadOlder(at: snapshot(), oldestID: oldest)
+        let grown = snapshot(contentHeight: 2_057)
+        #expect(policy.geometryChanged(from: snapshot(), to: grown, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
+        #expect(policy.pendingRestore == nil)
+    }
+
+    /// The reader's touch suspends following; letting go away from the bottom ends it, coming to rest at the bottom
+    /// (after a fling or by itself) resumes it.
+    @Test func theReadersOwnScrollDecidesWhetherTheyFollow() {
+        var policy = settled()
+        policy.scrollPhaseChanged(to: .touched, at: snapshot())
+        #expect(!policy.isFollowing)
+        policy.scrollPhaseChanged(to: .moving, at: snapshot(offsetY: 400, isAtBottom: false))
+        policy.scrollPhaseChanged(to: .resting, at: snapshot(offsetY: 500, isAtBottom: false))
+        #expect(!policy.isFollowing)
+        policy.scrollPhaseChanged(to: .touched, at: snapshot(offsetY: 500, isAtBottom: false))
+        policy.scrollPhaseChanged(to: .resting, at: snapshot())
+        #expect(policy.isFollowing, "a rest at the bottom resumes following")
+    }
+
+    /// The keyboard rises after a send: the reader who follows is pinned; one who reads older messages is not.
+    @Test func aGrownInsetPinsTheReaderWhoFollows() {
+        var policy = settled()
+        let keyboardUp = snapshot(bottomInset: 417, isAtBottom: false)
+        #expect(policy.geometryChanged(from: snapshot(), to: keyboardUp, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
+        var reader = reading()
+        let readingBefore = snapshot(offsetY: 300, isAtBottom: false)
+        let readingKeyboard = snapshot(offsetY: 300, bottomInset: 417, isAtBottom: false)
+        #expect(reader.geometryChanged(from: readingBefore,
+                                       to: readingKeyboard,
                                        hasRows: true,
                                        canLoadOlder: true,
-                                       oldestID: oldest) == .animateToBottom)
+                                       oldestID: oldest) == .none)
     }
 
-    /// The bubble before the appended row loses its time line a pass after the row lands, and that shrink is the
-    /// slide's to absorb, not a pin's, which would snap the slide to its end; a fast display may report the slide's
-    /// first frames in between, and they must not spend the allowance; a later shrink pins as ever.
-    @Test func theLayoutChangeAfterASlideMayShrinkWithoutAPin() {
-        var policy = settled()
-        let landed = snapshot(contentHeight: 2_083)
-        #expect(policy.geometryChanged(from: snapshot(), to: landed, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .animateToBottom)
-        let sliding = snapshot(offsetY: 8, contentHeight: 2_083)
-        #expect(policy.geometryChanged(from: landed, to: sliding, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .none, "the slide's own frame changes no layout")
-        let corrected = snapshot(offsetY: 8, contentHeight: 2_057)
-        #expect(policy.geometryChanged(from: sliding, to: corrected, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .none, "the time line going is absorbed")
-        let deleted = snapshot(offsetY: 8, contentHeight: 2_030)
-        #expect(policy.geometryChanged(from: corrected, to: deleted, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .scrollToBottom, "a later shrink pins")
-    }
-
-    /// The composer clears in a send: on a fast display its inset may report on its own between the row's two passes,
-    /// and that report spends nothing, so the pass after is still absorbed. A keyboard rising pins as ever, the slide
-    /// has no say over what covers the row.
-    @Test func anInsetReportLeavesTheAllowanceStanding() {
-        var policy = settled()
-        let landed = snapshot(contentHeight: 2_083)
-        _ = policy.geometryChanged(from: snapshot(), to: landed, hasRows: true, canLoadOlder: true, oldestID: oldest)
-        let shorterComposer = snapshot(contentHeight: 2_083, bottomInset: 60)
-        #expect(policy.geometryChanged(from: landed, to: shorterComposer, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .none)
-        let corrected = snapshot(contentHeight: 2_057, bottomInset: 60)
-        #expect(policy.geometryChanged(from: shorterComposer, to: corrected, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .none, "the pass after the inset's report is absorbed")
-        let keyboard = snapshot(contentHeight: 2_057, bottomInset: 400)
-        #expect(policy.geometryChanged(from: corrected, to: keyboard, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .scrollToBottom)
-    }
-
-    /// A second growth report during the slide (the row's passes, a picture) asks for the slide again and leaves the
-    /// allowance standing for the correction that follows.
-    @Test func aSecondGrowthDuringTheSlideKeepsTheAllowance() {
-        var policy = settled()
-        let landed = snapshot(contentHeight: 2_083)
-        _ = policy.geometryChanged(from: snapshot(), to: landed, hasRows: true, canLoadOlder: true, oldestID: oldest)
-        let taller = snapshot(contentHeight: 2_100)
-        #expect(policy.geometryChanged(from: landed, to: taller, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .animateToBottom)
-        let corrected = snapshot(contentHeight: 2_074)
-        #expect(policy.geometryChanged(from: taller, to: corrected, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .none)
-    }
-
-    /// The allowance is the lifted anchor's: a slide no shrink followed (another member's row, the caller's first after a
-    /// gap) leaves none behind once the anchor is back, so the next shrink at the bottom (a delete) pins.
-    @Test func theAllowanceEndsWithTheAnchorsReturn() {
-        var policy = settled()
-        let landed = snapshot(contentHeight: 2_083)
-        _ = policy.geometryChanged(from: snapshot(), to: landed, hasRows: true, canLoadOlder: true, oldestID: oldest)
-        policy.anchorReturned()
-        let deleted = snapshot(contentHeight: 2_040)
-        #expect(policy.geometryChanged(from: landed, to: deleted, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .scrollToBottom)
+    /// Before the first settle there is no reader to follow or fetch.
+    @Test func nothingFollowsBeforeTheFirstSettle() {
+        var policy = TranscriptScrollPolicy()
+        #expect(!policy.isFollowing)
+        policy.rowArrived(.pending(PendingMessage(draft: MessageDraft(clientMessageID: "c-1"), sentAt: .now)))
+        policy.scrollPhaseChanged(to: .resting, at: snapshot())
+        #expect(!policy.isFollowing)
     }
 }
