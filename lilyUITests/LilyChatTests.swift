@@ -195,8 +195,18 @@ final class LilyChatTests: LilyUITestCase {
         XCTAssertTrue(viewerShows("5 / 5"), "the +1 tile opens the fifth picture")
         XCTAssertTrue(viewerShows(["4 / 5", "3 / 5", "2 / 5", "1 / 5", "1 / 5"], swiping: .right), "the first stays")
         XCTAssertTrue(viewerShows(["2 / 5"], swiping: .left), "a swipe left pages forward again")
-        app.buttons["attachment-viewer-close"].tap()
-        XCTAssertTrue(app.descendants(matching: .any)["attachment-viewer"].waitForNonExistence(timeout: 5))
+        let viewer = app.descendants(matching: .any)["attachment-viewer"]
+        let middle = viewer.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        middle.press(forDuration: 0.05,
+                     thenDragTo: viewer.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6)),
+                     withVelocity: .slow,
+                     thenHoldForDuration: 0.5)
+        XCTAssertTrue(viewerShows("2 / 5"), "a short drag down settles back on the same page, never turning it")
+        middle.press(forDuration: 0.05,
+                     thenDragTo: viewer.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)),
+                     withVelocity: .fast,
+                     thenHoldForDuration: 0)
+        XCTAssertTrue(viewer.waitForNonExistence(timeout: 5), "a drag down closes the viewer from any page")
     }
 }
 

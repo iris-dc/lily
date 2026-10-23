@@ -45,14 +45,11 @@ nonisolated extension DesignTokens.Layout {
     static let stripBadgeSize: CGFloat = 22
     /// How far a picture in the viewer may be zoomed in.
     static let viewerMaxZoom: CGFloat = 4
-    /// How far a drag on the viewer moves before its axis is read: vertical closes, horizontal pages.
-    static let viewerDragLockDistance: CGFloat = 12
-    /// How far the viewer is dragged before letting go closes it; also where its fade and shrink end.
+    /// How far up or down the viewer is dragged, the throw included, before letting go closes it; also where its fade
+    /// and shrink end.
     static let viewerDismissDistance: CGFloat = 140
-    /// How far a thrown drag would have carried it (SwiftUI's predicted end) to close it without the distance.
-    static let viewerThrowDistance: CGFloat = 420
-    /// The size the page shrinks to as it is dragged the whole dismiss distance.
-    static let viewerDragMinimumScale: CGFloat = 0.85
+    /// The size the page shrinks to as it is dragged the whole dismiss distance, and grows from as the viewer opens.
+    static let viewerDragMinimumScale: CGFloat = 0.9
     /// The play badge over a video tile in a bubble, and its smaller sibling on a strip tile.
     static let playBadgeSize: CGFloat = 44
     static let stripPlayBadgeSize: CGFloat = 24
@@ -78,4 +75,12 @@ nonisolated extension DesignTokens.Opacity {
     static let playBadgeBacking: Double = 0.55
     /// The size caption under a file's name, quieter than the name.
     static let fileCaption: Double = 0.75
+}
+
+nonisolated extension DesignTokens.Duration {
+    /// How long a throw in the viewer is projected forward at the speed it was let go with, to count it in the distance.
+    static let viewerThrowProjection: TimeInterval = 0.15
+    /// How long the viewer's closing page takes to fly off the screen: as long as it needs to leave at the speed it was
+    /// let go with, within these bounds.
+    static let viewerFlyOutDuration: ClosedRange<TimeInterval> = 0.15 ... 0.35
 }

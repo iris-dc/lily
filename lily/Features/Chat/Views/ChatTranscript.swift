@@ -3,7 +3,7 @@ import SwiftUI
 /// The scrolling list of a chat: day chips, bubbles, system rows and the caller's unsent messages, anchored to the
 /// bottom. Every scroll rule is `TranscriptScrollPolicy`'s, judged on each geometry report as a `Snapshot`. A tapped
 /// quote scrolls to the original (loading older pages when it lies before the history held) and washes it in the accent
-/// for a moment; pictures and videos open in `AttachmentViewerSheet`, zooming out of their tile, a file in QuickLook
+/// for a moment; pictures and videos open in `AttachmentViewerSheet`, a file in QuickLook
 /// once it is on the device; a long press on another member's bubble also offers Report and Block. While the reader
 /// follows the bottom (the policy's state, which only the reader's own scroll ends), every report that changes the
 /// content or the inset pins the end marker to the bottom; a reader of older messages is left where they are. A row
@@ -33,8 +33,6 @@ struct ChatTranscript: View {
     @State private var reporting: ReportTarget?
     /// The row whose sender awaits the caller's word on a block.
     @State private var blocking: MessageRow?
-    /// The namespace the viewer zooms out of a tile in.
-    @Namespace private var attachmentZoom
 
     var body: some View {
         let rows = viewModel.rows
@@ -51,7 +49,7 @@ struct ChatTranscript: View {
                                     dependencies: dependencies,
                                     highlightedMessageID: highlightedMessageID,
                                     onTapQuote: reveal,
-                                    onTapAttachment: { viewing = $0 },
+                                    onTapAttachment: openViewer,
                                     onOpenFile: { previewURL = $0 },
                                     onReport: { reporting = $0 },
                                     onBlock: { blocking = $0 },
@@ -60,7 +58,6 @@ struct ChatTranscript: View {
                     }
                 }
                 .scrollTargetLayout()
-                .environment(\.attachmentZoom, attachmentZoom)
                 .padding(.horizontal, DesignTokens.Layout.screenMargin)
                 .padding(.vertical, DesignTokens.Spacing.md)
                 // The content's end, which pins bring to the bottom and whose place says whether the reader is there:
@@ -102,7 +99,7 @@ struct ChatTranscript: View {
             await summarizeArrival(of: id)
         }
         .fullScreenCover(item: $viewing) { selection in
-            AttachmentViewerSheet(selection: selection, loader: viewModel.attachmentLoader, zoom: attachmentZoom)
+            AttachmentViewerSheet(selection: selection, loader: viewModel.attachmentLoader)
         }
         .attachmentQuickLook($previewURL)
         .sheet(item: $reporting) { target in
@@ -126,6 +123,13 @@ struct ChatTranscript: View {
             tracker.policy.rowArrived(last)
         }
         return arrived
+    }
+
+    /// Opens the viewer without the cover's slide: the viewer draws its own appearance over the chat.
+    private func openViewer(_ selection: AttachmentSelection) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { viewing = selection }
     }
 
     /// The block confirmation's one action: blocks the row's sender for the caller, in every room at once.

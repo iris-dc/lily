@@ -3,81 +3,99 @@ import SwiftUI
 /// One message's pictures and videos over black, paged from the tapped one in the gallery's order, so the ones behind a
 /// "+N" tile are a swipe away; files stay cards that open in QuickLook. A picture page zooms (`ImageViewerPage`), a
 /// video page plays only while it is on screen (`VideoPlayerPage`); Close, the "n / m" position and Share sit in glass
-/// at the top. It opens with the system's zoom out of the tapped tile and closes back into the tile of the page on
-/// screen. A drag closes it as in Photos (`ViewerDismissal`): the page follows the finger, fading the black and the
-/// controls, up or down, and sideways too for a single picture; sideways is the pager's or a video's scrubber's
-/// otherwise, which is why the zoom transition's own drag, which takes every direction, is off. A zoomed picture does
-/// not close on a drag (a double tap returns it to size first), nor does one being pinched. An accessibility container
+/// at the top. The viewer draws its own coming and going over the chat, which the cover leaves in place
+/// (`presentationBackground(.clear)`, presented without the cover's slide): the black and the page fade in as the page
+/// grows to size, Close plays that back, and a drag up or down (`ViewerDismissPan`, `ViewerDismissal`) carries the page,
+/// fading the black, then flies it off the way it was thrown or springs it back; sideways stays the pager's. Not the
+/// system's zoom, which hides the tile until frames after a close it does not animate. A zoomed picture does not close
+/// on a drag (a double tap returns it to size first), nor does one being pinched. An accessibility container
 /// (`attachment-viewer`), so Close keeps its own identifier; VoiceOver's escape closes it too.
 struct AttachmentViewerSheet: View {
     let selection: AttachmentSelection
     let loader: AttachmentLoader
-    /// The tiles' namespace, which the zoom comes out of; `nil` opens it plainly.
-    var zoom: Namespace.ID?
     @Environment(\.dismiss) private var dismiss
+    /// Whether the viewer is up: false while it fades in and while Close fades it out.
+    @State private var isShown = false
     @State private var index: Int
     @State private var pictures = LoadedPictures()
-    /// The drag to close as it goes; reset when it ends or is cancelled, settling the page back.
-    @GestureState(resetTransaction: Transaction(animation: .smooth(duration: DesignTokens.Duration.fast)))
-    private var drag = ViewerDismissal.Drag()
-    /// Where the page was let go when the drag closes the viewer: it closes from there.
-    @State private var releasedAt: CGSize?
+    /// Where the drag to close has the page, and whether it is flying off.
+    @State private var drag = CGSize.zero
+    @State private var isClosing = false
+    /// The screen's height, safe areas included like the pager's: the closing page flies past it.
+    @State private var height: CGFloat = 0
     /// The pictures zoomed in or being pinched, which a drag does not close.
     @State private var zoomedIDs: Set<String> = []
 
     private typealias Copy = AppBranding.Chat.Attachments
 
-    init(selection: AttachmentSelection, loader: AttachmentLoader, zoom: Namespace.ID? = nil) {
+    init(selection: AttachmentSelection, loader: AttachmentLoader) {
         self.selection = selection
         self.loader = loader
-        self.zoom = zoom
         _index = State(initialValue: selection.start)
     }
 
     var body: some View {
-        let shown = releasedAt ?? drag.carried
-        let progress = ViewerDismissal.progress(of: shown)
+        let progress = isClosing || !isShown ? 1 : ViewerDismissal.progress(of: drag)
         ZStack {
             Color.black
                 .opacity(1 - progress)
                 .ignoresSafeArea()
+                .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: { height = $0 })
             pages
                 .scaleEffect(1 - progress * (1 - DesignTokens.Layout.viewerDragMinimumScale))
-                .offset(shown)
+                .offset(drag)
+                .opacity(isShown ? 1 : 0)
             VStack {
                 controls
                 Spacer()
             }
             .opacity(1 - progress)
         }
-        .simultaneousGesture(dismissDrag, isEnabled: !zoomedIDs.contains(current.id))
+        .gesture(ViewerDismissPan(isEnabled: isShown && !isClosing && !zoomedIDs.contains(current.id),
+                                  onChanged: { drag = $0 },
+                                  onEnded: letGo))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AccessibilityIdentifiers.attachmentViewer)
-        .accessibilityAction(.escape) { dismiss() }
+        .accessibilityAction(.escape) { close() }
         .presentationBackground(.clear)
-        .interactiveDismissDisabled()
-        .zoomsFromAttachment(current.id, in: zoom)
+        .onAppear {
+            withAnimation(.easeOut(duration: DesignTokens.Duration.fast)) { isShown = true }
+        }
     }
 
-    private var carriesHorizontally: Bool {
-        ViewerDismissal.carriesHorizontally(pages: selection.media.count, isPicture: current.kind != .video)
+    /// Close: the opening played back, then the cover goes without its own slide. Once only, and never over a fly-off.
+    private func close() {
+        guard isShown, !isClosing else { return }
+        withAnimation(.easeIn(duration: DesignTokens.Duration.fast), completionCriteria: .logicallyComplete) {
+            isShown = false
+        } completion: {
+            leave()
+        }
     }
 
-    /// The drag to close: carries the page while it carries, and on letting go closes from where the page is or lets the
-    /// gesture state settle it back.
-    private var dismissDrag: some Gesture {
-        DragGesture()
-            .updating($drag) { value, drag, _ in
-                drag.follow(value.translation, carriesHorizontally: carriesHorizontally)
-            }
-            .onEnded { value in
-                let whole = ViewerDismissal.Drag.reading(value.translation, carriesHorizontally: carriesHorizontally)
-                guard whole.carried != .zero,
-                      ViewerDismissal.closes(translation: value.translation, predictedEnd: value.predictedEndTranslation)
-                else { return }
-                releasedAt = whole.carried
-                dismiss()
-            }
+    /// Takes the cover away without its slide: the viewer has already drawn its going.
+    private func leave() {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { dismiss() }
+    }
+
+    /// Letting go: the page carries on off the screen at the speed it was let go with and the viewer goes, or it springs
+    /// back. A velocity-driven spring (`interpolatingSpring`) drew one stray frame as it came to rest, so neither move
+    /// uses one.
+    private func letGo(at translation: CGSize, velocity: CGSize, wasCancelled: Bool) {
+        guard !wasCancelled, ViewerDismissal.closes(translation: translation, velocity: velocity) else {
+            withAnimation(.spring(duration: DesignTokens.Duration.normal, bounce: 0)) { drag = .zero }
+            return
+        }
+        let target = ViewerDismissal.flyOut(from: translation, velocity: velocity, height: height)
+        let motion = ViewerDismissal.flyOutMotion(from: translation, to: target, velocity: velocity)
+        withAnimation(.timingCurve(motion.curve, duration: motion.duration), completionCriteria: .logicallyComplete) {
+            drag = target
+            isClosing = true
+        } completion: {
+            leave()
+        }
     }
 
     private var current: Attachment { selection.media[index] }
@@ -109,7 +127,7 @@ struct AttachmentViewerSheet: View {
 
     private var controls: some View {
         HStack {
-            close
+            closeButton
             Spacer()
             if selection.media.count > 1 {
                 position
@@ -120,9 +138,9 @@ struct AttachmentViewerSheet: View {
         .padding(DesignTokens.Spacing.lg)
     }
 
-    private var close: some View {
+    private var closeButton: some View {
         Button {
-            dismiss()
+            close()
         } label: {
             Image(systemName: DesignTokens.Symbols.dismiss)
         }

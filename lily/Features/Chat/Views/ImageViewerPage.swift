@@ -13,6 +13,8 @@ struct ImageViewerPage: View {
     @State private var picture = AttachmentImageLoad()
     @State private var zoom: CGFloat = 1
     @State private var settledZoom: CGFloat = 1
+    /// Whether a pinch is under way; back to false however it ends, a cancel included.
+    @GestureState private var isPinching = false
 
     private typealias Copy = AppBranding.Chat.Attachments
 
@@ -22,6 +24,11 @@ struct ImageViewerPage: View {
                 if let loaded = await picture.load(attachment, variant: .full, in: message, through: loader) {
                     onLoaded(loaded)
                 }
+            }
+            // From the first appearance, so a page the pager made again at full size clears what its last one reported.
+            .onChange(of: isPinching || settledZoom > 1, initial: true) { _, isZoomed in onZoomed(isZoomed) }
+            .onChange(of: isPinching) { _, pinching in
+                if !pinching { settle(to: min(max(zoom, 1), DesignTokens.Layout.viewerMaxZoom)) }
             }
     }
 
@@ -46,16 +53,12 @@ struct ImageViewerPage: View {
 
     private var magnify: some Gesture {
         MagnifyGesture()
-            .onChanged {
-                zoom = settledZoom * $0.magnification
-                onZoomed(true)
-            }
-            .onEnded { _ in settle(to: min(max(zoom, 1), DesignTokens.Layout.viewerMaxZoom)) }
+            .updating($isPinching) { _, pinching, _ in pinching = true }
+            .onChanged { zoom = settledZoom * $0.magnification }
     }
 
     private func settle(to scale: CGFloat) {
         settledZoom = scale
-        onZoomed(scale > 1)
         withAnimation(.smooth(duration: DesignTokens.Duration.fast)) { zoom = scale }
     }
 }

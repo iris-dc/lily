@@ -3,7 +3,7 @@ import SwiftUI
 /// The attachments of a stored message: pictures and videos as `GalleryLayout` lays them out, each a thumbnail loaded
 /// through the `AttachmentLoader`, and files as cards under the grid; a tap on a tile hands its `AttachmentSelection` up
 /// (the tapped picture, or the first hidden one from the "+N" tile) and the transcript opens the viewer or the player,
-/// zooming out of the tile; a tap on a card downloads the file and hands its preview up.
+/// and a tap on a card downloads the file and hands its preview up.
 struct AttachmentGallery: View {
     let message: ChatMessage
     let loader: AttachmentLoader
@@ -24,10 +24,8 @@ struct AttachmentGallery: View {
         switch attachment.kind {
         case .image:
             ImageAttachmentView(attachment: attachment, message: message, loader: loader) { select(tile: index) }
-                .attachmentZoomSource(attachment.id)
         case .video:
             VideoAttachmentView(attachment: attachment, message: message, loader: loader) { select(tile: index) }
-                .attachmentZoomSource(attachment.id)
         case .file, .unknown:
             EmptyView()
         }

@@ -1,60 +1,64 @@
-import CoreGraphics
-import Foundation
+import SwiftUI
 
-/// The attachment viewer's drag to close, as rules: a drag's axis is read once it has moved
-/// `viewerDragLockDistance`; a vertical one carries the page away (down or up), a horizontal one is the pager's, or a
-/// video's scrubber's, unless the viewer holds a single picture, when it carries the page too. The page fades and
-/// shrinks with the distance, and letting go closes the viewer past `viewerDismissDistance`, or when thrown past
-/// `viewerThrowDistance`; short of both it settles back.
+/// The attachment viewer's drag to close, as rules. Only a drag that starts more up or down than sideways is the
+/// viewer's (sideways is the pager's, or a video's scrubber's); the page then follows the finger, fading and shrinking
+/// with how far up or down it has gone. Letting go closes when that distance, with the throw projected forward for
+/// `viewerThrowProjection`, reaches `viewerDismissDistance`: the page carries on off the screen from the speed it was let
+/// go with (`flyOutMotion`), coming to rest past the edge. Short of it the page springs back.
 nonisolated enum ViewerDismissal {
-    enum Axis: Equatable, Sendable {
-        case vertical
-        case horizontal
+    /// Whether a drag starting at `velocity` is the viewer's: more up or down than sideways.
+    static func beginsDismissal(velocity: CGSize) -> Bool {
+        abs(velocity.height) > abs(velocity.width)
     }
 
-    /// A drag as it goes: its axis once read, and how far it carries the page.
-    struct Drag: Equatable, Sendable {
-        private(set) var axis: Axis?
-        private(set) var carried = CGSize.zero
-
-        /// Follows the finger: reads the axis once, then carries the page along the axes that carry it.
-        mutating func follow(_ translation: CGSize, carriesHorizontally: Bool) {
-            if axis == nil { axis = ViewerDismissal.axis(of: translation) }
-            guard let axis, axis == .vertical || carriesHorizontally else { return }
-            carried = translation
-        }
-
-        /// The whole drag, read at once: what letting go judges.
-        static func reading(_ translation: CGSize, carriesHorizontally: Bool) -> Drag {
-            var drag = Drag()
-            drag.follow(translation, carriesHorizontally: carriesHorizontally)
-            return drag
-        }
-    }
-
-    /// The axis a drag goes along, once it has moved far enough to tell; the one it moved more along.
-    static func axis(of translation: CGSize) -> Axis? {
-        guard distance(translation) >= DesignTokens.Layout.viewerDragLockDistance else { return nil }
-        return abs(translation.height) >= abs(translation.width) ? .vertical : .horizontal
-    }
-
-    /// Whether a horizontal drag carries the page: only a single picture's, with no page to turn and no scrubber.
-    static func carriesHorizontally(pages: Int, isPicture: Bool) -> Bool {
-        pages <= 1 && isPicture
-    }
-
-    /// How far toward closing the drag has gone, 0 to 1.
+    /// How far toward closing the drag has gone, 0 to 1: up or down only.
     static func progress(of translation: CGSize) -> Double {
-        min(1, distance(translation) / DesignTokens.Layout.viewerDismissDistance)
+        min(1, abs(translation.height) / DesignTokens.Layout.viewerDismissDistance)
     }
 
-    /// Whether letting go closes the viewer: dragged far enough, or thrown far enough.
-    static func closes(translation: CGSize, predictedEnd: CGSize) -> Bool {
-        distance(translation) >= DesignTokens.Layout.viewerDismissDistance
-            || distance(predictedEnd) >= DesignTokens.Layout.viewerThrowDistance
+    /// Where the drag would be after the throw, up or down.
+    static func projectedHeight(of translation: CGSize, velocity: CGSize) -> CGFloat {
+        translation.height + velocity.height * DesignTokens.Duration.viewerThrowProjection
     }
 
-    private static func distance(_ size: CGSize) -> CGFloat {
-        (size.width * size.width + size.height * size.height).squareRoot()
+    /// Whether letting go closes the viewer: dragged or thrown far enough, up or down.
+    static func closes(translation: CGSize, velocity: CGSize) -> Bool {
+        abs(projectedHeight(of: translation, velocity: velocity)) >= DesignTokens.Layout.viewerDismissDistance
+    }
+
+    /// Where the closing page goes: off the screen of `height` the way it was thrown, keeping its sideways place.
+    static func flyOut(from translation: CGSize, velocity: CGSize, height: CGFloat) -> CGSize {
+        let direction: CGFloat = projectedHeight(of: translation, velocity: velocity) < 0 ? -1 : 1
+        return CGSize(width: translation.width, height: direction * height)
+    }
+
+    /// How the closing page flies to `target`: the time an even slowing from the speed it was let go with needs for the
+    /// rest of the way (it starts at twice its average speed), within `viewerFlyOutDuration`, and a curve that starts
+    /// at that speed whatever the bounds made of the time. Only speed toward the target counts: a page let go at rest,
+    /// or with the finger moving back, starts from rest.
+    static func flyOutMotion(from translation: CGSize, to target: CGSize, velocity: CGSize) -> FlyOutMotion {
+        let bounds = DesignTokens.Duration.viewerFlyOutDuration
+        let way = target.height - translation.height
+        let distance = abs(way)
+        let speed = max(0, way < 0 ? -velocity.height : velocity.height)
+        guard speed > 0, distance > 0 else { return FlyOutMotion(duration: bounds.upperBound, startSlope: 0) }
+        let duration = min(max(2 * distance / speed, bounds.lowerBound), bounds.upperBound)
+        return FlyOutMotion(duration: duration, startSlope: min(speed * duration / distance, FlyOutMotion.steepestStart))
+    }
+}
+
+/// The closing page's flight: how long it lasts and how fast it starts, as a multiple of its average speed.
+nonisolated struct FlyOutMotion: Equatable, Sendable {
+    /// Beyond it the curve's first control point would rise past its end and the page would overshoot and come back.
+    static let steepestStart: Double = 3
+
+    var duration: TimeInterval
+    var startSlope: Double
+
+    /// A cubic whose control points sit at thirds of the time, so its time runs evenly: it starts at `startSlope` and
+    /// comes to rest at its end, never overshooting within `steepestStart`.
+    var curve: UnitCurve {
+        .bezier(startControlPoint: UnitPoint(x: 1.0 / 3, y: startSlope / 3),
+                endControlPoint: UnitPoint(x: 2.0 / 3, y: 1))
     }
 }
