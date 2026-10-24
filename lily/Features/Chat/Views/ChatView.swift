@@ -76,24 +76,31 @@ struct ChatView: View {
         }
     }
 
-    /// Over an empty transcript: a spinner while the first page loads, Try again when it failed, else the empty state
-    /// (also for a room just cleared).
-    @ViewBuilder private var placeholder: some View {
-        if viewModel.rows.isEmpty {
-            if viewModel.isLoadingHistory {
-                ProgressView()
-            } else if viewModel.historyLoadFailed {
-                EmptyStateView(symbolName: DesignTokens.Symbols.error,
-                               title: AppBranding.Chat.loadFailedTitle,
-                               message: AppBranding.Groups.loadFailedMessage,
-                               actionTitle: AppBranding.Groups.tryAgain) {
-                    Task { await viewModel.loadHistory() }
-                }
-            } else {
-                EmptyStateView(symbolName: DesignTokens.Symbols.chat,
-                               title: AppBranding.Chat.emptyTitle,
-                               message: AppBranding.Chat.emptyMessage)
+    /// Over an empty transcript once its history is no longer awaited (the transcript's spinner shows until then), fading
+    /// in as the spinner fades out: Try again when the load failed, else the empty state (also for a room just cleared).
+    private var placeholder: some View {
+        let isShown = viewModel.rows.isEmpty && !viewModel.isAwaitingHistory
+        return ZStack {
+            if isShown {
+                emptyState
+                    .transition(.opacity)
             }
+        }
+        .animation(.easeOut(duration: DesignTokens.Duration.fast), value: isShown)
+    }
+
+    @ViewBuilder private var emptyState: some View {
+        if viewModel.historyLoadFailed {
+            EmptyStateView(symbolName: DesignTokens.Symbols.error,
+                           title: AppBranding.Chat.loadFailedTitle,
+                           message: AppBranding.Groups.loadFailedMessage,
+                           actionTitle: AppBranding.Groups.tryAgain) {
+                Task { await viewModel.loadHistory() }
+            }
+        } else {
+            EmptyStateView(symbolName: DesignTokens.Symbols.chat,
+                           title: AppBranding.Chat.emptyTitle,
+                           message: AppBranding.Chat.emptyMessage)
         }
     }
 }

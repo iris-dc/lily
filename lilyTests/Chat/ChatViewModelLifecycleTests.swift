@@ -126,10 +126,12 @@ struct ChatViewModelLifecycleTests {
     @Test func aFailedFirstHistoryLoadOffersTryAgain() async {
         let (harness, viewModel) = await makeHarness()
         harness.chat.pageError = AppError.chatUnavailable
+        #expect(viewModel.isAwaitingHistory, "the first frame comes before the load: an empty room is not empty yet")
 
         await viewModel.appear()
 
         #expect(viewModel.rows.isEmpty && viewModel.historyLoadFailed)
+        #expect(!viewModel.isAwaitingHistory, "a failed first load is not awaited: Try again shows")
         #expect(!viewModel.isLoadingHistory && !viewModel.isGone)
         #expect(viewModel.historyLoadsFinished == 1, "a failed load ends too, for the transcript's arrivals")
         #expect(harness.errorCenter.current?.error == .chatUnavailable)
@@ -145,6 +147,29 @@ struct ChatViewModelLifecycleTests {
         #expect(harness.chat.newestGroupIDs == ["g", "g"], "Try again asks for the first page again")
     }
 
+    /// Whether the transcript waits for the history: until a load brings it in, rows or none; a load cancelled by
+    /// leaving the screen still leaves it awaited, since the way back loads again.
+    @Test func theHistoryIsAwaitedUntilALoadBringsItIn() async {
+        let (harness, viewModel) = await makeHarness()
+        harness.chat.holdsRequests = true
+        let cancelled = Task { await viewModel.loadHistory() }
+        await settle(until: { harness.chat.isHolding })
+        cancelled.cancel()
+        harness.chat.releaseRequests()
+        await cancelled.value
+
+        #expect(viewModel.isAwaitingHistory && !viewModel.hasLoadedHistory && viewModel.historyLoadsFinished == 1)
+
+        await viewModel.loadHistory()
+        #expect(!viewModel.isAwaitingHistory && viewModel.hasLoadedHistory && viewModel.rows.isEmpty,
+                "an empty page brings the history in: the empty state shows")
+
+        let (second, filled) = await makeHarness()
+        second.chat.newestPages = [.fixture([first])]
+        await filled.loadHistory()
+        #expect(!filled.isAwaitingHistory && filled.hasLoadedHistory && !filled.rows.isEmpty)
+    }
+
     @Test func aPageThatEndsRoomAccessIsGoneNotFailed() async {
         let (harness, viewModel) = await makeHarness()
         harness.chat.pageError = AppError.notAMember
@@ -152,6 +177,7 @@ struct ChatViewModelLifecycleTests {
         await viewModel.appear()
 
         #expect(viewModel.isGone && !viewModel.historyLoadFailed, "the screen leaves; there is nothing to try again")
+        #expect(viewModel.isAwaitingHistory, "no empty state on the way out")
     }
 
     /// A page that ended the room's access is a refusal the room expects: a warning, never an error line.

@@ -11,7 +11,8 @@ import SwiftUI
 /// each frame pinned the rows above move up with it, and nothing slides on its own; a sent message keeps its bubble's
 /// row (`ChatRow.id`) and its height, so the confirmation swaps the bubble in place and moves nothing. Every report while
 /// a row arrives, and in the first moments on screen, is logged at debug, and a line per arrival sums the motion up
-/// (`ArrivalMotion`).
+/// (`ArrivalMotion`). A room the cache missed lays its first page out under a spinner and fades it in once the layout
+/// has settled (`FirstPageReveal`).
 struct ChatTranscript: View {
     let viewModel: ChatViewModel
     let dependencies: AppDependencies
@@ -31,6 +32,8 @@ struct ChatTranscript: View {
     @State private var hero: ViewerHero
     /// A tapped picture's full version on its way, before the viewer opens.
     @State private var opening: Task<Void, Never>?
+    /// Whether the rows show yet: a room opened without its history shows its first page once it has settled.
+    @State var firstPageReveal: FirstPageReveal
     /// The file open in QuickLook, as the preview copy the loader named.
     @State private var previewURL: URL?
     /// The message whose report sheet is open.
@@ -42,6 +45,7 @@ struct ChatTranscript: View {
         self.viewModel = viewModel
         self.dependencies = dependencies
         _hero = State(initialValue: ViewerHero(logger: viewModel.logger))
+        _firstPageReveal = State(initialValue: FirstPageReveal(isShown: viewModel.room.hasHistory))
     }
 
     var body: some View {
@@ -79,8 +83,11 @@ struct ChatTranscript: View {
                                       of: { $0.frame(in: .scrollView).minY },
                                       action: { tracker.endMarkerY = $0 })
             }
+            .animation(.easeOut(duration: DesignTokens.Duration.fast)) { $0.opacity(firstPageReveal.isShown ? 1 : 0) }
         }
         .environment(\.viewerHero, hero)
+        .overlay { spinner }
+        .onChange(of: viewModel.isAwaitingHistory) { historyEnded() }
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .alignment)
         .scrollPosition($position)

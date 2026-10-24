@@ -30,6 +30,10 @@ nonisolated extension AppConfig {
         /// How long a tapped picture waits for the keyboard to finish going down, so the viewer opens from where the
         /// tile ends up rather than from a tile still moving.
         static let viewerKeyboardWait: Duration = .milliseconds(400)
+        /// A room opened without its history shows its first page once its layout has gone this long without a
+        /// change (`FirstPageReveal`), or after `firstPageRevealLimit` whatever it does.
+        static let firstPageRevealQuiet: Duration = .milliseconds(120)
+        static let firstPageRevealLimit: Duration = .milliseconds(700)
         static let readMarkFlushInterval: TimeInterval = 60
         static let mockEchoDelay: Duration = .milliseconds(200)
         static let mockAutoReplyDelay: Duration = .seconds(1.5)

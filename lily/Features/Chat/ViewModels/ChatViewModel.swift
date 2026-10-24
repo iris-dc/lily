@@ -16,6 +16,8 @@ final class ChatViewModel {
     var isLoadingHistory = false
     /// How many `loadHistory()` runs have ended: the transcript tells a load's last page from a live message by it.
     var historyLoadsFinished = 0
+    /// A `loadHistory()` run brought the history in, so the rows are the room's, none included.
+    var hasLoadedHistory = false
     /// The last `loadHistory()` failed while the room stays readable, so the empty state offers Try again; cleared by
     /// the next load.
     var historyLoadFailed = false

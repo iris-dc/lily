@@ -21,6 +21,7 @@ extension ChatViewModel {
                 logger.debug(.cache, "Room cache miss for group \(group.id); loading the newest page")
                 try await catchUp.loadNewest(groupID: group.id, epoch: group.channelEpoch)
             }
+            hasLoadedHistory = true
             await adoptEpoch(room.channelEpoch)
         } catch {
             historyLoadFailed = Self.leavesRoomReadable(error)
@@ -32,6 +33,13 @@ extension ChatViewModel {
     /// (`report` drops that room).
     private static func leavesRoomReadable(_ error: any Error) -> Bool {
         !AppError.isCancellation(error) && !((error as? AppError)?.endsRoomAccess ?? false)
+    }
+
+    /// Whether the room's history is still to come, so an empty transcript means nothing yet: a load runs, none has
+    /// brought it in (the first frame comes before `appear()`; a load cancelled by leaving runs again on the way back),
+    /// and the last did not fail.
+    var isAwaitingHistory: Bool {
+        isLoadingHistory || (!hasLoadedHistory && !historyLoadFailed)
     }
 
     var isLoadingOlder: Bool { olderPageTask != nil }

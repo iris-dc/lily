@@ -34,6 +34,33 @@ extension ChatTranscript {
         }
         apply(action)
         if tracker.policy.isFollowing != wasFollowing { logFollowing() }
+        // Rows laid out before the page (a pending send, a live line) are not the first page yet.
+        firstPageReveal.noteLayout(hasRows: laidOutRows > 0 && !viewModel.isAwaitingHistory) { showFirstPage() }
+    }
+
+    /// The first page settled out of sight, pinned by every change while it settled: shown, fading in.
+    func historyEnded() {
+        guard !viewModel.isAwaitingHistory else { return }
+        firstPageReveal.historyEnded(hasRows: !viewModel.rows.isEmpty, loaded: viewModel.hasLoadedHistory) { showFirstPage() }
+    }
+
+    func showFirstPage() {
+        log("revealed with \(viewModel.rows.count) rows, \(describe(tracker.geometry))")
+        firstPageReveal.show()
+    }
+
+    /// One view from the first frame until the rows show, so it never restarts or blinks between the load and the
+    /// settling; it fades out on the rows' curve as they fade in, so no frame between them is blank.
+    var spinner: some View {
+        let isShown = firstPageReveal.showsSpinner(hasRows: !viewModel.rows.isEmpty,
+                                                   isAwaitingHistory: viewModel.isAwaitingHistory)
+        return ZStack {
+            if isShown {
+                ProgressView()
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeOut(duration: DesignTokens.Duration.fast), value: isShown)
     }
 
     func scrollPhaseChanged(from old: ScrollPhase, to new: ScrollPhase) {
