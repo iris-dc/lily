@@ -28,13 +28,14 @@ nonisolated struct ReplyQuote: Hashable, Codable, Sendable {
     }
 
     /// The quote of `message` as the backend would store it, named after `senderName` (the sender's current name
-    /// when the roster knows it) and after the first attachment's kind when the message carries any. The one place a
+    /// when the roster knows it) and after the first attachment's kind when the message carries any; a poll's excerpt
+    /// is its question. The one place a
     /// message becomes a quote; the mock repository snapshots through it too.
     init(quoting message: ChatMessage, senderName: String) {
         self.init(messageId: message.id,
                   senderUserId: message.senderUserId,
                   senderName: senderName,
-                  excerpt: message.text?.prefix(wireLength: AppConfig.Chat.replyExcerptLength),
+                  excerpt: (message.text ?? message.poll?.question)?.prefix(wireLength: AppConfig.Chat.replyExcerptLength),
                   kind: message.kind,
                   attachmentKind: message.attachments.first?.kind)
     }
@@ -50,8 +51,10 @@ nonisolated struct ReplyQuote: Hashable, Codable, Sendable {
         }
     }
 
-    /// What the quote shows under the sender's name: the excerpt, else the placeholder.
+    /// What the quote shows under the sender's name: the excerpt (a poll's question, marked as a poll), else the
+    /// placeholder.
     var displayText: String {
-        excerpt ?? placeholder ?? ""
+        if kind == .poll { return AppBranding.Chat.Polls.quoted(excerpt ?? "") }
+        return excerpt ?? placeholder ?? ""
     }
 }

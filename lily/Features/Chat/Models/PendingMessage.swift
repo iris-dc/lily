@@ -15,6 +15,8 @@ nonisolated struct PendingMessage: Identifiable, Hashable, Sendable {
     private(set) var replyTo: ReplyQuote?
     /// The pictures the bubble previews from their files on the device, and the retry names again.
     let attachments: [AttachmentDraft]
+    /// A poll the bubble previews without votes, and the retry sends again.
+    let poll: PollDraft?
     var state: State = .sending
 
     var id: String { clientMessageID }
@@ -26,6 +28,7 @@ nonisolated struct PendingMessage: Identifiable, Hashable, Sendable {
         text = draft.trimmedText
         replyTo = draft.replyTo
         attachments = draft.attachments
+        poll = draft.poll
         self.sentAt = sentAt
     }
 
@@ -35,6 +38,7 @@ nonisolated struct PendingMessage: Identifiable, Hashable, Sendable {
         draft.text = text
         draft.replyTo = replyTo
         draft.attachments = attachments
+        draft.poll = poll
         return draft
     }
 

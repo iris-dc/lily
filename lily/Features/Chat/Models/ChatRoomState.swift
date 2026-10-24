@@ -3,7 +3,9 @@ import Foundation
 /// Everything known about one room, ordered by message id and deduplicated, with the two cursors the recovery
 /// protocol needs: `displayMaxID` (the newest row rendered, moved by live envelopes and REST alike) and `restWatermark`,
 /// moved only by a `newest` or `newer` page, so a live message can never hide a gap behind it: the next catch-up still
-/// starts where REST last left off. A `message_deleted` that arrives before its message is kept as a tombstone.
+/// starts where REST last left off. A `message_deleted` that arrives before its message is kept as a tombstone. The
+/// room's pins are the latest page's; `pollRevision` is the revision whose poll counts the room holds, so a page that
+/// names a later one says the polls held need a refresh (`ChatCatchUp`).
 nonisolated struct ChatRoomState: Hashable, Sendable {
     let groupID: String
     private(set) var messages: [ChatMessage] = []
@@ -17,6 +19,8 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
     private(set) var olderCursor: String?
     /// Whether a `newest` page was ever applied; before that the room is a live-only stub.
     private(set) var hasHistory = false
+    private(set) var pins: [PinnedMessage] = []
+    private(set) var pollRevision = 0
 
     init(groupID: String, channelEpoch: Int) {
         self.groupID = groupID
@@ -48,6 +52,43 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
         page.forEach { insert($0) }
     }
 
+    /// A page's messages: new ones inserted, and a poll already held takes the page's counts, which are the backend's
+    /// as of the page.
+    private mutating func take(_ page: [ChatMessage]) {
+        for message in page where !insert(message) {
+            guard let poll = message.poll, let index = messages.firstIndex(where: { $0.id == message.id }),
+                  !messages[index].isDeleted else { continue }
+            messages[index] = messages[index].replacingPoll(poll)
+        }
+    }
+
+    /// The polls' states a refresh answered at `revision`, which the room then holds.
+    mutating func applyPolls(_ states: [PollState], revision: Int) {
+        states.forEach { replacePoll(messageID: $0.messageId, with: $0.poll) }
+        pollRevision = max(pollRevision, revision)
+    }
+
+    /// One poll's state: the caller's vote, as shown before the answer or as answered. The revision moves only when the
+    /// answer's is the next one, so a vote that others' votes preceded still leaves the next catch-up a refresh to do.
+    mutating func applyPoll(messageID: String, poll: Poll, revision: Int? = nil) {
+        replacePoll(messageID: messageID, with: poll)
+        if let revision, revision == pollRevision + 1 { pollRevision = revision }
+    }
+
+    mutating func applyPins(_ pins: [PinnedMessage]) {
+        self.pins = pins
+    }
+
+    /// The live polls held, newest first, at most `limit`: what a refresh asks for.
+    func pollIDs(limit: Int) -> [String] {
+        Array(messages.reversed().filter { $0.poll != nil && !$0.isDeleted }.prefix(limit).map(\.id))
+    }
+
+    private mutating func replacePoll(messageID: String, with poll: Poll) {
+        guard let index = messages.firstIndex(where: { $0.id == messageID }), !messages[index].isDeleted else { return }
+        messages[index] = messages[index].replacingPoll(poll)
+    }
+
     /// Marks a message deleted, whether it is here yet or arrives later.
     mutating func markDeleted(id: String) {
         tombstonedIDs.insert(id)
@@ -66,7 +107,10 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
 
     /// The first page of a room: the newest messages, and the watermark at the newest of them.
     mutating func applyNewest(_ page: MessagePage) {
-        insert(contentsOf: page.items)
+        // A room's first page holds every poll as of the page's revision; a room held before may hold older polls.
+        if !hasHistory, messages.allSatisfy({ $0.poll == nil }) { pollRevision = page.pollRevision }
+        take(page.items)
+        pins = page.pins
         noteOlder(from: page)
         hasHistory = true
         advanceWatermark(to: page.items.last?.id)
@@ -80,7 +124,8 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
     @discardableResult
     mutating func applyOlder(_ page: MessagePage, before anchor: String) -> Bool {
         guard olderPageAnchor == anchor else { return false }
-        insert(contentsOf: page.items)
+        take(page.items)
+        pins = page.pins
         noteOlder(from: page)
         channelEpoch = page.channelEpoch
         return true
@@ -89,7 +134,8 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
     /// A catch-up page after the watermark, which moves to the page's continuation cursor when it names one (so a page
     /// of hidden or already-held messages still advances), else to the newest message it returned.
     mutating func applyNewer(_ page: MessagePage) {
-        insert(contentsOf: page.items)
+        take(page.items)
+        pins = page.pins
         advanceWatermark(to: page.nextAfter ?? page.items.last?.id)
         channelEpoch = page.channelEpoch
     }

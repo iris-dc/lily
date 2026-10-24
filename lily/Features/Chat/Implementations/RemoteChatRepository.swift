@@ -2,7 +2,8 @@ import Foundation
 
 /// Chat from the Laurel backend (plan section 3.4). Reads, the read marker and the clear fall back to
 /// `.chatUnavailable`, a send to `.messageSendFailed`, an upload ticket to `.attachmentUploadFailed` and a link
-/// refresh to `.attachmentUnavailable`; the codes with copy of their own map through the shared `BackendErrorCode`.
+/// refresh to `.attachmentUnavailable`, a vote to `.voteFailed` and a pin to `.pinFailed`; the codes with copy of their own
+/// map through the shared `BackendErrorCode`.
 final class RemoteChatRepository: ChatRepository {
     private let client: any APIClient
 
@@ -53,6 +54,31 @@ final class RemoteChatRepository: ChatRepository {
     func refreshAttachment(groupID: String, messageID: String, attachmentID: String) async throws -> AttachmentLink {
         let path = AppConfig.API.Paths.attachment(id: groupID, messageID: messageID, attachmentID: attachmentID)
         return try await client.send(.get(path), failingWith: .attachmentUnavailable)
+    }
+
+    func vote(groupID: String, messageID: String, optionIDs: [String]) async throws -> VoteResult {
+        let request = APIRequest<VoteResult>.put(AppConfig.API.Paths.vote(id: groupID, messageID: messageID),
+                                                 body: VotePayload(optionIds: optionIDs))
+        return try await client.send(request, failingWith: .voteFailed)
+    }
+
+    func polls(groupID: String, messageIDs: [String]) async throws -> PollStates {
+        let ids = URLQueryItem(name: AppConfig.API.Query.ids, value: messageIDs.joined(separator: ","))
+        return try await client.send(.get(AppConfig.API.Paths.polls(id: groupID), query: [ids]), failingWith: .chatUnavailable)
+    }
+
+    func voters(groupID: String, messageID: String) async throws -> PollVoters {
+        try await client.send(.get(AppConfig.API.Paths.voters(id: groupID, messageID: messageID)), failingWith: .chatUnavailable)
+    }
+
+    func pin(groupID: String, messageID: String) async throws -> PinList {
+        let request = APIRequest<PinList>.put(AppConfig.API.Paths.pin(id: groupID, messageID: messageID))
+        return try await client.send(request, failingWith: .pinFailed)
+    }
+
+    func unpin(groupID: String, messageID: String) async throws -> PinList {
+        let request = APIRequest<PinList>.delete(AppConfig.API.Paths.pin(id: groupID, messageID: messageID))
+        return try await client.send(request, failingWith: .pinFailed)
     }
 
     private func page(groupID: String, query: [URLQueryItem]) async throws -> MessagePage {

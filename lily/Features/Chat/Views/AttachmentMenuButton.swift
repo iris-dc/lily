@@ -4,10 +4,13 @@ import SwiftUI
 /// The "+" leading the composer's field: a menu with Photo library (the system picker for pictures and videos, which
 /// needs no permission), Camera (hidden where there is none, the simulator included) and File (the files importer,
 /// any type, several at once). Under `-mock-attachment-picker` the items add the bundled photo, clip and document at
-/// once, because XCUITest cannot drive the out-of-process pickers; Camera then shows without a camera. Disabled once
-/// the message holds `maxPerMessage` items; the composer hides it altogether while the backend takes no attachments.
+/// once, because XCUITest cannot drive the out-of-process pickers; Camera then shows without a camera. In a group chat
+/// Poll follows them (`onPoll`). The attachment items are disabled once the message holds `maxPerMessage` items, and
+/// left out while the backend takes no attachments (`offersAttachments`), when the menu holds Poll alone.
 struct AttachmentMenuButton: View {
     let attachments: AttachmentComposerModel
+    var offersAttachments = true
+    var onPoll: (() -> Void)?
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showsPhotoPicker = false
     @State private var showsCamera = false
@@ -17,17 +20,27 @@ struct AttachmentMenuButton: View {
 
     var body: some View {
         Menu {
-            Button(Copy.photoLibrary, systemImage: DesignTokens.Symbols.photoLibrary, action: pickPhotos)
-            if CameraPicker.isAvailable || attachments.picksWithoutPicker {
-                Button(Copy.camera, systemImage: DesignTokens.Symbols.camera, action: openCamera)
+            if offersAttachments {
+                Group {
+                    Button(Copy.photoLibrary, systemImage: DesignTokens.Symbols.photoLibrary, action: pickPhotos)
+                    if CameraPicker.isAvailable || attachments.picksWithoutPicker {
+                        Button(Copy.camera, systemImage: DesignTokens.Symbols.camera, action: openCamera)
+                    }
+                    Button(Copy.file, systemImage: DesignTokens.Symbols.file, action: pickFiles)
+                }
+                .disabled(attachments.isFull)
             }
-            Button(Copy.file, systemImage: DesignTokens.Symbols.file, action: pickFiles)
+            if let onPoll {
+                if offersAttachments { Divider() }
+                Button(AppBranding.Chat.Polls.poll, systemImage: DesignTokens.Symbols.poll, action: onPoll)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.chatAttachPoll)
+            }
         } label: {
             Image(systemName: DesignTokens.Symbols.attach)
         }
         .menuStyle(.button)
         .lilyGlassIconButton()
-        .disabled(attachments.isFull)
+        .disabled(attachments.isFull && onPoll == nil)
         .accessibilityLabel(Copy.attach)
         .accessibilityIdentifier(AccessibilityIdentifiers.chatAttach)
         .photosPicker(isPresented: $showsPhotoPicker,

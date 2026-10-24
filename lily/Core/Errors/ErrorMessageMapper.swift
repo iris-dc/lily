@@ -25,7 +25,8 @@ nonisolated enum ErrorMessageMapper {
              .contentRejected, .inviteExpired, .inviteUnavailable, .inboxUnavailable, .inviteActionFailed,
              .inviteNotPending, .alreadyMember, .cannotInvite:
             groupMessage(for: error)
-        case .chatUnavailable, .messageSendFailed, .messageNotFound, .replyTargetNotFound:
+        case .chatUnavailable, .messageSendFailed, .messageNotFound, .replyTargetNotFound, .pollsNotAllowed, .notAPoll,
+             .pollAnonymous, .voteFailed, .notPinnable, .tooManyPins, .pinFailed:
             chatMessage(for: error)
         case .attachmentNotFound, .attachmentTooLarge, .attachmentTypeNotAllowed, .attachmentsDisabled,
              .attachmentUploadFailed, .attachmentUnavailable:

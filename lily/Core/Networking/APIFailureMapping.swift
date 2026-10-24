@@ -49,6 +49,14 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case attachmentTypeNotAllowed = "ATTACHMENT_TYPE_NOT_ALLOWED"
     /// The backend has no bucket configured.
     case attachmentsDisabled = "ATTACHMENTS_DISABLED"
+    /// A poll sent into a direct conversation.
+    case pollsNotAllowed = "POLLS_NOT_ALLOWED"
+    case notAPoll = "NOT_A_POLL"
+    /// Who voted was asked of an anonymous poll.
+    case pollAnonymous = "POLL_ANONYMOUS"
+    /// A system row or a deleted message cannot be pinned.
+    case notPinnable = "NOT_PINNABLE"
+    case tooManyPins = "TOO_MANY_PINS"
     /// Also a private tournament to an outsider.
     case tournamentNotFound = "TOURNAMENT_NOT_FOUND"
     /// Like the group codes: the generic creation failure, and the refetch by client id finds what did land.
@@ -109,6 +117,11 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .attachmentTooLarge: .attachmentTooLarge(caps: .group)
         case .attachmentTypeNotAllowed: .attachmentTypeNotAllowed
         case .attachmentsDisabled: .attachmentsDisabled
+        case .pollsNotAllowed: .pollsNotAllowed
+        case .notAPoll: .notAPoll
+        case .pollAnonymous: .pollAnonymous
+        case .notPinnable: .notPinnable
+        case .tooManyPins: .tooManyPins
         case .tournamentNotFound: .tournamentNotFound
         case .tournamentIdTaken, .tournamentIdReused: .tournamentCreationFailed
         case .tournamentLimit: .tournamentLimit

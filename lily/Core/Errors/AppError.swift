@@ -88,6 +88,20 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case attachmentUploadFailed
     /// A link refresh or a download failed for a reason without a code of its own.
     case attachmentUnavailable
+    /// A poll sent into a direct conversation (`POLLS_NOT_ALLOWED`).
+    case pollsNotAllowed
+    /// A vote on a message that is no poll (`NOT_A_POLL`).
+    case notAPoll
+    /// Who voted was asked of an anonymous poll (`POLL_ANONYMOUS`).
+    case pollAnonymous
+    /// A vote failed for a reason without a code of its own.
+    case voteFailed
+    /// A system row or a deleted message (`NOT_PINNABLE`).
+    case notPinnable
+    /// The chat holds the most pins it may (`TOO_MANY_PINS`).
+    case tooManyPins
+    /// A pin or an unpin failed for a reason without a code of its own.
+    case pinFailed
     case reportFailed
     case blockLimitReached
     case userNotFound

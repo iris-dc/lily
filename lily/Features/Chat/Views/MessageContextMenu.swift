@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The long-press menu of a bubble, drawing what `MessageMenuItems` decided: Reply, Copy, Delete, and for another
-/// member's live message Report and Block, which the transcript presents through `onReport` and `onBlock`.
+/// The long-press menu of a bubble, drawing what `MessageMenuItems` decided: Reply, Copy, Pin or Unpin, Retract vote,
+/// Delete, and for another member's live message Report and Block, which the transcript presents through `onReport` and
+/// `onBlock`.
 struct MessageContextMenu: View {
     let items: MessageMenuItems
     let row: MessageRow
@@ -19,6 +20,20 @@ struct MessageContextMenu: View {
         }
         if items.offers(.copy) {
             Button(Copy.copyMessage, systemImage: DesignTokens.Symbols.copy) { viewModel.copy(message) }
+        }
+        if items.offers(.pin) {
+            Button(Copy.Pins.pin, systemImage: DesignTokens.Symbols.pin) { Task { await viewModel.pin(message) } }
+                .accessibilityIdentifier(AccessibilityIdentifiers.messagePin)
+        }
+        if items.offers(.unpin) {
+            Button(Copy.Pins.unpin, systemImage: DesignTokens.Symbols.unpin) { Task { await viewModel.unpin(message.id) } }
+                .accessibilityIdentifier(AccessibilityIdentifiers.messageUnpin)
+        }
+        if items.offers(.retractVote) {
+            Button(Copy.Polls.retractVote, systemImage: DesignTokens.Symbols.retractVote) {
+                Task { await viewModel.retractVote(in: message) }
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.messageRetractVote)
         }
         if items.offers(.delete) {
             Button(Copy.deleteMessage, systemImage: DesignTokens.Symbols.delete, role: .destructive) {

@@ -95,6 +95,17 @@ nonisolated enum GroupAccess: Equatable, Sendable {
         canRemove(other)
     }
 
+    /// Polls go into a group or a tournament's room the caller is in, never a conversation, nor a room of a kind this
+    /// build does not know.
+    func canCreatePolls(in group: SportGroup) -> Bool {
+        isMember && !group.isDirect && !group.kind.isUnknown
+    }
+
+    /// Either side of a conversation; in a group or a tournament's room, its admins and owner.
+    func canPin(in group: SportGroup) -> Bool {
+        self == .conversation || (isMember && group.role?.isAdmin == true)
+    }
+
     private func allows(_ membersMay: Bool) -> Bool {
         guard let role else { return false }
         return role.isAdmin || membersMay

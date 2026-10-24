@@ -1,7 +1,8 @@
 import Foundation
 
 /// Decodes the backend's `Message` directly: same keys, same optionality, except that missing `attachments` read as
-/// none (the field arrived after the first rooms shipped). Ids are server ULIDs, so their string order is their time
+/// none (the field arrived after the first rooms shipped). A `poll` message carries its poll instead of words; a
+/// `message_pinned` note carries the pinned message's quote in `replyTo`. Ids are server ULIDs, so their string order is their time
 /// order; every store sorts by `id`.
 nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
     let id: String
@@ -25,10 +26,12 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
     let replyTo: ReplyQuote?
     /// The pictures (later videos and files) sent with the message, with presigned links; empty on a tombstone.
     let attachments: [Attachment]
+    /// The question, options and counts of a `poll` message as of the answer it came in; absent on a tombstone.
+    let poll: Poll?
 
     private enum CodingKeys: String, CodingKey {
         case id, groupId, senderUserId, senderName, kind, text, eventId, tournamentId, matchId, clientMessageId, sentAt
-        case isDeleted, replyTo, attachments
+        case isDeleted, replyTo, attachments, poll
     }
 
     init(id: String,
@@ -44,7 +47,8 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
          sentAt: Date,
          isDeleted: Bool = false,
          replyTo: ReplyQuote? = nil,
-         attachments: [Attachment] = []) {
+         attachments: [Attachment] = [],
+         poll: Poll? = nil) {
         self.id = id
         self.groupId = groupId
         self.senderUserId = senderUserId
@@ -59,6 +63,7 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
         self.isDeleted = isDeleted
         self.replyTo = replyTo
         self.attachments = attachments
+        self.poll = poll
     }
 
     /// Key for key like the synthesized decoder, except that missing `attachments` are none: every fixture and
@@ -78,17 +83,38 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
                   sentAt: try container.decode(Date.self, forKey: .sentAt),
                   isDeleted: try container.decode(Bool.self, forKey: .isDeleted),
                   replyTo: try container.decodeIfPresent(ReplyQuote.self, forKey: .replyTo),
-                  attachments: try container.decodeIfPresent([Attachment].self, forKey: .attachments) ?? [])
+                  attachments: try container.decodeIfPresent([Attachment].self, forKey: .attachments) ?? [],
+                  poll: try container.decodeIfPresent(Poll.self, forKey: .poll))
     }
 
-    var isSystem: Bool { kind != .text }
+    var isSystem: Bool { !kind.isWrittenByMember }
     var hasAttachments: Bool { !attachments.isEmpty }
 
     func isSent(by userID: String?) -> Bool {
         userID != nil && senderUserId == userID
     }
 
-    /// The same row after a delete: the text, the quote and the pictures are gone, the bubble stays as a tombstone.
+    /// The same message with `poll` as its state: a vote's answer or a refresh replacing the counts held.
+    func replacingPoll(_ poll: Poll) -> ChatMessage {
+        ChatMessage(id: id,
+                    groupId: groupId,
+                    senderUserId: senderUserId,
+                    senderName: senderName,
+                    kind: kind,
+                    text: text,
+                    eventId: eventId,
+                    tournamentId: tournamentId,
+                    matchId: matchId,
+                    clientMessageId: clientMessageId,
+                    sentAt: sentAt,
+                    isDeleted: isDeleted,
+                    replyTo: replyTo,
+                    attachments: attachments,
+                    poll: poll)
+    }
+
+    /// The same row after a delete: the text, the quote, the pictures and the poll are gone, the bubble stays as a
+    /// tombstone.
     func markingDeleted() -> ChatMessage {
         ChatMessage(id: id,
                     groupId: groupId,

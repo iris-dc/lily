@@ -152,7 +152,7 @@ nonisolated enum MockChatFixtures {
                                     replyTo: quoted.map { ReplyQuote(quoting: $0, senderName: $0.senderName) }))
             lineIndex += 1
         }
-        return rows
+        return decorated(rows, groupID: groupID)
     }
 
     /// The conversation's lines, ending `conversationLastMessageAge` before the launch; the caller's carry client ids

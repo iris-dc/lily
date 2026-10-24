@@ -159,3 +159,37 @@ struct RemoteChatRepositoryTests {
         }
     }
 }
+
+/// The poll and pin routes, as the contract names them.
+extension RemoteChatRepositoryTests {
+    @Test func aVotePutsTheOptionsAndPollsAreAskedForByIDs() async throws {
+        let client = FakeAPIClient()
+        let repository = RemoteChatRepository(client: client)
+        client.responses = [VoteResult(messageId: "m1", poll: .fixture(myVotes: ["1"]), pollRevision: 2),
+                            PollStates(items: [], pollRevision: 2),
+                            PollVoters(options: [])]
+
+        _ = try await repository.vote(groupID: "g1", messageID: "m1", optionIDs: ["1"])
+        _ = try await repository.polls(groupID: "g1", messageIDs: ["m1", "m2"])
+        _ = try await repository.voters(groupID: "g1", messageID: "m1")
+
+        #expect(client.requests[0].method == .put && client.requests[0].path == "/api/groups/g1/messages/m1/vote")
+        #expect(client.requests[0].body as? VotePayload == VotePayload(optionIds: ["1"]))
+        #expect(client.requests[1].method == .get && client.requests[1].path == "/api/groups/g1/polls")
+        #expect(client.requests[1].queryItems == [URLQueryItem(name: "ids", value: "m1,m2")])
+        #expect(client.requests[2].path == "/api/groups/g1/messages/m1/votes")
+    }
+
+    @Test func pinsArePutAndDeletedOnTheirResource() async throws {
+        let client = FakeAPIClient()
+        let repository = RemoteChatRepository(client: client)
+        let list = PinList(pins: [.fixture()], channelEpoch: 3)
+        client.responses = [list, list]
+
+        #expect(try await repository.pin(groupID: "g1", messageID: "m1") == list)
+        _ = try await repository.unpin(groupID: "g1", messageID: "m1")
+
+        #expect(client.requests.map(\.method) == [.put, .delete])
+        #expect(client.requests.allSatisfy { $0.path == "/api/groups/g1/pins/m1" })
+    }
+}

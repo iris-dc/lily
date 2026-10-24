@@ -24,4 +24,15 @@ protocol ChatRepository {
     /// Fresh presigned links for an attachment whose links expired or were refused; the message id is in the path
     /// because the caller's history floor is checked against the message.
     func refreshAttachment(groupID: String, messageID: String, attachmentID: String) async throws -> AttachmentLink
+    /// The caller's choice in a poll, `[]` taking it back; the same choice twice changes nothing.
+    func vote(groupID: String, messageID: String, optionIDs: [String]) async throws -> VoteResult
+    /// The current state of the polls named (at most `AppConfig.Chat.Polls.refreshMaxIDs`); ids that are no live poll
+    /// here are left out.
+    func polls(groupID: String, messageIDs: [String]) async throws -> PollStates
+    /// Who picked what in a public poll.
+    func voters(groupID: String, messageID: String) async throws -> PollVoters
+    /// Admins and owners of a group or room, either side of a conversation; pinning a pinned message, or unpinning one
+    /// that is not, changes nothing. Both answer the chat's pins.
+    func pin(groupID: String, messageID: String) async throws -> PinList
+    func unpin(groupID: String, messageID: String) async throws -> PinList
 }

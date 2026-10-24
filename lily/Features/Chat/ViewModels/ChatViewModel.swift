@@ -231,7 +231,8 @@ extension AppError {
     var isChatRefusal: Bool {
         switch self {
         case .rateLimited, .replyTargetNotFound, .termsRequired, .contentRejected, .tryAgain, .notAMember,
-             .groupNotFound, .messageNotFound, .eventNotFound:
+             .groupNotFound, .messageNotFound, .eventNotFound, .pollsNotAllowed, .notAPoll, .pollAnonymous, .notPinnable,
+             .tooManyPins, .insufficientRole:
             true
         default:
             false

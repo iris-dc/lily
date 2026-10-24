@@ -52,7 +52,7 @@ extension ChatViewModel {
         change(&pending[index])
     }
 
-    private func perform(_ draft: MessageDraft) async {
+    func perform(_ draft: MessageDraft) async {
         do {
             let sent = try await LostRace.attemptTwice(delay: tryAgainDelay,
                                                        logger: logger,

@@ -42,13 +42,18 @@ struct PendingMessageBubble: View {
                     .foregroundStyle(Color.lilyAccent)
                     .accessibilityLabel(Copy.failedHint)
             }
-            BubbleContent(text: message.text,
-                          quote: message.replyTo,
-                          isQuoteDeleted: message.replyTo.map(viewModel.quoteIsDeleted) ?? false,
-                          own: true,
-                          attachmentKinds: message.attachments.map(\.kind),
-                          onTapQuote: onTapQuote) {
-                DraftGallery(drafts: message.attachments, alignment: .trailing)
+            if let poll = message.poll {
+                PollBubble(poll: poll.preview, own: true, isEnabled: false)
+                    .bubbleFill(own: true)
+            } else {
+                BubbleContent(text: message.text,
+                              quote: message.replyTo,
+                              isQuoteDeleted: message.replyTo.map(viewModel.quoteIsDeleted) ?? false,
+                              own: true,
+                              attachmentKinds: message.attachments.map(\.kind),
+                              onTapQuote: onTapQuote) {
+                    DraftGallery(drafts: message.attachments, alignment: .trailing)
+                }
             }
         }
         .contentShape(.rect)

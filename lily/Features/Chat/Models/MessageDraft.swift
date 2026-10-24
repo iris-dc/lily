@@ -12,6 +12,8 @@ nonisolated struct MessageDraft: Equatable, Sendable {
     var replyTo: ReplyQuote?
     /// The pictures going with the words, as the composer's `AttachmentComposerModel` holds them.
     var attachments: [AttachmentDraft] = []
+    /// A poll, sent alone: no words, no quote, no attachments go with it.
+    var poll: PollDraft?
 
     init(clientMessageID: String = UUID().uuidString.lowercased()) {
         self.clientMessageID = clientMessageID
@@ -33,6 +35,7 @@ nonisolated struct MessageDraft: Equatable, Sendable {
     var uploadedRefs: [AttachmentRef] { attachments.compactMap(\.uploadedRef) }
 
     var issues: [Issue] {
+        if let poll { return poll.isValid ? [] : [.empty] }
         var issues: [Issue] = []
         if trimmedText.isEmpty && uploadedRefs.isEmpty { issues.append(.empty) }
         if length > AppConfig.Chat.messageMaxLength { issues.append(.tooLong) }
@@ -50,6 +53,7 @@ nonisolated struct MessageDraft: Equatable, Sendable {
     var showsCounter: Bool { length >= AppConfig.Chat.counterThreshold }
 
     var payload: SendMessagePayload {
+        if let poll { return SendMessagePayload(clientMessageId: clientMessageID, text: nil, poll: poll.payload) }
         let refs = uploadedRefs
         return SendMessagePayload(clientMessageId: clientMessageID,
                                   text: text.nonBlankTrimmed,

@@ -1,7 +1,8 @@
 import Foundation
 
-/// What a chat row is: something a member wrote, or a system note the backend posted (a game created in the group;
-/// in a tournament's room its start, a result, a dispute and the winner). A kind this build does not know keeps its
+/// What a chat row is: something a member wrote (words and attachments, or a poll), or a system note the backend posted
+/// (a game created in the group, a message pinned; in a tournament's room its start, a result, a dispute and the
+/// winner). A kind this build does not know keeps its
 /// name and counts as a system note that `ChatTimeline` leaves out, so a room from a newer backend still decodes and
 /// shows nothing for it rather than a wrong line.
 nonisolated enum MessageKind: WireNamedKind {
@@ -11,6 +12,8 @@ nonisolated enum MessageKind: WireNamedKind {
     case matchResult
     case matchDisputed
     case tournamentCompleted
+    case poll
+    case messagePinned
     case unknown(String)
 
     private static let textName = "text"
@@ -19,6 +22,8 @@ nonisolated enum MessageKind: WireNamedKind {
     private static let matchResultName = "match_result"
     private static let matchDisputedName = "match_disputed"
     private static let tournamentCompletedName = "tournament_completed"
+    private static let pollName = "poll"
+    private static let messagePinnedName = "message_pinned"
 
     init(wireName: String) {
         switch wireName {
@@ -28,6 +33,8 @@ nonisolated enum MessageKind: WireNamedKind {
         case Self.matchResultName: self = .matchResult
         case Self.matchDisputedName: self = .matchDisputed
         case Self.tournamentCompletedName: self = .tournamentCompleted
+        case Self.pollName: self = .poll
+        case Self.messagePinnedName: self = .messagePinned
         default: self = .unknown(wireName)
         }
     }
@@ -40,6 +47,8 @@ nonisolated enum MessageKind: WireNamedKind {
         case .matchResult: Self.matchResultName
         case .matchDisputed: Self.matchDisputedName
         case .tournamentCompleted: Self.tournamentCompletedName
+        case .poll: Self.pollName
+        case .messagePinned: Self.messagePinnedName
         case .unknown(let name): name
         }
     }
@@ -48,7 +57,16 @@ nonisolated enum MessageKind: WireNamedKind {
     var isTournamentNote: Bool {
         switch self {
         case .tournamentStarted, .matchResult, .matchDisputed, .tournamentCompleted: true
-        case .text, .eventCreated, .unknown: false
+        case .text, .eventCreated, .poll, .messagePinned, .unknown: false
+        }
+    }
+
+    /// A member wrote it, so it is a bubble: words and attachments, or a poll; everything else is the backend's note.
+    var isWrittenByMember: Bool {
+        switch self {
+        case .text, .poll: true
+        case .eventCreated, .tournamentStarted, .matchResult, .matchDisputed, .tournamentCompleted, .messagePinned,
+             .unknown: false
         }
     }
 

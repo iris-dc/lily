@@ -30,9 +30,21 @@ final class SystemRowContent {
             return AppBranding.Chat.matchDisputed(message.text)
         case .tournamentCompleted:
             return AppBranding.Chat.tournamentCompleted(winner: message.text)
+        case .messagePinned:
+            return pinnedText(for: message)
+        case .poll:
+            return message.poll?.question ?? ""
         case .text, .unknown:
             return message.text ?? ""
         }
+    }
+
+    /// "Marta pinned «…»" from the quote the note carries; a quote without words reads as its placeholder.
+    private func pinnedText(for message: ChatMessage) -> String {
+        guard let quote = message.replyTo, !quote.displayText.isEmpty else {
+            return AppBranding.Chat.messagePinned(by: message.senderName)
+        }
+        return AppBranding.Chat.messagePinned(by: message.senderName, excerpt: quote.displayText)
     }
 
     /// Fetches what a row needs to word itself (a game's title, a started tournament's format). Quiet on failure: the

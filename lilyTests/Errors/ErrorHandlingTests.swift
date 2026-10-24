@@ -259,6 +259,8 @@ struct BackendErrorCodeTests {
             "REPLY_TARGET_NOT_FOUND": .replyTargetNotFound, "ATTACHMENT_NOT_FOUND": .attachmentNotFound,
             "ATTACHMENT_TOO_LARGE": .attachmentTooLarge(caps: .group), "ATTACHMENT_TYPE_NOT_ALLOWED": .attachmentTypeNotAllowed,
             "ATTACHMENTS_DISABLED": .attachmentsDisabled, "TOURNAMENT_NOT_FOUND": .tournamentNotFound,
+            "POLLS_NOT_ALLOWED": .pollsNotAllowed, "NOT_A_POLL": .notAPoll, "POLL_ANONYMOUS": .pollAnonymous,
+            "NOT_PINNABLE": .notPinnable, "TOO_MANY_PINS": .tooManyPins,
             "TOURNAMENT_ID_TAKEN": .tournamentCreationFailed, "TOURNAMENT_ID_REUSED": .tournamentCreationFailed,
             "TOURNAMENT_LIMIT": .tournamentLimit, "NOT_ORGANIZER": .notOrganizer, "TOURNAMENT_LOCKED": .tournamentLocked,
             "REGISTRATION_CLOSED": .registrationClosed, "TOURNAMENT_FULL": .tournamentFull, "ALREADY_ENTERED": .alreadyEntered,

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The field and the send button at the bottom of a chat, on glass, with the attach "+" leading the field while the
-/// backend takes attachments. The field grows to five lines, a counter shows once the text nears the limit, and after
+/// The field and the send button at the bottom of a chat, on glass, with the "+" leading the field while the backend
+/// takes attachments or the chat takes polls (its Poll item opens `PollComposerSheet`). The field grows to five lines, a counter shows once the text nears the limit, and after
 /// a 429 the button stays closed while a caption counts the cooldown down. While the draft answers a message,
 /// `ReplyPreviewBar` sits above the field and the field takes focus; while pictures are picked, `AttachmentStrip` does.
 /// On a hardware keyboard Return sends and Shift+Return starts a new line (`ReturnKeyPolicy`).
@@ -11,6 +11,7 @@ struct MessageComposer: View {
     @State private var tick = 0
     /// Whether the field holds the keyboard; the field writes it, a reply sets it.
     @State private var isFieldFocused = false
+    @State private var composesPoll = false
 
     private typealias Copy = AppBranding.Chat
 
@@ -25,8 +26,10 @@ struct MessageComposer: View {
                         AttachmentStrip(attachments: viewModel.attachments)
                     }
                     HStack(alignment: .bottom, spacing: DesignTokens.Spacing.sm) {
-                        if viewModel.attachmentsEnabled {
-                            AttachmentMenuButton(attachments: viewModel.attachments)
+                        if viewModel.attachmentsEnabled || viewModel.canCreatePolls {
+                            AttachmentMenuButton(attachments: viewModel.attachments,
+                                                 offersAttachments: viewModel.attachmentsEnabled,
+                                                 onPoll: viewModel.canCreatePolls ? { composesPoll = true } : nil)
                         }
                         GrowingTextView(text: $viewModel.draft.text,
                                         isFocused: $isFieldFocused,
@@ -48,6 +51,9 @@ struct MessageComposer: View {
         }
         .padding(DesignTokens.Spacing.md)
         .task(id: viewModel.cooldownUntil) { await countDown() }
+        .sheet(isPresented: $composesPoll) {
+            PollComposerSheet { poll in Task { await viewModel.sendPoll(poll) } }
+        }
         .onChange(of: viewModel.replyTarget) {
             if viewModel.replyTarget != nil { isFieldFocused = true }
         }

@@ -6,12 +6,17 @@ import Foundation
 /// stored row (`floors`), and hides a conversation from Mine until any new line, the caller's included, brings it back.
 /// Every id minted here (a send, a reply, a floor) comes from `MockChatFixtures.sentMessageID`, so it sorts after the
 /// room's fixture rows and after every earlier id of the run, as the backend's ULIDs do: pages, floors and the stores
-/// compare ids as strings. Attachments live in `MockAttachmentStore` (`MockChatRepository+Attachments.swift`).
+/// compare ids as strings. Attachments live in `MockAttachmentStore` (`MockChatRepository+Attachments.swift`); polls
+/// and pins follow the backend's rules in `MockChatRepository+Polls.swift`.
 final class MockChatRepository: ChatRepository {
     /// Stored state is internal, not private, so `MockChatRepository+Attachments.swift` can reach it.
     var rooms: [String: [ChatMessage]] = [:]
     /// The caller's history floor per room: pages show only the ids above it.
     var floors: [String: String] = [:]
+    /// Per room: its pins, oldest first, its poll revision, and the voters of its public polls by option id.
+    var pins: [String: [PinnedMessage]] = [:]
+    var pollRevisions: [String: Int] = [:]
+    var pollVoters: [String: [String: [PollVoters.Voter]]] = [:]
     private var replyIndex = 0
     private var sequence = 0
     let groups: MockGroupRepository
@@ -46,21 +51,30 @@ final class MockChatRepository: ChatRepository {
     func newest(groupID: String) async throws -> MessagePage {
         let (group, messages) = try await visibleRoom(groupID)
         let size = AppConfig.Chat.historyPageSize
-        return MessagePage(items: Array(messages.suffix(size)), hasMore: messages.count > size, channelEpoch: group.channelEpoch)
+        return page(Array(messages.suffix(size)), hasMore: messages.count > size, in: group)
     }
 
     func older(groupID: String, before messageID: String) async throws -> MessagePage {
         let (group, messages) = try await visibleRoom(groupID)
         let earlier = messages.filter { $0.id < messageID }
         let size = AppConfig.Chat.historyPageSize
-        return MessagePage(items: Array(earlier.suffix(size)), hasMore: earlier.count > size, channelEpoch: group.channelEpoch)
+        return page(Array(earlier.suffix(size)), hasMore: earlier.count > size, in: group)
     }
 
     func newer(groupID: String, after messageID: String) async throws -> MessagePage {
         let (group, messages) = try await visibleRoom(groupID)
         let later = messages.filter { $0.id > messageID }
         let size = AppConfig.Chat.catchUpPageSize
-        return MessagePage(items: Array(later.prefix(size)), hasMore: later.count > size, channelEpoch: group.channelEpoch)
+        return page(Array(later.prefix(size)), hasMore: later.count > size, in: group)
+    }
+
+    /// Every page carries the room's pins and poll revision, as the backend's do.
+    private func page(_ items: [ChatMessage], hasMore: Bool, in group: SportGroup) -> MessagePage {
+        MessagePage(items: items,
+                    hasMore: hasMore,
+                    channelEpoch: group.channelEpoch,
+                    pollRevision: pollRevisions[group.id] ?? 0,
+                    pins: pins[group.id] ?? [])
     }
 
     /// Like the backend: the same client id from the same sender answers the stored message, a reply carries the
@@ -77,16 +91,19 @@ final class MockChatRepository: ChatRepository {
             return SentMessage(message: stored, channelEpoch: group.channelEpoch)
         }
         let payload = draft.payload
-        guard payload.text != nil || payload.attachments != nil else { throw AppError.messageSendFailed }
+        guard payload.text != nil || payload.attachments != nil || payload.poll != nil else { throw AppError.messageSendFailed }
+        if payload.poll != nil, group.isDirect { throw AppError.pollsNotAllowed }
         let message = ChatMessage(id: nextID(in: groupID),
                                   groupId: groupID,
                                   senderUserId: callerID,
                                   senderName: AppBranding.Groups.Create.mockOwnerName,
+                                  kind: draft.poll == nil ? .text : .poll,
                                   text: payload.text,
                                   clientMessageId: draft.clientMessageID,
                                   sentAt: now(),
                                   replyTo: try replyQuote(for: draft, in: groupID, messages),
-                                  attachments: try storedAttachments(payload.attachments ?? [], in: groupID, by: callerID))
+                                  attachments: try storedAttachments(payload.attachments ?? [], in: groupID, by: callerID),
+                                  poll: draft.poll?.preview)
         post(message, in: group, echoAfter: AppConfig.Chat.mockEchoDelay)
         if autoReplies { scheduleReply(in: group) }
         return SentMessage(message: message, channelEpoch: group.channelEpoch)
@@ -100,6 +117,7 @@ final class MockChatRepository: ChatRepository {
         if message.isDeleted { return message }
         let deleted = message.markingDeleted()
         rooms[groupID]?[index] = deleted
+        pins[groupID]?.removeAll { $0.messageId == messageID }
         publish(.messageDeleted(groupID: groupID, id: messageID), to: group, after: AppConfig.Chat.mockEchoDelay)
         return deleted
     }
@@ -137,6 +155,8 @@ final class MockChatRepository: ChatRepository {
                                                        now: now(),
                                                        lastMessageAt: group.lastMessageAt ?? group.createdAt,
                                                        count: autoReplies ? AppConfig.Chat.mockLongRoomMessages : nil)
+            pins[groupID] = MockChatFixtures.pins(in: rooms[groupID] ?? [])
+            pollVoters = pollVoters.merging(MockChatFixtures.pollVoters(in: rooms[groupID] ?? [])) { $1 }
         }
         return (group, rooms[groupID] ?? [])
     }
@@ -160,7 +180,7 @@ final class MockChatRepository: ChatRepository {
 
     /// A new line in the room, echoed over the bus after `delay` as the backend publishes after its commit; a hidden
     /// conversation is back in Mine with it, as the backend's floor rule implies.
-    private func post(_ message: ChatMessage, in group: SportGroup, echoAfter delay: Duration) {
+    func post(_ message: ChatMessage, in group: SportGroup, echoAfter delay: Duration) {
         rooms[group.id, default: []].append(message)
         groups.noteMessage(message, in: group.id)
         if group.isDirect { groups.unhideConversation(id: group.id) }
@@ -168,7 +188,7 @@ final class MockChatRepository: ChatRepository {
     }
 
     /// Per room: after every fixture row of the room and after every earlier send, reply or floor of this run.
-    private func nextID(in groupID: String) -> String {
+    func nextID(in groupID: String) -> String {
         sequence += 1
         return MockChatFixtures.sentMessageID(groupID: groupID, sequence: sequence)
     }

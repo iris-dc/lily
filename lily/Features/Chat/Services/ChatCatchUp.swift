@@ -2,7 +2,8 @@ import Foundation
 
 /// Brings cached rooms up to date over REST, anchored to each room's `restWatermark`: the first page for a room seen
 /// for the first time, `newer` pages for one already held. Shared by the open chat and the realtime controller, so
-/// the resume protocol and the chat screen recover a room the same way, into the same cache.
+/// the resume protocol and the chat screen recover a room the same way, into the same cache. A page naming a later poll
+/// revision than the room holds is followed by one refresh of the polls held, the only way others' votes reach them.
 final class ChatCatchUp {
     private let repository: any ChatRepository
     private let cache: any ChatHistoryCache
@@ -23,7 +24,8 @@ final class ChatCatchUp {
             cache.store(ChatRoomState(groupID: groupID, channelEpoch: epoch), for: groupID)
         }
         let page = try await repository.newest(groupID: groupID)
-        return apply(to: groupID) { $0.applyNewest(page) }
+        guard apply(to: groupID, { $0.applyNewest(page) }) != nil else { return nil }
+        return await refreshPollsIfBehind(groupID: groupID, revision: page.pollRevision)
     }
 
     /// Everything after the room's watermark, at most `AppConfig.Chat.maxCatchUpPages` pages (the watermark has advanced
@@ -39,7 +41,9 @@ final class ChatCatchUp {
         for _ in 0..<AppConfig.Chat.maxCatchUpPages {
             let page = try await repository.newer(groupID: groupID, after: watermark)
             guard let updated = apply(to: groupID, { $0.applyNewer(page) }) else { return nil }
-            guard page.hasMore, let next = updated.restWatermark, next != watermark else { return updated }
+            guard page.hasMore, let next = updated.restWatermark, next != watermark else {
+                return await refreshPollsIfBehind(groupID: groupID, revision: page.pollRevision)
+            }
             watermark = next
         }
         logger.info(.chat,
@@ -65,6 +69,24 @@ final class ChatCatchUp {
             for await _ in tasks {
                 if let next = pending.popFirst() { tasks.addTask { await self.catchUpQuietly(next) } }
             }
+        }
+    }
+
+    /// Brings the polls held up to `revision` when the room holds an earlier one; the room as it then is. Quiet on a
+    /// failure: the room's revision stays behind, so the next catch-up asks again.
+    private func refreshPollsIfBehind(groupID: String, revision: Int) async -> ChatRoomState? {
+        guard let room = cache.room(for: groupID) else { return nil }
+        guard revision > room.pollRevision else { return room }
+        let ids = room.pollIDs(limit: AppConfig.Chat.Polls.refreshMaxIDs)
+        guard !ids.isEmpty else { return apply(to: groupID) { $0.applyPolls([], revision: revision) } }
+        do {
+            let states = try await repository.polls(groupID: groupID, messageIDs: ids)
+            let count = "\(states.items.count) of \(ids.count)"
+            logger.debug(.chat, "Polls refreshed in group \(groupID): \(count), revision \(states.pollRevision)")
+            return apply(to: groupID) { $0.applyPolls(states.items, revision: states.pollRevision) }
+        } catch {
+            if !AppError.isCancellation(error) { logger.warning(.chat, "Poll refresh failed in group \(groupID): \(error)") }
+            return cache.room(for: groupID)
         }
     }
 

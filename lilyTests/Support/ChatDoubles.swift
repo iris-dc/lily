@@ -35,6 +35,8 @@ final class FakeChatRepository: ChatRepository, HoldsRequests {
     /// Runs at the start of every request, so a test can look at other collaborators at that moment.
     var onRequest: () -> Void = {}
     let hold = RequestHold()
+    /// The poll and pin routes' answers and calls (`ChatPollDoubles.swift`).
+    let polls = FakePollRoutes()
     private(set) var newestGroupIDs: [String] = []
     private(set) var olderRequests: [(groupID: String, before: String)] = []
     private(set) var newerRequests: [(groupID: String, after: String)] = []

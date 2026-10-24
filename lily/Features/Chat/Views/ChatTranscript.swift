@@ -40,6 +40,10 @@ struct ChatTranscript: View {
     @State private var reporting: ReportTarget?
     /// The row whose sender awaits the caller's word on a block.
     @State private var blocking: MessageRow?
+    /// The public poll whose voters are on screen.
+    @State private var votersOf: ChatMessage?
+    /// The pin the bar shows, counted from the oldest; `nil` shows the newest.
+    @State var shownPinIndex: Int?
 
     init(viewModel: ChatViewModel, dependencies: AppDependencies) {
         self.viewModel = viewModel
@@ -67,6 +71,7 @@ struct ChatTranscript: View {
                                     onOpenFile: { previewURL = $0 },
                                     onReport: { reporting = $0 },
                                     onBlock: { blocking = $0 },
+                                    onShowVoters: { votersOf = $0 },
                                     arrivedAt: arrived.start(of: row.id))
                             .transition(MessageRemovalTransition(for: row))
                     }
@@ -112,6 +117,9 @@ struct ChatTranscript: View {
         .onDisappear { opening?.cancel() }
         .scrollDismissesKeyboard(.interactively)
         .accessibilityIdentifier(AccessibilityIdentifiers.chatList)
+        // Outside the list's identifier, which would be stamped on the bar's buttons too; a bar, so the rows scrolling
+        // under it blur as they do under the toolbar.
+        .safeAreaBar(edge: .top, spacing: 0) { pinnedBar }
         .onChange(of: rows.count) { old, new in
             log("rows \(old) to \(new), the last \(lastRowArrived ? "arrived" : "loaded"), \(describe(tracker.geometry))")
         }
@@ -122,6 +130,7 @@ struct ChatTranscript: View {
             AttachmentViewerSheet(selection: selection, loader: viewModel.attachmentLoader, hero: hero)
         }
         .attachmentQuickLook($previewURL)
+        .sheet(item: $votersOf) { PollVotersSheet(message: $0, viewModel: viewModel, errorCenter: dependencies.errorCenter) }
         .sheet(item: $reporting) { target in
             ReportSheet(viewModel: dependencies.makeReportViewModel(for: target, title: AppBranding.Moderation.reportMessage),
                         errorCenter: dependencies.errorCenter)
@@ -187,7 +196,7 @@ struct ChatTranscript: View {
     }
 
     /// Scrolls to the quoted original once the view model has it on hand, then washes it for `messageHighlight`.
-    private func reveal(_ quote: ReplyQuote) {
+    func reveal(_ quote: ReplyQuote) {
         Task {
             guard await viewModel.revealQuoted(id: quote.messageId) else { return }
             log("scrolls to a quoted message")

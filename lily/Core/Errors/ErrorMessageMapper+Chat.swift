@@ -1,8 +1,8 @@
 import Foundation
 
 /// Copy for the chat: reading, sending, replying and attaching (pictures, videos and files alike, so one line names the
-/// caps of all three); `message(for:)` routes exactly those cases here, the attachments in a branch of their own so
-/// neither switch grows past the complexity limit.
+/// caps of all three); `message(for:)` routes exactly those cases here, the attachments in a branch of their own and
+/// polls and pins in theirs (`pollAndPinMessage`), so no switch grows past the complexity limit.
 nonisolated extension ErrorMessageMapper {
     static func chatMessage(for error: AppError) -> ErrorMessage {
         switch error {
@@ -15,6 +15,8 @@ nonisolated extension ErrorMessageMapper {
             ErrorMessage(title: localized("Message not found"), body: localized("This message was already deleted."))
         case .replyTargetNotFound:
             ErrorMessage(title: localized("That message is gone"), body: localized("It was deleted before your reply was sent."))
+        case .pollsNotAllowed, .notAPoll, .pollAnonymous, .voteFailed, .notPinnable, .tooManyPins, .pinFailed:
+            pollAndPinMessage(for: error)
         default:
             unknownMessage
         }

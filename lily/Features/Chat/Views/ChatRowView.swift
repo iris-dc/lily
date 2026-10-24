@@ -17,6 +17,7 @@ struct ChatRowView: View {
     let onOpenFile: (URL) -> Void
     let onReport: (ReportTarget) -> Void
     let onBlock: (MessageRow) -> Void
+    let onShowVoters: (ChatMessage) -> Void
     /// When the row arrived; `nil` for a row that was there already.
     let arrivedAt: Date?
     /// Flipped when the arrival is over, so body runs again and the timeline pauses.
@@ -55,11 +56,20 @@ struct ChatRowView: View {
         case .message(let messageRow):
             messageBubble(for: messageRow)
         case .system(let message):
-            // Every chat is on the Chats stack, which registers the game and the tournament destinations.
-            SystemMessageRow(message: message, viewModel: viewModel) { $0.open(through: dependencies.navigation) }
+            // Every chat is on the Chats stack, which registers the game and the tournament destinations; a pin's note
+            // leads to the pinned message, as a quote does.
+            SystemMessageRow(message: message, viewModel: viewModel, onTap: pinnedMessageTap(for: message)) {
+                $0.open(through: dependencies.navigation)
+            }
         case .pending(let pending):
             PendingMessageBubble(message: pending, viewModel: viewModel, onTapQuote: onTapQuote)
         }
+    }
+
+    /// A pin's note leads to the pinned message, as a quote does; any other note keeps its own tap.
+    private func pinnedMessageTap(for message: ChatMessage) -> (() -> Void)? {
+        guard message.kind == .messagePinned, let quote = message.replyTo else { return nil }
+        return { onTapQuote(quote) }
     }
 
     /// The bubble, with a context menu only when `MessageMenuItems` offers something: an empty menu would still open on
@@ -69,14 +79,18 @@ struct ChatRowView: View {
         let items = MessageMenuItems.items(for: message,
                                            isOwn: messageRow.isOwn,
                                            canReply: viewModel.canReply(to: message),
-                                           canDelete: viewModel.canDelete(message))
+                                           canDelete: viewModel.canDelete(message),
+                                           pinning: viewModel.pinning(of: message),
+                                           canRetractVote: viewModel.canRetractVote(in: message))
         let bubble = MessageBubble(row: messageRow,
                                    profile: viewModel.profile(of: messageRow),
                                    loader: viewModel.attachmentLoader,
                                    isQuoteDeleted: message.replyTo.map(viewModel.quoteIsDeleted) ?? false,
                                    onTapQuote: onTapQuote,
                                    onTapAttachment: onTapAttachment,
-                                   onOpenFile: onOpenFile)
+                                   onOpenFile: onOpenFile,
+                                   onVote: { optionIDs in Task { await viewModel.vote(in: message, for: optionIDs) } },
+                                   onShowVoters: { onShowVoters(message) })
             .messageHighlight(highlightedMessageID == message.id)
         if items.hasEnabledItems {
             bubble.contextMenu {

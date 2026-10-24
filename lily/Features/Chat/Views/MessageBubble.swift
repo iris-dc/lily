@@ -14,6 +14,9 @@ struct MessageBubble: View {
     var onTapQuote: (ReplyQuote) -> Void = { _ in }
     var onTapAttachment: (AttachmentSelection) -> Void = { _ in }
     var onOpenFile: (URL) -> Void = { _ in }
+    /// A poll's vote (`[]` never comes from here: a vote is taken back from the long press) and View votes.
+    var onVote: ([String]) -> Void = { _ in }
+    var onShowVoters: () -> Void = {}
 
     var body: some View {
         HStack(alignment: .top, spacing: DesignTokens.Spacing.sm) {
@@ -67,6 +70,9 @@ struct MessageBubble: View {
             Text(AppBranding.Chat.deletedPlaceholder)
                 .italic()
                 .foregroundStyle(.secondary)
+                .bubbleFill(own: row.isOwn)
+        } else if let poll = row.message.poll {
+            PollBubble(poll: poll, own: row.isOwn, onVote: onVote, onShowVoters: onShowVoters)
                 .bubbleFill(own: row.isOwn)
         } else {
             BubbleContent(text: row.message.text ?? "",
