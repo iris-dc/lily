@@ -2,6 +2,8 @@ import SwiftUI
 
 /// A picture filling its tile, cropped to it, or its stand-in: a spinner while it loads, a faint glyph when it could
 /// not be loaded. Flexible, so the gallery or the strip sizes it; a plain fill, never glass, like the bubble it sits in.
+/// Touches and VoiceOver stop at the tile too: `clipped()` crops only the drawing, so a portrait picture filling the
+/// wide last tile of a gallery took the taps meant for the two tiles above it.
 struct AttachmentTile: View {
     let image: UIImage?
     let isLoading: Bool
@@ -25,6 +27,7 @@ struct AttachmentTile: View {
                 }
             }
             .clipped()
+            .contentShape([.interaction, .accessibility], .rect)
     }
 }
 

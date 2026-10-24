@@ -46,6 +46,17 @@ struct UsableWidthTests {
         #expect(UsableWidth.of(leading: 0, trailing: 200, frameInWindow: under, windowWidth: nil) == 600)
     }
 
+    /// A chat sliding off the screen during the back swipe, or the list under it sliding in from the left: what lies
+    /// beyond the window's edge is not covered by any inset, so the width stays the frame's.
+    @Test func aViewSlidingOffTheWindowKeepsItsWidth() {
+        let leaving = CGRect(x: 200, y: 0, width: 402, height: 874)
+        #expect(UsableWidth.of(leading: 0, trailing: 0, frameInWindow: leaving, windowWidth: 402) == 402)
+        let arriving = CGRect(x: -120, y: 0, width: 402, height: 874)
+        #expect(UsableWidth.of(leading: 0, trailing: 0, frameInWindow: arriving, windowWidth: 402) == 402)
+        let besideTheSidebar = CGRect(x: 500, y: 0, width: 434, height: 1000)
+        #expect(UsableWidth.of(leading: 310, trailing: 0, frameInWindow: besideTheSidebar, windowWidth: 744) == 434)
+    }
+
     @Test func insetsLargerThanTheViewNeverGoNegative() {
         let frame = CGRect(x: 0, y: 0, width: 100, height: 100)
         #expect(UsableWidth.of(leading: 300, trailing: 300, frameInWindow: frame, windowWidth: 100) == 0)

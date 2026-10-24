@@ -86,11 +86,11 @@ struct ErrorMessageMapperTests {
         #expect(ErrorMessageMapper.message(for: .attachmentNotFound).title == "Attachment missing")
         #expect(ErrorMessageMapper.message(for: .attachmentTooLarge(caps: .group)).title == "That's too big")
         let caps = ErrorMessageMapper.message(for: .attachmentTooLarge(caps: .group)).body
-        #expect(caps.contains("10 MB") && caps.contains("50 MB") && caps.contains("3 minutes") && caps.contains("25 MB"))
+        #expect(caps.contains("10 MB") && caps.contains("50 MB") && caps.contains("3 minutes") && caps.contains("40 MB"))
         let direct = ErrorMessageMapper.message(for: .attachmentTooLarge(caps: .direct)).body
-        #expect(direct.contains("10 MB") && direct.contains("20 MB") && direct.contains("5 MB"),
+        #expect(direct.contains("10 MB") && direct.contains("videos up to 40 MB") && direct.contains("files up to 40 MB"),
                 "a conversation names its own caps")
-        #expect(!direct.contains("50 MB") && !direct.contains("25 MB"))
+        #expect(!direct.contains("50 MB"))
         #expect(ErrorMessageMapper.message(for: .attachmentTypeNotAllowed).title == "That can't be sent")
         #expect(ErrorMessageMapper.message(for: .attachmentsDisabled).title == "Attachments are off")
         #expect(ErrorMessageMapper.message(for: .attachmentUploadFailed).title == "Couldn't upload the attachment")

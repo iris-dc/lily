@@ -98,8 +98,8 @@ struct AttachmentComposerModelKindTests {
         #expect(!harness.chatLogs().contains { $0.contains("tax-return") })
     }
 
-    /// A conversation's composer hands the preparers the smaller caps, a group's the full ones, so a 6 MB file is
-    /// refused on the device in a conversation and taken in a group; a backend refusal for size is restated with the
+    /// A conversation's composer hands the preparers the conversation's caps, a group's the full ones, so a 45 MB video
+    /// is refused on the device in a conversation and taken in a group; a backend refusal for size is restated with the
     /// room's caps before it reaches the popup, since the code names no room.
     @Test func aConversationPreparesAgainstTheDirectCapsAndNamesThemInThePopup() async throws {
         let conversation = harness.makeAttachmentComposer(for: .fixture(id: "dm", role: .member, kind: .direct))

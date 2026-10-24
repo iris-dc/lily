@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 
 /// The full object of an attachment as a named file, for QuickLook and the player: the cache keeps bytes under the
 /// attachment id alone, and both QuickLook and `AVPlayer` decide what they are looking at from the name and extension.
-/// The copy is made off the main actor (the fallback to a hard link writes up to 25 MB), and a copy the file system
+/// The copy is made off the main actor (the fallback to a hard link writes up to 40 MB), and a copy the file system
 /// refuses is logged here, where the id and the error meet; the cards and the player stay silent.
 extension AttachmentLoader {
     /// A file named after the attachment (its sender's name for it, else the id with the content type's extension)
@@ -26,7 +26,7 @@ extension AttachmentLoader {
 }
 
 /// `tmp/AttachmentPreviews/<id>/<name>`: one folder per attachment, so two files with the same name never collide, and
-/// a hard link to the cached bytes (a copy when the link fails), so a 25 MB document is not written twice.
+/// a hard link to the cached bytes (a copy when the link fails), so a 40 MB document is not written twice.
 nonisolated enum PreviewFiles {
     static var directory: URL {
         FileManager.default.temporaryDirectory.appending(path: AppConfig.Chat.Attachments.previewDirectoryName)

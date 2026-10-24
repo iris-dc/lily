@@ -2,20 +2,20 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The byte caps per room: a group's are the full ones, a conversation's smaller for videos and files, pictures alike.
+/// The byte caps per room: a group's are the full ones, a conversation's smaller for videos; pictures and files alike.
 struct AttachmentCapsTests {
     @Test func aGroupTakesTheFullCapsAndAConversationTheSmallerOnes() {
         #expect(AttachmentCaps.group.maxBytes(for: .image) == 10 * 1024 * 1024)
         #expect(AttachmentCaps.group.maxBytes(for: .video) == 50 * 1024 * 1024)
-        #expect(AttachmentCaps.group.maxBytes(for: .file) == 25 * 1024 * 1024)
+        #expect(AttachmentCaps.group.maxBytes(for: .file) == 40 * 1024 * 1024)
         #expect(AttachmentCaps.direct.maxBytes(for: .image) == AttachmentCaps.group.maxBytes(for: .image))
-        #expect(AttachmentCaps.direct.maxBytes(for: .video) == 20 * 1024 * 1024)
-        #expect(AttachmentCaps.direct.maxBytes(for: .file) == 5 * 1024 * 1024)
+        #expect(AttachmentCaps.direct.maxBytes(for: .video) == 40 * 1024 * 1024)
+        #expect(AttachmentCaps.direct.maxBytes(for: .file) == AttachmentCaps.group.maxBytes(for: .file))
     }
 
     @Test func anUnknownKindIsCappedLikeAFile() {
         #expect(AttachmentCaps.group.maxBytes(for: .unknown("audio")) == AttachmentCaps.group.maxBytes(for: .file))
-        #expect(AttachmentCaps.direct.maxBytes(for: .unknown("audio")) == 5 * 1024 * 1024)
+        #expect(AttachmentCaps.direct.maxBytes(for: .unknown("audio")) == 40 * 1024 * 1024)
         #expect(AttachmentCaps.group.maxBytes(for: .unknown("audio")) != AttachmentCaps.group.maxBytes(for: .video))
     }
 

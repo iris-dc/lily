@@ -38,6 +38,25 @@ extension LilyChatTests {
     }
 }
 
+extension LilyChatTests {
+    /// Each tile of a three-picture gallery opens its own picture, a tap near a top tile's lower edge included: the wide
+    /// last tile's picture overhangs the row above where its crop hides it, and used to take those taps.
+    @objc @MainActor
+    func testEachTileOfAGalleryOpensItsOwnPicture() {
+        openKickersRoomWithMockPicker()
+        attachPhotosFromTheMockLibrary(3)
+        let tiles = sendAndWaitForTiles(3)
+        let viewer = app.descendants(matching: .any)["attachment-viewer"]
+        for (index, position) in ["1 / 3", "2 / 3", "3 / 3"].enumerated() {
+            tiles.element(boundBy: index).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)).tap()
+            XCTAssertTrue(viewer.waitForExistence(timeout: 5), "tile \(index + 1) opens the viewer")
+            XCTAssertTrue(viewerShows(position), "tile \(index + 1) opens its own picture")
+            app.buttons["attachment-viewer-close"].tap()
+            XCTAssertTrue(viewer.waitForNonExistence(timeout: 5))
+        }
+    }
+}
+
 /// One drag of the viewer test: where it ends, whether it closes, and whether it waits for the viewer to have grown in.
 private struct ViewerDrag {
     let name: String

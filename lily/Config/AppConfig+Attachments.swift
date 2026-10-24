@@ -36,11 +36,11 @@ nonisolated extension AppConfig.Chat {
         /// Where in a video the thumbnail frame is taken, in seconds; clamped into a shorter clip.
         static let videoThumbnailTime: TimeInterval = 0.5
         /// Any other file; Laurel's `file-max-bytes`.
-        static let fileMaxBytes = 25 * 1024 * 1024
+        static let fileMaxBytes = 40 * 1024 * 1024
         /// The video and file caps in a direct conversation (`AttachmentCaps.direct`); Laurel's `direct-video-max-bytes`
-        /// and `direct-file-max-bytes`. Pictures keep `imageMaxBytes` there.
-        static let directVideoMaxBytes = 20 * 1024 * 1024
-        static let directFileMaxBytes = 5 * 1024 * 1024
+        /// and `direct-file-max-bytes`. Pictures keep `imageMaxBytes` there, and files the group's cap.
+        static let directVideoMaxBytes = 40 * 1024 * 1024
+        static let directFileMaxBytes = 40 * 1024 * 1024
         /// What a file is declared as when the system cannot name its type.
         static let fallbackFileContentType = "application/octet-stream"
         /// Bytes the on-disk cache keeps; the least recently used files go first.

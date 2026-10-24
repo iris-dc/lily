@@ -1,9 +1,10 @@
 import Foundation
 
-/// The byte caps of one room's attachments, by kind. A group room takes the full caps; a direct conversation takes
-/// smaller ones for videos and files (`AppConfig.Chat.Attachments.direct*`), because anyone can start one from a
-/// roster or a profile and a one-to-one room is where the storage buys the least. Pictures are re-encoded to a few
-/// megabytes anyway, so their cap is the same everywhere. Laurel applies the same rule to the ticket and the send
+/// The byte caps of one room's attachments, by kind. A group room takes the full caps; a direct conversation takes a
+/// smaller one for videos (`AppConfig.Chat.Attachments.direct*`), because anyone can start one from a roster or a
+/// profile and a one-to-one room is where the storage buys the least. Files and pictures take the group's caps
+/// there: files by their own key, which Laurel keeps too, and pictures because they are re-encoded to a few
+/// megabytes anyway. Laurel applies the same rule to the ticket and the send
 /// (`attachments.direct-video-max-bytes`, `direct-file-max-bytes`), so what the device refuses the backend would too.
 nonisolated struct AttachmentCaps: Hashable, Sendable {
     let imageMaxBytes: Int

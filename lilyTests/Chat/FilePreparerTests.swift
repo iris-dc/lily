@@ -73,7 +73,7 @@ struct FilePreparerTests {
         #expect(longer.fileName?.wireLength == limit)
     }
 
-    /// The cap is the room's: a conversation's 5 MB would refuse what a group's 25 MB takes.
+    /// The cap is the room's, named in the refusal.
     @Test func aFileOverTheRoomsCapIsRefusedBeforeTheCopy() async throws {
         let caps = AttachmentCaps(imageMaxBytes: 10, videoMaxBytes: 10, fileMaxBytes: 10)
         let big = try file(named: "big.bin", bytes: 11)
@@ -81,7 +81,6 @@ struct FilePreparerTests {
         await #expect(throws: AppError.attachmentTooLarge(caps: caps)) {
             try await makePreparer().prepareFile(at: big, id: "f5", caps: caps)
         }
-        #expect(AttachmentCaps.direct.fileMaxBytes < AttachmentCaps.group.fileMaxBytes)
         #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "f5.bin").path()))
     }
 

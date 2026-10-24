@@ -158,18 +158,18 @@ extension MockChatRepositoryTests {
     }
 
     /// A conversation's ticket is judged against the smaller caps, a group's against the full ones, as Laurel does
-    /// by the room's kind: a 6 MB file passes in Kreuzberg Kickers and is refused in the conversation with Marta.
+    /// by the room's kind: a 45 MB video passes in Kreuzberg Kickers and is refused in the conversation with Marta.
     @Test func aConversationsTicketTakesTheDirectCaps() async throws {
         let repository = makeRepository()
-        let sixMegabytes = UploadRequestPayload(clientAttachmentId: "f",
-                                                kind: .file,
-                                                contentType: "application/pdf",
-                                                sizeBytes: 6 * 1024 * 1024,
-                                                fileName: "season.pdf")
+        let video = UploadRequestPayload(clientAttachmentId: "v",
+                                         kind: .video,
+                                         contentType: "video/mp4",
+                                         sizeBytes: 45 * 1024 * 1024,
+                                         thumbnail: .init(contentType: "image/jpeg", sizeBytes: 10))
 
-        _ = try await repository.requestUpload(groupID: kickers, sixMegabytes)
+        _ = try await repository.requestUpload(groupID: kickers, video)
         await #expect(throws: AppError.attachmentTooLarge(caps: .direct)) {
-            try await repository.requestUpload(groupID: MockGroupFixtures.martaConversationID, sixMegabytes)
+            try await repository.requestUpload(groupID: MockGroupFixtures.martaConversationID, video)
         }
     }
 

@@ -3,7 +3,7 @@ import Foundation
 /// Attachment bytes under `Caches/Attachments/<id>` and `<id>.thumb`, least recently used first out once the files
 /// exceed `diskCacheBytes`. "Used" is the file's modification date, bumped on every hit (the file system's access
 /// date is not kept reliably). The system may purge `Caches/` on its own, which is fine: a miss downloads again.
-/// The file work runs on a detached task (`AttachmentCacheFiles`), so a 25 MB write never holds the main actor.
+/// The file work runs on a detached task (`AttachmentCacheFiles`), so a 40 MB write never holds the main actor.
 /// Cleared when the session ends, the preview copies included, so one account's pictures never stay on the device
 /// for the next.
 final class DiskAttachmentCache: AttachmentCache, SessionObserver {
