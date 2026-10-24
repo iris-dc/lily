@@ -53,6 +53,9 @@ nonisolated extension DesignTokens.Layout {
     static let viewerDismissDistance: CGFloat = 140
     /// How far up or down the dragged picture has gone when the black behind it has faded out, showing the chat.
     static let viewerFadeDistance: CGFloat = 280
+    /// How far back toward its tile (the viewer's progress) the moving picture is cut to the chat's rows' area: by then
+    /// the chat shows through the backdrop, and a tile's part under the composer or a bar shows its own picture there.
+    static let viewerViewportCutProgress: CGFloat = 0.5
     /// The play badge over a video tile in a bubble, and its smaller sibling on a strip tile.
     static let playBadgeSize: CGFloat = 44
     static let stripPlayBadgeSize: CGFloat = 24
@@ -82,11 +85,16 @@ nonisolated extension DesignTokens.Opacity {
 
 nonisolated extension DesignTokens.Duration {
     /// How long the viewer takes to open out of a tile, to land back on it and to spring back from a short drag.
-    static let viewerTransition: TimeInterval = 0.3
-    /// Those moves' curve: quick out of the start and a long gentle stop, as a spring looks, but over an exact time,
-    /// so a move hands over the moment it ends (a spring's completion came about a second after it looked done).
-    static let viewerTransitionCurve = UnitCurve.bezier(startControlPoint: UnitPoint(x: 0.2, y: 0.8),
+    static let viewerTransition: TimeInterval = 0.28
+    /// The curve of a move from rest (the open, a close by the button): a critically damped spring's shape, as the
+    /// system's own moves, but over an exact time, so a move hands over the moment it ends (a spring's completion came
+    /// about a second after it looked done). It starts gently, so no frame jumps far: at most a seventh of the way.
+    static let viewerTransitionCurve = UnitCurve.bezier(startControlPoint: UnitPoint(x: 0.2, y: 0.05),
                                                         endControlPoint: UnitPoint(x: 0.2, y: 1))
+    /// The curve of a move out of a drag (a throw that closes, the spring back from a short one): quick out of the
+    /// start, carrying on at the finger's speed, and a long gentle stop.
+    static let viewerThrowCurve = UnitCurve.bezier(startControlPoint: UnitPoint(x: 0.2, y: 0.8),
+                                                   endControlPoint: UnitPoint(x: 0.2, y: 1))
     /// The full picture fading in over the thumbnail when it lands in an open viewer.
     static let viewerSharpen: TimeInterval = 0.25
     /// How long a throw in the viewer is projected forward at the speed it was let go with, to count it in the distance.

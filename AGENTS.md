@@ -159,8 +159,9 @@ how every adaptive view decides, never the device.
 - **Generated asset symbols** (`Color.lilyAccent`, `Image(.googleLogo)`) are main-actor isolated: use them from
   views and other main-actor types only, never from a `nonisolated` type.
 - **Synchronized folder groups.** New files under `lily/`, `lilyTests/`, `lilyUITests/` join their target with no
-  `.pbxproj` edit. Info.plist is generated: plist keys are `INFOPLIST_KEY_*` build settings. **`lily/` holds only
-  Swift sources, `Assets.xcassets` and the two string catalogs**; anything else ships inside the app bundle.
+  `.pbxproj` edit. Info.plist is generated: plist keys are `INFOPLIST_KEY_*` build settings, and a key Xcode has no
+  such setting for goes in `lily-Info.plist` at the repository root, which the generated one merges. **`lily/` holds
+  only Swift sources, `Assets.xcassets` and the two string catalogs**; anything else ships inside the app bundle.
   `find lily -type f ! -name '*.swift' ! -name '*.xcstrings' | grep -v Assets.xcassets` must print nothing.
   Entitlements live at the repository root (`lily.entitlements` for Release, `lily.debug.entitlements` for Debug).
 - **SwiftLint (strict, `.swiftlint.yml`).** Line 130/160, function body 40/60, type body 200/300, file 300/400,

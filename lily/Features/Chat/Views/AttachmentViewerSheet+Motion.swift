@@ -4,9 +4,10 @@ import SwiftUI
 /// each started and finished through `ViewerMotion`.
 extension AttachmentViewerSheet {
     /// The way in, back and out, over an exact time, each handing over to the pager or the chat once removed, the
-    /// moment it ends.
-    var transition: Animation {
-        .timingCurve(DesignTokens.Duration.viewerTransitionCurve, duration: DesignTokens.Duration.viewerTransition)
+    /// moment it ends; a move out of a drag starts at speed, one from rest gently.
+    func transition(fromDrag: Bool) -> Animation {
+        .timingCurve(fromDrag ? DesignTokens.Duration.viewerThrowCurve : DesignTokens.Duration.viewerTransitionCurve,
+                     duration: DesignTokens.Duration.viewerTransition)
     }
 
     /// Out of the tile: the first frame draws the picture on it, then it grows to fill the screen, a turn later, once
@@ -14,11 +15,11 @@ extension AttachmentViewerSheet {
     func open() {
         hero.shownID = current.id
         hero.log("opens \(current.id) from tile \(ViewerHero.describe(hero.tiles[current.id]?.frame)), page "
-                 + ViewerHero.describe(layout.frames[current.id]))
+                 + "\(ViewerHero.describe(layout.frames[current.id])), viewport \(ViewerHero.describe(hero.viewport))")
         let move = motion.startOpening()
         Task { @MainActor in
             hero.log("grows \(current.id) to page \(ViewerHero.describe(layout.frames[current.id]))")
-            withAnimation(transition, completionCriteria: .removed) {
+            withAnimation(transition(fromDrag: false), completionCriteria: .removed) {
                 progress = 0
             } completion: {
                 _ = motion.finish(move)
@@ -42,7 +43,7 @@ extension AttachmentViewerSheet {
 
     func settle() {
         guard let move = motion.startSettling() else { return }
-        withAnimation(transition, completionCriteria: .removed) {
+        withAnimation(transition(fromDrag: true), completionCriteria: .removed) {
             drag = 0
         } completion: {
             _ = motion.finish(move)
@@ -54,7 +55,7 @@ extension AttachmentViewerSheet {
         guard let move = motion.startClosing() else { return }
         landing = tile?.frame
         hero.log("closes \(current.id) onto tile \(ViewerHero.describe(landing)), dragged \(Int(drag))")
-        withAnimation(transition, completionCriteria: .removed) {
+        withAnimation(transition(fromDrag: drag != 0), completionCriteria: .removed) {
             progress = 1
             drag = 0
         } completion: {

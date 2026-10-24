@@ -41,6 +41,32 @@ nonisolated struct ViewerGeometry: Equatable, Sendable {
         opacity = 1
     }
 
+    /// What of the moving picture shows: the whole screen while it is fitted or dragged, the chat's `viewport` (the
+    /// rows' area between the top bars and the composer) from `viewerViewportCutProgress` on the way to the tile, linear
+    /// in between. A tile partly under the composer or a bar keeps that part's picture behind them (`shownPart`), so the
+    /// moving picture comes out from behind them on the way in and goes back behind them on the way out, rather than
+    /// jumping in front at the first frame and behind at the last, and is never drawn over that part twice. Not linear
+    /// in `progress`, so it is applied on every frame (`viewerViewportCut`).
+    static func clip(viewport: CGRect?, screen: CGRect, progress: CGFloat) -> CGRect {
+        guard let viewport else { return screen }
+        let cut = min(1, progress / DesignTokens.Layout.viewerViewportCutProgress)
+        return CGRect(x: mix(screen.minX, viewport.minX, cut),
+                      y: mix(screen.minY, viewport.minY, cut),
+                      width: mix(screen.width, viewport.width, cut),
+                      height: mix(screen.height, viewport.height, cut))
+    }
+
+    /// The part of a tile the chat's `viewport` shows, in the tile's own coordinates: what the viewer's picture stands
+    /// for, so the slot it leaves covers only that, and a part under the composer or a bar keeps its picture behind them
+    /// for the whole move. The whole tile without a viewport; `nil` when none of it shows.
+    static func shownPart(of tile: CGRect, in viewport: CGRect?) -> CGRect? {
+        let local = CGRect(origin: .zero, size: tile.size)
+        guard let viewport else { return local }
+        let shown = tile.intersection(viewport)
+        guard !shown.isNull, !shown.isEmpty else { return nil }
+        return shown.offsetBy(dx: -tile.minX, dy: -tile.minY)
+    }
+
     /// The black behind the picture and the controls over it: gone on the tile, and fading as the picture is dragged
     /// over `viewerFadeDistance`, so the chat shows through.
     static func backdropOpacity(progress: CGFloat, drag: CGFloat) -> Double {

@@ -91,6 +91,7 @@ struct ChatTranscript: View {
             .animation(.easeOut(duration: DesignTokens.Duration.fast)) { $0.opacity(firstPageReveal.isShown ? 1 : 0) }
         }
         .environment(\.viewerHero, hero)
+        .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }, action: { hero.viewport = $0 })
         .overlay { spinner }
         .onChange(of: viewModel.isAwaitingHistory) { historyEnded() }
         .onArrival(perform: screenArrived, onDeparture: firstPageReveal.departed)

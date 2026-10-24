@@ -91,7 +91,8 @@ struct AttachmentViewerSheet: View {
         zoomedIDs.contains(current.id) ? nil : hero.tiles[current.id]
     }
 
-    /// The picture drawn by itself where `ViewerGeometry` puts it, in the full screen's coordinates.
+    /// The picture drawn by itself where `ViewerGeometry` puts it, in the full screen's coordinates, cut to what of it the
+    /// chat would show near its tile (`ViewerGeometry.clip`).
     @ViewBuilder private func movingPicture(in proxy: GeometryProxy) -> some View {
         let space = proxy.frame(in: .global)
         if let picture, let tile {
@@ -107,6 +108,9 @@ struct AttachmentViewerSheet: View {
                 .frame(width: frame.rect.width, height: frame.rect.height)
                 .clipShape(UnevenRoundedRectangle(cornerRadii: frame.radii))
                 .position(x: frame.rect.midX, y: frame.rect.midY)
+                .viewerViewportCut(progress: progress,
+                                   viewport: hero.viewport.map(toLocal),
+                                   screen: CGRect(origin: .zero, size: space.size))
                 .accessibilityHidden(true)
         }
     }

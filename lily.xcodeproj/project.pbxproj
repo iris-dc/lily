@@ -467,6 +467,7 @@
 				DEVELOPMENT_TEAM = 65T5BZMSP2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "lily-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = iskra;
 				INFOPLIST_KEY_NSCameraUsageDescription = "iskra uses the camera to take photos for your chats.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "iskra connects to a Laurel backend running on your Mac during development.";
@@ -505,6 +506,7 @@
 				DEVELOPMENT_TEAM = 65T5BZMSP2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "lily-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = iskra;
 				INFOPLIST_KEY_NSCameraUsageDescription = "iskra uses the camera to take photos for your chats.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "iskra shows games near you and how far away they are.";
@@ -542,6 +544,7 @@
 				DEVELOPMENT_TEAM = 65T5BZMSP2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "lily-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = iskra;
 				INFOPLIST_KEY_NSCameraUsageDescription = "iskra uses the camera to take photos for your chats.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "iskra shows games near you and how far away they are.";

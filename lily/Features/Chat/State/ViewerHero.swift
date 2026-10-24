@@ -10,6 +10,8 @@ final class ViewerHero {
     /// The attachment on screen in the viewer; `nil` while it is closed.
     var shownID: String?
     @ObservationIgnored private(set) var tiles: [String: TileGeometry] = [:]
+    /// The chat's rows' area in the window, between the top bars and the composer: what of a tile shows in the chat.
+    @ObservationIgnored var viewport: CGRect?
     @ObservationIgnored private let thumbnailsByID = NSMapTable<NSString, UIImage>.strongToWeakObjects()
     /// The full pictures decoded for the viewer before it opened, kept until it closes.
     @ObservationIgnored private(set) var preloaded: [String: UIImage] = [:]
