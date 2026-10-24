@@ -2,16 +2,19 @@ import Foundation
 import Testing
 @testable import lily
 
-/// A first page shows once its layout has gone quiet, or at the limit while it keeps changing; a cached room shows at
-/// once, a loaded room with no rows too; one spinner covers the wait.
+/// A first page shows once the push has ended and its layout has gone quiet, or at the limit while it keeps changing;
+/// a cached room shows at once, a loaded room with no rows too; one spinner covers the wait.
 @MainActor
 struct FirstPageRevealTests {
     private let sleep = HeldSleep()
     private let quiet = AppConfig.Chat.firstPageRevealQuiet
     private let limit = AppConfig.Chat.firstPageRevealLimit
 
-    private func makeSubject(isShown: Bool = false) -> FirstPageReveal {
-        FirstPageReveal(isShown: isShown, sleep: { [sleep] in try await sleep.sleep(for: $0) })
+    /// Hidden, and on screen already unless `arriving`: the push that brings it on still runs.
+    private func makeSubject(isShown: Bool = false, arriving: Bool = false) -> FirstPageReveal {
+        let subject = FirstPageReveal(isShown: isShown, sleep: { [sleep] in try await sleep.sleep(for: $0) })
+        if !arriving { subject.arrived() }
+        return subject
     }
 
     /// Notes a layout that shows the rows once settled, as the transcript's does, counting the calls.
@@ -112,6 +115,65 @@ struct FirstPageRevealTests {
         noteLayout(on: subject, counting: settled)
         await Task.yield()
         #expect(sleep.requested.count == 2, "a shown transcript waits for nothing more")
+    }
+
+    /// The page landed during the push, which still draws the scroll view where it took it: the rows wait for its end.
+    @Test func aLayoutQuietDuringThePushShowsWhenThePushEnds() async {
+        let subject = makeSubject(arriving: true)
+        let settled = Counter()
+
+        noteLayout(on: subject, counting: settled)
+        await settle(until: { sleep.held.count == 2 })
+        sleep.release { $0 == quiet }
+        await settle(until: { subject.isSettled })
+        #expect(!subject.isShown, "quiet, but the push still runs")
+
+        subject.arrived()
+
+        #expect(subject.isShown && settled.value == 1)
+    }
+
+    @Test func aLayoutStillChangingAsThePushEndsWaitsForTheQuiet() async {
+        let subject = makeSubject(arriving: true)
+        let settled = Counter()
+
+        noteLayout(on: subject, counting: settled)
+        await settle(until: { sleep.held.count == 2 })
+        subject.arrived()
+        #expect(!subject.isShown)
+
+        sleep.release { $0 == quiet }
+        await settle(until: { subject.isShown })
+        #expect(settled.value == 1)
+    }
+
+    /// The limit is a ceiling: a push whose end never comes keeps nothing hidden for good.
+    @Test func theLimitShowsEvenDuringThePush() async {
+        let subject = makeSubject(arriving: true)
+        let settled = Counter()
+
+        noteLayout(on: subject, counting: settled)
+        await settle(until: { sleep.held.count == 2 })
+        sleep.release { $0 == limit }
+        await settle(until: { subject.isShown })
+
+        #expect(settled.value == 1)
+    }
+
+    /// Covered by another screen while hidden, the transcript waits for the pop that brings it back as for the push.
+    @Test func aDepartureMakesTheWayBackATransitionToWaitFor() async {
+        let subject = makeSubject()
+        let settled = Counter()
+        subject.departed()
+
+        noteLayout(on: subject, counting: settled)
+        await settle(until: { sleep.held.count == 2 })
+        sleep.release { $0 == quiet }
+        await settle(until: { subject.isSettled })
+        #expect(!subject.isShown, "quiet, but the pop still runs")
+
+        subject.arrived()
+        #expect(subject.isShown && settled.value == 1)
     }
 
     @Test func anEndedLoadShowsALoadedEmptyRoomAtOnceAndKeepsAFailedOneHidden() {

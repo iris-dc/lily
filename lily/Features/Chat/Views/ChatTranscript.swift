@@ -88,6 +88,7 @@ struct ChatTranscript: View {
         .environment(\.viewerHero, hero)
         .overlay { spinner }
         .onChange(of: viewModel.isAwaitingHistory) { historyEnded() }
+        .onArrival(perform: screenArrived, onDeparture: firstPageReveal.departed)
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .alignment)
         .scrollPosition($position)

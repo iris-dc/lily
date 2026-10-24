@@ -44,6 +44,11 @@ extension ChatTranscript {
         firstPageReveal.historyEnded(hasRows: !viewModel.rows.isEmpty, loaded: viewModel.hasLoadedHistory) { showFirstPage() }
     }
 
+    func screenArrived() {
+        if !firstPageReveal.isShown { log("arrived, the first page still hidden, \(describe(tracker.geometry))") }
+        firstPageReveal.arrived()
+    }
+
     func showFirstPage() {
         log("revealed with \(viewModel.rows.count) rows, \(describe(tracker.geometry))")
         firstPageReveal.show()
