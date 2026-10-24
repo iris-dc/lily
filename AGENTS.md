@@ -14,7 +14,9 @@ chat, enter or set up a tournament. iOS 26+, SwiftUI, Liquid Glass, dark only fo
 and bundle id (`iris.lily`) keep the code name `lily`. Design: modern
 and minimalistic, reusable SwiftUI components, consistent spacing and typography, no visual clutter.
 
-Feature flags (`AppConfig.FeatureFlags`): groups, chat and tournaments are on in debug builds only.
+Feature flags (`AppConfig.FeatureFlags`): groups, chat and tournaments are on in debug builds and in the Staging
+configuration (Release's optimised build with these flags, for trying the app on a phone as it will run; the scheme
+that runs it is made locally, see `docs/notes/build-test-and-simulator.md`); off in Release.
 
 ## Repositories and backend
 
