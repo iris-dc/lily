@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Who voted for what in a public poll: a section per option with its voters in the order they voted. A failed load
-/// reaches the popup this sheet mounts and closes the sheet.
+/// Who voted for what in a public poll: a section per option, its count at the trailing edge, with its voters in the
+/// order they voted, each behind their initials. A failed load reaches the popup this sheet mounts and closes the sheet.
 struct PollVotersSheet: View {
     let message: ChatMessage
     let viewModel: ChatViewModel
@@ -19,7 +19,12 @@ struct PollVotersSheet: View {
                         Section {
                             section(for: option)
                         } header: {
-                            Text(verbatim: option.text)
+                            HStack {
+                                Text(verbatim: option.text)
+                                Spacer()
+                                Text(option.votes, format: .number)
+                                    .monospacedDigit()
+                            }
                         }
                     }
                 }
@@ -50,7 +55,11 @@ struct PollVotersSheet: View {
                 Text(Copy.nobodyYet).foregroundStyle(.secondary)
             } else {
                 ForEach(names) { voter in
-                    Label(voter.name, systemImage: DesignTokens.Symbols.profile)
+                    HStack(spacing: DesignTokens.Spacing.md) {
+                        AvatarCircle(initials: voter.name.initials, size: DesignTokens.Layout.avatarSmall, tint: .secondary)
+                            .accessibilityHidden(true)
+                        Text(verbatim: voter.name)
+                    }
                 }
             }
         }

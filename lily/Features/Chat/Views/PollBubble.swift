@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// A poll in its bubble, drawn as Telegram draws one: the question, whether the poll is anonymous and takes several
-/// answers, then the options. Before the caller voted a tap on an option votes; with multiple answers it ticks, and
-/// Vote sends the ticks. Once they voted, each option shows its share as a number and a bar, theirs marked, and the
-/// voters' count sits under them with View votes for a public poll. Taking a vote back is in the long press.
+/// A poll in its bubble: the question, how it votes, a pill per option (`PollOptionPill`) and a line with the voters'
+/// count. Before the caller voted a tap on a pill votes, with several answers it ticks the pill and Vote sends the
+/// ticks; once they voted the pills fill to their shares, theirs ticked, and View votes opens a public poll's voters.
+/// Every state shares one layout, so the bubble keeps its height and the transcript stands still; what the poll's
+/// change moves (the fills, the numbers, the ticks) animates in place. Taking a vote back is in the long press.
 struct PollBubble: View {
     let poll: Poll
     let own: Bool
@@ -23,14 +24,20 @@ struct PollBubble: View {
                     .font(.caption)
                     .foregroundStyle(secondary)
             }
-            ForEach(Array(poll.options.enumerated()), id: \.element.id) { index, option in
-                optionRow(option)
+            VStack(spacing: DesignTokens.Spacing.sm) {
+                ForEach(Array(poll.options.enumerated()), id: \.element.id) { index, option in
+                    PollOptionPill(option: option, display: PollOptionDisplay(option, in: poll, ticked: ticked), own: own) {
+                        choose(option)
+                    }
                     .accessibilityIdentifier(AccessibilityIdentifiers.pollOption(index))
+                }
             }
+            .disabled(poll.hasVoted)
             footer
         }
-        .frame(minWidth: DesignTokens.Layout.pollMinWidth, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .disabled(!isEnabled)
+        .animation(.spring(duration: DesignTokens.Duration.normal), value: poll)
         .onChange(of: poll.myVotes) { ticked = [] }
     }
 
@@ -41,99 +48,47 @@ struct PollBubble: View {
 
     private var secondary: Color { own ? Color.white.opacity(DesignTokens.Opacity.secondaryOnAccent) : .secondary }
 
-    @ViewBuilder private func optionRow(_ option: Poll.Option) -> some View {
-        if poll.hasVoted {
-            PollResultRow(option: option, share: poll.share(of: option), isMine: poll.myVotes.contains(option.id), own: own)
-        } else {
-            Button {
-                choose(option)
-            } label: {
-                Label {
-                    Text(verbatim: option.text)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                } icon: {
-                    Image(systemName: symbol(for: option))
-                        .foregroundStyle(ticked.contains(option.id) ? (own ? Color.white : Color.lilyAccent) : secondary)
-                }
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .accessibilityAddTraits(ticked.contains(option.id) ? .isSelected : [])
-        }
-    }
-
-    private func symbol(for option: Poll.Option) -> String {
-        if poll.allowsMultipleAnswers {
-            return ticked.contains(option.id) ? DesignTokens.Symbols.pollTicked : DesignTokens.Symbols.pollTick
-        }
-        return DesignTokens.Symbols.pollChoice
-    }
-
     private func choose(_ option: Poll.Option) {
         guard poll.allowsMultipleAnswers else {
             onVote([option.id])
             return
         }
-        if ticked.contains(option.id) { ticked.remove(option.id) } else { ticked.insert(option.id) }
+        withAnimation(.spring(duration: DesignTokens.Duration.fast)) {
+            if ticked.contains(option.id) { ticked.remove(option.id) } else { ticked.insert(option.id) }
+        }
     }
 
+    /// The voters' count and, at the trailing edge, Vote or View votes when the poll offers one; one height whichever
+    /// shows, so the bubble's does not change with it. The count rolls its digits from one number to the next, and
+    /// crossfades to and from "No votes yet", which has no digits to roll (the morph left ghosts of the words).
     private var footer: some View {
-        HStack {
+        HStack(spacing: DesignTokens.Spacing.sm) {
             Text(poll.totalVoters == 0 ? Copy.noVotesYet : Copy.voterCount(poll.totalVoters))
-                .font(.caption)
+                .font(.footnote)
                 .foregroundStyle(secondary)
+                .contentTransition(poll.totalVoters > 1 ? .numericText() : .opacity)
                 .accessibilityIdentifier(AccessibilityIdentifiers.pollTotal)
-            Spacer(minLength: DesignTokens.Spacing.sm)
-            if poll.allowsMultipleAnswers, !poll.hasVoted {
-                Button(Copy.vote) { onVote(poll.options.map(\.id).filter(ticked.contains)) }
-                    .buttonStyle(.borderless)
-                    .tappableLabel()
-                    .disabled(ticked.isEmpty)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.pollVote)
-            } else if poll.hasVoted, !poll.isAnonymous {
-                Button(Copy.viewVotes, action: onShowVoters)
-                    .buttonStyle(.borderless)
-                    .tappableLabel()
-                    .accessibilityIdentifier(AccessibilityIdentifiers.pollVoters)
-            }
+            Spacer(minLength: 0)
+            footerAction
+                .font(.footnote.weight(.semibold))
+                .buttonStyle(.borderless)
+                .tint(own ? Color.white : Color.lilyAccent)
         }
-        .font(.caption.weight(.semibold))
-        .tint(own ? Color.white : Color.lilyAccent)
-    }
-}
-
-/// One option of a poll the caller voted in: its share, its text, a mark when it is theirs, and the bar.
-private struct PollResultRow: View {
-    let option: Poll.Option
-    let share: Double
-    let isMine: Bool
-    let own: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-            HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.xs) {
-                Text(share.formatted(.percent.precision(.fractionLength(0))))
-                    .font(.caption.weight(.semibold).monospacedDigit())
-                    .frame(width: DesignTokens.Layout.pollShareWidth, alignment: .leading)
-                Text(verbatim: option.text)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if isMine {
-                    Image(systemName: DesignTokens.Symbols.pollChosen)
-                        .font(.caption)
-                        .accessibilityLabel(AppBranding.Chat.Polls.chosen)
-                }
-            }
-            ZStack(alignment: .leading) {
-                Capsule().fill(fill.opacity(DesignTokens.Opacity.pollBarTrack))
-                Capsule().fill(fill).scaleEffect(x: share, y: 1, anchor: .leading)
-            }
-            .frame(height: DesignTokens.Layout.pollBarHeight)
-            .padding(.leading, DesignTokens.Layout.pollShareWidth + DesignTokens.Spacing.xs)
-            .animation(.easeOut(duration: DesignTokens.Duration.normal), value: share)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(isMine ? .isSelected : [])
+        .frame(minHeight: DesignTokens.Layout.pollFooterHeight)
     }
 
-    private var fill: Color { own ? Color.white : Color.lilyAccent }
+    @ViewBuilder private var footerAction: some View {
+        if poll.allowsMultipleAnswers, !poll.hasVoted {
+            Button(Copy.vote) { onVote(poll.options.map(\.id).filter(ticked.contains)) }
+                .frame(minHeight: DesignTokens.Layout.pollFooterHeight)
+                .contentShape(.rect)
+                .disabled(ticked.isEmpty)
+                .accessibilityIdentifier(AccessibilityIdentifiers.pollVote)
+        } else if poll.hasVoted, !poll.isAnonymous {
+            Button(Copy.viewVotes, action: onShowVoters)
+                .frame(minHeight: DesignTokens.Layout.pollFooterHeight)
+                .contentShape(.rect)
+                .accessibilityIdentifier(AccessibilityIdentifiers.pollVoters)
+        }
+    }
 }
