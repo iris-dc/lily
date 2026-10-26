@@ -1,9 +1,14 @@
 import SwiftUI
 import UIKit
 
+/// The shell's four tabs. Copy is read into views as plain strings, so a new language rebuilds each tab's tree
+/// (`.id(language)`) while the bar itself only re-renders its titles: a rebuilt bar slid its indicator in from the
+/// first tab and drew the glyphs at its own heavy weight until the tab was tapped again.
 struct MainTabView: View {
     let dependencies: AppDependencies
     @Environment(\.layoutMode) private var layoutMode
+
+    private var language: AppLanguage { dependencies.language.language }
 
     /// Rooms with unread messages plus the inbox when it holds something unseen: one badge for every conversation.
     private var unreadChats: Int {
@@ -15,17 +20,20 @@ struct MainTabView: View {
         TabView(selection: $navigation.selectedTab) {
             Tab(value: .home) {
                 HomeTab(dependencies: dependencies)
+                    .id(language)
             } label: {
                 tabLabel(AppBranding.homeTitle, symbol: DesignTokens.Symbols.home)
             }
             Tab(value: .explore) {
                 ExploreTab(dependencies: dependencies)
+                    .id(language)
             } label: {
                 tabLabel(AppBranding.exploreTitle, symbol: DesignTokens.Symbols.explore)
             }
             if AppConfig.FeatureFlags.chat {
                 Tab(value: .chat) {
                     ChatTab(dependencies: dependencies)
+                    .id(language)
                 } label: {
                     tabLabel(AppBranding.chatsTitle, symbol: DesignTokens.Symbols.chat)
                 }
@@ -35,6 +43,7 @@ struct MainTabView: View {
             }
             Tab(value: .profile) {
                 ProfileView(dependencies: dependencies)
+                    .id(language)
             } label: {
                 tabLabel(AppBranding.profileTitle, symbol: DesignTokens.Symbols.profile)
             }

@@ -23,13 +23,14 @@ struct AppRootView: View {
         Group {
             switch session.state {
             case .signedOut:
+                // Copy is read into views as plain strings, so a new language needs the tree rebuilt, not re-rendered;
+                // the shell rebuilds each tab's tree itself and keeps its bar.
                 LandingView(dependencies: dependencies)
+                    .id(language.language)
             case .guest, .signedIn:
                 MainTabView(dependencies: dependencies)
             }
         }
-        // Copy is read into views as plain strings, so a new language needs the tree rebuilt, not re-rendered.
-        .id(language.language)
         .environment(\.locale, language.locale)
         .environment(\.auroraFrozen, dependencies.freezesAurora)
         .layoutModeProvider()

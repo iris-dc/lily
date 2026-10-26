@@ -1,7 +1,9 @@
 import SwiftUI
 
 /// The language setting on Profile, for guests and users alike: a card that opens a menu of "System" and every
-/// language naming itself. A pick applies at once; `AppRootView` rebuilds the tree under it.
+/// language naming itself. A pick applies at once: `MainTabView` rebuilds each tab's tree under it, animated here, so
+/// this screen crossfades into the new language while the menu closes on its own curve, rather than vanishing with the
+/// old tree.
 struct LanguageRow: View {
     let language: LanguageStore
 
@@ -25,7 +27,8 @@ struct LanguageRow: View {
     }
 
     private var selection: Binding<LanguagePreference> {
-        Binding(get: { language.preference }, set: { language.select($0) })
+        Binding(get: { language.preference },
+                set: { choice in withAnimation(.smooth(duration: DesignTokens.Duration.normal)) { language.select(choice) } })
     }
 }
 
