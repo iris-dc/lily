@@ -38,19 +38,25 @@ struct ChatClearMenuItem: View {
 
 /// The confirmation the room's menu and a Chats row share, worded by `ChatClearPrompt`: an alert in the middle of the
 /// screen, since a confirmation dialog asked from the room's toolbar menu opened as a popover at its corner. `group` is
-/// the room awaiting the caller's word, `nil` while nothing is asked.
+/// the room awaiting the caller's word, `nil` while nothing is asked. An alert's buttons take the presenting view's
+/// tint and ignore their own, and a destructive one is always the system's red, so the alert hangs off a helper tinted
+/// white: Cancel reads white, Delete chat red, and the room's accent toolbar keeps its colour.
 private struct ChatClearConfirmation: ViewModifier {
     @Binding var group: SportGroup?
     let onConfirm: (SportGroup) -> Void
 
     func body(content: Content) -> some View {
-        content.alert(item: $group,
-                      title: { ChatClearPrompt(group: $0).title },
-                      actions: { group in
-                          Button(AppBranding.Forms.cancel, role: .cancel) {}
-                          Button(ChatClearPrompt(group: group).actionTitle, role: .destructive) { onConfirm(group) }
-                      },
-                      message: { Text(ChatClearPrompt(group: $0).message) })
+        content.background {
+            Color.clear
+                .alert(item: $group,
+                       title: { ChatClearPrompt(group: $0).title },
+                       actions: { group in
+                           Button(AppBranding.Forms.cancel, role: .cancel) {}
+                           Button(ChatClearPrompt(group: group).actionTitle, role: .destructive) { onConfirm(group) }
+                       },
+                       message: { Text(ChatClearPrompt(group: $0).message) })
+                .tint(.white)
+        }
     }
 }
 
