@@ -4,7 +4,10 @@ import SwiftUI
 /// The screens of one navigation stack that hide the tab bar, each by its depth in the stack. A pushed screen's own
 /// visibility leaves with the screen the moment a pop starts, so the bar would reappear in one frame; the stack's root
 /// reads this instead and flips the bar inside an animation as the path changes, which is what makes the bar slide
-/// away and back with the push and the pop.
+/// away and back with the push and the pop. Once a screen hides the bar, every screen pushed over it hides it too: a
+/// profile or a game opened from a room is still inside the room's flow, and a bar that came back over them left again
+/// only when the swipe back to the room had ended, so the room's composer sat above the bar through the swipe and
+/// dropped to the bottom at its end.
 @Observable
 final class TabBarHiding {
     /// The depth of every screen on this stack that hides the bar, by the screen's own token, so two screens at one
@@ -25,9 +28,9 @@ final class TabBarHiding {
         depths = depths.filter { $0.value <= depth }
     }
 
-    /// Whether the screen at `depth` hides the bar.
+    /// Whether the bar is hidden with the screen at `depth` on top: by that screen, or by one under it.
     func hides(at depth: Int) -> Bool {
-        depths.values.contains(depth)
+        depths.values.contains { $0 <= depth }
     }
 }
 

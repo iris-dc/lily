@@ -18,7 +18,7 @@ extension LilyChatTests {
         let clear = app.buttons["chat-clear"]
         openContextMenu(on: kickers, until: clear)
         clear.tap()
-        let confirmation = app.sheets.firstMatch
+        let confirmation = app.alerts.firstMatch
         XCTAssertTrue(confirmation.waitForExistence(timeout: 5), "the confirmation asks first")
         confirmation.buttons["Clear chat"].tap()
 

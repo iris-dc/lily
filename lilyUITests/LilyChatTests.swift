@@ -110,7 +110,7 @@ final class LilyChatTests: LilyUITestCase {
         let delete = app.buttons["chat-clear"]
         XCTAssertTrue(delete.waitForExistence(timeout: 5), "the room's menu offers Delete chat")
         delete.tap()
-        let confirmation = app.sheets.firstMatch
+        let confirmation = app.alerts.firstMatch
         XCTAssertTrue(confirmation.waitForExistence(timeout: 5), "the confirmation asks first")
         confirmation.buttons["Delete chat"].tap()
 

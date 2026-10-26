@@ -36,23 +36,21 @@ struct ChatClearMenuItem: View {
     }
 }
 
-/// The confirmation the room's menu and a Chats row share, worded by `ChatClearPrompt`. `group` is the room awaiting
-/// the caller's word, `nil` while nothing is asked.
+/// The confirmation the room's menu and a Chats row share, worded by `ChatClearPrompt`: an alert in the middle of the
+/// screen, since a confirmation dialog asked from the room's toolbar menu opened as a popover at its corner. `group` is
+/// the room awaiting the caller's word, `nil` while nothing is asked.
 private struct ChatClearConfirmation: ViewModifier {
     @Binding var group: SportGroup?
     let onConfirm: (SportGroup) -> Void
 
     func body(content: Content) -> some View {
-        content.confirmationDialog(item: $group,
-                                   title: { ChatClearPrompt(group: $0).title },
-                                   actions: { group in
-                                       Button(role: .destructive) {
-                                           onConfirm(group)
-                                       } label: {
-                                           Text(ChatClearPrompt(group: group).actionTitle)
-                                       }
-                                   },
-                                   message: { Text(ChatClearPrompt(group: $0).message) })
+        content.alert(item: $group,
+                      title: { ChatClearPrompt(group: $0).title },
+                      actions: { group in
+                          Button(AppBranding.Forms.cancel, role: .cancel) {}
+                          Button(ChatClearPrompt(group: group).actionTitle, role: .destructive) { onConfirm(group) }
+                      },
+                      message: { Text(ChatClearPrompt(group: $0).message) })
     }
 }
 
