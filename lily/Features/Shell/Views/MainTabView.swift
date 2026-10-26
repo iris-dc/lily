@@ -1,9 +1,11 @@
 import SwiftUI
 import UIKit
 
-/// The shell's four tabs. Copy is read into views as plain strings, so a new language rebuilds each tab's tree
-/// (`.id(language)`) while the bar itself only re-renders its titles: a rebuilt bar slid its indicator in from the
-/// first tab and drew the glyphs at its own heavy weight until the tab was tapped again.
+/// The shell's four tabs. Copy is read into views as plain strings, so a new language rebuilds the trees of Home, Explore
+/// and Chats (`.id(language)`) while the bar itself only re-renders its titles: a rebuilt bar slid its indicator in from
+/// the first tab and drew the glyphs at its own heavy weight until the tab was tapped again. Profile, where the language
+/// is picked, re-renders in place instead (it takes the language as an input), so the Language menu closes over its own
+/// card: a rebuilt Profile left the card's slot blank while the menu's source view was still hidden.
 struct MainTabView: View {
     let dependencies: AppDependencies
     @Environment(\.layoutMode) private var layoutMode
@@ -42,8 +44,7 @@ struct MainTabView: View {
                 .accessibilityValue(Text(AppBranding.Chats.unreadChats(unreadChats)), isEnabled: unreadChats > 0)
             }
             Tab(value: .profile) {
-                ProfileView(dependencies: dependencies)
-                    .id(language)
+                ProfileView(dependencies: dependencies, language: language)
             } label: {
                 tabLabel(AppBranding.profileTitle, symbol: DesignTokens.Symbols.profile)
             }

@@ -1,7 +1,13 @@
 import SwiftUI
 
+/// The caller's profile or the guest prompt, the language, the currency and the contact card. The screen re-renders in
+/// place when the language changes (`language` is an input for that alone; every row reads its copy afresh), rather than
+/// being rebuilt like the other tabs: the Language menu picked here closes over its own card, and a rebuilt tree left
+/// the card's slot blank while the menu's source view was still hidden.
 struct ProfileView: View {
     let dependencies: AppDependencies
+    /// The language the copy is in; a change re-runs this body and, through it, every row's.
+    let language: AppLanguage
     @State private var isSignInPresented = false
     @State private var isFeedbackPresented = false
 

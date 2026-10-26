@@ -18,6 +18,8 @@ final class LilyLanguageTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Профиль"].waitForExistence(timeout: 5), "the screen relabels without a relaunch")
         XCTAssertTrue(app.tabBars.buttons["Обзор"].exists, "the tab bar follows too")
         XCTAssertTrue(app.staticTexts["Вы авторизованы как гость"].exists)
+        let currency = app.buttons["profile-currency"]
+        XCTAssertTrue(currency.label.contains("Валюта"), "every Profile card relabels in place: \(currency.label)")
 
         app.buttons["profile-language"].tap()
         let english = app.buttons["English"]

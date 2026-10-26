@@ -1,14 +1,16 @@
 import SwiftUI
 
 /// The language setting on Profile, for guests and users alike: a card that opens a menu of "System" and every
-/// language naming itself. A pick applies at once: `MainTabView` rebuilds each tab's tree under it, animated here, so
-/// this screen crossfades into the new language while the menu closes on its own curve, rather than vanishing with the
-/// old tree.
+/// language naming itself. A pick applies at once: Profile re-renders in place and `MainTabView` rebuilds the other
+/// tabs' trees, inside an animation, so what the new copy moves on this screen slides rather than jumps.
 struct LanguageRow: View {
     let language: LanguageStore
 
     var body: some View {
-        SettingsMenuRow(title: AppBranding.Settings.language, systemImage: DesignTokens.Symbols.language, value: value) {
+        SettingsMenuRow(title: AppBranding.Settings.language,
+                        systemImage: DesignTokens.Symbols.language,
+                        value: value,
+                        identifier: AccessibilityIdentifiers.profileLanguage) {
             Picker(AppBranding.Settings.language, selection: selection) {
                 Text(AppBranding.Settings.systemLanguage).tag(LanguagePreference.system)
                 ForEach(AppLanguage.allCases, id: \.self) { choice in
@@ -16,7 +18,6 @@ struct LanguageRow: View {
                 }
             }
         }
-        .accessibilityIdentifier(AccessibilityIdentifiers.profileLanguage)
     }
 
     private var value: String {
