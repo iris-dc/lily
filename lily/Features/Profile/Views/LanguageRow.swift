@@ -1,22 +1,23 @@
 import SwiftUI
 
-/// The language setting on Profile, for guests and users alike: a card that opens a menu of "System" and every
-/// language naming itself. A pick applies at once: `MainTabView` rebuilds each tab's tree under it, animated here, so
-/// this screen crossfades into the new language while the menu closes on its own curve, rather than vanishing with the
-/// old tree.
+/// The language setting on Profile, for guests and users alike: a card that drops down "System" and every language
+/// naming itself. A pick applies at once: Profile re-renders in place and `MainTabView` rebuilds the other tabs' trees,
+/// with no animation, since an animated pick slid the cards' new values into their chevrons over ten frames.
 struct LanguageRow: View {
     let language: LanguageStore
 
     var body: some View {
-        SettingsMenuRow(title: AppBranding.Settings.language, systemImage: DesignTokens.Symbols.language, value: value) {
-            Picker(AppBranding.Settings.language, selection: selection) {
-                Text(AppBranding.Settings.systemLanguage).tag(LanguagePreference.system)
-                ForEach(AppLanguage.allCases, id: \.self) { choice in
-                    Text(verbatim: choice.nativeName).tag(LanguagePreference.fixed(choice))
-                }
-            }
-        }
-        .accessibilityIdentifier(AccessibilityIdentifiers.profileLanguage)
+        SettingsChoiceRow(title: AppBranding.Settings.language,
+                          systemImage: DesignTokens.Symbols.language,
+                          value: value,
+                          identifier: AccessibilityIdentifiers.profileLanguage,
+                          choices: choices,
+                          selection: selection)
+    }
+
+    private var choices: [SettingsChoice<LanguagePreference>] {
+        [SettingsChoice(value: .system, title: AppBranding.Settings.systemLanguage)]
+            + AppLanguage.allCases.map { SettingsChoice(value: .fixed($0), title: $0.nativeName) }
     }
 
     private var value: String {
@@ -27,8 +28,7 @@ struct LanguageRow: View {
     }
 
     private var selection: Binding<LanguagePreference> {
-        Binding(get: { language.preference },
-                set: { choice in withAnimation(.smooth(duration: DesignTokens.Duration.normal)) { language.select(choice) } })
+        Binding(get: { language.preference }, set: { language.select($0) })
     }
 }
 
