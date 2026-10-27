@@ -62,10 +62,10 @@ struct PollComposerSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(AppBranding.Events.Create.cancel, role: .cancel) { dismiss() }
+                    Button(AppBranding.Forms.cancel, role: .cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(Copy.send, action: send)
+                    Button(AppBranding.Chat.send, action: send)
                         .disabled(!draft.isValid)
                         .accessibilityIdentifier(AccessibilityIdentifiers.pollSend)
                 }
@@ -87,7 +87,7 @@ struct PollComposerSheet: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.pollOptionField(index))
                 if options.count > AppConfig.Chat.Polls.minOptions {
                     Button {
-                        options.removeAll { $0.id == option.id }
+                        remove(option, at: index)
                     } label: {
                         Image(systemName: DesignTokens.Symbols.removeOption)
                             .foregroundStyle(.secondary)
@@ -97,6 +97,14 @@ struct PollComposerSheet: View {
                 }
             }
         }
+    }
+
+    /// The field before takes the focus of a removed field, so the keyboard stays.
+    private func remove(_ option: OptionField, at index: Int) {
+        if focus == .option(option.id) {
+            focus = index > 0 ? .option(options[index - 1].id) : .question
+        }
+        options.removeAll { $0.id == option.id }
     }
 
     private func addOption() {

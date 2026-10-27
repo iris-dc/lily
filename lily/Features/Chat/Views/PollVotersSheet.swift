@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Who voted for what in a public poll: a section per option, its count at the trailing edge, with its voters in the
-/// order they voted, each behind their initials. A failed load reaches the popup this sheet mounts and closes the sheet.
+/// order they voted, each behind their initials. A failed load closes the sheet and reaches the popup under it.
 struct PollVotersSheet: View {
     let message: ChatMessage
     let viewModel: ChatViewModel
@@ -22,7 +22,7 @@ struct PollVotersSheet: View {
                             HStack {
                                 Text(verbatim: option.text)
                                 Spacer()
-                                Text(option.votes, format: .number)
+                                Text(count(for: option), format: .number)
                                     .monospacedDigit()
                             }
                         }
@@ -44,8 +44,12 @@ struct PollVotersSheet: View {
         .lilyFormSheet()
         .presentationDragIndicator(.visible)
         .errorPopup(errorCenter)
-        .accessibilityIdentifier(AccessibilityIdentifiers.pollVotersSheet)
         .task { await load() }
+    }
+
+    /// The voters listed once they loaded, the message's count until then, so the header never disagrees with the rows.
+    private func count(for option: Poll.Option) -> Int {
+        voters?.options.first { $0.id == option.id }?.voters.count ?? option.votes
     }
 
     @ViewBuilder private func section(for option: Poll.Option) -> some View {

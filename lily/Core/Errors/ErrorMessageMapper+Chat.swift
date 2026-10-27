@@ -15,10 +15,9 @@ nonisolated extension ErrorMessageMapper {
             ErrorMessage(title: localized("Message not found"), body: localized("This message was already deleted."))
         case .replyTargetNotFound:
             ErrorMessage(title: localized("That message is gone"), body: localized("It was deleted before your reply was sent."))
-        case .pollsNotAllowed, .notAPoll, .pollAnonymous, .voteFailed, .notPinnable, .tooManyPins, .pinFailed:
-            pollAndPinMessage(for: error)
         default:
-            unknownMessage
+            // The poll and pin cases `message(for:)` sends here, named once, there.
+            pollAndPinMessage(for: error)
         }
     }
 

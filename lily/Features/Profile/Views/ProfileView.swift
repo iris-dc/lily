@@ -2,8 +2,8 @@ import SwiftUI
 
 /// The caller's profile or the guest prompt, the language, the currency and the contact card. The screen re-renders in
 /// place when the language changes (`language` is an input for that alone; every row reads its copy afresh, or is given
-/// the language as its identity when nothing else about it changes), rather than being rebuilt like the other tabs: a
-/// rebuilt tree crossfaded over the pick and dimmed the screen for a frame.
+/// the language as its identity when nothing else about it changes), rather than being rebuilt like the other tabs,
+/// whose rebuild would crossfade over the pick made here.
 struct ProfileView: View {
     let dependencies: AppDependencies
     /// The language the copy is in; a change re-runs this body and, through it, every row's.
@@ -24,7 +24,7 @@ struct ProfileView: View {
                     }
                     LanguageRow(language: dependencies.language)
                     CurrencyRow(currency: dependencies.currency)
-                    // Its only input is a closure, which SwiftUI does not count as a change, so it kept the old language.
+                    // Its only input is a closure, which SwiftUI does not count as a change, so it would keep the old copy.
                     FeedbackRow(action: openFeedback)
                         .id(language)
                     Spacer()

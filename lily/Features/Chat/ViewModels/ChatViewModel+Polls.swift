@@ -9,7 +9,7 @@ extension ChatViewModel {
     }
 
     func sendPoll(_ poll: PollDraft) async {
-        guard poll.isValid, canCreatePolls, !isCoolingDown else { return }
+        guard poll.isValid, canCreatePolls, !isCoolingDown, !isGone else { return }
         var draft = MessageDraft()
         draft.poll = poll
         pending.append(PendingMessage(draft: draft, sentAt: now()))
@@ -18,7 +18,8 @@ extension ChatViewModel {
 
     /// The caller's choice in the poll of `message`; `[]` takes the vote back.
     func vote(in message: ChatMessage, for optionIDs: [String]) async {
-        guard !message.isDeleted, let before = currentPoll(of: message.id) ?? message.poll else { return }
+        guard !message.isDeleted, !room.isDeleted(id: message.id),
+              let before = currentPoll(of: message.id) ?? message.poll else { return }
         mutateRoom { $0.applyPoll(messageID: message.id, poll: before.voting(optionIDs)) }
         do {
             let result = try await LostRace.attemptTwice(delay: tryAgainDelay,
@@ -30,7 +31,7 @@ extension ChatViewModel {
             mutateRoom { $0.applyPoll(messageID: result.messageId, poll: result.poll, revision: result.pollRevision) }
             logger.info(.chat, "Vote of \(optionIDs.count) options in poll \(message.id) in group \(group.id)")
         } catch {
-            if let appError = error as? AppError, appError.leavesSendOutcomeUnknown,
+            if let appError = error as? AppError, appError.leavesVoteOutcomeUnknown,
                await voteLanded(optionIDs, in: message.id) {
                 return
             }
@@ -65,8 +66,14 @@ extension ChatViewModel {
     /// replaces the one shown either way.
     private func voteLanded(_ optionIDs: [String], in messageID: String) async -> Bool {
         logger.warning(.chat, "Vote outcome unknown in poll \(messageID) in group \(group.id); refreshing it")
-        guard let states = try? await repository.polls(groupID: group.id, messageIDs: [messageID]),
-              let state = states.items.first(where: { $0.messageId == messageID }) else { return false }
+        let states: PollStates
+        do {
+            states = try await repository.polls(groupID: group.id, messageIDs: [messageID])
+        } catch {
+            logger.warning(.chat, "Poll refresh after an unknown vote outcome failed in group \(group.id): \(error)")
+            return false
+        }
+        guard let state = states.items.first(where: { $0.messageId == messageID }) else { return false }
         mutateRoom { $0.applyPoll(messageID: messageID, poll: state.poll) }
         return Set(state.poll.myVotes) == Set(optionIDs)
     }

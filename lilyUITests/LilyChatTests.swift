@@ -229,6 +229,21 @@ final class LilyChatTests: LilyUITestCase {
                      thenHoldForDuration: 0)
         XCTAssertTrue(viewer.waitForNonExistence(timeout: 5), "a drag down closes the viewer from any page")
     }
+
+    /// A profile opened from a room stays in the room's flow: no tab bar, so the swipe back has nothing to hide.
+    @MainActor
+    func testAProfileOpenedFromARoomKeepsTheTabBarHidden() {
+        tapSignInWithApple()
+        openChatsTab()
+        openRoom("group-row-mock-dm-mock-user-marta", titled: "Marta")
+        XCTAssertTrue(app.tabBars.buttons["Home"].waitForNonExistence(timeout: 5), "a room hides the bar")
+
+        app.buttons["chat-title"].tap()
+        XCTAssertTrue(app.staticTexts["Groups in common"].waitForExistence(timeout: 10), "the profile opened")
+
+        XCTAssertFalse(app.buttons["profile-message"].exists, "a profile reached from its chat offers no Message")
+        XCTAssertFalse(app.tabBars.buttons["Home"].exists, "the profile pushed over the room keeps the bar away")
+    }
 }
 
 /// The badge is read through the tab button's accessibility value (`AppBranding.Chats.unreadChats`): the badge itself

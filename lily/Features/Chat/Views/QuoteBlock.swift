@@ -36,14 +36,9 @@ struct QuoteBlock: View {
         isDeleted ? AppBranding.Chat.quotedDeleted : quote.displayText
     }
 
-    /// White on the caller's accent bubble, the accent on everyone else's surface bubble.
-    private var barColor: Color {
-        own ? .white : .lilyAccent
-    }
+    private var barColor: Color { BubbleInk(own: own).accent }
 
-    private var fill: Color {
-        (own ? Color.white : Color.lilyInk).opacity(DesignTokens.Opacity.quoteFill)
-    }
+    private var fill: Color { BubbleInk(own: own).primary.opacity(DesignTokens.Opacity.quoteFill) }
 }
 
 /// The coloured bar at the leading edge of a quote, in a bubble and in the composer's preview.

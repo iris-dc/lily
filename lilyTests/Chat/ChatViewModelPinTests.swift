@@ -22,9 +22,13 @@ struct ChatViewModelPinTests {
         let (_, member) = await makeChat(role: .member)
         let (_, conversation) = await makeChat(group: .conversationFixture(id: "c"))
 
+        let unknownRoom = SportGroup.fixture(id: "u", channelEpoch: 1, role: .admin, kind: .unknown("poll_room"))
+        let (_, unknownKind) = await makeChat(group: unknownRoom)
+
         #expect(admin.canPin(message) && !member.canPin(message))
         #expect(conversation.canPin(.fixture(id: "m1", groupID: "c")), "either side of a conversation")
         #expect(!admin.canPin(.fixture(id: "s1", kind: .eventCreated)) && !admin.canPin(message.markingDeleted()))
+        #expect(!unknownKind.canPin(.fixture(id: "m1", groupID: "u")), "a room of an unknown kind keeps the backend's rules")
     }
 
     @Test func aPinTakesTheAnswersPinsAndCatchesUpForTheNote() async {
@@ -48,6 +52,27 @@ struct ChatViewModelPinTests {
         await viewModel.unpin("m1")
 
         #expect(viewModel.pins.isEmpty && harness.chat.polls.unpinned == ["m1"])
+        #expect(harness.chatLogs(.info).mentioning(["m1", "unpinned"]).count == 1)
+    }
+
+    @Test func aRefusedUnpinReachesThePopupAndKeepsThePins() async {
+        let (harness, viewModel) = await makeChat()
+        viewModel.mutateRoom { $0.applyPins([.fixture()]) }
+        harness.chat.polls.pinLists = [.failure(AppError.insufficientRole)]
+
+        await viewModel.unpin("m1")
+
+        #expect(viewModel.pins == [.fixture()] && harness.errorCenter.current?.error == .insufficientRole)
+        #expect(harness.chatLogs(.info).mentioning(["unpinned"]).isEmpty, "nothing was unpinned")
+    }
+
+    @Test func theLongPressOffersPinThenUnpinAndNothingToAMember() async {
+        let (_, admin) = await makeChat(role: .admin)
+        let (_, member) = await makeChat(role: .member)
+
+        #expect(admin.pinning(of: message) == .pin && member.pinning(of: message) == .none)
+        admin.mutateRoom { $0.applyPins([.fixture()]) }
+        #expect(admin.pinning(of: message) == .unpin)
     }
 
     @Test func aRefusedPinReachesThePopupAndChangesNothing() async {

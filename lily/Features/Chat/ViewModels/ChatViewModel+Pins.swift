@@ -30,10 +30,10 @@ extension ChatViewModel {
 
     func pin(_ message: ChatMessage) async {
         guard canPin(message) else { return }
-        await changePins(of: message.id, during: "Pinning") {
+        let changed = await changePins(of: message.id, during: "Pinning") {
             try await repository.pin(groupID: group.id, messageID: message.id)
         }
-        guard isPinned(message.id) else { return }
+        guard changed else { return }
         logger.info(.chat, "Message \(message.id) pinned in group \(group.id)")
         do {
             try await catchUp.catchUp(groupID: group.id)
@@ -43,13 +43,14 @@ extension ChatViewModel {
     }
 
     func unpin(_ messageID: String) async {
-        await changePins(of: messageID, during: "Unpinning") {
+        let changed = await changePins(of: messageID, during: "Unpinning") {
             try await repository.unpin(groupID: group.id, messageID: messageID)
         }
-        if !isPinned(messageID) { logger.info(.chat, "Message \(messageID) unpinned in group \(group.id)") }
+        if changed { logger.info(.chat, "Message \(messageID) unpinned in group \(group.id)") }
     }
 
-    private func changePins(of messageID: String, during step: String, _ work: () async throws -> PinList) async {
+    /// Whether the backend answered; a refusal reached the popup and changed nothing.
+    private func changePins(of messageID: String, during step: String, _ work: () async throws -> PinList) async -> Bool {
         do {
             let list = try await LostRace.attemptTwice(delay: tryAgainDelay,
                                                        logger: logger,
@@ -58,8 +59,10 @@ extension ChatViewModel {
                                                        work)
             mutateRoom { $0.applyPins(list.pins) }
             await adoptEpoch(list.channelEpoch)
+            return true
         } catch {
             report(error, during: "\(step) message \(messageID)")
+            return false
         }
     }
 }

@@ -8,19 +8,23 @@ struct PollOptionPill: View {
     let display: PollOptionDisplay
     let own: Bool
     let onTap: () -> Void
+    /// The share's column grows with the type, or "100%" would be cut at accessibility sizes.
+    @ScaledMetric(relativeTo: .footnote) private var shareWidth = DesignTokens.Layout.pollShareWidth
+
+    private var ink: BubbleInk { BubbleInk(own: own) }
 
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: DesignTokens.Spacing.sm) {
                 Image(systemName: display.isMarked ? DesignTokens.Symbols.pollChosen : DesignTokens.Symbols.pollChoice)
-                    .foregroundStyle(display.isMarked ? ink : ring)
+                    .foregroundStyle(display.isMarked ? ink.accent : ink.secondary)
                     .contentTransition(.symbolEffect(.replace))
                     .accessibilityLabel(display.isMarked ? Text(AppBranding.Chat.Polls.chosen) : Text(verbatim: ""))
                 Text(verbatim: option.text)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(display.share, format: .percent.precision(.fractionLength(0)))
                     .font(.footnote.weight(.semibold).monospacedDigit())
-                    .frame(width: DesignTokens.Layout.pollShareWidth, alignment: .trailing)
+                    .frame(width: shareWidth, alignment: .trailing)
                     .opacity(display.showsShare ? 1 : 0)
                     .contentTransition(.numericText())
                     .accessibilityHidden(!display.showsShare)
@@ -40,9 +44,6 @@ struct PollOptionPill: View {
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(display.isMarked ? .isSelected : [])
     }
-
-    private var ink: Color { own ? .white : .lilyAccent }
-    private var ring: Color { own ? Color.white.opacity(DesignTokens.Opacity.secondaryOnAccent) : .secondary }
 
     private var track: Color {
         own ? Color.white.opacity(DesignTokens.Opacity.pollTrackOnAccent) : Color.lilyInk.opacity(DesignTokens.Opacity.pollTrack)

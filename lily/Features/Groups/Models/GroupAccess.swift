@@ -101,9 +101,10 @@ nonisolated enum GroupAccess: Equatable, Sendable {
         isMember && !group.isDirect && !group.kind.isUnknown
     }
 
-    /// Either side of a conversation; in a group or a tournament's room, its admins and owner.
+    /// Either side of a conversation; in a group or a tournament's room, its admins and owner; never in a room of a
+    /// kind this build does not know, whose rules are the backend's.
     func canPin(in group: SportGroup) -> Bool {
-        self == .conversation || (isMember && group.role?.isAdmin == true)
+        self == .conversation || (isMember && group.role?.isAdmin == true && !group.kind.isUnknown)
     }
 
     private func allows(_ membersMay: Bool) -> Bool {

@@ -73,4 +73,71 @@ extension LilyChatTests {
         expectation(for: earlier, evaluatedWith: bar)
         waitForExpectations(timeout: 5)
     }
+
+    /// A poll with several answers ticks its options and Vote sends them; the shares then show for every option.
+    @objc @MainActor
+    func testAMultipleAnswerPollTicksThenVotes() {
+        tapSignInWithApple()
+        openChatsTab()
+        openRoom(padelRow, titled: "Sunday Padel Crew")
+        app.buttons["chat-attach"].tap()
+        XCTAssertTrue(app.buttons["chat-attach-poll"].waitForExistence(timeout: 5))
+        app.buttons["chat-attach-poll"].tap()
+        enter("Which evenings?", into: app.textFields["poll-question"].firstMatch)
+        enter("Tuesday", into: app.textFields["poll-option-field-0"])
+        enter("Thursday", into: app.textFields["poll-option-field-1"])
+        app.buttons["poll-add-option"].tap()
+        enter("Friday", into: app.textFields["poll-option-field-2"])
+        let multiple = app.switches["poll-multiple"].firstMatch
+        XCTAssertTrue(multiple.waitForExistence(timeout: 5))
+        // With the keyboard up the toggles sit under it; scrolled into the clear, a Toggle in a Form flips at its
+        // trailing end (a tap in the middle lands on the label).
+        scrollUntilHittable(multiple)
+        multiple.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+        expectation(for: NSPredicate(format: "value == '1'"), evaluatedWith: multiple)
+        waitForExpectations(timeout: 5)
+        app.buttons["poll-send"].tap()
+        XCTAssertTrue(app.staticTexts["Which evenings?"].waitForExistence(timeout: 10), "the poll lands in the room")
+
+        let vote = app.buttons.matching(identifier: "poll-vote").firstMatch
+        XCTAssertTrue(vote.waitForExistence(timeout: 5))
+        XCTAssertFalse(vote.isEnabled, "nothing ticked yet")
+        let options = app.descendants(matching: .any).matching(identifier: "poll-option-0").allElementsBoundByIndex
+        let seconds = app.descendants(matching: .any).matching(identifier: "poll-option-1").allElementsBoundByIndex
+        options.last?.tap()
+        seconds.last?.tap()
+        XCTAssertTrue(vote.isEnabled, "two ticks make a vote")
+        vote.tap()
+
+        let total = app.staticTexts.matching(identifier: "poll-total").allElementsBoundByIndex.last
+        XCTAssertNotNil(total)
+        let counted = NSPredicate(format: "label == %@", "1 vote")
+        expectation(for: counted, evaluatedWith: total)
+        waitForExpectations(timeout: 5)
+        XCTAssertTrue(vote.waitForNonExistence(timeout: 5), "Vote leaves once voted")
+    }
+
+    /// Retract vote in the long press takes the caller's vote back: the shares hide and View votes goes with them.
+    @objc @MainActor
+    func testRetractVoteFromTheLongPressHidesTheShares() {
+        tapSignInWithApple()
+        openChatsTab()
+        openRoom(padelRow, titled: "Sunday Padel Crew")
+        let option = app.descendants(matching: .any)["poll-option-1"].firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout: 10))
+        scrollUntilHittable(option)
+        option.tap()
+        let voters = app.buttons["poll-voters"].firstMatch
+        XCTAssertTrue(voters.waitForExistence(timeout: 5))
+
+        let question = app.staticTexts["Which court for Sunday?"].firstMatch
+        openContextMenu(on: question, until: app.buttons["message-retract-vote"])
+        app.buttons["message-retract-vote"].tap()
+
+        XCTAssertTrue(voters.waitForNonExistence(timeout: 5), "View votes goes once the vote is taken back")
+        let total = app.staticTexts["poll-total"].firstMatch
+        let back = NSPredicate(format: "label == %@", "3 votes")
+        expectation(for: back, evaluatedWith: total)
+        waitForExpectations(timeout: 5)
+    }
 }

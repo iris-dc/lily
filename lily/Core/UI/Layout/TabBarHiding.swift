@@ -5,9 +5,8 @@ import SwiftUI
 /// visibility leaves with the screen the moment a pop starts, so the bar would reappear in one frame; the stack's root
 /// reads this instead and flips the bar inside an animation as the path changes, which is what makes the bar slide
 /// away and back with the push and the pop. Once a screen hides the bar, every screen pushed over it hides it too: a
-/// profile or a game opened from a room is still inside the room's flow, and a bar that came back over them left again
-/// only when the swipe back to the room had ended, so the room's composer sat above the bar through the swipe and
-/// dropped to the bottom at its end.
+/// profile or a game opened from a room is still inside the room's flow, and a bar that comes back over them can only
+/// leave again once the swipe back to the room has ended.
 @Observable
 final class TabBarHiding {
     /// The depth of every screen on this stack that hides the bar, by the screen's own token, so two screens at one

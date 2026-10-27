@@ -15,7 +15,6 @@ nonisolated extension AccessibilityIdentifiers {
     static let pollVote = "poll-vote"
     static let pollTotal = "poll-total"
     static let pollVoters = "poll-voters"
-    static let pollVotersSheet = "poll-voters-sheet"
     /// The long-press menu's items.
     static let messageRetractVote = "message-retract-vote"
     static let messagePin = "message-pin"

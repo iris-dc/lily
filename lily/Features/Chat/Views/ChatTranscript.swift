@@ -121,6 +121,7 @@ struct ChatTranscript: View {
         // Outside the list's identifier, which would be stamped on the bar's buttons too; a bar, so the rows scrolling
         // under it blur as they do under the toolbar.
         .safeAreaBar(edge: .top, spacing: 0) { pinnedBar }
+        .onChange(of: viewModel.pins.map(\.messageId)) { shownPinIndex = nil }
         .onChange(of: rows.count) { old, new in
             log("rows \(old) to \(new), the last \(lastRowArrived ? "arrived" : "loaded"), \(describe(tracker.geometry))")
         }

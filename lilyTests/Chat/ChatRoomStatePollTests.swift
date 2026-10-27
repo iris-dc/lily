@@ -50,6 +50,20 @@ struct ChatRoomStatePollTests {
         #expect(room.pollRevision == 4 && room.messages.first?.poll?.myVotes == ["1"])
     }
 
+    /// A page generated before the vote's answer landed names an older revision: taking its counts would undo the vote,
+    /// and no refresh would follow, since the room is already past the page.
+    @Test func aPageFromBeforeAVotesAnswerDoesNotUndoTheVote() {
+        var room = ChatRoomState(groupID: "g", channelEpoch: 1)
+        room.applyNewest(page([.pollFixture(id: "m1")], revision: 3))
+        room.applyPoll(messageID: "m1", poll: .fixture(myVotes: ["0"], votes: [4, 1], totalVoters: 5), revision: 4)
+
+        room.applyNewer(page([.pollFixture(id: "m1")], revision: 3))
+        #expect(room.messages.first?.poll?.myVotes == ["0"], "the stale page's counts are left alone")
+
+        room.applyNewer(page([.pollFixture(id: "m1", poll: .fixture(votes: [4, 2], totalVoters: 6))], revision: 5))
+        #expect(room.messages.first?.poll?.totalVoters == 6, "a page at or past the room's revision is taken")
+    }
+
     @Test func aDeletedPollTakesNoCountsAndIsNotRefreshed() {
         var room = ChatRoomState.fixture(messages: [.pollFixture(id: "m1"), .pollFixture(id: "m2")])
         room.markDeleted(id: "m1")

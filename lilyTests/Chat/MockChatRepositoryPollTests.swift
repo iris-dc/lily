@@ -31,6 +31,40 @@ extension MockChatRepositoryTests {
         #expect(voters.options.first?.voters.map(\.name) == ["Jonas", "Ayşe", "You"])
     }
 
+    @Test func theSameVoteAgainChangesNothing() async throws {
+        let repository = makeRepository()
+        let pollID = try #require(try await repository.newest(groupID: padel).items.first { $0.kind == .poll }?.id)
+
+        let first = try await repository.vote(groupID: padel, messageID: pollID, optionIDs: ["1"])
+        let again = try await repository.vote(groupID: padel, messageID: pollID, optionIDs: ["1"])
+
+        #expect(again == first, "the same choice answers the current state and moves no revision")
+    }
+
+    @Test func theVotersOfAnAnonymousPollOrOfANonPollAreRefused() async throws {
+        let repository = makeRepository()
+        var draft = MessageDraft()
+        draft.poll = PollDraft(question: "Which court?", options: ["1", "3"])
+        let anonymous = try await repository.send(groupID: padel, draft)
+        let textID = try #require(try await repository.newest(groupID: padel).items.first { $0.kind == .text }?.id)
+
+        await #expect(throws: AppError.pollAnonymous) {
+            try await repository.voters(groupID: padel, messageID: anonymous.message.id)
+        }
+        await #expect(throws: AppError.notAPoll) {
+            try await repository.voters(groupID: padel, messageID: textID)
+        }
+    }
+
+    @Test func unpinningWhatIsNotPinnedAnswersTheListUnchanged() async throws {
+        let repository = makeRepository()
+        let before = try await repository.newest(groupID: padel).pins
+
+        let after = try await repository.unpin(groupID: padel, messageID: "not-a-pin")
+
+        #expect(after.pins == before && !before.isEmpty)
+    }
+
     @Test func aVoteOutsideTheRulesIsRefused() async throws {
         let repository = makeRepository()
         let page = try await repository.newest(groupID: padel)

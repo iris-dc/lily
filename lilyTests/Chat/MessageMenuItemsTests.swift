@@ -48,4 +48,28 @@ struct MessageMenuItemsTests {
 
         #expect(items.enabled == [.reply, .copy, .delete, .report, .block])
     }
+
+    @Test func aPinnableVotedPollOffersPinAndRetractVoteBetweenCopyAndDelete() {
+        let poll = ChatMessage.pollFixture(id: "m1")
+
+        let items = MessageMenuItems.items(for: poll,
+                                           isOwn: true,
+                                           canReply: true,
+                                           canDelete: true,
+                                           pinning: .pin,
+                                           canRetractVote: true)
+
+        #expect(items.enabled == [.reply, .pin, .retractVote, .delete], "a poll has no text to copy")
+    }
+
+    @Test func aPinnedMessageOffersUnpinInsteadOfPin() {
+        let items = MessageMenuItems.items(for: .fixture(id: "m1"),
+                                           isOwn: false,
+                                           canReply: true,
+                                           canDelete: false,
+                                           pinning: .unpin)
+
+        #expect(items.enabled == [.reply, .copy, .unpin, .report, .block])
+        #expect(items.offers(.unpin) && !items.offers(.pin) && !items.offers(.retractVote))
+    }
 }

@@ -11,7 +11,6 @@ nonisolated extension DesignTokens.Symbols {
     static let pollChosen = "checkmark.circle.fill"
     static let addOption = "plus.circle.fill"
     static let removeOption = "minus.circle.fill"
-    static let dismissPin = "xmark"
 }
 
 nonisolated extension DesignTokens.Layout {
@@ -21,9 +20,10 @@ nonisolated extension DesignTokens.Layout {
     static let pollShareWidth: CGFloat = 40
     /// The bubble's last line (the voters' count, Vote or View votes): one height with or without a button.
     static let pollFooterHeight: CGFloat = 32
-    /// The pinned bar's accent stripe, one segment per pin.
+    /// The pinned bar's accent stripe, one segment per pin, at most this many: a window around the shown one past that.
     static let pinStripeWidth: CGFloat = 2
     static let pinStripeSpacing: CGFloat = 2
+    static let pinStripeMaxSegments = 4
     /// The stripe's height: the bar's two lines, its title and the quote.
     static let pinStripeHeight: CGFloat = 34
 }

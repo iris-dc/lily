@@ -35,7 +35,7 @@ struct MainTabView: View {
             if AppConfig.FeatureFlags.chat {
                 Tab(value: .chat) {
                     ChatTab(dependencies: dependencies)
-                    .id(language)
+                        .id(language)
                 } label: {
                     tabLabel(AppBranding.chatsTitle, symbol: DesignTokens.Symbols.chat)
                 }

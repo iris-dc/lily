@@ -58,6 +58,51 @@ struct ChatViewModelPollTests {
         #expect(viewModel.room.messages.first?.poll == landed && harness.errorCenter.current == nil)
     }
 
+    /// The vote route's fallback for a 5xx is `voteFailed`, and the backend commits before it answers: checked first.
+    @Test func aServerErrorOnTheVoteIsCheckedBeforeAnyPopup() async {
+        let (harness, viewModel) = await makeChat()
+        harness.chat.polls.voteResults = [.failure(AppError.voteFailed)]
+        let landed = Poll.fixture(myVotes: ["1"], votes: [3, 2], totalVoters: 5)
+        harness.chat.polls.pollStates = [.success(PollStates(items: [PollState(messageId: "m1", poll: landed)], pollRevision: 3))]
+
+        await viewModel.vote(in: poll, for: ["1"])
+
+        #expect(viewModel.room.messages.first?.poll == landed && harness.errorCenter.current == nil)
+        #expect(harness.chatLogs(.warning).mentioning(["Vote outcome unknown", "m1"]).count == 1)
+    }
+
+    @Test func aFailedRefreshAfterALostAnswerBringsThePollBackWithThePopup() async {
+        let (harness, viewModel) = await makeChat()
+        harness.chat.polls.voteResults = [.failure(AppError.network)]
+        harness.chat.polls.pollStates = [.failure(AppError.network)]
+
+        await viewModel.vote(in: poll, for: ["1"])
+
+        #expect(viewModel.room.messages.first?.poll == .fixture() && harness.errorCenter.current?.error == .network)
+        #expect(harness.chatLogs(.warning).mentioning(["Poll refresh", "failed"]).count == 1)
+    }
+
+    @Test func aVoteThatLostARaceIsSentOnceMore() async {
+        let (harness, viewModel) = await makeChat()
+        let answered = Poll.fixture(myVotes: ["1"], votes: [3, 2], totalVoters: 5)
+        harness.chat.polls.voteResults = [.failure(AppError.tryAgain),
+                                          .success(VoteResult(messageId: "m1", poll: answered, pollRevision: 1))]
+
+        await viewModel.vote(in: poll, for: ["1"])
+
+        #expect(harness.chat.polls.votes.count == 2 && viewModel.room.messages.first?.poll == answered)
+        #expect(harness.chatLogs(.info).mentioning(["lost a race"]).count == 1)
+    }
+
+    @Test func aDeletedPollTakesNoVote() async {
+        let (harness, viewModel) = await makeChat()
+        viewModel.mutateRoom { $0.markDeleted(id: "m1") }
+
+        await viewModel.vote(in: poll, for: ["1"])
+
+        #expect(harness.chat.polls.votes.isEmpty && !viewModel.canRetractVote(in: poll))
+    }
+
     @Test func aLostAnswerWhoseVoteDidNotLandBringsThePollBack() async {
         let (harness, viewModel) = await makeChat()
         harness.chat.polls.voteResults = [.failure(AppError.network)]

@@ -11,8 +11,8 @@ extension View {
     }
 
     /// Gives a text-only button a finger-sized hit area without changing how it looks.
-    func tappableLabel() -> some View {
-        frame(minHeight: DesignTokens.Layout.controlHeight)
+    func tappableLabel(minHeight: CGFloat = DesignTokens.Layout.controlHeight) -> some View {
+        frame(minHeight: minHeight)
             .contentShape(.rect)
     }
 }

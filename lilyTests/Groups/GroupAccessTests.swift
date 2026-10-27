@@ -149,4 +149,23 @@ struct GroupAccessTests {
         #expect(owner.canRemove(.member) && owner.canRemove(.admin) && owner.canBan(.member) && owner.canBan(.admin))
         #expect(!owner.canRemove(.owner) && !owner.canBan(.owner) && !owner.canRemove(.banned))
     }
+
+    /// Polls go into groups and tournament rooms the caller is in; pins are an admin's there and either side's in a
+    /// conversation; a room of a kind this build does not know keeps the backend's rules for both.
+    @Test func pollsAndPinsFollowTheRoomsKindAndTheCallersRole() {
+        func access(_ group: SportGroup, _ userID: String? = "u") -> (polls: Bool, pins: Bool) {
+            let access = GroupAccess(group: group, userID: userID)
+            return (access.canCreatePolls(in: group), access.canPin(in: group))
+        }
+
+        #expect(access(.fixture(role: .member)) == (true, false))
+        #expect(access(.fixture(role: .admin)) == (true, true))
+        #expect(access(.fixture(visibility: .private, role: .owner)) == (true, true))
+        #expect(access(.fixture()) == (false, false), "an outsider")
+        #expect(access(.fixture(), nil) == (false, false), "a guest")
+        #expect(access(.conversationFixture()) == (false, true))
+        #expect(access(.tournamentRoomFixture(role: .owner)) == (true, true))
+        #expect(access(.tournamentRoomFixture(role: .member)) == (true, false))
+        #expect(access(.fixture(role: .owner, kind: .unknown("poll_room"))) == (false, false))
+    }
 }

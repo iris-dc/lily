@@ -61,11 +61,12 @@ extension BubbleContent where Media == EmptyView {
 extension View {
     /// Body text on a plain rounded fill: accent with white text for the caller, surface with ink for the others.
     func bubbleFill(own: Bool) -> some View {
-        font(.body)
-            .foregroundStyle(own ? Color.white : Color.lilyInk)
+        let ink = BubbleInk(own: own)
+        return font(.body)
+            .foregroundStyle(ink.primary)
             .padding(.horizontal, DesignTokens.Layout.bubbleHorizontalPadding)
             .padding(.vertical, DesignTokens.Layout.bubbleVerticalPadding)
-            .background(own ? Color.lilyAccent : Color.lilySurface, in: .rect(cornerRadius: DesignTokens.Radius.bubble))
+            .background(ink.background, in: .rect(cornerRadius: DesignTokens.Radius.bubble))
     }
 
     /// A row of the transcript: the content may take `bubbleMaxWidthFraction` of the list and hugs its side.

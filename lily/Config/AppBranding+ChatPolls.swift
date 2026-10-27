@@ -13,7 +13,6 @@ nonisolated extension AppBranding.Chat {
         static var removeOption: String { localized("Remove option") }
         static var anonymousVoting: String { localized("Anonymous voting") }
         static var multipleAnswers: String { localized("Multiple answers") }
-        static var send: String { localized("Send") }
         static var anonymousPoll: String { localized("Anonymous poll") }
         static var publicPoll: String { localized("Public poll") }
         static var vote: String { localized("Vote") }

@@ -30,10 +30,7 @@ nonisolated struct ViewerGeometry: Equatable, Sendable {
             opacity = 1 - Double(progress)
             return
         }
-        rect = CGRect(x: Self.mix(start.minX, tile.frame.minX, progress),
-                      y: Self.mix(start.minY, tile.frame.minY, progress),
-                      width: Self.mix(start.width, tile.frame.width, progress),
-                      height: Self.mix(start.height, tile.frame.height, progress))
+        rect = Self.mix(start, tile.frame, progress)
         radii = RectangleCornerRadii(topLeading: tile.radii.topLeading * progress,
                                      bottomLeading: tile.radii.bottomLeading * progress,
                                      bottomTrailing: tile.radii.bottomTrailing * progress,
@@ -49,11 +46,8 @@ nonisolated struct ViewerGeometry: Equatable, Sendable {
     /// in `progress`, so it is applied on every frame (`viewerViewportCut`).
     static func clip(viewport: CGRect?, screen: CGRect, progress: CGFloat) -> CGRect {
         guard let viewport else { return screen }
-        let cut = min(1, progress / DesignTokens.Layout.viewerViewportCutProgress)
-        return CGRect(x: mix(screen.minX, viewport.minX, cut),
-                      y: mix(screen.minY, viewport.minY, cut),
-                      width: mix(screen.width, viewport.width, cut),
-                      height: mix(screen.height, viewport.height, cut))
+        let cut = min(1, max(0, progress / DesignTokens.Layout.viewerViewportCutProgress))
+        return mix(screen, viewport, cut)
     }
 
     /// The part of a tile the chat's `viewport` shows, in the tile's own coordinates: what the viewer's picture stands
@@ -89,5 +83,13 @@ nonisolated struct ViewerGeometry: Equatable, Sendable {
 
     private static func mix(_ from: CGFloat, _ to: CGFloat, _ progress: CGFloat) -> CGFloat {
         from + (to - from) * progress
+    }
+
+    /// Each edge of `from` moved toward `to` by `progress`.
+    static func mix(_ from: CGRect, _ to: CGRect, _ progress: CGFloat) -> CGRect {
+        CGRect(x: mix(from.minX, to.minX, progress),
+               y: mix(from.minY, to.minY, progress),
+               width: mix(from.width, to.width, progress),
+               height: mix(from.height, to.height, progress))
     }
 }

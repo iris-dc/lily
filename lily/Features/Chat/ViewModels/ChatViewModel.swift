@@ -222,6 +222,12 @@ extension AppError {
         self == .network || self == .messageSendFailed
     }
 
+    /// A 500 or a lost connection after the backend may already have counted the vote (`voteFailed` is the vote
+    /// route's fallback for an answer without a known code).
+    var leavesVoteOutcomeUnknown: Bool {
+        self == .network || self == .voteFailed
+    }
+
     /// The room is no longer the caller's to read.
     var endsRoomAccess: Bool {
         self == .notAMember || self == .groupNotFound

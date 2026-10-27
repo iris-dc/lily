@@ -14,10 +14,12 @@ extension MockChatRepository {
         guard Set(optionIDs).count == optionIDs.count, optionIDs.allSatisfy(known.contains),
               poll.allowsMultipleAnswers || optionIDs.count <= 1 else { throw AppError.voteFailed }
         let voted = poll.voting(optionIDs)
-        replace(messageID, in: groupID) { $0.replacingPoll(voted) }
-        let revision = (pollRevisions[groupID] ?? 0) + 1
-        pollRevisions[groupID] = revision
-        return VoteResult(messageId: messageID, poll: voted, pollRevision: revision)
+        // The same choice again changes nothing and answers the current state, as the backend does.
+        if voted != poll {
+            replace(messageID, in: groupID) { $0.replacingPoll(voted) }
+            pollRevisions[groupID] = (pollRevisions[groupID] ?? 0) + 1
+        }
+        return VoteResult(messageId: messageID, poll: voted, pollRevision: pollRevisions[groupID] ?? 0)
     }
 
     func polls(groupID: String, messageIDs: [String]) async throws -> PollStates {
@@ -32,9 +34,10 @@ extension MockChatRepository {
     /// The fixture voters, and the caller under the options they picked.
     func voters(groupID: String, messageID: String) async throws -> PollVoters {
         let (_, messages) = try await visibleRoom(groupID)
-        guard let poll = messages.first(where: { $0.id == messageID && !$0.isDeleted })?.poll else {
+        guard let message = messages.first(where: { $0.id == messageID }), !message.isDeleted else {
             throw AppError.messageNotFound
         }
+        guard let poll = message.poll else { throw AppError.notAPoll }
         guard !poll.isAnonymous else { throw AppError.pollAnonymous }
         let caller = PollVoters.Voter(userId: identity.currentUserID ?? "", name: AppBranding.Groups.Create.mockOwnerName)
         let fixture = pollVoters[messageID] ?? [:]
@@ -52,13 +55,7 @@ extension MockChatRepository {
         }
         guard current.count < AppConfig.Chat.Pins.maxPins else { throw AppError.tooManyPins }
         let quote = ReplyQuote(quoting: message, senderName: message.senderName)
-        pins[groupID] = current + [PinnedMessage(messageId: quote.messageId,
-                                                 senderUserId: quote.senderUserId,
-                                                 senderName: quote.senderName,
-                                                 excerpt: quote.excerpt,
-                                                 kind: quote.kind,
-                                                 attachmentKind: quote.attachmentKind,
-                                                 pinnedAt: now())]
+        pins[groupID] = current + [PinnedMessage(quote: quote, pinnedAt: now())]
         post(ChatMessage(id: nextID(in: groupID),
                          groupId: groupID,
                          senderUserId: identity.currentUserID ?? "",

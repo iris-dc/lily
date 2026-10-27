@@ -28,15 +28,7 @@ nonisolated extension MockChatFixtures {
     /// The room's pins as its fixture rows have them: the line Jonas's note pinned.
     static func pins(in rows: [ChatMessage]) -> [PinnedMessage] {
         rows.filter { $0.kind == .messagePinned }.compactMap { note in
-            note.replyTo.map { quote in
-                PinnedMessage(messageId: quote.messageId,
-                              senderUserId: quote.senderUserId,
-                              senderName: quote.senderName,
-                              excerpt: quote.excerpt,
-                              kind: quote.kind,
-                              attachmentKind: quote.attachmentKind,
-                              pinnedAt: note.sentAt)
-            }
+            note.replyTo.map { PinnedMessage(quote: $0, pinnedAt: note.sentAt) }
         }
     }
 

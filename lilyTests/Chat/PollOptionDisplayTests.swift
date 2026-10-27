@@ -22,4 +22,19 @@ struct PollOptionDisplayTests {
         #expect(mine.isMarked && mine.showsShare && mine.share == poll.share(of: poll.options[1]))
         #expect(!other.isMarked && other.showsShare, "a tick left over from before the vote no longer marks")
     }
+
+    @Test func aRetractionShowsNoShareAndUnmarksTheOldPick() {
+        let voted = Poll.fixture(myVotes: ["1"])
+        let retracted = voted.voting([])
+        let display = PollOptionDisplay(retracted.options[1], in: retracted, ticked: [])
+
+        #expect(!display.isMarked && !display.showsShare)
+    }
+
+    @Test func aPollWithNoVotersHasZeroShares() {
+        let poll = Poll.fixture(myVotes: ["0"], votes: [0, 0], totalVoters: 0)
+
+        #expect(PollOptionDisplay(poll.options[0], in: poll, ticked: []).share == 0)
+        #expect(PollOptionDisplay(poll.options[1], in: poll, ticked: []).share == 0)
+    }
 }

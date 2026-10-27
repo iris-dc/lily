@@ -96,7 +96,7 @@ struct FileCard<Trailing: View>: View {
         .background(tint.opacity(DesignTokens.Opacity.quoteFill), in: .rect(cornerRadius: DesignTokens.Radius.quote))
     }
 
-    private var tint: Color { own ? .white : .lilyInk }
+    private var tint: Color { BubbleInk(own: own).primary }
 }
 
 extension FileCard where Trailing == EmptyView {

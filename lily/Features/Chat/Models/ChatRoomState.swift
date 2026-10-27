@@ -52,12 +52,13 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
         page.forEach { insert($0) }
     }
 
-    /// A page's messages: new ones inserted, and a poll already held takes the page's counts, which are the backend's
-    /// as of the page.
-    private mutating func take(_ page: [ChatMessage]) {
+    /// A page's messages: new ones inserted, and a poll already held takes the page's counts when the page is at least
+    /// as fresh as the room (`revision`, the page's `pollRevision`): a page generated before a vote's answer landed would
+    /// otherwise undo the vote, and no refresh would follow, since the room is already past the page.
+    private mutating func take(_ page: [ChatMessage], revision: Int) {
         for message in page where !insert(message) {
-            guard let poll = message.poll, let index = messages.firstIndex(where: { $0.id == message.id }),
-                  !messages[index].isDeleted else { continue }
+            guard revision >= pollRevision, let poll = message.poll,
+                  let index = messages.firstIndex(where: { $0.id == message.id }), !messages[index].isDeleted else { continue }
             messages[index] = messages[index].replacingPoll(poll)
         }
     }
@@ -109,7 +110,7 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
     mutating func applyNewest(_ page: MessagePage) {
         // A room's first page holds every poll as of the page's revision; a room held before may hold older polls.
         if !hasHistory, messages.allSatisfy({ $0.poll == nil }) { pollRevision = page.pollRevision }
-        take(page.items)
+        take(page.items, revision: page.pollRevision)
         pins = page.pins
         noteOlder(from: page)
         hasHistory = true
@@ -124,7 +125,7 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
     @discardableResult
     mutating func applyOlder(_ page: MessagePage, before anchor: String) -> Bool {
         guard olderPageAnchor == anchor else { return false }
-        take(page.items)
+        take(page.items, revision: page.pollRevision)
         pins = page.pins
         noteOlder(from: page)
         channelEpoch = page.channelEpoch
@@ -134,7 +135,7 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
     /// A catch-up page after the watermark, which moves to the page's continuation cursor when it names one (so a page
     /// of hidden or already-held messages still advances), else to the newest message it returned.
     mutating func applyNewer(_ page: MessagePage) {
-        take(page.items)
+        take(page.items, revision: page.pollRevision)
         pins = page.pins
         advanceWatermark(to: page.nextAfter ?? page.items.last?.id)
         channelEpoch = page.channelEpoch

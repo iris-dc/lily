@@ -46,4 +46,23 @@ struct TabBarHidingTests {
         hiding.prune(above: 0)
         #expect(!hiding.hides(at: 1))
     }
+
+    @Test func aScreenPushedOverTheRoomAgainAfterAPopStaysWithoutTheBar() {
+        let hiding = TabBarHiding()
+        hiding.hide("room", at: 1)
+        hiding.prune(above: 2)
+        hiding.prune(above: 1)
+        hiding.prune(above: 2)
+        #expect(hiding.hides(at: 2), "a profile pushed, popped and pushed again stays in the room's flow")
+    }
+
+    @Test func twoHidingScreensAtDifferentDepthsLeaveWithTheirOwnPops() {
+        let hiding = TabBarHiding()
+        hiding.hide("room", at: 1)
+        hiding.hide("inbox", at: 3)
+        hiding.prune(above: 2)
+        #expect(hiding.hides(at: 2), "the room under the detail still hides the bar")
+        hiding.prune(above: 0)
+        #expect(!hiding.hides(at: 1) && !hiding.hides(at: 3))
+    }
 }

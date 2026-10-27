@@ -1,6 +1,6 @@
 import Foundation
 
-/// Copy for polls and pins; `chatMessage(for:)` routes exactly those cases here.
+/// Copy for polls and pins, the chat cases `chatMessage(for:)` has no copy of its own for.
 nonisolated extension ErrorMessageMapper {
     static func pollAndPinMessage(for error: AppError) -> ErrorMessage {
         switch error {

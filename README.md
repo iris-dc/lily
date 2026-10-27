@@ -10,8 +10,9 @@ module and bundle id (`iris.lily`) keep it; the home screen says iskra.
   the public groups to discover above them.
 - **Events**: create one from the "+" (sport, time, place on a map, how many players, optional price and level), join
   or leave, edit your own. Signed-in users see who is in.
-- **Groups and chat** (debug builds): public or invite-only groups for a sport or a place, each with a chat room, a
-  roster with roles, direct invites, and events hosted inside the group.
+- **Groups and chat** (debug builds): public or invite-only groups for a sport or a place, each with a chat room
+  (replies, pictures, videos and files, polls, pinned messages), a roster with roles, direct invites, and events hosted
+  inside the group.
 - **Tournaments** (debug builds): single elimination or round robin, players or teams, self-reported results that the
   other side confirms, schedules and reminders.
 - **People**: profiles, direct conversations, an inbox for invites and reminders, push notifications once the Apple
@@ -19,7 +20,8 @@ module and bundle id (`iris.lily`) keep it; the home screen says iskra.
 - **Seven languages** (en, ru, es, fr, uk, pl, pt), prices in your currency, iPhone and iPad layouts.
 
 Release builds ship Explore, events, people's profiles and the Profile tab; groups, chat (with conversations and the
-inbox) and tournaments are behind debug-only feature flags for now.
+inbox) and tournaments are behind feature flags for now, on in debug builds and in the Staging configuration (a release
+build for trying the app on a phone).
 
 ## How it fits together
 

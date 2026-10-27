@@ -22,7 +22,7 @@ struct PollBubble: View {
                     .fontWeight(.semibold)
                 Text(caption)
                     .font(.caption)
-                    .foregroundStyle(secondary)
+                    .foregroundStyle(ink.secondary)
             }
             VStack(spacing: DesignTokens.Spacing.sm) {
                 ForEach(Array(poll.options.enumerated()), id: \.element.id) { index, option in
@@ -43,10 +43,12 @@ struct PollBubble: View {
 
     private var caption: String {
         let kind = poll.isAnonymous ? Copy.anonymousPoll : Copy.publicPoll
-        return poll.allowsMultipleAnswers ? "\(kind) · \(Copy.multipleAnswers)" : kind
+        return poll.allowsMultipleAnswers
+            ? [kind, Copy.multipleAnswers].joined(separator: AppBranding.Events.captionSeparator)
+            : kind
     }
 
-    private var secondary: Color { own ? Color.white.opacity(DesignTokens.Opacity.secondaryOnAccent) : .secondary }
+    private var ink: BubbleInk { BubbleInk(own: own) }
 
     private func choose(_ option: Poll.Option) {
         guard poll.allowsMultipleAnswers else {
@@ -65,14 +67,14 @@ struct PollBubble: View {
         HStack(spacing: DesignTokens.Spacing.sm) {
             Text(poll.totalVoters == 0 ? Copy.noVotesYet : Copy.voterCount(poll.totalVoters))
                 .font(.footnote)
-                .foregroundStyle(secondary)
+                .foregroundStyle(ink.secondary)
                 .contentTransition(poll.totalVoters > 1 ? .numericText() : .opacity)
                 .accessibilityIdentifier(AccessibilityIdentifiers.pollTotal)
             Spacer(minLength: 0)
             footerAction
                 .font(.footnote.weight(.semibold))
                 .buttonStyle(.borderless)
-                .tint(own ? Color.white : Color.lilyAccent)
+                .tint(ink.accent)
         }
         .frame(minHeight: DesignTokens.Layout.pollFooterHeight)
     }
@@ -80,14 +82,12 @@ struct PollBubble: View {
     @ViewBuilder private var footerAction: some View {
         if poll.allowsMultipleAnswers, !poll.hasVoted {
             Button(Copy.vote) { onVote(poll.options.map(\.id).filter(ticked.contains)) }
-                .frame(minHeight: DesignTokens.Layout.pollFooterHeight)
-                .contentShape(.rect)
+                .tappableLabel(minHeight: DesignTokens.Layout.pollFooterHeight)
                 .disabled(ticked.isEmpty)
                 .accessibilityIdentifier(AccessibilityIdentifiers.pollVote)
         } else if poll.hasVoted, !poll.isAnonymous {
             Button(Copy.viewVotes, action: onShowVoters)
-                .frame(minHeight: DesignTokens.Layout.pollFooterHeight)
-                .contentShape(.rect)
+                .tappableLabel(minHeight: DesignTokens.Layout.pollFooterHeight)
                 .accessibilityIdentifier(AccessibilityIdentifiers.pollVoters)
         }
     }

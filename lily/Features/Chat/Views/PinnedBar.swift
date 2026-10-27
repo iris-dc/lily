@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// The bar of pinned messages at the top of a chat, on glass, as Telegram draws it: an accent stripe cut into one
-/// segment per pin (at most `maxStripeSegments`, the shown one lit), "Pinned message" (with its place among several)
-/// and the pinned message's quote; a tap jumps to the message, which the transcript then steps back from; those who
-/// may pin get an unpin ✕ for the one shown.
+/// segment per pin (at most `pinStripeMaxSegments`, the shown one lit), "Pinned message" (with its place among several)
+/// and the pinned message's quote; a tap jumps to the message, which the transcript then steps back from
+/// (`PinnedBarPosition`); those who may pin get an unpin ✕ for the one shown.
 struct PinnedBar: View {
     let pins: [PinnedMessage]
     let shownIndex: Int
@@ -11,7 +11,8 @@ struct PinnedBar: View {
     let onTap: () -> Void
     let onUnpin: () -> Void
 
-    private static let maxStripeSegments = 4
+    /// The stripe spans the bar's two lines, so it grows with the type.
+    @ScaledMetric(relativeTo: .subheadline) private var stripeHeight = DesignTokens.Layout.pinStripeHeight
     private typealias Copy = AppBranding.Chat.Pins
 
     private var shown: PinnedMessage { pins[shownIndex] }
@@ -39,7 +40,7 @@ struct PinnedBar: View {
             .accessibilityIdentifier(AccessibilityIdentifiers.pinnedBar)
             if canUnpin {
                 Button(action: onUnpin) {
-                    Image(systemName: DesignTokens.Symbols.dismissPin)
+                    Image(systemName: DesignTokens.Symbols.dismiss)
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.borderless)
@@ -54,18 +55,19 @@ struct PinnedBar: View {
         .padding(.bottom, DesignTokens.Spacing.xs)
     }
 
-    /// One segment per pin, the newest at the bottom as the list runs; past `maxStripeSegments` pins a window of them
-    /// around the shown one.
+    /// One segment per pin, the newest at the bottom as the list runs; past `pinStripeMaxSegments` pins a window of
+    /// them around the shown one.
     private var stripe: some View {
-        let count = min(pins.count, Self.maxStripeSegments)
-        let first = min(max(0, shownIndex - count + 1), pins.count - count)
+        let window = PinnedBarPosition.stripeWindow(shown: shownIndex,
+                                                    count: pins.count,
+                                                    maxSegments: DesignTokens.Layout.pinStripeMaxSegments)
         return VStack(spacing: DesignTokens.Layout.pinStripeSpacing) {
-            ForEach(first..<first + count, id: \.self) { index in
+            ForEach(window, id: \.self) { index in
                 Capsule()
                     .fill(Color.lilyAccent.opacity(index == shownIndex ? 1 : DesignTokens.Opacity.pinStripeIdle))
             }
         }
-        .frame(width: DesignTokens.Layout.pinStripeWidth, height: DesignTokens.Layout.pinStripeHeight)
+        .frame(width: DesignTokens.Layout.pinStripeWidth, height: stripeHeight)
         .accessibilityHidden(true)
     }
 }

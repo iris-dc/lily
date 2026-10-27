@@ -90,4 +90,22 @@ struct ViewerGeometryTests {
         let hidden = CGRect(x: 148, y: 760, width: 235, height: 100)
         #expect(ViewerGeometry.shownPart(of: hidden, in: viewport) == nil)
     }
+
+    /// Between the cut and the tile the picture stays cut to the viewport; a progress below zero cuts nothing.
+    @Test func thePictureStaysCutToTheViewportFromTheCutToTheTile() {
+        let screen = CGRect(x: 0, y: 0, width: 400, height: 800)
+        let viewport = CGRect(x: 0, y: 100, width: 400, height: 600)
+
+        #expect(ViewerGeometry.clip(viewport: viewport, screen: screen, progress: 0.75) == viewport)
+        #expect(ViewerGeometry.clip(viewport: viewport, screen: screen, progress: -0.2) == screen)
+    }
+
+    @Test func aTileTallerThanTheViewportShowsItsMiddleAndOneBesideItNothing() {
+        let viewport = CGRect(x: 0, y: 116, width: 402, height: 642)
+        let tall = CGRect(x: 100, y: 50, width: 200, height: 900)
+        let beside = CGRect(x: 500, y: 300, width: 200, height: 150)
+
+        #expect(ViewerGeometry.shownPart(of: tall, in: viewport) == CGRect(x: 0, y: 66, width: 200, height: 642))
+        #expect(ViewerGeometry.shownPart(of: beside, in: viewport) == nil)
+    }
 }

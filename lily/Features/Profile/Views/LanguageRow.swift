@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The language setting on Profile, for guests and users alike: a card that drops down "System" and every language
-/// naming itself. A pick applies at once: Profile re-renders in place and `MainTabView` rebuilds the other tabs' trees,
-/// with no animation, since an animated pick slid the cards' new values into their chevrons over ten frames.
+/// naming itself. A pick applies at once, with no animation: Profile re-renders in place, and an animated pick would
+/// slide the cards' new values into their chevrons.
 struct LanguageRow: View {
     let language: LanguageStore
 

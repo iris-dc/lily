@@ -10,11 +10,9 @@ struct SettingsChoice<Value: Hashable>: Identifiable {
 
 /// A setting on Profile as one card that opens its choices as a popover from a tap anywhere on it: the setting's name,
 /// its current value and the chevrons, then the choices as rows with a mark on the current one, which a pick or a tap
-/// outside closes. The popover opens upward, where Profile has room, and shows whole rows before it scrolls
-/// (`dropdownMaxHeight`): opened downward it lay over the floating tab bar with a row cut mid-glyph. A `Menu` was tried
-/// first: iOS morphs a menu's label into the menu and back, and with the whole card as the label the card left its slot
-/// empty while the menu was up and zoomed back with an overshoot when it closed, while a glass card kept out of the
-/// label lost its material under the menu; a popover leaves the card where it is.
+/// outside closes. A popover, not a `Menu`: iOS morphs a menu's label into the menu and back, which empties the card's
+/// slot while it is up. It opens upward, where Profile has room and the floating tab bar is not, and shows whole rows
+/// (`dropdownRows`) before it scrolls.
 struct SettingsChoiceRow<Value: Hashable>: View {
     let title: String
     let systemImage: String
@@ -26,6 +24,8 @@ struct SettingsChoiceRow<Value: Hashable>: View {
     @State private var isPresented = false
     /// The card's width, which the popover takes up to `dropdownMaxWidth`, so the list lines up with the card.
     @State private var cardWidth: CGFloat?
+    /// A row's height grows with the type, and the list's cap with it, so it still ends on a row's edge.
+    @ScaledMetric(relativeTo: .body) private var rowHeight = DesignTokens.Layout.controlHeight
 
     var body: some View {
         Button {
@@ -56,7 +56,7 @@ struct SettingsChoiceRow<Value: Hashable>: View {
                 list.padding(.horizontal, DesignTokens.Spacing.lg)
             }
             .frame(width: min(cardWidth ?? DesignTokens.Layout.dropdownMaxWidth, DesignTokens.Layout.dropdownMaxWidth))
-            .frame(maxHeight: DesignTokens.Layout.dropdownMaxHeight)
+            .frame(maxHeight: CGFloat(DesignTokens.Layout.dropdownRows) * rowHeight)
             .presentationBackground(.clear)
             .presentationCompactAdaptation(.popover)
         }
@@ -78,7 +78,7 @@ struct SettingsChoiceRow<Value: Hashable>: View {
                                 .foregroundStyle(Color.lilyAccent)
                         }
                     }
-                    .tappableLabel()
+                    .tappableLabel(minHeight: rowHeight)
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(choice.value == selection ? .isSelected : [])
