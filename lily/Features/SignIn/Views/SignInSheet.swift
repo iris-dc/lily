@@ -7,6 +7,10 @@ import SwiftUI
 /// another 16 pt half a second after the push, when the bar's inset settled.
 struct SignInSheet: View {
     @State private var viewModel: SignInViewModel
+    /// The content's height with the keyboard down, the smallest it is seen at: a sheet the keyboard pushes up is
+    /// extended down to the screen's bottom behind it, and buttons centred in that height jumped to their places when
+    /// the keyboard went. They are centred in this height whatever the sheet's.
+    @State private var restHeight: CGFloat?
     private let session: SessionController
     private let errorCenter: ErrorCenter
     @Environment(\.dismiss) private var dismiss
@@ -20,14 +24,13 @@ struct SignInSheet: View {
     var body: some View {
         NavigationStack {
             ContentScreen {
-                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                    ScreenTitle(text: AppBranding.signInSheetTitle, subtitle: AppBranding.signInSheetSubtitle)
-                    Spacer(minLength: 0)
-                    providers
-                    Spacer(minLength: 0)
+                GeometryReader { proxy in
+                    column
+                        .frame(height: restHeight ?? proxy.size.height, alignment: .top)
+                        .onChange(of: proxy.size.height, initial: true) { _, height in
+                            if height > 0 { restHeight = min(restHeight ?? height, height) }
+                        }
                 }
-                .padding(DesignTokens.Spacing.xl)
-                .readableColumn()
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -37,7 +40,10 @@ struct SignInSheet: View {
                 EmailSignInView(session: session)
             }
         }
-        .presentationDetents([.medium, .large])
+        // One detent: the keyboard slides the sheet up and back at its own height. With a large detent too, the focus
+        // grew the sheet while the keyboard pushed it, the title shot past its place and settled back, and on the way
+        // back from the form the providers were laid out for the tall sheet and jumped to their medium places at the end.
+        .presentationDetents([.medium])
         .lilyFormSheet()
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
         .errorPopup(errorCenter)
@@ -57,6 +63,17 @@ struct SignInSheet: View {
         }
         .accessibilityLabel(AppBranding.Forms.close)
         .accessibilityIdentifier(AccessibilityIdentifiers.signInClose)
+    }
+
+    private var column: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
+            ScreenTitle(text: AppBranding.signInSheetTitle, subtitle: AppBranding.signInSheetSubtitle)
+            Spacer(minLength: 0)
+            providers
+            Spacer(minLength: 0)
+        }
+        .padding(DesignTokens.Spacing.xl)
+        .readableColumn()
     }
 
     private var providers: some View {

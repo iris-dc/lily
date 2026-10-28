@@ -124,6 +124,26 @@ extension LilySignInTests {
         XCTAssertEqual(formSubtitle.frame.minY, pushedY, accuracy: 0.5, "nothing moves after the push")
     }
 
+    /// Back from the form with the keyboard up, the providers sit where they sat before: the keyboard pushes the sheet
+    /// up and extends it to the screen's bottom behind it, and buttons centred in that height used to jump to their
+    /// places when the keyboard went.
+    @objc @MainActor
+    func testTheProvidersKeepTheirPlacesAfterTheKeyboardAndTheWayBack() {
+        openSignInSheet()
+        let apple = app.buttons["Continue with Apple"]
+        XCTAssertTrue(apple.waitForExistence(timeout: 5))
+        let restY = apple.frame.minY
+        app.buttons["Continue with Email"].tap()
+        let email = app.textFields["auth-email"]
+        XCTAssertTrue(email.waitForExistence(timeout: 5))
+        email.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "the field brings the keyboard")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(apple.waitForExistence(timeout: 5), "back to the providers")
+        sleep(1)
+        XCTAssertEqual(apple.frame.minY, restY, accuracy: 1, "the buttons are where they were, with nothing to jump to")
+    }
+
     /// The sheet's keyboard is the window's: it used to shrink the landing's pages under the sheet, and the pager came
     /// back caught between two slides once the sheet was swiped away with the keyboard up.
     @objc @MainActor
