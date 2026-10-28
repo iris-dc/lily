@@ -1,26 +1,28 @@
 import SwiftUI
 
 /// The viewer's moves: the way in out of the tile, the drag, the way back to the middle and the way out onto the tile,
-/// each started and finished through `ViewerMotion`.
+/// each started and finished through `ViewerMotion` and run frame by frame by the `ViewerMoveDriver`, which writes the
+/// shared state both halves of the picture draw from.
 extension AttachmentViewerSheet {
-    /// The way in, back and out, over an exact time, each handing over to the pager or the chat once removed, the
-    /// moment it ends; a move out of a drag starts at speed, one from rest gently.
-    func transition(fromDrag: Bool) -> Animation {
-        .timingCurve(fromDrag ? DesignTokens.Duration.viewerThrowCurve : DesignTokens.Duration.viewerTransitionCurve,
-                     duration: DesignTokens.Duration.viewerTransition)
+    /// The way in, back and out take an exact time, each handing over to the pager or the chat the moment it ends; a
+    /// move out of a drag starts at speed, one from rest gently.
+    func curve(fromDrag: Bool) -> UnitCurve {
+        fromDrag ? DesignTokens.Duration.viewerThrowCurve : DesignTokens.Duration.viewerTransitionCurve
     }
 
     /// Out of the tile: the first frame draws the picture on it, then it grows to fill the screen, a turn later, once
     /// the page has laid out where it will end.
     func open() {
         hero.shownID = current.id
+        stage()
         hero.log("opens \(current.id) from tile \(ViewerHero.describe(hero.tiles[current.id]?.frame)), page "
                  + "\(ViewerHero.describe(layout.frames[current.id])), viewport \(ViewerHero.describe(hero.viewport))")
         let move = motion.startOpening()
         Task { @MainActor in
+            stage()
             hero.log("grows \(current.id) to page \(ViewerHero.describe(layout.frames[current.id]))")
-            withAnimation(transition(fromDrag: false), completionCriteria: .removed) {
-                progress = 0
+            driver.run(duration: DesignTokens.Duration.viewerTransition, curve: curve(fromDrag: false)) { way in
+                hero.progress = 1 - way
             } completion: {
                 _ = motion.finish(move)
             }
@@ -28,8 +30,10 @@ extension AttachmentViewerSheet {
     }
 
     func dragged(_ translation: CGSize) {
+        let wasDragging = motion.phase == .dragging
         guard motion.drag() else { return }
-        drag = translation.height
+        if !wasDragging { stage() }
+        hero.drag = translation.height
     }
 
     /// Far or fast enough closes; short of it the picture goes back to the middle.
@@ -43,8 +47,9 @@ extension AttachmentViewerSheet {
 
     func settle() {
         guard let move = motion.startSettling() else { return }
-        withAnimation(transition(fromDrag: true), completionCriteria: .removed) {
-            drag = 0
+        let from = hero.drag
+        driver.run(duration: DesignTokens.Duration.viewerTransition, curve: curve(fromDrag: true)) { way in
+            hero.drag = from * (1 - way)
         } completion: {
             _ = motion.finish(move)
         }
@@ -53,11 +58,13 @@ extension AttachmentViewerSheet {
     /// Back onto the tile of the page on screen.
     func close() {
         guard let move = motion.startClosing() else { return }
-        landing = tile?.frame
-        hero.log("closes \(current.id) onto tile \(ViewerHero.describe(landing)), dragged \(Int(drag))")
-        withAnimation(transition(fromDrag: drag != 0), completionCriteria: .removed) {
-            progress = 1
-            drag = 0
+        stage()
+        hero.landing = tile?.frame
+        let (fromProgress, fromDrag) = (hero.progress, hero.drag)
+        hero.log("closes \(current.id) onto tile \(ViewerHero.describe(hero.landing)), dragged \(Int(fromDrag))")
+        driver.run(duration: DesignTokens.Duration.viewerTransition, curve: curve(fromDrag: fromDrag != 0)) { way in
+            hero.progress = fromProgress + (1 - fromProgress) * way
+            if fromDrag != 0 { hero.drag = fromDrag * (1 - way) }
         } completion: {
             guard motion.finish(move) else { return }
             followTileThenLeave()
@@ -67,14 +74,14 @@ extension AttachmentViewerSheet {
     /// The chat moved under the closing picture (a line arrived, the keyboard went): the picture catches its tile up
     /// before the chat takes over, rather than the tile jumping into place after.
     private func followTileThenLeave() {
-        guard let landing, let now = hero.tiles[current.id]?.frame,
+        guard let landing = hero.landing, let now = hero.tiles[current.id]?.frame,
               abs(now.minX - landing.minX) + abs(now.minY - landing.minY) > 1 else {
             handOver()
             return
         }
         hero.log("tile of \(current.id) moved while closing to \(ViewerHero.describe(now)); following")
-        withAnimation(.easeOut(duration: DesignTokens.Duration.fast), completionCriteria: .removed) {
-            self.landing = now
+        driver.run(duration: DesignTokens.Duration.fast, curve: .easeOut) { way in
+            hero.landing = ViewerGeometry.mix(landing, now, way)
         } completion: {
             handOver()
         }
@@ -89,10 +96,14 @@ extension AttachmentViewerSheet {
         Task { @MainActor in leave() }
     }
 
-    /// Takes the cover away without its slide: the viewer has already drawn its going.
+    /// Takes the cover away without its slide, and the chat's half of the picture with it: the viewer has already drawn
+    /// its going.
     private func leave() {
         var transaction = Transaction()
         transaction.disablesAnimations = true
-        withTransaction(transaction) { dismiss() }
+        withTransaction(transaction) {
+            dismiss()
+            hero.endMove()
+        }
     }
 }

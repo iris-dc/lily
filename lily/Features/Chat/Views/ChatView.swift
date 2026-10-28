@@ -4,9 +4,13 @@ import SwiftUI
 /// member count in the bar, an info button that leads to the group and a "more" menu whose one item clears the chat
 /// for the caller after a confirmation. A direct conversation is titled with the other person, has no member count,
 /// its info button leads to their profile and its menu reads "Delete chat". On a compact width the tab bar hides
-/// while it is open; on a regular width the room sits in a split view's detail beside the tabs' top bar.
+/// while it is open; on a regular width the room sits in a split view's detail beside the tabs' top bar. While a
+/// picture opens out of its tile or closes back into it, the chat draws the picture's part under the composer itself
+/// (`ViewerStage`) and the composer fades, so the whole picture moves and the composer's glass comes back over it.
 struct ChatView: View {
     @State private var viewModel: ChatViewModel
+    /// What the transcript's tiles and the viewer share for the viewer's coming and going.
+    @State private var hero: ViewerHero
     /// The room awaiting the caller's word on a clear; `nil` while nothing is asked.
     @State private var clearing: SportGroup?
     private let dependencies: AppDependencies
@@ -18,6 +22,7 @@ struct ChatView: View {
 
     init(viewModel: ChatViewModel, dependencies: AppDependencies, onGone: (() -> Void)? = nil) {
         _viewModel = State(initialValue: viewModel)
+        _hero = State(initialValue: ViewerHero(logger: viewModel.logger))
         self.dependencies = dependencies
         self.onGone = onGone
     }
@@ -26,9 +31,13 @@ struct ChatView: View {
 
     var body: some View {
         ContentScreen {
-            ChatTranscript(viewModel: viewModel, dependencies: dependencies)
+            ChatTranscript(viewModel: viewModel, dependencies: dependencies, hero: hero)
                 .overlay { placeholder }
-                .safeAreaInset(edge: .bottom) { MessageComposer(viewModel: viewModel) }
+                .overlay { ViewerStage(hero: hero) }
+                .safeAreaInset(edge: .bottom) {
+                    MessageComposer(viewModel: viewModel)
+                        .opacity(ViewerGeometry.chromeOpacity(progress: hero.progress, drag: hero.drag))
+                }
         }
         .navigationTitle(group.name)
         .navigationSubtitle(ifPresent: viewModel.subtitle)

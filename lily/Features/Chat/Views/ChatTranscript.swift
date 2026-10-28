@@ -28,8 +28,9 @@ struct ChatTranscript: View {
     @State private var transcriptWidth: CGFloat?
     /// The picture or video open full screen.
     @State private var viewing: AttachmentSelection?
-    /// The tiles' places and thumbnails, which the viewer opens out of and closes into.
-    @State private var hero: ViewerHero
+    /// The tiles' places and thumbnails, which the viewer opens out of and closes into; the room's, since the composer
+    /// over the transcript fades with the viewer's moves.
+    let hero: ViewerHero
     /// A tapped picture's full version on its way, before the viewer opens.
     @State private var opening: Task<Void, Never>?
     /// Whether the rows show yet: a room opened without its history shows its first page once it has settled.
@@ -45,10 +46,10 @@ struct ChatTranscript: View {
     /// The pin the bar shows, counted from the oldest; `nil` shows the newest.
     @State var shownPinIndex: Int?
 
-    init(viewModel: ChatViewModel, dependencies: AppDependencies) {
+    init(viewModel: ChatViewModel, dependencies: AppDependencies, hero: ViewerHero) {
         self.viewModel = viewModel
         self.dependencies = dependencies
-        _hero = State(initialValue: ViewerHero(logger: viewModel.logger))
+        self.hero = hero
         _firstPageReveal = State(initialValue: FirstPageReveal(isShown: viewModel.room.hasHistory))
     }
 

@@ -1,14 +1,26 @@
 import SwiftUI
 
 /// What a chat and its viewer share for the viewer's coming and going: where each gallery tile is and the thumbnail it
-/// shows, so the viewer opens out of the tile with a picture already on it and closes back into it, and which
-/// attachment is in the viewer, whose tile shows the accent meanwhile. Tiles write their places on every layout pass
-/// and scroll, so those stay out of observation; only the attachment in the viewer redraws a tile. Thumbnails are held
-/// weakly: each is the tile's own, and a long room would otherwise keep every decoded one it ever showed.
+/// shows, so the viewer opens out of the tile with a picture already on it and closes back into it, which attachment
+/// is in the viewer, whose tile shows the accent meanwhile, and where the moving picture is on its way (`progress`,
+/// `drag`, `landing`, `moving`, written frame by frame by the viewer's `ViewerMoveDriver`), which both sides draw: the
+/// viewer's cover its part above the composer line, over the bars, and the chat its part below it, under the composer,
+/// which fades with the move (`ViewerStage`), so a tile partly under the composer opens and closes whole. Tiles write their places on every layout pass and scroll, so those stay
+/// out of observation; only the attachment in the viewer redraws a tile. Thumbnails are held weakly: each is the tile's
+/// own, and a long room would otherwise keep every decoded one it ever showed.
 @Observable @MainActor
 final class ViewerHero {
     /// The attachment on screen in the viewer; `nil` while it is closed.
     var shownID: String?
+    /// 0 with the picture fitted to the screen, 1 with it on its tile in the chat; the viewer's moves write it a frame
+    /// at a time (`ViewerMoveDriver`), so both sides draw the same frame.
+    var progress: CGFloat = 1
+    /// How far up or down the picture is dragged.
+    var drag: CGFloat = 0
+    /// The tile the way out aims at, in the window; it follows the tile if the chat moved under the closing picture.
+    var landing: CGRect?
+    /// The picture on its way between its page and its tile; `nil` while the viewer is closed or fades instead.
+    var moving: MovingPicture?
     @ObservationIgnored private(set) var tiles: [String: TileGeometry] = [:]
     /// The chat's rows' area in the window, between the top bars and the composer: what of a tile shows in the chat.
     @ObservationIgnored var viewport: CGRect?
@@ -51,6 +63,14 @@ final class ViewerHero {
         preloaded.removeAll()
     }
 
+    /// The viewer is gone: nothing moves, and the composer is whole.
+    func endMove() {
+        moving = nil
+        landing = nil
+        progress = 1
+        drag = 0
+    }
+
     /// A line of the viewer's coming and going, at debug: ids and geometry only.
     func log(_ message: String) {
         logger?.debug(.chat, "Viewer \(message)")
@@ -73,6 +93,15 @@ final class ViewerHero {
     func thumbnail(for id: String) -> UIImage? {
         thumbnailsByID.object(forKey: id as NSString)
     }
+}
+
+/// The picture the viewer draws on its way in and out, by itself, where `ViewerGeometry` puts it between `page` (where
+/// its page lays it out, in the window; `nil` before the page's first layout, which the screen stands in for) and its
+/// tile (`ViewerHero.tiles[id]`, or the `landing` once it closes).
+struct MovingPicture {
+    let id: String
+    let image: UIImage
+    let page: CGRect?
 }
 
 extension EnvironmentValues {

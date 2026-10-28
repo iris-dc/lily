@@ -11,19 +11,49 @@ struct ViewerGeometryTests {
         radii: RectangleCornerRadii(topLeading: 15, bottomLeading: 4, bottomTrailing: 4, topTrailing: 15)
     )
 
-    /// On the tile the picture shows only within the chat's rows' area, as the tile does under the composer and the
-    /// bars; fitted or dragged it shows whole; halfway is halfway.
-    @Test func thePictureIsCutToTheChatsViewportOnItsTileAndWholeOnTheScreen() {
+    /// The cover's part of the picture ends at the composer line in every state; at the top it is cut to the chat's
+    /// rows' area on the tile, as the tile is under the bars, whole on the screen when fitted or dragged, halfway halfway.
+    @Test func theCoversPictureEndsAtTheComposerLineAndIsCutToTheViewportOnItsTile() {
         let screen = CGRect(x: 0, y: 0, width: 400, height: 800)
         let viewport = CGRect(x: 0, y: 100, width: 400, height: 600)
+        let aboveTheLine = CGRect(x: 0, y: 0, width: 400, height: 700)
 
         #expect(ViewerGeometry.clip(viewport: viewport, screen: screen, progress: 1) == viewport)
-        #expect(ViewerGeometry.clip(viewport: viewport, screen: screen, progress: 0) == screen)
+        #expect(ViewerGeometry.clip(viewport: viewport, screen: screen, progress: 0) == aboveTheLine)
         let cutFrom = DesignTokens.Layout.viewerViewportCutProgress
         #expect(ViewerGeometry.clip(viewport: viewport, screen: screen, progress: cutFrom) == viewport)
         #expect(ViewerGeometry.clip(viewport: viewport, screen: screen, progress: cutFrom / 2)
-                == CGRect(x: 0, y: 50, width: 400, height: 700))
+                == CGRect(x: 0, y: 50, width: 400, height: 650))
         #expect(ViewerGeometry.clip(viewport: nil, screen: screen, progress: 1) == screen, "no viewport cuts nothing")
+    }
+
+    /// The chat draws the picture and the black below the composer line, the cover above it; without a line, or with
+    /// nothing below it, the cover has the whole screen and the chat nothing.
+    @Test func theChatDrawsBelowTheComposerLineAndTheCoverAbove() {
+        let screen = CGRect(x: 0, y: 0, width: 400, height: 800)
+        let viewport = CGRect(x: 0, y: 100, width: 400, height: 600)
+        let toTheBottom = CGRect(x: 0, y: 100, width: 400, height: 700)
+
+        #expect(ViewerGeometry.underComposer(viewport: viewport, screen: screen)
+                == CGRect(x: 0, y: 700, width: 400, height: 100))
+        #expect(ViewerGeometry.overComposer(viewport: viewport, screen: screen)
+                == CGRect(x: 0, y: 0, width: 400, height: 700))
+        #expect(ViewerGeometry.underComposer(viewport: nil, screen: screen) == nil)
+        #expect(ViewerGeometry.overComposer(viewport: nil, screen: screen) == screen)
+        #expect(ViewerGeometry.underComposer(viewport: toTheBottom, screen: screen) == nil)
+        #expect(ViewerGeometry.overComposer(viewport: toTheBottom, screen: screen) == screen)
+    }
+
+    /// The composer is gone while the viewer is open, whole with the picture on its tile, and comes back as the black
+    /// goes: with the way out and with the drag alike.
+    @Test func theComposerFadesAgainstTheBlack() {
+        #expect(ViewerGeometry.chromeOpacity(progress: 0, drag: 0) == 0)
+        #expect(ViewerGeometry.chromeOpacity(progress: 1, drag: 0) == 1)
+        #expect(ViewerGeometry.chromeOpacity(progress: 0.25, drag: 0) == 0.25)
+        let halfDragged = DesignTokens.Layout.viewerFadeDistance / 2
+        #expect(ViewerGeometry.chromeOpacity(progress: 0, drag: -halfDragged) == 0.5)
+        #expect(ViewerGeometry.chromeOpacity(progress: 0, drag: halfDragged)
+                == 1 - ViewerGeometry.backdropOpacity(progress: 0, drag: halfDragged))
     }
 
     @Test func atZeroThePictureIsFittedToItsPage() {
@@ -71,6 +101,15 @@ struct ViewerGeometryTests {
         #expect(ViewerGeometry.backdropOpacity(progress: 0, drag: fade * 2) == 0)
     }
 
+    /// Filling is fitting's complement: the picture covers the rect, centred, overflowing on one axis.
+    @Test func aPictureFillsItsRectAsScaledToFillDoes() {
+        let bounds = CGRect(x: 0, y: 0, width: 400, height: 200)
+        #expect(ViewerGeometry.fill(1, in: bounds) == CGRect(x: 0, y: -100, width: 400, height: 400))
+        #expect(ViewerGeometry.fill(4, in: bounds) == CGRect(x: -200, y: 0, width: 800, height: 200))
+        #expect(ViewerGeometry.fill(2, in: bounds) == bounds)
+        #expect(ViewerGeometry.fill(nil, in: bounds) == bounds, "an unknown ratio fills the rect as it is")
+    }
+
     @Test func aTallPictureFitsTheHeightAndATallPageTheWidth() {
         let bounds = CGRect(x: 0, y: 0, width: 400, height: 800)
         #expect(ViewerGeometry.fit(0.25, in: bounds) == CGRect(x: 100, y: 0, width: 200, height: 800))
@@ -97,7 +136,8 @@ struct ViewerGeometryTests {
         let viewport = CGRect(x: 0, y: 100, width: 400, height: 600)
 
         #expect(ViewerGeometry.clip(viewport: viewport, screen: screen, progress: 0.75) == viewport)
-        #expect(ViewerGeometry.clip(viewport: viewport, screen: screen, progress: -0.2) == screen)
+        #expect(ViewerGeometry.clip(viewport: viewport, screen: screen, progress: -0.2)
+                == CGRect(x: 0, y: 0, width: 400, height: 700))
     }
 
     @Test func aTileTallerThanTheViewportShowsItsMiddleAndOneBesideItNothing() {

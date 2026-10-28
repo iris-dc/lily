@@ -17,6 +17,21 @@ struct ViewerHeroTests {
         #expect(hero.tiles.isEmpty)
     }
 
+    /// The move's state both sides draw from rests once the viewer is gone, so the next one opens from the tile and the
+    /// composer is whole meanwhile.
+    @Test func theMoveRestsOnceTheViewerIsGone() {
+        let hero = ViewerHero()
+        hero.progress = 0
+        hero.drag = -30
+        hero.landing = CGRect(x: 1, y: 2, width: 3, height: 4)
+        hero.moving = MovingPicture(id: "a1", image: UIImage(), page: nil)
+
+        hero.endMove()
+
+        #expect(hero.progress == 1 && hero.drag == 0)
+        #expect(hero.landing == nil && hero.moving == nil)
+    }
+
     @Test func aThumbnailIsHeldOnlyWhileItsTileHoldsIt() {
         let hero = ViewerHero()
         var heldWhileAlive = false

@@ -170,7 +170,8 @@ lily/
                  MockAttachmentUploader), Services (ChatCatchUp: the REST catch-up shared by the chat and the realtime controller;
                  ChatHistoryClearer: the per-side clear; AttachmentLoader (+ Files): cache first, else one download with the link refreshed
                  and its progress reported, and the named preview file QuickLook and the player read; ReadMarkerFlusher: the read marker's
-                 timing), State (UnreadCenter, ChatOutbox: every room's unsent and failed bubbles), ViewModels
+                 timing), State (UnreadCenter, ChatOutbox: every room's unsent and failed bubbles, ViewerHero + MovingPicture: what the tiles,
+                 the viewer and the composer share for the viewer's moves, ViewerMoveDriver: the moves' display-link clock), ViewModels
                  (ChatViewModel + History + Send + Live + Events + Conversation + Clear + Reply + Attachments + Moderation, AttachmentComposerModel
                  (+ Picking: the items picked for one message and every way in; + Upload: AttachmentWork, one item's prepare, ticket and
                  PUTs, holding the model weakly so a closed room cancels and cleans up)), Views (ChatsView (the Chats root:
@@ -180,7 +181,8 @@ lily/
                  + CameraPicker, AttachmentStrip (the picked items above the field), AttachmentGallery + DraftGallery + GalleryGrid,
                  ImageAttachmentView + AttachmentTile + LocalImage + AttachmentImageLoad (the one picture-loading state box), VideoAttachmentView +
                  PlayBadge + DurationBadge, FileAttachmentCard + FileCard, AttachmentViewerSheet (the pager over ImageViewerPage and
-                 VideoPlayerPage), QuickLookPreview, ConversationList (the Chats list, owning the clear confirmation),
+                 VideoPlayerPage; + Motion for its moves), ViewerMovingPicture (the moving picture, one Canvas per layer), ViewerStage (the
+                 chat's half under the composer), ViewerHeroSource, ViewerDismissPan, QuickLookPreview, ConversationList (the Chats list, owning the clear confirmation),
                  MessageComposer, DaySeparator, SystemMessageRow, MessageContextMenu, ChatRoomMenu (the room's menu, its clear item and
                  the shared confirmation))
     People/      Profiles and direct conversations: Models (UserProfile, GroupSummary, UserProfileDestination,

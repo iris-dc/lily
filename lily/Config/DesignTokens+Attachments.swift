@@ -53,8 +53,8 @@ nonisolated extension DesignTokens.Layout {
     static let viewerDismissDistance: CGFloat = 140
     /// How far up or down the dragged picture has gone when the black behind it has faded out, showing the chat.
     static let viewerFadeDistance: CGFloat = 280
-    /// How far back toward its tile (the viewer's progress) the moving picture is cut to the chat's rows' area: by then
-    /// the chat shows through the backdrop, and a tile's part under the composer or a bar shows its own picture there.
+    /// How far back toward its tile (the viewer's progress) the moving picture's top is cut to the chat's rows' area: by
+    /// then the chat shows through the backdrop, and a tile's part under a bar shows its own picture there.
     static let viewerViewportCutProgress: CGFloat = 0.5
     /// The play badge over a video tile in a bubble, and its smaller sibling on a strip tile.
     static let playBadgeSize: CGFloat = 44

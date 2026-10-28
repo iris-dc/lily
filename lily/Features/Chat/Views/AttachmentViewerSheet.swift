@@ -11,11 +11,15 @@ import SwiftUI
 /// back onto its tile, the one of the page on screen, and the chat is back; short of it the picture springs back.
 /// On the way in and out, and while dragged, the picture is drawn by itself over the hidden pager, each move's ends as
 /// `ViewerGeometry` places them from where its page lays the picture out (SwiftUI draws the frames between, which the
-/// geometry's linearity keeps on the path): a transformed pager re-laid its UIKit page out on alternate frames. A video
+/// geometry's linearity keeps on the path): a transformed pager re-laid its UIKit page out on alternate frames. The
+/// move lives in the `ViewerHero` (`progress`, `drag`, `landing`, `moving`), written frame by frame by the
+/// `ViewerMoveDriver`, because the cover draws only the picture's and the black's part above the composer line, over
+/// the bars; the chat draws the part below it under the composer, which fades with the move (`ViewerStage`), so a tile
+/// partly under the composer opens and closes whole. A video
 /// moves as its poster. Without a picture or a tile (a page with nothing loaded yet, a zoomed picture) the pager fades
-/// instead. `ViewerMotion` decides which phase the viewer is in and which move's completion still counts. A zoomed
-/// picture does not close on a drag (a double tap returns it to size first), nor does one being pinched. An
-/// accessibility container (`attachment-viewer`), so Close keeps its own identifier.
+/// instead, over black on the whole screen. `ViewerMotion` decides which phase the viewer is in and which move's
+/// completion still counts. A zoomed picture does not close on a drag (a double tap returns it to size first), nor does
+/// one being pinched. An accessibility container (`attachment-viewer`), so Close keeps its own identifier.
 struct AttachmentViewerSheet: View {
     let selection: AttachmentSelection
     let loader: AttachmentLoader
@@ -24,15 +28,11 @@ struct AttachmentViewerSheet: View {
     @State private var index: Int
     @State private var pictures = LoadedPictures()
     @State var motion = ViewerMotion()
-    /// 0 with the picture fitted to the screen, 1 with it on its tile in the chat.
-    @State var progress: CGFloat = 1
-    /// How far up or down the picture is dragged.
-    @State var drag: CGFloat = 0
+    /// Runs the moves frame by frame; a run in flight ends with the cover.
+    @State var driver = ViewerMoveDriver()
     /// The pictures zoomed in or being pinched, which a drag does not close.
     @State private var zoomedIDs: Set<String> = []
     @State var layout = ViewerPageLayout()
-    /// The tile the way out aims at, in the window; it follows the tile if the chat moved under the closing picture.
-    @State var landing: CGRect?
 
     private typealias Copy = AppBranding.Chat.Attachments
 
@@ -44,20 +44,16 @@ struct AttachmentViewerSheet: View {
     }
 
     var body: some View {
-        let backdrop = ViewerGeometry.backdropOpacity(progress: progress, drag: drag)
-        let drawsPicture = picture != nil && tile != nil
+        let backdrop = ViewerGeometry.backdropOpacity(progress: hero.progress, drag: hero.drag)
+        let drawsPicture = hero.moving != nil
         ZStack {
-            Color.black
-                .opacity(backdrop)
-                .ignoresSafeArea()
+            black(opacity: backdrop)
             pages
-                .opacity(isOpen ? 1 : drawsPicture ? 0 : 1 - Double(progress))
-                .offset(y: drawsPicture ? 0 : drag)
-            GeometryReader { proxy in
-                if !isOpen, drawsPicture { movingPicture(in: proxy) }
+                .opacity(isOpen ? 1 : drawsPicture ? 0 : 1 - Double(hero.progress))
+                .offset(y: drawsPicture ? 0 : hero.drag)
+            if !isOpen {
+                ViewerMovingPicture(hero: hero, layer: .overBars)
             }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
             VStack {
                 controls
                 Spacer()
@@ -73,8 +69,27 @@ struct AttachmentViewerSheet: View {
         .onDisappear {
             if selection.media.contains(where: { $0.id == hero.shownID }) { hero.shownID = nil }
             hero.forgetPreloaded()
+            driver.cancel()
+            hero.endMove()
         }
-        .onChange(of: index) { hero.shownID = current.id }
+        .onChange(of: index) {
+            hero.shownID = current.id
+            stage()
+        }
+    }
+
+    /// The black behind the picture: above the composer line while the chat draws the picture's and the black's part
+    /// below it, the whole screen while the pager fades instead (`ViewerGeometry.overComposer`).
+    private func black(opacity: Double) -> some View {
+        GeometryReader { proxy in
+            let space = proxy.frame(in: .global)
+            let region = hero.moving == nil ? space : ViewerGeometry.overComposer(viewport: hero.viewport, screen: space)
+            Color.black
+                .opacity(opacity)
+                .frame(width: region.width, height: region.height)
+                .offset(y: region.minY - space.minY)
+        }
+        .ignoresSafeArea()
     }
 
     private var isOpen: Bool { motion.phase == .open }
@@ -91,28 +106,14 @@ struct AttachmentViewerSheet: View {
         zoomedIDs.contains(current.id) ? nil : hero.tiles[current.id]
     }
 
-    /// The picture drawn by itself where `ViewerGeometry` puts it, in the full screen's coordinates, cut to what of it the
-    /// chat would show near its tile (`ViewerGeometry.clip`).
-    @ViewBuilder private func movingPicture(in proxy: GeometryProxy) -> some View {
-        let space = proxy.frame(in: .global)
-        if let picture, let tile {
-            let toLocal = { (rect: CGRect) in rect.offsetBy(dx: -space.minX, dy: -space.minY) }
-            let frame = ViewerGeometry(page: toLocal(layout.frames[current.id] ?? space),
-                                       aspectRatio: picture.size.height > 0 ? picture.size.width / picture.size.height : nil,
-                                       tile: TileGeometry(frame: toLocal(landing ?? tile.frame), radii: tile.radii),
-                                       progress: progress,
-                                       drag: drag)
-            Image(uiImage: picture)
-                .resizable()
-                .scaledToFill()
-                .frame(width: frame.rect.width, height: frame.rect.height)
-                .clipShape(UnevenRoundedRectangle(cornerRadii: frame.radii))
-                .position(x: frame.rect.midX, y: frame.rect.midY)
-                .viewerViewportCut(progress: progress,
-                                   viewport: hero.viewport.map(toLocal),
-                                   screen: CGRect(origin: .zero, size: space.size))
-                .accessibilityHidden(true)
+    /// Hands the chat and this cover the picture a move draws, from where its page lays it out; none when the pager
+    /// fades instead.
+    func stage() {
+        guard let picture, tile != nil else {
+            hero.moving = nil
+            return
         }
+        hero.moving = MovingPicture(id: current.id, image: picture, page: layout.frames[current.id])
     }
 
     private var canDrag: Bool {

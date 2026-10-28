@@ -156,6 +156,10 @@ how every adaptive view decides, never the device.
   `Sendable`. Every `extension AppConfig/AppBranding/DesignTokens/AccessibilityIdentifiers/ErrorMessageMapper/String`
   in its own file must be a `nonisolated extension`, or its members become main-actor isolated and the build only
   warns; after a build check `grep "/lily/.*: warning:" build/results/build.log` prints nothing.
+- **Two hierarchies, one animation.** A `withAnimation` on an observable value that a cover and its presenter both
+  draw runs once per hierarchy, each on its own clock, a frame apart; a positioned `Image` under `mask` or `clipped()`
+  may be drawn whole regardless of the clip. The viewer writes its values per frame (`ViewerMoveDriver`) and draws
+  each half in a `Canvas` sized to its window; see `docs/notes/chat.md` (2026-10-28).
 - **Generated asset symbols** (`Color.lilyAccent`, `Image(.googleLogo)`) are main-actor isolated: use them from
   views and other main-actor types only, never from a `nonisolated` type.
 - **Synchronized folder groups.** New files under `lily/`, `lilyTests/`, `lilyUITests/` join their target with no

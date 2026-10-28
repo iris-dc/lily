@@ -38,16 +38,25 @@ nonisolated struct ViewerGeometry: Equatable, Sendable {
         opacity = 1
     }
 
-    /// What of the moving picture shows: the whole screen while it is fitted or dragged, the chat's `viewport` (the
-    /// rows' area between the top bars and the composer) from `viewerViewportCutProgress` on the way to the tile, linear
-    /// in between. A tile partly under the composer or a bar keeps that part's picture behind them (`shownPart`), so the
-    /// moving picture comes out from behind them on the way in and goes back behind them on the way out, rather than
-    /// jumping in front at the first frame and behind at the last, and is never drawn over that part twice. Not linear
-    /// in `progress`, so it is applied on every frame (`viewerViewportCut`).
+    /// What of the moving picture the viewer's cover draws, over the bars: everything above the composer line (the
+    /// chat's `viewport`, the rows' area between the top bars and the composer, ends there); at the top the whole screen
+    /// while the picture is fitted or dragged, the viewport's edge from `viewerViewportCutProgress` on the way to the tile,
+    /// linear in between, so a tile partly under a bar keeps that part's picture behind it (`shownPart`) and the moving
+    /// picture comes out from behind the bar on the way in and goes back behind it on the way out. Below the line the
+    /// chat draws the picture itself, under the composer (`underComposer`).
     static func clip(viewport: CGRect?, screen: CGRect, progress: CGFloat) -> CGRect {
         guard let viewport else { return screen }
         let cut = min(1, max(0, progress / DesignTokens.Layout.viewerViewportCutProgress))
-        return mix(screen, viewport, cut)
+        let top = mix(screen, viewport, cut)
+        return CGRect(x: top.minX, y: top.minY, width: top.width, height: viewport.maxY - top.minY)
+    }
+
+    /// What of the moving picture the chat draws, under the composer: the screen below the composer line, where the
+    /// composer's glass covers the picture as it covers the tile's part there, and the composer itself fades
+    /// (`chromeOpacity`). `nil` without a viewport, or when nothing lies below the line.
+    static func underComposer(viewport: CGRect?, screen: CGRect) -> CGRect? {
+        guard let viewport, viewport.maxY < screen.maxY else { return nil }
+        return CGRect(x: screen.minX, y: viewport.maxY, width: screen.width, height: screen.maxY - viewport.maxY)
     }
 
     /// The part of a tile the chat's `viewport` shows, in the tile's own coordinates: what the viewer's picture stands
@@ -61,11 +70,24 @@ nonisolated struct ViewerGeometry: Equatable, Sendable {
         return shown.offsetBy(dx: -tile.minX, dy: -tile.minY)
     }
 
+    /// Where the viewer's cover draws its black: the screen above the composer line while the chat draws the picture
+    /// and the black below it, the whole screen otherwise.
+    static func overComposer(viewport: CGRect?, screen: CGRect) -> CGRect {
+        guard let under = underComposer(viewport: viewport, screen: screen) else { return screen }
+        return CGRect(x: screen.minX, y: screen.minY, width: screen.width, height: under.minY - screen.minY)
+    }
+
     /// The black behind the picture and the controls over it: gone on the tile, and fading as the picture is dragged
     /// over `viewerFadeDistance`, so the chat shows through.
     static func backdropOpacity(progress: CGFloat, drag: CGFloat) -> Double {
         let dragged = min(1, abs(drag) / DesignTokens.Layout.viewerFadeDistance)
         return (1 - Double(progress)) * (1 - Double(dragged))
+    }
+
+    /// The composer over the picture's way: gone while the viewer is open, whole with the picture on its tile, coming
+    /// back as the black goes, so the picture's part under it shows through until the chat is back.
+    static func chromeOpacity(progress: CGFloat, drag: CGFloat) -> Double {
+        1 - backdropOpacity(progress: progress, drag: drag)
     }
 
     /// The largest rect of `aspectRatio` centred in `bounds`, as `scaledToFit` lays a picture out; `bounds` itself when
@@ -75,6 +97,19 @@ nonisolated struct ViewerGeometry: Equatable, Sendable {
         let size = bounds.width / bounds.height > aspectRatio
             ? CGSize(width: bounds.height * aspectRatio, height: bounds.height)
             : CGSize(width: bounds.width, height: bounds.width / aspectRatio)
+        return CGRect(x: bounds.midX - size.width / 2,
+                      y: bounds.midY - size.height / 2,
+                      width: size.width,
+                      height: size.height)
+    }
+
+    /// The smallest rect of `aspectRatio` covering `bounds`, centred, as `scaledToFill` lays a picture out; `bounds`
+    /// itself when the ratio is unknown.
+    static func fill(_ aspectRatio: CGFloat?, in bounds: CGRect) -> CGRect {
+        guard let aspectRatio, aspectRatio > 0, bounds.width > 0, bounds.height > 0 else { return bounds }
+        let size = bounds.width / bounds.height > aspectRatio
+            ? CGSize(width: bounds.width, height: bounds.width / aspectRatio)
+            : CGSize(width: bounds.height * aspectRatio, height: bounds.height)
         return CGRect(x: bounds.midX - size.width / 2,
                       y: bounds.midY - size.height / 2,
                       width: size.width,
