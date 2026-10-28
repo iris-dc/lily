@@ -93,3 +93,57 @@ final class LilySignInTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts[text].waitForExistence(timeout: 10), "the write goes through once the terms are accepted")
     }
 }
+
+/// The sheet's layout: a bar with Close over the title, the email form's title where the sheet's is, and the landing left
+/// as it was once the sheet goes.
+extension LilySignInTests {
+    @objc @MainActor
+    func testTheCloseButtonDismissesTheSheet() {
+        openSignInSheet()
+        let close = app.buttons["sign-in-close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 5), "the sheet's bar carries Close")
+        close.tap()
+        XCTAssertTrue(app.buttons["Continue with Apple"].waitForNonExistence(timeout: 5), "Close takes the sheet away")
+        XCTAssertTrue(app.buttons["Sign in"].waitForExistence(timeout: 5), "the landing is back")
+    }
+
+    /// The form's title sits where the sheet's did, and stays there: with the bar on the form alone it sat a bar lower
+    /// and dropped another 16 pt half a second after the push.
+    @objc @MainActor
+    func testTheEmailFormKeepsTheTitleWhereTheSheetHadIt() {
+        openSignInSheet()
+        let sheetSubtitle = app.staticTexts["Sign in to create events, join and chat."]
+        XCTAssertTrue(sheetSubtitle.waitForExistence(timeout: 5))
+        let sheetY = sheetSubtitle.frame.minY
+        app.buttons["Continue with Email"].tap()
+        let formSubtitle = app.staticTexts["Use your email and a password."]
+        XCTAssertTrue(formSubtitle.waitForExistence(timeout: 5))
+        let pushedY = formSubtitle.frame.minY
+        sleep(1)
+        XCTAssertEqual(pushedY, sheetY, accuracy: 1, "the form's title block starts where the sheet's did")
+        XCTAssertEqual(formSubtitle.frame.minY, pushedY, accuracy: 0.5, "nothing moves after the push")
+    }
+
+    /// The sheet's keyboard is the window's: it used to shrink the landing's pages under the sheet, and the pager came
+    /// back caught between two slides once the sheet was swiped away with the keyboard up.
+    @objc @MainActor
+    func testTheLandingKeepsItsSlideAfterTheKeyboardAndTheSheetsDismissal() {
+        let pager = app.scrollViews["intro-pager"]
+        XCTAssertTrue(pager.waitForExistence(timeout: 5))
+        pager.swipeUp()
+        let headline = app.staticTexts["Join a group"]
+        XCTAssertTrue(headline.waitForExistence(timeout: 5), "the second slide is up")
+        sleep(1)
+        let before = headline.frame
+        openEmailForm()
+        app.textFields["auth-email"].tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "the field brings the keyboard")
+        let grabber = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08))
+        let bottom = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98))
+        grabber.press(forDuration: 0.1, thenDragTo: bottom, withVelocity: .default, thenHoldForDuration: 0)
+        XCTAssertTrue(app.textFields["auth-email"].waitForNonExistence(timeout: 5), "the swipe takes the sheet away")
+        sleep(1)
+        XCTAssertTrue(headline.exists, "the landing shows the slide it showed before")
+        XCTAssertEqual(headline.frame.minY, before.minY, accuracy: 1, "the slide sits where it sat, not between pages")
+    }
+}

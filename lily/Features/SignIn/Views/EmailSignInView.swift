@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Email + password form, pushed inside the sign-in sheet. Its third step, the confirmation code, replaces the
-/// credential fields once the pool asks for the code.
+/// credential fields once the pool asks for the code. Its navigation bar holds the system back button, as the sheet's
+/// first screen's holds Close, so the two titles sit at one height and nothing shifts after the push.
 struct EmailSignInView: View {
     @State private var viewModel: EmailSignInViewModel
     @FocusState private var focusedField: Field?

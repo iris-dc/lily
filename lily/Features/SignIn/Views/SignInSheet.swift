@@ -1,6 +1,10 @@
 import SwiftUI
 
-/// Sign-in options, presented as a sheet from the landing screen or the guest profile.
+/// Sign-in options, presented as a sheet from the landing screen or the guest profile: a navigation bar with Close, the
+/// title under it and the three provider buttons centred in the room below, so the half sheet carries no empty band
+/// under them. The email form pushed over it swaps Close for the system back button in the same bar, so its title sits
+/// where this screen's does; with a bar on the form alone, its title sat a bar's height lower than this one and dropped
+/// another 16 pt half a second after the push, when the bar's inset settled.
 struct SignInSheet: View {
     @State private var viewModel: SignInViewModel
     private let session: SessionController
@@ -18,11 +22,16 @@ struct SignInSheet: View {
             ContentScreen {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     ScreenTitle(text: AppBranding.signInSheetTitle, subtitle: AppBranding.signInSheetSubtitle)
+                    Spacer(minLength: 0)
                     providers
-                    Spacer()
+                    Spacer(minLength: 0)
                 }
                 .padding(DesignTokens.Spacing.xl)
                 .readableColumn()
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) { closeButton }
             }
             .navigationDestination(isPresented: $viewModel.isEmailFormPresented) {
                 EmailSignInView(session: session)
@@ -30,16 +39,24 @@ struct SignInSheet: View {
         }
         .presentationDetents([.medium, .large])
         .lilyFormSheet()
-        // No grabber over the email form: it sat right above the glass back button in the sheet's corner.
-        .presentationDragIndicator(viewModel.isEmailFormPresented ? .hidden : .visible)
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
         .errorPopup(errorCenter)
         // Guests are already inside the app, so watch for a user rather than for entering the app.
         .onChange(of: session.state.user) { _, user in
             if user != nil { dismiss() }
         }
-        // The sheet is closed by swiping down (no Cancel button); nothing may finish signing in once it is gone.
+        // Closed by Close or a swipe down; nothing may finish signing in once it is gone.
         .onDisappear { viewModel.cancel() }
+    }
+
+    private var closeButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: DesignTokens.Symbols.dismiss)
+        }
+        .accessibilityLabel(AppBranding.Forms.close)
+        .accessibilityIdentifier(AccessibilityIdentifiers.signInClose)
     }
 
     private var providers: some View {

@@ -20,7 +20,7 @@ nonisolated extension AppBranding.Chat {
         /// VoiceOver hint on a file card whose bytes are not on the device yet.
         static var download: String { localized("Download") }
         static var share: String { localized("Share") }
-        static var close: String { localized("Close") }
+        static var close: String { AppBranding.Forms.close }
         /// On the last tile of a gallery with more pictures than it shows: how many are hidden.
         static func more(_ count: Int) -> String {
             localized("+\(count)")
