@@ -44,7 +44,7 @@ final class LilySignInTests: LilyUITestCase {
         app.buttons["auth-mode-toggle"].tap()
         XCTAssertTrue(app.staticTexts["Create your account"].waitForExistence(timeout: 5))
         enter("jane.doe@example.com", into: app.textFields["auth-email"])
-        enter("long-enough", into: app.secureTextFields["auth-password"])
+        enter("long-enough", into: passwordField())
         app.buttons["auth-submit"].tap()
 
         XCTAssertTrue(app.staticTexts["Check your email"].waitForExistence(timeout: 10), "sign-up must lead to the code step")
@@ -165,5 +165,48 @@ extension LilySignInTests {
         sleep(1)
         XCTAssertTrue(headline.exists, "the landing shows the slide it showed before")
         XCTAssertEqual(headline.frame.minY, before.minY, accuracy: 1, "the slide sits where it sat, not between pages")
+    }
+
+    /// The focus moving between the fields moves the sheet once each way: the password field's keyboard carries the
+    /// Passwords bar, the email field's does not, and the sheet follows the keyboard. The title's rows are sampled
+    /// through each move and may never turn back; with a secure field beside the email field at the moment the latter
+    /// takes the focus, the sheet dipped about 18 pt and eased back on every change.
+    @MainActor
+    func testTheTitleMovesOnceWhenTheFocusChangesField() {
+        openEmailForm()
+        let title = app.staticTexts["Welcome back"]
+        let email = app.textFields["auth-email"]
+        email.tap()
+        XCTAssertTrue(waitForKeyboardFocus(email))
+        sleep(1)
+        let withEmail = title.frame.minY
+
+        let password = passwordField()
+        XCTAssertTrue(waitForKeyboardFocus(password))
+        let rise = sampleTitleRows(title)
+        XCTAssertTrue(isMonotonic(rise, rising: true), "the sheet must rise once for the password field: \(rise)")
+        XCTAssertLessThan(rise.last ?? withEmail, withEmail - 20, "the password field's taller keyboard lifts the sheet")
+
+        email.tap()
+        XCTAssertTrue(waitForKeyboardFocus(email))
+        let fall = sampleTitleRows(title)
+        XCTAssertTrue(isMonotonic(fall, rising: false), "the sheet must come down once for the email field: \(fall)")
+        XCTAssertEqual(fall.last ?? 0, withEmail, accuracy: 1, "the email field's keyboard puts the sheet back")
+    }
+
+    /// The title's top edge about every 50 ms for a second, from the first sample on.
+    @MainActor
+    private func sampleTitleRows(_ title: XCUIElement) -> [CGFloat] {
+        let deadline = Date().addingTimeInterval(1)
+        var rows: [CGFloat] = []
+        while Date() < deadline {
+            rows.append(title.frame.minY)
+            usleep(50_000)
+        }
+        return rows
+    }
+
+    private func isMonotonic(_ rows: [CGFloat], rising: Bool) -> Bool {
+        zip(rows, rows.dropFirst()).allSatisfy { rising ? $1 <= $0 + 1 : $1 >= $0 - 1 }
     }
 }

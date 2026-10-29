@@ -223,36 +223,6 @@ class LilyUITestCase: XCTestCase {
         XCTAssertTrue(item.exists, "the row's menu must offer the action")
     }
 
-    /// Opens the sign-in sheet from whatever screen shows "Sign in": the landing, Home's guest prompt or Profile.
-    @MainActor
-    func openSignInSheet() {
-        let signIn = app.buttons["Sign in"]
-        XCTAssertTrue(signIn.waitForExistence(timeout: 5))
-        signIn.tap()
-    }
-
-    /// Opens the sign-in sheet from whatever screen shows "Sign in" and picks the mock Apple provider. Returns the
-    /// provider button, so callers can watch the sheet close or stay.
-    @MainActor
-    @discardableResult
-    func tapSignInWithApple() -> XCUIElement {
-        openSignInSheet()
-        let apple = app.buttons["Continue with Apple"]
-        XCTAssertTrue(apple.waitForExistence(timeout: 5))
-        apple.tap()
-        return apple
-    }
-
-    /// Opens the sign-in sheet from the landing and pushes the email form.
-    @MainActor
-    func openEmailForm() {
-        openSignInSheet()
-        let email = app.buttons["Continue with Email"]
-        XCTAssertTrue(email.waitForExistence(timeout: 5))
-        email.tap()
-        XCTAssertTrue(app.textFields["auth-email"].waitForExistence(timeout: 5))
-    }
-
     @MainActor
     func showMap() {
         // Segments expose their SF Symbol name as identifier (DesignTokens.Symbols.map).

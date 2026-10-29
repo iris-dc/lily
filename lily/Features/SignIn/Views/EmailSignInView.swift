@@ -6,8 +6,10 @@ import SwiftUI
 struct EmailSignInView: View {
     @State private var viewModel: EmailSignInViewModel
     @FocusState private var focusedField: Field?
+    /// Whether the secure field is in the hierarchy; a row that looks like it stands in while it is not (`passwordRow`).
+    @State private var showsPasswordField = false
 
-    private enum Field { case email, password, code }
+    private enum Field { case email, password, passwordStandIn, code }
 
     init(session: SessionController) {
         _viewModel = State(initialValue: EmailSignInViewModel(session: session))
@@ -39,7 +41,12 @@ struct EmailSignInView: View {
             .scrollBounceBehavior(.basedOnSize)
         }
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: viewModel.mode) { _, mode in focusedField = mode == .confirm ? .code : .email }
+        .onChange(of: viewModel.mode) { _, mode in
+            if mode == .confirm { focusedField = .code } else { focusEmail() }
+        }
+        .onChange(of: focusedField) { _, field in
+            if field != .password { showsPasswordField = false }
+        }
         // The sheet cannot reach this view model, so the form stops its own submit when it goes away.
         .onDisappear { viewModel.cancel() }
     }
@@ -53,9 +60,35 @@ struct EmailSignInView: View {
                 .autocorrectionDisabled()
                 .focused($focusedField, equals: .email)
                 .submitLabel(.next)
-                .onSubmit { focusedField = .password }
+                .onSubmit { focusPassword() }
                 .lilyField()
+                // While the secure field is up, a tap here is taken before the field, so the secure field can go first:
+                // a secure sibling at the moment this field takes the focus puts the Passwords bar on its keyboard.
+                .overlay {
+                    if focusedField == .password {
+                        Color.clear
+                            .contentShape(.rect)
+                            .onTapGesture { focusEmail() }
+                            .accessibilityHidden(true)
+                    }
+                }
                 .accessibilityIdentifier(AccessibilityIdentifiers.authEmail)
+            passwordRow
+            Text(viewModel.passwordHint)
+                .font(LilyTheme.Fonts.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// The secure field is in the hierarchy only while it has the focus. Beside a secure field, the email field's
+    /// keyboard carries the Passwords bar too, and at every change of focus UIKit drops the bar for a frame and brings it
+    /// back; the half sheet followed that as a dip. Alone, the email keyboard has no bar and the password keyboard has
+    /// one, so each change of focus is one move of the sheet. While the secure field is out, a plain field drawn like it
+    /// (the placeholder, or a bullet per character typed) holds its place; a tap on it brings the secure field back.
+    @ViewBuilder
+    private var passwordRow: some View {
+        if showsPasswordField {
             SecureField(AppBranding.passwordFieldPlaceholder, text: $viewModel.password)
                 .textContentType(viewModel.mode == .signUp ? .newPassword : .password)
                 .focused($focusedField, equals: .password)
@@ -63,11 +96,41 @@ struct EmailSignInView: View {
                 .onSubmit { viewModel.submit() }
                 .lilyField()
                 .accessibilityIdentifier(AccessibilityIdentifiers.authPassword)
-            Text(viewModel.passwordHint)
-                .font(LilyTheme.Fonts.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            TextField(AppBranding.passwordFieldPlaceholder, text: .constant(passwordBullets))
+                .focused($focusedField, equals: .passwordStandIn)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+                .lilyField()
+                .overlay {
+                    Button(action: focusPassword) { Color.clear.contentShape(.rect) }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(AppBranding.passwordFieldPlaceholder)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.authPassword)
+                }
         }
+    }
+
+    private var passwordBullets: String {
+        String(repeating: DesignTokens.Typography.secureFieldBullet, count: viewModel.password.count)
+    }
+
+    private func focusPassword() {
+        showsPasswordField = true
+        focusedField = .password
+    }
+
+    /// From the secure field, two turns: it must be gone before the email field takes the focus, or its keyboard gets
+    /// the bar after all, and a turn with no first responder sends the keyboard away (the sheet dropped 250 pt after
+    /// it). The stand-in holds the keyboard for that one turn. From anywhere else there is no secure field to go first.
+    private func focusEmail() {
+        guard focusedField == .password else {
+            focusedField = .email
+            return
+        }
+        showsPasswordField = false
+        focusedField = .passwordStandIn
+        DispatchQueue.main.async { focusedField = .email }
     }
 
     private var codeField: some View {
