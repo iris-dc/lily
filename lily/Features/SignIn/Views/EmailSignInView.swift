@@ -2,7 +2,8 @@ import SwiftUI
 
 /// Email + password form, pushed inside the sign-in sheet. Its third step, the confirmation code, replaces the
 /// credential fields once the pool asks for the code. Its navigation bar holds the system back button, as the sheet's
-/// first screen's holds Close, so the two titles sit at one height and nothing shifts after the push.
+/// first screen's holds Close, so the two titles sit at one height under their bars and nothing shifts after the push;
+/// the sheet is at its large detent here (`SignInSheet.detent`), above the keyboard, so the keyboard moves nothing.
 struct EmailSignInView: View {
     @State private var viewModel: EmailSignInViewModel
     @FocusState private var focusedField: Field?
@@ -15,33 +16,35 @@ struct EmailSignInView: View {
 
     /// A scroll view, not a fixed column: at accessibility type sizes the form with the keyboard up outgrows the sheet,
     /// and a fixed `VStack` gets compressed instead (the title rides up under the back button, both header lines truncate).
-    /// No field takes focus on appearance: the keyboard would arrive a beat after the push and lift the half sheet with
-    /// it, which read as a stutter; the user's tap on a field brings the keyboard and the room for it in one motion.
+    /// No field takes focus on appearance: the keyboard would arrive a beat after the push and lift the sheet with it,
+    /// which read as a stutter; the user's tap on a field brings the keyboard and the room for it in one motion.
     var body: some View {
         ContentScreen {
-            ScrollView {
-                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                    ScreenTitle(text: viewModel.mode.title, subtitle: viewModel.subtitle)
-                    if viewModel.mode == .confirm {
-                        codeField
-                    } else {
-                        credentialFields
-                    }
-                    submitButton
-                    if viewModel.mode == .confirm {
-                        resendButton
-                    }
-                    modeToggle
-                }
-                .padding(DesignTokens.Spacing.xl)
-                .readableColumn()
-            }
-            .scrollBounceBehavior(.basedOnSize)
+            ScrollView { column }
+                .scrollBounceBehavior(.basedOnSize)
         }
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: viewModel.mode) { _, mode in focusedField = mode == .confirm ? .code : .email }
         // The sheet cannot reach this view model, so the form stops its own submit when it goes away.
         .onDisappear { viewModel.cancel() }
+    }
+
+    private var column: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
+            ScreenTitle(text: viewModel.mode.title, subtitle: viewModel.subtitle)
+            if viewModel.mode == .confirm {
+                codeField
+            } else {
+                credentialFields
+            }
+            submitButton
+            if viewModel.mode == .confirm {
+                resendButton
+            }
+            modeToggle
+        }
+        .padding(DesignTokens.Spacing.xl)
+        .readableColumn()
     }
 
     private var credentialFields: some View {

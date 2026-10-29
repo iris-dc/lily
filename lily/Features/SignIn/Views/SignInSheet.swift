@@ -3,14 +3,20 @@ import SwiftUI
 /// Sign-in options, presented as a sheet from the landing screen or the guest profile: a navigation bar with Close, the
 /// title under it and the three provider buttons centred in the room below, so the half sheet carries no empty band
 /// under them. The email form pushed over it swaps Close for the system back button in the same bar, so its title sits
-/// where this screen's does; with a bar on the form alone, its title sat a bar's height lower than this one and dropped
-/// another 16 pt half a second after the push, when the bar's inset settled.
+/// under the bar as this screen's does (with a bar on the form alone, its title sat a bar's height lower and dropped
+/// another 16 pt half a second after the push, when the bar's inset settled), and the sheet grows to its large detent
+/// with the push, so the keyboard never moves it.
 struct SignInSheet: View {
     @State private var viewModel: SignInViewModel
     /// The content's height with the keyboard down, the smallest it is seen at: a sheet the keyboard pushes up is
     /// extended down to the screen's bottom behind it, and buttons centred in that height jumped to their places when
     /// the keyboard went. They are centred in this height whatever the sheet's.
     @State private var restHeight: CGFloat?
+    /// Medium for the providers, large for the form: a sheet the keyboard pushes up followed every change of the
+    /// keyboard's frame, and its assistant bar hides and shows again whenever the focus moves between the fields, so the
+    /// whole form dipped 27 pt and eased back on each switch; a full sheet sits above the keyboard and only the scroll
+    /// view's inset changes. Changed through the selection, which the sheet animates; a changed set of detents is not.
+    @State private var detent = PresentationDetent.medium
     private let session: SessionController
     private let errorCenter: ErrorCenter
     @Environment(\.dismiss) private var dismiss
@@ -40,10 +46,10 @@ struct SignInSheet: View {
                 EmailSignInView(session: session)
             }
         }
-        // One detent: the keyboard slides the sheet up and back at its own height. With a large detent too, the focus
-        // grew the sheet while the keyboard pushed it, the title shot past its place and settled back, and on the way
-        // back from the form the providers were laid out for the tall sheet and jumped to their medium places at the end.
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large], selection: $detent)
+        .onChange(of: viewModel.isEmailFormPresented) { _, presented in
+            withAnimation(.smooth) { detent = presented ? .large : .medium }
+        }
         .lilyFormSheet()
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
         .errorPopup(errorCenter)

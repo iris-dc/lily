@@ -107,21 +107,48 @@ extension LilySignInTests {
         XCTAssertTrue(app.buttons["Sign in"].waitForExistence(timeout: 5), "the landing is back")
     }
 
-    /// The form's title sits where the sheet's did, and stays there: with the bar on the form alone it sat a bar lower
-    /// and dropped another 16 pt half a second after the push.
+    /// The form's title sits under its bar as the sheet's does under its own, and stays there: with the bar on the form
+    /// alone it sat a bar lower and dropped another 16 pt half a second after the push. The sheet grows to its large
+    /// detent for the form, and the medium sheet is the floating card drawn at 96 %, so the offsets are compared in
+    /// bar heights.
     @objc @MainActor
     func testTheEmailFormKeepsTheTitleWhereTheSheetHadIt() {
         openSignInSheet()
+        let bar = app.navigationBars.firstMatch
         let sheetSubtitle = app.staticTexts["Sign in to create events, join and chat."]
         XCTAssertTrue(sheetSubtitle.waitForExistence(timeout: 5))
-        let sheetY = sheetSubtitle.frame.minY
+        let sheetOffset = (sheetSubtitle.frame.minY - bar.frame.minY) / bar.frame.height
         app.buttons["Continue with Email"].tap()
         let formSubtitle = app.staticTexts["Use your email and a password."]
         XCTAssertTrue(formSubtitle.waitForExistence(timeout: 5))
-        let pushedY = formSubtitle.frame.minY
         sleep(1)
-        XCTAssertEqual(pushedY, sheetY, accuracy: 1, "the form's title block starts where the sheet's did")
-        XCTAssertEqual(formSubtitle.frame.minY, pushedY, accuracy: 0.5, "nothing moves after the push")
+        let pushedY = formSubtitle.frame.minY
+        let formOffset = (pushedY - bar.frame.minY) / bar.frame.height
+        XCTAssertEqual(formOffset, sheetOffset, accuracy: 0.02, "the form's title block sits under its bar as the sheet's")
+        XCTAssertLessThan(pushedY, 300, "the sheet has grown to its large detent for the form")
+        sleep(1)
+        XCTAssertEqual(formSubtitle.frame.minY, pushedY, accuracy: 0.5, "nothing moves once the sheet has grown")
+    }
+
+    /// Moving the focus between the fields moves nothing else: a sheet the keyboard pushed up dipped 27 pt and eased back
+    /// on every switch, with the keyboard's assistant bar.
+    @objc @MainActor
+    func testSwitchingFieldsMovesNothingElse() {
+        openEmailForm()
+        let title = app.staticTexts["Use your email and a password."]
+        let email = app.textFields["auth-email"]
+        email.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        sleep(1)
+        let y = title.frame.minY
+        app.secureTextFields["auth-password"].tap()
+        usleep(120_000)
+        XCTAssertEqual(title.frame.minY, y, accuracy: 0.5, "the title holds while the focus moves to the password")
+        sleep(1)
+        XCTAssertEqual(title.frame.minY, y, accuracy: 0.5)
+        email.tap()
+        usleep(120_000)
+        XCTAssertEqual(title.frame.minY, y, accuracy: 0.5, "and while it moves back")
     }
 
     /// Back from the form with the keyboard up, the providers sit where they sat before: the keyboard pushes the sheet
