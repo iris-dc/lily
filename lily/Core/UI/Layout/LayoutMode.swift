@@ -26,12 +26,19 @@ extension EnvironmentValues {
 private struct LayoutModeProvider: ViewModifier {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var width: CGFloat = 0
+    @State private var height: CGFloat = 0
 
     func body(content: Content) -> some View {
         content
             .onGeometryChange(for: CGFloat.self, of: \.size.width) { width = $0 }
+            // The safe area and the keyboard shrink the root's size and grow its insets by the same amount, so the sum
+            // is the window's height whatever is up.
+            .onGeometryChange(for: CGFloat.self,
+                              of: { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom },
+                              action: { height = $0 })
             .environment(\.layoutMode, LayoutMode.resolve(sizeClass: sizeClass, width: width))
             .environment(\.windowWidth, width > 0 ? width : nil)
+            .environment(\.windowHeight, height > 0 ? height : nil)
     }
 }
 

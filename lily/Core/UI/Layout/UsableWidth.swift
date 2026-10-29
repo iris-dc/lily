@@ -34,4 +34,7 @@ extension EnvironmentValues {
     /// layout. An environment value rather than a named coordinate space on the root: `bounds(of:)` answers `nil` from
     /// inside a split view's detail column, which is hosted apart from the root.
     @Entry var windowWidth: CGFloat?
+    /// The window's full height, safe areas included, as the root measured it; `nil` above the root or before its first
+    /// layout. What `ContentScreen` sizes its aurora by, so a sheet's background keeps one size while the sheet's does not.
+    @Entry var windowHeight: CGFloat?
 }
