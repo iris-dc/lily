@@ -7,8 +7,11 @@ struct EmailSignInView: View {
     @State private var viewModel: EmailSignInViewModel
     @FocusState private var focusedField: Field?
     @Environment(\.dismiss) private var dismiss
-    /// Whether the secure field is in the hierarchy; a row that looks like it stands in while it is not (`passwordRow`).
-    @State private var showsPasswordField = false
+    /// What the password row holds (`passwordRow`): the secure field, the plain field that stands in for it, or both
+    /// for the one turn of the hand-over from the secure field to the email field (`focusEmail`).
+    @State private var passwordRow: PasswordRow = .standIn
+
+    private enum PasswordRow { case standIn, secure, handOver }
 
     private enum Field { case email, password, passwordStandIn, code }
 
@@ -50,7 +53,11 @@ struct EmailSignInView: View {
             if mode == .confirm { focusedField = .code } else { focusEmail() }
         }
         .onChange(of: focusedField) { _, field in
-            if field != .password { showsPasswordField = false }
+            switch field {
+            case .password: break
+            case .passwordStandIn: finishHandOver()
+            default: passwordRow = .standIn
+            }
         }
         // The sheet cannot reach this view model, so the form stops its own submit when it goes away.
         .onDisappear { viewModel.cancel() }
@@ -77,7 +84,7 @@ struct EmailSignInView: View {
                     }
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.authEmail)
-            passwordRow
+            passwordRowView
             Text(viewModel.passwordHint)
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
@@ -90,28 +97,32 @@ struct EmailSignInView: View {
     /// back; the half sheet followed that as a dip. Alone, the email keyboard has no bar and the password keyboard has
     /// one, so each change of focus is one move of the sheet. While the secure field is out, a plain field drawn like it
     /// (the placeholder, or a bullet per character typed) holds its place; a tap on it brings the secure field back.
-    @ViewBuilder
-    private var passwordRow: some View {
-        if showsPasswordField {
-            SecureField(AppBranding.passwordFieldPlaceholder, text: $viewModel.password)
-                .textContentType(viewModel.mode == .signUp ? .newPassword : .password)
-                .focused($focusedField, equals: .password)
-                .submitLabel(.go)
-                .onSubmit { viewModel.submit() }
-                .lilyField()
-                .accessibilityIdentifier(AccessibilityIdentifiers.authPassword)
-        } else {
-            TextField(AppBranding.passwordFieldPlaceholder, text: .constant(passwordBullets))
-                .focused($focusedField, equals: .passwordStandIn)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
-                .lilyField()
-                .overlay {
-                    Button(action: focusPassword) { Color.clear.contentShape(.rect) }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(AppBranding.passwordFieldPlaceholder)
-                        .accessibilityIdentifier(AccessibilityIdentifiers.authPassword)
-                }
+    private var passwordRowView: some View {
+        ZStack {
+            if passwordRow != .secure {
+                TextField(AppBranding.passwordFieldPlaceholder, text: .constant(passwordBullets))
+                    .focused($focusedField, equals: .passwordStandIn)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                    .opacity(passwordRow == .standIn ? 1 : 0)
+            }
+            if passwordRow != .standIn {
+                SecureField(AppBranding.passwordFieldPlaceholder, text: $viewModel.password)
+                    .textContentType(viewModel.mode == .signUp ? .newPassword : .password)
+                    .focused($focusedField, equals: .password)
+                    .submitLabel(.go)
+                    .onSubmit { viewModel.submit() }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.authPassword)
+            }
+        }
+        .lilyField()
+        .overlay {
+            if passwordRow == .standIn {
+                Button(action: focusPassword) { Color.clear.contentShape(.rect) }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(AppBranding.passwordFieldPlaceholder)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.authPassword)
+            }
         }
     }
 
@@ -140,20 +151,27 @@ struct EmailSignInView: View {
     }
 
     private func focusPassword() {
-        showsPasswordField = true
+        passwordRow = .secure
         focusedField = .password
     }
 
-    /// From the secure field, two turns: it must be gone before the email field takes the focus, or its keyboard gets
-    /// the bar after all, and a turn with no first responder sends the keyboard away (the sheet dropped 250 pt after
-    /// it). The stand-in holds the keyboard for that one turn. From anywhere else there is no secure field to go first.
+    /// From the secure field, a hand-over in turns: the email field must take the focus with no secure field in the
+    /// hierarchy, or its keyboard gets the bar after all (the bar is decided at the change of focus, even when the
+    /// removal is in the same update), and the keyboard must keep a first responder throughout, or it starts to go (on
+    /// the phone it hid for a few frames and the sheet dropped and came back). So the stand-in is mounted beside the
+    /// secure field and takes the focus; `finishHandOver` then removes the secure field and, a turn later, moves the
+    /// focus on. From anywhere else there is no secure field to go first.
     private func focusEmail() {
         guard focusedField == .password else {
             focusedField = .email
             return
         }
-        showsPasswordField = false
+        passwordRow = .handOver
         focusedField = .passwordStandIn
+    }
+
+    private func finishHandOver() {
+        passwordRow = .standIn
         DispatchQueue.main.async { focusedField = .email }
     }
 
