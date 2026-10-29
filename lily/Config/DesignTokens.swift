@@ -155,6 +155,7 @@ nonisolated enum DesignTokens {
         static let lookingFor = "person.2"
         static let error = "exclamationmark.circle.fill"
         static let dismiss = "xmark"
+        static let back = "chevron.backward"
         static let apple = "apple.logo"
         static let email = "envelope.fill"
         static let home = "house"

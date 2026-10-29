@@ -39,6 +39,7 @@ nonisolated enum AccessibilityIdentifiers {
     static let authModeToggle = "auth-mode-toggle"
     static let authResendCode = "auth-resend-code"
     static let signInClose = "sign-in-close"
+    static let authBack = "auth-back"
 
     /// One chip per event type in the filter panel, e.g. `filter-type-football`.
     static func filterType(_ type: EventType) -> String {

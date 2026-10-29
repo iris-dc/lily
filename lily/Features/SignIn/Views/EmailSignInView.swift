@@ -1,11 +1,12 @@
 import SwiftUI
 
 /// Email + password form, pushed inside the sign-in sheet. Its third step, the confirmation code, replaces the
-/// credential fields once the pool asks for the code. Its navigation bar holds the system back button, as the sheet's
-/// first screen's holds Close, so the two titles sit at one height and nothing shifts after the push.
+/// credential fields once the pool asks for the code. Its navigation bar holds a back button, as the sheet's first
+/// screen's holds Close, so the two titles sit at one height and nothing shifts after the push.
 struct EmailSignInView: View {
     @State private var viewModel: EmailSignInViewModel
     @FocusState private var focusedField: Field?
+    @Environment(\.dismiss) private var dismiss
     /// Whether the secure field is in the hierarchy; a row that looks like it stands in while it is not (`passwordRow`).
     @State private var showsPasswordField = false
 
@@ -41,6 +42,10 @@ struct EmailSignInView: View {
             .scrollBounceBehavior(.basedOnSize)
         }
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) { backButton }
+        }
         .onChange(of: viewModel.mode) { _, mode in
             if mode == .confirm { focusedField = .code } else { focusEmail() }
         }
@@ -54,7 +59,6 @@ struct EmailSignInView: View {
     private var credentialFields: some View {
         VStack(spacing: DesignTokens.Spacing.md) {
             TextField(AppBranding.emailFieldPlaceholder, text: $viewModel.email)
-                .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
@@ -113,6 +117,26 @@ struct EmailSignInView: View {
 
     private var passwordBullets: String {
         String(repeating: DesignTokens.Typography.secureFieldBullet, count: viewModel.password.count)
+    }
+
+    /// Back in the bar of our own, so the keyboard can start down before the pop. The system back button pops with the
+    /// field still focused, and UIKit then takes the keyboard away with no animation: the sheet snapped to its resting
+    /// place under the keyboard still up, or the keyboard vanished in a frame over the sheet's extended bottom.
+    private var backButton: some View {
+        Button(action: goBack) {
+            Image(systemName: DesignTokens.Symbols.back)
+        }
+        .accessibilityLabel(AppBranding.Forms.back)
+        .accessibilityIdentifier(AccessibilityIdentifiers.authBack)
+    }
+
+    private func goBack() {
+        guard focusedField != nil else {
+            dismiss()
+            return
+        }
+        focusedField = nil
+        DispatchQueue.main.async { dismiss() }
     }
 
     private func focusPassword() {
