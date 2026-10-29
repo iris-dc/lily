@@ -92,18 +92,4 @@ extension LilyUITestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         waitUntilHittableAndStill(field)
     }
-
-    /// The form's password field. It is a secure field only once it has been tapped; a row that looks like it holds its
-    /// place before that, so the row is tapped first and the field it brings is returned.
-    @MainActor
-    func passwordField() -> XCUIElement {
-        let field = app.secureTextFields["auth-password"]
-        if !field.exists {
-            let row = app.buttons["auth-password"]
-            XCTAssertTrue(row.waitForExistence(timeout: 5), "the password row must be on the form")
-            row.tap()
-            XCTAssertTrue(field.waitForExistence(timeout: 5), "tapping the row must bring the secure field")
-        }
-        return field
-    }
 }

@@ -11,6 +11,9 @@ struct SignInSheet: View {
     /// extended down to the screen's bottom behind it, and buttons centred in that height jumped to their places when
     /// the keyboard went. They are centred in this height whatever the sheet's.
     @State private var restHeight: CGFloat?
+    /// Medium for the providers and the form at rest; the form grows the sheet to large before a field takes the focus,
+    /// so the keyboard never pushes the sheet and its bar's comings and goings move nothing (`EmailSignInView.focus`).
+    @State private var detent: PresentationDetent = .medium
     private let session: SessionController
     private let errorCenter: ErrorCenter
     @Environment(\.dismiss) private var dismiss
@@ -37,13 +40,13 @@ struct SignInSheet: View {
                 ToolbarItem(placement: .topBarTrailing) { closeButton }
             }
             .navigationDestination(isPresented: $viewModel.isEmailFormPresented) {
-                EmailSignInView(session: session)
+                EmailSignInView(session: session, detent: $detent)
             }
         }
-        // One detent: the keyboard slides the sheet up and back at its own height. With a large detent too, the focus
-        // grew the sheet while the keyboard pushed it, the title shot past its place and settled back, and on the way
-        // back from the form the providers were laid out for the tall sheet and jumped to their medium places at the end.
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large], selection: $detent)
+        .onChange(of: viewModel.isEmailFormPresented) { _, presented in
+            if !presented { withAnimation(.smooth(duration: DesignTokens.Duration.normal)) { detent = .medium } }
+        }
         .lilyFormSheet()
         // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
         .errorPopup(errorCenter)

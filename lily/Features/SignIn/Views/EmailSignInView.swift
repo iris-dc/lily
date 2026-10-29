@@ -6,23 +6,22 @@ import SwiftUI
 struct EmailSignInView: View {
     @State private var viewModel: EmailSignInViewModel
     @FocusState private var focusedField: Field?
+    /// The sheet's detent, the sheet's own state: the form grows the sheet before a field takes the focus and gives it
+    /// back when the focus goes (`focus(_:)`, `goBack`).
+    @Binding var detent: PresentationDetent
     @Environment(\.dismiss) private var dismiss
-    /// What the password row holds (`passwordRow`): the secure field, the plain field that stands in for it, or both
-    /// for the one turn of the hand-over from the secure field to the email field (`focusEmail`).
-    @State private var passwordRow: PasswordRow = .standIn
 
-    private enum PasswordRow { case standIn, secure, handOver }
+    private enum Field { case email, password, code }
 
-    private enum Field { case email, password, passwordStandIn, code }
-
-    init(session: SessionController) {
+    init(session: SessionController, detent: Binding<PresentationDetent>) {
         _viewModel = State(initialValue: EmailSignInViewModel(session: session))
+        _detent = detent
     }
 
     /// A scroll view, not a fixed column: at accessibility type sizes the form with the keyboard up outgrows the sheet,
     /// and a fixed `VStack` gets compressed instead (the title rides up under the back button, both header lines truncate).
     /// No field takes focus on appearance: the keyboard would arrive a beat after the push and lift the half sheet with
-    /// it, which read as a stutter; the user's tap on a field brings the keyboard and the room for it in one motion.
+    /// it, which read as a stutter; the user's tap on a field grows the sheet and brings the keyboard.
     var body: some View {
         ContentScreen {
             ScrollView {
@@ -49,15 +48,9 @@ struct EmailSignInView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) { backButton }
         }
-        .onChange(of: viewModel.mode) { _, mode in
-            if mode == .confirm { focusedField = .code } else { focusEmail() }
-        }
+        .onChange(of: viewModel.mode) { _, mode in focus(mode == .confirm ? .code : .email) }
         .onChange(of: focusedField) { _, field in
-            switch field {
-            case .password: break
-            case .passwordStandIn: finishHandOver()
-            default: passwordRow = .standIn
-            }
+            if field == nil { withAnimation(.smooth(duration: DesignTokens.Duration.normal)) { detent = .medium } }
         }
         // The sheet cannot reach this view model, so the form stops its own submit when it goes away.
         .onDisappear { viewModel.cancel() }
@@ -66,25 +59,24 @@ struct EmailSignInView: View {
     private var credentialFields: some View {
         VStack(spacing: DesignTokens.Spacing.md) {
             TextField(AppBranding.emailFieldPlaceholder, text: $viewModel.email)
+                .textContentType(.username)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .focused($focusedField, equals: .email)
                 .submitLabel(.next)
-                .onSubmit { focusPassword() }
+                .onSubmit { focus(.password) }
                 .lilyField()
-                // While the secure field is up, a tap here is taken before the field, so the secure field can go first:
-                // a secure sibling at the moment this field takes the focus puts the Passwords bar on its keyboard.
-                .overlay {
-                    if focusedField == .password {
-                        Color.clear
-                            .contentShape(.rect)
-                            .onTapGesture { focusEmail() }
-                            .accessibilityHidden(true)
-                    }
-                }
+                .firstTapGrowsTheSheet(detent: detent) { focus(.email) }
                 .accessibilityIdentifier(AccessibilityIdentifiers.authEmail)
-            passwordRowView
+            SecureField(AppBranding.passwordFieldPlaceholder, text: $viewModel.password)
+                .textContentType(viewModel.mode == .signUp ? .newPassword : .password)
+                .focused($focusedField, equals: .password)
+                .submitLabel(.go)
+                .onSubmit { viewModel.submit() }
+                .lilyField()
+                .firstTapGrowsTheSheet(detent: detent) { focus(.password) }
+                .accessibilityIdentifier(AccessibilityIdentifiers.authPassword)
             Text(viewModel.passwordHint)
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
@@ -92,42 +84,27 @@ struct EmailSignInView: View {
         }
     }
 
-    /// The secure field is in the hierarchy only while it has the focus. Beside a secure field, the email field's
-    /// keyboard carries the Passwords bar too, and at every change of focus UIKit drops the bar for a frame and brings it
-    /// back; the half sheet followed that as a dip. Alone, the email keyboard has no bar and the password keyboard has
-    /// one, so each change of focus is one move of the sheet. While the secure field is out, a plain field drawn like it
-    /// (the placeholder, or a bullet per character typed) holds its place; a tap on it brings the secure field back.
-    private var passwordRowView: some View {
-        ZStack {
-            if passwordRow != .secure {
-                TextField(AppBranding.passwordFieldPlaceholder, text: .constant(passwordBullets))
-                    .focused($focusedField, equals: .passwordStandIn)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-                    .opacity(passwordRow == .standIn ? 1 : 0)
-            }
-            if passwordRow != .standIn {
-                SecureField(AppBranding.passwordFieldPlaceholder, text: $viewModel.password)
-                    .textContentType(viewModel.mode == .signUp ? .newPassword : .password)
-                    .focused($focusedField, equals: .password)
-                    .submitLabel(.go)
-                    .onSubmit { viewModel.submit() }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.authPassword)
-            }
-        }
-        .lilyField()
-        .overlay {
-            if passwordRow == .standIn {
-                Button(action: focusPassword) { Color.clear.contentShape(.rect) }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(AppBranding.passwordFieldPlaceholder)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.authPassword)
-            }
-        }
+    private var codeField: some View {
+        TextField(AppBranding.confirmationCodePlaceholder, text: $viewModel.code)
+            .keyboardType(.numberPad)
+            .textContentType(.oneTimeCode)
+            .focused($focusedField, equals: .code)
+            .lilyField()
+            .firstTapGrowsTheSheet(detent: detent) { focus(.code) }
+            .accessibilityIdentifier(AccessibilityIdentifiers.authConfirmationCode)
     }
 
-    private var passwordBullets: String {
-        String(repeating: DesignTokens.Typography.secureFieldBullet, count: viewModel.password.count)
+    /// The keyboard never moves the sheet: a half sheet the keyboard pushes up follows every change of the keyboard's
+    /// height, and the keyboard's bar (the password manager's suggestions, on both fields) is dropped and rebuilt at
+    /// every change of focus, so the sheet dipped and came back each time. The sheet grows to its large detent first,
+    /// above where the keyboard reaches, and the field takes the focus once it has; from a sheet already large, at once.
+    private func focus(_ field: Field) {
+        guard detent != .large else {
+            focusedField = field
+            return
+        }
+        withAnimation(.smooth(duration: DesignTokens.Duration.normal)) { detent = .large }
+        DispatchQueue.main.async { focusedField = field }
     }
 
     /// Back in the bar of our own, so the keyboard can start down before the pop. The system back button pops with the
@@ -148,40 +125,6 @@ struct EmailSignInView: View {
         }
         focusedField = nil
         DispatchQueue.main.async { dismiss() }
-    }
-
-    private func focusPassword() {
-        passwordRow = .secure
-        focusedField = .password
-    }
-
-    /// From the secure field, a hand-over in turns: the email field must take the focus with no secure field in the
-    /// hierarchy, or its keyboard gets the bar after all (the bar is decided at the change of focus, even when the
-    /// removal is in the same update), and the keyboard must keep a first responder throughout, or it starts to go (on
-    /// the phone it hid for a few frames and the sheet dropped and came back). So the stand-in is mounted beside the
-    /// secure field and takes the focus; `finishHandOver` then removes the secure field and, a turn later, moves the
-    /// focus on. From anywhere else there is no secure field to go first.
-    private func focusEmail() {
-        guard focusedField == .password else {
-            focusedField = .email
-            return
-        }
-        passwordRow = .handOver
-        focusedField = .passwordStandIn
-    }
-
-    private func finishHandOver() {
-        passwordRow = .standIn
-        DispatchQueue.main.async { focusedField = .email }
-    }
-
-    private var codeField: some View {
-        TextField(AppBranding.confirmationCodePlaceholder, text: $viewModel.code)
-            .keyboardType(.numberPad)
-            .textContentType(.oneTimeCode)
-            .focused($focusedField, equals: .code)
-            .lilyField()
-            .accessibilityIdentifier(AccessibilityIdentifiers.authConfirmationCode)
     }
 
     private var submitButton: some View {
@@ -225,6 +168,23 @@ struct EmailSignInView: View {
     }
 }
 
+private extension View {
+    /// While the sheet is still half, a tap on the field is taken here and runs `action` (the growth, then the focus)
+    /// instead of focusing the field at once, which would bring the keyboard before the sheet has grown and let it push
+    /// the sheet. Once the sheet is large the field takes its taps itself.
+    func firstTapGrowsTheSheet(detent: PresentationDetent, action: @escaping () -> Void) -> some View {
+        overlay {
+            if detent != .large {
+                Color.clear
+                    .contentShape(.rect)
+                    .onTapGesture(perform: action)
+                    .accessibilityHidden(true)
+            }
+        }
+    }
+}
+
 #Preview {
-    NavigationStack { EmailSignInView(session: AppDependencies.makeMock().sessionController) }
+    @Previewable @State var detent: PresentationDetent = .medium
+    NavigationStack { EmailSignInView(session: AppDependencies.makeMock().sessionController, detent: $detent) }
 }

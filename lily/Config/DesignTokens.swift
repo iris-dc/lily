@@ -137,8 +137,6 @@ nonisolated enum DesignTokens {
         static let headlineTracking: CGFloat = -1.8
         static let headlineLineSpacing: CGFloat = -4
         static let titleTracking: CGFloat = -0.5
-        /// What a `SecureField` shows per character, for a row that stands in for one.
-        static let secureFieldBullet = "\u{2022}"
     }
 
     /// SF Symbol names, so icons stay consistent across screens.

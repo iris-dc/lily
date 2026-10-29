@@ -44,7 +44,7 @@ final class LilySignInTests: LilyUITestCase {
         app.buttons["auth-mode-toggle"].tap()
         XCTAssertTrue(app.staticTexts["Create your account"].waitForExistence(timeout: 5))
         enter("jane.doe@example.com", into: app.textFields["auth-email"])
-        enter("long-enough", into: passwordField())
+        enter("long-enough", into: app.secureTextFields["auth-password"])
         app.buttons["auth-submit"].tap()
 
         XCTAssertTrue(app.staticTexts["Check your email"].waitForExistence(timeout: 10), "sign-up must lead to the code step")
@@ -167,31 +167,32 @@ extension LilySignInTests {
         XCTAssertEqual(headline.frame.minY, before.minY, accuracy: 1, "the slide sits where it sat, not between pages")
     }
 
-    /// The focus moving between the fields moves the sheet once each way: the password field's keyboard carries the
-    /// Passwords bar, the email field's does not, and the sheet follows the keyboard. The title's rows are sampled
-    /// through each move and may never turn back; with a secure field beside the email field at the moment the latter
-    /// takes the focus, the sheet dipped about 18 pt and eased back on every change.
+    /// A tap on a field grows the sheet to its large detent and then brings the keyboard, so the keyboard never pushes
+    /// the sheet; the focus moving between the fields then moves nothing, though the keyboard's bar (the password
+    /// manager's suggestions, on both fields) is dropped and rebuilt at every change. With a half sheet pushed by the
+    /// keyboard, that rebuild dipped the sheet about 18 pt and eased it back on every change of focus.
     @MainActor
-    func testTheTitleMovesOnceWhenTheFocusChangesField() {
+    func testTheSheetGrowsOnceForTheKeyboardAndStaysThroughTheFocusChanges() {
         openEmailForm()
         let title = app.staticTexts["Welcome back"]
+        let atRest = title.frame.minY
         let email = app.textFields["auth-email"]
         email.tap()
         XCTAssertTrue(waitForKeyboardFocus(email))
         sleep(1)
-        let withEmail = title.frame.minY
+        let grown = title.frame.minY
+        XCTAssertLessThan(grown, atRest - 250, "the sheet grows to the large detent for the keyboard")
 
-        let password = passwordField()
+        let password = app.secureTextFields["auth-password"]
+        password.tap()
         XCTAssertTrue(waitForKeyboardFocus(password))
-        let rise = sampleTitleRows(title)
-        XCTAssertTrue(isMonotonic(rise, rising: true), "the sheet must rise once for the password field: \(rise)")
-        XCTAssertLessThan(rise.last ?? withEmail, withEmail - 20, "the password field's taller keyboard lifts the sheet")
+        let toPassword = sampleTitleRows(title)
+        XCTAssertTrue(isStill(toPassword, at: grown), "the title stays through the focus moving to the password: \(toPassword)")
 
         email.tap()
         XCTAssertTrue(waitForKeyboardFocus(email))
-        let fall = sampleTitleRows(title)
-        XCTAssertTrue(isMonotonic(fall, rising: false), "the sheet must come down once for the email field: \(fall)")
-        XCTAssertEqual(fall.last ?? 0, withEmail, accuracy: 1, "the email field's keyboard puts the sheet back")
+        let toEmail = sampleTitleRows(title)
+        XCTAssertTrue(isStill(toEmail, at: grown), "the title stays through the focus moving back: \(toEmail)")
     }
 
     /// The title's top edge about every 50 ms for a second, from the first sample on.
@@ -206,7 +207,7 @@ extension LilySignInTests {
         return rows
     }
 
-    private func isMonotonic(_ rows: [CGFloat], rising: Bool) -> Bool {
-        zip(rows, rows.dropFirst()).allSatisfy { rising ? $1 <= $0 + 1 : $1 >= $0 - 1 }
+    private func isStill(_ rows: [CGFloat], at row: CGFloat) -> Bool {
+        rows.allSatisfy { abs($0 - row) <= 1 }
     }
 }
