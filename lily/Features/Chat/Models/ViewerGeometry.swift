@@ -9,7 +9,7 @@ nonisolated struct TileGeometry: Equatable, Sendable {
 /// Where the viewer draws its picture at one moment of its coming and going, as rules: `progress` 0 is the picture
 /// fitted to its page, 1 is the picture on its tile, filling it as the tile crops it and rounded like it; the drag moves
 /// it up or down only, at full size. The picture fills `rect`, so the crop follows the rect's shape on the way; every
-/// value is linear in `progress`, so an animation of it draws each frame of the way. Without a tile to land on, the
+/// value is linear in `progress`, so the frames the `ViewerMoveDriver` writes stay on the path. Without a tile to land on, the
 /// picture fades instead. Pure, so the frames can be checked without a view.
 nonisolated struct ViewerGeometry: Equatable, Sendable {
     var rect: CGRect
@@ -93,8 +93,21 @@ nonisolated struct ViewerGeometry: Equatable, Sendable {
     /// The largest rect of `aspectRatio` centred in `bounds`, as `scaledToFit` lays a picture out; `bounds` itself when
     /// the ratio is unknown.
     static func fit(_ aspectRatio: CGFloat?, in bounds: CGRect) -> CGRect {
+        aspect(aspectRatio, in: bounds, covering: false)
+    }
+
+    /// The smallest rect of `aspectRatio` covering `bounds`, centred, as `scaledToFill` lays a picture out; `bounds`
+    /// itself when the ratio is unknown.
+    static func fill(_ aspectRatio: CGFloat?, in bounds: CGRect) -> CGRect {
+        aspect(aspectRatio, in: bounds, covering: true)
+    }
+
+    /// The rect of `aspectRatio` centred in `bounds` that the bounds contain, or, `covering`, that contains them: bounds
+    /// wider than the ratio bind a fitted rect by their height and a covering one by their width, and the other way round.
+    private static func aspect(_ aspectRatio: CGFloat?, in bounds: CGRect, covering: Bool) -> CGRect {
         guard let aspectRatio, aspectRatio > 0, bounds.width > 0, bounds.height > 0 else { return bounds }
-        let size = bounds.width / bounds.height > aspectRatio
+        let wide = bounds.width / bounds.height > aspectRatio
+        let size = wide != covering
             ? CGSize(width: bounds.height * aspectRatio, height: bounds.height)
             : CGSize(width: bounds.width, height: bounds.width / aspectRatio)
         return CGRect(x: bounds.midX - size.width / 2,
@@ -103,20 +116,8 @@ nonisolated struct ViewerGeometry: Equatable, Sendable {
                       height: size.height)
     }
 
-    /// The smallest rect of `aspectRatio` covering `bounds`, centred, as `scaledToFill` lays a picture out; `bounds`
-    /// itself when the ratio is unknown.
-    static func fill(_ aspectRatio: CGFloat?, in bounds: CGRect) -> CGRect {
-        guard let aspectRatio, aspectRatio > 0, bounds.width > 0, bounds.height > 0 else { return bounds }
-        let size = bounds.width / bounds.height > aspectRatio
-            ? CGSize(width: bounds.width, height: bounds.width / aspectRatio)
-            : CGSize(width: bounds.height * aspectRatio, height: bounds.height)
-        return CGRect(x: bounds.midX - size.width / 2,
-                      y: bounds.midY - size.height / 2,
-                      width: size.width,
-                      height: size.height)
-    }
-
-    private static func mix(_ from: CGFloat, _ to: CGFloat, _ progress: CGFloat) -> CGFloat {
+    /// `from` moved toward `to` by `progress`: 0 is `from`, 1 is `to`.
+    static func mix(_ from: CGFloat, _ to: CGFloat, _ progress: CGFloat) -> CGFloat {
         from + (to - from) * progress
     }
 

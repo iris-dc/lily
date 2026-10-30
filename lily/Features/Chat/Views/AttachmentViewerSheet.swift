@@ -10,13 +10,12 @@ import SwiftUI
 /// size, fading the black so the chat shows through; letting go far enough, or Close, or VoiceOver's escape, puts it
 /// back onto its tile, the one of the page on screen, and the chat is back; short of it the picture springs back.
 /// On the way in and out, and while dragged, the picture is drawn by itself over the hidden pager, each move's ends as
-/// `ViewerGeometry` places them from where its page lays the picture out (SwiftUI draws the frames between, which the
-/// geometry's linearity keeps on the path): a transformed pager re-laid its UIKit page out on alternate frames. The
-/// move lives in the `ViewerHero` (`progress`, `drag`, `landing`, `moving`), written frame by frame by the
-/// `ViewerMoveDriver`, because the cover draws only the picture's and the black's part above the composer line, over
-/// the bars; the chat draws the part below it under the composer, which fades with the move (`ViewerStage`), so a tile
-/// partly under the composer opens and closes whole. A video
-/// moves as its poster. Without a picture or a tile (a page with nothing loaded yet, a zoomed picture) the pager fades
+/// `ViewerGeometry` places them from where its page lays the picture out and the frames between written by the
+/// `ViewerMoveDriver`: a transformed pager re-laid its UIKit page out on alternate frames. The move lives in the
+/// `ViewerHero` (`progress`, `drag`, `landing`, `moving`), because the cover draws only the picture's and the black's
+/// part above the composer line, over the bars; the chat draws the part below it under the composer, which fades with
+/// the move (`ViewerStage`), so a tile partly under the composer opens and closes whole. A video moves as its poster.
+/// Without a picture or a tile (a page with nothing loaded yet, a zoomed picture) the pager fades
 /// instead, over black on the whole screen. `ViewerMotion` decides which phase the viewer is in and which move's
 /// completion still counts. A zoomed picture does not close on a drag (a double tap returns it to size first), nor does
 /// one being pinched. An accessibility container (`attachment-viewer`), so Close keeps its own identifier.
@@ -70,6 +69,7 @@ struct AttachmentViewerSheet: View {
             if selection.media.contains(where: { $0.id == hero.shownID }) { hero.shownID = nil }
             hero.forgetPreloaded()
             driver.cancel()
+            // `leave()` has ended the move already on a close by the button; the fade and the interactive dismissal end here.
             hero.endMove()
         }
         .onChange(of: index) {

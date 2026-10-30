@@ -5,9 +5,10 @@ import SwiftUI
 /// is in the viewer, whose tile shows the accent meanwhile, and where the moving picture is on its way (`progress`,
 /// `drag`, `landing`, `moving`, written frame by frame by the viewer's `ViewerMoveDriver`), which both sides draw: the
 /// viewer's cover its part above the composer line, over the bars, and the chat its part below it, under the composer,
-/// which fades with the move (`ViewerStage`), so a tile partly under the composer opens and closes whole. Tiles write their places on every layout pass and scroll, so those stay
-/// out of observation; only the attachment in the viewer redraws a tile. Thumbnails are held weakly: each is the tile's
-/// own, and a long room would otherwise keep every decoded one it ever showed.
+/// which fades with the move (`ViewerStage`), so a tile partly under the composer opens and closes whole. Tiles write
+/// their places on every layout pass and scroll, so those stay out of observation; only the attachment in the viewer
+/// redraws a tile. Thumbnails are held weakly: each is the tile's own, and a long room would otherwise keep every decoded
+/// one it ever showed.
 @Observable @MainActor
 final class ViewerHero {
     /// The attachment on screen in the viewer; `nil` while it is closed.
@@ -93,15 +94,6 @@ final class ViewerHero {
     func thumbnail(for id: String) -> UIImage? {
         thumbnailsByID.object(forKey: id as NSString)
     }
-}
-
-/// The picture the viewer draws on its way in and out, by itself, where `ViewerGeometry` puts it between `page` (where
-/// its page lays it out, in the window; `nil` before the page's first layout, which the screen stands in for) and its
-/// tile (`ViewerHero.tiles[id]`, or the `landing` once it closes).
-struct MovingPicture {
-    let id: String
-    let image: UIImage
-    let page: CGRect?
 }
 
 extension EnvironmentValues {

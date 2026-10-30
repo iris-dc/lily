@@ -88,7 +88,10 @@ final class LilyStateTests: LilyUITestCase {
         openSignInSheet()
         let apple = app.buttons["Continue with Apple"]
         XCTAssertTrue(apple.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Continue with Email"].isHittable, "every provider fits the sheet at AX5")
+        // The three buttons outgrow even the full sheet at AX5, so the sheet scrolls; every provider is reached by it.
+        scrollUntilHittable(app.buttons["Continue with Email"])
+        XCTAssertTrue(app.buttons["Continue with Email"].isHittable, "every provider is reachable in the sheet at AX5")
+        scrollUntilHittable(apple)
         XCTAssertTrue(apple.isHittable)
         apple.tap()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))

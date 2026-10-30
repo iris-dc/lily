@@ -1,21 +1,5 @@
 import SwiftUI
 
-/// Which side of the composer line a layer draws of the viewer's moving picture.
-nonisolated enum ViewerLayer: Sendable {
-    /// The viewer's cover, over the bars: everything above the composer line (`ViewerGeometry.clip`).
-    case overBars
-    /// The chat, under the composer: everything below the line (`ViewerGeometry.underComposer`).
-    case underComposer
-
-    /// The part of the screen this layer draws, in the screen's coordinates; `nil` when nothing of it.
-    func window(viewport: CGRect?, screen: CGRect, progress: CGFloat) -> CGRect? {
-        switch self {
-        case .overBars: ViewerGeometry.clip(viewport: viewport, screen: screen, progress: progress)
-        case .underComposer: ViewerGeometry.underComposer(viewport: viewport, screen: screen)
-        }
-    }
-}
-
 /// The viewer's picture drawn by itself where `ViewerGeometry` puts it between its page and its tile, in the window's
 /// coordinates, on its way in and out and while dragged; `layer` says which side of the composer line this copy draws,
 /// the other side being the other layer's. Both read the same `ViewerHero` move, so the two halves are one picture on

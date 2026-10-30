@@ -8,7 +8,7 @@ struct EmailSignInView: View {
     @FocusState private var focusedField: Field?
     /// The sheet's detent, the sheet's own state: the form grows the sheet before a field takes the focus and gives it
     /// back when the focus goes (`focus(_:)`, `goBack`).
-    @Binding var detent: PresentationDetent
+    @Binding private var detent: PresentationDetent
     @Environment(\.dismiss) private var dismiss
 
     private enum Field { case email, password, code }
@@ -49,8 +49,12 @@ struct EmailSignInView: View {
             ToolbarItem(placement: .topBarLeading) { backButton }
         }
         .onChange(of: viewModel.mode) { _, mode in focus(mode == .confirm ? .code : .email) }
+        // A focus that arrives with the sheet still half (VoiceOver activates a field itself) grows it late rather than
+        // leaving the keyboard to push it.
         .onChange(of: focusedField) { _, field in
-            if field == nil { withAnimation(.smooth(duration: DesignTokens.Duration.normal)) { detent = .medium } }
+            withAnimation(.smooth(duration: DesignTokens.Duration.normal)) {
+                detent = field == nil ? .medium : .large
+            }
         }
         // The sheet cannot reach this view model, so the form stops its own submit when it goes away.
         .onDisappear { viewModel.cancel() }
@@ -104,6 +108,8 @@ struct EmailSignInView: View {
             return
         }
         withAnimation(.smooth(duration: DesignTokens.Duration.normal)) { detent = .large }
+        // The next turn of the main queue, once the detent has reached UIKit; measured, the keyboard then starts 0.3 s
+        // after the tap and the sheet never overshoots.
         DispatchQueue.main.async { focusedField = field }
     }
 
@@ -124,6 +130,7 @@ struct EmailSignInView: View {
             return
         }
         focusedField = nil
+        // The next turn of the main queue: the keyboard is on its way down and the sheet shrinking when the pop starts.
         DispatchQueue.main.async { dismiss() }
     }
 

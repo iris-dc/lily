@@ -77,7 +77,7 @@ struct ViewerGeometryTests {
         #expect(up.rect == open.rect.offsetBy(dx: 0, dy: -90))
     }
 
-    /// Halfway is halfway in every value, so an animation of the progress draws the path.
+    /// Halfway is halfway in every value, so the frames written along the progress stay on the path.
     @Test func halfwayIsHalfwayInEveryValue() {
         let open = ViewerGeometry(page: page, aspectRatio: 1.5, tile: tile, progress: 0, drag: 0)
         let half = ViewerGeometry(page: page, aspectRatio: 1.5, tile: tile, progress: 0.5, drag: 0)
@@ -147,5 +147,23 @@ struct ViewerGeometryTests {
 
         #expect(ViewerGeometry.shownPart(of: tall, in: viewport) == CGRect(x: 0, y: 66, width: 200, height: 642))
         #expect(ViewerGeometry.shownPart(of: beside, in: viewport) == nil)
+    }
+
+    @Test func mixMovesAValueFromOneEndToTheOther() {
+        #expect(ViewerGeometry.mix(10, 20, 0) == 10)
+        #expect(ViewerGeometry.mix(10, 20, 0.25) == 12.5)
+        #expect(ViewerGeometry.mix(10, 20, 1) == 20)
+        #expect(ViewerGeometry.mix(1, 0, 0.75) == 0.25, "a way back runs the other way")
+    }
+
+    /// The two layers draw the two sides of the composer line: the cover what the clip keeps, the chat what lies under
+    /// the composer.
+    @Test func theLayersWindowsAreTheClipAndTheRestUnderTheComposer() {
+        let screen = CGRect(x: 0, y: 0, width: 402, height: 874)
+        let viewport = CGRect(x: 0, y: 116, width: 402, height: 642)
+        #expect(ViewerLayer.overBars.window(viewport: viewport, screen: screen, progress: 0.5)
+                == ViewerGeometry.clip(viewport: viewport, screen: screen, progress: 0.5))
+        #expect(ViewerLayer.underComposer.window(viewport: viewport, screen: screen, progress: 0.5)
+                == ViewerGeometry.underComposer(viewport: viewport, screen: screen))
     }
 }

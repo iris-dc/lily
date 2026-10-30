@@ -1,3 +1,4 @@
+import QuartzCore
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -86,6 +87,8 @@ nonisolated extension DesignTokens.Opacity {
 nonisolated extension DesignTokens.Duration {
     /// How long the viewer takes to open out of a tile, to land back on it and to spring back from a short drag.
     static let viewerTransition: TimeInterval = 0.28
+    /// The viewer's moves run at the display's fastest rate, 120 Hz where it has one and 60 elsewhere.
+    static let viewerFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
     /// The curve of a move from rest (the open, a close by the button): a critically damped spring's shape, as the
     /// system's own moves, but over an exact time, so a move hands over the moment it ends (a spring's completion came
     /// about a second after it looked done). It starts gently, so no frame jumps far: at most a seventh of the way.

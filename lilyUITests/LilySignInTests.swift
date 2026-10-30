@@ -44,10 +44,15 @@ final class LilySignInTests: LilyUITestCase {
         app.buttons["auth-mode-toggle"].tap()
         XCTAssertTrue(app.staticTexts["Create your account"].waitForExistence(timeout: 5))
         enter("jane.doe@example.com", into: app.textFields["auth-email"])
+        let grownTitleY = app.staticTexts["Create your account"].frame.minY
         enter("long-enough", into: app.secureTextFields["auth-password"])
         app.buttons["auth-submit"].tap()
 
-        XCTAssertTrue(app.staticTexts["Check your email"].waitForExistence(timeout: 10), "sign-up must lead to the code step")
+        let codeTitle = app.staticTexts["Check your email"]
+        XCTAssertTrue(codeTitle.waitForExistence(timeout: 10), "sign-up must lead to the code step")
+        XCTAssertTrue(waitForKeyboardFocus(app.textFields["auth-confirmation-code"]), "the code field takes the focus")
+        sleep(1)
+        XCTAssertEqual(codeTitle.frame.minY, grownTitleY, accuracy: 1, "the sheet stays large through the code step")
         XCTAssertTrue(app.staticTexts["We sent a code to jane.doe@example.com"].exists)
         XCTAssertTrue(app.buttons["auth-resend-code"].exists)
         XCTAssertEqual(app.buttons["auth-mode-toggle"].label, "Back to sign in")
@@ -138,7 +143,7 @@ extension LilySignInTests {
         XCTAssertTrue(email.waitForExistence(timeout: 5))
         email.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "the field brings the keyboard")
-        app.navigationBars.buttons.firstMatch.tap()
+        app.buttons["auth-back"].tap()
         XCTAssertTrue(apple.waitForExistence(timeout: 5), "back to the providers")
         sleep(1)
         XCTAssertEqual(apple.frame.minY, restY, accuracy: 1, "the buttons are where they were, with nothing to jump to")
@@ -171,7 +176,7 @@ extension LilySignInTests {
     /// the sheet; the focus moving between the fields then moves nothing, though the keyboard's bar (the password
     /// manager's suggestions, on both fields) is dropped and rebuilt at every change. With a half sheet pushed by the
     /// keyboard, that rebuild dipped the sheet about 18 pt and eased it back on every change of focus.
-    @MainActor
+    @objc @MainActor
     func testTheSheetGrowsOnceForTheKeyboardAndStaysThroughTheFocusChanges() {
         openEmailForm()
         let title = app.staticTexts["Welcome back"]

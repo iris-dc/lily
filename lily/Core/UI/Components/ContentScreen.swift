@@ -11,9 +11,10 @@ struct ContentScreen<Content: View>: View {
     @Environment(\.windowHeight) private var windowHeight
 
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack {
+            // The reader is greedy and lays its child out at its top; the aurora grows into the top safe area itself, so
+            // that inset is left out of the height it is given.
             GeometryReader { proxy in
-                // The aurora grows into the top safe area itself, so that inset is left out of the height it is given.
                 AuroraBackground(intensity: DesignTokens.Aurora.contentIntensity)
                     .frame(height: windowHeight.map { $0 - proxy.safeAreaInsets.top })
             }

@@ -150,7 +150,7 @@ lily/
                  GroupActionRow, GroupDetailMenu, GroupEventsSegment, MembersList, MemberRow, GroupLoaderView, the Create/Edit sheets
                  (thin wrappers over GroupDraftSheet over the shared DraftSheet around GroupDraftForm), InvitePeopleSheet over
                  InviteCandidateRow, ReportSheet (a reason, a comment, Send, thanks; a group, a tournament or a message), GroupDestinations)
-    Chat/        Interfaces (ChatRepository, ChatHistoryCache, AttachmentUploader, AttachmentCache, MediaPreparer, GalleryItem), Models (ChatMessage,
+    Chat/        Interfaces (ChatRepository, ChatHistoryCache, AttachmentUploader, AttachmentCache, MediaPreparer, GalleryItem, FrameClock), Models (ChatMessage,
                  MessageKind (text, event_created, the four tournament notes; an unknown kind decodes as `unknown(name)` and the
                  transcript hides it), MessagePage/SentMessage/ReadMarker/ClearedHistory, MessageDraft, PendingMessage, ReplyQuote (the quote a
                  reply carries), MessageArrivalCurve + TranscriptArrivals (a row's arrival from a clock, and which rows arrived), AttachmentKind (image, video, file, or an unknown kind drawn as a file), Attachment + AttachmentVariant (a stored attachment and its presigned links), AttachmentDraft
@@ -163,15 +163,17 @@ lily/
                  long press offers), ChatClearPrompt (the clear / delete wording), ChatRoomState (one room: id-ordered messages,
                  tombstones, the two cursors, the cleared floor), ChatRow, ChatTimeline (pure rows: runs, day dividers, live names,
                  blocked senders), ChatDayLabel, ChatDestination, SystemRowContent (the system rows' texts, lookups and destinations over
-                 SystemRowLinks + LinkedContent, which remembers what is gone) and SystemRowDestination (where a tapped one leads)), Implementations (RemoteChatRepository, MockChatRepository
+                 SystemRowLinks + LinkedContent, which remembers what is gone) and SystemRowDestination (where a tapped one leads), ViewerGeometry + TileGeometry +
+                 ViewerLayer (pure: where the moving picture is at each moment and which side of the composer line a layer draws),
+                 MovingPicture (the picture on its way)), Implementations (RemoteChatRepository, MockChatRepository
                  (+ Attachments) + MockChatFixtures, InMemoryChatHistoryCache, URLSessionAttachmentUploader, DiskAttachmentCache (+ AttachmentCacheFiles, the
                  byte-moving steps off the main actor), DeviceMediaPreparer over ImagePreparer (+ ImageEncoding), VideoPreparer (+ VideoEncoding)
                  and FilePreparer (+ FileCopying), all off the main actor through DetachedWork, MockMediaPreparer (the picker stand-in), MockAttachmentStore + MockAttachmentURLProtocol,
-                 MockAttachmentUploader), Services (ChatCatchUp: the REST catch-up shared by the chat and the realtime controller;
+                 MockAttachmentUploader, DisplayLinkFrameClock: the FrameClock on Core Animation's display link), Services (ChatCatchUp: the REST catch-up shared by the chat and the realtime controller;
                  ChatHistoryClearer: the per-side clear; AttachmentLoader (+ Files): cache first, else one download with the link refreshed
                  and its progress reported, and the named preview file QuickLook and the player read; ReadMarkerFlusher: the read marker's
-                 timing), State (UnreadCenter, ChatOutbox: every room's unsent and failed bubbles, ViewerHero + MovingPicture: what the tiles,
-                 the viewer and the composer share for the viewer's moves, ViewerMoveDriver: the moves' display-link clock), ViewModels
+                 timing), State (UnreadCenter, ChatOutbox: every room's unsent and failed bubbles, ViewerHero: what the tiles,
+                 the viewer and the composer share for the viewer's moves, ViewerMoveDriver: the moves a frame at a time on a FrameClock), ViewModels
                  (ChatViewModel + History + Send + Live + Events + Conversation + Clear + Reply + Attachments + Moderation, AttachmentComposerModel
                  (+ Picking: the items picked for one message and every way in; + Upload: AttachmentWork, one item's prepare, ticket and
                  PUTs, holding the model weakly so a closed room cancels and cleans up)), Views (ChatsView (the Chats root:

@@ -7,16 +7,28 @@ import SwiftUI
 /// behind the cover's; one clock and one value put both halves on the same frame. A new run cancels the one before,
 /// whose completion never comes; `cancel` ends a run with the viewer.
 @MainActor
-final class ViewerMoveDriver: NSObject {
-    private var link: CADisplayLink?
+final class ViewerMoveDriver {
+    private let clock: any FrameClock
     private var start: CFTimeInterval = 0
     private var duration: TimeInterval = 0
     private var curve = UnitCurve.linear
     private var apply: ((Double) -> Void)?
     private var completion: (() -> Void)?
 
+    init(clock: any FrameClock) {
+        self.clock = clock
+    }
+
+    convenience init() {
+        self.init(clock: DisplayLinkFrameClock())
+    }
+
+    var isRunning: Bool { apply != nil }
+
+    /// Starts a move at `now` on the clock's timeline; from the next frame on, `apply` gets the way.
     func run(duration: TimeInterval,
              curve: UnitCurve,
+             now: CFTimeInterval = CACurrentMediaTime(),
              apply: @escaping (Double) -> Void,
              completion: @escaping () -> Void) {
         cancel()
@@ -24,16 +36,12 @@ final class ViewerMoveDriver: NSObject {
         self.curve = curve
         self.apply = apply
         self.completion = completion
-        start = CACurrentMediaTime()
-        let link = CADisplayLink(target: self, selector: #selector(tick(_:)))
-        link.preferredFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
-        link.add(to: .main, forMode: .common)
-        self.link = link
+        start = now
+        clock.start { [weak self] timestamp in self?.step(at: timestamp) }
     }
 
     func cancel() {
-        link?.invalidate()
-        link = nil
+        clock.stop()
         apply = nil
         completion = nil
     }
@@ -44,9 +52,10 @@ final class ViewerMoveDriver: NSObject {
         return curve.value(at: min(1, max(0, elapsed / duration)))
     }
 
-    /// Each frame writes the value for the moment the frame will be shown; the last one is exactly the end.
-    @objc private func tick(_ link: CADisplayLink) {
-        let fraction = Self.fraction(elapsed: link.targetTimestamp - start, duration: duration, curve: curve)
+    /// One frame: the value for the moment it will be shown (`timestamp`); the frame at or past the end is exactly the
+    /// end, and the move hands over once.
+    func step(at timestamp: CFTimeInterval) {
+        let fraction = Self.fraction(elapsed: timestamp - start, duration: duration, curve: curve)
         apply?(fraction)
         guard fraction >= 1 else { return }
         let completion = self.completion

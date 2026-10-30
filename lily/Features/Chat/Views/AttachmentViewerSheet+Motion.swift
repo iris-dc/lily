@@ -22,7 +22,7 @@ extension AttachmentViewerSheet {
             stage()
             hero.log("grows \(current.id) to page \(ViewerHero.describe(layout.frames[current.id]))")
             driver.run(duration: DesignTokens.Duration.viewerTransition, curve: curve(fromDrag: false)) { way in
-                hero.progress = 1 - way
+                hero.progress = ViewerGeometry.mix(1, 0, way)
             } completion: {
                 _ = motion.finish(move)
             }
@@ -49,7 +49,7 @@ extension AttachmentViewerSheet {
         guard let move = motion.startSettling() else { return }
         let from = hero.drag
         driver.run(duration: DesignTokens.Duration.viewerTransition, curve: curve(fromDrag: true)) { way in
-            hero.drag = from * (1 - way)
+            hero.drag = ViewerGeometry.mix(from, 0, way)
         } completion: {
             _ = motion.finish(move)
         }
@@ -63,8 +63,8 @@ extension AttachmentViewerSheet {
         let (fromProgress, fromDrag) = (hero.progress, hero.drag)
         hero.log("closes \(current.id) onto tile \(ViewerHero.describe(hero.landing)), dragged \(Int(fromDrag))")
         driver.run(duration: DesignTokens.Duration.viewerTransition, curve: curve(fromDrag: fromDrag != 0)) { way in
-            hero.progress = fromProgress + (1 - fromProgress) * way
-            if fromDrag != 0 { hero.drag = fromDrag * (1 - way) }
+            hero.progress = ViewerGeometry.mix(fromProgress, 1, way)
+            if fromDrag != 0 { hero.drag = ViewerGeometry.mix(fromDrag, 0, way) }
         } completion: {
             guard motion.finish(move) else { return }
             followTileThenLeave()
