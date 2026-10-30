@@ -10,6 +10,10 @@ import UIKit
 struct MainTabView: View {
     let dependencies: AppDependencies
     let showsContent: Bool
+    /// Whether the selected tab's screen has appeared. A tab view can show its first tab before it applies the selection
+    /// (on an iPhone, a guest's launch read as Home turning into Explore; never on the simulator), so the shell stays
+    /// transparent until then; the launch's black and the landing cover that moment anyway.
+    @State private var showsSelectedTab = false
     @Environment(\.layoutMode) private var layoutMode
 
     private var language: AppLanguage { dependencies.language.language }
@@ -23,18 +27,18 @@ struct MainTabView: View {
         @Bindable var navigation = dependencies.navigation
         TabView(selection: $navigation.selectedTab) {
             Tab(value: .home) {
-                content { HomeTab(dependencies: dependencies).id(language) }
+                content(.home) { HomeTab(dependencies: dependencies).id(language) }
             } label: {
                 tabLabel(AppBranding.homeTitle, symbol: DesignTokens.Symbols.home)
             }
             Tab(value: .explore) {
-                content { ExploreTab(dependencies: dependencies).id(language) }
+                content(.explore) { ExploreTab(dependencies: dependencies).id(language) }
             } label: {
                 tabLabel(AppBranding.exploreTitle, symbol: DesignTokens.Symbols.explore)
             }
             if AppConfig.FeatureFlags.chat {
                 Tab(value: .chat) {
-                    content { ChatTab(dependencies: dependencies).id(language) }
+                    content(.chat) { ChatTab(dependencies: dependencies).id(language) }
                 } label: {
                     tabLabel(AppBranding.chatsTitle, symbol: DesignTokens.Symbols.chat)
                 }
@@ -43,7 +47,7 @@ struct MainTabView: View {
                 .accessibilityValue(Text(AppBranding.Chats.unreadChats(unreadChats)), isEnabled: unreadChats > 0)
             }
             Tab(value: .profile) {
-                content { ProfileView(dependencies: dependencies, language: language) }
+                content(.profile) { ProfileView(dependencies: dependencies, language: language) }
             } label: {
                 tabLabel(AppBranding.profileTitle, symbol: DesignTokens.Symbols.profile)
             }
@@ -51,6 +55,9 @@ struct MainTabView: View {
         // iPadOS draws the tabs as a top bar on its own; the iPhone keeps its floating bar. `.sidebarAdaptable` was tried
         // and dropped: its sidebar only repeated the four tabs and iPadOS opened it by itself in landscape,
         // taking 280 pt from the content column.
+        // Only while the tabs hold their screens: under the landing the shell is covered anyway, and at opacity 0 the
+        // empty tabs' hidden bar stayed in the accessibility tree.
+        .opacity(showsContent && !showsSelectedTab ? 0 : 1)
         .tabBarMinimizeBehavior(.onScrollDown)
         // The tabs fill and the bar shows at once, under the landing that the root fades out over them; animated, the
         // bar would slide up into view.
@@ -64,11 +71,22 @@ struct MainTabView: View {
     /// A tab's screen, or nothing while the landing covers the shell; the bar hides then, which keeps it built, so it
     /// is out of the accessibility tree without being rebuilt when the shell comes back.
     @ViewBuilder
-    private func content(@ViewBuilder _ screen: () -> some View) -> some View {
+    private func content(_ tab: AppTab, @ViewBuilder _ screen: () -> some View) -> some View {
         if showsContent {
-            screen()
+            screen().onAppear { tabAppeared(tab) }
         } else {
             Color.clear.toolbarVisibility(.hidden, for: .tabBar)
+        }
+    }
+
+    /// The shell shows once the tab on screen is the selected one; another tab first is the tab view's own detour.
+    private func tabAppeared(_ tab: AppTab) {
+        guard !showsSelectedTab else { return }
+        let selected = dependencies.navigation.selectedTab
+        if tab == selected {
+            showsSelectedTab = true
+        } else {
+            dependencies.logger.debug(.ui, "Tab \(tab) appeared before the selected tab \(selected); shell kept hidden")
         }
     }
 
