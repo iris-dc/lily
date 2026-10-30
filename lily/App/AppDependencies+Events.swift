@@ -4,8 +4,10 @@ import Foundation
 extension AppDependencies {
     /// Explore starts from the filter as the user last left it (the defaults, 10 km around the user, on a fresh
     /// install) and keeps every change; a list without a filter button, such as Home, must never hide a game, so it
-    /// starts from `.everything` and keeps nothing.
-    func makeEventListViewModel(scope: EventScope) -> EventListViewModel {
+    /// starts from `.everything` and keeps nothing. A tab's list (`ShellLists`) passes the app's snapshot store; a
+    /// group's segment keeps none (the default).
+    func makeEventListViewModel(scope: EventScope,
+                                snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) -> EventListViewModel {
         EventListViewModel(scope: scope,
                            repository: eventRepository,
                            identity: identity,
@@ -16,7 +18,8 @@ extension AppDependencies {
                            logger: logger,
                            currencyCode: { [currency] in currency.currencyCode },
                            initialFilter: scope == .upcoming ? eventFilterStore.load() ?? EventFilter() : .everything,
-                           filterStore: scope == .upcoming ? eventFilterStore : NoOpEventFilterStore())
+                           filterStore: scope == .upcoming ? eventFilterStore : NoOpEventFilterStore(),
+                           snapshots: snapshots)
     }
 
     /// Explore's filter as last set, forgotten on a fresh start (`-reset-session`, decided and logged once by

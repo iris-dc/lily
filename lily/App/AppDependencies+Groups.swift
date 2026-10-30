@@ -124,6 +124,9 @@ struct GroupDependencies {
     let groupChanges = ChangeTracker()
     /// Counts tournament changes made anywhere, the realtime controller's included; every tournament list reloads on it.
     let tournamentChanges = ChangeTracker()
+    /// Where the lists keep their last answer for the first frame of the next launch. Carried with the group
+    /// collaborators, whose Mine is the one store reading it; the root and the tabs' lists read it from here.
+    let snapshots: any ListSnapshotStore
 
     var groupRepository: any GroupRepository { repositories.groups }
     var inviteRepository: any InviteRepository { repositories.invites }
@@ -134,17 +137,22 @@ struct GroupDependencies {
     var chatRepository: any ChatRepository { repositories.chat }
     var userRepository: any UserRepository { repositories.users }
 
+    /// `snapshots` is where Mine keeps its last answer for the first frame of the next launch; the identity must
+    /// already answer for the cached session, since the store reads the caller to pick the snapshot it starts from.
     init(repositories: GroupRepositories,
          identity: any IdentityProvider,
          tokenProvider: (any AuthTokenProvider)?,
          errorCenter: ErrorCenter,
-         logger: any Logging) {
+         logger: any Logging,
+         snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) {
         self.repositories = repositories
+        self.snapshots = snapshots
         let myGroups = MyGroupsStore(repository: repositories.groups,
                                      identity: identity,
                                      changes: groupChanges,
                                      errorCenter: errorCenter,
-                                     logger: logger)
+                                     logger: logger,
+                                     snapshots: snapshots)
         self.myGroups = myGroups
         let me = MeStore(repository: repositories.me, identity: identity, errorCenter: errorCenter, logger: logger)
         self.me = me
@@ -188,18 +196,22 @@ extension AppDependencies {
     var meRepository: any MeRepository { groups.meRepository }
     var moderationRepository: any ModerationRepository { groups.moderationRepository }
     var myGroups: MyGroupsStore { groups.myGroups }
+    /// Where the tabs' lists keep their last answer; see `AppDependencies+Shell.swift`.
+    var listSnapshots: any ListSnapshotStore { groups.snapshots }
     var me: MeStore { groups.me }
     var blocks: BlockListStore { groups.blocks }
     var groupChanges: ChangeTracker { groups.groupChanges }
 
-    func makeDiscoverGroupsViewModel() -> DiscoverGroupsViewModel {
+    /// Discover's own screen keeps no snapshot (the default); the carousel on Explore passes the app's store.
+    func makeDiscoverGroupsViewModel(snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) -> DiscoverGroupsViewModel {
         DiscoverGroupsViewModel(changes: groupChanges,
                                 repository: groupRepository,
                                 identity: identity,
                                 locationService: locationService,
                                 errorCenter: errorCenter,
                                 recorder: interactionRecorder,
-                                logger: logger)
+                                logger: logger,
+                                snapshots: snapshots)
     }
 
     func makeGroupDetailViewModel(for group: SportGroup, context: GroupDetailContext) -> GroupDetailViewModel {

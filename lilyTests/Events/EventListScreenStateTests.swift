@@ -2,17 +2,28 @@ import Testing
 @testable import lily
 
 struct EventListScreenStateTests {
-    @Test func theFirstLoadShowsTheSpinnerWhateverElseIsTrue() {
+    @Test func theFirstLoadOverNothingShowsTheSpinnerWhateverElseIsTrue() {
         for loadFailed in [false, true] {
-            for hasEvents in [false, true] {
-                for filteredOut in [false, true] {
-                    let state = EventListScreenState.resolve(isInitialLoad: true,
-                                                             loadFailed: loadFailed,
-                                                             hasEvents: hasEvents,
-                                                             isEverythingFilteredOut: filteredOut)
-                    #expect(state == .loading, "loadFailed \(loadFailed), hasEvents \(hasEvents), filteredOut \(filteredOut)")
-                }
-            }
+            let state = EventListScreenState.resolve(isInitialLoad: true,
+                                                     loadFailed: loadFailed,
+                                                     hasEvents: false,
+                                                     isEverythingFilteredOut: false)
+            #expect(state == .loading, "loadFailed \(loadFailed)")
+        }
+    }
+
+    /// The snapshot of the last answer shows through the first load, the filter judged as ever.
+    @Test func eventsHeldThroughTheFirstLoadShow() {
+        for loadFailed in [false, true] {
+            let list = EventListScreenState.resolve(isInitialLoad: true,
+                                                    loadFailed: loadFailed,
+                                                    hasEvents: true,
+                                                    isEverythingFilteredOut: false)
+            let filtered = EventListScreenState.resolve(isInitialLoad: true,
+                                                        loadFailed: loadFailed,
+                                                        hasEvents: true,
+                                                        isEverythingFilteredOut: true)
+            #expect(list == .list && filtered == .filteredOut, "loadFailed \(loadFailed)")
         }
     }
 

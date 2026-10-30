@@ -5,7 +5,11 @@ import Observation
 /// presentation switch and the statistics they produce live in `EventListViewModel+Filter.swift`.
 @Observable
 final class EventListViewModel {
-    private(set) var events: [SportEvent] = []
+    /// Starts from the snapshot the list left, and every change is kept as the next one, under the caller it shows to.
+    /// No default value: with one, the seeding in `init` would count as a change and write the snapshot back.
+    private(set) var events: [SportEvent] {
+        didSet { snapshots.save(events, for: snapshotKey) }
+    }
     /// Narrows `events` to `visibleEvents` on device; the map and the list read the same slice.
     private(set) var filter: EventFilter
     private(set) var isLoading = false
@@ -28,6 +32,8 @@ final class EventListViewModel {
     private let errorCenter: ErrorCenter
     /// Where every filter change is kept for the next launch; a no-op for the lists that start from `.everything`.
     private let filterStore: any EventFilterStore
+    /// Where the list's last answer is kept for the first frame of the next launch; a no-op for a list that is no tab's.
+    private let snapshots: any ListSnapshotStore
     /// TTL, the change counter, caller and (on Explore) position the content reflects, and the cooldown after a failed
     /// load.
     private var freshness = ContentFreshness.standard
@@ -43,7 +49,8 @@ final class EventListViewModel {
          now: @escaping () -> Date = { .now },
          currencyCode: @escaping () -> String,
          initialFilter: EventFilter = EventFilter(),
-         filterStore: any EventFilterStore = NoOpEventFilterStore()) {
+         filterStore: any EventFilterStore = NoOpEventFilterStore(),
+         snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) {
         self.filter = initialFilter
         self.currencyCode = currencyCode
         self.scope = scope
@@ -53,9 +60,18 @@ final class EventListViewModel {
         self.changes = changes
         self.errorCenter = errorCenter
         self.filterStore = filterStore
+        self.snapshots = snapshots
         self.recorder = recorder
         self.logger = logger
         self.now = now
+        // The snapshot is a hint for the first frame, not an answer: `freshness` still says "never loaded".
+        let key = ListSnapshotKey(list: scope.snapshotList, userID: identity.currentUserID)
+        events = snapshots.load([SportEvent].self, for: key) ?? []
+    }
+
+    /// The snapshot is one caller's answer (`isJoined`, Home's own games), so it is kept under the caller it shows to.
+    private var snapshotKey: ListSnapshotKey {
+        ListSnapshotKey(list: scope.snapshotList, userID: identity.currentUserID)
     }
 
     /// The very first load, before any result exists. Later loads keep the current content (and its refresh spinner) on screen.
@@ -125,16 +141,18 @@ final class EventListViewModel {
     /// one it lists but did not hold yet (a join made from a group's segment on the Home stack reaches Home's games at
     /// once). Every other list reloads on its next appearance; this one already shows the change.
     func replace(_ event: SportEvent) {
-        if let index = events.firstIndex(where: { $0.id == event.id }) {
+        var next = events
+        if let index = next.firstIndex(where: { $0.id == event.id }) {
             if scope == .upcoming {
-                events[index] = event
+                next[index] = event
             } else {
-                events.remove(at: index)
-                if listsByStart(event) { insertByStart(event) }
+                next.remove(at: index)
+                if listsByStart(event) { Self.insertByStart(event, into: &next) }
             }
         } else if listsByStart(event) {
-            insertByStart(event)
+            Self.insertByStart(event, into: &next)
         }
+        events = next
         recordOwnChange("Event \(event.id) replaced in scope \(scope)")
     }
 
@@ -155,9 +173,15 @@ final class EventListViewModel {
         case .upcoming:
             break
         case .joined, .group:
-            if listsByStart(event) { insertByStart(event) }
+            if listsByStart(event) { Self.insertByStart(event, into: &events) }
         }
         recordOwnChange("Event \(event.id) added to scope \(scope)")
+    }
+
+    /// The session ended: the next caller starts from nothing, and the first load is theirs (`ShellLists` calls it).
+    func clear() {
+        events = []
+        freshness.reset()
     }
 
     /// Whether a list in start order lists `event`, held or not: Home the caller's own games, a group's Events that
@@ -171,7 +195,8 @@ final class EventListViewModel {
         }
     }
 
-    private func insertByStart(_ event: SportEvent) {
+    /// Into a local copy where a change has more than one step, so the list (and its snapshot) is written once.
+    private static func insertByStart(_ event: SportEvent, into events: inout [SportEvent]) {
         events.insert(event, at: events.firstIndex { $0.startsAt > event.startsAt } ?? events.endIndex)
     }
 
@@ -210,12 +235,19 @@ final class EventListViewModel {
     }
 
     /// One request and its bookkeeping; answers whether it succeeded. Version and caller are taken before the request:
-    /// a change or a sign-in landing mid-flight may be missing from the answer, and must reload.
+    /// a change or a sign-in landing mid-flight may be missing from the answer, and must reload. A signed-in caller's
+    /// answer is theirs alone: one landing after they signed out is dropped, since the list outlives the session and
+    /// would keep it as the next caller's snapshot; a guest's answer is anyone's, so it is shown and reloaded by caller.
     private func performLoad(near position: Coordinate?) async -> Bool {
         let version = changes.version
         let userID = identity.currentUserID
         do {
-            events = try await repository.events(in: scope, near: position)
+            let loaded = try await repository.events(in: scope, near: position)
+            guard userID == nil || identity.currentUserID == userID else {
+                logger.debug(.cache, "Events for scope \(scope) answered for a caller who signed out; dropped")
+                return false
+            }
+            events = loaded
             freshness.recordSuccess(at: now(), version: version, userID: userID, position: position)
             logger.info(.events, "Loaded \(events.count) events for scope \(scope); with position: \(position != nil)")
             return true

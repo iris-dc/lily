@@ -4,23 +4,20 @@ import SwiftUI
 /// cards. Creating lives under the "+" on Explore, chats on the Chats tab. A guest is asked to sign in instead, and
 /// nothing is requested for them; the loads run again for whoever signs in from here.
 struct HomeView: View {
-    private let dependencies: AppDependencies
-    @State private var events: EventListViewModel
-    @State private var tournaments: TournamentListViewModel
+    let dependencies: AppDependencies
 
     private typealias Copy = AppBranding.Home
+
+    /// Home's lists, owned by `ShellLists` for the app's lifetime: the first frame shows the last run's snapshot while
+    /// the loads below run.
+    private var events: EventListViewModel { dependencies.lists.homeEvents }
+    private var tournaments: TournamentListViewModel { dependencies.lists.homeTournaments }
 
     /// What one run of the loads is for; a new caller or a game changed elsewhere starts another.
     private struct LoadKey: Hashable {
         let userID: String?
         let eventsVersion: Int
         let tournamentsVersion: Int
-    }
-
-    init(dependencies: AppDependencies) {
-        self.dependencies = dependencies
-        _events = State(initialValue: dependencies.makeEventListViewModel(scope: .joined))
-        _tournaments = State(initialValue: dependencies.makeTournamentListViewModel(scope: .mine))
     }
 
     private var content: HomeContent { HomeContent(for: dependencies.sessionController.state) }

@@ -120,8 +120,8 @@ undo your own edit in a dirty tree: it drops the user's uncommitted work on that
   file is a `nonisolated extension` (see Conventions).
 - `lily/Core/`: `Networking` (`APIClient`, `APIRequest`, `URLSessionAPIClient`, `send(_:failingWith:)`,
   `WriteGate`, `CreateFlow`, `LostRace`), `Auth`, `Realtime`, `Navigation` (`AppNavigation`, the tab paths),
-  `Changes` (`ContentFreshness`, `StoreLoader`, `ChangeTracker`), `Concurrency` (`SingleFlight`, `Deadline`,
-  `SlotGate`, `DetachedWork`, `Sleep`), `Localization` (`localized(_:)`, `AppLocale`, `LanguageStore`), `Currency`,
+  `Changes` (`ContentFreshness`, `StoreLoader`, `ChangeTracker`, `ListSnapshotStore`), `Concurrency` (`SingleFlight`,
+  `Deadline`, `SlotGate`, `DetachedWork`, `Sleep`), `Localization` (`localized(_:)`, `AppLocale`, `LanguageStore`), `Currency`,
   `Preferences`, `Location`, `Statistics`, `Push`, `Errors` (`AppError`, `ErrorCenter`, `ErrorMessageMapper` + its
   per-area files), `Logging`, `Validation` (`CredentialsValidator`, `String.wireLength`, `Collection.first(of:)`),
   `System` (`Calendar.nextFullHour`, `FileManager.removeItemIfPresent`), `Foundation` (`String.trimmed` and
@@ -142,6 +142,9 @@ with Cognito once per process and settles a disagreement (a pool without a sessi
 sign-out, a pool session the cache missed signs in, an unreachable pool keeps the cache and the backend's 401 decides).
 `ShellSync.run`, Home's and Chats' loads join that check first, so nothing loads for a user the pool has not confirmed;
 the start tab is picked from the cached state in `AppDependencies.init`. `ErrorCenter` is the one funnel for errors.
+`ShellLists` (`AppDependencies.lists`) owns the Home and Explore list view models for the app's lifetime: each starts
+from the last answer kept on disk for the caller (`ListSnapshotStore`, a hint shown on the first frame while the load
+runs, cleared with the session), and `ShellSync.run` loads Explore's right after launch, so a tab never opens empty.
 `EventListViewModel` owns a list (scopes `upcoming`, `joined`, `group`) and reloads on `ContentFreshness` rules and
 `ChangeTracker` bumps; `EventDetailViewModel` owns the event on screen and the join/leave rules (`Participation`).
 `MyGroupsStore` is the one source of the caller's groups (rooms and conversations are groups of kind `tournament` and

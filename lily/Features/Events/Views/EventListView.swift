@@ -8,12 +8,13 @@ import SwiftUI
 struct EventListView<Header: View>: View {
     /// Heading over the cards, for a screen whose header (the groups carousel) would otherwise make them read as its.
     let listTitle: String?
+    /// The upcoming list, owned by `ShellLists` for the app's lifetime, so it holds content before this screen exists.
+    let viewModel: EventListViewModel
     let dependencies: AppDependencies
     let header: () -> Header
     /// Pull-to-refresh reloads the header's content too (the carousel), before the events.
     let refreshHeader: () async -> Void
     @State var presentation: EventsPresentation = .list
-    @State var viewModel: EventListViewModel
     @State var presentedSheet: ExploreSheet?
     /// The header's measured height: a spinner or empty state is centred in what the screen leaves under it.
     @State var headerHeight: CGFloat = 0
@@ -25,14 +26,15 @@ struct EventListView<Header: View>: View {
     var showsMapAlone: Bool { layout == .switchable && presentation == .map }
 
     init(listTitle: String?,
+         viewModel: EventListViewModel,
          dependencies: AppDependencies,
          refreshHeader: @escaping () async -> Void,
          @ViewBuilder header: @escaping () -> Header) {
         self.listTitle = listTitle
+        self.viewModel = viewModel
         self.dependencies = dependencies
         self.header = header
         self.refreshHeader = refreshHeader
-        _viewModel = State(initialValue: dependencies.makeEventListViewModel(scope: .upcoming))
     }
 
     var body: some View {

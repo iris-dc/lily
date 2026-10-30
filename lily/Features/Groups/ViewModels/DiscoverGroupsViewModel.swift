@@ -47,6 +47,9 @@ final class DiscoverGroupsViewModel {
     let logger: any Logging
     let sleep: Sleep
     let now: () -> Date
+    /// Where a plain browse's first page is kept for the first frame of the next launch (the carousel on Explore); a
+    /// no-op for Discover's own screen, which is built when it opens.
+    private let snapshots: any ListSnapshotStore
 
     init(changes: ChangeTracker,
          repository: any GroupRepository,
@@ -56,7 +59,8 @@ final class DiscoverGroupsViewModel {
          recorder: any InteractionRecorder,
          logger: any Logging,
          sleep: @escaping Sleep = systemSleep,
-         now: @escaping () -> Date = { .now }) {
+         now: @escaping () -> Date = { .now },
+         snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) {
         self.changes = changes
         self.repository = repository
         self.identity = identity
@@ -66,7 +70,18 @@ final class DiscoverGroupsViewModel {
         self.logger = logger
         self.sleep = sleep
         self.now = now
+        self.snapshots = snapshots
+        // A hint for the first frame, not an answer: `hasSearched` stays false, so the first appearance searches.
+        groups = snapshots.load([SportGroup].self, for: Self.snapshotKey(for: identity.currentUserID)) ?? []
     }
+
+    /// "Joined" on a card is one caller's answer, so the snapshot is kept under the caller it shows to.
+    private static func snapshotKey(for userID: String?) -> ListSnapshotKey {
+        ListSnapshotKey(list: AppConfig.Lists.discoverGroupsSnapshot, userID: userID)
+    }
+
+    /// A browse with nothing typed and no type chosen: the page the carousel shows, and the one worth a snapshot.
+    private var isPlainBrowse: Bool { effectiveQuery == nil && typeFilter == nil }
 
     /// True until the first answer, so the empty state waits for it.
     var isInitialLoad: Bool { isLoading && !hasSearched }
@@ -99,9 +114,25 @@ final class DiscoverGroupsViewModel {
     }
 
     /// Searches once per caller, again after a group changed anywhere or the position moved, and otherwise only on a
-    /// new search or a refresh.
+    /// new search or a refresh. A search already out is left to answer (it re-checks the position itself; a caller
+    /// change leaves its page stale for the next appearance), so the tab opening during the launch's warm-up does not
+    /// spend a second request and drop the first.
     func loadIfStale() async {
-        if isStale { await search() }
+        if isStale, !isLoading { await search() }
+    }
+
+    /// The session ended: the next caller starts from nothing and a search still out is dropped when it answers
+    /// (`ShellLists` calls it).
+    func clear() {
+        cancel()
+        searchGeneration += 1
+        isLoading = false
+        groups = []
+        nextCursor = nil
+        hasSearched = false
+        searchedUserID = nil
+        searchedChangesVersion = nil
+        searchedPosition = nil
     }
 
     /// Asks for the position on every appearance (the cache answers within its TTL). A browse answered for another
@@ -150,7 +181,9 @@ final class DiscoverGroupsViewModel {
 
     /// One request and its bookkeeping; answers whether this generation's page was taken. The caller and the
     /// group-changes version stamped on the page are read before the request, so a `group_updated`, a join or a sign-in
-    /// landing while the page was out leaves it stale and the next appearance searches again.
+    /// landing while the page was out leaves it stale and the next appearance searches again; a sign-out meanwhile went
+    /// through `clear()`, whose generation this page no longer matches, and the snapshot is written under the caller
+    /// the page was fetched for.
     private func performSearch(near position: Coordinate?, generation: Int) async -> Bool {
         let userID = identity.currentUserID
         let version = changes.version
@@ -163,6 +196,7 @@ final class DiscoverGroupsViewModel {
             searchedUserID = userID
             searchedChangesVersion = version
             searchedPosition = position
+            if isPlainBrowse { snapshots.save(groups, for: Self.snapshotKey(for: userID)) }
             recordSearch(resultCount: page.items.count)
             return true
         } catch {

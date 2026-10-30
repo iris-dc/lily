@@ -12,15 +12,9 @@ struct ShellSyncTests {
 
     init() {
         let tokens = FakeAuthTokenProvider(token: JWTFixtures.token(expiringAt: Date(timeIntervalSince1970: 1_800_003_600)))
-        realtime = RealtimeHarness(tokens: tokens)
-        sync = ShellSync(session: session.controller,
-                         navigation: push.navigation,
-                         me: realtime.me,
-                         realtime: realtime.controller,
-                         myGroups: realtime.store,
-                         inbox: realtime.inbox,
-                         blocks: realtime.blocks,
-                         push: push.coordinator)
+        let realtime = RealtimeHarness(tokens: tokens)
+        self.realtime = realtime
+        sync = ShellSync.make(session: session.controller, navigation: push.navigation, realtime: realtime, push: push)
     }
 
     /// Nothing loads for a user the pool has not confirmed: a run joins the restore's check and starts after it.
@@ -49,6 +43,7 @@ struct ShellSyncTests {
 
         #expect(realtime.meRepository.meCallCount == 0)
         #expect(realtime.transport.connectCount == 0)
+        #expect(realtime.events.requestedScopes.isEmpty)
     }
 
     /// The tab was picked from the cache when the root was built; the restore moves it only when the check changed the
@@ -85,7 +80,8 @@ struct ShellSyncTests {
         let run = startActiveRun()
         await settle(until: { realtime.meRepository.meCallCount == 1 && realtime.transport.isConnecting })
 
-        #expect(realtime.groups.requestedScopes.isEmpty)
+        // Explore's Discover browse runs alongside the chain; Mine is the one that waits.
+        #expect(!realtime.groups.requestedScopes.contains(.mine))
 
         realtime.transport.releaseConnects()
         await run.value
@@ -189,17 +185,9 @@ struct ShellSyncTests {
     }
 
     private func makeSync(session: SessionController, navigation: AppNavigation) -> ShellSync {
-        ShellSync(session: session,
-                  navigation: navigation,
-                  me: realtime.me,
-                  realtime: realtime.controller,
-                  myGroups: realtime.store,
-                  inbox: realtime.inbox,
-                  blocks: realtime.blocks,
-                  push: push.coordinator)
+        ShellSync.make(session: session, navigation: navigation, realtime: realtime, push: push)
     }
 
-    /// An active run for the test user, in a task of its own so the test can act while a request is held.
     private func startActiveRun() -> Task<Void, Never> {
         let sync = sync
         return Task { await sync.run(active: true, user: TestFixtures.user) }
@@ -212,7 +200,9 @@ struct ShellSyncTests {
                       inboxPages: realtime.inboxRepository.pageRequests.count,
                       blockLists: realtime.moderation.blocksRequestCount,
                       permissionAsks: push.registrar.requestCount,
-                      registrations: push.devices.registrations.count)
+                      registrations: push.devices.registrations.count,
+                      events: realtime.events.requestedScopes.count,
+                      tournaments: realtime.tournaments.requestedScopes.count)
     }
 
     private struct RequestCounts: Equatable {
@@ -222,5 +212,7 @@ struct ShellSyncTests {
         let blockLists: Int
         let permissionAsks: Int
         let registrations: Int
+        let events: Int
+        let tournaments: Int
     }
 }

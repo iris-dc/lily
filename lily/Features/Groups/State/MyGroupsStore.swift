@@ -8,10 +8,14 @@ import Observation
 /// already has.
 @Observable
 final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
-    /// Most recently active first, as the backend orders Mine.
-    private(set) var groups: [SportGroup] = []
+    /// Most recently active first, as the backend orders Mine. Starts from the snapshot the last run left for the
+    /// caller, and every change is kept as the next one (Home, Chats and the event form draw it on their first frame).
+    /// No default value: with one, the seeding in `init` would count as a change and write the snapshot back.
+    private(set) var groups: [SportGroup] {
+        didSet { saveSnapshot() }
+    }
     /// Counts the loads that answered. The unread set follows this, not `groups`: a local `add` or `replace` carries
-    /// membership flags read before the rooms were, and would bring a read room's dot back.
+    /// membership flags read before the rooms were, and would bring a read room's dot back; a snapshot is no load either.
     private(set) var loadVersion = 0
     private let loader: StoreLoader
 
@@ -21,17 +25,20 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
     /// The group-changes version as of now, for screens that decide staleness against it (Discover behind the carousel).
     var changesVersion: Int { changes.version }
     private let logger: any Logging
+    private let snapshots: any ListSnapshotStore
 
     init(repository: any GroupRepository,
          identity: any IdentityProvider,
          changes: ChangeTracker,
          errorCenter: ErrorCenter,
          logger: any Logging,
-         now: @escaping () -> Date = { .now }) {
+         now: @escaping () -> Date = { .now },
+         snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) {
         self.repository = repository
         self.identity = identity
         self.changes = changes
         self.logger = logger
+        self.snapshots = snapshots
         loader = StoreLoader(noun: "groups",
                              category: .groups,
                              identity: identity,
@@ -39,6 +46,19 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
                              logger: logger,
                              now: now,
                              version: { changes.version })
+        // A hint for the first frame, not a load: the loader still says "never loaded" and `loadVersion` stays.
+        groups = snapshots.load([SportGroup].self, for: Self.snapshotKey(for: identity.currentUserID)) ?? []
+    }
+
+    /// Mine is the caller's, so the snapshot is kept under the caller it shows to; a guest has none, so the clearing
+    /// of a signed-out run writes nothing.
+    private func saveSnapshot() {
+        guard let userID = identity.currentUserID else { return }
+        snapshots.save(groups, for: Self.snapshotKey(for: userID))
+    }
+
+    private static func snapshotKey(for userID: String?) -> ListSnapshotKey {
+        ListSnapshotKey(list: AppConfig.Lists.mineGroupsSnapshot, userID: userID)
     }
 
     /// True from a failed load until the next successful one.
@@ -91,13 +111,13 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
     /// request went out: it keeps that message and its place; `loadVersion` tells the unread set a load, not a local
     /// change, did it.
     private func applyMine(_ loaded: [SportGroup]) {
-        let held = groups
-        groups = loaded
-        for stored in held {
-            guard let index = groups.firstIndex(where: { $0.id == stored.id }) else { continue }
-            let kept = groups[index].keepingLaterLastMessage(of: stored)
-            if kept != groups[index] { move(kept, from: index) }
+        var next = loaded
+        for stored in groups {
+            guard let index = next.firstIndex(where: { $0.id == stored.id }) else { continue }
+            let kept = next[index].keepingLaterLastMessage(of: stored)
+            if kept != next[index] { Self.move(kept, from: index, in: &next) }
         }
+        groups = next
         loadVersion += 1
         logger.info(.groups, "Loaded \(groups.count) groups")
     }
@@ -106,8 +126,10 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
     /// backend's Mine index is eventually consistent, so a reload right after a join might still miss it; this is what
     /// shows it at once.
     func add(_ group: SportGroup) {
-        groups.removeAll { $0.id == group.id }
-        groups.insert(group, at: groups.firstIndex { SportGroup.mineOrder(group, $0) } ?? groups.endIndex)
+        var next = groups
+        next.removeAll { $0.id == group.id }
+        next.insert(group, at: next.firstIndex { SportGroup.mineOrder(group, $0) } ?? next.endIndex)
+        groups = next
         recordChange("Group \(group.id) added to Mine")
     }
 
@@ -138,12 +160,15 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
     func noteMessage(_ message: ChatMessage, in groupID: String) {
         guard let index = groups.firstIndex(where: { $0.id == groupID }),
               let moved = groups[index].noting(message) else { return }
-        move(moved, from: index)
+        var next = groups
+        Self.move(moved, from: index, in: &next)
+        groups = next
         logger.debug(.groups, "Group \(groupID) moved by message \(message.id)")
     }
 
-    /// Puts the group at `index` back where Mine's order puts its new copy.
-    private func move(_ group: SportGroup, from index: Int) {
+    /// Puts the group at `index` back where Mine's order puts its new copy. On a local copy, so `groups` (and its
+    /// snapshot) is written once per change, a message burst included.
+    private static func move(_ group: SportGroup, from index: Int, in groups: inout [SportGroup]) {
         groups.remove(at: index)
         groups.insert(group, at: groups.firstIndex { SportGroup.mineOrder(group, $0) } ?? groups.endIndex)
     }

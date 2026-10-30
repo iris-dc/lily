@@ -152,8 +152,8 @@ struct HomeOverview: View {
     NavigationStack {
         ContentScreen {
             HomeOverview(groups: dependencies.myGroups,
-                         events: dependencies.makeEventListViewModel(scope: .joined),
-                         tournaments: dependencies.makeTournamentListViewModel(scope: .mine),
+                         events: dependencies.lists.homeEvents,
+                         tournaments: dependencies.lists.homeTournaments,
                          dependencies: dependencies)
         }
     }

@@ -196,6 +196,15 @@ nonisolated enum TournamentScope: Hashable, Sendable {
         case .group: nil
         }
     }
+
+    /// The list's name in its snapshot's file (`ListSnapshotKey`).
+    var snapshotList: String {
+        switch self {
+        case .upcoming: AppConfig.Lists.upcomingTournamentsSnapshot
+        case .mine: AppConfig.Lists.mineTournamentsSnapshot
+        case .group(let id): AppConfig.Lists.groupTournamentsSnapshot(id)
+        }
+    }
 }
 
 /// A tournament's detail, pushed from a card, a tile, a chat's info button or a room row. An opener that holds the

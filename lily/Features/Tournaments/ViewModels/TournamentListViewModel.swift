@@ -6,7 +6,11 @@ import Observation
 @Observable
 final class TournamentListViewModel {
     let scope: TournamentScope
-    private(set) var tournaments: [Tournament] = []
+    /// Starts from the snapshot the list left, and every change is kept as the next one, under the caller it shows to.
+    /// No default value: with one, the seeding in `init` would count as a change and write the snapshot back.
+    private(set) var tournaments: [Tournament] {
+        didSet { snapshots.save(tournaments, for: snapshotKey) }
+    }
     private(set) var isLoading = false
     private(set) var userLocation: Coordinate?
     /// Discover's one criterion, applied on device; `nil` is any type.
@@ -22,6 +26,8 @@ final class TournamentListViewModel {
     private let errorCenter: ErrorCenter
     private let logger: any Logging
     private let now: () -> Date
+    /// Where the list's last answer is kept for the first frame of the next launch; a no-op for a list that is no tab's.
+    private let snapshots: any ListSnapshotStore
     private var freshness = ContentFreshness.standard
 
     init(scope: TournamentScope,
@@ -31,7 +37,8 @@ final class TournamentListViewModel {
          changes: ChangeTracker,
          errorCenter: ErrorCenter,
          logger: any Logging,
-         now: @escaping () -> Date = { .now }) {
+         now: @escaping () -> Date = { .now },
+         snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) {
         self.scope = scope
         self.repository = repository
         self.identity = identity
@@ -40,6 +47,15 @@ final class TournamentListViewModel {
         self.errorCenter = errorCenter
         self.logger = logger
         self.now = now
+        self.snapshots = snapshots
+        // The snapshot is a hint for the first frame, not an answer: `freshness` still says "never loaded".
+        let key = ListSnapshotKey(list: scope.snapshotList, userID: identity.currentUserID)
+        tournaments = snapshots.load([Tournament].self, for: key) ?? []
+    }
+
+    /// The snapshot is one caller's answer (Home's own tournaments), so it is kept under the caller it shows to.
+    private var snapshotKey: ListSnapshotKey {
+        ListSnapshotKey(list: scope.snapshotList, userID: identity.currentUserID)
     }
 
     /// True until the first answer, success or failure, so a screen shows its spinner through a location wait and never
@@ -64,7 +80,7 @@ final class TournamentListViewModel {
     func loadIfStale() async {
         if scope == .mine, identity.currentUserID == nil {
             // An empty answer, not a reset: a guest's Mine is no initial load, and a sign-in makes it stale by caller.
-            tournaments = []
+            if !tournaments.isEmpty { tournaments = [] }
             freshness.recordSuccess(at: now(), version: changes.version, userID: nil)
             return
         }
@@ -106,12 +122,19 @@ final class TournamentListViewModel {
     }
 
     /// One request and its bookkeeping; answers whether it succeeded. Version and caller are taken before the request:
-    /// a change or a sign-in landing mid-flight may be missing from the answer, and must reload.
+    /// a change or a sign-in landing mid-flight may be missing from the answer, and must reload. A signed-in caller's
+    /// answer is theirs alone: one landing after they signed out is dropped, since the list outlives the session and
+    /// would keep it as the next caller's snapshot; a guest's answer is anyone's, so it is shown and reloaded by caller.
     private func performLoad(near position: Coordinate?) async -> Bool {
         let version = changes.version
         let userID = identity.currentUserID
         do {
-            tournaments = try await repository.tournaments(in: scope, near: position)
+            let loaded = try await repository.tournaments(in: scope, near: position)
+            guard userID == nil || identity.currentUserID == userID else {
+                logger.debug(.cache, "Tournaments for scope \(scope) answered for a caller who signed out; dropped")
+                return false
+            }
+            tournaments = loaded
             freshness.recordSuccess(at: now(), version: version, userID: userID, position: position)
             logger.info(.tournaments,
                         "Loaded \(tournaments.count) tournaments for scope \(scope); with position: \(position != nil)")
@@ -167,6 +190,12 @@ final class TournamentListViewModel {
         guard !tournaments.contains(where: { $0.id == tournament.id }) else { return }
         if belongs(tournament) { insertByStart(tournament) }
         recordOwnChange("Tournament \(tournament.id) added to scope \(scope)")
+    }
+
+    /// The session ended: the next caller starts from nothing, and the first load is theirs (`ShellLists` calls it).
+    func clear() {
+        tournaments = []
+        freshness.reset()
     }
 
     /// Road distance from the user to a tournament, formatted; `nil` while the position is unknown.

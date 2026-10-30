@@ -3,12 +3,16 @@ import Testing
 
 /// What a list segment shows, decided from the three facts a list view model knows.
 struct ListStateTests {
-    /// Whatever the list holds or a load did, the first load's spinner comes first.
-    @Test func loadingWhileTheFirstLoadRuns() {
+    /// With nothing held, the first load's spinner comes first, whatever a load did.
+    @Test func loadingWhileTheFirstLoadRunsOverNothing() {
         #expect(ListState(isInitialLoad: true, isEmpty: true, loadFailed: false) == .loading)
-        #expect(ListState(isInitialLoad: true, isEmpty: false, loadFailed: false) == .loading)
         #expect(ListState(isInitialLoad: true, isEmpty: true, loadFailed: true) == .loading)
-        #expect(ListState(isInitialLoad: true, isEmpty: false, loadFailed: true) == .loading)
+    }
+
+    /// The snapshot of the last answer is content on the first frame, through the first load.
+    @Test func contentHeldThroughTheFirstLoadShows() {
+        #expect(ListState(isInitialLoad: true, isEmpty: false, loadFailed: false) == .content)
+        #expect(ListState(isInitialLoad: true, isEmpty: false, loadFailed: true) == .content)
     }
 
     @Test func emptyOnceAnAnswerHadNothing() {

@@ -34,6 +34,9 @@ final class AppDependencies {
     /// Shell-wide navigation, read by every feature; a session observer, so the next user never lands on the previous
     /// one's screens.
     let navigation = AppNavigation()
+    /// The Home and Explore lists, kept for the app's lifetime (`ShellLists`); lazy because the factories read the
+    /// stores above, built at the end of `init`, where it registers as a session observer.
+    private(set) lazy var lists: ShellLists = makeShellLists()
 
     init(logger: any Logging,
          sessionStore: any SessionStore,
@@ -51,6 +54,7 @@ final class AppDependencies {
          language: LanguageStore? = nil,
          currency: CurrencyStore? = nil,
          eventFilterStore: any EventFilterStore = NoOpEventFilterStore(),
+         listSnapshots: any ListSnapshotStore = NoOpListSnapshotStore(),
          errorCenter: ErrorCenter? = nil,
          freezesAurora: Bool = false,
          defaults: UserDefaults = .standard) {
@@ -72,11 +76,20 @@ final class AppDependencies {
         self.feedbackRepository = feedbackRepository
         self.interactionRecorder = interactionRecorder
         self.locationService = locationService
+        self.sessionController = SessionController(authService: authService,
+                                                   sessionStore: sessionStore,
+                                                   profileRepository: profileRepository,
+                                                   errorCenter: errorCenter,
+                                                   logger: logger)
+        // The repositories were built around `identity` before the controller existed; close the loop before the
+        // stores are built, since they read the caller for the snapshot they start from.
+        identity.session = sessionController
         self.groups = GroupDependencies(repositories: groupRepositories,
                                         identity: identity,
                                         tokenProvider: tokenProvider,
                                         errorCenter: errorCenter,
-                                        logger: logger)
+                                        logger: logger,
+                                        snapshots: listSnapshots)
         self.push = PushDependencies(registrar: pushRegistrar,
                                      devices: deviceRepository,
                                      events: eventRepository,
@@ -87,17 +100,18 @@ final class AppDependencies {
                                      defaults: defaults,
                                      languageCode: { language.language.code },
                                      logger: logger)
-        self.sessionController = SessionController(authService: authService,
-                                                   sessionStore: sessionStore,
-                                                   profileRepository: profileRepository,
-                                                   errorCenter: errorCenter,
-                                                   logger: logger)
-        // The start tab follows the cached session, so the shell's first frame is already on it.
+        finishWiring(recorder: interactionRecorder)
+    }
+
+    /// The start tab follows the cached session, so the shell's first frame is already on it; then everything that
+    /// holds state for the signed-in user registers (`recorder` is the parameter's `SessionObserver` face, which the
+    /// stored property lacks). The recorder flushes before the session ends, the rest clear after it; the snapshots
+    /// last, after the stores and the tabs' lists wrote their cleared lists.
+    private func finishWiring(recorder: any SessionObserver) {
         navigation.selectedTab = AppNavigation.startTab(for: sessionController.state)
-        // The repositories were built around `identity` before the controller existed; close the loop. The recorder
-        // flushes before the session ends, the rest clear after it.
-        identity.session = sessionController
-        (groups.sessionObservers + [navigation, push.coordinator, interactionRecorder]).forEach(sessionController.addObserver)
+        let observers: [any SessionObserver] = groups.sessionObservers
+            + [navigation, push.coordinator, recorder, lists, listSnapshots]
+        observers.forEach(sessionController.addObserver)
     }
 
     /// Production wiring: Cognito through Amplify, whose access token the API client sends, unless a launch argument
@@ -111,7 +125,7 @@ final class AppDependencies {
         let logger = OSLogLogger()
         let startsFresh = arguments.contains(AppConfig.LaunchArguments.resetSession)
         if startsFresh {
-            logger.info(.auth, "Launch argument requested a fresh start: stored session, language, currency and filter cleared")
+            logger.info(.auth, "Launch argument requested a fresh start: stored session, choices, filter and snapshots cleared")
         }
         let language = makeLanguageStore(arguments: arguments,
                                          startsFresh: startsFresh,
@@ -125,6 +139,7 @@ final class AppDependencies {
                                             identity: identity,
                                             tokenProvider: auth.tokenProvider,
                                             logger: logger)
+        let snapshots = makeListSnapshotStore(arguments: arguments, startsFresh: startsFresh, logger: logger)
         return AppDependencies(logger: logger,
                                sessionStore: store,
                                authService: auth.service,
@@ -143,6 +158,7 @@ final class AppDependencies {
                                eventFilterStore: makeEventFilterStore(startsFresh: startsFresh,
                                                                       defaults: defaults,
                                                                       logger: logger),
+                               listSnapshots: snapshots,
                                errorCenter: makeErrorCenter(arguments: arguments, logger: logger),
                                freezesAurora: freezesAurora(arguments: arguments, logger: logger),
                                defaults: defaults)

@@ -142,7 +142,8 @@ func makeEventListViewModel(scope: EventScope = .upcoming,
                             now: @escaping () -> Date = { .now },
                             currencyCode: @escaping () -> String = { EventDraft.testCurrencyCode },
                             initialFilter: EventFilter = EventFilter(),
-                            filterStore: (any EventFilterStore)? = nil) -> EventListViewModel {
+                            filterStore: (any EventFilterStore)? = nil,
+                            snapshots: (any ListSnapshotStore)? = nil) -> EventListViewModel {
     EventListViewModel(scope: scope,
                        repository: repository,
                        identity: identity ?? FakeIdentityProvider(),
@@ -154,7 +155,8 @@ func makeEventListViewModel(scope: EventScope = .upcoming,
                        now: now,
                        currencyCode: currencyCode,
                        initialFilter: initialFilter,
-                       filterStore: filterStore ?? NoOpEventFilterStore())
+                       filterStore: filterStore ?? NoOpEventFilterStore(),
+                       snapshots: snapshots ?? NoOpListSnapshotStore())
 }
 
 /// A `UserDefaults` suite of its own, removed with its last reference: tests that build the composition root never
@@ -250,5 +252,40 @@ final class ManualClock {
 
     func advance(by duration: Duration) {
         now = now.advanced(by: duration)
+    }
+}
+
+/// Snapshots in memory, through the backend's coding like the file store, so a round trip is the real one; `seed`
+/// leaves a snapshot as a previous run would have, and every save and clear is counted.
+final class InMemoryListSnapshotStore: ListSnapshotStore {
+    private var files: [String: Data] = [:]
+    private(set) var saveCount = 0
+    private(set) var clearCount = 0
+    private let encoder = APIJSONCoding.makeEncoder()
+    private let decoder = APIJSONCoding.makeDecoder()
+
+    /// The file names held, as the file store would name them.
+    var storedFiles: Set<String> { Set(files.keys) }
+
+    func load<Value: Decodable>(_ type: Value.Type, for key: ListSnapshotKey) -> Value? {
+        files[key.fileName].flatMap { try? decoder.decode(Value.self, from: $0) }
+    }
+
+    func save<Value: Encodable>(_ value: Value, for key: ListSnapshotKey) {
+        seed(value, for: key)
+        saveCount += 1
+    }
+
+    func seed<Value: Encodable>(_ value: Value, for key: ListSnapshotKey) {
+        files[key.fileName] = try? encoder.encode(value)
+    }
+
+    func clear() {
+        files = [:]
+        clearCount += 1
+    }
+
+    func sessionDidEnd() {
+        clear()
     }
 }

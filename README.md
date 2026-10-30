@@ -44,8 +44,9 @@ build for trying the app on a phone).
 
 The app keeps no credentials of its own: Cognito signs people in, the backend validates the token and reads the user
 id from it. Guests can browse events without signing in. The app keeps what it has loaded in memory and asks the
-backend again only when it is stale or something changed, because the backend runs on a tight budget; pictures and
-files are cached on disk.
+backend again only when it is stale or something changed, because the backend runs on a tight budget; the tabs' lists
+also keep their last answer on disk, so a launch shows them at once and refreshes behind; pictures and files are
+cached on disk.
 
 ## Status
 

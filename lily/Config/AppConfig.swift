@@ -95,6 +95,21 @@ nonisolated enum AppConfig {
         /// A failed load is not retried by a reappearing tab before this has passed, so switching tabs while the
         /// backend is down neither hammers it nor repeats the popup; pull-to-refresh is not held back.
         static let retryAfterFailure: TimeInterval = 10
+        /// Where the tabs' lists keep their last answer under `Caches/`, one JSON file per list and caller, for the
+        /// first frame of the next launch (`ListSnapshotStore`).
+        static let snapshotDirectoryName = "ListSnapshots"
+        /// The caller part of a guest's snapshot file name.
+        static let guestSnapshotName = "guest"
+        /// The lists' names in their snapshot files; a scope reads its own through `snapshotList`.
+        static let upcomingEventsSnapshot = "events-upcoming"
+        static let joinedEventsSnapshot = "events-joined"
+        static let upcomingTournamentsSnapshot = "tournaments-upcoming"
+        static let mineTournamentsSnapshot = "tournaments-mine"
+        static let mineGroupsSnapshot = "groups-mine"
+        static let discoverGroupsSnapshot = "groups-discover"
+        /// A group's segments are built when the group opens and keep no snapshot; the name is for the key alone.
+        static func groupEventsSnapshot(_ groupID: String) -> String { "events-group-\(groupID)" }
+        static func groupTournamentsSnapshot(_ groupID: String) -> String { "tournaments-group-\(groupID)" }
     }
 
     enum Location {

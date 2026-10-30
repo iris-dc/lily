@@ -36,7 +36,10 @@ lily/
                  ContentFreshness (the shared staleness rules: TTL, change version, caller, coarse position, retry cooldown; .standard
                  over AppConfig.Lists), StoreLoader (the app-lifetime stores' load skeleton: SingleFlight keyed by user +
                  ContentFreshness, a version that moved mid-request loaded once more), ListState (loading / empty / failed / content,
-                 what a list segment draws)
+                 what a list segment draws; held content wins over the first load's spinner); Interfaces (ListSnapshotStore +
+                 ListSnapshotKey: a list's last answer kept per caller for the first frame of the next launch), Implementations
+                 (FileListSnapshotStore under Caches/ListSnapshots in the backend's JSON coding, NoOpListSnapshotStore for mock runs
+                 and the lists that are no tab's)
     Concurrency/ Sleep (the injectable pause timers and debounces wait on; systemSleep is Task.sleep), SingleFlight (one run of a
                  load at a time in a task of its own; callers made while it runs join it; the per-user stores' load), DetachedWork (work off the main
                  actor that dies with its caller: the media preparers' one hop), SlotGate (at most N at once, the rest in order, a
@@ -107,7 +110,9 @@ lily/
                  with Chats), GuestSignInPrompt, ExploreTab (Explore with the groups and tournaments carousels), ChatTab (the Chats stack);
                  Models (HomeOverviewState + HomeListSnapshot + HomeSectionState: Home's spinner / empty / sections rule while its three
                  loads run; CreateIntent, the keyboard shortcuts' request), Services (ShellSync: the restore that lands on the start tab
-                 and opens a pending notification tap, and the per-user run: account, realtime, Mine, inbox, block list, push, in order)
+                 and opens a pending notification tap, and the per-user run: account, realtime, Mine, inbox, block list, push, in order,
+                 with Explore's lists loading alongside; ShellLists: the Home and Explore list view models the root owns for the app's
+                 lifetime, each seeded from its snapshot)
     Events/      Models (SportEvent with optional Price and SkillLevel, EventType and SkillLevel (both keeping a wire value this build does
                  not know as unknown), EventFilter + PersistedEventFilter, DateWindow, Participation, MapFraming + PickerSettlePolicy (the
                  map's opening region; when a settle is the user's choice),
@@ -225,7 +230,7 @@ lily/
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ and Moderation/ included;
                  Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests and CreateFlowTests); Support/ holds fakes
-                 (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness,
+                 (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, ShellDoubles,
                  StatisticsDoubles, GroupDoubles (with FakeInviteRepository), GroupViewModelDoubles with the shared GroupHarness and the
                  TermsCountingReporter every harness uses, InboxDoubles, PeopleDoubles, LocationDoubles, PushDoubles, FeedbackDoubles,
                  AttachmentDoubles, CreateEventHarness, EventDetailHarness, FakeTournamentRepository (+ Matches), TournamentHarness), the

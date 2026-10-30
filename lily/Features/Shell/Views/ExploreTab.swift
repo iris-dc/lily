@@ -1,25 +1,17 @@
 import SwiftUI
 
 /// The Explore tab: the upcoming games as a list or a map, with the public groups to discover in a carousel above the
-/// list. The carousel's Discover view model lives here so it survives the list's own state changes; it searches once
-/// per caller and position and again after a group changed anywhere (a join, a leave, a create), and keeps a failure
-/// to itself because the list reports its own. Both carousels ask for the position on appearance: the backend orders
-/// what they show by distance, and the tiles show it.
+/// list. The list and the carousels draw the app-lifetime view models of `ShellLists`, which `ShellSync` loads right
+/// after launch, so the tab's first frame has content (the last run's snapshot at the least); the appearance tasks
+/// here keep them fresh: Discover searches again after a group changed anywhere (a join, a leave, a create), the
+/// tournaments reload on a tournament change, and both carousels ask for the position, since the backend orders what
+/// they show by distance and the tiles show it. The carousels keep a failure to themselves because the list reports
+/// its own.
 struct ExploreTab: View {
-    private let dependencies: AppDependencies
-    @State private var discover: DiscoverGroupsViewModel
-    /// The public tournaments open for entries, under the groups; it keeps a failure to itself like Discover does.
-    @State private var tournaments: TournamentListViewModel
+    let dependencies: AppDependencies
 
-    init(dependencies: AppDependencies) {
-        self.dependencies = dependencies
-        let discover = dependencies.makeDiscoverGroupsViewModel()
-        discover.reportsSearchFailures = false
-        _discover = State(initialValue: discover)
-        let tournaments = dependencies.makeTournamentListViewModel(scope: .upcoming)
-        tournaments.reportsFailures = false
-        _tournaments = State(initialValue: tournaments)
-    }
+    private var discover: DiscoverGroupsViewModel { dependencies.lists.discover }
+    private var tournaments: TournamentListViewModel { dependencies.lists.exploreTournaments }
 
     private var showsGroups: Bool { AppConfig.FeatureFlags.groups && !discover.groups.isEmpty }
     private var showsTournaments: Bool { AppConfig.FeatureFlags.tournaments && !tournaments.visibleTournaments.isEmpty }
@@ -41,6 +33,7 @@ struct ExploreTab: View {
 
     var body: some View {
         EventListView(listTitle: showsGroups || showsTournaments ? AppBranding.Events.eventsSection : nil,
+                      viewModel: dependencies.lists.exploreEvents,
                       dependencies: dependencies,
                       refreshHeader: refreshCarousels,
                       header: carousels)

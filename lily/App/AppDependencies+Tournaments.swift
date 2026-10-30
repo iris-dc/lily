@@ -7,14 +7,17 @@ extension AppDependencies {
     var tournamentRepository: any TournamentRepository { groups.repositories.tournaments }
     var tournamentChanges: ChangeTracker { groups.tournamentChanges }
 
-    func makeTournamentListViewModel(scope: TournamentScope) -> TournamentListViewModel {
+    /// A tab's list (`ShellLists`) passes the app's snapshot store; a group's segment keeps none (the default).
+    func makeTournamentListViewModel(scope: TournamentScope,
+                                     snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) -> TournamentListViewModel {
         TournamentListViewModel(scope: scope,
                                 repository: tournamentRepository,
                                 identity: identity,
                                 locationService: locationService,
                                 changes: tournamentChanges,
                                 errorCenter: errorCenter,
-                                logger: logger)
+                                logger: logger,
+                                snapshots: snapshots)
     }
 
     /// `onChange` receives the tournament as the backend answered it; the list behind the detail replaces its row.

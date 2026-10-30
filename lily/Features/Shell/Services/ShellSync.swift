@@ -11,6 +11,8 @@ import Foundation
 /// so nothing loads for a user the pool has not confirmed (the loads need the token that check obtains anyway). The
 /// start tab is picked from the cached session when the root is built; the restore moves it only when the check changed
 /// the state, and before it opens a pending notification tap, or the tab would overwrite the screen the tap opened.
+/// Explore's lists load alongside the chain for a guest or a signed-in user, so the tab holds a fresh answer before it
+/// is first opened; a signed-out visitor is on the landing and is asked for nothing.
 final class ShellSync {
     private let session: SessionController
     private let navigation: AppNavigation
@@ -20,6 +22,7 @@ final class ShellSync {
     private let inbox: InboxStore
     private let blocks: BlockListStore
     private let push: PushCoordinator
+    private let lists: ShellLists
 
     init(session: SessionController,
          navigation: AppNavigation,
@@ -28,7 +31,8 @@ final class ShellSync {
          myGroups: MyGroupsStore,
          inbox: InboxStore,
          blocks: BlockListStore,
-         push: PushCoordinator) {
+         push: PushCoordinator,
+         lists: ShellLists) {
         self.session = session
         self.navigation = navigation
         self.me = me
@@ -37,6 +41,7 @@ final class ShellSync {
         self.inbox = inbox
         self.blocks = blocks
         self.push = push
+        self.lists = lists
     }
 
     /// Verifies the cached session with the pool, moves the start tab when that changed the state, then opens a
@@ -51,10 +56,12 @@ final class ShellSync {
     }
 
     /// In the background only the connection is told to close. A guest needs no guard here: every store and coordinator
-    /// guards on the identity itself and clears when the session ends.
+    /// guards on the identity itself and clears when the session ends. A return before the end (a cancelled run)
+    /// cancels Explore's loads with it.
     func run(active: Bool, user: AuthUser?) async {
         await session.restore()
         guard !Task.isCancelled else { return }
+        async let explore: Void = loadExploreIfStale(active: active)
         if active { await me.loadIfNeeded() }
         guard !Task.isCancelled else { return }
         await realtime.setDesired(active: active, user: user)
@@ -68,5 +75,13 @@ final class ShellSync {
         // A signed-in user entering the app is asked for the permission once; a grant registers the device at once.
         await push.offerReminders()
         await push.sync()
+        await explore
+    }
+
+    /// Not on the landing: a signed-out visitor may never pass it, a sign-in reloads by caller anyway, and the position
+    /// the list asks for would put the permission alert over the intro. The state is read after the session check.
+    private func loadExploreIfStale(active: Bool) async {
+        guard active, session.state != .signedOut else { return }
+        await lists.loadExploreIfStale()
     }
 }

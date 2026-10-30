@@ -216,4 +216,13 @@ nonisolated enum EventScope: Hashable, Sendable {
         case .group: nil
         }
     }
+
+    /// The list's name in its snapshot's file (`ListSnapshotKey`).
+    var snapshotList: String {
+        switch self {
+        case .upcoming: AppConfig.Lists.upcomingEventsSnapshot
+        case .joined: AppConfig.Lists.joinedEventsSnapshot
+        case .group(let id): AppConfig.Lists.groupEventsSnapshot(id)
+        }
+    }
 }

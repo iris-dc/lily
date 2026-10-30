@@ -1,10 +1,11 @@
 import Foundation
 
-/// What Explore's list shows, resolved from the view model's flags in one place. A first load shows the spinner, never
-/// "nothing yet"; the failed state shows only while nothing is loaded, so a failed refresh keeps the list on screen (or
-/// the filtered-out state, which still offers "show everything").
+/// What Explore's list shows, resolved from the view model's flags in one place. The cards whenever the list holds
+/// any, the last answer kept on the device included while the first load is still out; a first load over nothing shows
+/// the spinner, never "nothing yet"; the failed state shows only while nothing is loaded, so a failed refresh keeps the
+/// list on screen (or the filtered-out state, which still offers "show everything").
 nonisolated enum EventListScreenState: Equatable, Sendable {
-    /// The first load is out: a spinner, never "nothing yet".
+    /// The first load is out and nothing is held: a spinner, never "nothing yet".
     case loading
     /// Nothing is loaded and the last load failed.
     case failed
@@ -19,8 +20,10 @@ nonisolated enum EventListScreenState: Equatable, Sendable {
                         loadFailed: Bool,
                         hasEvents: Bool,
                         isEverythingFilteredOut: Bool) -> EventListScreenState {
-        if isInitialLoad { return .loading }
-        guard hasEvents else { return loadFailed ? .failed : .empty }
+        guard hasEvents else {
+            if isInitialLoad { return .loading }
+            return loadFailed ? .failed : .empty
+        }
         return isEverythingFilteredOut ? .filteredOut : .list
     }
 }
