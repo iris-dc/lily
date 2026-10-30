@@ -18,6 +18,9 @@ final class AppNavigation: SessionObserver {
     var selectedConversation: ConversationSelection?
     /// A create asked for by a shortcut, waiting for Explore to present its sheet.
     var pendingCreate: CreateIntent?
+    /// Counts the sessions that ended. The root keys the shell on it, so a sign-out takes the shell away as it was
+    /// (the crossfade never shows its screens turning into a guest's) and a new one is built under the landing.
+    private(set) var shellGeneration = 0
 
     /// Shows the Home tab with `destination` pushed onto its stack.
     func openInHome(_ destination: some Hashable) {
@@ -94,7 +97,13 @@ final class AppNavigation: SessionObserver {
         }
     }
 
+    /// A restore that signed the user in lands on their start tab before the shell is revealed.
+    func sessionDidRestore() {
+        selectedTab = .home
+    }
+
     func sessionDidEnd() {
+        shellGeneration += 1
         selectedTab = .explore
         selectedConversation = nil
         pendingCreate = nil

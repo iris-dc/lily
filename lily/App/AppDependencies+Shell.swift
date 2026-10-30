@@ -5,7 +5,6 @@ extension AppDependencies {
     /// to the scene phase and the session.
     func makeShellSync() -> ShellSync {
         ShellSync(session: sessionController,
-                  navigation: navigation,
                   me: me,
                   realtime: realtime,
                   myGroups: myGroups,

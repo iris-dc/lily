@@ -6,8 +6,12 @@ import Foundation
 protocol SessionObserver: AnyObject {
     func sessionWillEnd() async
     func sessionDidEnd()
+    /// The launch's check against the pool signed a user in that the cache did not have (a reinstall over a keychain
+    /// that kept the tokens), told in the same turn as the state change, so nothing renders the state without it.
+    func sessionDidRestore()
 }
 
 extension SessionObserver {
     func sessionWillEnd() async {}
+    func sessionDidRestore() {}
 }

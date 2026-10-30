@@ -77,6 +77,7 @@ final class SessionController {
         case (let session?, _):
             logger.info(.auth, "Session restored for user \(session.user.id)")
             state = .signedIn(session.user)
+            observers.forEach { $0.observer?.sessionDidRestore() }
         case (nil, .signedIn(let user)):
             // The service signed the pool out where that was due; only the session on the device is left to end.
             logger.warning(.auth, "Cached session dropped: the pool has no session for user \(user.id)")

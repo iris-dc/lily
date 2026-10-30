@@ -15,7 +15,7 @@ struct ShellSyncExploreTests {
         let tokens = FakeAuthTokenProvider(token: JWTFixtures.token(expiringAt: Date(timeIntervalSince1970: 1_800_003_600)))
         let realtime = RealtimeHarness(tokens: tokens)
         self.realtime = realtime
-        sync = ShellSync.make(session: session.controller, navigation: push.navigation, realtime: realtime, push: push)
+        sync = ShellSync.make(session: session.controller, realtime: realtime, push: push)
     }
 
     /// After the session check like everything else, and alongside the chain rather than at its end.

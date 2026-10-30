@@ -123,6 +123,30 @@ struct AppNavigationTests {
         #expect(navigation.selectedConversation == nil && navigation.pendingCreate == nil)
     }
 
+    /// A restore that signed the user in lands on Home, their start tab, whatever showed before.
+    @Test func aRestoreThatSignsInLandsOnHome() {
+        let navigation = AppNavigation()
+
+        navigation.sessionDidRestore()
+
+        #expect(navigation.selectedTab == .home && navigation.shellGeneration == 0)
+    }
+
+    /// The root keys the shell on the generation: each sign-out builds a new one under the landing, and nothing else does
+    /// (a tab bar built while the shell is on screen slides in from the first tab and draws heavy glyphs).
+    @Test func onlyASignOutStartsANewShellGeneration() {
+        let navigation = AppNavigation()
+        navigation.open(group: .fixture(id: "a"))
+        navigation.requestCreate(.game)
+        navigation.selectedTab = .profile
+        #expect(navigation.shellGeneration == 0)
+
+        navigation.sessionDidEnd()
+        navigation.sessionDidEnd()
+
+        #expect(navigation.shellGeneration == 2)
+    }
+
     /// Through the composition root: a sign-out must reach the navigation like every other per-user state.
     @Test func signOutResetsTheShellThroughTheSessionController() async {
         let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.resetSession,

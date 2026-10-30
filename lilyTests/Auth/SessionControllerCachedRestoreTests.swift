@@ -71,6 +71,30 @@ struct SessionControllerCachedRestoreTests {
         #expect(harness.logger.messages(in: .auth, at: .info).contains { $0.contains("Session restored") })
     }
 
+    /// Observers hear of a restore that signed the user in the moment the state changes (the shell picks its tab before
+    /// it is revealed), and of nothing else the check settles.
+    @Test func aRestoreThatSignsInTellsTheObserversInTheSameTurn() async {
+        let harness = SessionHarness()
+        let observer = SpySessionObserver()
+        harness.controller.addObserver(observer)
+        var stateWhenTold: SessionState?
+        observer.onSessionRestore = { stateWhenTold = harness.controller.state }
+        harness.auth.restoreResult = .success(TestFixtures.session)
+
+        await harness.controller.restore()
+
+        #expect(observer.restoreCount == 1 && stateWhenTold == .signedIn(TestFixtures.user))
+
+        let verified = SessionHarness()
+        verified.store.stored = .signedIn(TestFixtures.session)
+        let controller = verified.makeController()
+        let quiet = SpySessionObserver()
+        controller.addObserver(quiet)
+        verified.auth.restoreResult = .success(TestFixtures.session)
+        await controller.restore()
+        #expect(quiet.restoreCount == 0)
+    }
+
     /// A verified cache changes nothing and says so quietly.
     @Test func aVerifiedCacheIsLeftAlone() async {
         let harness = SessionHarness()

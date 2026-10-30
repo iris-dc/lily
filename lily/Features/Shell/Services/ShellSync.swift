@@ -9,13 +9,13 @@ import Foundation
 /// the check before `setDesired` matters most, since `resume()` sets `isActive` unconditionally and a stale run must
 /// never reopen a connection the background run closed. Every run first joins the session's check against the pool,
 /// so nothing loads for a user the pool has not confirmed (the loads need the token that check obtains anyway). The
-/// start tab is picked from the cached session when the root is built; the restore moves it only when the check changed
-/// the state, and before it opens a pending notification tap, or the tab would overwrite the screen the tap opened.
+/// start tab is picked from the cached session when the root is built; a check that changed the state moves it in the
+/// same turn (`AppNavigation.sessionDidRestore`, `sessionDidEnd`), before the restore opens a pending notification tap,
+/// or the tab would overwrite the screen the tap opened.
 /// Explore's lists load alongside the chain for a guest or a signed-in user, so the tab holds a fresh answer before it
 /// is first opened; a signed-out visitor is on the landing and is asked for nothing.
 final class ShellSync {
     private let session: SessionController
-    private let navigation: AppNavigation
     private let me: MeStore
     private let realtime: RealtimeSessionController
     private let myGroups: MyGroupsStore
@@ -25,7 +25,6 @@ final class ShellSync {
     private let lists: ShellLists
 
     init(session: SessionController,
-         navigation: AppNavigation,
          me: MeStore,
          realtime: RealtimeSessionController,
          myGroups: MyGroupsStore,
@@ -34,7 +33,6 @@ final class ShellSync {
          push: PushCoordinator,
          lists: ShellLists) {
         self.session = session
-        self.navigation = navigation
         self.me = me
         self.realtime = realtime
         self.myGroups = myGroups
@@ -44,14 +42,9 @@ final class ShellSync {
         self.lists = lists
     }
 
-    /// Verifies the cached session with the pool, moves the start tab when that changed the state, then opens a
-    /// notification tapped before the restore.
+    /// Verifies the cached session with the pool, then opens a notification tapped before the restore.
     func restore() async {
-        let cached = session.state
         await session.restore()
-        if session.state != cached {
-            navigation.selectedTab = AppNavigation.startTab(for: session.state)
-        }
         await push.openPendingTap()
     }
 

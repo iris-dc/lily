@@ -14,7 +14,7 @@ struct ShellSyncTests {
         let tokens = FakeAuthTokenProvider(token: JWTFixtures.token(expiringAt: Date(timeIntervalSince1970: 1_800_003_600)))
         let realtime = RealtimeHarness(tokens: tokens)
         self.realtime = realtime
-        sync = ShellSync.make(session: session.controller, navigation: push.navigation, realtime: realtime, push: push)
+        sync = ShellSync.make(session: session.controller, realtime: realtime, push: push)
     }
 
     /// Nothing loads for a user the pool has not confirmed: a run joins the restore's check and starts after it.
@@ -47,8 +47,10 @@ struct ShellSyncTests {
     }
 
     /// The tab was picked from the cache when the root was built; the restore moves it only when the check changed the
-    /// state: a pool session over an empty cache lands on Home, a dropped cached user on Explore.
+    /// state, through the session's observers in the same turn: a pool session over an empty cache lands on Home, a
+    /// dropped cached user on Explore.
     @Test func restoreMovesTheTabOnlyWhenTheCheckChangedTheState() async {
+        session.controller.addObserver(push.navigation)
         session.auth.restoreResult = .success(TestFixtures.session)
         await sync.restore()
         #expect(push.navigation.selectedTab == .home)
@@ -59,7 +61,8 @@ struct ShellSyncTests {
         cached.auth.restoreResult = .success(nil)
         let navigation = AppNavigation()
         navigation.selectedTab = .home
-        await makeSync(session: controller, navigation: navigation).restore()
+        controller.addObserver(navigation)
+        await makeSync(session: controller).restore()
         #expect(navigation.selectedTab == .explore)
     }
 
@@ -161,6 +164,7 @@ struct ShellSyncTests {
     }
 
     @Test func restoreLandsOnTheStartTabBeforeOpeningThePendingTap() async {
+        session.controller.addObserver(push.navigation)
         session.auth.restoreResult = .success(TestFixtures.session)
         push.events.result = .success([.fixture(id: "e1")])
         push.identity.currentUserID = nil
@@ -184,8 +188,8 @@ struct ShellSyncTests {
         #expect(push.coordinator.pendingTap == .event(id: "e1"))
     }
 
-    private func makeSync(session: SessionController, navigation: AppNavigation) -> ShellSync {
-        ShellSync.make(session: session, navigation: navigation, realtime: realtime, push: push)
+    private func makeSync(session: SessionController) -> ShellSync {
+        ShellSync.make(session: session, realtime: realtime, push: push)
     }
 
     private func startActiveRun() -> Task<Void, Never> {

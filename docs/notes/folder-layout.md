@@ -109,7 +109,7 @@ lily/
                  Home stack), HomeView, HomeOverview (your groups above your games), HomeContent (guest prompt or overview, shared
                  with Chats), GuestSignInPrompt, ExploreTab (Explore with the groups and tournaments carousels), ChatTab (the Chats stack);
                  Models (HomeOverviewState + HomeListSnapshot + HomeSectionState: Home's spinner / empty / sections rule while its three
-                 loads run; CreateIntent, the keyboard shortcuts' request), Services (ShellSync: the restore that lands on the start tab
+                 loads run; CreateIntent, the keyboard shortcuts' request), Services (ShellSync: the restore (the tab follows through the session observers)
                  and opens a pending notification tap, and the per-user run: account, realtime, Mine, inbox, block list, push, in order,
                  with Explore's lists loading alongside; ShellLists: the Home and Explore list view models the root owns for the app's
                  lifetime, each seeded from its snapshot)

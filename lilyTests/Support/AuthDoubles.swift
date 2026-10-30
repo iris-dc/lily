@@ -119,8 +119,10 @@ enum JWTFixtures {
 final class SpySessionObserver: SessionObserver {
     private(set) var willEndCount = 0
     private(set) var endCount = 0
+    private(set) var restoreCount = 0
     var onSessionWillEnd: () -> Void = {}
     var onSessionEnd: () -> Void = {}
+    var onSessionRestore: () -> Void = {}
     /// While true, `sessionWillEnd()` parks after recording the call until `releaseWillEnd()`, as a device unregistration
     /// that waits for the network would.
     var holdsWillEnd: Bool {
@@ -135,6 +137,11 @@ final class SpySessionObserver: SessionObserver {
         willEndCount += 1
         onSessionWillEnd()
         await willEndHold.wait()
+    }
+
+    func sessionDidRestore() {
+        restoreCount += 1
+        onSessionRestore()
     }
 
     func sessionDidEnd() {

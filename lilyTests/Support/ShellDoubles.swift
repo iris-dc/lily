@@ -5,12 +5,8 @@ extension ShellSync {
     /// The sync over the harnesses' stores and coordinators, with the tabs' lists over the realtime harness' fakes
     /// (`events`, `tournaments`, `groups`), so a run's Explore loads are observable there.
     @MainActor
-    static func make(session: SessionController,
-                     navigation: AppNavigation,
-                     realtime: RealtimeHarness,
-                     push: PushHarness) -> ShellSync {
+    static func make(session: SessionController, realtime: RealtimeHarness, push: PushHarness) -> ShellSync {
         ShellSync(session: session,
-                  navigation: navigation,
                   me: realtime.me,
                   realtime: realtime.controller,
                   myGroups: realtime.store,
