@@ -10,10 +10,12 @@ import UIKit
 struct MainTabView: View {
     let dependencies: AppDependencies
     let showsContent: Bool
-    /// Whether the selected tab's screen has appeared. A tab view can show its first tab before it applies the selection
-    /// (on an iPhone, a guest's launch read as Home turning into Explore; never on the simulator), so the shell stays
-    /// transparent until then; the launch's black and the landing cover that moment anyway.
-    @State private var showsSelectedTab = false
+    /// The tabs on screen, as their `onAppear` and `onDisappear` report. A tab view can show its first tab before it
+    /// applies the selection and cross-fade to it (on an iPhone, a guest's launch read as Home turning into Explore;
+    /// never on the simulator), so the shell stays transparent until the selected tab is the only one on screen and has
+    /// been for `tabSettle`, or `tabSettleFallback` has passed; the launch's black and the landing cover that moment.
+    @State private var visibleTabs: Set<AppTab> = []
+    @State private var settled = false
     @Environment(\.layoutMode) private var layoutMode
 
     private var language: AppLanguage { dependencies.language.language }
@@ -57,7 +59,9 @@ struct MainTabView: View {
         // taking 280 pt from the content column.
         // Only while the tabs hold their screens: under the landing the shell is covered anyway, and at opacity 0 the
         // empty tabs' hidden bar stayed in the accessibility tree.
-        .opacity(showsContent && !showsSelectedTab ? 0 : 1)
+        .opacity(showsContent && !settled ? 0 : 1)
+        .task(id: visibleTabs) { await settleWhenOnlyTheSelectedTabShows() }
+        .task(id: showsContent) { await settleAtTheLatest() }
         .tabBarMinimizeBehavior(.onScrollDown)
         // The tabs fill and the bar shows at once, under the landing that the root fades out over them; animated, the
         // bar would slide up into view.
@@ -73,21 +77,33 @@ struct MainTabView: View {
     @ViewBuilder
     private func content(_ tab: AppTab, @ViewBuilder _ screen: () -> some View) -> some View {
         if showsContent {
-            screen().onAppear { tabAppeared(tab) }
+            screen()
+                .onAppear { visibleTabs.insert(tab) }
+                .onDisappear { visibleTabs.remove(tab) }
         } else {
             Color.clear.toolbarVisibility(.hidden, for: .tabBar)
         }
     }
 
-    /// The shell shows once the tab on screen is the selected one; another tab first is the tab view's own detour.
-    private func tabAppeared(_ tab: AppTab) {
-        guard !showsSelectedTab else { return }
+    /// Runs on every change of the tabs on screen; a change within `tabSettle` starts it over.
+    private func settleWhenOnlyTheSelectedTabShows() async {
+        guard showsContent, !settled else { return }
         let selected = dependencies.navigation.selectedTab
-        if tab == selected {
-            showsSelectedTab = true
-        } else {
-            dependencies.logger.debug(.ui, "Tab \(tab) appeared before the selected tab \(selected); shell kept hidden")
+        guard visibleTabs == [selected] else {
+            if !visibleTabs.isEmpty {
+                dependencies.logger.debug(.ui, "Tabs on screen \(visibleTabs) with \(selected) selected; shell kept hidden")
+            }
+            return
         }
+        guard (try? await Task.sleep(for: .seconds(DesignTokens.Duration.tabSettle))) != nil else { return }
+        settled = true
+    }
+
+    private func settleAtTheLatest() async {
+        guard showsContent, !settled else { return }
+        guard (try? await Task.sleep(for: .seconds(DesignTokens.Duration.tabSettleFallback))) != nil, !settled else { return }
+        dependencies.logger.warning(.ui, "Shell shown by the fallback; tabs on screen \(visibleTabs)")
+        settled = true
     }
 
     /// A light outline glyph over the title. `Tab(_:systemImage:)` would draw the symbol at the bar's own heavy weight

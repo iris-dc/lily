@@ -20,6 +20,11 @@ nonisolated enum DesignTokens {
         static let fast: TimeInterval = 0.2
         static let normal: TimeInterval = 0.35
         static let slow: TimeInterval = 0.6
+        /// How long the selected tab must be the only one on screen before the shell shows: longer than a frame, so a
+        /// first tab the tab view shows and then cross-fades away never gets a frame of its own.
+        static let tabSettle: TimeInterval = 0.08
+        /// The shell shows after this whatever the tabs reported, so a report that never comes cannot keep it hidden.
+        static let tabSettleFallback: TimeInterval = 1.0
     }
 
     enum Layout {
