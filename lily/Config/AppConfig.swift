@@ -141,6 +141,12 @@ nonisolated enum AppConfig {
         static let autoDismissDelay: Duration = .seconds(4)
     }
 
+    enum Launch {
+        /// UIKit animations held off at launch (`LaunchAnimations`) come back after this at the latest, should the root's
+        /// first frame never report; longer than a cold start on a phone, so the tab bar is still laid out without them.
+        static let animationsResumeFallback: TimeInterval = 3
+    }
+
     /// The Laurel backend. Paths are relative to `baseURL`; the request shapes are documented in the README.
     enum API {
         /// Plain HTTP needs no ATS exception here: ATS exempts unqualified host names.

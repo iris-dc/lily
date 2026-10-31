@@ -8,6 +8,8 @@ import SwiftUI
 /// first tab and draws its glyphs at its own heavy weight until a tab is tapped, which a sign-in from the landing used
 /// to show. While the landing covers the shell, its tabs hold nothing and its bar is hidden (`MainTabView.showsContent`);
 /// a sign-out takes the shell away as it was and builds the next one under the landing (`AppNavigation.shellGeneration`).
+/// The bar built at launch, in view from its first frame, slides its pill in all the same; UIKit's animations are off
+/// until that frame has committed (`LaunchAnimations`, frozen by the app delegate, resumed from `onAppear` here).
 struct AppRootView: View {
     let dependencies: AppDependencies
     @State private var terms: TermsViewModel
@@ -38,6 +40,7 @@ struct AppRootView: View {
         .environment(\.auroraFrozen, dependencies.freezesAurora)
         .layoutModeProvider()
         .animation(.smooth(duration: DesignTokens.Duration.slow), value: showsShell)
+        .onAppear { LaunchAnimations.resumeAfterFirstFrame() }
         .task { await sync.restore() }
         // Going to the background is the last moment a small batch is sure to be sent.
         .onChange(of: scenePhase) {

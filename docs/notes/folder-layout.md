@@ -83,7 +83,8 @@ lily/
                  implementations (CoreLocation update source and service, caching decorator, mock)
     Validation/  CredentialsValidator (mirroring the backend's @Email: no inner whitespace, one @, a 64-unit local part), String+WireLength
                  (UTF-16 length, as the backend counts text), Collection+FirstOf (the one first-present-issue rule of the forms)
-    UI/          Theme (fonts, aurora role-to-color mapping), Effects (aurora geometry, roles, film grain: pure, testable math),
+    UI/          Theme (fonts, aurora role-to-color mapping), Effects (aurora geometry, roles, film grain: pure, testable math;
+                 LaunchAnimations, UIKit's animations off until the shell's first frame so the tab bar's pill is placed, not slid),
                  Components (aurora background, content-screen scaffold, glass cards, button modifiers, provider buttons, error popup,
                  ScreenTitle + ScreenSubtitle, AvatarCircle, String+Initials (the one initials rule, beside AvatarCircle),
                  UnreadDot, GrowingTextView (the multi-line field the chat composer owns, over a UIKit text view), ConversationRow (avatar + title + caption + dot, shared by the Chats rows and the

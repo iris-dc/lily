@@ -2,11 +2,13 @@ import UIKit
 import UserNotifications
 
 /// The UIKit callbacks SwiftUI has no modifier for: the APNs token (or its refusal) and notification taps, posted to
-/// `PushEventRelay` because this object is created before the composition root exists.
+/// `PushEventRelay` because this object is created before the composition root exists, and the launch's animation
+/// freeze (`LaunchAnimations`), which must start before the first view is built.
 final class LilyAppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        LaunchAnimations.freeze()
         return true
     }
 
