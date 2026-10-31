@@ -36,7 +36,8 @@ struct EventListSnapshotTests {
 
         let load = Task { await viewModel.loadIfStale() }
         await settle(until: { repository.requestedScopes.count == 1 })
-        #expect(viewModel.isInitialLoad && viewModel.listState == .content && screenState(of: viewModel) == .list)
+        #expect(viewModel.isLoading && !viewModel.isInitialLoad && viewModel.listState == .content)
+        #expect(screenState(of: viewModel) == .list)
         #expect(viewModel.events == held)
 
         repository.releaseRequests()
@@ -46,12 +47,34 @@ struct EventListSnapshotTests {
         #expect(logger.messages(in: .cache).contains { $0.contains("never loaded") })
     }
 
+    /// An empty answer kept from the last launch is content too: "nothing yet" from the first frame, kept through the
+    /// reload, where a spinner between the two readings of the same words looked like a glitch on the phone.
+    @Test func anEmptySnapshotSaysNothingYetFromTheFirstFrameAndThroughTheReload() async {
+        snapshots.seed([SportEvent](), for: key)
+        repository.result = .success([])
+        repository.holdsRequests = true
+        let viewModel = makeViewModel()
+        #expect(!viewModel.isInitialLoad && viewModel.listState == .empty && screenState(of: viewModel) == .empty)
+
+        let load = Task { await viewModel.loadIfStale() }
+        await settle(until: { repository.requestedScopes.count == 1 })
+        #expect(viewModel.isLoading && !viewModel.isInitialLoad && screenState(of: viewModel) == .empty)
+
+        repository.releaseRequests()
+        await load.value
+        #expect(viewModel.hasLoaded && screenState(of: viewModel) == .empty)
+
+        viewModel.clear()
+        #expect(viewModel.isInitialLoad && viewModel.listState == .loading, "the next caller has no snapshot")
+    }
+
     /// Without a snapshot nothing changes: the spinner through the first load, the answer kept for the next launch.
     @Test func withoutASnapshotTheFirstLoadShowsTheSpinnerAndIsKept() async {
         repository.result = .success(fresh)
         repository.holdsRequests = true
         let viewModel = makeViewModel()
         #expect(viewModel.events.isEmpty && snapshots.saveCount == 0)
+        #expect(viewModel.isInitialLoad && viewModel.listState == .loading, "spinning before the load as through it")
 
         let load = Task { await viewModel.loadIfStale() }
         await settle(until: { repository.requestedScopes.count == 1 })
@@ -120,7 +143,7 @@ struct EventListSnapshotTests {
 
         viewModel.clear()
 
-        #expect(viewModel.events.isEmpty && !viewModel.hasLoaded && viewModel.listState == .empty)
+        #expect(viewModel.events.isEmpty && !viewModel.hasLoaded && viewModel.listState == .loading)
         await viewModel.loadIfStale()
         #expect(repository.requestedScopes.count == 2)
     }

@@ -13,6 +13,9 @@ final class TournamentListViewModel {
     }
     private(set) var isLoading = false
     private(set) var userLocation: Coordinate?
+    /// The list began as the last launch's answer, an empty one included: content, not a load to wait for (see
+    /// `EventListViewModel.startedFromSnapshot`).
+    @ObservationIgnored private var startedFromSnapshot = false
     /// Discover's one criterion, applied on device; `nil` is any type.
     var typeFilter: EventType?
     /// Off for the carousel on Explore: the events list there reports its own failure, and a second popup would only
@@ -54,7 +57,9 @@ final class TournamentListViewModel {
         self.snapshots = snapshots
         // The snapshot is a hint for the first frame, not an answer: `freshness` still says "never loaded".
         let key = ListSnapshotKey(list: scope.snapshotList, userID: identity.currentUserID)
-        tournaments = snapshots.load([Tournament].self, for: key) ?? []
+        let snapshot = snapshots.load([Tournament].self, for: key)
+        tournaments = snapshot ?? []
+        startedFromSnapshot = snapshot != nil
     }
 
     /// The snapshot is one caller's answer (Home's own tournaments), so it is kept under the caller it shows to.
@@ -63,8 +68,8 @@ final class TournamentListViewModel {
     }
 
     /// True until the first answer, success or failure, so a screen shows its spinner through a location wait and never
-    /// an empty state before the list was asked.
-    var isInitialLoad: Bool { !freshness.hasLoaded && !loadFailed }
+    /// an empty state before the list was asked; a snapshot, empty or not, is an answer the screen can show meanwhile.
+    var isInitialLoad: Bool { !startedFromSnapshot && !freshness.hasLoaded && !loadFailed }
     var listState: ListState {
         ListState(isInitialLoad: isInitialLoad, isEmpty: visibleTournaments.isEmpty, loadFailed: loadFailed)
     }
@@ -205,6 +210,7 @@ final class TournamentListViewModel {
     /// The session ended: the next caller starts from nothing, and the first load is theirs (`ShellLists` calls it).
     func clear() {
         tournaments = []
+        startedFromSnapshot = false
         freshness.reset()
     }
 

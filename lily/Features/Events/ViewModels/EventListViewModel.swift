@@ -16,8 +16,12 @@ final class EventListViewModel {
     private(set) var userLocation: Coordinate?
     /// The filter as it was when the panel opened, `nil` while it is closed. Written by the filter extension.
     @ObservationIgnored var filterWhenPanelOpened: EventFilter?
+    /// The list began as the last launch's answer, an empty one included: content, so the first frame says "nothing yet"
+    /// rather than spinning, and the reload behind it changes nothing on screen until it answers differently (a spinner
+    /// giving way to the same words read as a glitch on the phone).
+    @ObservationIgnored var startedFromSnapshot = false
 
-    /// Shared with the filter extension in the sibling file, hence not `private`.
+    /// Shared with the filter and freshness extensions in the sibling files, hence not `private`.
     let recorder: any InteractionRecorder
     let logger: any Logging
     let now: () -> Date
@@ -26,11 +30,11 @@ final class EventListViewModel {
     /// The user's currency (`CurrencyStore.currencyCode`): what the price cap is typed and judged in.
     let currencyCode: () -> String
 
-    private let scope: EventScope
+    let scope: EventScope
     private let repository: any EventRepository
-    private let identity: any IdentityProvider
+    let identity: any IdentityProvider
     private let locationService: any LocationService
-    private let changes: ChangeTracker
+    let changes: ChangeTracker
     private let errorCenter: ErrorCenter
     /// Where every filter change is kept for the next launch; a no-op for the lists that start from `.everything`.
     private let filterStore: any EventFilterStore
@@ -38,7 +42,7 @@ final class EventListViewModel {
     private let snapshots: any ListSnapshotStore
     /// TTL, the change counter, caller and (on Explore) position the content reflects, and the cooldown after a failed
     /// load.
-    private var freshness = ContentFreshness.standard
+    var freshness = ContentFreshness.standard
 
     init(scope: EventScope,
          repository: any EventRepository,
@@ -70,24 +74,15 @@ final class EventListViewModel {
         self.now = now
         // The snapshot is a hint for the first frame, not an answer: `freshness` still says "never loaded".
         let key = ListSnapshotKey(list: scope.snapshotList, userID: identity.currentUserID)
-        events = snapshots.load([SportEvent].self, for: key) ?? []
+        let snapshot = snapshots.load([SportEvent].self, for: key)
+        events = snapshot ?? []
+        startedFromSnapshot = snapshot != nil
     }
 
     /// The snapshot is one caller's answer (`isJoined`, Home's own games), so it is kept under the caller it shows to.
     private var snapshotKey: ListSnapshotKey {
         ListSnapshotKey(list: scope.snapshotList, userID: identity.currentUserID)
     }
-
-    /// The very first load, before any result exists. Later loads keep the current content (and its refresh spinner) on screen.
-    var isInitialLoad: Bool { isLoading && !freshness.hasLoaded && !loadFailed }
-    /// What a segment drawing this list shows now.
-    var listState: ListState { ListState(isInitialLoad: isInitialLoad, isEmpty: visibleEvents.isEmpty, loadFailed: loadFailed) }
-
-    /// True from a failed load until the next successful one, so the screen can say so instead of "nothing yet".
-    var loadFailed: Bool { freshness.loadFailed }
-
-    /// An answer landed at least once since the last reset; `loadFailed` is the other way a load ends.
-    var hasLoaded: Bool { freshness.hasLoaded }
 
     /// Distance is judged from the user's position; while that is unknown the distance criterion is skipped. The price
     /// cap is judged in the user's currency, read on every pass so a change on Profile applies at once.
@@ -185,6 +180,7 @@ final class EventListViewModel {
     /// The session ended: the next caller starts from nothing, and the first load is theirs (`ShellLists` calls it).
     func clear() {
         events = []
+        startedFromSnapshot = false
         freshness.reset()
     }
 
@@ -273,24 +269,5 @@ final class EventListViewModel {
             errorCenter.report(error)
             return false
         }
-    }
-
-    /// Only Explore is ordered by distance; Home is the caller's own games, in start order.
-    var requestPosition: Coordinate? { scope == .upcoming ? userLocation : nil }
-
-    /// Why the user's position makes Explore content stale (`ContentFreshness.positionReason`); Home sends none.
-    var positionReason: String? { freshness.positionReason(for: requestPosition) }
-
-    private var isWaitingToRetry: Bool {
-        freshness.isWaitingToRetry(now: now(), version: changes.version, userID: identity.currentUserID)
-    }
-
-    /// Why the content must be reloaded, or `nil` while it can be reused: the shared rules first, then the position
-    /// only Explore sends.
-    private var stalenessReason: String? {
-        freshness.stalenessReason(now: now(),
-                                  version: changes.version,
-                                  userID: identity.currentUserID,
-                                  position: requestPosition)
     }
 }

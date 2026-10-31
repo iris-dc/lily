@@ -37,6 +37,26 @@ struct TournamentListSnapshotTests {
         #expect(viewModel.tournaments == fresh && snapshots.load([Tournament].self, for: key) == fresh)
     }
 
+    /// An empty answer kept from the last launch is content: the empty state from the first frame and through the reload,
+    /// never the spinner (`EventListSnapshotTests` has the events side); `clear` leaves the next caller spinning.
+    @Test func anEmptySnapshotIsTheEmptyStateFromTheFirstFrame() async {
+        snapshots.seed([Tournament](), for: key)
+        harness.repository.result = .success([])
+        harness.repository.holdsRequests = true
+        let viewModel = makeViewModel()
+        #expect(!viewModel.isInitialLoad && viewModel.listState == .empty)
+
+        let load = Task { await viewModel.loadIfStale() }
+        await settle(until: { harness.repository.requestedScopes.count == 1 })
+        #expect(viewModel.isLoading && viewModel.listState == .empty)
+        harness.repository.releaseRequests()
+        await load.value
+        #expect(viewModel.hasLoaded && viewModel.listState == .empty)
+
+        viewModel.clear()
+        #expect(viewModel.isInitialLoad && viewModel.listState == .loading)
+    }
+
     /// The list outlives the session: an answer for a caller who signed out meanwhile is dropped, and `clear` forgets
     /// the list and its loads.
     @Test func anAnswerForAPreviousCallerIsDroppedAndClearForgets() async {
