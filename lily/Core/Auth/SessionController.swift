@@ -77,7 +77,7 @@ final class SessionController {
         case (let session?, _):
             logger.info(.auth, "Session restored for user \(session.user.id)")
             state = .signedIn(session.user)
-            observers.forEach { $0.observer?.sessionDidRestore() }
+            notifyObservers { $0.sessionDidRestore() }
         case (nil, .signedIn(let user)):
             // The service signed the pool out where that was due; only the session on the device is left to end.
             logger.warning(.auth, "Cached session dropped: the pool has no session for user \(user.id)")
@@ -158,10 +158,16 @@ final class SessionController {
         }
     }
 
-    /// Observers whose owner is gone are dropped on the way, so the list never grows past the live ones.
     private func notifySessionEnded() {
+        notifyObservers { $0.sessionDidEnd() }
+    }
+
+    /// Observers whose owner is gone are dropped on the way, so the list never grows past the live ones.
+    private func notifyObservers(_ tell: (any SessionObserver) -> Void) {
         observers.removeAll { $0.observer == nil }
-        observers.forEach { $0.observer?.sessionDidEnd() }
+        for entry in observers {
+            if let observer = entry.observer { tell(observer) }
+        }
     }
 
     /// Runs `attempt` holding the single in-flight authentication slot; `busy` without a popup when another holds it.

@@ -3,13 +3,11 @@ import SwiftUI
 /// Shows the landing over the main shell while signed out, on the session state (which starts from the cache, so the
 /// first frame is already one of the two), ties `ShellSync` to the scene phase and the user (the restore once, a run
 /// whenever either changes), and presents the terms sheet while a signed-in caller owes the current terms. Wiring only:
-/// what a run does, and in which order, is `ShellSync`'s. The shell is built once, at launch, and the landing fades over
-/// it rather than replacing it: an iOS 26 tab bar built while the app is on screen slides its indicator in from the
-/// first tab and draws its glyphs at its own heavy weight until a tab is tapped, which a sign-in from the landing used
-/// to show. While the landing covers the shell, its tabs hold nothing and its bar is hidden (`MainTabView.showsContent`);
-/// a sign-out takes the shell away as it was and builds the next one under the landing (`AppNavigation.shellGeneration`).
-/// The bar built at launch, in view from its first frame, slides its pill in all the same; UIKit's animations are off
-/// until that frame has committed (`LaunchAnimations`, frozen by the app delegate, resumed from `onAppear` here).
+/// what a run does, and in which order, is `ShellSync`'s. The shell is built once, under the landing, since an iOS 26
+/// tab bar built in view slides its pill in from the first tab and draws heavy glyphs; its tabs hold nothing while
+/// covered (`MainTabView.showsContent`), a sign-out builds the next shell under the landing again
+/// (`AppNavigation.shellGeneration`), and UIKit's animations stay off until the first frame has committed
+/// (`LaunchAnimations`), so the bar a cold launch shows at once places its pill rather than sliding it.
 struct AppRootView: View {
     let dependencies: AppDependencies
     @State private var terms: TermsViewModel

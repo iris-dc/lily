@@ -6,9 +6,9 @@ import UIKit
 /// out while animations are off draws the pill on the selected tab from its first frame. `AppConfig.Launch.animationsResumeFallback`
 /// bounds the freeze should the root never appear: an app without UIKit animations would be a worse fault than the slide.
 enum LaunchAnimations {
-    static func freeze() {
+    static func freeze(resumingAfter fallback: TimeInterval = AppConfig.Launch.animationsResumeFallback) {
         UIView.setAnimationsEnabled(false)
-        DispatchQueue.main.asyncAfter(deadline: .now() + AppConfig.Launch.animationsResumeFallback) { resume() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + fallback) { resume() }
     }
 
     /// From the root's `onAppear`: the frame being built commits at the end of this turn of the run loop, the next one

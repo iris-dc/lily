@@ -19,6 +19,8 @@ final class DiscoverGroupsViewModel {
     private(set) var isLoading = false
     private(set) var isLoadingMore = false
     private(set) var hasSearched = false
+    /// True from a failed search until the next answer, so the screen stops spinning for one that will not come.
+    private(set) var searchFailed = false
     /// Cursor of the next page; `nil` once the last page arrived.
     @ObservationIgnored private(set) var nextCursor: String?
     /// Bumped by every new search, so a page that answers for an older query or filter is dropped.
@@ -83,8 +85,9 @@ final class DiscoverGroupsViewModel {
     /// A browse with nothing typed and no type chosen: the page the carousel shows, and the one worth a snapshot.
     private var isPlainBrowse: Bool { effectiveQuery == nil && typeFilter == nil }
 
-    /// True until the first answer, so the empty state waits for it.
-    var isInitialLoad: Bool { isLoading && !hasSearched }
+    /// Nothing to show yet: no page and no answer, success or failure, from the first frame through the location wait
+    /// and the first search, so the screen spins rather than drawing an empty grid before the list was asked.
+    var isInitialLoad: Bool { !hasSearched && groups.isEmpty && !searchFailed }
 
     /// The search has answered and nothing matched.
     var nothingMatched: Bool { hasSearched && groups.isEmpty && !isLoading }
@@ -130,6 +133,7 @@ final class DiscoverGroupsViewModel {
         groups = []
         nextCursor = nil
         hasSearched = false
+        searchFailed = false
         searchedUserID = nil
         searchedChangesVersion = nil
         searchedPosition = nil
@@ -199,6 +203,7 @@ final class DiscoverGroupsViewModel {
             groups = page.items
             nextCursor = page.nextCursor
             hasSearched = true
+            searchFailed = false
             searchedUserID = userID
             searchedChangesVersion = version
             searchedPosition = position
@@ -207,6 +212,7 @@ final class DiscoverGroupsViewModel {
             return true
         } catch {
             guard !AppError.isCancellation(error), generation == searchGeneration else { return false }
+            searchFailed = true
             logger.error(.groups, "Discover failed: \(error)")
             if reportsSearchFailures { errorCenter.report(error) }
             return false

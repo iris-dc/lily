@@ -58,6 +58,7 @@ struct ShellListsTests {
         #expect(groups.requestedScopes.isEmpty != AppConfig.FeatureFlags.groups)
         #expect(events.requestedPositions == [AppConfig.Location.mockCenter], "the first request carries the position")
         #expect(tournaments.requestedPositions.allSatisfy { $0 == AppConfig.Location.mockCenter })
+        #expect(groups.requestedPositions.allSatisfy { $0 == AppConfig.Location.mockCenter.coarse })
     }
 
     /// Within the lists' TTL a later run (a return to the foreground) asks nothing.

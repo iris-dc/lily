@@ -10,6 +10,9 @@ final class FileListSnapshotStore: ListSnapshotStore {
     private let logger: any Logging
     private let decoder = APIJSONCoding.makeDecoder()
     private let encoder = APIJSONCoding.makeEncoder()
+    /// A sweep the file system refused: the files are of another format, so none is read and none written beside
+    /// them until a clear succeeds (the next launch sweeps again).
+    private var holdsAnotherFormat = false
 
     init(directory: URL = FileListSnapshotStore.defaultDirectory, logger: any Logging) {
         self.directory = directory
@@ -24,7 +27,7 @@ final class FileListSnapshotStore: ListSnapshotStore {
         let found = try? String(contentsOf: formatMarker, encoding: .utf8)
         guard found != String(AppConfig.Lists.snapshotFormat) else { return }
         logger.info(.cache, "List snapshots of format \(found ?? "none") swept for format \(AppConfig.Lists.snapshotFormat)")
-        clear()
+        holdsAnotherFormat = !removeDirectory()
     }
 
     private var formatMarker: URL { directory.appending(path: AppConfig.Lists.snapshotFormatFileName) }
@@ -36,6 +39,10 @@ final class FileListSnapshotStore: ListSnapshotStore {
 
     /// A snapshot that no longer decodes (a model that changed shape) is dropped, so the next launch is a plain miss.
     func load<Value: Decodable>(_ type: Value.Type, for key: ListSnapshotKey) -> Value? {
+        guard !holdsAnotherFormat else {
+            logger.debug(.cache, "Snapshot for \(key.list) held back: another format could not be swept")
+            return nil
+        }
         let url = location(of: key)
         guard let data = try? Data(contentsOf: url) else {
             logger.debug(.cache, "Snapshot miss for \(key.list)")
@@ -55,6 +62,10 @@ final class FileListSnapshotStore: ListSnapshotStore {
     /// In place of whatever was there, the directory made on the way; a failure is a warning, since the list on screen
     /// is right either way.
     func save<Value: Encodable>(_ value: Value, for key: ListSnapshotKey) {
+        guard !holdsAnotherFormat else {
+            logger.warning(.cache, "Snapshot for \(key.list) not stored: another format could not be swept")
+            return
+        }
         do {
             let data = try encoder.encode(value)
             try prepareDirectory()
@@ -64,13 +75,21 @@ final class FileListSnapshotStore: ListSnapshotStore {
         }
     }
 
-    /// A removal the file system refuses is a warning and no "cleared" line: a failed clear never claims a clean device.
     func clear() {
+        removeDirectory()
+    }
+
+    /// A removal the file system refuses is a warning and no "cleared" line: a failed clear never claims a clean device.
+    @discardableResult
+    private func removeDirectory() -> Bool {
         do {
             try FileManager.default.removeItemIfPresent(at: directory)
+            holdsAnotherFormat = false
             logger.debug(.cache, "List snapshots cleared")
+            return true
         } catch {
             logger.warning(.cache, "List snapshots could not be cleared: \(error)")
+            return false
         }
     }
 

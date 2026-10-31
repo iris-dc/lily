@@ -17,7 +17,7 @@ struct HomeOverview: View {
     /// A list behind a flag that is off is left out, so the screen never waits for it.
     private var state: HomeOverviewState {
         .resolve(events: HomeListSnapshot(isEmpty: events.visibleEvents.isEmpty,
-                                          hasAnswered: events.hasLoaded || events.loadFailed,
+                                          hasAnswered: !events.isInitialLoad,
                                           loadFailed: events.loadFailed),
                  groups: showsGroups ? HomeListSnapshot(isEmpty: groups.communities.isEmpty,
                                                         hasAnswered: groups.hasLoaded || groups.loadFailed,

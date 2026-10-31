@@ -20,6 +20,30 @@ struct HeadStartTests {
         #expect(sleep.requested == [.seconds(1)] && sleep.held.isEmpty)
     }
 
+    /// A caller cancelled during the head start runs no `then` (the timer's early return is not the time being up) and
+    /// still lets the work finish.
+    @Test func aCancelledCallerRunsNoThenAndLetsTheWorkFinish() async {
+        let hold = RequestHold()
+        hold.isEnabled = true
+        let run = Task {
+            await HeadStart.give(.seconds(1), sleep: sleep.sleep(for:)) {
+                await hold.wait()
+                order.record(1)
+            } then: {
+                order.record(2)
+            }
+        }
+        await settle(until: { sleep.held.count == 1 && hold.isHolding })
+
+        run.cancel()
+        await settle(until: { sleep.held.isEmpty })
+        #expect(order.entries.isEmpty && hold.isHolding)
+
+        hold.release()
+        await run.value
+        #expect(order.entries == [1])
+    }
+
     /// Work that takes longer is not cut short: `then` runs when the time is up, the work goes on and finishes.
     @Test func workThatTakesLongerGoesOnAfterThen() async {
         let hold = RequestHold()

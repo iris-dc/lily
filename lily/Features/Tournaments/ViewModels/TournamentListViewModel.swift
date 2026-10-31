@@ -6,16 +6,16 @@ import Observation
 @Observable
 final class TournamentListViewModel {
     let scope: TournamentScope
-    /// Starts from the snapshot the list left, and every change is kept as the next one, under the caller it shows to.
-    /// No default value: with one, the seeding in `init` would count as a change and write the snapshot back.
-    private(set) var tournaments: [Tournament] {
-        didSet { snapshots.save(tournaments, for: snapshotKey) }
-    }
+    /// Starts from the snapshot the list left; every answer and local change goes through `keep(_:for:)`, which writes
+    /// the next snapshot under the caller the content belongs to.
+    private(set) var tournaments: [Tournament] = []
     private(set) var isLoading = false
     private(set) var userLocation: Coordinate?
     /// The list began as the last launch's answer, an empty one included: content, not a load to wait for (see
     /// `EventListViewModel.startedFromSnapshot`).
     @ObservationIgnored private var startedFromSnapshot = false
+    /// Bumped by `clear()`: a load still out when the session ended must not end the next caller's load or reload.
+    @ObservationIgnored private var loadGeneration = 0
     /// Discover's one criterion, applied on device; `nil` is any type.
     var typeFilter: EventType?
     /// Off for the carousel on Explore: the events list there reports its own failure, and a second popup would only
@@ -62,9 +62,10 @@ final class TournamentListViewModel {
         startedFromSnapshot = snapshot != nil
     }
 
-    /// The snapshot is one caller's answer (Home's own tournaments), so it is kept under the caller it shows to.
-    private var snapshotKey: ListSnapshotKey {
-        ListSnapshotKey(list: scope.snapshotList, userID: identity.currentUserID)
+    /// The list and its snapshot, under the caller the content belongs to (see `EventListViewModel.keep`).
+    private func keep(_ next: [Tournament], for userID: String?) {
+        tournaments = next
+        snapshots.save(next, for: ListSnapshotKey(list: scope.snapshotList, userID: userID))
     }
 
     /// True until the first answer, success or failure, so a screen shows its spinner through a location wait and never
@@ -89,7 +90,8 @@ final class TournamentListViewModel {
     func loadIfStale() async {
         if scope == .mine, identity.currentUserID == nil {
             // An empty answer, not a reset: a guest's Mine is no initial load, and a sign-in makes it stale by caller.
-            if !tournaments.isEmpty { tournaments = [] }
+            // Nothing is written: a guest keeps no Mine snapshot.
+            tournaments = []
             freshness.recordSuccess(at: now(), version: changes.version, userID: nil)
             return
         }
@@ -112,7 +114,10 @@ final class TournamentListViewModel {
     func load() async {
         guard !isLoading else { return }
         isLoading = true
+        let generation = loadGeneration
         let succeeded = await performLoad(near: requestPosition)
+        // Cleared meanwhile: the next caller's load owns the flag, and nothing of this one is reloaded.
+        guard generation == loadGeneration else { return }
         isLoading = false
         if succeeded, let reason = stalenessReason {
             logger.debug(.cache, "Tournaments for scope \(scope): \(reason) while loading; reloading")
@@ -149,7 +154,7 @@ final class TournamentListViewModel {
                 logger.debug(.cache, "Tournaments for scope \(scope) answered for a caller who signed out; dropped")
                 return false
             }
-            tournaments = loaded
+            keep(loaded, for: userID)
             freshness.recordSuccess(at: now(), version: version, userID: userID, position: position)
             logger.info(.tournaments,
                         "Loaded \(tournaments.count) tournaments for scope \(scope); with position: \(position != nil)")
@@ -190,12 +195,14 @@ final class TournamentListViewModel {
     /// not hold it yet (one entered on a detail pushed from a group's segment reaches Home's list at once). Recorded so
     /// every other list reloads on its next appearance; this one already shows the change.
     func replace(_ tournament: Tournament) {
-        switch (tournaments.firstIndex(where: { $0.id == tournament.id }), belongs(tournament)) {
-        case (let index?, true): tournaments[index] = tournament
-        case (let index?, false): tournaments.remove(at: index)
-        case (nil, true): insertByStart(tournament)
+        var next = tournaments
+        switch (next.firstIndex(where: { $0.id == tournament.id }), belongs(tournament)) {
+        case (let index?, true): next[index] = tournament
+        case (let index?, false): next.remove(at: index)
+        case (nil, true): Self.insertByStart(tournament, into: &next)
         case (nil, false): break
         }
+        keep(next, for: identity.currentUserID)
         recordOwnChange("Tournament \(tournament.id) replaced in scope \(scope)")
     }
 
@@ -203,12 +210,20 @@ final class TournamentListViewModel {
     /// a no-op. Recorded like `replace`.
     func add(_ tournament: Tournament) {
         guard !tournaments.contains(where: { $0.id == tournament.id }) else { return }
-        if belongs(tournament) { insertByStart(tournament) }
+        if belongs(tournament) {
+            var next = tournaments
+            Self.insertByStart(tournament, into: &next)
+            keep(next, for: identity.currentUserID)
+        }
         recordOwnChange("Tournament \(tournament.id) added to scope \(scope)")
     }
 
-    /// The session ended: the next caller starts from nothing, and the first load is theirs (`ShellLists` calls it).
+    /// The session ended: the next caller starts from nothing, and the first load is theirs (`ShellLists` calls it). No
+    /// snapshot is written: the store sweeps its directory right after. A load still out is disowned, so its answer
+    /// neither shows nor ends the next caller's load.
     func clear() {
+        loadGeneration += 1
+        isLoading = false
         tournaments = []
         startedFromSnapshot = false
         freshness.reset()
@@ -229,7 +244,8 @@ final class TournamentListViewModel {
         }
     }
 
-    private func insertByStart(_ tournament: Tournament) {
+    /// Into a local copy where a change has more than one step, so the list (and its snapshot) is written once.
+    private static func insertByStart(_ tournament: Tournament, into tournaments: inout [Tournament]) {
         let index = tournaments.firstIndex { $0.startsAt > tournament.startsAt } ?? tournaments.endIndex
         tournaments.insert(tournament, at: index)
     }

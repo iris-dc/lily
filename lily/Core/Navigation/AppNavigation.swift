@@ -84,7 +84,11 @@ final class AppNavigation: SessionObserver {
     /// Where a launch lands once the session is restored: a signed-in user on Home, their groups and games; everyone
     /// else on Explore, which is what the landing's button promises.
     static func startTab(for state: SessionState) -> AppTab {
-        state.isSignedIn ? .home : .explore
+        startTab(signedIn: state.isSignedIn)
+    }
+
+    static func startTab(signedIn: Bool) -> AppTab {
+        signedIn ? .home : .explore
     }
 
     /// A screen a notification or the inbox asked for lands on the Chats stack, where the inbox lives, or on Home while
@@ -99,7 +103,7 @@ final class AppNavigation: SessionObserver {
 
     /// A restore that signed the user in lands on their start tab before the shell is revealed.
     func sessionDidRestore() {
-        selectedTab = .home
+        selectedTab = Self.startTab(signedIn: true)
     }
 
     func sessionDidEnd() {

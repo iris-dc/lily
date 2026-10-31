@@ -135,6 +135,54 @@ struct EventListSnapshotTests {
         #expect(logger.messages(in: .cache).filter { $0.contains("signed out; dropped") }.count == 1)
     }
 
+    /// A load still out when the session ends must not hold the next caller's first load: before, the old load's end
+    /// cleared `isLoading` for a load it no longer owned, or its answer, dropped, left the flag latched and Explore spun.
+    @Test func aLoadInFlightWhenTheSessionEndsDoesNotHoldTheNextCallersLoad() async {
+        repository.result = .success(fresh)
+        repository.holdsRequests = true
+        let viewModel = makeViewModel()
+        let signedIn = Task { await viewModel.loadIfStale() }
+        await settle(until: { repository.requestedScopes.count == 1 })
+
+        viewModel.clear()
+        identity.currentUserID = nil
+        #expect(!viewModel.isLoading && viewModel.isInitialLoad)
+        let guest = Task { await viewModel.loadIfStale() }
+        await settle(until: { repository.requestedScopes.count == 2 })
+
+        repository.releaseRequests()
+        await signedIn.value
+        await guest.value
+        #expect(viewModel.events == fresh && viewModel.hasLoaded && !viewModel.isLoading)
+        #expect(snapshots.load([SportEvent].self, for: ListSnapshotKey(list: key.list, userID: nil)) == fresh)
+        #expect(snapshots.load([SportEvent].self, for: key) == nil, "the signed-out caller's answer was dropped")
+    }
+
+    /// A guest's answer landing after a sign-in is shown and kept as the guest's, never as the new user's snapshot; the
+    /// reload by caller then writes the user's own.
+    @Test func aGuestsAnswerAfterASignInIsKeptUnderTheGuest() async {
+        identity.currentUserID = nil
+        repository.result = .success(held)
+        repository.holdsRequests = true
+        let viewModel = makeViewModel()
+        let load = Task { await viewModel.loadIfStale() }
+        await settle(until: { repository.requestedScopes.count == 1 })
+
+        identity.currentUserID = TestFixtures.user.id
+        repository.releaseRequests()
+        // The reload by caller follows at once; held, so the guest's answer is on screen meanwhile.
+        repository.holdsRequests = true
+        await settle(until: { repository.requestedScopes.count == 2 })
+
+        let guest = ListSnapshotKey(list: key.list, userID: nil)
+        #expect(viewModel.events == held && snapshots.load([SportEvent].self, for: guest) == held)
+        #expect(snapshots.load([SportEvent].self, for: key) == nil)
+        repository.result = .success(fresh)
+        repository.releaseRequests()
+        await load.value
+        #expect(viewModel.events == fresh && snapshots.load([SportEvent].self, for: key) == fresh)
+    }
+
     /// The session's end empties the list and forgets its loads; what the clearing writes is the snapshot store's to sweep.
     @Test func clearForgetsTheListAndItsLoads() async {
         repository.result = .success(fresh)

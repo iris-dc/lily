@@ -3,7 +3,8 @@ import Foundation
 /// Gives `work` a head start of at most `timeout` before `then` runs, and lets it finish: `then` runs once `work` has
 /// returned or the time has passed, whichever is first, and a `work` still running then goes on to its end. Nothing is
 /// cancelled but the timer, where `Deadline.within` cancels the loser: Explore's lists give the position lookup a head
-/// start so their first request carries it, and a fix that comes later still lands and reloads.
+/// start so their first request carries it, and a fix that comes later still lands and reloads. A caller cancelled
+/// meanwhile (a run replaced, a screen gone) runs no `then`: the timer's early return is not the time being up.
 enum HeadStart {
     static func give(_ timeout: Duration,
                      sleep: @escaping Sleep = systemSleep,
@@ -13,6 +14,7 @@ enum HeadStart {
             group.addTask { await work(); return true }
             group.addTask { try? await sleep(timeout); return false }
             if await group.next() == true { group.cancelAll() }
+            guard !Task.isCancelled else { return }
             await then()
         }
     }

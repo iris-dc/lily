@@ -57,6 +57,27 @@ struct TournamentListSnapshotTests {
         #expect(viewModel.isInitialLoad && viewModel.listState == .loading)
     }
 
+    /// A load still out when the session ends neither holds the next caller's load nor ends it (`EventListSnapshotTests`
+    /// has the events side with the snapshot keys).
+    @Test func aLoadInFlightWhenTheSessionEndsDoesNotHoldTheNextCallersLoad() async {
+        harness.repository.result = .success(fresh)
+        harness.repository.holdsRequests = true
+        let viewModel = makeViewModel()
+        let signedIn = Task { await viewModel.loadIfStale() }
+        await settle(until: { harness.repository.requestedScopes.count == 1 })
+
+        viewModel.clear()
+        harness.identity.currentUserID = nil
+        #expect(!viewModel.isLoading && viewModel.isInitialLoad)
+        let guest = Task { await viewModel.loadIfStale() }
+        await settle(until: { harness.repository.requestedScopes.count == 2 })
+
+        harness.repository.releaseRequests()
+        await signedIn.value
+        await guest.value
+        #expect(viewModel.tournaments == fresh && viewModel.hasLoaded && !viewModel.isLoading)
+    }
+
     /// The list outlives the session: an answer for a caller who signed out meanwhile is dropped, and `clear` forgets
     /// the list and its loads.
     @Test func anAnswerForAPreviousCallerIsDroppedAndClearForgets() async {

@@ -51,7 +51,7 @@ struct DiscoverGroupsViewModelTests {
         harness.repository.result = .success([])
         harness.repository.holdsRequests = true
         let viewModel = makeViewModel()
-        #expect(!viewModel.isInitialLoad && !viewModel.nothingMatched, "nothing asked yet")
+        #expect(viewModel.isInitialLoad && !viewModel.nothingMatched, "nothing asked yet: the spinner, not an empty grid")
 
         let appearance = Task { await viewModel.loadIfStale() }
         await settle(until: { harness.repository.requestedScopes.count == 1 })

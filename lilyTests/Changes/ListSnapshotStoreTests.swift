@@ -97,6 +97,28 @@ struct ListSnapshotStoreTests {
         #expect(!FileManager.default.fileExists(atPath: directory.path()))
     }
 
+    /// A sweep the file system refuses leaves files of another format in place: none is read and none written beside
+    /// them, so a list never starts from what an older build meant differently.
+    @Test func aSweepThatFailsHoldsTheStoreBack() throws {
+        let parent = FileManager.default.temporaryDirectory.appending(path: "list-snapshots-parent-\(UUID().uuidString)")
+        let locked = parent.appending(path: "snapshots")
+        try FileManager.default.createDirectory(at: locked, withIntermediateDirectories: true)
+        try "1".write(to: locked.appending(path: AppConfig.Lists.snapshotFormatFileName), atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: parent.path())
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: parent.path())
+            try? FileManager.default.removeItem(at: parent)
+        }
+
+        let store = FileListSnapshotStore(directory: locked, logger: logger)
+        store.save(events, for: key)
+
+        #expect(store.load([SportEvent].self, for: key) == nil)
+        #expect(!FileManager.default.fileExists(atPath: locked.appending(path: key.fileName).path()))
+        #expect(logger.messages(in: .cache, at: .warning).filter { $0.contains("could not be cleared") }.count == 1)
+        #expect(logger.messages(in: .cache, at: .warning).filter { $0.contains("not stored") }.count == 1)
+    }
+
     @Test func clearingNothingIsNoError() {
         makeStore().clear()
 

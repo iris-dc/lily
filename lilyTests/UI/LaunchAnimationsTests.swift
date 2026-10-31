@@ -15,4 +15,15 @@ struct LaunchAnimationsTests {
         await settle(until: { UIView.areAnimationsEnabled })
         #expect(UIView.areAnimationsEnabled)
     }
+
+    /// Should the root never appear, the fallback turns the animations on regardless.
+    @Test func theFallbackResumesWithoutTheRoot() async throws {
+        LaunchAnimations.freeze(resumingAfter: 0.05)
+        #expect(!UIView.areAnimationsEnabled)
+
+        for _ in 0..<50 where !UIView.areAnimationsEnabled {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(UIView.areAnimationsEnabled)
+    }
 }

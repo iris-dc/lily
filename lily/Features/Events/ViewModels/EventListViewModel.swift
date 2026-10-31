@@ -5,11 +5,9 @@ import Observation
 /// presentation switch and the statistics they produce live in `EventListViewModel+Filter.swift`.
 @Observable
 final class EventListViewModel {
-    /// Starts from the snapshot the list left, and every change is kept as the next one, under the caller it shows to.
-    /// No default value: with one, the seeding in `init` would count as a change and write the snapshot back.
-    private(set) var events: [SportEvent] {
-        didSet { snapshots.save(events, for: snapshotKey) }
-    }
+    /// Starts from the snapshot the list left; every answer and local change goes through `keep(_:for:)`, which writes
+    /// the next snapshot under the caller the content belongs to.
+    private(set) var events: [SportEvent] = []
     /// Narrows `events` to `visibleEvents` on device; the map and the list read the same slice.
     private(set) var filter: EventFilter
     private(set) var isLoading = false
@@ -20,6 +18,8 @@ final class EventListViewModel {
     /// rather than spinning, and the reload behind it changes nothing on screen until it answers differently (a spinner
     /// giving way to the same words read as a glitch on the phone).
     @ObservationIgnored var startedFromSnapshot = false
+    /// Bumped by `clear()`: a load still out when the session ended must not end the next caller's load or reload.
+    @ObservationIgnored private var loadGeneration = 0
 
     /// Shared with the filter and freshness extensions in the sibling files, hence not `private`.
     let recorder: any InteractionRecorder
@@ -79,9 +79,12 @@ final class EventListViewModel {
         startedFromSnapshot = snapshot != nil
     }
 
-    /// The snapshot is one caller's answer (`isJoined`, Home's own games), so it is kept under the caller it shows to.
-    private var snapshotKey: ListSnapshotKey {
-        ListSnapshotKey(list: scope.snapshotList, userID: identity.currentUserID)
+    /// The list and its snapshot, under the caller the content belongs to: an answer under the caller it was requested
+    /// for (a guest's landing after a sign-in is the guest's, not the new user's, who is reloaded by caller), a local
+    /// change under the caller who made it. `isJoined` and Home's own games are one caller's.
+    private func keep(_ next: [SportEvent], for userID: String?) {
+        events = next
+        snapshots.save(next, for: ListSnapshotKey(list: scope.snapshotList, userID: userID))
     }
 
     /// Distance is judged from the user's position; while that is unknown the distance criterion is skipped. The price
@@ -126,7 +129,10 @@ final class EventListViewModel {
     func load() async {
         guard !isLoading else { return }
         isLoading = true
+        let generation = loadGeneration
         let succeeded = await performLoad(near: requestPosition)
+        // Cleared meanwhile: the next caller's load owns the flag, and nothing of this one is reloaded.
+        guard generation == loadGeneration else { return }
         isLoading = false
         if succeeded, let reason = stalenessReason {
             logger.debug(.cache, "Events for scope \(scope): \(reason) while loading; reloading")
@@ -151,7 +157,7 @@ final class EventListViewModel {
         } else if listsByStart(event) {
             Self.insertByStart(event, into: &next)
         }
-        events = next
+        keep(next, for: identity.currentUserID)
         recordOwnChange("Event \(event.id) replaced in scope \(scope)")
     }
 
@@ -166,19 +172,25 @@ final class EventListViewModel {
             logger.debug(.cache, "Event \(event.id) already in scope \(scope); add ignored")
             return
         }
+        var next = events
         switch scope {
         case .upcoming where event.isListed:
-            events.insert(event, at: 0)
+            next.insert(event, at: 0)
         case .upcoming:
             break
         case .joined, .group:
-            if listsByStart(event) { Self.insertByStart(event, into: &events) }
+            if listsByStart(event) { Self.insertByStart(event, into: &next) }
         }
+        keep(next, for: identity.currentUserID)
         recordOwnChange("Event \(event.id) added to scope \(scope)")
     }
 
-    /// The session ended: the next caller starts from nothing, and the first load is theirs (`ShellLists` calls it).
+    /// The session ended: the next caller starts from nothing, and the first load is theirs (`ShellLists` calls it). No
+    /// snapshot is written: the store sweeps its directory right after. A load still out is disowned, so its answer
+    /// neither shows nor ends the next caller's load.
     func clear() {
+        loadGeneration += 1
+        isLoading = false
         events = []
         startedFromSnapshot = false
         freshness.reset()
@@ -255,7 +267,7 @@ final class EventListViewModel {
                 logger.debug(.cache, "Events for scope \(scope) answered for a caller who signed out; dropped")
                 return false
             }
-            events = loaded
+            keep(loaded, for: userID)
             freshness.recordSuccess(at: now(), version: version, userID: userID, position: position)
             logger.info(.events, "Loaded \(events.count) events for scope \(scope); with position: \(position != nil)")
             return true

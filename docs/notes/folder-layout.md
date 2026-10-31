@@ -125,7 +125,7 @@ lily/
                  CreateIntentPolicy + ExploreSheet (which sheet a create request or a shortcut opens; sign-in for a guest); SportEvent and
                  EventDraft carry an optional EventGroupRef), Interfaces (EventRepository, EventFilterStore, EventDraftEditing),
                  Implementations (remote and mock repositories, MockEventFixtures with the mock's participant names in MockEventFixtures+Participants),
-                 ViewModels (list with its filter extension, detail with who is in, create, edit), Views (cards, EventCardList (the
+                 ViewModels (list with its filter and freshness extensions, detail with who is in, create, edit), Views (cards, EventCardList (the
                  bare card list), list screen, map, detail with the host's Edit button, ParticipantRow, preview card, filter button
                  and panel (over SkillLevelPicker, the one level picker), create button, the Create/Edit sheets (thin wrappers over
                  EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm), PlaceFields (the

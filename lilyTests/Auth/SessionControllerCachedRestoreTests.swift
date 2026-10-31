@@ -84,15 +84,20 @@ struct SessionControllerCachedRestoreTests {
         await harness.controller.restore()
 
         #expect(observer.restoreCount == 1 && stateWhenTold == .signedIn(TestFixtures.user))
+    }
 
-        let verified = SessionHarness()
-        verified.store.stored = .signedIn(TestFixtures.session)
-        let controller = verified.makeController()
-        let quiet = SpySessionObserver()
-        controller.addObserver(quiet)
-        verified.auth.restoreResult = .success(TestFixtures.session)
+    /// A cache the pool confirms changes nothing, so the observers hear nothing.
+    @Test func aVerifiedCacheTellsTheObserversNothing() async {
+        let harness = SessionHarness()
+        harness.store.stored = .signedIn(TestFixtures.session)
+        let controller = harness.makeController()
+        let observer = SpySessionObserver()
+        controller.addObserver(observer)
+        harness.auth.restoreResult = .success(TestFixtures.session)
+
         await controller.restore()
-        #expect(quiet.restoreCount == 0)
+
+        #expect(observer.restoreCount == 0)
     }
 
     /// A verified cache changes nothing and says so quietly.
