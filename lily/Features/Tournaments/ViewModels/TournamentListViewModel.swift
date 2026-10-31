@@ -26,6 +26,8 @@ final class TournamentListViewModel {
     private let errorCenter: ErrorCenter
     private let logger: any Logging
     private let now: () -> Date
+    /// What the wait for the first fix sleeps on; injected so a test moves it by hand.
+    private let sleep: Sleep
     /// Where the list's last answer is kept for the first frame of the next launch; a no-op for a list that is no tab's.
     private let snapshots: any ListSnapshotStore
     private var freshness = ContentFreshness.standard
@@ -38,8 +40,10 @@ final class TournamentListViewModel {
          errorCenter: ErrorCenter,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
+         sleep: @escaping Sleep = systemSleep,
          snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) {
         self.scope = scope
+        self.sleep = sleep
         self.repository = repository
         self.identity = identity
         self.locationService = locationService
@@ -109,6 +113,12 @@ final class TournamentListViewModel {
             logger.debug(.cache, "Tournaments for scope \(scope): \(reason) while loading; reloading")
             await load()
         }
+    }
+
+    /// Explore's load as the carousel and the launch make it: the position first, for `AppConfig.Location.firstFixWait`
+    /// at most, then the load, so the first answer is the one for the user's position (see `EventListViewModel`).
+    func loadIfStaleNearTheUser() async {
+        await HeadStart.give(AppConfig.Location.firstFixWait, sleep: sleep, to: loadUserLocation, then: loadIfStale)
     }
 
     /// Asks for the position on every appearance (the cache answers within its TTL): the distances need it, and

@@ -6,6 +6,13 @@ extension EventListViewModel {
     /// Events were loaded but the filter hides all of them, so the screen offers to clear it instead of saying "nothing yet".
     var isEverythingFilteredOut: Bool { !events.isEmpty && visibleEvents.isEmpty }
 
+    /// The content is not the answer for the user's position: the snapshot before any answer, or an answer loaded for
+    /// no position or another one, while the position is known. The backend's answer for the position may hold other
+    /// events entirely, so a filter that hides all of this is no verdict yet; a failed load ends the wait.
+    var awaitsAnswerForPosition: Bool {
+        requestPosition != nil && !loadFailed && (!hasLoaded || positionReason != nil)
+    }
+
     /// The currency the panel's price cap is in: the user's, so its symbol follows the Profile choice.
     var priceCurrencyCode: String { currencyCode() }
 

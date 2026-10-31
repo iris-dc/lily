@@ -121,7 +121,7 @@ undo your own edit in a dirty tree: it drops the user's uncommitted work on that
 - `lily/Core/`: `Networking` (`APIClient`, `APIRequest`, `URLSessionAPIClient`, `send(_:failingWith:)`,
   `WriteGate`, `CreateFlow`, `LostRace`), `Auth`, `Realtime`, `Navigation` (`AppNavigation`, the tab paths),
   `Changes` (`ContentFreshness`, `StoreLoader`, `ChangeTracker`, `ListSnapshotStore`), `Concurrency` (`SingleFlight`,
-  `Deadline`, `SlotGate`, `DetachedWork`, `Sleep`), `Localization` (`localized(_:)`, `AppLocale`, `LanguageStore`), `Currency`,
+  `Deadline`, `HeadStart`, `SlotGate`, `DetachedWork`, `Sleep`), `Localization` (`localized(_:)`, `AppLocale`, `LanguageStore`), `Currency`,
   `Preferences`, `Location`, `Statistics`, `Push`, `Errors` (`AppError`, `ErrorCenter`, `ErrorMessageMapper` + its
   per-area files), `Logging`, `Validation` (`CredentialsValidator`, `String.wireLength`, `Collection.first(of:)`),
   `System` (`Calendar.nextFullHour`, `FileManager.removeItemIfPresent`), `Foundation` (`String.trimmed` and

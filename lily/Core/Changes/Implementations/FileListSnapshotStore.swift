@@ -14,7 +14,20 @@ final class FileListSnapshotStore: ListSnapshotStore {
     init(directory: URL = FileListSnapshotStore.defaultDirectory, logger: any Logging) {
         self.directory = directory
         self.logger = logger
+        sweepAnotherFormat()
     }
+
+    /// Snapshots an older build wrote mean something else (`AppConfig.Lists.snapshotFormat`): the directory goes, so
+    /// no list starts from them.
+    private func sweepAnotherFormat() {
+        guard FileManager.default.fileExists(atPath: directory.path()) else { return }
+        let found = try? String(contentsOf: formatMarker, encoding: .utf8)
+        guard found != String(AppConfig.Lists.snapshotFormat) else { return }
+        logger.info(.cache, "List snapshots of format \(found ?? "none") swept for format \(AppConfig.Lists.snapshotFormat)")
+        clear()
+    }
+
+    private var formatMarker: URL { directory.appending(path: AppConfig.Lists.snapshotFormatFileName) }
 
     static var defaultDirectory: URL {
         FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -44,7 +57,7 @@ final class FileListSnapshotStore: ListSnapshotStore {
     func save<Value: Encodable>(_ value: Value, for key: ListSnapshotKey) {
         do {
             let data = try encoder.encode(value)
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try prepareDirectory()
             try data.write(to: location(of: key), options: .atomic)
         } catch {
             logger.warning(.cache, "Storing the snapshot for \(key.list) failed: \(error)")
@@ -63,6 +76,14 @@ final class FileListSnapshotStore: ListSnapshotStore {
 
     func sessionDidEnd() {
         clear()
+    }
+
+    /// The directory with its format marker, made on the way; a sweep takes both, so the marker is written again.
+    private func prepareDirectory() throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        if !FileManager.default.fileExists(atPath: formatMarker.path()) {
+            try String(AppConfig.Lists.snapshotFormat).write(to: formatMarker, atomically: true, encoding: .utf8)
+        }
     }
 
     private func location(of key: ListSnapshotKey) -> URL {

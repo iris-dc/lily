@@ -51,6 +51,22 @@ struct EventListScreenStateTests {
         #expect(state == .filteredOut)
     }
 
+    /// Content that is not the answer for the user's position (the snapshot, or an answer for none) and that the filter
+    /// hides entirely is no verdict: the spinner, until the answer for the position lands.
+    @Test func everythingFilteredOutWhileTheAnswerForThePositionIsOutIsLoading() {
+        let waiting = EventListScreenState.resolve(isInitialLoad: false,
+                                                   loadFailed: false,
+                                                   hasEvents: true,
+                                                   isEverythingFilteredOut: true,
+                                                   awaitsAnswerForPosition: true)
+        let showing = EventListScreenState.resolve(isInitialLoad: false,
+                                                   loadFailed: false,
+                                                   hasEvents: true,
+                                                   isEverythingFilteredOut: false,
+                                                   awaitsAnswerForPosition: true)
+        #expect(waiting == .loading && showing == .list)
+    }
+
     @Test func aFailedRefreshKeepsTheList() {
         let state = EventListScreenState.resolve(isInitialLoad: false,
                                                  loadFailed: true,

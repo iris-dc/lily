@@ -28,15 +28,13 @@ final class ShellLists: SessionObserver {
         self.exploreTournaments = exploreTournaments
     }
 
-    /// What Explore does on appearance, done ahead of it: the loads with the position alongside, as the tab runs them
-    /// (a list answered before the fix arrived asks once more itself), the carousels behind their flags. Within the
-    /// lists' TTL a later run asks nothing.
+    /// What Explore does on appearance, done ahead of it: each list's position-first load (`loadIfStaleNearTheUser`),
+    /// the three alongside, the carousels behind their flags. Within the lists' TTL a later run asks nothing.
     func loadExploreIfStale() async {
-        async let events: Void = exploreEvents.loadIfStale()
-        async let eventsPosition: Void = exploreEvents.loadUserLocation()
+        async let events: Void = exploreEvents.loadIfStaleNearTheUser()
         async let groups: Void = loadDiscoverIfStale()
         async let tournaments: Void = loadExploreTournamentsIfStale()
-        _ = await (events, eventsPosition, groups, tournaments)
+        _ = await (events, groups, tournaments)
     }
 
     /// Every list empties and forgets its loads; the snapshots they write while clearing are swept by the snapshot
@@ -50,16 +48,10 @@ final class ShellLists: SessionObserver {
     }
 
     private func loadDiscoverIfStale() async {
-        guard AppConfig.FeatureFlags.groups else { return }
-        async let page: Void = discover.loadIfStale()
-        async let position: Void = discover.loadUserLocation()
-        _ = await (page, position)
+        if AppConfig.FeatureFlags.groups { await discover.loadIfStaleNearTheUser() }
     }
 
     private func loadExploreTournamentsIfStale() async {
-        guard AppConfig.FeatureFlags.tournaments else { return }
-        async let list: Void = exploreTournaments.loadIfStale()
-        async let position: Void = exploreTournaments.loadUserLocation()
-        _ = await (list, position)
+        if AppConfig.FeatureFlags.tournaments { await exploreTournaments.loadIfStaleNearTheUser() }
     }
 }

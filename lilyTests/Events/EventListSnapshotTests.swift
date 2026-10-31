@@ -22,7 +22,8 @@ struct EventListSnapshotTests {
         .resolve(isInitialLoad: viewModel.isInitialLoad,
                  loadFailed: viewModel.loadFailed,
                  hasEvents: !viewModel.events.isEmpty,
-                 isEverythingFilteredOut: viewModel.isEverythingFilteredOut)
+                 isEverythingFilteredOut: viewModel.isEverythingFilteredOut,
+                 awaitsAnswerForPosition: viewModel.awaitsAnswerForPosition)
     }
 
     /// The snapshot is content on the first frame and through the first load, which still runs: it is a hint, not an answer.

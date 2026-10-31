@@ -27,8 +27,7 @@ struct DiscoverTournamentsView: View {
         }
         // Re-runs on a change made elsewhere; the position first, so the one request is ranked by distance.
         .task(id: dependencies.tournamentChanges.version) {
-            await viewModel.loadUserLocation()
-            await viewModel.loadIfStale()
+            await viewModel.loadIfStaleNearTheUser()
         }
     }
 

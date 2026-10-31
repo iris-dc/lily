@@ -38,14 +38,10 @@ struct ExploreTab: View {
                       refreshHeader: refreshCarousels,
                       header: carousels)
         .task(id: dependencies.groupChanges.version) {
-            if AppConfig.FeatureFlags.groups { await discover.loadIfStale() }
+            if AppConfig.FeatureFlags.groups { await discover.loadIfStaleNearTheUser() }
         }
         .task(id: dependencies.tournamentChanges.version) {
-            if AppConfig.FeatureFlags.tournaments { await tournaments.loadIfStale() }
-        }
-        .task {
-            if AppConfig.FeatureFlags.groups { await discover.loadUserLocation() }
-            if AppConfig.FeatureFlags.tournaments { await tournaments.loadUserLocation() }
+            if AppConfig.FeatureFlags.tournaments { await tournaments.loadIfStaleNearTheUser() }
         }
     }
 }

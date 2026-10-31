@@ -77,6 +77,26 @@ struct ListSnapshotStoreTests {
         #expect(logger.messages(in: .cache).filter { $0.contains("List snapshots cleared") }.count == 1)
     }
 
+    /// A build that reads the snapshots differently sweeps what an older one wrote (`AppConfig.Lists.snapshotFormat`),
+    /// marker or none; the current format's are kept, and a save writes the marker again.
+    @Test func snapshotsOfAnotherFormatAreSweptWhenTheStoreStarts() throws {
+        defer { removeDirectory() }
+        let marker = directory.appending(path: AppConfig.Lists.snapshotFormatFileName)
+        makeStore().save(events, for: key)
+        #expect(try String(contentsOf: marker, encoding: .utf8) == String(AppConfig.Lists.snapshotFormat))
+        #expect(makeStore().load([SportEvent].self, for: key) == events, "the current format is kept")
+
+        try "1".write(to: marker, atomically: true, encoding: .utf8)
+        #expect(makeStore().load([SportEvent].self, for: key) == nil)
+        #expect(logger.messages(in: .cache).filter { $0.contains("of format 1 swept") }.count == 1)
+
+        makeStore().save(events, for: key)
+        try FileManager.default.removeItem(at: marker)
+        #expect(makeStore().load([SportEvent].self, for: key) == nil, "no marker is an older build's directory")
+        #expect(logger.messages(in: .cache).filter { $0.contains("of format none swept") }.count == 1)
+        #expect(!FileManager.default.fileExists(atPath: directory.path()))
+    }
+
     @Test func clearingNothingIsNoError() {
         makeStore().clear()
 

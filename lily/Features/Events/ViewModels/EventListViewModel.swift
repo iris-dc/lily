@@ -21,6 +21,8 @@ final class EventListViewModel {
     let recorder: any InteractionRecorder
     let logger: any Logging
     let now: () -> Date
+    /// What the wait for the first fix sleeps on; injected so a test moves it by hand.
+    private let sleep: Sleep
     /// The user's currency (`CurrencyStore.currencyCode`): what the price cap is typed and judged in.
     let currencyCode: () -> String
 
@@ -47,11 +49,13 @@ final class EventListViewModel {
          recorder: any InteractionRecorder,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
+         sleep: @escaping Sleep = systemSleep,
          currencyCode: @escaping () -> String,
          initialFilter: EventFilter = EventFilter(),
          filterStore: any EventFilterStore = NoOpEventFilterStore(),
          snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) {
         self.filter = initialFilter
+        self.sleep = sleep
         self.currencyCode = currencyCode
         self.scope = scope
         self.repository = repository
@@ -207,6 +211,14 @@ final class EventListViewModel {
         logger.debug(.cache, "\(what); sibling lists invalidated")
     }
 
+    /// Explore's load as the tab and the launch make it: the position first, for `AppConfig.Location.firstFixWait` at
+    /// most, then the load, so the first answer is the one for the user's position and no answer for none shows in
+    /// between (one for the Berlin fixtures, filtered to "nothing matches" for a user elsewhere, then the real one). A
+    /// fix that takes longer lands through `loadUserLocation`, which reloads once for it as ever.
+    func loadIfStaleNearTheUser() async {
+        await HeadStart.give(AppConfig.Location.firstFixWait, sleep: sleep, to: loadUserLocation, then: loadIfStale)
+    }
+
     /// Asks for the position on every appearance: the cache in front of CoreLocation answers within its TTL, so a tab
     /// that reappears within minutes costs nothing and one that reappears later follows the user. Location is optional
     /// context: without a fix the UI simply omits distances, and a miss after a fix keeps the last known position rather
@@ -264,10 +276,10 @@ final class EventListViewModel {
     }
 
     /// Only Explore is ordered by distance; Home is the caller's own games, in start order.
-    private var requestPosition: Coordinate? { scope == .upcoming ? userLocation : nil }
+    var requestPosition: Coordinate? { scope == .upcoming ? userLocation : nil }
 
     /// Why the user's position makes Explore content stale (`ContentFreshness.positionReason`); Home sends none.
-    private var positionReason: String? { freshness.positionReason(for: requestPosition) }
+    var positionReason: String? { freshness.positionReason(for: requestPosition) }
 
     private var isWaitingToRetry: Bool {
         freshness.isWaitingToRetry(now: now(), version: changes.version, userID: identity.currentUserID)

@@ -94,7 +94,8 @@ extension EventListView {
         .resolve(isInitialLoad: viewModel.isInitialLoad,
                  loadFailed: viewModel.loadFailed,
                  hasEvents: !viewModel.events.isEmpty,
-                 isEverythingFilteredOut: viewModel.isEverythingFilteredOut)
+                 isEverythingFilteredOut: viewModel.isEverythingFilteredOut,
+                 awaitsAnswerForPosition: viewModel.awaitsAnswerForPosition)
     }
 
     var eventList: some View {

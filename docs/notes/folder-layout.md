@@ -44,7 +44,8 @@ lily/
                  load at a time in a task of its own; callers made while it runs join it; the per-user stores' load), DetachedWork (work off the main
                  actor that dies with its caller: the media preparers' one hop), SlotGate (at most N at once, the rest in order, a
                  cancelled waiter handing its slot on: the upload cap), Deadline (two unstructured tasks, the first outcome wins, the loser
-                 cancelled but not awaited: the sign-out's caps on the device removal and the statistics flush)
+                 cancelled but not awaited: the sign-out's caps on the device removal and the statistics flush), HeadStart (work given
+                 a head start of at most a timeout before the next step runs, and left to finish: Explore's lists and the position lookup)
     Foundation/  String+Trimming (trimmed and nonBlankTrimmed, how every typed field is read)
     Realtime/    Interfaces (RealtimeTransport, RealtimeEndpointProvider), Models (RealtimeChannel, RealtimeEnvelope, RealtimeConnectionState,
                  RealtimeTransportError, Backoff + RenewalDelay (the pure reconnect and renewal waits)), Implementations (MockRealtimeTransport: the in-memory bus of a mock run; NoRealtimeTransport;
@@ -227,7 +228,7 @@ lily/
                  reminder's game or match), Views (InboxView, InboxItemRow (the group invite and game reminder cards) +
                  InboxItemRow+Tournaments (the tournament invite and match reminder cards) over InboxCardParts, InboxRow (the pinned
                  row on Chats))
-lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests), Errors/ (with AppErrorCases, every AppError case
+lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ and Moderation/ included;
                  Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests and CreateFlowTests); Support/ holds fakes
                  (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, ShellDoubles,

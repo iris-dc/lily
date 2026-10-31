@@ -24,8 +24,7 @@ struct DiscoverGroupsView: View {
                 TypeFilterButton(typeFilter: $viewModel.typeFilter, identifier: AccessibilityIdentifiers.groupsTypeFilter)
             }
         }
-        .task { await viewModel.loadIfStale() }
-        .task { await viewModel.loadUserLocation() }
+        .task { await viewModel.loadIfStaleNearTheUser() }
         .onDisappear { viewModel.cancel() }
     }
 }

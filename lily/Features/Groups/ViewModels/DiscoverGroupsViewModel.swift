@@ -135,6 +135,12 @@ final class DiscoverGroupsViewModel {
         searchedPosition = nil
     }
 
+    /// A browse as the carousel and the launch make it: the position first, for `AppConfig.Location.firstFixWait` at
+    /// most, then the search, so the first page is the one around the user (see `EventListViewModel`).
+    func loadIfStaleNearTheUser() async {
+        await HeadStart.give(AppConfig.Location.firstFixWait, sleep: sleep, to: loadUserLocation, then: loadIfStale)
+    }
+
     /// Asks for the position on every appearance (the cache answers within its TTL). A browse answered for another
     /// position than the user's now (or none) is searched again, so the page is the one around the user; a search in
     /// flight notices the position itself when it answers (`search()`).

@@ -100,6 +100,10 @@ nonisolated enum AppConfig {
         static let snapshotDirectoryName = "ListSnapshots"
         /// The caller part of a guest's snapshot file name.
         static let guestSnapshotName = "guest"
+        /// What the snapshots mean; a directory written under another number is swept, since a build that reads them
+        /// differently (format 2: Explore's lists hold the answer for the user's position) must not start from them.
+        static let snapshotFormat = 2
+        static let snapshotFormatFileName = "format"
         /// The lists' names in their snapshot files; a scope reads its own through `snapshotList`.
         static let upcomingEventsSnapshot = "events-upcoming"
         static let joinedEventsSnapshot = "events-joined"
@@ -124,6 +128,9 @@ nonisolated enum AppConfig {
         static let pickerMinimumMoveMeters: Double = 1
         /// Waiting longer than this for a GPS fix falls back to a map centred on the events.
         static let fixTimeout: Duration = .seconds(8)
+        /// How long Explore's first request waits for the fix, so its answer is the one for the user's position and no
+        /// answer for none shows in between; a fix that takes longer comes through the usual reload.
+        static let firstFixWait: Duration = .seconds(1.5)
         /// A fix is reused for this long, so screens re-appearing and sibling tabs share one CoreLocation stream.
         static let fixTTL: Duration = .seconds(300)
         /// A missing fix (denied or timed out) is remembered this long: short, so a later GPS fix is picked up soon.

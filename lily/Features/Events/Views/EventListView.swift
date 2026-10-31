@@ -62,8 +62,7 @@ struct EventListView<Header: View>: View {
         }
         // Re-runs when a game changes anywhere (a create from a group's detail pushed on this stack), so the list behind
         // the detail is right on return, not only on the next appearance.
-        .task(id: dependencies.eventChanges.version) { await viewModel.loadIfStale() }
-        .task { await viewModel.loadUserLocation() }
+        .task(id: dependencies.eventChanges.version) { await viewModel.loadIfStaleNearTheUser() }
         .onChange(of: presentation) { viewModel.presentationChanged(to: presentation) }
         // Coming back to the foreground is the one moment location permission may have changed (Settings), and the
         // user may have moved meanwhile, so the position is asked for again; the cache answers within its TTL.
