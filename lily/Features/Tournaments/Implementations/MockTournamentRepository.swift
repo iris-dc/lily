@@ -10,6 +10,9 @@ final class MockTournamentRepository: TournamentRepository {
     /// Private tournaments the caller was invited into: readable before they enter, as the backend's `invitedUserIds`
     /// makes them (`MockInboxRepository` notes the pending invites).
     private var invitedTournamentIDs: Set<String> = []
+    /// The draft behind each tournament made here, by client id: Laurel compares a repeated create with what it stored
+    /// and refuses other details under the same id.
+    private var drafts: [String: TournamentDraft] = [:]
     let groups: MockGroupRepository
     let identity: any IdentityProvider
     let logger: any Logging
@@ -52,10 +55,11 @@ final class MockTournamentRepository: TournamentRepository {
         return resolved(try readable(id))
     }
 
-    /// Like the backend: the draft's client id is the tournament id, so a repeated create answers the same tournament;
-    /// the room is registered with the caller as its owner.
+    /// Like the backend: the draft's client id is the tournament id, so a repeated create answers the same tournament
+    /// and the same id with other details is `TOURNAMENT_ID_REUSED`; the room is registered with the caller as its owner.
     func create(_ draft: TournamentDraft) async throws -> TournamentDetail {
         if let existing = details[draft.clientId] {
+            guard drafts[draft.clientId] == draft else { throw AppError.createIdReused }
             logger.info(.tournaments, "Mock create replayed for tournament \(existing.id)")
             return resolved(existing)
         }
@@ -72,6 +76,7 @@ final class MockTournamentRepository: TournamentRepository {
                                               now: now())
         let detail = TournamentDetail(tournament: tournament)
         details[tournament.id] = detail
+        drafts[tournament.id] = draft
         groups.registerRoom(for: tournament, memberCount: MockTournamentFixtures.playerCount(of: detail))
         logger.info(.tournaments, "Mock tournament \(tournament.id) created (\(tournament.entriesDescription))")
         return resolved(detail)
@@ -91,6 +96,7 @@ final class MockTournamentRepository: TournamentRepository {
         guard meetsFormatFloor(draft) else { throw AppError.tournamentUpdateFailed }
         guard draft.maxEntries >= tournament.entryCount else { throw AppError.capacityTooLow }
         let updated = store(detail.replacing(tournament: tournament.updating(with: draft, at: now())))
+        drafts[id] = draft
         groups.syncRoom(for: updated.tournament, memberCount: MockTournamentFixtures.playerCount(of: updated))
         logger.info(.tournaments, "Mock tournament \(id) updated (\(updated.tournament.entriesDescription))")
         return resolved(updated)

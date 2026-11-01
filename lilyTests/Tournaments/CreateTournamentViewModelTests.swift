@@ -136,6 +136,36 @@ struct CreateTournamentViewModelTests {
             .filter { $0.contains("Could not check whether tournament \(viewModel.draft.clientId) landed") }.count == 1)
     }
 
+    @Test func aTryAgainOnTheCreateIsRepeatedOnce() async {
+        harness.repository.transientErrors = [.tryAgain]
+        let viewModel = harness.makeCreateViewModel()
+        completeDraft(viewModel)
+
+        await viewModel.submit()
+
+        #expect(viewModel.isDone && harness.presentedError == nil)
+        #expect(harness.repository.createdDrafts.count == 2 && harness.repository.fetchedIDs.isEmpty)
+        #expect(harness.logs(.info).contains { $0.contains("lost a race") })
+    }
+
+    @Test func aReusedIdUpdatesTheTournamentWithTheLatestDetails() async {
+        harness.repository.transientErrors = [.createIdReused]
+        let viewModel = harness.makeCreateViewModel()
+        completeDraft(viewModel)
+        let stored = Tournament.fixture(id: viewModel.draft.clientId,
+                                        name: "Kickers Cup (old)",
+                                        organizerUserId: TestFixtures.user.id)
+        harness.repository.details[viewModel.draft.clientId] = .fixture(tournament: stored)
+
+        await viewModel.submit()
+
+        #expect(viewModel.isDone && harness.presentedError == nil)
+        #expect(harness.sink.details.count == 1 && harness.sink.details.first?.tournament.name == "Kickers Cup")
+        #expect(harness.repository.updatedDrafts.map(\.id) == [viewModel.draft.clientId])
+        #expect(harness.repository.fetchedIDs.isEmpty, "no lookup")
+        #expect(harness.logs(.warning).contains { $0.contains("repeated with other details") })
+    }
+
     @Test func aTournamentCreateOffersRemindersOnceAfterTheTournamentWasHandedOn() async {
         let spy = SpyPushOptIn()
         let viewModel = harness.makeCreateViewModel(pushOptIn: spy)

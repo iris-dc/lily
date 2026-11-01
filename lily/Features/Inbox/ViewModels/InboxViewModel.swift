@@ -88,7 +88,7 @@ final class InboxViewModel {
     /// still admitted the caller somewhere, so Mine is reloaded, the one place a new room can surface; nothing opens
     /// and no popup shows.
     func accept(_ item: InboxItem) async {
-        await answer(item, verb: "accept") {
+        await answer(item, verb: "accept", wanting: .accepted) {
             let acceptance = try await repository.accept(itemID: item.id)
             store.replace(acceptance.item)
             if let group = acceptance.group {
@@ -109,7 +109,7 @@ final class InboxViewModel {
     }
 
     func decline(_ item: InboxItem) async {
-        await answer(item, verb: "decline") {
+        await answer(item, verb: "decline", wanting: .declined) {
             store.replace(try await repository.decline(itemID: item.id))
             logger.info(.inbox, "Invite \(item.id) declined")
         }
@@ -132,10 +132,16 @@ final class InboxViewModel {
         navigation.openInChat(reminder.destination)
     }
 
-    /// One answer per invite at a time; `TRY_AGAIN` is repeated once. A verdict on the invite (answered already,
-    /// expired) is a stale card, not a fault: a warning, and the inbox is reloaded after the popup so the card shows
+    /// One answer per invite at a time; `TRY_AGAIN` is repeated once. An outcome left unknown (a lost connection, a
+    /// 5xx) is read back from the inbox before any popup (`LostAnswer`): a card the backend shows answered as asked
+    /// means the tap went through, and an accept then reloads Mine, the one place the new room can surface, since the
+    /// page names no group or tournament (a tournament invite's tells the tournament lists too). A verdict on the invite
+    /// (answered already, expired) is a stale card, not a fault: a warning, and the same read-back so the card shows
     /// the invite as the backend now has it.
-    private func answer(_ item: InboxItem, verb: String, _ attempt: () async throws -> Void) async {
+    private func answer(_ item: InboxItem,
+                        verb: String,
+                        wanting status: InviteStatus,
+                        _ attempt: () async throws -> Void) async {
         guard !busyItemIDs.contains(item.id) else { return }
         busyItemIDs.insert(item.id)
         defer { busyItemIDs.remove(item.id) }
@@ -148,11 +154,39 @@ final class InboxViewModel {
         } catch {
             guard !AppError.isCancellation(error) else { return }
             let failure = Self.restated(error, for: item)
+            let settled = await inviteReadBack.settle("Invite \(item.id) \(verb)", despite: failure) { items in
+                items.first { $0.id == item.id }?.inviteAnswer.map { $0.status == status }
+            }
+            if settled.isLanded {
+                await noteLanded(status, of: item)
+                return
+            }
             let isVerdict = (failure as? AppError)?.isInviteVerdict == true
             logger.log(isVerdict ? .warning : .error, .inbox, "Invite \(item.id) \(verb) failed: \(failure)")
             reporter.report(failure)
-            if isVerdict { await store.reload() }
         }
+    }
+
+    /// A landed accept admitted the caller somewhere the page does not name: Mine is reloaded for the room, and a
+    /// tournament's lists are told as a direct accept tells them.
+    private func noteLanded(_ status: InviteStatus, of item: InboxItem) async {
+        guard status == .accepted else { return }
+        if item.kind == .tournamentInvite { tournamentChanges.recordChange() }
+        await myGroups.reload()
+    }
+
+    /// The store stays the one source: the read-back is its reload, and its failure is the inbox's own.
+    private var inviteReadBack: LostAnswer<[InboxItem]> {
+        LostAnswer(category: .inbox,
+                   logger: logger,
+                   leavesOutcomeUnknown: { $0 == .network || $0 == .inviteActionFailed },
+                   isWorthAnotherLook: { $0.isInviteVerdict },
+                   refetch: { [store] in
+                       await store.reload()
+                       guard !store.loadFailed else { throw AppError.inboxUnavailable }
+                       return store.items
+                   },
+                   apply: { _ in })
     }
 
     /// The inbox route answers the groups cap and the tournaments cap under one code; the card knows which it is.

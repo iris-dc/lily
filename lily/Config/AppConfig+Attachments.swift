@@ -22,6 +22,11 @@ nonisolated extension AppConfig.Chat {
         static let thumbnailMaxBytes = 200 * 1024
         /// A thumbnail over the cap is encoded again at this quality; one still over it is left out.
         static let thumbnailFallbackJPEGQuality = 0.6
+        /// A stored picture whose header declares more pixels than this is not decoded at all (its tile shows the failed
+        /// glyph and a warning names the size). This app's own uploads are at most 2048 x 2048, a fourfold margin, and
+        /// ImageIO builds a GIF's whole canvas, about 4 B/px, before it can shrink it, so 16 MP keeps one hostile GIF to
+        /// about 64 MB; raise it only with that arithmetic redone.
+        static let imageMaxDeclaredPixels = 16_000_000
         /// The content types Laurel accepts for images and videos; the mock ticket refuses the rest like the backend.
         static let imageContentTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
         static let videoContentTypes = ["video/mp4", "video/quicktime"]

@@ -12,21 +12,26 @@ final class CreateGroupViewModel {
     private(set) var createdGroup: SportGroup?
 
     private let repository: any GroupRepository
+    private let identity: any IdentityProvider
     private let store: MyGroupsStore
     private let locationService: any LocationService
     private let logger: any Logging
     /// A `.network` or `.groupCreationFailed` (which also covers an id another user owns) leaves the outcome unknown;
-    /// the group is ours when the caller owns what the backend holds under the draft's id.
+    /// the group is ours when the caller owns what the backend holds under the draft's id; a `.createIdReused` sends
+    /// the draft as an update under that id.
     private let flow: CreateFlow<SportGroup>
     private let onCreated: @MainActor (SportGroup) -> Void
 
     init(repository: any GroupRepository,
+         identity: any IdentityProvider,
          store: MyGroupsStore,
          locationService: any LocationService,
          reporter: GroupErrorReporter,
          logger: any Logging,
+         tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
          onCreated: @escaping @MainActor (SportGroup) -> Void) {
         self.repository = repository
+        self.identity = identity
         self.store = store
         self.locationService = locationService
         self.logger = logger
@@ -34,6 +39,7 @@ final class CreateGroupViewModel {
         flow = CreateFlow(noun: "group",
                           category: .groups,
                           logger: logger,
+                          tryAgainDelay: tryAgainDelay,
                           report: { reporter.report($0) },
                           leavesOutcomeUnknown: { $0 == .network || $0 == .groupCreationFailed },
                           notFound: .groupNotFound,
@@ -57,16 +63,21 @@ final class CreateGroupViewModel {
 
     /// Sends the draft. A call while one is in flight is dropped; a dismissed sheet (cancellation) stays quiet; a
     /// failure goes to the popup unless the backend turns out to have the group already (`CreateFlow`). The same
-    /// `clientId` travels with every attempt, so a retry after a lost answer finds the group instead of creating a
-    /// second one.
+    /// `clientId` travels with every attempt, so a retry after a lost answer finds the group, or updates it with the
+    /// latest details, instead of creating a second one. An answer for a caller who signed out or changed meanwhile is
+    /// dropped: nothing enters Mine, nothing opens (a guest's caller is nil; the client refuses their write).
     func submit() async {
         guard canSubmit else { return }
         isSubmitting = true
         defer { isSubmitting = false }
+        let caller = identity.currentUserID
         let created = await flow.submit(clientID: draft.clientId,
                                         describing: { "(\($0.visibility.rawValue))" },
-                                        send: { try await repository.create(draft) })
-        if let created { accept(created) }
+                                        send: { try await repository.create(draft) },
+                                        update: { try await repository.update(id: draft.clientId, draft) })
+        guard let created else { return }
+        if let caller, !identity.isStillCaller(caller, orDrop: "Create answer", logger: logger) { return }
+        accept(created)
     }
 
     private func accept(_ group: SportGroup) {

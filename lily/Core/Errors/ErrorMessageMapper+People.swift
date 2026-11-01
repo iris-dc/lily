@@ -1,12 +1,15 @@
 import Foundation
 
-/// Copy for profiles and direct conversations; `message(for:)` routes those cases here, and the tournament cases fall
-/// through to `tournamentMessage(for:)` so the main switch stays under the complexity limit.
+/// Copy for profiles (a person's, and the caller's own name) and direct conversations; `message(for:)` routes those
+/// cases here, and the tournament cases fall through to `tournamentMessage(for:)` so the main switch stays under the
+/// complexity limit.
 nonisolated extension ErrorMessageMapper {
     static func peopleMessage(for error: AppError) -> ErrorMessage {
         switch error {
         case .profileUnavailable:
             ErrorMessage(title: localized("Couldn't load this profile"), body: localized("Please try again in a moment."))
+        case .profileUpdateFailed:
+            ErrorMessage(title: localized("Couldn't save your name"), body: localized("Please try again in a moment."))
         case .conversationFailed:
             ErrorMessage(title: localized("Couldn't start the conversation"), body: localized("Please try again in a moment."))
         case .conversationLimit:

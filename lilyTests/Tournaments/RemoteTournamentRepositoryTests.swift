@@ -128,6 +128,16 @@ struct RemoteTournamentRepositoryTests {
         #expect(client.requests.isEmpty)
     }
 
+    /// The same id with other details is our own earlier create, which `CreateFlow` updates; another organiser's id
+    /// stays the generic creation failure, which the lookup settles.
+    @Test func aReusedIdOnACreateIsCreateIdReusedAndATakenOneTheCreationFailure() async {
+        client.error = APIError.http(status: 409, body: APIErrorBody(code: "TOURNAMENT_ID_REUSED", message: "m"))
+        await #expect(throws: AppError.createIdReused) { try await repository.create(.fixture()) }
+
+        client.error = APIError.http(status: 409, body: APIErrorBody(code: "TOURNAMENT_ID_TAKEN", message: "m"))
+        await #expect(throws: AppError.tournamentCreationFailed) { try await repository.create(.fixture()) }
+    }
+
     /// The real client answers a `204` as the empty body the route promised, and refuses it for a type that needs JSON.
     @Test func theClientDecodesAnEmptyBodyForTheTypesThatAllowOne() async throws {
         let backend = StubBackend(status: 204)

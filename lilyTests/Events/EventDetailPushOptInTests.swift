@@ -43,6 +43,18 @@ struct EventDetailPushOptInTests {
         #expect(spy.offerCount == 0)
     }
 
+    /// The read-back shows the caller in: the join landed, and it earns the prompt as a direct answer does.
+    @Test func aJoinWhoseOutcomeIsUnknownButLandedOffersRemindersOnce() async {
+        let harness = makeHarness()
+        harness.repository.result = .success([harness.viewModel.event.updatingParticipation(count: 2, isJoined: true)])
+        harness.repository.participationError = AppError.network
+
+        await harness.viewModel.join()
+
+        #expect(harness.errorCenter.current == nil)
+        #expect(spy.offerCount == 1)
+    }
+
     @Test func aJoinWhoseOutcomeIsUnknownAndDidNotLandNeverOffersReminders() async {
         let harness = makeHarness()
         harness.repository.participationError = AppError.network

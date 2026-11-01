@@ -18,18 +18,21 @@ lily/
                  + AppDependencies+Tournaments (the tournament repository and change tracker over the group dependencies; the
                  tournament view-model factories) + AppDependencies+Moderation (the terms sheet's view model) + AppDependencies+Session
                  (the session store settled from the launch arguments; -reset-session decided and logged once as startsFresh and handed to
-                 the session, language, currency and filter stores) + AppDependencies+Shell (makeShellSync) + AppDependencies+Currency
-                 + AppDependencies+Feedback + AppDependencies+LaunchArguments (the value-taking arguments' URL helpers)
+                 the session, language, currency and filter stores; wireSessionExpiry, the hook that ends the session when the pool
+                 refuses to refresh the token) + AppDependencies+Shell (makeShellSync) + AppDependencies+Currency
+                 + AppDependencies+Feedback + AppDependencies+Profile (the display name editor's view model over the root's
+                 ProfileStore; 2026-10-31) + AppDependencies+LaunchArguments (the value-taking arguments' URL helpers)
   Localizable.xcstrings, InfoPlist.xcstrings   the string catalogs: every line of copy in seven languages, and the usage descriptions
   Config/        AppConfig (non-visual constants), AppBranding (product copy, every line read through localized(_:)), DesignTokens (spacing, radii, durations, SF Symbol names),
                  AccessibilityIdentifiers (the identifiers UI tests query); the groups, chat, realtime, moderation, people, shell
                  and language constants, copy, tokens and identifiers live in +Groups / +Chat / +Realtime / +Moderation / +People /
                  +Shell / +Localization / +Settings / +FeatureFlags / +Tournaments / +TournamentResults / +TournamentInvites /
-                 +ChatTournaments extension files so SwiftLint's type_body_length never trips on the four main types
+                 +ChatTournaments / +Profile (the display name's limits, copy and identifiers; 2026-10-31) extension files so
+                 SwiftLint's type_body_length never trips on the four main types
   Core/
     Auth/        Models (AuthUser, AuthSession + StoredSession (guest, signed in, or signing out: a sign-out the pool has not confirmed yet),
                  EmailAuthResult, ConfirmOutcome, SignUpOutcome, SessionState, AuthProvider), Interfaces (AuthService, SessionStore,
-                 IdentityProvider, CognitoClient, AuthTokenProvider, SessionObserver),
+                 IdentityProvider, CognitoClient, AuthTokenProvider, SessionExpiryReporter, SessionObserver),
                  Implementations (CognitoAuthService over AmplifyCognitoClient, the only file importing Amplify, configured
                  from AmplifyConfigurationBuilder; JWTClaims; Mock*, UserDefaults*, SessionIdentityProvider), SessionController
     Changes/     ChangeTracker (observable change counter; one per kind of data, so lists that missed a change reload),
@@ -75,14 +78,16 @@ lily/
                  paged list decodes), URLSessionAPIClient + JSON conventions (queries percent-encoded, refusals logged at warning and
                  faults at error), APIFailureMapping (backend codes to AppError, one exhaustive switch), LostRace (the one TRY_AGAIN
                  repeat every write shares, logging the retry line itself), WriteGate (the frame around one plain write: the repeat,
-                 quiet cancellation, the failure logged and reported, a Bool back), CreateFlow (the create forms' send, unknown-outcome
-                 lookup and ownership check)
+                 quiet cancellation, the failure logged and reported, a Bool back, a settling read-back), LostAnswer (the read-back
+                 after a lost answer every write shares: refetch, apply, landed or not), CreateFlow (the create forms' send: the
+                 TRY_AGAIN repeat, the unknown-outcome lookup and ownership check, the update after a reused id)
     Statistics/  Models (Interaction, InteractionKind, FilterSummary, InteractionBatch, InteractionReceipt), the
                  InteractionRecorder interface, RemoteInteractionRecorder (batching) and NoOpInteractionRecorder (mock runs)
     Location/    Coordinate model (+ CoreLocation bridge), LocationFix, interfaces (LocationService, LocationUpdateSource),
                  implementations (CoreLocation update source and service, caching decorator, mock)
     Validation/  CredentialsValidator (mirroring the backend's @Email: no inner whitespace, one @, a 64-unit local part), String+WireLength
-                 (UTF-16 length, as the backend counts text), Collection+FirstOf (the one first-present-issue rule of the forms)
+                 (UTF-16 length, as the backend counts text), Collection+FirstOf (the one first-present-issue rule of the forms),
+                 String+CodePoints (codePointCount and prefix(codePoints:), the backend's measure of a display name; 2026-10-31)
     UI/          Theme (fonts, aurora role-to-color mapping), Effects (aurora geometry, roles, film grain: pure, testable math;
                  LaunchAnimations, UIKit's animations off until the shell's first frame so the tab bar's pill is placed, not slid),
                  Components (aurora background, content-screen scaffold, glass cards, button modifiers, provider buttons, error popup,
@@ -96,8 +101,9 @@ lily/
                  TileGrid on a regular width), CardHeader (the chips-and-time header of the event and tournament cards), OwnerTitleBlock
                  (title, host or organiser line and group line of the two details), ListSegment (a list segment's loading / empty / failed
                  / content over ListState), VisibilityChip, DraftSheet (the one sheet around every create and edit form: Cancel, submit,
-                 form sizing, own popup) + DraftSubmitButton + CaptionedControl (a caption over a control), FilterDropdown
-                 (FilterDropdownButton + DropdownPanel, the dropdown scaffold of the event and type filters), ...), Interfaces
+                 form sizing, own popup) + DraftSubmitButton + CaptionedControl (a caption over a control), SettingsLinkRow
+                 (a glass link card: icon, title, subtitle, chevron; Profile's display name and contact rows share it; 2026-10-31),
+                 FilterDropdown (FilterDropdownButton + DropdownPanel, the dropdown scaffold of the event and type filters), ...), Interfaces
                  (DraftSubmitting: what DraftSheet reads from a form's view model), Layout (LayoutMode, ReadableColumn, AdaptiveCardGrid,
                  TileGrid, FormSheet, UsableWidth, FlowArrangement (the pure wrapping arithmetic behind FlowLayout), Binding+IsPresent
                  (confirmationDialog(item:)), HidesTabBarOnCompact + TabBarHiding (the stack root's animated tab-bar
@@ -131,7 +137,11 @@ lily/
                  EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm), PlaceFields (the
                  place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms), location picker), Services (EventOpener: fetch a game by id and push its detail, shared
                  by the inbox's reminder card and a tapped notification)
-    Profile/     Guest and signed-in profile; ProfileRepository interface, remote and mock implementations, Profile models
+    Profile/     Guest and signed-in profile; ProfileRepository interface (GET and PUT /api/profile), remote and mock
+                 implementations, Models (Profile, ProfileUpdateRequest, DisplayNameDraft with its issues), State (ProfileStore:
+                 the caller's name, loaded once per session, cleared with it), ViewModels (DisplayNameViewModel), Views
+                 (ProfileView, DisplayNameRow and DisplayNameSheet, the Language and Currency rows, SettingsChoiceRow (the
+                 popover card the Language and Currency rows share)) (updated 2026-11-01)
     Feedback/    The contact form: Models (FeedbackKind, FeedbackDraft with its issues and the one payload builder,
                  FeedbackEnvironment: app version, OS version, device model, language), FeedbackRepository interface, remote
                  (POST /api/feedback) and mock implementations, FeedbackViewModel, Views (FeedbackRow on Profile, FeedbackSheet)
@@ -179,7 +189,8 @@ lily/
                  MockAttachmentUploader, DisplayLinkFrameClock: the FrameClock on Core Animation's display link), Services (ChatCatchUp: the REST catch-up shared by the chat and the realtime controller;
                  ChatHistoryClearer: the per-side clear; AttachmentLoader (+ Files): cache first, else one download with the link refreshed
                  and its progress reported, and the named preview file QuickLook and the player read; ReadMarkerFlusher: the read marker's
-                 timing), State (UnreadCenter, ChatOutbox: every room's unsent and failed bubbles, ViewerHero: what the tiles,
+                 timing; ImageFile: the one decode of a picture file for a view, capped at the header and downsampled to the side the
+                 view needs, the upload side downsampling through it too), State (UnreadCenter, ChatOutbox: every room's unsent and failed bubbles, ViewerHero: what the tiles,
                  the viewer and the composer share for the viewer's moves, ViewerMoveDriver: the moves a frame at a time on a FrameClock), ViewModels
                  (ChatViewModel + History + Send + Live + Events + Conversation + Clear + Reply + Attachments + Moderation, AttachmentComposerModel
                  (+ Picking: the items picked for one message and every way in; + Upload: AttachmentWork, one item's prepare, ticket and
@@ -215,7 +226,7 @@ lily/
                  + Rooms), RemoteTournamentInviteRepository + MockTournamentInviteRepository (the InviteRepository seam over the
                  tournament routes)), Services (TournamentOpener: fetch a tournament by id and push its detail with a match named,
                  behind a tapped match reminder), ViewModels
-                 (TournamentList, TournamentDetail (+ Entries, + Matches), CreateTournament, EditTournament), Views (TournamentCard +
+                 (TournamentList, TournamentDetail (+ Actions, + Entries, + Matches), CreateTournament, EditTournament), Views (TournamentCard +
                  TournamentStatusChip + TournamentCardList, TournamentTile + TournamentCarousel, DiscoverTournamentsView,
                  GroupTournamentsSegment, TournamentDetailView with TournamentHeader + TournamentFacts, TournamentEntriesSegment +
                  EntryRow, TournamentResultsSegment over BracketView, StandingsTable and MatchList (all drawing MatchCell), MatchSheet
@@ -231,11 +242,13 @@ lily/
                  row on Chats))
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ and Moderation/ included;
-                 Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests and CreateFlowTests); Support/ holds fakes
+                 Profile/ holds ProfileStoreTests, DisplayNameViewModelTests, DisplayNameDraftTests and both repositories' tests
+                 (2026-10-31); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests and CreateFlowTests; Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01); Support/ holds fakes
                  (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, ShellDoubles,
                  StatisticsDoubles, GroupDoubles (with FakeInviteRepository), GroupViewModelDoubles with the shared GroupHarness and the
                  TermsCountingReporter every harness uses, InboxDoubles, PeopleDoubles, LocationDoubles, PushDoubles, FeedbackDoubles,
-                 AttachmentDoubles, CreateEventHarness, EventDetailHarness, FakeTournamentRepository (+ Matches), TournamentHarness), the
+                 ProfileDoubles (FakeProfileRepository and the Profile fixture), AttachmentDoubles, CreateEventHarness, EventDetailHarness,
+                 FakeTournamentRepository (+ Matches), TournamentHarness), the
                  shared test tools (RequestHold with the HoldsRequests protocol, Recorded, ScriptedAttempt, SpyLogger, TestFixtureFiles,
                  ImageFiles) and fixtures (TestFixtures,
                  GroupFixtures with the groups and invites contract JSON, InboxFixtures with the inbox's, PeopleFixtures with the profile,

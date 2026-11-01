@@ -113,4 +113,50 @@ struct MeStoreTermsTests {
 
         #expect(repository.acceptedVersions.isEmpty && repository.meCallCount == 0 && errorCenter.current == nil)
     }
+
+    /// A sign-out while the acceptance is out: the answer is the previous user's and must not put their account back
+    /// into the cleared store.
+    @Test func anAcceptanceForAPreviousCallerIsDropped() async {
+        repository.meResult = .success(.fixture(acceptedTermsVersion: nil))
+        let store = makeStore()
+        await store.loadIfNeeded()
+        repository.holdsRequests = true
+
+        let accepting = Task { await store.acceptTerms() }
+        await settle(until: { repository.meCallCount == 2 })
+        repository.releaseRequests()
+        repository.holdsRequests = true
+        await settle(until: { repository.acceptedVersions.count == 1 })
+        identity.currentUserID = nil
+        store.sessionDidEnd()
+        repository.releaseRequests()
+        let accepted = await accepting.value
+
+        #expect(!accepted && store.account == nil && !store.needsTerms && errorCenter.current == nil)
+        #expect(logger.count(in: .cache, at: .debug, mentioning: "Terms acceptance", "previous caller") == 1)
+    }
+
+    /// A sign-out while the acceptance is out, and the backend refuses it: the refusal is the previous user's, so no
+    /// popup rises over the landing and nothing is logged as a fault.
+    @Test func aRefusalForAPreviousCallerIsDropped() async {
+        repository.meResult = .success(.fixture(acceptedTermsVersion: nil))
+        let store = makeStore()
+        await store.loadIfNeeded()
+        repository.holdsRequests = true
+
+        let accepting = Task { await store.acceptTerms() }
+        await settle(until: { repository.meCallCount == 2 })
+        repository.releaseRequests()
+        repository.holdsRequests = true
+        await settle(until: { repository.acceptedVersions.count == 1 })
+        repository.acceptError = .network
+        identity.currentUserID = nil
+        store.sessionDidEnd()
+        repository.releaseRequests()
+        let accepted = await accepting.value
+
+        #expect(!accepted && store.account == nil && errorCenter.current == nil)
+        #expect(logger.messages(in: .groups, at: .error).isEmpty)
+        #expect(logger.count(in: .cache, at: .debug, mentioning: "Terms acceptance failure", "previous caller") == 1)
+    }
 }

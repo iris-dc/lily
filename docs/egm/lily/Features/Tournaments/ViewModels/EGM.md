@@ -8,21 +8,21 @@ The four `@Observable final class` view models of the Tournaments feature, all w
 main-actor isolated under the app target's default. `TournamentListViewModel` drives every list (`.upcoming` for the
 Explore carousel and Discover, `.mine` for Home, `.group(id)` for a group's segment) with snapshot seeding,
 `ContentFreshness` rules, `ChangeTracker` bumps and a head start for the position. `TournamentDetailViewModel` (with
-its `+Entries` and `+Matches` files) owns the detail screen: it fetches by `destination.id`, draws the opener's
-preview until the fetch answers, derives permissions, refetches after entry writes and reads back after a match write
-whose outcome is unknown. `CreateTournamentViewModel` and `EditTournamentViewModel` are the `TournamentDraftEditing`
+its `+Actions`, `+Entries` and `+Matches` files) owns the detail screen: it fetches by `destination.id`, draws the
+opener's preview until the fetch answers, derives permissions, and reads the detail back through `LostAnswer` after an
+entry or match write whose outcome is unknown (entries also after the refusals a stale detail earns). `CreateTournamentViewModel` and `EditTournamentViewModel` are the `TournamentDraftEditing`
 conformers ([`../Interfaces/EGM.md`](../Interfaces/EGM.md)) behind the draft sheets. Every dependency is a protocol
 (`TournamentRepository`, `IdentityProvider`, `LocationService`, `ListSnapshotStore`, `Logging`, `PushOptIn`,
 `GroupRepository`, `InteractionRecorder`) or a shared store (`ChangeTracker`, `ErrorCenter`, `GroupErrorReporter`,
 `MyGroupsStore`, `AppNavigation`); the models they manipulate are in [`../Models/EGM.md`](../Models/EGM.md). None
-of the six files sends invites; the invite sheet is the shared one built by `AppDependencies`.
+of the seven files sends invites; the invite sheet is the shared one built by `AppDependencies`.
 
 ## Interface
 
 - `[lily/Features/Tournaments/ViewModels/TournamentListViewModel.swift:TournamentListViewModel.init]`:
   `init(scope: TournamentScope, repository: any TournamentRepository, identity: any IdentityProvider, locationService:
-  any LocationService, changes: ChangeTracker, errorCenter: ErrorCenter, logger: any Logging, now: () -> Date = {
-  .now }, sleep: Sleep = systemSleep, snapshots: any ListSnapshotStore = NoOpListSnapshotStore())`; seeds
+  any LocationService, changes: ChangeTracker, errorCenter: ErrorCenter, logger: any Logging, now: @escaping () -> Date =
+  { .now }, sleep: @escaping Sleep = systemSleep, snapshots: any ListSnapshotStore = NoOpListSnapshotStore())`; seeds
   `tournaments` from `snapshots.load(...)` under `ListSnapshotKey(list: scope.snapshotList, userID:)`.
 - `[lily/Features/Tournaments/ViewModels/TournamentListViewModel.swift:TournamentListViewModel.tournaments]`: state
   `scope`, `private(set) tournaments`, `private(set) isLoading`, `private(set) userLocation: Coordinate?`,
@@ -35,8 +35,8 @@ of the six files sends invites; the invite sheet is the shared one built by `App
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.init]`:
   `init(destination: TournamentDestination, repository:, groupRepository: any GroupRepository, myGroups:
   MyGroupsStore, identity:, navigation: AppNavigation, changes: ChangeTracker, reporter: GroupErrorReporter,
-  recorder: any InteractionRecorder, logger:, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay, now:,
-  pushOptIn: any PushOptIn = NoPushOptIn(), onChange: @MainActor (Tournament) -> Void)`; builds a
+  recorder: any InteractionRecorder, logger:, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay, now: @escaping
+  () -> Date = { .now }, pushOptIn: any PushOptIn = NoPushOptIn(), onChange: @MainActor (Tournament) -> Void)`; builds a
   `WriteGate(category: .tournaments, ..., isExpected: { $0.isTournamentRefusal })`.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.State]`:
   `enum State: Equatable { loading, previewing(Tournament), loaded(TournamentDetail), notFound, failed }`; state
@@ -46,19 +46,25 @@ of the six files sends invites; the invite sheet is the shared one built by `App
   AppConfig.FeatureFlags.chat`), `reportTarget`, `winnerName`, `isSelf(_:)`.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.loadIfNeeded]`:
   `loadIfNeeded() async`, `load(reportingFailures: Bool = true) async`, `accept(_ detail:)`,
-  `consumeLinkedMatch()`, `openChat() async`, `cancel() async`, and the shared write frame
-  `@discardableResult perform(_ action: String, _ work: () async throws -> Void) async -> Bool`.
+  `consumeLinkedMatch()`, and the shared write frame
+  `@discardableResult perform(_ action: String, _ work: () async throws -> Void) async -> Bool` with its
+  `perform(_ action: String, settling: (any Error) async -> Bool, _ work: () async throws -> Void) async -> Bool`
+  overload; `extension AppError { var isTournamentRefusal: Bool; var leavesTournamentWriteOutcomeUnknown: Bool }` is
+  internal, the second shared by the `+Entries` and `+Matches` files; `groupRepository` and `navigation` are internal
+  `let`s for the `+Actions` file.
+- `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Actions.swift:TournamentDetailViewModel.openChat]`:
+  `openChat() async`, `cancel() async`, the menu actions that write no entry and no match.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Entries.swift:TournamentDetailViewModel.join]`:
-  `canJoin(_ entry:) -> Bool`, `join() async`, `createTeam(named:) async`, `joinTeam(_ entry:) async`,
-  `leave() async`, `removeEntry(_ entry:) async`.
+  `canJoin(_ entry:) -> Bool`, `join() async`, `@discardableResult createTeam(named:onEntered: () -> Void = {}) async -> Bool`,
+  `joinTeam(_ entry:) async`, `leave() async`, `removeEntry(_ entry:) async`.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Matches.swift:TournamentDetailViewModel.report]`:
   `hasMatches`, `actions(for:) -> MatchActions`, `entryName(_:) -> String`, `start() async`, and the
   `@discardableResult ... async -> Bool` writes `report(_:scoreA:scoreB:)`, `confirm(_:)`, `dispute(_:)`,
   `walkover(_:winnerEntryID:)`, `schedule(_:_:)`.
 - `[lily/Features/Tournaments/ViewModels/CreateTournamentViewModel.swift:CreateTournamentViewModel.init]`:
-  `init(repository:, identity:, locationService:, groups: MyGroupsStore, reporter:, logger:, now:, calendar:
-  Calendar = .current, pushOptIn:, lockedGroup: EventGroupRef? = nil, onCreated: @MainActor (TournamentDetail) ->
-  Void)`; builds a `CreateFlow<TournamentDetail>` keyed on the draft's client id. State `draft`, `isSubmitting`,
+  `init(repository:, identity:, locationService:, groups: MyGroupsStore, reporter:, logger:, now: @escaping () -> Date =
+  { .now }, calendar: Calendar = .current, pushOptIn:, lockedGroup: EventGroupRef? = nil, tryAgainDelay: Duration =
+  AppConfig.API.tryAgainDelay, onCreated: @MainActor (TournamentDetail) -> Void)`; builds a `CreateFlow<TournamentDetail>` keyed on the draft's client id. State `draft`, `isSubmitting`,
   `created`, `eligibleGroups`, `belongsToGroups`, `lockedGroup`; the `TournamentDraftEditing` members
   (`issues`, `canSubmit`, `isDone`, `earliestStart`, `proposedDeadline()`, `entriesRange`, `isLocked = false`,
   `allowsStructureChanges = true`, `showsGroupRow`, `explainsNoEligibleGroups`); `prepare() async`, `submit() async`.
@@ -110,23 +116,28 @@ of the six files sends invites; the invite sheet is the shared one built by `App
   a change; `noteRefreshFailure` (a failed refetch after a landed entry write) records a change and shows no popup.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.perform]`: one
   action at a time, signed-in only (`guard !isBusy, identity.currentUserID != nil`); the `WriteGate` repeats a
-  `TRY_AGAIN` once after `AppConfig.API.tryAgainDelay`, stays quiet on cancellation, logs refusals at warning and
-  faults at error, and reports every non-cancelled failure through `reporter` (so `.termsRequired` raises the terms
-  sheet).
+  `TRY_AGAIN` once after `AppConfig.API.tryAgainDelay`, stays quiet on cancellation, asks `settling` first (a landed
+  write answers `true` with no popup), then logs refusals at warning and faults at error, and reports every other
+  non-cancelled failure through `reporter` (so `.termsRequired` raises the terms sheet).
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:AppError.isTournamentRefusal]`: the expected
   refusals are `.tournamentNotFound`, `.registrationClosed`, `.tournamentFull`, `.alreadyEntered`, `.teamFull`,
   `.entryNotFound`, `.notOrganizer`, `.tournamentLocked`, `.notEnoughEntries`, `.notInMatch`, `.matchNotReady`,
   `.matchNotFound`, `.drawNotAllowed`, `.tournamentLimit`, `.tournamentMembershipLimit`, `.tryAgain`,
   `.termsRequired`; they are shown, never swallowed.
-- `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Entries.swift:TournamentDetailViewModel.enter]`:
+- `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Entries.swift:TournamentDetailViewModel.settleEntry]`:
   entry writes answer an entry only, so `join`, `createTeam`, `joinTeam`, `leave` and `removeEntry` refetch with
-  `load(reportingFailures: false)`; the first four also `myGroups.reload()` because the backend moves the caller's
-  room in the same transaction; `pushOptIn.offerReminders()` runs only after a successful enter. `leave` needs
-  `myEntryId` and a caller, and drops the room from `myGroups` only for a non-organiser. `canJoin` needs
-  `permissions.canJoinTeams`, a registered entry and a free seat; a full tournament is no bar.
+  `load(reportingFailures: false)` after an answer; a `.network` or `.tournamentActionFailed`
+  (`leavesTournamentWriteOutcomeUnknown`), and every `isTournamentRefusal` except `.termsRequired` and `.tryAgain`, read the
+  detail back through `LostAnswer<TournamentDetail>` (`repository.tournament(id:)` applied through `accept`); a lost
+  answer whose fresh detail shows the intent (`hasEntered`, `!hasEntered`, the entry gone) counts as landed and reports
+  nothing. The first four reload Mine when the write landed, because the backend moves the caller's room in the same
+  transaction; `pushOptIn.offerReminders()` runs only after a landed enter, outside the gate; `createTeam` runs
+  `onEntered` first, before the Mine reload and the offer, and answers whether the team exists. `leave` needs `myEntryId` and a caller, and drops the room from `myGroups` only for a
+  non-organiser. `canJoin` needs `permissions.canJoinTeams`, a registered entry and a free seat; a full tournament is
+  no bar.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Matches.swift:TournamentDetailViewModel.writeMatch]`:
-  only `.network` and `.tournamentActionFailed` leave a match write's outcome unknown and trigger `readBack`; a
-  refusal propagates as the backend's word. `readBack` refetches the detail and asks `MatchWrite.landed(on:callerID:)`:
+  only `.network` and `.tournamentActionFailed` (`leavesTournamentWriteOutcomeUnknown`, the same rule as the entry
+  writes') leave a match write's outcome unknown and trigger `readBack`; a refusal propagates as the backend's word. `readBack` refetches the detail and asks `MatchWrite.landed(on:callerID:)`:
   a landed write returns the fresh detail and reports nothing; a write that did not land still accepts the fresh
   detail before the error goes on; a failed read leaves the screen untouched.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Matches.swift:TournamentDetailViewModel.schedule]`:
@@ -135,9 +146,13 @@ of the six files sends invites; the invite sheet is the shared one built by `App
 - `[lily/Features/Tournaments/ViewModels/CreateTournamentViewModel.swift:CreateTournamentViewModel.submit]`:
   `canSubmit = !isSubmitting && issues.isEmpty` under `Rules.creation`; `isSubmitting` guards a second tap. The
   default start is `AppConfig.Tournaments.defaultStartOffset` ahead rounded to the next full hour; the position is
-  proposed only while `draft.coordinate == nil` (re-checked after the await). `CreateFlow` treats `.network` and
-  `.tournamentCreationFailed` as unknown, looks the draft's `clientId` up and counts the create as landed only when
-  the caller organises it; every kept failure is reported.
+  proposed only while `draft.coordinate == nil` (re-checked after the await). `CreateFlow` repeats one `TRY_AGAIN`,
+  treats `.network` and `.tournamentCreationFailed` as unknown, looks the draft's `clientId` up and counts the create
+  as landed only when the caller organises it, and answers `.createIdReused` with `repository.update(id: clientId,
+  draft)`; every kept failure is reported. `accept` compares the answered tournament's `format`, `teamSize`,
+  `visibility` (only for a draft without a group, since `CreateTournamentPayload` leaves it out with a `groupId`) and
+  `group?.id` with the draft and logs one warning per field that differs, because `UpdateTournamentPayload` carries none
+  of them: the first tap's structure stands and the sheet still closes on the answer.
 - `[lily/Features/Tournaments/ViewModels/EditTournamentViewModel.swift:EditTournamentViewModel.submit]`: `canSubmit =
   !isSubmitting && hasChanges && issues.isEmpty` with `hasChanges = draft != TournamentDraft(editing: original)`
   under `Rules.editing`; after the start the form is locked and structure never changes; the gate repeats one
@@ -152,11 +167,13 @@ of the six files sends invites; the invite sheet is the shared one built by `App
   when `reportsFailures`. Logs: `.tournaments` info on a load ("Loaded N tournaments for scope ...; with position:
   ..."), error on failure, debug on cancellation; `.cache` debug for every skip, reload and invalidation reason.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.load]`:
-  `repository.tournament(id:)`; `recorder.record(.tournamentViewed(...))` once per instance; `myGroups.remove(id:)`
+  `repository.tournament(id:)`, also as the read-back after a lost or refused entry write (one per failure);
+  `recorder.record(.tournamentViewed(...))` once per instance; `myGroups.remove(id:)`
   and `changes.recordChange()` when the tournament is gone; `onChange(detail.tournament)` from `accept`;
   `reporter.report` on a reported failure. Logs under `.tournaments`: info on a 404, error on a failed load,
-  warning on a failed refetch after a write.
-- `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.openChat]`:
+  warning on a failed refetch after a write, and `LostAnswer`'s "<action> for tournament <id> outcome unknown",
+  "Reading back after", "landed despite", "Could not read back after".
+- `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Actions.swift:TournamentDetailViewModel.openChat]`:
   `groupRepository.group(id:)`, `myGroups.add(room)` when a member, and the navigation mutation
   `navigation.open(chat: room)`; `cancel` calls `repository.cancel(id:)` and logs "Tournament ... cancelled".
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Entries.swift:TournamentDetailViewModel.enter]`:
@@ -169,10 +186,12 @@ of the six files sends invites; the invite sheet is the shared one built by `App
   warning when the read-back fails.
 - `[lily/Features/Tournaments/ViewModels/CreateTournamentViewModel.swift:CreateTournamentViewModel.submit]`:
   `repository.create(draft)` through `CreateFlow` with a `repository.tournament(id: clientId)` lookup after an unknown
-  outcome; `locationService.currentLocation()` from `prepare`; `onCreated(detail)` then `pushOptIn.offerReminders()`;
+  outcome and `repository.update(id: clientId, draft)` after `.createIdReused`; `locationService.currentLocation()`
+  from `prepare`; `onCreated(detail)` then `pushOptIn.offerReminders()`;
   `reporter.report` on a kept failure. Logs through `CreateFlow` (`lily/Core/Networking/CreateFlow.swift`):
-  `.tournaments` info "Tournament created ...", error "Create failed ..."; the view model's own log is `.location`
-  debug on the proposed position.
+  `.tournaments` info "Tournament created ...", error "Create failed ..."; the view model's own logs are `.location`
+  debug on the proposed position and `.tournaments` warning "Tournament <id> keeps its <field>; the draft named
+  another" per structure field a reused-id update could not carry (`noteStructureKept`).
 - `[lily/Features/Tournaments/ViewModels/EditTournamentViewModel.swift:EditTournamentViewModel.submit]`:
   `repository.update(id:_:)` through the gate; `onChange(detail)`; info log "Tournament ... updated (...)".
 - `[lily/Features/Tournaments/ViewModels/TournamentListViewModel.swift:TournamentListViewModel.init]`: the injected
@@ -180,4 +199,5 @@ of the six files sends invites; the invite sheet is the shared one built by `App
 
 ## Verification
 
-- Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/Tournaments`).
+- Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/Tournaments`,
+  `CreateTournamentOutcomeTests` included).

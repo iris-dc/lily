@@ -37,8 +37,9 @@ final class TournamentDetailViewModel {
     let now: () -> Date
     let pushOptIn: any PushOptIn
     let onChange: @MainActor (Tournament) -> Void
-    private let groupRepository: any GroupRepository
-    private let navigation: AppNavigation
+    /// Read by the `+Actions` file: the chat opener fetches the room and pushes it.
+    let groupRepository: any GroupRepository
+    let navigation: AppNavigation
     private let recorder: any InteractionRecorder
     private let gate: WriteGate
     /// Tournament changes made anywhere; the screen reloads when it moved past the version it last agreed with.
@@ -235,43 +236,29 @@ final class TournamentDetailViewModel {
         recorder.record(.tournamentViewed(tournament, at: now()))
     }
 
-    /// The room is a group under the tournament's id; fetched for the chat, which needs the group as the backend holds it.
-    /// Placed in Mine first, as an accepted invite's is: Mine's by-user index may still miss a room just entered, and
-    /// the Chats split view shows only rooms Mine lists.
-    func openChat() async {
-        await perform("Open chat") { [self] in
-            let room = try await groupRepository.group(id: destination.id)
-            if room.isMember { myGroups.add(room) }
-            navigation.open(chat: room)
-        }
-    }
-
-    /// The organiser calls it off; the room stays, the lists learn of it.
-    func cancel() async {
-        await perform("Cancel") { [self] in
-            let cancelled = try await repository.cancel(id: destination.id)
-            accept(cancelled)
-            logger.info(.tournaments, "Tournament \(cancelled.id) cancelled")
-        }
-    }
-
     /// One action at a time; the gate repeats a `TRY_AGAIN` once, keeps a dismissed screen quiet, logs a refusal at
     /// warning (an expected product state: the detail was stale) and sends every failure to the popup through the
     /// reporter, so a `TERMS_REQUIRED` raises the terms sheet. Answers whether the work went through, so a sheet can
-    /// close on success. Shared with the `+Entries` and `+Matches` files.
+    /// close on success. Shared with the `+Actions`, `+Entries` and `+Matches` files.
     @discardableResult
     func perform(_ action: String, _ work: () async throws -> Void) async -> Bool {
+        await perform(action, settling: { _ in false }, work)
+    }
+
+    /// `settling` reads a lost answer back (`LostAnswer`); `true` means the write landed and nothing is reported.
+    @discardableResult
+    func perform(_ action: String, settling: (any Error) async -> Bool, _ work: () async throws -> Void) async -> Bool {
         guard !isBusy, identity.currentUserID != nil else { return false }
         isBusy = true
         defer { isBusy = false }
-        return await gate.run("\(action) for tournament \(destination.id)", work)
+        return await gate.run("\(action) for tournament \(destination.id)", settling: settling, work)
     }
 }
 
-private extension AppError {
+extension AppError {
     /// The 403, 404 and 409 answers a stale detail earns (registration closed meanwhile, the entry gone, a match not
     /// ready): expected product states, not failures, like `EventDetailViewModel`'s `isParticipationConflict` and
-    /// `GroupDetailViewModel`'s `isGroupConflict`.
+    /// `GroupDetailViewModel`'s `isGroupConflict`. Read by the `+Entries` file too, hence not private.
     var isTournamentRefusal: Bool {
         switch self {
         case .tournamentNotFound, .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound,
@@ -282,4 +269,9 @@ private extension AppError {
             false
         }
     }
+
+    /// A lost connection, or the route's fallback for a 5xx (`tournamentActionFailed`, the entry and match routes'
+    /// answer without a known code): the backend may have committed before either, so the write is read back. A
+    /// refusal never is; it is the backend's word that nothing changed. Read by the `+Entries` and `+Matches` files.
+    var leavesTournamentWriteOutcomeUnknown: Bool { self == .network || self == .tournamentActionFailed }
 }

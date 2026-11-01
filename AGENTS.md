@@ -118,14 +118,15 @@ undo your own edit in a dirty tree: it drops the user's uncommitted work on that
 - `lily/Config/`: `AppConfig` (API paths and base URLs, limits, `LaunchArguments`, `FeatureFlags`, `Cognito`),
   `AppBranding` (every string, through `localized`), `DesignTokens`, `AccessibilityIdentifiers`; each extension
   file is a `nonisolated extension` (see Conventions).
-- `lily/Core/`: `Networking` (`APIClient`, `APIRequest`, `URLSessionAPIClient`, `send(_:failingWith:)`,
-  `WriteGate`, `CreateFlow`, `LostRace`), `Auth`, `Realtime`, `Navigation` (`AppNavigation`, the tab paths),
-  `Changes` (`ContentFreshness`, `StoreLoader`, `ChangeTracker`, `ListSnapshotStore`), `Concurrency` (`SingleFlight`,
-  `Deadline`, `HeadStart`, `SlotGate`, `DetachedWork`, `Sleep`), `Localization` (`localized(_:)`, `AppLocale`, `LanguageStore`), `Currency`,
-  `Preferences`, `Location`, `Statistics`, `Push`, `Errors` (`AppError`, `ErrorCenter`, `ErrorMessageMapper` + its
-  per-area files), `Logging`, `Validation` (`CredentialsValidator`, `String.wireLength`, `Collection.first(of:)`),
-  `System` (`Calendar.nextFullHour`, `FileManager.removeItemIfPresent`), `Foundation` (`String.trimmed` and
-  `nonBlankTrimmed`, how every typed field is read), `UI` (`Components`, `Layout`, `Effects`, `Theme`, `Interfaces`).
+- `lily/Core/`: `Networking` (`APIClient`, `APIRequest`, `URLSessionAPIClient`, `send(_:failingWith:)`, `WriteGate`,
+  `CreateFlow`, `LostRace`, `LostAnswer`), `Auth`, `Realtime`, `Navigation` (`AppNavigation`, the tab paths), `Changes`
+  (`ContentFreshness`, `StoreLoader`, `ChangeTracker`, `ListSnapshotStore`), `Concurrency` (`SingleFlight`, `Deadline`,
+  `HeadStart`, `SlotGate`, `DetachedWork`, `Sleep`), `Localization` (`localized(_:)`, `AppLocale`, `LanguageStore`),
+  `Currency`, `Preferences`, `Location`, `Statistics`, `Push`, `Errors` (`AppError`, `ErrorCenter`,
+  `ErrorMessageMapper` + its per-area files), `Logging`, `Validation` (`CredentialsValidator`, `String.wireLength`,
+  `String.codePointCount`, `Collection.first(of:)`), `System` (`Calendar.nextFullHour`,
+  `FileManager.removeItemIfPresent`), `Foundation` (`String.trimmed` and `nonBlankTrimmed`, how every typed field is
+  read), `UI` (`Components`, `Layout`, `Effects`, `Theme`, `Interfaces`).
 - `lily/Features/`: `Landing`, `SignIn`, `Shell` (`ShellSync` in `Services` runs the per-user loads), `Events`,
   `Groups`, `Chat`, `Inbox`, `People`, `Tournaments`, `Profile`, `Feedback`, `Moderation`.
 - `lilyTests/`: Swift Testing suites by area; `Support/` holds the fakes, fixtures and harnesses (`FakeAPIClient`,
@@ -139,7 +140,8 @@ undo your own edit in a dirty tree: it drops the user's uncommitted work on that
 **Who owns what.** `SessionController` owns the session state machine (`SessionState`: signedOut, guest, signedIn).
 The first frame shows the cached choice from `SessionStore`, no network answer awaited; `restore()` then verifies it
 with Cognito once per process and settles a disagreement (a pool without a session ends the cached one like a
-sign-out, a pool session the cache missed signs in, an unreachable pool keeps the cache and the backend's 401 decides).
+sign-out, a pool session the cache missed signs in, an unreachable pool keeps the cache; a refresh token the pool
+refuses later ends the session mid-run, once, through `endExpiredSession()` with the "Session expired" popup).
 `ShellSync.run`, Home's and Chats' loads join that check first, so nothing loads for a user the pool has not confirmed;
 the start tab is picked from the cached state in `AppDependencies.init`. `ErrorCenter` is the one funnel for errors.
 `ShellLists` (`AppDependencies.lists`) owns the Home and Explore list view models for the app's lifetime: each starts
@@ -259,8 +261,8 @@ how every adaptive view decides, never the device.
   bodies map to `AppError` (`APIFailureMapping`, `BackendErrorCode` exhaustive), 401 to `.sessionExpired`, 429 to
   `.rateLimited`, other `URLError`s to `.network`. Every request carries `X-App-Version`.
 - Writes repeat one `TRY_AGAIN` (`LostRace.attemptTwice`, `WriteGate`); a write whose outcome is unknown (`.network`,
-  a 5xx) refetches before showing a popup, because Laurel commits before it answers; creates are idempotent by client
-  id (`CreateFlow`).
+  a 5xx) refetches before showing a popup (`LostAnswer`), because Laurel commits before it answers; creates are
+  idempotent by client id (`CreateFlow`).
 
 ## Documentation rules
 
@@ -270,6 +272,10 @@ how every adaptive view decides, never the device.
 - `docs/notes/<area>.md`: the dated engineering notes. Append, with the date, the why and the evidence (which test,
   which screenshot). When a later change supersedes an older sentence, add a marker such as "(removed 2026-10-14)"
   rather than rewriting history.
+- `EGM.md`: the contract for agents (Interface, Invariants, Side Effects, Verification; claims cite
+  `lily/<path>.swift:Symbol`), one per code directory at `docs/egm/lily/<same path>/EGM.md` (never inside `lily/`, which
+  ships every non-Swift file) and a blueprint per directory above, up to the root `EGM.md`. Read it before touching a
+  directory; a change to a public symbol, condition, refusal or log line updates its `EGM.md` in the same commit.
 - `CLAUDE.md`: Claude Code specifics only; it imports this file.
 
 ## Notes index (`docs/notes/`)

@@ -63,13 +63,15 @@ final class GroupHarness {
     var changed: [SportGroup] { sink.values }
     var presentedError: AppError? { errorCenter.current?.error }
 
-    init() {
+    /// `snapshots` is where Mine keeps its last answer; a suite pinning that nothing is written passes an in-memory one.
+    init(snapshots: (any ListSnapshotStore)? = nil) {
         errorCenter = ErrorCenter(logger: logger)
         store = MyGroupsStore(repository: repository,
                               identity: identity,
                               changes: changes,
                               errorCenter: errorCenter,
-                              logger: logger)
+                              logger: logger,
+                              snapshots: snapshots ?? NoOpListSnapshotStore())
         inbox = InboxStore(repository: inboxRepository, identity: identity, errorCenter: errorCenter, logger: logger)
         terms = TermsCountingReporter(errorCenter: errorCenter)
     }

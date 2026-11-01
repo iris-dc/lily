@@ -192,7 +192,7 @@ struct RealtimeReconnectTests {
 
         harness.errorCenter.dismiss()
         harness.transport.connectErrors = [RealtimeTransportError.unauthorized]
-        await harness.controller.setDesired(active: true, user: AuthUser(id: "u-2", displayName: "Two", email: nil))
+        await harness.controller.setDesired(active: true, user: AuthUser(id: "u-2", email: nil))
         #expect(harness.errorCenter.current?.error == .sessionExpired, "the new user's refused token is reported again")
         #expect(harness.controller.knownEpochs["g1"] == nil)
         #expect(harness.controller.lastExpiry == nil, "the renewal compares the next token against nothing")
@@ -214,7 +214,7 @@ struct RealtimeReconnectTests {
         #expect(harness.controller.reconnectsWithoutToken == 1)
 
         tokens.token = nil
-        await harness.controller.setDesired(active: true, user: AuthUser(id: "u-2", displayName: "Two", email: nil))
+        await harness.controller.setDesired(active: true, user: AuthUser(id: "u-2", email: nil))
         await settle(until: { harness.sleep.held.isEmpty })
         #expect(harness.controller.reconnectsWithoutToken == 0 && harness.controller.state == .disconnected)
         #expect(harness.transport.connectCount == 1, "no token, no connect for the new user either")

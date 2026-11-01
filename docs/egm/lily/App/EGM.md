@@ -29,21 +29,21 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
 - `ShellCommands` (`lily/App/ShellCommands.swift:ShellCommands`): new event Cmd-N (`navigation.requestCreate(.game)`),
   new group Cmd-Shift-N (only if `AppConfig.FeatureFlags.groups`), new tournament Cmd-Shift-T (only if
   `AppConfig.FeatureFlags.tournaments`), Cmd-1 to Cmd-N select `AppTab.shown`; `private func inShell(_:)` gates every action.
-- `AppDependencies` (`lily/App/AppDependencies.swift:AppDependencies`): `final class` storing, each typed by its
-  protocol, the session (`sessionStore`, `authService`, `tokenProvider?`, `sessionController`, `identity`), the data
-  layer (`eventRepository`, `profileRepository`, `feedbackRepository`, `interactionRecorder`, `locationService`,
+- `AppDependencies` (`lily/App/AppDependencies.swift:AppDependencies`): `final class` storing the services typed by their
+  protocols and the stores and controllers by their concrete types: the session (`sessionStore`, `authService`, `tokenProvider?`, `sessionController`, `identity`), the data
+  layer (`eventRepository`, `profileRepository`, `profile: ProfileStore`, `feedbackRepository`, `interactionRecorder`, `locationService`,
   `eventFilterStore`, `eventChanges`), `logger`, `errorCenter`, `freezesAurora`, `language: LanguageStore`,
   `currency: CurrencyStore`, `groups: GroupDependencies`, `push: PushDependencies`, `navigation = AppNavigation()`,
   `private(set) lazy var lists: ShellLists`.
-- `init(logger:sessionStore:authService:tokenProvider:identity:eventRepository:profileRepository:feedbackRepository:interactionRecorder:locationService:groupRepositories:pushRegistrar:deviceRepository:language:currency:eventFilterStore:listSnapshots:errorCenter:freezesAurora:defaults:)`
+- `init(logger:sessionStore:authService:tokenProvider:sessionExpiry:identity:eventRepository:profileRepository:feedbackRepository:interactionRecorder:locationService:groupRepositories:pushRegistrar:deviceRepository:language:currency:eventFilterStore:listSnapshots:errorCenter:freezesAurora:defaults:)`
   (`lily/App/AppDependencies.swift:AppDependencies.init`): optionals default to `nil`, the stores to the `NoOp*` types;
-  builds `SessionController`, sets `identity.session`, builds `GroupDependencies` and `PushDependencies`, calls `finishWiring(recorder:)`.
+  builds `SessionController`, sets `identity.session`, builds `ProfileStore`, `GroupDependencies` and `PushDependencies`, calls `finishWiring(recorder:expiry:)`.
 - `static func makeDefault(arguments: [String] = AppConfig.LaunchArguments.isHonored ? CommandLine.arguments : [], defaults: UserDefaults = .standard, apply: @escaping (AppLocale.Context) -> Void = AppLocale.set) -> AppDependencies`
-  (`lily/App/AppDependencies.swift:AppDependencies.makeDefault`): `startsFresh = arguments.contains(.resetSession)`, then
+  (`lily/App/AppDependencies.swift:AppDependencies.makeDefault`): `startsFresh(arguments:logger:)` (`+Session.swift`), then
   the `make*` factories below, `makeAuthService`, `makeRepositories`, `makeLocationService`, `makeErrorCenter`, `freezesAurora`.
 - `static func mockAuthBehavior(from: [String]) -> MockAuthBehavior?` (`lily/App/AppDependencies.swift:AppDependencies.mockAuthBehavior`);
-  `makeAuthService` binds `MockAuthService` (`tokenProvider: nil`) or `CognitoAuthService(client: AmplifyCognitoClient(logger:), ...)`
-  as both `AuthService` and `AuthTokenProvider`; `makeLocationService` binds `MockLocationService()` or
+  `makeAuthService` binds `MockAuthService` (`tokenProvider: nil`, `expiry: nil`) or `CognitoAuthService(client: AmplifyCognitoClient(logger:), ...)`
+  as `AuthService`, `AuthTokenProvider` and `SessionExpiryReporter` (the private `Auth` struct's three fields); `makeLocationService` binds `MockLocationService()` or
   `CachedLocationService(upstream: CoreLocationService(logger:), logger:)`.
 - `struct Repositories` (`lily/App/AppDependencies.swift:Repositories`): `events`, `profile`, `feedback`, `interactions`,
   `groups: GroupRepositories`, `devices`, `pushRegistrar`. `remote(baseURL:realtimeEndpoint:identity:tokenProvider:logger:)`
@@ -61,14 +61,16 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
 - `GroupDependencies` (`lily/App/AppDependencies+Groups.swift:GroupDependencies`): `init(repositories:identity:tokenProvider:errorCenter:logger:snapshots:)`
   builds `MyGroupsStore`, `MeStore`, `InboxStore`, `BlockListStore`, `GroupErrorReporter`, `InMemoryChatHistoryCache`,
   `ChatOutbox`, `UnreadCenter`, `ChatCatchUp`, `AttachmentDependencies`, `RealtimeSessionController`; `pasteboard: any Pasteboard = SystemPasteboard()`;
-  `sessionObservers` is `[myGroups, me, inbox, blocks, chatHistory, outbox, unreadCenter, attachments.cache, realtime]`.
+  `sessionObservers` is `[myGroups, me, inbox, blocks, chatHistory, outbox, unreadCenter, attachments.loader,
+  attachments.cache, realtime]` (the loader drains its downloads before the cache sweeps).
 - `AttachmentDependencies` (`lily/App/AppDependencies+Chat.swift:AttachmentDependencies`): `cache: DiskAttachmentCache`,
   `loader: AttachmentLoader`, `uploader`, `preparer`. `PushDependencies` (`lily/App/AppDependencies+Push.swift:PushDependencies`):
   `registrar`, `devices`, `opener: EventOpener`, `tournamentOpener: TournamentOpener`, `coordinator: PushCoordinator`.
 - Static parsing and knobs: `apiBaseURL(from:logger:) -> URL`, `url(following:in:logger:) -> URL?`
   (`lily/App/AppDependencies+LaunchArguments.swift:AppDependencies.apiBaseURL`); `realtimeEndpoint(from:logger:) -> URL?`
   (`+Chat.swift`); `makeErrorCenter(arguments:logger:)`, `freezesAurora(arguments:logger:)` (`lily/App/AppDependencies+Knobs.swift`).
-- Static store factories, each honouring `startsFresh`: `makeSessionStore` (`+Session.swift`), `makeLanguageStore`
+- Static store factories, each honouring `startsFresh`: `makeSessionStore` (`+Session.swift`, beside `startsFresh(arguments:logger:)`
+  and the instance method `wireSessionExpiry(_ reporter: (any SessionExpiryReporter)?)`), `makeLanguageStore`
   (`+Localization.swift`), `makeCurrencyStore` (`+Currency.swift`), `makeEventFilterStore` (`+Events.swift`),
   `makeListSnapshotStore(arguments:startsFresh:directory:logger:)`; instance factories `makeShellSync()` and
   `makeShellLists()` (`lily/App/AppDependencies+Shell.swift:AppDependencies.makeShellLists`).
@@ -79,7 +81,9 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
   `makeAttachmentComposer`, `makeChatHistoryClearer`, `myGroupsDidChange()`, `myGroupsDidLoad()` (`+Chat.swift`);
   `makeTournamentListViewModel(scope:snapshots:)`, `makeTournamentDetailViewModel`, `makeCreateTournamentViewModel`,
   `makeEditTournamentViewModel` (`+Tournaments.swift`); `makeInboxViewModel`, `makeUserProfileViewModel`, `makeTermsViewModel`,
-  `makeFeedbackViewModel` (`+Inbox`, `+People`, `+Moderation`, `+Feedback`). Each extension exposes its stores as pass-throughs.
+  `makeFeedbackViewModel`, `makeDisplayNameViewModel` (`+Inbox`, `+People`, `+Moderation`, `+Feedback`, `+Profile`). The
+  `+Groups`, `+Chat`, `+Push`, `+Inbox`, `+People` and `+Tournaments` extensions expose their stores and repositories as
+  pass-throughs.
 - `static func makeMock(authBehavior: MockAuthBehavior = .succeed) -> AppDependencies` (`lily/App/AppDependencies+Mock.swift:AppDependencies.makeMock`):
   `Repositories.mock`, `MockAuthService(delay: .zero)`, `MockLocationService()`, a `UserDefaults` suite named
   `AppConfig.Storage.previewSuitePrefix + UUID().uuidString`.
@@ -113,8 +117,11 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
   (`lily/App/AppDependencies.swift:AppDependencies.init`, `lily/App/AppDependencies+Groups.swift:GroupDependencies.init`).
 - `finishWiring` sets `navigation.selectedTab = AppNavigation.startTab(for: sessionController.state)` from the cached
   state, then registers observers in the order `groups.sessionObservers`, `navigation`, `push.coordinator`, the
-  recorder, `lists`, `listSnapshots`: the recorder flushes before the session ends, the snapshots clear last
-  (`lily/App/AppDependencies.swift:AppDependencies.finishWiring`).
+  recorder, `profile`, `lists`, `listSnapshots`: the loader drains its downloads before the cache sweeps, the
+  recorder flushes before the session ends, the snapshots clear last; then `wireSessionExpiry(expiry)` sets the
+  reporter's `onSessionExpired` to a closure that holds the controller weakly (the controller owns the service that
+  fires it) (`lily/App/AppDependencies.swift:AppDependencies.finishWiring`,
+  `lily/App/AppDependencies+Session.swift:AppDependencies.wireSessionExpiry`).
 - The data layer is one set, all remote or all in-memory, so a mock run never posts a statistic or registers a
   device: `Repositories.mock` uses `NoOpInteractionRecorder()` and `MockPushRegistrar` unless `-system-push`
   (`lily/App/AppDependencies.swift:Repositories.mock`); `-mock-events` forces `NoOpListSnapshotStore()`
@@ -159,7 +166,9 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
 - `UserDefaults`: `UserDefaultsSessionStore.clear()` when fresh and `save(.guest)` under `-start-as-guest`
   (`lily/App/AppDependencies+Session.swift:AppDependencies.makeSessionStore`); the language, currency and event-filter
   stores `clear()` when fresh (`+Localization.swift`, `+Currency.swift`, `+Events.swift`); `makeMock` creates a new suite per call.
-- State: `finishWiring` sets `navigation.selectedTab` and registers observers on `sessionController`; `makeShellLists`
+- State: `finishWiring` sets `navigation.selectedTab`, registers observers on `sessionController` and sets the expiry
+  reporter's hook, which spawns `Task { await controller?.endExpiredSession() }` over a weak controller when the pool
+  refuses to refresh the token (`lily/App/AppDependencies+Session.swift`); `makeShellLists`
   mutates the new view models' failure-reporting flags; `makeTermsViewModel`'s closure calls
   `await sessionController.signOut()` (`lily/App/AppDependencies+Moderation.swift`).
 - Logging through `OSLogLogger()`: `.auth` for `-reset-session`, mock auth, the mock user id and guest mode;

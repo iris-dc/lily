@@ -57,6 +57,17 @@ struct UserDefaultsSessionStoreTests {
         #expect(warnings.count == 1)
     }
 
+    /// A session cached before the name moved to the backend profile carries a `displayName` key the decoder ignores,
+    /// so an upgrading user stays signed in.
+    @Test func aLegacyBlobWithADisplayNameStillLoadsTheSignedInSession() {
+        let harness = Harness()
+        let legacy = #"{"signedIn":{"_0":{"user":{"id":"u-1","email":"test@example.com","displayName":"Jane"}}}}"#
+        harness.defaults.set(Data(legacy.utf8), forKey: AppConfig.Storage.Keys.storedSession)
+
+        #expect(harness.store.load() == .signedIn(TestFixtures.session))
+        #expect(harness.logger.entries.allSatisfy { $0.level != .warning })
+    }
+
     @Test func logsCacheHitMissAndInvalidation() {
         let harness = Harness()
 

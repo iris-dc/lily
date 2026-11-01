@@ -38,7 +38,7 @@ extension SportGroup {
         SportGroup(id: id,
                    name: name,
                    visibility: .private,
-                   ownerName: TestFixtures.user.displayName,
+                   ownerName: TestFixtures.displayName,
                    memberCount: 2,
                    maxMembers: 2,
                    membersCanCreateEvents: false,

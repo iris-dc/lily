@@ -77,20 +77,6 @@ final class FakeAuthService: AuthService, HoldsRequests {
 }
 
 @MainActor
-final class FakeProfileRepository: ProfileRepository {
-    var error: AppError?
-    /// Simulated latency, a suspension point so cancellation can be observed.
-    var delay: Duration = .zero
-    private(set) var syncedNames: [String] = []
-
-    func syncDisplayName(_ name: String) async throws {
-        syncedNames.append(name)
-        if delay > .zero { try await Task.sleep(for: delay) }
-        if let error { throw error }
-    }
-}
-
-@MainActor
 final class FakeIdentityProvider: IdentityProvider {
     var currentUserID: String?
 
@@ -104,7 +90,6 @@ final class FakeIdentityProvider: IdentityProvider {
 struct SessionHarness {
     let auth = FakeAuthService()
     let store = InMemorySessionStore()
-    let profile = FakeProfileRepository()
     let logger = SpyLogger()
     let errorCenter: ErrorCenter
     let controller: SessionController
@@ -113,7 +98,6 @@ struct SessionHarness {
         errorCenter = ErrorCenter(logger: logger)
         controller = SessionController(authService: auth,
                                        sessionStore: store,
-                                       profileRepository: profile,
                                        errorCenter: errorCenter,
                                        logger: logger)
     }
@@ -122,7 +106,6 @@ struct SessionHarness {
     func makeController() -> SessionController {
         SessionController(authService: auth,
                           sessionStore: store,
-                          profileRepository: profile,
                           errorCenter: errorCenter,
                           logger: logger)
     }

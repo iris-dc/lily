@@ -7,6 +7,17 @@ private final class Reported {
     var errors: [AppError] = []
 }
 
+/// What the gate asked `settling` about, answering as told.
+@MainActor
+private final class Settled {
+    var errors: [AppError] = []
+
+    func record(_ error: any Error, as landed: Bool) -> Bool {
+        errors.append(AppError.wrapping(error))
+        return landed
+    }
+}
+
 @MainActor
 struct WriteGateTests {
     private let logger = SpyLogger()
@@ -87,6 +98,45 @@ struct WriteGateTests {
         let wentThrough = await run(script)
 
         #expect(!wentThrough)
+        #expect(logger.messages(in: .groups).isEmpty && reported.errors.isEmpty)
+    }
+
+    /// The read-back found the write landed: the gate has nothing to say.
+    @Test func aFailureSettledAsLandedAnswersTrueAndReportsNothing() async {
+        let script = ScriptedAttempt([.failure(AppError.network)])
+        let settled = Settled()
+
+        let wentThrough = await makeGate().run("Remove in group g",
+                                               settling: { settled.record($0, as: true) },
+                                               { _ = try script.next() })
+
+        #expect(wentThrough)
+        #expect(settled.errors == [.network])
+        #expect(logger.messages(in: .groups, at: .error).isEmpty && reported.errors.isEmpty)
+    }
+
+    @Test func aFailureNotSettledIsReportedAsBefore() async {
+        let script = ScriptedAttempt([.failure(AppError.network)])
+        let settled = Settled()
+
+        let wentThrough = await makeGate().run("Remove in group g",
+                                               settling: { settled.record($0, as: false) },
+                                               { _ = try script.next() })
+
+        #expect(!wentThrough)
+        #expect(settled.errors == [.network])
+        #expect(logger.count(in: .groups, at: .error) == 1 && reported.errors == [.network])
+    }
+
+    @Test func cancellationNeverReachesTheSettling() async {
+        let script = ScriptedAttempt([.failure(CancellationError())])
+        let settled = Settled()
+
+        let wentThrough = await makeGate().run("Remove in group g",
+                                               settling: { settled.record($0, as: true) },
+                                               { _ = try script.next() })
+
+        #expect(!wentThrough && settled.errors.isEmpty)
         #expect(logger.messages(in: .groups).isEmpty && reported.errors.isEmpty)
     }
 

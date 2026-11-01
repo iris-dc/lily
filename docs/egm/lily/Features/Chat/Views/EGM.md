@@ -14,8 +14,8 @@ scroll decisions are delegated to `TranscriptScrollPolicy` through a reference-t
 hierarchies draw from one shared `ViewerHero`) complete the set. Views read `ChatViewModel` and
 `AttachmentComposerModel` (`../ViewModels/EGM.md`) and the objects in `../State/EGM.md`; strings come from
 `AppBranding`, numbers from `DesignTokens` and `AppConfig.Chat`, identifiers from `AccessibilityIdentifiers`.
-Explicit isolation is rare: `@MainActor` on `AttachmentImageLoad`, `ScrollTracker`, `ArrivalTracker` and the
-viewer's private `LoadedPictures`; `nonisolated` on `ImageFile` and `TranscriptScrollPolicy.Snapshot.init`;
+Explicit isolation is rare: `@MainActor` on `AttachmentImageLoad`, `ScrollTracker`, `ArrivalTracker` (private to `ChatTranscript.swift`) and the
+viewer's private `LoadedPictures`; `nonisolated` on `TranscriptScrollPolicy.Snapshot.init`;
 everything else takes the app target's default `@MainActor`.
 
 ## Interface
@@ -91,7 +91,8 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `View.galleryWidth(alignment:)`.
 - `[AttachmentImageLoad.swift:AttachmentImageLoad]` `@Observable @MainActor`; `image`, `failed`, `isLoading`;
   `load(_:variant:in:through:available:) async -> UIImage?`. `[AttachmentTile.swift:AttachmentTile]` `image`,
-  `isLoading`, `placeholderSymbol`; `LocalImage(url:isPreparing:)`; `nonisolated enum ImageFile.load(_:)`.
+  `isLoading`, `placeholderSymbol`; `LocalImage(url:isPreparing:)` (decoding through `ImageFile.load(_:maxDimension:)`,
+  `../Services/EGM.md`, at the thumbnail's bound).
 - `[AttachmentViewerSheet.swift:AttachmentViewerSheet]` `init(selection: AttachmentSelection, loader:, hero:
   ViewerHero)`; a `TabView` pager of `ImageViewerPage` and `VideoPlayerPage`, Close, position and share controls, a
   `ViewerDismissPan`; `@State` `ViewerMotion`, `ViewerMoveDriver`, `zoomedIDs`, `ViewerPageLayout` (not observable).
@@ -163,8 +164,10 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   a single tile fits its aspect capped at `DesignTokens.Layout.galleryMaxHeight`; the "+N" scrim only where
   `layout.showsOverflow(at:)`.
 - `[AttachmentImageLoad.swift:AttachmentImageLoad]` `available == false` fails without a download; a cancellation
-  leaves `image` and `failed` untouched; undecodable bytes count as failed. `[AttachmentTile.swift:ImageFile]`
-  decodes on `Task.detached(priority: .userInitiated)`. `[VideoAttachmentView.swift:VideoAttachmentView]` passes
+  leaves `image` and `failed` untouched; undecodable bytes count as failed, as does a picture whose header declares
+  more pixels than the cap, which alone logs one `.chat` warning naming the id and the declared size; the picture is
+  decoded at `variant.maxDecodedDimension` (512 for a tile, even when the loader hands over the full object, 2048 for
+  the viewer). `[VideoAttachmentView.swift:VideoAttachmentView]` passes
   `available: thumbnailUrl != nil`.
 - `[AttachmentViewerSheet.swift:AttachmentViewerSheet]` The pan is taken only while `motion.takesDrag` and the
   picture is not zoomed; `stage()` sets `hero.moving` only when a picture and a tile exist, else the pager fades;
@@ -206,7 +209,8 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - `[ChatRowView.swift:ChatRowView]` `Task.sleep` for the arrival's remaining time; `viewModel.vote(in:for:)`;
   `SystemRowDestination.open(through: navigation)`. `[MessageContextMenu.swift:MessageContextMenu]`,
   `[PendingMessageBubble.swift:PendingMessageBubble]` call `startReply(to:)` and `copy(_:)` directly and spawn
-  `Task`s into `pin`, `unpin`, `retractVote`, `delete`, `retry`, `discard` (under `withAnimation(.messageArrival)`).
+  `Task`s into `pin`, `unpin`, `retractVote`, `delete`, `retry`; `discard` runs synchronously under
+  `withAnimation(.messageArrival)`.
   `[SystemMessageRow.swift:SystemMessageRow]` `loadLinkedContent(for:)` on task, `destination(for:)` on tap.
 - `[MessageComposer.swift:MessageComposer]` A `.task(id: cooldownUntil)` ticking every `AppConfig.Chat.cooldownTick`
   while cooling down; `send()`, `sendPoll(_:)`, `cancelReply()`; keyboard focus; the poll sheet.
@@ -218,8 +222,10 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - `[FileAttachmentCard.swift:FileAttachmentCard]` `loader.cachedFile(for:)`, `loader.previewFile(for:in:)` with
   progress. `[ImageAttachmentView.swift:ImageAttachmentView]`, `[VideoAttachmentView.swift:VideoAttachmentView]` load
   the `.thumbnail` through `AttachmentLoader` and write `hero?.noteThumbnail(_:for:)`.
-  `[AttachmentImageLoad.swift:AttachmentImageLoad.load]` `loader.file(for:variant:in:)` then `ImageFile.load`;
-  `[AttachmentTile.swift:ImageFile.load]` a detached task reading `UIImage(contentsOfFile:)`.
+  `[AttachmentImageLoad.swift:AttachmentImageLoad.load]` `loader.file(for:variant:in:)` then
+  `ImageFile.load(_:maxDimension:)` (`lily/Features/Chat/Services/ImageFile.swift`, a detached ImageIO decode) and
+  `loader.logger.warning` for a header over the cap; `[AttachmentTile.swift:LocalImage]` the same decode for a draft's
+  file.
 - `[AttachmentViewerSheet.swift:AttachmentViewerSheet]` Writes `hero.shownID`, `hero.moving`, `forgetPreloaded()`,
   `endMove()`, `driver.cancel()`; a `ShareLink`; installs the pan recognizer.
   `[AttachmentViewerSheet+Motion.swift:AttachmentViewerSheet]` `driver.run` writes `hero.progress`, `hero.drag`,
@@ -234,6 +240,7 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - Run: `./scripts/ci.sh unit` (from the repository root). The logic these views delegate to is pinned under
   `lilyTests/Chat`: `TranscriptScrollPolicyTests` (+Appends), `TranscriptArrivalsTests`, `MessageArrivalCurveTests`,
   `ReturnKeyPolicyTests`, `PinnedBarPositionTests`, `ChatClearPromptTests`, `ConversationSelectionTests`,
-  `BubbleFillTests`, `GalleryLayoutTests`, `AttachmentImageLoadTests`, `ImageFileTests`, `FileAttachmentCardTests`,
+  `BubbleFillTests`, `GalleryLayoutTests`, `AttachmentImageLoadTests`, `AttachmentVariantTests`, `ImageFileTests`,
+  `FileAttachmentCardTests`,
   `ViewerMotionTests`, `ViewerDismissalTests`, `ViewerGeometryTests`. Rendering: `./scripts/ci.sh ui`
   (`LilyChatTests` and its `+Area` files in `lilyUITests`).

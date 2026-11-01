@@ -19,10 +19,9 @@ struct MockAuthServiceTests {
         #expect(store.stored == .signedIn(session))
     }
 
-    @Test func emailUserGetsReadableDisplayName() {
+    @Test func emailUserKeepsTheEmailAndNoName() {
         let user = MockUsers.user(for: .email(TestFixtures.credentials))
-        #expect(user.displayName == "Jane Doe")
-        #expect(user.email == TestFixtures.credentials.email)
+        #expect(user == AuthUser(id: user.id, email: TestFixtures.credentials.email))
     }
 
     @Test func restoreReturnsPersistedSession() async throws {
@@ -104,9 +103,9 @@ struct MockUsersTests {
         #expect(!user.id.localizedCaseInsensitiveContains("jane"))
     }
 
-    @Test func aChosenIDNamesTheUserAfterItsMailbox() {
+    @Test func aChosenIDIsTheUsersIdAndMailbox() {
         let user = MockUsers.user(withID: "jane.doe")
-        #expect(user == AuthUser(id: "jane.doe", displayName: "Jane Doe", email: "jane.doe@example.com"))
+        #expect(user == AuthUser(id: "jane.doe", email: "jane.doe@example.com"))
     }
 
     @Test func emailUserIDIsStableAndCaseInsensitive() {

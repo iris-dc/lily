@@ -22,7 +22,8 @@ final class CreateEventViewModel {
     private let groups: MyGroupsStore
     private let logger: any Logging
     /// A `.network` or `.eventCreationFailed` leaves the outcome unknown; the game is ours when the caller hosts what
-    /// the backend holds under the draft's id (another host's, the backend's `EVENT_ID_TAKEN`, keeps the failure).
+    /// the backend holds under the draft's id (another host's, the backend's `EVENT_ID_TAKEN`, keeps the failure); a
+    /// `.createIdReused` sends the draft as an update under that id.
     private let flow: CreateFlow<SportEvent>
     private let now: () -> Date
     /// Asked after a successful create: the host wants the reminder too.
@@ -40,6 +41,7 @@ final class CreateEventViewModel {
          currencyCode: String,
          pushOptIn: any PushOptIn = NoPushOptIn(),
          lockedGroup: EventGroupRef? = nil,
+         tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
          onCreated: @escaping @MainActor (SportEvent) -> Void) {
         self.repository = repository
         self.locationService = locationService
@@ -52,6 +54,7 @@ final class CreateEventViewModel {
         flow = CreateFlow(noun: "event",
                           category: .events,
                           logger: logger,
+                          tryAgainDelay: tryAgainDelay,
                           report: { errorCenter.report($0) },
                           leavesOutcomeUnknown: { $0.leavesCreateOutcomeUnknown },
                           notFound: .eventNotFound,
@@ -95,22 +98,32 @@ final class CreateEventViewModel {
     /// Sends the draft. A call while one is in flight is dropped; a dismissed sheet (cancellation) stays quiet; a
     /// failure goes to the popup, unless the backend turns out to have the game already (`CreateFlow`). The same
     /// `clientId` travels with every attempt, so a retry after a lost answer finds the event the backend already
-    /// stored instead of creating a second one.
+    /// stored, or updates it with the latest details, instead of creating a second one.
     func submit() async {
         guard canSubmit else { return }
         isSubmitting = true
         defer { isSubmitting = false }
         let created = await flow.submit(clientID: draft.clientId,
                                         describing: { "(\($0.spotsDescription))\(Self.groupSuffix(for: $0))" },
-                                        send: { try await repository.create(draft) })
+                                        send: { try await repository.create(draft) },
+                                        update: { try await repository.update(id: draft.clientId, draft) })
         if let created { await accept(created) }
     }
 
     /// The sheet dismisses on `createdEvent`; the permission prompt, when it is due, comes up over the screen behind.
     private func accept(_ event: SportEvent) async {
+        noteGroupKept(by: event)
         createdEvent = event
         onCreated(event)
         await pushOptIn.offerReminders()
+    }
+
+    /// The update after a reused id carries no group (`UpdateEventPayload` has none, like Laurel's request), so a game
+    /// whose first tap landed in one group stays there whatever the repeated draft named; the list shows the backend's.
+    private func noteGroupKept(by event: SportEvent) {
+        guard event.group?.id != draft.group?.id else { return }
+        let kept = event.group?.id ?? "none", named = draft.group?.id ?? "none"
+        logger.warning(.events, "Event \(event.id) stays in group \(kept); the draft named \(named)")
     }
 
     /// The group id for the log line; ids only, never the name.
@@ -126,7 +139,9 @@ final class CreateEventViewModel {
 
 private extension AppError {
     /// Failures after which the create may still have landed (a 500 or a lost connection after the commit): the
-    /// create counterpart of the detail screen's `needsRefresh`, without the 409s, which a create never gets.
+    /// create counterpart of `EventDetailViewModel`'s `eventReadBack` (`.network` and the route's fallback, without the
+    /// participation 409s); a create's own 409s are settled without a lookup (a `TRY_AGAIN` is repeated, a reused id
+    /// is updated).
     var leavesCreateOutcomeUnknown: Bool {
         self == .network || self == .eventCreationFailed
     }

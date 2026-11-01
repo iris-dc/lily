@@ -10,8 +10,6 @@ final class SessionController {
     private(set) var state: SessionState
     /// Provider currently mid sign-in, so buttons can show a spinner without a second source of truth.
     private(set) var authenticatingProvider: AuthProvider.Kind?
-    /// Display-name sync started by the last sign-in. Sign-in never waits for it; sign-out cancels it.
-    private(set) var profileSync: Task<Void, Never>?
     private var isSigningOut = false
     /// The one check of the cached session against the pool; a second `restore()` joins it instead of asking again.
     private var restoreCheck: Task<Void, Never>?
@@ -20,18 +18,15 @@ final class SessionController {
 
     let authService: any AuthService
     private let sessionStore: any SessionStore
-    private let profileRepository: any ProfileRepository
     private let errorCenter: ErrorCenter
     let logger: any Logging
 
     init(authService: any AuthService,
          sessionStore: any SessionStore,
-         profileRepository: any ProfileRepository,
          errorCenter: ErrorCenter,
          logger: any Logging) {
         self.authService = authService
         self.sessionStore = sessionStore
-        self.profileRepository = profileRepository
         self.errorCenter = errorCenter
         self.logger = logger
         state = Self.state(cached: sessionStore.load())
@@ -39,7 +34,8 @@ final class SessionController {
 
     /// Verifies the cached session with the pool, once per process (a later call joins the check), and settles the
     /// answer over the state the first frame showed: a pool without a session ends a cached one like a sign-out, a pool
-    /// session the cache missed signs in, and a check that could not be made keeps the cache, the backend's 401 deciding.
+    /// session the cache missed signs in, and a check that could not be made keeps the cache; the pool refusing to
+    /// refresh the token later ends the session through `endExpiredSession()`.
     func restore() async {
         if restoreCheck == nil {
             restoreCheck = Task { await verifyCachedSession() }
@@ -114,11 +110,31 @@ final class SessionController {
     func signOut() async {
         await holdingSignOutSlot {
             guard await endLocalSession() else { return }
-            do {
-                try await authService.signOut()
-            } catch {
-                logger.warning(.auth, "Remote sign-out failed, local session already cleared: \(error)")
-            }
+            await signOutOfPool()
+        }
+    }
+
+    /// The pool refused to refresh the token mid-session (expired or revoked): the session ends like a sign-out and the
+    /// shared popup says why, once, unless a 401 already put it up. With nobody signed in there is nothing to end.
+    func endExpiredSession() async {
+        guard let user = state.user else {
+            logger.debug(.auth, "Expired token reported with nobody signed in")
+            return
+        }
+        logger.warning(.auth, "Session expired for user \(user.id): the pool refused to refresh the token")
+        await holdingSignOutSlot {
+            guard await endLocalSession() else { return }
+            if errorCenter.current?.error != .sessionExpired { errorCenter.report(AppError.sessionExpired) }
+            await signOutOfPool()
+        }
+    }
+
+    /// The local session is already cleared, so the pool's refusal is only logged.
+    private func signOutOfPool() async {
+        do {
+            try await authService.signOut()
+        } catch {
+            logger.warning(.auth, "Remote sign-out failed, local session already cleared: \(error)")
         }
     }
 
@@ -139,7 +155,6 @@ final class SessionController {
     @discardableResult
     private func endLocalSession() async -> Bool {
         let ending = state
-        profileSync?.cancel()
         await notifySessionWillEnd()
         guard state == ending else {
             logger.debug(.auth, "Session changed while it was ending; the sign-out stands down")
@@ -190,7 +205,6 @@ final class SessionController {
             let session = try await authService.signIn(with: provider)
             logger.info(.auth, "Sign-in succeeded \(via) for user \(session.user.id)")
             state = .signedIn(session.user)
-            syncProfile(for: session.user)
             return .signedIn
         } catch AppError.emailNotConfirmed {
             logger.info(.auth, "Sign-in needs email confirmation")
@@ -215,25 +229,6 @@ final class SessionController {
         }
         errorCenter.report(wrapped == .unknown ? fallback : wrapped)
         return .failed
-    }
-
-    /// The backend copies the host's name onto events, so it must know it before the user hosts one. Fire and forget:
-    /// the user did sign in, so a failure here is logged and never shown. A sign-out cancels it on purpose, which
-    /// is not a failure and stays at debug.
-    private func syncProfile(for user: AuthUser) {
-        profileSync?.cancel()
-        profileSync = Task { [profileRepository, logger] in
-            do {
-                try await profileRepository.syncDisplayName(user.displayName)
-                logger.info(.auth, "Profile synced for user \(user.id)")
-            } catch {
-                if AppError.isCancellation(error) {
-                    logger.debug(.auth, "Profile sync cancelled for user \(user.id)")
-                } else {
-                    logger.warning(.auth, "Profile sync failed for user \(user.id): \(error)")
-                }
-            }
-        }
     }
 }
 

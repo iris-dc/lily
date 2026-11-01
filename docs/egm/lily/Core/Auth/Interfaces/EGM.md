@@ -7,8 +7,8 @@ Source: `lily/Core/Auth/Interfaces/`
 The protocols and framework-free value types that `SessionController` (the parent directory) and the rest of the app
 depend on for authentication, so `CognitoAuthService` and `MockAuthService` are interchangeable and nothing outside
 `Implementations/` imports Amplify. `CognitoClient` is the thin seam over Amplify; `AuthService` is the app-facing
-boundary; `AuthTokenProvider`, `IdentityProvider`, `SessionObserver` and `SessionStore` are the small roles other layers
-read the session through. The protocols are main-actor isolated by the target's default; the value types are
+boundary; `AuthTokenProvider`, `SessionExpiryReporter`, `IdentityProvider`, `SessionObserver` and `SessionStore` are the
+small roles other layers read the session through. The protocols are main-actor isolated by the target's default; the value types are
 `nonisolated` and `Sendable`.
 
 ## Interface
@@ -33,6 +33,8 @@ read the session through. The protocols are main-actor isolated by the target's 
   `.codeMismatch`, `.codeExpired`, `.limitExceeded`, `.network`, `.sessionExpired`, `.other(String)`.
 - `IdentityProvider` (`lily/Core/Auth/Interfaces/IdentityProvider.swift:IdentityProvider`): `var currentUserID: String? { get }`
   (the Cognito `sub`, `nil` for guests); extension `isStillCaller(_ userID: String, orDrop what: String, logger: any Logging) -> Bool`.
+- `SessionExpiryReporter` (`lily/Core/Auth/Interfaces/SessionExpiryReporter.swift:SessionExpiryReporter`): `AnyObject`
+  protocol with `var onSessionExpired: () -> Void { get set }`.
 - `SessionObserver` (`lily/Core/Auth/Interfaces/SessionObserver.swift:SessionObserver`): `AnyObject` protocol with
   `sessionWillEnd() async`, `sessionDidEnd()`, `sessionDidRestore()`; the extension gives `sessionWillEnd` and
   `sessionDidRestore` empty defaults, so `sessionDidEnd` is the one member a conformer must write.
@@ -48,6 +50,8 @@ read the session through. The protocols are main-actor isolated by the target's 
 - `AuthTokenProvider.accessToken()` never throws: without a token the request goes out bare and the backend's 401
   becomes `AppError.sessionExpired`; `freshAccessToken()` is for the realtime connection only, the REST client keeps
   `accessToken()`, which refreshes only an expired token (`AuthTokenProvider.swift:AuthTokenProvider`).
+- `SessionExpiryReporter.onSessionExpired` is fired once per lost session, when the pool refused to refresh the token;
+  the composition root decides what ends (`SessionExpiryReporter.swift:SessionExpiryReporter`).
 - `IdentityProvider.isStillCaller` returns `false` once `currentUserID` differs from the id an answer was requested for:
   after a sign-out or a switch the answer belongs to whoever asked (`IdentityProvider.swift:isStillCaller`).
 - `SessionObserver.sessionWillEnd()` runs while the user is still signed in, for a last request on their behalf;

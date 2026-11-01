@@ -191,6 +191,16 @@ struct RemoteEventRepositoryTests {
         await #expect(throws: AppError.tryAgain) { try await repository.create(.fixture()) }
     }
 
+    /// The same id with other details means our earlier create landed: `CreateFlow` updates it, so the code keeps its
+    /// own case while `EVENT_ID_TAKEN` (another user's id) stays the generic creation failure.
+    @Test func createMapsAReusedIdToCreateIdReused() async {
+        client.error = APIError.http(status: 409, body: APIErrorBody(code: "EVENT_ID_REUSED", message: "m"))
+        await #expect(throws: AppError.createIdReused) { try await repository.create(.fixture()) }
+
+        client.error = APIError.http(status: 409, body: APIErrorBody(code: "EVENT_ID_TAKEN", message: "m"))
+        await #expect(throws: AppError.eventCreationFailed) { try await repository.create(.fixture()) }
+    }
+
     @Test(arguments: codeCases)
     func backendCodesMapToAppErrors(code: String, expected: AppError) async {
         client.error = APIError.http(status: 409, body: APIErrorBody(code: code, message: "m"))
@@ -214,30 +224,5 @@ struct RemoteEventRepositoryTests {
             await #expect(throws: AppError.participationFailed) { try await repository.join(eventId: "evt_01J") }
             await #expect(throws: AppError.participationFailed) { try await repository.leave(eventId: "evt_01J") }
         }
-    }
-}
-
-@MainActor
-struct RemoteProfileRepositoryTests {
-    private let client = FakeAPIClient()
-
-    @Test func syncPutsTheDisplayName() async throws {
-        client.responses = [Profile(userId: "u-1", displayName: "Apple Tester", createdAt: .now)]
-
-        try await RemoteProfileRepository(client: client).syncDisplayName("Apple Tester")
-
-        let request = try #require(client.requests.first)
-        #expect(request.method == .put)
-        #expect(request.path == "/api/profile")
-        #expect(request.body as? ProfileUpdateRequest == ProfileUpdateRequest(displayName: "Apple Tester"))
-    }
-
-    /// The caller logs what it catches, so it must be a clean `AppError`, never an `APIError` carrying the backend's
-    /// message body.
-    @Test func unnamedFailuresFallBackToUnknown() async {
-        let repository = RemoteProfileRepository(client: client)
-        client.error = APIError.http(status: 400, body: APIErrorBody(code: "VALIDATION_FAILED", message: "empty"))
-
-        await #expect(throws: AppError.unknown) { try await repository.syncDisplayName("") }
     }
 }

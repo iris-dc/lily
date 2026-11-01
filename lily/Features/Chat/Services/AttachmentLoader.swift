@@ -5,7 +5,9 @@ import Foundation
 /// with the link refreshed first when it is about to expire (`urlRefreshMargin`) and once more after a 403 (presigned
 /// links die with the backend's credentials, which can be sooner than the stated expiry). Two views asking for the
 /// same file share one download; a caller that wants to show the download's progress passes `progress`
-/// (`AttachmentLoader+Files.swift` builds the player's and the cards' entries on it).
+/// (`AttachmentLoader+Files.swift` builds the player's and the cards' entries on it). A sign-out cancels and awaits the
+/// downloads in flight before the cache is swept, and starts none until the session has ended (`SessionObserver`,
+/// registered ahead of the cache).
 final class AttachmentLoader {
     private let repository: any ChatRepository
     private let cache: any AttachmentCache
@@ -14,6 +16,9 @@ final class AttachmentLoader {
     let previewDirectory: URL
     private let now: () -> Date
     private var inFlight: [String: Task<URL, any Error>] = [:]
+    /// Set by `sessionWillEnd` ahead of the drain, cleared by `sessionDidEnd`: a tile appearing in between asks for no
+    /// download the cache sweep could race.
+    private var isEnding = false
 
     init(repository: any ChatRepository,
          cache: any AttachmentCache,
@@ -36,12 +41,16 @@ final class AttachmentLoader {
     /// A picture stored without a thumbnail is kept once under `.full` whichever variant is asked for, since
     /// `Attachment.url(for: .thumbnail)` falls back to the full link and the gallery and the viewer would otherwise
     /// store the same bytes twice. A refused or failed download, or a cache that cannot keep the bytes, is
-    /// `.attachmentUnavailable`, a lost connection `.network`; `progress` follows the download when there is one, and a
-    /// caller joining a download already running hears only its end.
+    /// `.attachmentUnavailable`, a lost connection `.network`, a session on its way out a `CancellationError`; `progress`
+    /// follows the download when there is one, and a caller joining a download already running hears only its end.
     func file(for attachment: Attachment,
               variant: AttachmentVariant,
               in message: ChatMessage,
               progress: ProgressHandler? = nil) async throws -> URL {
+        guard !isEnding else {
+            logger.debug(.chat, "Attachment \(attachment.id) not fetched: the session is ending")
+            throw CancellationError()
+        }
         let variant: AttachmentVariant = attachment.thumbnailUrl == nil ? .full : variant
         if let cached = cache.fileURL(for: attachment.id, variant: variant) { return cached }
         let key = attachment.id + variant.fileSuffix
@@ -84,11 +93,13 @@ final class AttachmentLoader {
         return url
     }
 
-    /// A cache that cannot keep the bytes (a full disk) fails the download; the log names the id, never the link.
+    /// A cache that cannot keep the bytes (a full disk) fails the download; the log names the id, never the link. A
+    /// cache that refuses because the session is ending passes its cancellation on.
     private func stored(_ data: Data, for attachment: Attachment, variant: AttachmentVariant) async throws -> URL {
         do {
             return try await cache.store(data, for: attachment.id, variant: variant)
         } catch {
+            guard !AppError.isCancellation(error) else { throw error }
             logger.error(.chat, "Attachment \(attachment.id) could not be cached: \(error)")
             throw AppError.attachmentUnavailable
         }
@@ -111,5 +122,25 @@ final class AttachmentLoader {
                                                           attachmentID: attachment.id)
         logger.debug(.chat, "Attachment link refreshed for \(attachment.id)")
         return attachment.refreshed(with: link)
+    }
+}
+
+/// `SessionController` awaits observers in registration order, so the downloads end here before `DiskAttachmentCache`
+/// sweeps, and from the drain until `sessionDidEnd` no download starts here and no store lands there (the cache refuses
+/// its own), so nothing of the ended account re-creates the folder before the state flips. The cancel reaches the
+/// transfer (`ProgressDataTask`); a `cache.store` already running is a detached write it does not touch, which the
+/// await lets finish. Callers get the cancellation they already treat as quiet.
+extension AttachmentLoader: SessionObserver {
+    func sessionWillEnd() async {
+        isEnding = true
+        let running = Array(inFlight.values)
+        guard !running.isEmpty else { return }
+        running.forEach { $0.cancel() }
+        for task in running { _ = try? await task.value }
+        logger.debug(.cache, "\(running.count) attachment downloads ended for the sign-out")
+    }
+
+    func sessionDidEnd() {
+        isEnding = false
     }
 }

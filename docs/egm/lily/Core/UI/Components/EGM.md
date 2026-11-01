@@ -4,7 +4,7 @@ Source: `lily/Core/UI/Components/`
 
 ## Overview
 
-The reusable SwiftUI pieces every feature screen is built from, 37 files with no subfolders: the screen scaffold and
+The reusable SwiftUI pieces every feature screen is built from, 38 files with no subfolders: the screen scaffold and
 its aurora (`ContentScreen`, `AuroraBackground`, `FilmGrainOverlay`), the button, chip and field modifiers that give
 the app its one look, the cards, titles, rows, avatars and tiles, the list and empty states, the filter dropdowns, the
 shared error popup (`errorPopup`), the create-or-edit sheet (`DraftSheet`) and the UIKit-backed growing text field
@@ -75,6 +75,9 @@ use the generated `Color.lily*` asset symbols.
   `ConversationRow<Title, Trailing>(caption:, avatar: AvatarCircle, title:, trailing:)` with
   `init(caption:, hasUnread: Bool, avatar:, title:)` where `Trailing == UnreadDot?`, and `AvatarRowDivider()`
   [`lily/Core/UI/Components/ConversationRow.swift:ConversationRow`, `AvatarRowDivider`];
+  `SettingsLinkRow(title:, subtitle:, systemImage:, identifier:, action:)` (a whole-card `GlassCard` button with icon,
+  title, subtitle and chevron, `.buttonStyle(.plain)`, `.lilyHoverable()`; Profile's display name and contact rows)
+  [`lily/Core/UI/Components/SettingsLinkRow.swift:SettingsLinkRow`];
   `EntriesBar(fillRatio: Double, text: String, isFull: = false, isNearlyFull: = false, showsTrack: = true)` with
   `init(tournament: Tournament)` [`lily/Core/UI/Components/EntriesBar.swift:EntriesBar`]; `CapacityBar(event: SportEvent)`
   [`lily/Core/UI/Components/CapacityBar.swift:CapacityBar`].

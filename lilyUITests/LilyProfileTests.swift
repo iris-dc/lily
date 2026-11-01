@@ -2,8 +2,8 @@ import XCTest
 
 /// The contact form on Profile: a guest is sent to sign in first, a user picks what the message is about, writes it
 /// and is thanked; the mock accepts the send, so no backend is needed. The currency row: a pick changes the
-/// currency the create form's price and the filter's cap are typed in. And Sign out: it returns to the landing and
-/// forgets the session.
+/// currency the create form's price and the filter's cap are typed in. The display name: a new account starts as the
+/// backend's "Player" and chooses a name on the card. And Sign out: it returns to the landing and forgets the session.
 final class LilyProfileTests: LilyUITestCase {
     /// The symbol the en_US simulator shows for złoty is the code itself; a Polish device shows "zł".
     private static let zlotySymbols: Set<String> = ["PLN", "zł"]
@@ -70,13 +70,39 @@ final class LilyProfileTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
     }
 
+    /// A new account's public name is the backend's default until the user picks one: the card says so, the sheet saves
+    /// a changed name only, and the header shows the backend's answer.
+    @MainActor
+    func testChoosingADisplayNameOnProfileShowsIt() {
+        tapSignInWithApple()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+        openProfileTab()
+        XCTAssertTrue(app.staticTexts["Player"].waitForExistence(timeout: 5), "a new account starts as the backend's default")
+        let nudge = app.staticTexts["Choose a name other players will see"]
+        XCTAssertTrue(nudge.waitForExistence(timeout: 5), "the card nudges while the default stands")
+
+        app.buttons["profile-name"].tap()
+        XCTAssertTrue(app.navigationBars["Display name"].waitForExistence(timeout: 5))
+        let save = app.buttons["profile-name-save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5))
+        XCTAssertFalse(save.isEnabled, "nothing to save until the name changed")
+        replaceText(in: app.textFields["profile-name-field"], with: "Alex Kim")
+        assertBecomesEnabled(save, "a changed valid name enables Save")
+        save.tap()
+
+        XCTAssertTrue(app.navigationBars["Display name"].waitForNonExistence(timeout: 10), "the sheet closes on the answer")
+        XCTAssertTrue(app.staticTexts["Alex Kim"].waitForExistence(timeout: 5), "the header shows the backend's answer")
+        XCTAssertTrue(app.staticTexts["What other players see"].waitForExistence(timeout: 5), "the nudge is over")
+        XCTAssertFalse(app.staticTexts["Player"].exists)
+    }
+
     /// Sign out on Profile returns to the landing and forgets the session: the next way in is a guest's.
     @MainActor
     func testSigningOutReturnsToTheLanding() {
         tapSignInWithApple()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
         openProfileTab()
-        XCTAssertTrue(app.staticTexts["Apple Tester"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["apple@example.com"].waitForExistence(timeout: 5))
 
         let signOut = app.buttons["Sign out"]
         XCTAssertTrue(signOut.waitForExistence(timeout: 5))

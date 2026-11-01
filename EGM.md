@@ -56,16 +56,19 @@ token; everything else answers 401.
 - **One owner per state.** `SessionController` owns `SessionState` (signedOut, guest, signedIn) and is the one place
   that mutates it; `ErrorCenter` is the one funnel for user-facing errors and `AppError` the one typed failure, mapped
   to copy only in `ErrorMessageMapper`; `MyGroupsStore` is the one source of the caller's groups, `InboxStore` of the
-  inbox, `ChatHistoryCache` the room truth the realtime controller and `ChatViewModel` both write; `AppNavigation` the
+  inbox, `ProfileStore` of the caller's own profile (the display name, chosen by the user, never derived from the
+  email), `ChatHistoryCache` the room truth the realtime controller and `ChatViewModel` both write; `AppNavigation` the
   one navigation state; `AppLocale` the one process-wide locale.
 - **Session first.** The first frame shows the cached session from `SessionStore`; `restore()` verifies it with Cognito
   once per process, and `ShellSync.run` and the tab loads join that check before loading anything for a user.
-  Sign-out clears every `SessionObserver` (stores, caches, paths, snapshots) before the pool is told.
+  Sign-out clears every `SessionObserver` (stores, caches, paths, snapshots) before the pool is told. A refresh token
+  the pool refuses mid-session ends it like a sign-out (`CognitoAuthService.onSessionExpired` ->
+  `SessionController.endExpiredSession()`), once, with the shared popup.
 - **Backend rules on every call.** Repositories build an `APIRequest` and call `send(_:failingWith:)`; backend
   `{code, message}` bodies map to `AppError` (`BackendErrorCode` exhaustive), 401 to `.sessionExpired`, 429 to
   `.rateLimited`; every request carries `X-App-Version`; debug builds may send `X-Local-User-Id` to a local Laurel.
   Writes repeat one `TRY_AGAIN` (`LostRace.attemptTwice`, `WriteGate`), a write with an unknown outcome refetches
-  before any popup, creates are idempotent by client id (`CreateFlow`, `clientEventId`, `clientMessageId`).
+  before any popup (`LostAnswer`), creates are idempotent by client id (`CreateFlow`, `clientEventId`, `clientMessageId`).
   Repositories themselves send exactly once; the repeat lives in the callers.
 - **Cache before network.** Lists reload only on `ContentFreshness` rules and `ChangeTracker` bumps, start from the
   last answer on disk (`ListSnapshotStore`, a hint, never the truth) and never poll; the first Explore request waits

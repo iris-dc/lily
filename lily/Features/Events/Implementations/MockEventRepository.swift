@@ -12,6 +12,9 @@ final class MockEventRepository: EventRepository {
     private let logger: any Logging
     /// `-mock-events-fail`: the next list load throws, the reads by id, joins and creates never do.
     private var failsNextLoad: Bool
+    /// The draft behind each game made here, by client id: Laurel compares a repeated create with what it stored and
+    /// refuses other details under the same id.
+    private var drafts: [String: EventDraft] = [:]
 
     init(now: Date = .now,
          count: Int = AppConfig.Events.mockFeedSize,
@@ -87,9 +90,11 @@ final class MockEventRepository: EventRepository {
         return store(event.updatingParticipation(count: event.participantCount - 1, isJoined: false))
     }
 
-    /// Like the backend: the draft's client id is the event id, so a repeated create answers the same event.
+    /// Like the backend: the draft's client id is the event id, so a repeated create answers the same event, and the
+    /// same id with other details is `EVENT_ID_REUSED`.
     func create(_ draft: EventDraft) async throws -> SportEvent {
         if let existing = events.first(where: { $0.id == draft.clientId }) {
+            guard drafts[draft.clientId] == draft else { throw AppError.createIdReused }
             logger.info(.events, "Mock create replayed for event \(existing.id)")
             return existing
         }
@@ -98,6 +103,7 @@ final class MockEventRepository: EventRepository {
                                     hostName: AppBranding.Events.Create.mockHostName,
                                     coordinate: coordinate)
         events.append(event)
+        drafts[draft.clientId] = draft
         logger.info(.events, "Mock event \(event.id) created (\(event.spotsDescription))")
         return event
     }
@@ -108,6 +114,7 @@ final class MockEventRepository: EventRepository {
         guard event.isHosted(by: identity.currentUserID) else { throw AppError.notHost }
         guard draft.playerLimit != .maximum || draft.capacity >= event.participantCount else { throw AppError.capacityTooLow }
         let updated = store(event.updating(with: draft))
+        drafts[id] = draft
         logger.info(.events, "Mock event \(updated.id) updated (\(updated.spotsDescription))")
         return updated
     }

@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// "Create team": one field for the team's name, judged against the backend's limits, and Create in the bar. Closes
-/// itself once the caller's entry exists.
+/// "Create team": one field for the team's name, judged against the backend's limits, and Create in the bar. Closes as
+/// soon as the caller's team exists (`onEntered`: the write's answer or its read-back, before the reminders are
+/// offered), or once the entry shows up through a live change.
 struct TeamNameSheet: View {
     let viewModel: TournamentDetailViewModel
     let errorCenter: ErrorCenter
@@ -41,7 +42,7 @@ struct TeamNameSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     DraftSubmitButton(title: Copy.createTeam, isSubmitting: viewModel.isBusy, isEnabled: issue == nil) {
-                        await viewModel.createTeam(named: name)
+                        await viewModel.createTeam(named: name) { dismiss() }
                     }
                     .accessibilityIdentifier(AccessibilityIdentifiers.tournamentTeamSubmit)
                 }

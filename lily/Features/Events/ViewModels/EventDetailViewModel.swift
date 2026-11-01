@@ -93,38 +93,32 @@ final class EventDetailViewModel {
         await update("Leave", wantsToParticipate: false) { try await repository.leave(eventId: event.id) }
     }
 
-    /// One change at a time. The server's answer replaces the event and goes to `onChange`, so the list behind this
-    /// screen is right on the way back without a reload. A refusal because the event moved on is shown, but only
-    /// after the event on screen has been brought up to date, so the popup and the numbers agree. A failure that
-    /// leaves the outcome unknown is shown only when the refetched event does not already show what the user asked
-    /// for: Laurel commits a join before it reads the event back, so the write may have landed, and a popup saying
-    /// otherwise would only send the user into an "already joined" refusal.
+    /// One change at a time, through the shared gate (`WriteGate`: one `TRY_AGAIN` repeated, a cancellation quiet, a
+    /// refusal logged at warning). The server's answer replaces the event and goes to `onChange`, so the list behind
+    /// this screen is right on the way back without a reload. A refusal because the event moved on is shown, but only
+    /// after the event on screen has been read back, so the popup and the numbers agree; a failure that leaves the
+    /// outcome unknown is shown only when the read-back does not already show what the user asked for (`LostAnswer`):
+    /// Laurel commits a join before it reads the event back, so the write may have landed, and a popup saying otherwise
+    /// would only send the user into an "already joined" refusal. A join that landed either way earns the prompt.
     private func update(_ action: String, wantsToParticipate: Bool, _ change: () async throws -> SportEvent) async {
         guard !isBusy else { return }
         isBusy = true
         defer { isBusy = false }
-        do {
-            let updated = try await LostRace.attemptTwice(delay: tryAgainDelay,
-                                                          logger: logger,
-                                                          category: .events,
-                                                          retrying: "\(action) for event \(event.id)",
-                                                          change)
-            apply(updated)
-            logSuccess(action, updated)
-            await loadParticipants()
-            // The control is done before the permission prompt comes up, so it never spins behind the alert.
-            isBusy = false
-            if wantsToParticipate { await pushOptIn.offerReminders() }
-        } catch {
-            guard !AppError.isCancellation(error) else { return }
-            logFailure(action, error)
-            let fresh = await refreshAfterFailure(error)
-            if let fresh, Self.landed(despite: error, fresh: fresh, wantsToParticipate: wantsToParticipate) {
-                logger.info(.events, "\(action) landed for event \(fresh.id) despite \(error); nothing to report")
-                return
-            }
-            errorCenter.report(error)
-        }
+        let what = "\(action) for event \(event.id)"
+        let done = await gate.run(what,
+                                  settling: { [self] error in
+                                      await readBack(what, despite: error, wantsToParticipate: wantsToParticipate)
+                                  },
+                                  { [self] in
+                                      let updated = try await change()
+                                      apply(updated)
+                                      logSuccess(action, updated)
+                                      await loadParticipants()
+                                  })
+        guard done else { return }
+        // The control is done before the permission prompt comes up, so it never spins behind the alert.
+        isBusy = false
+        if wantsToParticipate { await pushOptIn.offerReminders() }
     }
 
     private func logSuccess(_ action: String, _ updated: SportEvent) {
@@ -132,36 +126,31 @@ final class EventDetailViewModel {
         if updated.isFull { logger.info(.events, "Capacity reached for event \(updated.id)") }
     }
 
-    /// An unknown outcome (never a refusal) whose refetch already shows the change the user asked for.
-    private static func landed(despite error: any Error, fresh: SportEvent, wantsToParticipate: Bool) -> Bool {
-        guard let appError = error as? AppError, !appError.isParticipationConflict else { return false }
-        return fresh.participates == wantsToParticipate
+    /// Reads the event back and answers whether the write landed; the roster follows every fresh event.
+    private func readBack(_ what: String, despite error: any Error, wantsToParticipate: Bool) async -> Bool {
+        let settlement = await eventReadBack.settle(what, despite: error) { $0.participates == wantsToParticipate }
+        if settlement != .unresolved { await loadParticipants() }
+        return settlement.isLanded
     }
 
-    /// A refusal is an expected product state (the event moved on) and stays a warning; anything else is an error.
-    private func logFailure(_ action: String, _ error: any Error) {
-        let message = "\(action) failed for event \(event.id): \(error)"
-        if let appError = error as? AppError, appError.isParticipationConflict {
-            logger.warning(.events, message)
-        } else {
-            logger.error(.events, message)
-        }
+    private var gate: WriteGate {
+        WriteGate(category: .events,
+                  logger: logger,
+                  tryAgainDelay: tryAgainDelay,
+                  report: { [errorCenter] in errorCenter.report($0) },
+                  isExpected: { $0.isParticipationConflict })
     }
 
-    /// The server refused because the event is not what the screen shows (any of the 409s, or a failure that leaves
-    /// the outcome unknown: the write may have committed before the answer was lost). Fetching it again fixes the
-    /// numbers here and, through `onChange`, in the lists behind; a failed fetch leaves things as they are, the
-    /// popup still explains the refusal. Returns the fresh event when there is one.
-    private func refreshAfterFailure(_ error: any Error) async -> SportEvent? {
-        guard let appError = error as? AppError, appError.needsRefresh else { return nil }
-        guard let fresh = try? await repository.event(id: event.id) else {
-            logger.warning(.events, "Could not refresh event \(event.id) after \(appError)")
-            return nil
-        }
-        apply(fresh)
-        logger.info(.events, "Refreshed event \(event.id) after \(appError): \(fresh.countDescription)")
-        await loadParticipants()
-        return fresh
+    /// The event is read back after every refusal (the screen was stale; the popup still explains it) and after a 500
+    /// or a lost connection (`participationFailed` is the participation routes' fallback), when a fresh event already
+    /// showing the change means the write landed.
+    private var eventReadBack: LostAnswer<SportEvent> {
+        LostAnswer(category: .events,
+                   logger: logger,
+                   leavesOutcomeUnknown: { $0 == .participationFailed || $0 == .network },
+                   isWorthAnotherLook: { $0.isParticipationConflict },
+                   refetch: { [self] in try await repository.event(id: event.id) },
+                   apply: { [self] in apply($0) })
     }
 
     /// Takes the event as the edit sheet saved it, so the detail and the list behind it show the change at once.
@@ -182,11 +171,5 @@ private extension AppError {
         case .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain: true
         default: false
         }
-    }
-
-    /// Outcomes after which the event's current state is worth another look: a conflict, or a failure that leaves
-    /// the outcome unknown (a 500 or a lost connection after the backend may already have committed the change).
-    var needsRefresh: Bool {
-        isParticipationConflict || self == .participationFailed || self == .network
     }
 }

@@ -90,4 +90,15 @@ extension MockGroupRepositoryTests {
             try await repository.unban(id: MockGroupFixtures.kickersID, userID: priya)
         }
     }
+
+    /// Like Laurel's `GROUP_ID_TAKEN`: a deleted group keeps its id, so a create under it is refused, not replayed.
+    @Test func aCreateUnderADeletedGroupsIdIsRefused() async throws {
+        let repository = makeRepository()
+        let draft = GroupDraft.fixture()
+        let created = try await repository.create(draft)
+        _ = try await repository.delete(id: created.id)
+
+        await #expect(throws: AppError.groupCreationFailed) { try await repository.create(draft) }
+        await #expect(throws: AppError.groupNotFound) { try await repository.group(id: created.id) }
+    }
 }

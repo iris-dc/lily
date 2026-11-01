@@ -110,16 +110,10 @@ nonisolated enum ImageEncoding {
         return url
     }
 
-    /// The source scaled so its longest side is at most `maxDimension`, never upscaled, with the EXIF orientation
-    /// applied, so a portrait photo stays portrait.
+    /// The source within `maxDimension` through the one ImageIO recipe (`ImageFile.downsampled`: never upscaled, the
+    /// EXIF orientation applied); bytes it cannot read as a picture are refused.
     private static func downsample(_ source: CGImageSource, maxDimension: Int) throws -> CGImage {
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceShouldCacheImmediately: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxDimension,
-        ]
-        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+        guard let image = ImageFile.downsampled(source, maxDimension: maxDimension) else {
             throw AppError.attachmentTypeNotAllowed
         }
         return image

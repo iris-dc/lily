@@ -12,7 +12,8 @@ holds the seven protocols every other layer depends on (`ChatRepository`, `ChatH
 repositories, the in-memory room cache and on-disk attachment cache, and the attachment pipeline; `Models` the wire
 types (`ChatMessage`, `MessagePage`, `Attachment`, polls, pins, `MessageKind` and `AttachmentKind` tolerating unknown
 kinds), the drafts, the per-room `ChatRoomState` and the pure presentation rules; `Services` the four main-actor
-services between the screens, the realtime controller and the data layer; `State` the observable objects that
+services between the screens, the realtime controller and the data layer, and `ImageFile`, the one decode of a picture
+file for a view; `State` the observable objects that
 outlive a room (`ChatOutbox`, `UnreadCenter`) or are shared between a chat and its viewer (`ViewerHero`,
 `ViewerMoveDriver`); `ViewModels` the two `@Observable` classes (`ChatViewModel`, `AttachmentComposerModel`);
 `Views` the SwiftUI screens and row primitives.
@@ -43,7 +44,8 @@ the unit suites live under `lilyTests/Chat` (`./scripts/ci.sh unit`).
 - Services: [`./Services/EGM.md`](./Services/EGM.md) - `AttachmentLoader` (bytes through the cache with presigned-link
   refresh and single-flight downloads, `PreviewFiles` for QuickLook copies), `ChatCatchUp` (pages cached rooms
   forward from their watermark and refreshes polls), `ChatHistoryClearer` (the caller-only clear), `ReadMarkerFlusher`
-  (coalesced read-marker pushes).
+  (coalesced read-marker pushes), `ImageFile` (a picture file decoded at the side a view needs, refused unread when
+  its header declares more pixels than the cap).
 - State: [`./State/EGM.md`](./State/EGM.md) - `ChatOutbox` (unsent and failed messages per room) and `UnreadCenter`
   (rooms with unseen messages, feeding the tab badge), both `SessionObserver`s cleared on sign-out; `FirstPageReveal`,
   `ViewerHero` and `ViewerMoveDriver`, which runs the viewer's open and close move one frame at a time on one

@@ -5,13 +5,17 @@ import Foundation
 /// date is not kept reliably). The system may purge `Caches/` on its own, which is fine: a miss downloads again.
 /// The file work runs on a detached task (`AttachmentCacheFiles`), so a 40 MB write never holds the main actor.
 /// Cleared when the session ends, the preview copies included, so one account's pictures never stay on the device
-/// for the next.
+/// for the next; from the sweep until the state flips every store is refused, so nothing of the ended account
+/// re-creates the folder.
 final class DiskAttachmentCache: AttachmentCache, SessionObserver {
     private let directory: URL
     private let previewDirectory: URL
     private let limitBytes: Int
     private let logger: any Logging
     private let now: () -> Date
+    /// Set by `sessionWillEnd` before the sweep, cleared by `sessionDidEnd`: a store in between (a tile that appeared
+    /// after the loader's drain, a send that answered after it) would re-create the folder for the ended account.
+    private var isEnding = false
 
     init(directory: URL = DiskAttachmentCache.defaultDirectory,
          previewDirectory: URL = PreviewFiles.directory,
@@ -39,6 +43,7 @@ final class DiskAttachmentCache: AttachmentCache, SessionObserver {
 
     @discardableResult
     func store(_ data: Data, for id: String, variant: AttachmentVariant) async throws -> URL {
+        try refuseWhileEnding(id)
         let url = location(of: id, variant: variant)
         let stamp = now()
         try await Task.detached(priority: .userInitiated) {
@@ -50,6 +55,7 @@ final class DiskAttachmentCache: AttachmentCache, SessionObserver {
 
     @discardableResult
     func store(copying fileURL: URL, for id: String, variant: AttachmentVariant) async throws -> URL {
+        try refuseWhileEnding(id)
         let url = location(of: id, variant: variant)
         let stamp = now()
         try await Task.detached(priority: .userInitiated) {
@@ -93,13 +99,23 @@ final class DiskAttachmentCache: AttachmentCache, SessionObserver {
     }
 
     /// Awaited by the session controller before the state flips, so the device is clean (or the warning logged) before
-    /// the next account can sign in.
+    /// the next account can sign in; stores are refused from here until `sessionDidEnd`.
     func sessionWillEnd() async {
+        isEnding = true
         await clear()
     }
 
-    /// Nothing left to do: the clearing happened in `sessionWillEnd`.
-    func sessionDidEnd() {}
+    /// The clearing happened in `sessionWillEnd`; the next account's stores go through again.
+    func sessionDidEnd() {
+        isEnding = false
+    }
+
+    /// Nothing of the ended account is written after its sweep; callers treat the cancellation as quiet.
+    private func refuseWhileEnding(_ id: String) throws {
+        guard isEnding else { return }
+        logger.debug(.cache, "Attachment \(id) store refused: the session is ending")
+        throw CancellationError()
+    }
 
     private func location(of id: String, variant: AttachmentVariant) -> URL {
         directory.appending(path: id + variant.fileSuffix)

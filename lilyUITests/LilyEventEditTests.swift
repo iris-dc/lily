@@ -158,15 +158,4 @@ final class LilyEventEditTests: LilyUITestCase {
     private func spotText(of row: XCUIElement) -> String {
         "\(row.label)|\(row.value as? String ?? "")"
     }
-
-    /// Puts the cursor at the end of the field's text, deletes it and types the replacement; the only way to replace a
-    /// field's text that does not depend on the edit menu.
-    @MainActor
-    private func replaceText(in field: XCUIElement, with text: String) {
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "missing text field")
-        let current = field.value as? String ?? ""
-        field.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
-        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count))
-        field.typeText(text)
-    }
 }

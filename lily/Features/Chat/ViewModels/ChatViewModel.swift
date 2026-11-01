@@ -228,6 +228,12 @@ extension AppError {
         self == .network || self == .voteFailed
     }
 
+    /// A 500 or a lost connection after the backend may already have changed the pins (`pinFailed` is the pin routes'
+    /// fallback for an answer without a known code).
+    var leavesPinOutcomeUnknown: Bool {
+        self == .network || self == .pinFailed
+    }
+
     /// The room is no longer the caller's to read.
     var endsRoomAccess: Bool {
         self == .notAMember || self == .groupNotFound

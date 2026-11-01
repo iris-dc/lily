@@ -9,6 +9,9 @@ final class MockGroupRepository: GroupRepository {
     var rosters: [String: [GroupMember]]
     /// Conversations the caller cleared (`MockChatRepository.clearHistory`): out of Mine until a new line arrives.
     var hiddenConversationIDs: Set<String> = []
+    /// The draft behind each group made here, by client id: Laurel compares a repeated create with what it stored and
+    /// refuses other details under the same id.
+    private var drafts: [String: GroupDraft] = [:]
     let identity: any IdentityProvider
     let logger: any Logging
     let now: () -> Date
@@ -39,15 +42,20 @@ final class MockGroupRepository: GroupRepository {
         try readable(id)
     }
 
-    /// Like the backend: the draft's client id is the group id, so a repeated create answers the same group.
+    /// Like the backend: the draft's client id is the group id, so a repeated create answers the same group, the same id
+    /// with other details is `GROUP_ID_REUSED`, and the id of a deleted group is `GROUP_ID_TAKEN` (the tombstone keeps
+    /// it; nothing replays it).
     func create(_ draft: GroupDraft) async throws -> SportGroup {
         if let existing = groups.first(where: { $0.id == draft.clientId }) {
+            guard !existing.isDeleted else { throw AppError.groupCreationFailed }
+            guard drafts[draft.clientId] == draft else { throw AppError.createIdReused }
             logger.info(.groups, "Mock create replayed for group \(existing.id)")
             return existing
         }
         let group = draft.makeGroup(ownerName: AppBranding.Groups.Create.mockOwnerName, now: now())
         groups.append(group)
         rosters[group.id] = []
+        drafts[group.id] = draft
         logger.info(.groups, "Group created \(group.id) (\(group.visibility.rawValue))")
         return group
     }
@@ -56,6 +64,7 @@ final class MockGroupRepository: GroupRepository {
         let group = try readable(id)
         guard group.role?.isAdmin == true else { throw AppError.insufficientRole }
         try requireGroupRoute(group)
+        drafts[id] = draft
         return store(group.updating(with: draft))
     }
 

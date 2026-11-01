@@ -31,9 +31,10 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   `.inviteeAlreadyEntered` and `.insufficientRole` to `.cannotInviteToTournament`.
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository.swift:MockTournamentRepository]`:
   `final class MockTournamentRepository: TournamentRepository`,
-  `init(groups: MockGroupRepository, identity: any IdentityProvider, logger: any Logging, now: () -> Date = { .now })`.
+  `init(groups: MockGroupRepository, identity: any IdentityProvider, logger: any Logging,
+  now: @escaping () -> Date = { .now })`.
   State: `details: [String: TournamentDetail]` (seeded from `MockTournamentFixtures.make(now:)`), `entrySequence`,
-  `invitedTournamentIDs`. Internal helpers shared with the extensions: `readable(_:)`, `requireCaller()`,
+  `invitedTournamentIDs`, `drafts: [String: TournamentDraft]`. Internal helpers shared with the extensions: `readable(_:)`, `requireCaller()`,
   `organized(_:)`, `store(_:)`, `resolved(_:)` (detail and tournament overloads), `isInRoom(_:)`,
   `noteInvitee(of:)`, `invited(_:)`. Implements `tournaments(in:near:)`, `tournament(id:)`, `create(_:)`,
   `update(id:_:)`, `cancel(id:)` here.
@@ -89,7 +90,8 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   `update`, `cancel`, `removeEntry` and `start` check caller, then readability, then `organizerUserId ==
   callerMarker` (`.notOrganizer`).
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository.swift:MockTournamentRepository.create(_:)]`:
-  idempotent by `draft.clientId` (an existing id replays the stored tournament); refusals in order: no coordinate or
+  idempotent by `draft.clientId` (an existing id replays the stored tournament when the draft equals the stored one,
+  `drafts`, and is `.createIdReused` when it differs; `update` stores the new draft); refusals in order: no coordinate or
   `maxEntries` below `AppConfig.Tournaments.minEntries(for:)` (`.tournamentCreationFailed`), a group that is unknown
   or neither public nor joined (`.groupNotFound`), `GroupAccess.canCreateEvents` false (`.insufficientRole`).
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository.swift:MockTournamentRepository.update(id:_:)]`:
@@ -167,7 +169,8 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository.swift:MockTournamentRepository.create(_:)]`:
   every mock write mutates `details` through `store(_:)` and mirrors the room: `groups.registerRoom` on create,
   `groups.syncRoom` after update, join, leave and removal, `groups.admitToRoom` on join, `groups.leaveRoom` per
-  departing user; `noteInvitee(of:)` mutates `invitedTournamentIDs`; `join` increments `entrySequence`.
+  departing user; `noteInvitee(of:)` mutates `invitedTournamentIDs`; `join` increments `entrySequence`; `create` and
+  `update` write `drafts` (a repeated create with other details is `.createIdReused`).
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository.swift:MockTournamentRepository.tournaments(in:near:)]`:
   logging under `.tournaments`: reads at debug ("Mock tournaments served for scope ...", "Mock tournament ...
   served"), every write at info (created or replayed, updated, cancelled, joined, left, removed, started, result,

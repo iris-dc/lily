@@ -31,14 +31,14 @@ final class BlockListStore: SessionObserver {
         await reload()
     }
 
-    /// A call made while one is in flight joins it; an answer that arrives after the caller signed out or changed is
-    /// dropped.
+    /// A call for the same user joins the run in flight; one for another user waits it out and then loads for them; an
+    /// answer for a caller who signed out or changed is dropped.
     func reload() async {
         guard let userID = identity.currentUserID else {
             clear()
             return
         }
-        await load.run { [self] in await performLoad(for: userID) }
+        await load.run(key: userID) { [self] in await performLoad(for: userID) }
     }
 
     private func performLoad(for userID: String) async {

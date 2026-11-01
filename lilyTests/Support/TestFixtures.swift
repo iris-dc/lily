@@ -3,7 +3,9 @@ import Foundation
 
 /// Shared test data: one user, their session and credentials.
 enum TestFixtures {
-    static let user = AuthUser(id: "u-1", displayName: "Test Person", email: "test@example.com")
+    static let user = AuthUser(id: "u-1", email: "test@example.com")
+    /// The name the backend shows for `user` in the fixtures (host, owner, organiser, entry member).
+    static let displayName = "Test Person"
     static let session = AuthSession(user: user)
     static let credentials = EmailCredentials(email: "jane.doe@example.com", password: "correct-horse")
     /// Munich: far enough from `AppConfig.Location.mockCenter` that a move there rounds differently at any precision.

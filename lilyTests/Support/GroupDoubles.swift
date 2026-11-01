@@ -2,8 +2,8 @@ import Foundation
 @testable import lily
 
 /// Scriptable `GroupRepository`: lists answer from `result`, writes from the stored groups, and every call is recorded.
-/// `holdsRequests` parks the list, create and join requests; `group(id:)`, the other writes, the roster and the bans
-/// answer at once.
+/// `holdsRequests` parks the list, create and join requests; `holdsFetches` parks `group(id:)` on a hold of its own, so
+/// a refetch is held after the write that led to it answered; the other writes, the roster and the bans answer at once.
 @MainActor
 final class FakeGroupRepository: GroupRepository, HoldsRequests {
     var result: Result<[SportGroup], AppError> = .success([])
@@ -19,6 +19,8 @@ final class FakeGroupRepository: GroupRepository, HoldsRequests {
     var bansError: (any Error)?
     var members: [GroupMember] = []
     let hold = RequestHold()
+    /// Parks `group(id:)` alone: one hold per operation.
+    let fetchHold = RequestHold()
     private(set) var requestedScopes: [GroupScope] = []
     private(set) var requestedCursors: [String?] = []
     /// The position each list request carried (`nil` for none), in call order.
@@ -48,8 +50,19 @@ final class FakeGroupRepository: GroupRepository, HoldsRequests {
         return Page(items: try result.get(), nextCursor: nextCursor)
     }
 
+    /// While true, every `group(id:)` records its call and then suspends until `releaseFetches()`.
+    var holdsFetches: Bool {
+        get { fetchHold.isEnabled }
+        set { fetchHold.isEnabled = newValue }
+    }
+
+    func releaseFetches() {
+        fetchHold.release()
+    }
+
     func group(id: String) async throws -> SportGroup {
         fetchedGroupIDs.append(id)
+        try await fetchHold.waitOrThrow()
         if let thrownError { throw thrownError }
         return try stored(id)
     }
@@ -58,7 +71,7 @@ final class FakeGroupRepository: GroupRepository, HoldsRequests {
         createdDrafts.append(draft)
         try await hold.waitOrThrow()
         try throwIfScripted()
-        return draft.makeGroup(ownerName: TestFixtures.user.displayName, now: .now)
+        return draft.makeGroup(ownerName: TestFixtures.displayName, now: .now)
     }
 
     func update(id: String, _ draft: GroupDraft) async throws -> SportGroup {
@@ -163,7 +176,7 @@ final class FakeInviteRepository: InviteRepository, HoldsRequests {
 }
 
 /// Scriptable `MeRepository`: `me()` answers from `meResult`, `acceptTerms` refuses with `acceptError`;
-/// `holdsRequests` parks `me()` only.
+/// `holdsRequests` parks `me()` and `acceptTerms`.
 @MainActor
 final class FakeMeRepository: MeRepository, HoldsRequests {
     var meResult: Result<Account, AppError> = .success(.fixture())
@@ -183,6 +196,7 @@ final class FakeMeRepository: MeRepository, HoldsRequests {
 
     func acceptTerms(version: Int) async throws -> TermsAcceptance {
         acceptedVersions.append(version)
+        try await hold.waitOrThrow()
         if let acceptError { throw acceptError }
         return TermsAcceptance(acceptedTermsVersion: version, acceptedTermsAt: .now)
     }

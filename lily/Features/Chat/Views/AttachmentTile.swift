@@ -32,7 +32,8 @@ struct AttachmentTile: View {
 }
 
 /// A picture from a file on the device (a picked draft's thumbnail, in the strip and in the unsent bubble), decoded
-/// off the main actor; a spinner while the preparer still works on it.
+/// off the main actor at a tile's side whether the preparer left a thumbnail or only the picture; a spinner while the
+/// preparer still works on it.
 struct LocalImage: View {
     let url: URL
     var isPreparing = false
@@ -48,21 +49,8 @@ struct LocalImage: View {
         AttachmentTile(image: image, isLoading: isPreparing || (image == nil && !failed))
             .task(id: LoadKey(url: url, isPreparing: isPreparing)) {
                 guard !isPreparing else { return }
-                image = await ImageFile.load(url)
+                image = try? await ImageFile.load(url, maxDimension: AttachmentVariant.thumbnail.maxDecodedDimension)
                 failed = image == nil
             }
-    }
-}
-
-/// Reads and decodes a picture file on a detached task, so neither the read (`UIImage(contentsOfFile:)`) nor the
-/// decode stalls the main actor. `nil` for a missing file or one that is no picture.
-nonisolated enum ImageFile {
-    static func load(_ url: URL) async -> UIImage? {
-        await Task.detached(priority: .userInitiated) { await decoded(url) }.value
-    }
-
-    private static func decoded(_ url: URL) async -> UIImage? {
-        guard let image = UIImage(contentsOfFile: url.path()) else { return nil }
-        return await image.byPreparingForDisplay() ?? image
     }
 }

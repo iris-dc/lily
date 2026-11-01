@@ -74,7 +74,7 @@ extension TournamentDetailViewModel {
                 let updated = try await repository.schedule(id: destination.id, matchID: match.id, schedule)
                 guard let current = detail else { return }
                 accept(current.replacing(match: updated))
-            } catch let error as AppError where error.leavesMatchOutcomeUnknown {
+            } catch let error as AppError where error.leavesTournamentWriteOutcomeUnknown {
                 guard let fresh = await readBack(after: error, match, asking: .schedule(schedule), action: "Schedule") else {
                     throw error
                 }
@@ -93,7 +93,7 @@ extension TournamentDetailViewModel {
         await write(action) { [self] in
             do {
                 return try await work()
-            } catch let error as AppError where error.leavesMatchOutcomeUnknown {
+            } catch let error as AppError where error.leavesTournamentWriteOutcomeUnknown {
                 guard let fresh = await readBack(after: error, match, asking: asked, action: action) else { throw error }
                 return fresh
             }
@@ -137,10 +137,4 @@ extension TournamentDetailViewModel {
     private func logMatch(_ matchID: String, _ outcome: String) {
         logger.info(.tournaments, "Match \(matchID) of tournament \(destination.id): \(outcome)")
     }
-}
-
-private extension AppError {
-    /// A lost connection, or the route's fallback for a 5xx: the backend may have committed before either, so the write
-    /// is read back. A refusal never is; it is the backend's word that nothing changed.
-    var leavesMatchOutcomeUnknown: Bool { self == .network || self == .tournamentActionFailed }
 }

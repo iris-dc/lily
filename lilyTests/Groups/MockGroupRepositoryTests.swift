@@ -154,6 +154,22 @@ struct MockGroupRepositoryTests {
         await #expect(throws: AppError.groupNotFound) { try await repository.group(id: created.id) }
     }
 
+    /// Like Laurel: the same id with other details is `GROUP_ID_REUSED`; an update makes the new details the stored ones.
+    @Test func aRepeatedCreateWithOtherDetailsIsIdReused() async throws {
+        let repository = makeRepository()
+        let draft = GroupDraft.fixture()
+        let created = try await repository.create(draft)
+        var edited = draft
+        edited.name = "Renamed"
+
+        await #expect(throws: AppError.createIdReused) { try await repository.create(edited) }
+        #expect(try await repository.group(id: created.id).name == created.name, "nothing changed")
+
+        let updated = try await repository.update(id: created.id, edited)
+        #expect(try await repository.create(edited) == updated)
+        await #expect(throws: AppError.createIdReused) { try await repository.create(draft) }
+    }
+
     @Test func rolesGateEditingAndDeleting() async {
         let repository = makeRepository()
 

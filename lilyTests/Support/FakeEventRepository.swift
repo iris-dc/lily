@@ -15,6 +15,8 @@ final class FakeEventRepository: EventRepository, HoldsRequests {
     var nextParticipationError: (any Error)?
     /// Thrown by `create` when set; otherwise the draft becomes an event hosted by `hostUserID`, joined, 1 of N.
     var createError: (any Error)?
+    /// Thrown by the next `create` only, ahead of `createError`: a `TRY_AGAIN` that a repeat gets past.
+    var nextCreateError: (any Error)?
     /// Thrown by `update` when set; otherwise the stored event takes the draft's fields.
     var updateError: (any Error)?
     /// Thrown by the next `update` only, ahead of `updateError`: a `TRY_AGAIN` that a repeat gets past.
@@ -69,9 +71,13 @@ final class FakeEventRepository: EventRepository, HoldsRequests {
     func create(_ draft: EventDraft) async throws -> SportEvent {
         createdDrafts.append(draft)
         try await hold.waitOrThrow()
+        if let error = nextCreateError {
+            nextCreateError = nil
+            throw error
+        }
         if let createError { throw createError }
         return draft.makeEvent(hostUserId: hostUserID,
-                               hostName: TestFixtures.user.displayName,
+                               hostName: TestFixtures.displayName,
                                coordinate: draft.coordinate ?? AppConfig.Location.mockCenter)
     }
 

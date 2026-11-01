@@ -1,17 +1,9 @@
 import Foundation
 
+/// Who is signed in, as the pool knows them: the `sub` and the email attribute. The name other players see is the
+/// backend's profile (`ProfileStore`), chosen by the user, never derived from the email. A session stored before the
+/// name moved there still carries a `displayName` key, which the decoder ignores.
 nonisolated struct AuthUser: Codable, Hashable, Identifiable, Sendable {
     let id: String
-    let displayName: String
     let email: String?
-
-    var initials: String { displayName.initials }
-
-    /// "jane.doe@example.com" becomes "Jane Doe": the pool stores no name, so the local part is the best first guess.
-    static func displayName(fromEmail email: String) -> String {
-        let local = email.split(separator: "@").first.map(String.init) ?? email
-        return local.split(whereSeparator: { $0 == "." || $0 == "_" })
-            .map { $0.prefix(1).uppercased() + $0.dropFirst() }
-            .joined(separator: " ")
-    }
 }

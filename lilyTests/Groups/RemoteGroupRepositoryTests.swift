@@ -142,15 +142,19 @@ struct RemoteGroupRepositoryTests {
         await #expect(throws: expected) { try await repository.join(id: "g1") }
     }
 
-    /// Both id conflicts mean the group behind the id may exist: the generic creation failure triggers the refetch.
+    /// An id another user owns may hide a group of ours: the generic creation failure triggers the refetch. The same id
+    /// with other details is our own earlier create, which `CreateFlow` updates (`.createIdReused`).
     @Test func idConflictsAndUnnamedCreateFailuresBecomeGroupCreationFailed() async {
-        let coded = ["GROUP_ID_TAKEN", "GROUP_ID_REUSED", "VALIDATION_FAILED"].map {
+        let coded = ["GROUP_ID_TAKEN", "VALIDATION_FAILED"].map {
             APIError.http(status: 409, body: APIErrorBody(code: $0, message: "m"))
         }
         for error in coded + Self.otherFailures {
             client.error = error
             await #expect(throws: AppError.groupCreationFailed) { try await repository.create(.fixture()) }
         }
+
+        client.error = APIError.http(status: 409, body: APIErrorBody(code: "GROUP_ID_REUSED", message: "m"))
+        await #expect(throws: AppError.createIdReused) { try await repository.create(.fixture()) }
     }
 
     @Test func otherFailuresOnReadsBecomeGroupsUnavailableAndOnWritesGroupActionFailed() async {

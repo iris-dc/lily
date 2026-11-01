@@ -5,8 +5,9 @@ Source: `lily/Core/Validation/`
 ## Overview
 
 Client-side checks that mirror what the backend refuses, so a draft that passes here is never a 400 there: the email and
-password rules used before credentials leave the device, the UTF-16 length the backend's `@Size` counts, and a small
-collection helper that names the first wrong field of a form section. Everything is `nonisolated` and pure.
+password rules used before credentials leave the device, the UTF-16 length the backend's `@Size` counts, the code-point
+length Laurel's display-name rule counts, and a small collection helper that names the first wrong field of a form
+section. Everything is `nonisolated` and pure.
 
 ## Interface
 
@@ -16,6 +17,8 @@ collection helper that names the first wrong field of a form section. Everything
 - `nonisolated extension String`: `var wireLength: Int`, `func prefix(wireLength maxLength: Int) -> String`
   [`lily/Core/Validation/String+WireLength.swift:String.wireLength`, `String+WireLength.swift:String.prefix(wireLength:)`].
 - `nonisolated extension String?`: `var wireLength: Int` [`lily/Core/Validation/String+WireLength.swift:Optional<String>.wireLength`].
+- `nonisolated extension String`: `var codePointCount: Int`, `func prefix(codePoints maxLength: Int) -> String`
+  [`lily/Core/Validation/String+CodePoints.swift:String.codePointCount`, `String+CodePoints.swift:String.prefix(codePoints:)`].
 - `nonisolated extension Collection where Element: Equatable`: `func first(of candidates: [Element]) -> Element?`,
   `func first(of candidates: Element...) -> Element?` [`lily/Core/Validation/Collection+FirstOf.swift:Collection.first(of:)`].
 
@@ -33,6 +36,9 @@ collection helper that names the first wrong field of a form section. Everything
   [`String+WireLength.swift:String.wireLength`, `String+WireLength.swift:Optional<String>.wireLength`].
 - `prefix(wireLength:)` keeps the longest prefix of whole `Character`s whose UTF-16 total stays within the cap, so a
   cut never splits an emoji and never exceeds the backend's limit [`String+WireLength.swift:String.prefix(wireLength:)`].
+- `codePointCount` is `unicodeScalars.count`, the unit Laurel's `codePointCount` uses for a display name, so an emoji
+  is one here where `wireLength` counts two; `prefix(codePoints:)` keeps the first `maxLength` scalars, never cutting
+  inside one [`String+CodePoints.swift:String.codePointCount`, `String+CodePoints.swift:String.prefix(codePoints:)`].
 - `first(of:)` is ordered by the candidates, not by the collection: it answers the first candidate the collection
   contains [`Collection+FirstOf.swift:Collection.first(of:)`].
 

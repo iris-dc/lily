@@ -4,8 +4,8 @@ Source: `lily/Features/Feedback/Views/`
 
 ## Overview
 
-Two views. `FeedbackRow` is the tappable glass card on Profile that opens the form; it renders copy and symbols and
-defers everything to an injected closure. `FeedbackSheet` is the contact form: a `NavigationStack` with a segmented
+Two views. `FeedbackRow` is the tappable card on Profile that opens the form: a `SettingsLinkRow`
+(`lily/Core/UI/Components`) given its copy and symbol, deferring everything to an injected closure. `FeedbackSheet` is the contact form: a `NavigationStack` with a segmented
 `FeedbackKind` picker, a multi-line message field, a reply-email field with validation hints and the environment
 summary in its footers, a Cancel/Send toolbar that becomes Done once the message was sent, its own error popup
 mount, and swipe-to-dismiss blocked while sending. It drives `FeedbackViewModel`
@@ -13,9 +13,10 @@ mount, and swipe-to-dismiss blocked while sending. It drives `FeedbackViewModel`
 
 ## Interface
 
-- `FeedbackRow` (`lily/Features/Feedback/Views/FeedbackRow.swift`): `let action: () -> Void`; a `Button` around a
-  `GlassCard` with the `AppBranding.Feedback.rowTitle` / `rowSubtitle` label, `DesignTokens.Symbols.feedback` icon
-  and a chevron; `.buttonStyle(.plain)`, `.lilyHoverable()`, identifier `AccessibilityIdentifiers.profileFeedback`.
+- `FeedbackRow` (`lily/Features/Feedback/Views/FeedbackRow.swift`): `let action: () -> Void`; a
+  `SettingsLinkRow(title: AppBranding.Feedback.rowTitle, subtitle: rowSubtitle, systemImage: DesignTokens.Symbols.feedback,
+  identifier: AccessibilityIdentifiers.profileFeedback, action:)`, the shared glass card with icon, title, subtitle and
+  chevron (`lily/Core/UI/Components/SettingsLinkRow.swift`).
 - `FeedbackSheet` (`lily/Features/Feedback/Views/FeedbackSheet.swift`): `init(viewModel: FeedbackViewModel,
   errorCenter: ErrorCenter)`; keeps the view model in `@State` (`State(initialValue:)`), reads
   `@Environment(\.dismiss)`. Private `form`, `hint(for: FeedbackField) -> Text?`, `toolbar`. Identifiers:

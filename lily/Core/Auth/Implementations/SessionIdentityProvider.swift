@@ -1,7 +1,7 @@
 import Foundation
 
-/// Answers with the signed-in user of the session. The API client is built before the `SessionController` (the
-/// controller's own profile sync goes through that client), so the composition root links the two afterwards.
+/// Answers with the signed-in user of the session. The repositories are built around this provider before the
+/// `SessionController` exists, so the composition root links the two afterwards.
 final class SessionIdentityProvider: IdentityProvider {
     weak var session: SessionController?
 

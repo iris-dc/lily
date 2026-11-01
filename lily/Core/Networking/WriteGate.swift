@@ -3,9 +3,9 @@ import Foundation
 /// The frame around one backend write a screen makes: a `TRY_AGAIN` is repeated once through `LostRace`, a
 /// cancellation (the screen was dismissed) stays quiet, any other failure is logged under `category` (at warning when
 /// `isExpected` names it a product state the screen shows, else at error) and handed to `report` (an `ErrorCenter`, or
-/// a `GroupErrorReporter` so `TERMS_REQUIRED` still raises the terms sheet). `run` answers whether the write went
-/// through, so a sheet can close on success. The busy flag stays at the call site: every screen has its own shape and
-/// some release it before a prompt.
+/// a `GroupErrorReporter` so `TERMS_REQUIRED` still raises the terms sheet), unless `settling` read a lost answer back
+/// and found the write landed. `run` answers whether the write went through, so a sheet can close on success. The busy
+/// flag stays at the call site: every screen has its own shape and some release it before a prompt.
 struct WriteGate {
     let category: LogCategory
     let logger: any Logging
@@ -15,11 +15,18 @@ struct WriteGate {
 
     @discardableResult
     func run(_ what: String, _ work: () async throws -> Void) async -> Bool {
+        await run(what, settling: { _ in false }, work)
+    }
+
+    /// `settling` reads a lost answer back (`LostAnswer`); `true` means the write landed and nothing is reported.
+    @discardableResult
+    func run(_ what: String, settling: (any Error) async -> Bool, _ work: () async throws -> Void) async -> Bool {
         do {
             try await LostRace.attemptTwice(delay: tryAgainDelay, logger: logger, category: category, retrying: what, work)
             return true
         } catch {
             guard !AppError.isCancellation(error) else { return false }
+            if await settling(error) { return true }
             log(failure: error, of: what)
             report(error)
             return false

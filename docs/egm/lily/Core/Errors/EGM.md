@@ -5,7 +5,7 @@ Source: `lily/Core/Errors/`
 ## Overview
 
 The app's single typed failure and the one funnel that shows it. `AppError` is the `nonisolated`, `Equatable`, `Sendable`
-enum every repository and service throws (90 cases), with `wrapping(_:)` to normalise any thrown error and
+enum every repository and service throws (92 cases), with `wrapping(_:)` to normalise any thrown error and
 `isCancellation(_:)` to tell a caller leaving mid-request from a fault. `ErrorMessageMapper` turns every case into a
 localized `ErrorMessage` through one exhaustive switch that routes to per-area `nonisolated extension` files, each
 chaining to the next and ending in `unknownMessage`. `ErrorCenter`, an `@Observable` main-actor class mounted once on
@@ -19,7 +19,8 @@ draws.
     `invalidCredentials`, `emailTaken`, `emailNotConfirmed`, `invalidConfirmationCode`, `tooManyAttempts`, `sessionExpired`;
   - transport: `rateLimited(retryAfter: TimeInterval?)`, `network`;
   - events: `eventsUnavailable`, `eventNotFound`, `eventFull`, `alreadyJoined`, `notAParticipant`, `hostCannotLeave`,
-    `tryAgain`, `participationFailed`, `eventCreationFailed`, `notHost`, `capacityTooLow`, `eventUpdateFailed`;
+    `tryAgain`, `participationFailed`, `eventCreationFailed`, `createIdReused` (a `*_ID_REUSED` on any create: the
+    earlier create landed and `CreateFlow` updates it), `notHost`, `capacityTooLow`, `eventUpdateFailed`;
   - groups and invites: `groupsUnavailable`, `groupNotFound`, `groupFull`, `notAMember`, `bannedFromGroup`, `memberBanned`,
     `ownerCannotLeave`, `insufficientRole`, `membershipLimitReached`, `groupCreationFailed`, `groupActionFailed`,
     `contentRejected`, `inviteExpired`, `inviteUnavailable`, `inboxUnavailable`, `inviteActionFailed`, `inviteNotPending`,
@@ -29,7 +30,7 @@ draws.
     `attachmentUploadFailed`, `attachmentUnavailable`, `pollsNotAllowed`, `notAPoll`, `pollAnonymous`, `voteFailed`,
     `notPinnable`, `tooManyPins`, `pinFailed`;
   - moderation and people: `reportFailed`, `blockLimitReached`, `userNotFound`, `accountSuspended`, `termsRequired`,
-    `feedbackFailed`, `profileUnavailable`, `conversationFailed`, `conversationLimit`;
+    `feedbackFailed`, `profileUnavailable`, `profileUpdateFailed`, `conversationFailed`, `conversationLimit`;
   - tournaments: `tournamentsUnavailable`, `tournamentNotFound`, `tournamentCreationFailed`, `tournamentUpdateFailed`,
     `tournamentActionFailed`, `registrationClosed`, `tournamentFull`, `alreadyEntered`, `teamFull`, `entryNotFound`,
     `notOrganizer`, `tournamentLocked`, `notEnoughEntries`, `notInMatch`, `matchNotReady`, `matchNotFound`,
@@ -57,12 +58,13 @@ draws.
 
 ## Invariants
 
-- `message(for:)` is an exhaustive `switch` over all 90 cases with no `default`, so a new `AppError` case that is not
+- `message(for:)` is an exhaustive `switch` over all 92 cases with no `default`, so a new `AppError` case that is not
   routed is a compile error; `.network` and `.rateLimited` are answered inline (the `retryAfter` value is not used in the
   copy), every other case goes to an area function (`ErrorMessageMapper.swift:message(for:)`).
 - Every area switch ends in a `default` that chains or returns `unknownMessage`, so no path traps:
   `eventMessage -> hostMessage`, `groupMessage -> groupWriteMessage -> inviteMessage`, `chatMessage -> pollAndPinMessage`,
-  `peopleMessage -> tournamentMessage -> entryMessage -> matchMessage -> tournamentInviteMessage`; `authMessage`,
+  `peopleMessage -> tournamentMessage -> entryMessage -> matchMessage -> tournamentInviteMessage`; `.createIdReused`
+  shares `.tryAgain`'s copy in `eventMessage` (`CreateFlow` settles it before any popup); `authMessage`,
   `attachmentMessage` and `moderationMessage` fall straight to `unknownMessage` (`ErrorMessageMapper*.swift`).
 - Every title and body is read through `localized(_:)` (`lily/Core/Localization/Localized.swift`); the limits in the copy
   come from `AppConfig` (`Groups.maxMemberships`, `Moderation.supportEmail`, `People.maxConversations`,

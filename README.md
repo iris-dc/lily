@@ -15,8 +15,8 @@ module and bundle id (`iris.lily`) keep it; the home screen says iskra.
   inside the group.
 - **Tournaments** (debug builds): single elimination or round robin, players or teams, self-reported results that the
   other side confirms, schedules and reminders.
-- **People**: profiles, direct conversations, an inbox for invites and reminders, push notifications once the Apple
-  Developer account exists.
+- **People**: profiles with a display name you choose on Profile (a new account starts as "Player"), direct
+  conversations, an inbox for invites and reminders, push notifications once the Apple Developer account exists.
 - **Seven languages** (en, ru, es, fr, uk, pl, pt), prices in your currency, iPhone and iPad layouts.
 
 Release builds ship Explore, events, people's profiles and the Profile tab; groups, chat (with conversations and the

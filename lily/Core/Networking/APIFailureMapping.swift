@@ -24,8 +24,11 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case groupNotFound = "GROUP_NOT_FOUND"
     case messageNotFound = "MESSAGE_NOT_FOUND"
     case userNotFound = "USER_NOT_FOUND"
-    /// Another user owns the client id; like `GROUP_ID_REUSED` it becomes the generic creation failure, and the
-    /// refetch by client id that follows every unknown create outcome finds the group that did land.
+    /// The same client id sent again with other details: our earlier create landed and its answer was lost, so
+    /// `CreateFlow` updates the stored item instead of looking it up (`.createIdReused`).
+    case eventIdReused = "EVENT_ID_REUSED"
+    /// Another user owns the client id: the generic creation failure, and the refetch by client id that follows every
+    /// unknown create outcome finds someone else's group and keeps the popup.
     case groupIdTaken = "GROUP_ID_TAKEN"
     case groupIdReused = "GROUP_ID_REUSED"
     case groupFull = "GROUP_FULL"
@@ -59,7 +62,7 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case tooManyPins = "TOO_MANY_PINS"
     /// Also a private tournament to an outsider.
     case tournamentNotFound = "TOURNAMENT_NOT_FOUND"
-    /// Like the group codes: the generic creation failure, and the refetch by client id finds what did land.
+    /// Like `GROUP_ID_TAKEN`: the generic creation failure, and the refetch by client id finds another organiser's.
     case tournamentIdTaken = "TOURNAMENT_ID_TAKEN"
     case tournamentIdReused = "TOURNAMENT_ID_REUSED"
     case tournamentLimit = "TOURNAMENT_LIMIT"
@@ -100,7 +103,8 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .groupNotFound: .groupNotFound
         case .messageNotFound: .messageNotFound
         case .userNotFound: .userNotFound
-        case .groupIdTaken, .groupIdReused: .groupCreationFailed
+        case .eventIdReused, .groupIdReused, .tournamentIdReused: .createIdReused
+        case .groupIdTaken: .groupCreationFailed
         case .groupFull: .groupFull
         case .ownerCannotLeave: .ownerCannotLeave
         case .memberBanned: .memberBanned
@@ -123,7 +127,7 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .notPinnable: .notPinnable
         case .tooManyPins: .tooManyPins
         case .tournamentNotFound: .tournamentNotFound
-        case .tournamentIdTaken, .tournamentIdReused: .tournamentCreationFailed
+        case .tournamentIdTaken: .tournamentCreationFailed
         case .tournamentLimit: .tournamentLimit
         case .notOrganizer: .notOrganizer
         case .tournamentLocked: .tournamentLocked

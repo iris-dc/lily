@@ -88,8 +88,10 @@ final class FakeMediaPreparer: MediaPreparer, HoldsRequests {
 
 /// An attachment cache in memory: bytes go to a directory of the instance's own (removed by `clear()`), copies are
 /// recorded and answered as the source itself, `evict()` does nothing, and `storeError` (a full disk) refuses both stores.
+/// `holdsRequests` parks the byte store (not the copy) until released, as a write in progress; it does not throw on
+/// cancellation, as the real cache's detached write does not.
 @MainActor
-final class FakeAttachmentCache: AttachmentCache {
+final class FakeAttachmentCache: AttachmentCache, HoldsRequests {
     struct Copy: Equatable {
         let id: String
         let variant: AttachmentVariant
@@ -97,6 +99,7 @@ final class FakeAttachmentCache: AttachmentCache {
     }
 
     var storeError: (any Error)?
+    let hold = RequestHold()
     private let directory = FileManager.default.temporaryDirectory
         .appending(path: "fake-cache-\(UUID().uuidString)", directoryHint: .isDirectory)
     private var files: [String: URL] = [:]
@@ -108,6 +111,7 @@ final class FakeAttachmentCache: AttachmentCache {
 
     @discardableResult
     func store(_ data: Data, for id: String, variant: AttachmentVariant) async throws -> URL {
+        await hold.wait()
         if let storeError { throw storeError }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let url = directory.appending(path: UUID().uuidString)

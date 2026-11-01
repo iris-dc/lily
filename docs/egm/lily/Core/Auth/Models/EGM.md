@@ -11,8 +11,8 @@ ones are `Codable`. No tokens live here: Cognito's stay in Amplify's keychain.
 ## Interface
 
 - `AuthUser` (`lily/Core/Auth/Models/AuthUser.swift:AuthUser`): `Codable, Hashable, Identifiable, Sendable`; `id: String`
-  (the Cognito `sub`), `displayName: String`, `email: String?`, `initials: String` (through `String.initials`, defined
-  in `lily/Core/UI`), `static displayName(fromEmail:) -> String`.
+  (the Cognito `sub`) and `email: String?`, nothing else: the name other players see is the backend profile's
+  (`ProfileStore`, `lily/Features/Profile/State`), chosen by the user, never derived from the email.
 - `AuthSession` (`lily/Core/Auth/Models/AuthSession.swift:AuthSession`): `Codable` struct wrapping `user: AuthUser`.
 - `StoredSession` (`lily/Core/Auth/Models/AuthSession.swift:StoredSession`): `Codable` enum `.guest`,
   `.signedIn(AuthSession)`, `.signingOut`.
@@ -28,9 +28,8 @@ ones are `Codable`. No tokens live here: Cognito's stay in Amplify's keychain.
 
 ## Invariants
 
-- `AuthUser.displayName(fromEmail:)` takes the local part before `@`, splits it on `.` and `_`, capitalises each piece
-  and joins with spaces (`jane.doe@example.com` becomes `Jane Doe`); an address without `@` is used whole
-  (`AuthUser.swift:displayName(fromEmail:)`).
+- A session stored before the name moved to the backend profile still carries a `displayName` key, which `AuthUser`'s
+  synthesized decoder ignores, so the cached sign-in survives the change (`AuthUser.swift:AuthUser`).
 - `SessionState.isSignedIn` is true only for `.signedIn`, the one state that may ask for user-scoped content or write;
   `showsShell` is true for `.guest` and `.signedIn`, false for `.signedOut` (`SessionState.swift:SessionState`).
 - `StoredSession.signingOut` marks a sign-out the pool has not confirmed: saved before Amplify is asked, cleared once

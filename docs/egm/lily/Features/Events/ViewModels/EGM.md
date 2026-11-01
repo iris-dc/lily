@@ -36,7 +36,8 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   `leave()`, `accept(_:)`.
 - `CreateEventViewModel` (`lily/Features/Events/ViewModels/CreateEventViewModel.swift`):
   `init(repository:identity:locationService:groups: MyGroupsStore, errorCenter:logger:now:calendar: = .current,
-  currencyCode:pushOptIn:lockedGroup: EventGroupRef? = nil, onCreated: @MainActor (SportEvent) -> Void)`. State:
+  currencyCode:pushOptIn:lockedGroup: EventGroupRef? = nil, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
+  onCreated: @MainActor (SportEvent) -> Void)`. State:
   `draft`, `isSubmitting`, `createdEvent`, `eligibleGroups`, `belongsToGroups`, `let lockedGroup`. Derived:
   `issues`, `canSubmit`, `isDone`, `earliestStart`, `capacityRange`, `showsGroupRow`, `explainsNoEligibleGroups`.
   Methods: `prepare()`, `submit()`. `extension CreateEventViewModel: EventDraftEditing {}`.
@@ -77,19 +78,25 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
 - `updateFilter` is the one way views change `filter`, saving through `filterStore` every time;
   `filterPanelClosed()` records `.filterApplied` only when the filter differs from when the panel opened.
 - Detail write (`EventDetailViewModel.update`): one change at a time (`isBusy`); the write runs through
-  `LostRace.attemptTwice(delay: tryAgainDelay, ...)`; on success `apply` (→ `onChange`), log, `loadParticipants()`,
-  then `pushOptIn.offerReminders()` only for a join and only after `isBusy` was reset.
-- Detail failure: cancellation is silent; a 409 (`isParticipationConflict`: `.eventFull`, `.alreadyJoined`,
-  `.notAParticipant`, `.hostCannotLeave`, `.tryAgain`) logs at warning, anything else at error; `needsRefresh`
-  (a conflict, `.participationFailed` or `.network`) refetches `repository.event(id:)` and applies it before the
-  popup; an unknown outcome whose refetch already shows `participates == wantsToParticipate` reports nothing.
+  `WriteGate.run(_:settling:_:)` with `what` = "<action> for event <id>" (one `TRY_AGAIN` repeated after
+  `tryAgainDelay`, a cancellation silent, a 409 in `isParticipationConflict` (`.eventFull`, `.alreadyJoined`,
+  `.notAParticipant`, `.hostCannotLeave`, `.tryAgain`) logged at warning, anything else at error, the failure
+  reported unless the read-back found it landed); on success `apply` (→ `onChange`), log, `loadParticipants()`; then,
+  for a join that went through or landed by the read-back, `pushOptIn.offerReminders()` only after `isBusy` was reset.
+- Detail read-back (`LostAnswer<SportEvent>`, `eventReadBack`): `.participationFailed` and `.network` leave the
+  outcome unknown, every `isParticipationConflict` refusal is worth another look; `repository.event(id:)` is applied
+  before the popup and the roster reloads after every fresh event; an unknown outcome whose fresh event shows
+  `participates == wantsToParticipate` reports nothing.
 - `loadParticipants()` is a no-op for guests (`showsParticipants = identity.currentUserID != nil`);
   `recordViewed()` records once per instance; `canEdit = participation == .hosting`; `hostProfile` is `nil` for a
   guest, an unknown host or the caller themselves.
 - `canSubmit`: create `!isSubmitting && issues.isEmpty`; edit also `hasChanges`
   (`draft != EventDraft(editing: original, currencyCode:)`). `submit()` guards on it and drops a call in flight.
-- Create runs through `CreateFlow<SportEvent>` keyed on `draft.clientId`: after `.network` or
-  `.eventCreationFailed` it looks the event up by that id and claims it when `hostUserId == identity.currentUserID`.
+- Create runs through `CreateFlow<SportEvent>` keyed on `draft.clientId`: one `TRY_AGAIN` is repeated; after
+  `.network` or `.eventCreationFailed` it looks the event up by that id and claims it when
+  `hostUserId == identity.currentUserID`; after `.createIdReused` it sends the draft as `repository.update(id:
+  clientId, draft)` and the answer is the created event; the update carries no group, so `accept(_:)` logs a
+  warning when the answer's group differs from the draft's.
   The default start is `AppConfig.Events.Creation.defaultStartOffset` (24 h) ahead, rounded to the next full hour;
   `draft.group` is stamped with `lockedGroup`.
 - `CreateEventViewModel.prepare()`: `eligibleGroups = groups.eligibleForEvents.map(\.ref)`, `belongsToGroups =
@@ -109,7 +116,8 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
 - `ErrorCenter.report` on a failed load, a failed roster load, a participation failure not shown to have landed, and
   through `CreateFlow` and `WriteGate`.
 - `InteractionRecorder.record`: `.filterApplied`, `.presentationChanged`, `.viewed`.
-- Logging: `.events` (loads, join and leave outcomes, "Capacity reached", create, update), `.cache` (fresh, stale,
+- Logging: `.events` (loads, join and leave outcomes, "Capacity reached", create, update, "stays in group" after a
+  reused id), `.cache` (fresh, stale,
   retry and dropped-answer decisions, sibling invalidation), `.location` (fix available, changed, none).
 - Callbacks: `onChange(SportEvent)` (detail, edit), `onCreated(SportEvent)` (create);
   `pushOptIn.offerReminders()` after a join or a create.

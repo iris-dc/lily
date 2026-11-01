@@ -2,8 +2,8 @@ import Foundation
 @testable import lily
 
 /// Scriptable `ChatRepository`: pages answer from queues (an empty page once a queue runs dry), sends from `sendErrors`,
-/// then `sentMessages`, then a `sent-N` fixture; every call is recorded in order. `holdsRequests` parks page, send, delete and
-/// clear requests until released, each recorded before it waits so a test can see it in flight.
+/// then `sentMessages`, then a `sent-N` fixture; every call is recorded in order. `holdsRequests` parks page, send, delete,
+/// clear and link-refresh requests until released, each recorded before it waits so a test can see it in flight.
 @MainActor
 final class FakeChatRepository: ChatRepository, HoldsRequests {
     var epoch = 1
@@ -99,6 +99,7 @@ final class FakeChatRepository: ChatRepository, HoldsRequests {
 
     func refreshAttachment(groupID: String, messageID: String, attachmentID: String) async throws -> AttachmentLink {
         refreshRequests.append(RefreshRequest(groupID: groupID, messageID: messageID, attachmentID: attachmentID))
+        try await hold.waitOrThrow()
         if let refreshError { throw refreshError }
         guard !refreshLinks.isEmpty else { throw AppError.attachmentUnavailable }
         return refreshLinks.removeFirst()

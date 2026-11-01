@@ -126,10 +126,11 @@ final class GroupDetailViewModel {
 
     /// One change at a time; `TRY_AGAIN` is repeated once. A refusal is shown after the group on screen was brought
     /// up to date, so the popup and the buttons agree. A failure that leaves the outcome unknown is shown only when
-    /// the refetched group does not already show what was asked for: the backend commits before it answers.
+    /// the refetched group does not already show what was asked for: the backend commits before it answers. An answer
+    /// for a caller who signed out or changed meanwhile is dropped, nothing written or shown.
     private func update(_ intent: Intent, _ change: () async throws -> SportGroup) async {
         guard !isBusy else { return }
-        guard identity.currentUserID != nil else {
+        guard let caller = identity.currentUserID else {
             logger.debug(.groups, "\(intent.name) ignored for a guest")
             return
         }
@@ -141,24 +142,27 @@ final class GroupDetailViewModel {
                                                           category: .groups,
                                                           retrying: "\(intent.name) for group \(group.id)",
                                                           change)
+            guard identity.isStillCaller(caller, orDrop: "\(intent.name) answer", logger: logger) else { return }
             apply(updated)
             logSuccess(intent, updated)
         } catch {
             guard !AppError.isCancellation(error) else { return }
+            guard identity.isStillCaller(caller, orDrop: "\(intent.name) failure", logger: logger) else { return }
             logFailure(intent, error)
-            if await landed(intent, despite: error) {
+            if await landed(intent, despite: error, for: caller) {
                 logger.info(.groups, "\(intent.name) landed for group \(group.id) despite \(error); nothing to report")
                 return
             }
+            guard identity.isStillCaller(caller, orDrop: "\(intent.name) failure", logger: logger) else { return }
             reporter.report(error)
         }
     }
 
     /// Refetches when the outcome is worth another look and answers whether the fresh state already shows the intent.
     /// Refusals are never skipped, except `NOT_A_MEMBER` on a leave: the caller is out, which is what they asked.
-    private func landed(_ intent: Intent, despite error: any Error) async -> Bool {
+    private func landed(_ intent: Intent, despite error: any Error, for caller: String) async -> Bool {
         guard let appError = error as? AppError, appError.needsGroupRefresh else { return false }
-        let fresh = await refetch(after: appError)
+        let fresh = await refetch(intent, after: appError, for: caller)
         guard appError.leavesOutcomeUnknown || (intent == .leave && appError == .notAMember) else { return false }
         switch (intent, fresh) {
         case (.join, .fresh(let group)): return group.isMember
@@ -177,15 +181,28 @@ final class GroupDetailViewModel {
         case unavailable
     }
 
-    private func refetch(after error: AppError) async -> Refetch {
-        do {
-            let fresh = try await repository.group(id: group.id)
+    /// Fetches, checks the caller, then writes: a fresh group answered after a sign-out or a switch is dropped.
+    private func refetch(_ intent: Intent, after error: AppError, for caller: String) async -> Refetch {
+        let answer = await fetchFresh(after: error)
+        guard identity.isStillCaller(caller, orDrop: "\(intent.name) refetch", logger: logger) else { return .unavailable }
+        switch answer {
+        case .fresh(let fresh):
             apply(fresh)
             logger.info(.groups, "Refreshed group \(group.id) after \(error)")
-            return .fresh(fresh)
-        } catch AppError.groupNotFound {
+        case .gone:
             markGone()
             logger.info(.groups, "Group \(group.id) is gone for the caller after \(error)")
+        case .unavailable:
+            break
+        }
+        return answer
+    }
+
+    private func fetchFresh(after error: AppError) async -> Refetch {
+        do {
+            let fresh = try await repository.group(id: group.id)
+            return .fresh(fresh)
+        } catch AppError.groupNotFound {
             return .gone
         } catch {
             if !AppError.isCancellation(error) {

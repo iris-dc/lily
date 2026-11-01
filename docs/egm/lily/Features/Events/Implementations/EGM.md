@@ -59,8 +59,10 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   then `.capacityTooLow` when `playerLimit == .maximum && capacity < participantCount`; `create` throws
   `.eventCreationFailed` without a coordinate.
 - `MockEventRepository.create` is idempotent on `draft.clientId`: an event already stored under that id is returned
-  unchanged ("replayed"); otherwise `draft.makeEvent(hostUserId: identity.currentUserID, hostName:
-  AppBranding.Events.Create.mockHostName, coordinate:)` is appended.
+  unchanged ("replayed") when the draft equals the one stored for it (`drafts`), and refused with `.createIdReused`
+  when it differs, as Laurel compares the request with what it stored; otherwise `draft.makeEvent(hostUserId:
+  identity.currentUserID, hostName: AppBranding.Events.Create.mockHostName, coordinate:)` is appended. `update`
+  stores the new draft, so a replay must match the latest details.
 - `MockEventRepository.participants`: the host first (`joinedAt = startsAt - hostJoinLead`), then
   `participantCount - 1` deterministic names an hour apart, or `participantCount - 2` when the caller's own row
   follows, so the roster is always `participantCount` long (`participantNames(for:count:)` starts at an offset from
@@ -84,7 +86,8 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   event and roster; info on create and update with `spotsDescription` and on replay with the id alone; warning for
   the requested first-load failure).
 - In-memory state (`MockEventRepository`): `events` is mutated by `join`, `leave`, `update` (`store`) and `create`
-  (`append`); `failsNextLoad` flips to `false` after the one failure.
+  (`append`); `drafts` keeps each client id's draft, so a repeated create with other details is `.createIdReused`;
+  `failsNextLoad` flips to `false` after the one failure.
 - Clock: `MockEventRepository.init` defaults `now` to `.now`; `MockEventFixtures.make` derives every start from the
   `now` it is given.
 

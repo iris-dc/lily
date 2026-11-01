@@ -47,7 +47,7 @@ extension CognitoAuthServiceTests {
     }
 
     /// The load's error is the one the caller sees; the sign-out's own failure gets the one line that explains a later
-    /// launch's silent sign-in.
+    /// launch's silent sign-in, preceded by the pool's reason for it.
     @Test func aFailedUserLoadWhosePoolSignOutAlsoFailsIsLogged() async {
         let harness = Harness()
         harness.client.signedIn = true
@@ -58,8 +58,9 @@ extension CognitoAuthServiceTests {
 
         #expect(harness.client.signOutCount == 1)
         let warnings = harness.logger.messages(in: .auth, at: .warning)
-        #expect(warnings.count == 2)
+        #expect(warnings.count == 3)
         #expect(warnings.contains { $0.contains("signing out") })
+        #expect(warnings.contains { $0.contains("keychain") })
         #expect(warnings.contains { $0.contains("failed too") })
         let email = TestFixtures.credentials.email
         #expect(!harness.logger.entries.contains { $0.message.contains(email) }, "no email in the log")
@@ -128,6 +129,33 @@ extension CognitoAuthServiceTests {
 
         #expect(harness.store.stored == nil)
         #expect(harness.client.signOutCount == 0)
+    }
+
+    /// A sign-out tapped while the launch's check refreshes the token writes `.signingOut`; the check's answer must not
+    /// cache the departed user over it, or a `.failed` pool sign-out would sign them back in on the next launch.
+    @Test func aSignOutLandingDuringTheTokenCheckKeepsItsMarker() async throws {
+        let harness = Harness()
+        harness.client.signedIn = true
+        harness.store.stored = .signedIn(TestFixtures.session)
+        harness.client.onAccessToken = { harness.store.save(.signingOut) }
+
+        #expect(try await harness.service.restoreSession() == nil)
+
+        #expect(harness.store.stored == .signingOut)
+        #expect(harness.client.signOutCount == 0, "the sign-out in flight owns the pool call")
+        #expect(harness.logger.messages(in: .auth, at: .info).contains { $0.contains("marker stands") })
+    }
+
+    /// The restore-only rule never reaches the sign-in path: a sign-in made over a pending marker or a guest choice is
+    /// what the next launch must read.
+    @Test(arguments: [StoredSession.signingOut, .guest])
+    func aSignInOverAPendingMarkerOrAGuestChoiceIsCached(seeded: StoredSession) async throws {
+        let harness = Harness()
+        harness.store.stored = seeded
+
+        let session = try await harness.service.signIn(with: .email(TestFixtures.credentials))
+
+        #expect(harness.store.stored == .signedIn(session))
     }
 
     @Test func aGuestChoiceNextToALeftoverPoolSessionEndsItAndStaysGuest() async throws {

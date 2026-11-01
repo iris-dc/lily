@@ -60,6 +60,16 @@ struct AppDependenciesChatTests {
         #expect(remote.groups.sessionObservers.contains { $0 === remote.groups.attachments.cache })
     }
 
+    /// `notifySessionWillEnd` awaits observers in registration order, so the loader's drain precedes the cache's sweep.
+    @Test func theLoaderEndsItsDownloadsBeforeTheCacheSweeps() throws {
+        let dependencies = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
+        let observers = dependencies.groups.sessionObservers
+
+        let loader = try #require(observers.firstIndex { $0 === dependencies.groups.attachments.loader })
+        let cache = try #require(observers.firstIndex { $0 === dependencies.groups.attachments.cache })
+        #expect(loader < cache)
+    }
+
     @Test func chatCollaboratorsAreSharedInstances() {
         let dependencies = AppDependencies.makeMock()
         #expect(dependencies.realtime === dependencies.groups.realtime)

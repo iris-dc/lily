@@ -2,8 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Pins: who may, what the answer does to the room, the note a catch-up brings after a pin, and deleted messages
-/// leaving the bar.
+/// Pins: who may, what the answer does to the room, the note a catch-up brings after a pin, a lost answer read back
+/// through one catch-up, and deleted messages leaving the bar.
 @MainActor
 struct ChatViewModelPinTests {
     private let message = ChatMessage.fixture(id: "m1")
@@ -83,6 +83,72 @@ struct ChatViewModelPinTests {
 
         #expect(viewModel.pins.isEmpty && harness.errorCenter.current?.error == .tooManyPins)
         #expect(harness.chat.newerRequests.isEmpty, "no catch-up after a refusal")
+    }
+
+    /// The backend commits before it answers: one catch-up shows the pin landed, so no popup and no second catch-up.
+    @Test func aLostAnswerWhoseCatchUpShowsThePinReportsNothing() async {
+        let (harness, viewModel) = await makeChat()
+        harness.chat.polls.pinLists = [.failure(AppError.network)]
+        harness.chat.newerPages = [MessagePage(items: [], hasMore: false, channelEpoch: 1, pins: [.fixture()])]
+
+        await viewModel.pin(message)
+
+        #expect(viewModel.isPinned("m1") && harness.errorCenter.current == nil)
+        #expect(harness.chat.newerRequests.count == 1, "one catch-up")
+        #expect(harness.chatLogs(.warning).mentioning(["Pinning message m1", "reading back"]).count == 1)
+        #expect(harness.chatLogs(.info).mentioning(["landed"]).count == 1)
+        #expect(harness.chatLogs(.info).mentioning(["m1", "pinned"]).count == 1)
+    }
+
+    @Test func aLostAnswerWhoseCatchUpLacksThePinReachesThePopup() async {
+        let (harness, viewModel) = await makeChat()
+        harness.chat.polls.pinLists = [.failure(AppError.network)]
+        harness.chat.newerPages = [MessagePage(items: [], hasMore: false, channelEpoch: 1, pins: [])]
+
+        await viewModel.pin(message)
+
+        #expect(viewModel.pins.isEmpty && harness.errorCenter.current?.error == .network)
+        #expect(harness.chat.newerRequests.count == 1)
+        #expect(harness.chatLogs(.info).mentioning(["pinned"]).isEmpty)
+    }
+
+    /// `pinFailed` is the pin routes' fallback for a 5xx, and the backend commits before it answers.
+    @Test func aFiveHundredOnAnUnpinIsReadBack() async {
+        let (harness, viewModel) = await makeChat()
+        viewModel.mutateRoom { $0.applyPins([.fixture()]) }
+        harness.chat.polls.pinLists = [.failure(AppError.pinFailed)]
+        harness.chat.newerPages = [MessagePage(items: [], hasMore: false, channelEpoch: 1, pins: [])]
+
+        await viewModel.unpin("m1")
+
+        #expect(viewModel.pins.isEmpty && harness.errorCenter.current == nil)
+        #expect(harness.chatLogs(.info).mentioning(["m1", "unpinned"]).count == 1)
+    }
+
+    /// The catch-up answers `nil` for a room the cache no longer holds: the stub room's empty pins are no verdict, so
+    /// the unpin is not passed as landed.
+    @Test func aLostAnswerWhoseCatchUpFindsNoRoomReachesThePopup() async {
+        let (harness, viewModel) = await makeChat()
+        viewModel.mutateRoom { $0.applyPins([.fixture()]) }
+        harness.chat.polls.pinLists = [.failure(AppError.network)]
+        harness.cache.drop(groupID: "g", reason: "removed meanwhile")
+
+        await viewModel.unpin("m1")
+
+        #expect(harness.errorCenter.current?.error == .network)
+        #expect(harness.chat.newerRequests.isEmpty, "an uncached room is caught up with no request")
+        #expect(harness.chatLogs(.info).mentioning(["unpinned"]).isEmpty, "nothing settled as landed")
+    }
+
+    @Test func aFailedCatchUpAfterALostAnswerKeepsThePinsAndThePopup() async {
+        let (harness, viewModel) = await makeChat()
+        harness.chat.polls.pinLists = [.failure(AppError.network)]
+        harness.chat.pageError = AppError.chatUnavailable
+
+        await viewModel.pin(message)
+
+        #expect(viewModel.pins.isEmpty && harness.errorCenter.current?.error == .network)
+        #expect(harness.chatLogs(.warning).mentioning(["Could not read back", "Pinning message m1"]).count == 1)
     }
 
     @Test func aDeletedMessageLeavesThePins() async {

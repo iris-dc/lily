@@ -16,6 +16,8 @@ final class FakeCognitoClient: CognitoClient {
     var signOutError: CognitoClientError?
     /// Runs inside `signOut()` before it answers, so a test can act while the pool is being asked.
     var onSignOut: @MainActor () -> Void = {}
+    /// Runs inside `accessToken()` before it answers, so a test can act while the token is being checked.
+    var onAccessToken: @MainActor () -> Void = {}
     private(set) var signIns: [EmailCredentials] = []
     private(set) var signUps: [EmailCredentials] = []
     private(set) var languageCodes: [String] = []
@@ -26,7 +28,10 @@ final class FakeCognitoClient: CognitoClient {
 
     func isSignedIn() async throws -> Bool { signedIn }
 
-    func accessToken() async throws -> String? { try tokenResult.get() }
+    func accessToken() async throws -> String? {
+        onAccessToken()
+        return try tokenResult.get()
+    }
 
     func freshAccessToken() async throws -> String? {
         freshTokenRequestCount += 1

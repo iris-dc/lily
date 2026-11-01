@@ -183,9 +183,10 @@ struct GroupDependencies {
                                              logger: logger)
     }
 
-    /// Everything here that holds state for the signed-in user; `SessionController` tells them when the session ends.
+    /// Everything here that holds state for the signed-in user; `SessionController` tells them when the session ends,
+    /// awaiting `sessionWillEnd` in this order: the loader ends its downloads before the cache sweeps.
     var sessionObservers: [any SessionObserver] {
-        [myGroups, me, inbox, blocks, chatHistory, outbox, unreadCenter, attachments.cache, realtime]
+        [myGroups, me, inbox, blocks, chatHistory, outbox, unreadCenter, attachments.loader, attachments.cache, realtime]
     }
 }
 
@@ -231,6 +232,7 @@ extension AppDependencies {
 
     func makeCreateGroupViewModel(onCreated: @escaping @MainActor (SportGroup) -> Void) -> CreateGroupViewModel {
         CreateGroupViewModel(repository: groupRepository,
+                             identity: identity,
                              store: myGroups,
                              locationService: locationService,
                              reporter: groups.errorReporter,

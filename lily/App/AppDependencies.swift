@@ -13,6 +13,8 @@ final class AppDependencies {
     let identity: any IdentityProvider
     let eventRepository: any EventRepository
     let profileRepository: any ProfileRepository
+    /// The caller's public name, loaded when Profile opens; see `AppDependencies+Profile.swift`.
+    let profile: ProfileStore
     /// Where the contact form on Profile sends its messages; see `AppDependencies+Feedback.swift`.
     let feedbackRepository: any FeedbackRepository
     /// Where the event screens report their taps; the root view flushes it when the app goes to the background.
@@ -42,6 +44,7 @@ final class AppDependencies {
          sessionStore: any SessionStore,
          authService: any AuthService,
          tokenProvider: (any AuthTokenProvider)? = nil,
+         sessionExpiry: (any SessionExpiryReporter)? = nil,
          identity: SessionIdentityProvider = SessionIdentityProvider(),
          eventRepository: any EventRepository,
          profileRepository: any ProfileRepository,
@@ -78,12 +81,12 @@ final class AppDependencies {
         self.locationService = locationService
         self.sessionController = SessionController(authService: authService,
                                                    sessionStore: sessionStore,
-                                                   profileRepository: profileRepository,
                                                    errorCenter: errorCenter,
                                                    logger: logger)
         // The repositories were built around `identity` before the controller existed; close the loop before the
         // stores are built, since they read the caller for the snapshot they start from.
         identity.session = sessionController
+        profile = ProfileStore(repository: profileRepository, identity: identity, logger: logger)
         self.groups = GroupDependencies(repositories: groupRepositories,
                                         identity: identity,
                                         tokenProvider: tokenProvider,
@@ -100,33 +103,32 @@ final class AppDependencies {
                                      defaults: defaults,
                                      languageCode: { language.language.code },
                                      logger: logger)
-        finishWiring(recorder: interactionRecorder)
+        finishWiring(recorder: interactionRecorder, expiry: sessionExpiry)
     }
 
     /// The start tab follows the cached session, so the shell's first frame is already on it; then everything that
     /// holds state for the signed-in user registers (`recorder` is the parameter's `SessionObserver` face, which the
     /// stored property lacks). The recorder flushes before the session ends, the rest clear after it; the snapshots
-    /// last, after the stores and the tabs' lists wrote their cleared lists.
-    private func finishWiring(recorder: any SessionObserver) {
+    /// last, after the stores and the tabs' lists wrote their cleared lists. Last, a token the pool refuses to refresh
+    /// is wired to end the session (`AppDependencies+Session.swift`).
+    private func finishWiring(recorder: any SessionObserver, expiry: (any SessionExpiryReporter)?) {
         navigation.selectedTab = AppNavigation.startTab(for: sessionController.state)
         let observers: [any SessionObserver] = groups.sessionObservers
-            + [navigation, push.coordinator, recorder, lists, listSnapshots]
+            + [navigation, push.coordinator, recorder, profile, lists, listSnapshots]
         observers.forEach(sessionController.addObserver)
+        wireSessionExpiry(expiry)
     }
 
     /// Production wiring: Cognito through Amplify, whose access token the API client sends, unless a launch argument
     /// asks for the mock. Launch arguments are read in debug builds only (`AppConfig.LaunchArguments.isHonored`); a
     /// release build ignores them, so nobody can start it as a guest or on mock data from the outside. `-reset-session`
-    /// is judged here once and handed to the store factories as `startsFresh`. `apply` moves the process-wide
+    /// is judged once (`startsFresh(arguments:logger:)`) and handed to the store factories. `apply` moves the process-wide
     /// `AppLocale`; it is injectable so a test can build the default root without touching it.
     static func makeDefault(arguments: [String] = AppConfig.LaunchArguments.isHonored ? CommandLine.arguments : [],
                             defaults: UserDefaults = .standard,
                             apply: @escaping (AppLocale.Context) -> Void = AppLocale.set) -> AppDependencies {
         let logger = OSLogLogger()
-        let startsFresh = arguments.contains(AppConfig.LaunchArguments.resetSession)
-        if startsFresh {
-            logger.info(.auth, "Launch argument requested a fresh start: stored session, choices, filter and snapshots cleared")
-        }
+        let startsFresh = startsFresh(arguments: arguments, logger: logger)
         let language = makeLanguageStore(arguments: arguments,
                                          startsFresh: startsFresh,
                                          defaults: defaults,
@@ -144,6 +146,7 @@ final class AppDependencies {
                                sessionStore: store,
                                authService: auth.service,
                                tokenProvider: auth.tokenProvider,
+                               sessionExpiry: auth.expiry,
                                identity: identity,
                                eventRepository: repositories.events,
                                profileRepository: repositories.profile,
@@ -164,8 +167,8 @@ final class AppDependencies {
                                defaults: defaults)
     }
 
-    /// The Cognito service doubles as the token provider; the mock has no token to offer. `-mock-user-id` is read
-    /// only with the mock: a Cognito user is whoever the pool says.
+    /// The Cognito service doubles as the token provider and reports a refresh token the pool refuses; the mock has no
+    /// token to offer. `-mock-user-id` is read only with the mock: a Cognito user is whoever the pool says.
     private static func makeAuthService(arguments: [String],
                                         store: any SessionStore,
                                         language: LanguageStore,
@@ -175,13 +178,13 @@ final class AppDependencies {
             let userID = AppConfig.LaunchArguments.value(following: AppConfig.LaunchArguments.mockUserID, in: arguments)
             if let userID { logger.info(.auth, "Launch argument set the mock user id to \(userID)") }
             let mock = MockAuthService(behavior: behavior, store: store, userIDOverride: userID)
-            return Auth(service: mock, tokenProvider: nil)
+            return Auth(service: mock, tokenProvider: nil, expiry: nil)
         }
         let cognito = CognitoAuthService(client: AmplifyCognitoClient(logger: logger),
                                          store: store,
                                          languageCode: { language.language.code },
                                          logger: logger)
-        return Auth(service: cognito, tokenProvider: cognito)
+        return Auth(service: cognito, tokenProvider: cognito, expiry: cognito)
     }
 
     /// The mock behaviour a launch asks for, `nil` for the real pool. `-mock-auth-fail` and `-mock-auth-confirm` imply
@@ -233,10 +236,12 @@ final class AppDependencies {
     }
 }
 
-/// Who signs the user in, and who hands the API client the token to send: Cognito for both, or the mock and nobody.
+/// Who signs the user in, who hands the API client the token to send, and who reports a refresh token the pool
+/// refuses: Cognito for all three, or the mock and nobody.
 private struct Auth {
     let service: any AuthService
     let tokenProvider: (any AuthTokenProvider)?
+    let expiry: (any SessionExpiryReporter)?
 }
 
 /// The data layer comes as a set: everything talks to the same backend, or everything stays in memory, so a mock run
@@ -279,7 +284,7 @@ struct Repositories {
                      termsPending: Bool = false,
                      eventsFailFirst: Bool = false) -> Repositories {
         Repositories(events: MockEventRepository(identity: identity, logger: logger, failsFirstLoad: eventsFailFirst),
-                     profile: MockProfileRepository(logger: logger),
+                     profile: MockProfileRepository(identity: identity, logger: logger),
                      feedback: MockFeedbackRepository(logger: logger),
                      interactions: NoOpInteractionRecorder(),
                      groups: .mock(identity: identity,

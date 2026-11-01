@@ -53,7 +53,7 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   `startReply(to row: MessageRow)`, `cancelReply()`, `quoteIsDeleted(_:)`, `revealQuoted(id:) async -> Bool`,
   `dropReply(from clientMessageID:)`.
 - `[ChatViewModel.swift:AppError]` extension: `leavesSendOutcomeUnknown`, `leavesVoteOutcomeUnknown`,
-  `endsRoomAccess`, `isChatRefusal`, `static chatLogLevel(for:) -> LogLevel`.
+  `leavesPinOutcomeUnknown`, `endsRoomAccess`, `isChatRefusal`, `static chatLogLevel(for:) -> LogLevel`.
 - `[lily/Features/Chat/ViewModels/AttachmentComposerModel.swift:AttachmentComposerModel.init]` takes `groupID`,
   `caps: AttachmentCaps`, `repository: any ChatRepository`, `uploader: any AttachmentUploader`, `preparer: any
   MediaPreparer`, `cache: any AttachmentCache`, `reporter: GroupErrorReporter`, `logger`,
@@ -109,9 +109,17 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   `GroupAccess.canEdit`. `[ChatViewModel+Pins.swift:ChatViewModel.canPin]` not deleted, not system,
   `GroupAccess.canPin(in:)`; `pins` leaves out messages the room marks deleted.
   `[ChatViewModel+Reply.swift:ChatViewModel.canReply]` not deleted, not system.
-- `[ChatViewModel+Polls.swift:ChatViewModel.vote]` Optimistic `applyPoll(before.voting(optionIDs))`; a failure
-  restores `before` unless the outcome is unknown and a refresh through `repository.polls` shows `myVotes` equal to
-  the choice. `retractVote` is a vote for `[]`.
+- `[ChatViewModel+Pins.swift:ChatViewModel.changePins]` A pin or unpin answered applies the answer's pins and adopts
+  its epoch; a pin then catches up once for the backend's note. A `.network` or `.pinFailed`
+  (`leavesPinOutcomeUnknown`) is read back through `LostAnswer` with one `catchUp.catchUp(groupID:)` (every page
+  carries `pins`): the room the catch-up answered showing `wanted` for the id in its `pins` means landed and nothing
+  is reported; a catch-up answering `nil` (the room left the cache meanwhile) is unresolved, never judged on `room`'s
+  empty stub; otherwise the failure reaches `report`. A refusal catches up nothing.
+- `[ChatViewModel+Polls.swift:ChatViewModel.vote]` Optimistic `applyPoll(before.voting(optionIDs))`. A failure whose
+  outcome is unknown (`leavesVoteOutcomeUnknown`) is read back through `LostAnswer` with
+  `repository.polls(groupID:messageIDs:)`: the state the backend names replaces the shown poll whatever it says, and
+  `myVotes` equal to the choice means landed (no popup); `before` returns only when the settlement is `.unresolved` (a
+  refusal, a failed refresh, no state named). `retractVote` is a vote for `[]`.
 - `[ChatViewModel+Reply.swift:ChatViewModel.revealQuoted]` Loads at most `AppConfig.Chat.maxReplyLookupPages`
   older pages; an in-flight `olderPageTask` is awaited and not counted; "before the history" is `id < oldestID`.
 - `[ChatViewModel+Attachments.swift:ChatViewModel.confirmPending]` The bubble's files are seeded into the cache
@@ -142,15 +150,17 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   `pasteboard.copy`; `GroupErrorReporter.report` for the popup (and the terms sheet on `TERMS_REQUIRED`).
 - `[ChatViewModel]` Logs under `.chat` (`.cache` for "Room cache hit/miss for group"): "Message sent", "deleted in
   group", "Send outcome unknown for", "Send landed for", "Blocked user", "pinned in group", "unpinned in group",
-  "Vote of", "Vote outcome unknown in poll", "Quoted message", "Roster unavailable for group", "Catch-up after",
-  "Older page before". Tests pin these as count plus fragment.
+  "Vote of", "Vote in poll <id> outcome unknown", "Pinning message <id> outcome unknown", "landed despite", "Could
+  not read back after", "Quoted message", "Roster unavailable for group", "Catch-up after",
+  "Older page before", "<step> failed in group <id>" (at `AppError.chatLogLevel(for:)`). Tests pin these as count plus fragment.
 - `[AttachmentComposerModel]` One `Task` per draft in `tasks`, cancelled by `remove`, `reset` and `deinit`. Disk:
   `deleteLocalFiles()`, `FileManager.default.removeItem(at: ownedFile)`, `AttachmentCache.store(copying:for:variant:)`.
   Network: `ChatRepository.requestUpload`, `AttachmentUploader.upload`. Media: `MediaPreparer.prepareImage`,
   `prepareVideo`, `prepareFile`; `PhotosPickerItem.loadTransferable`; `UIImage.jpegData`. `GroupErrorReporter.report`
   on a refusal and an upload failure. Logs under `.chat`: "uploaded as" (info), "upload failed" (error), "could not
   be prepared", "could not seed the cache", "The files importer failed", "could not be loaded" (warning),
-  "Attachment dropped" (debug).
+  "Attachment dropped", "prepared for a slot that is gone: files deleted", "uploaded for a composer that is gone: files
+  deleted" (debug).
 
 ## Verification
 

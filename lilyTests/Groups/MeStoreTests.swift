@@ -176,4 +176,26 @@ struct MeStoreTests {
         #expect(store.account == nil && logger.messages(in: .groups, at: .warning).isEmpty)
         #expect(logger.messages(in: .groups, at: .debug).contains { $0.contains("cancelled") })
     }
+
+    /// A sign-out and sign-in while the previous user's request is still out: the new user's load waits it out instead
+    /// of joining it, so the previous user's answer is dropped and theirs is what the store shows.
+    @Test func aReloadForANewUserWaitsOutThePreviousUsersRun() async {
+        repository.holdsRequests = true
+        let store = makeStore()
+
+        let first = Task { await store.reload() }
+        await settle(until: { repository.meCallCount == 1 })
+        identity.currentUserID = "someone-else"
+        let second = Task { await store.reload() }
+        await Task.yield()
+        #expect(repository.meCallCount == 1, "the new user waits, nothing runs beside the old request")
+
+        repository.meResult = .success(.fixture(isOperator: true))
+        repository.releaseRequests()
+        await first.value
+        await second.value
+
+        #expect(repository.meCallCount == 2 && store.isOperator && !store.isLoading)
+        #expect(logger.messages(in: .cache, at: .debug).contains { $0.contains("previous caller") })
+    }
 }

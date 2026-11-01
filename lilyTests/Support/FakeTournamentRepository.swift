@@ -17,8 +17,8 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
     var transientErrors: [AppError] = []
     /// Thrown by `tournament(id:)` when set (a refetch that fails).
     var detailError: (any Error)?
-    /// Thrown once by a match write after it stored its result, as a commit whose answer never arrived; the refetch and
-    /// later writes answer normally.
+    /// Thrown once by an entry or match write after it stored its result, as a commit whose answer never arrived; the
+    /// refetch and later writes answer normally.
     var lostAnswerError: (any Error)?
     let hold = RequestHold()
     var organizerUserID = "host"
@@ -75,7 +75,7 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
         try await hold.waitOrThrow()
         try throwIfScripted()
         let tournament = draft.makeTournament(organizerUserId: organizerUserID,
-                                              organizerName: TestFixtures.user.displayName,
+                                              organizerName: TestFixtures.displayName,
                                               coordinate: draft.coordinate ?? AppConfig.Location.mockCenter,
                                               now: .now)
         let detail = TournamentDetail(tournament: tournament)
@@ -98,13 +98,14 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
         entrySequence += 1
         let entry = TournamentEntry(id: "01J9ENTRY000000000000000\(entrySequence)",
                                     tournamentId: id,
-                                    name: teamName ?? TestFixtures.user.displayName,
+                                    name: teamName ?? TestFixtures.displayName,
                                     captainUserId: TestFixtures.user.id,
                                     members: [callerMember],
                                     seed: detail.entries.count + 1,
                                     createdAt: .now)
         let tournament = detail.tournament.updatingEntries(count: detail.tournament.entryCount + 1, myEntryId: entry.id, at: .now)
         store(detail.replacing(entries: detail.entries + [entry]).replacing(tournament: tournament))
+        try throwLostAnswer()
         return entry
     }
 
@@ -117,6 +118,7 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
         entries[index] = entries[index].adding(callerMember)
         let tournament = detail.tournament.updatingEntries(count: detail.tournament.entryCount, myEntryId: entryID, at: .now)
         store(detail.replacing(entries: entries).replacing(tournament: tournament))
+        try throwLostAnswer()
         return entries[index]
     }
 
@@ -130,6 +132,7 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
         if let remaining { entries[index] = remaining } else { entries.remove(at: index) }
         let tournament = detail.tournament.updatingEntries(count: entries.count, myEntryId: nil, at: .now)
         store(detail.replacing(entries: entries).replacing(tournament: tournament))
+        try throwLostAnswer()
         return remaining
     }
 
@@ -142,6 +145,7 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
         let myEntryId = detail.tournament.myEntryId == entryID ? nil : detail.tournament.myEntryId
         store(detail.replacing(entries: entries)
             .replacing(tournament: detail.tournament.updatingEntries(count: entries.count, myEntryId: myEntryId, at: .now)))
+        try throwLostAnswer()
     }
 
     /// Refuses a start under the format's minimum like the backend (`canStart`); `TournamentDetail.starting` draws the matches.
@@ -173,7 +177,7 @@ final class FakeTournamentRepository: TournamentRepository, HoldsRequests {
     }
 
     private var callerMember: EntryMember {
-        EntryMember(userId: TestFixtures.user.id, displayName: TestFixtures.user.displayName)
+        EntryMember(userId: TestFixtures.user.id, displayName: TestFixtures.displayName)
     }
 
     /// Shared with the `+Matches` file, hence not `private`.

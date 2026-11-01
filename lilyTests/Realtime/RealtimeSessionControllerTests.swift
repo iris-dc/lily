@@ -240,7 +240,7 @@ struct RealtimeSessionControllerTests {
         let harness = RealtimeHarness()
         await harness.connect()
 
-        await harness.controller.setDesired(active: true, user: AuthUser(id: "u-2", displayName: "Two", email: nil))
+        await harness.controller.setDesired(active: true, user: AuthUser(id: "u-2", email: nil))
 
         #expect(harness.transport.disconnectCount == 1 && harness.transport.connectCount == 2)
         #expect(harness.transport.subscribedChannels == [.user(sub: "u-2")])

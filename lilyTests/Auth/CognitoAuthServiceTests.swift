@@ -17,8 +17,8 @@ struct CognitoAuthServiceTests {
     }
 
     private let credentials = TestFixtures.credentials
-    /// The user the fake client describes: `sub` as id, the name derived from the email.
-    private let expectedUser = AuthUser(id: "sub-1", displayName: "Jane Doe", email: TestFixtures.credentials.email)
+    /// The user the fake client describes: `sub` as id and the email attribute; the name is the backend's, not the pool's.
+    private let expectedUser = AuthUser(id: "sub-1", email: TestFixtures.credentials.email)
 
     // MARK: Restore
 
@@ -70,14 +70,15 @@ struct CognitoAuthServiceTests {
         #expect(harness.store.stored == .signedIn(session))
     }
 
-    @Test func aPoolWithoutAnEmailAttributeNamesTheUserAfterTheUsername() async throws {
+    /// No name is made from the username either: the username is the pool's handle, never shown to anyone.
+    @Test func aPoolWithoutAnEmailAttributeLeavesTheUserWithoutOne() async throws {
         let harness = Harness()
         harness.client.emailResult = .success(nil)
         harness.client.user = CognitoUser(sub: "sub-2", username: "pat_lee")
 
         let session = try await harness.service.signIn(with: .email(credentials))
 
-        #expect(session.user == AuthUser(id: "sub-2", displayName: "Pat Lee", email: nil))
+        #expect(session.user == AuthUser(id: "sub-2", email: nil))
     }
 
     /// The pool accepted the sign-in, so a failure to read the user afterwards signs the pool out again: the app must
@@ -230,5 +231,53 @@ struct CognitoAuthServiceTests {
 
         #expect(await harness.service.accessToken() == nil)
         #expect(harness.logger.messages(in: .auth, at: .warning).contains { $0.contains("No access token") })
+    }
+
+    /// The first refusal is reported (the root ends the session); the parallel requests that hit the same dead token say
+    /// nothing more, and a token that comes back arms the report again.
+    @Test func aDeadRefreshTokenReportsTheExpiryOnceUntilATokenComesBack() async {
+        let harness = Harness()
+        var reports = 0
+        harness.service.onSessionExpired = { reports += 1 }
+        harness.client.tokenResult = .failure(.sessionExpired)
+        harness.client.freshTokenResult = .failure(.sessionExpired)
+
+        #expect(await harness.service.accessToken() == nil)
+        #expect(await harness.service.accessToken() == nil)
+        #expect(await harness.service.freshAccessToken() == nil)
+        #expect(reports == 1)
+        #expect(harness.logger.messages(in: .auth, at: .warning).contains { $0.contains("No access token") })
+
+        harness.client.tokenResult = .success("access-token")
+        #expect(await harness.service.accessToken() == "access-token")
+        harness.client.tokenResult = .failure(.sessionExpired)
+        #expect(await harness.service.accessToken() == nil)
+        #expect(reports == 2)
+    }
+
+    /// An offline run keeps the session: only the pool's refusal of the refresh token is an expiry.
+    @Test(arguments: [Result<String?, CognitoClientError>.failure(.network), .failure(.other("x")), .success(nil)])
+    func aTokenFetchThatFailsForAnotherReasonReportsNoExpiry(result: Result<String?, CognitoClientError>) async {
+        let harness = Harness()
+        var reports = 0
+        harness.service.onSessionExpired = { reports += 1 }
+        harness.client.tokenResult = result
+
+        #expect(await harness.service.accessToken() == nil)
+        #expect(reports == 0)
+    }
+
+    /// `.authFailed` says nothing about why; the pool's condition text is the one line that does, with no email in it.
+    @Test func anUnnamedPoolFailureIsLoggedWithItsDescription() async {
+        let harness = Harness()
+        harness.client.signInResult = .failure(.other("InvalidParameterException"))
+
+        await #expect(throws: AppError.authFailed(provider: .email)) {
+            try await harness.service.signIn(with: .email(credentials))
+        }
+
+        let warnings = harness.logger.messages(in: .auth, at: .warning)
+        #expect(warnings.count == 1 && warnings.allSatisfy { $0.contains("InvalidParameterException") })
+        #expect(!harness.logger.entries.contains { $0.message.contains(credentials.email) }, "no email in the log")
     }
 }

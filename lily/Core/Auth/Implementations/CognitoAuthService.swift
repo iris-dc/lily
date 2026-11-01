@@ -1,8 +1,11 @@
 import Foundation
 
-/// `AuthService` over the Cognito user pool. Amplify holds the tokens; this keeps the signed-in user in the
-/// `SessionStore` so a relaunch shows the profile without a round trip.
-final class CognitoAuthService: AuthService, AuthTokenProvider {
+/// `AuthService` over the Cognito user pool. Amplify holds the tokens; this keeps the signed-in user (id and email) in
+/// the `SessionStore` so a relaunch starts signed in, with no round trip before the first frame.
+final class CognitoAuthService: AuthService, AuthTokenProvider, SessionExpiryReporter {
+    /// Fired by the first token fetch the pool refuses as expired, once until a token comes back.
+    var onSessionExpired: () -> Void = {}
+    private var hasReportedExpiry = false
     private let client: any CognitoClient
     private let store: any SessionStore
     private let languageCode: () -> String
@@ -26,8 +29,16 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
         }
         if await endsLeftoverPoolSession() { return nil }
         guard await refreshTokenIsAlive() else { return nil }
-        if case .signedIn(let session) = store.load() { return session }
-        return try await loadAndCacheSession()
+        switch store.load() {
+        case .signedIn(let session):
+            return session
+        case .signingOut:
+            // The sign-out in flight owns the marker: it clears it when Amplify answers, or the next launch finishes it.
+            logger.info(.auth, "A sign-out landed during the session check; its marker stands")
+            return nil
+        case .guest, nil:
+            return try await loadAndCacheSession()
+        }
     }
 
     func signIn(with provider: AuthProvider) async throws -> AuthSession {
@@ -71,7 +82,8 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
         if store.load() == .signingOut { store.clear() }
     }
 
-    /// Never throws: a request without a token is answered 401 by the backend, which is the one place that decides.
+    /// Never throws: the request goes out bare. A refresh token the pool refuses is reported once through
+    /// `onSessionExpired`; every other failure leaves the backend's 401 to refuse the call.
     func accessToken() async -> String? {
         await token("access token") { try await client.accessToken() }
     }
@@ -80,11 +92,18 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
         await token("fresh access token") { try await client.freshAccessToken() }
     }
 
+    /// A token that comes back arms the report again, so a second expiry later in the same process is reported too.
     private func token(_ kind: String, _ fetch: () async throws -> String?) async -> String? {
         do {
-            return try await fetch()
+            let token = try await fetch()
+            hasReportedExpiry = false
+            return token
         } catch {
             logger.warning(.auth, "No \(kind): \(error)")
+            if case CognitoClientError.sessionExpired = error, !hasReportedExpiry {
+                hasReportedExpiry = true
+                onSessionExpired()
+            }
             return nil
         }
     }
@@ -122,7 +141,7 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
     }
 
     /// Amplify keeps `isSignedIn` true after the refresh token expired; only a token request tells. Any other failure
-    /// (offline) keeps the session: the backend's 401 is the one place that decides then.
+    /// (offline) keeps the session: the backend's 401 refuses the calls until the next token fetch tells.
     private func refreshTokenIsAlive() async -> Bool {
         do {
             _ = try await mapped { try await client.accessToken() }
@@ -144,9 +163,7 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
         do {
             let user = try await mapped { try await client.currentUser() }
             let email = try await mapped { try await client.fetchEmail() }
-            let session = AuthSession(user: AuthUser(id: user.sub,
-                                                     displayName: AuthUser.displayName(fromEmail: email ?? user.username),
-                                                     email: email))
+            let session = AuthSession(user: AuthUser(id: user.sub, email: email))
             store.save(.signedIn(session))
             return session
         } catch {
@@ -173,6 +190,8 @@ final class CognitoAuthService: AuthService, AuthTokenProvider {
         do {
             return try await operation()
         } catch let error as CognitoClientError {
+            // `.authFailed` says nothing about why; the description is Amplify's condition text, never the user.
+            if case .other(let description) = error { logger.warning(.auth, "Cognito call failed: \(description)") }
             throw error.appError
         }
     }

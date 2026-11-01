@@ -1,5 +1,6 @@
 import Testing
 import UIKit
+import UniformTypeIdentifiers
 @testable import lily
 
 /// `AttachmentImageLoad` is the state of one picture a view brings through the loader.
@@ -23,11 +24,16 @@ struct AttachmentImageLoadTests {
                          previewDirectory: previewDirectory) { [clock] in clock.now }
     }
 
-    private func attachment(on backend: StubBackend) -> lily.Attachment {
+    private func attachment(on backend: StubBackend, thumbnail: Bool = true) -> lily.Attachment {
         .fixture(id: "a1",
                  url: backend.baseURL.appending(path: "/chat/g1/a1"),
-                 thumbnailUrl: backend.baseURL.appending(path: "/chat/g1/a1/thumb"),
+                 thumbnailUrl: thumbnail ? backend.baseURL.appending(path: "/chat/g1/a1/thumb") : nil,
                  expiresAt: clock.now.addingTimeInterval(3600))
+    }
+
+    private func pixels(of image: UIImage?) throws -> (width: Int, height: Int) {
+        let bitmap = try #require(image?.cgImage)
+        return (bitmap.width, bitmap.height)
     }
 
     /// `StubBackend` serves text only, so a picture that decodes reaches the box through the cache.
@@ -67,6 +73,43 @@ struct AttachmentImageLoadTests {
 
         #expect(handed == nil && box.image == nil && box.failed)
         #expect(backend.requests.count == 1, "the bytes were fetched once and refused by the decoder")
+        #expect(logger.messages(in: .chat, at: .warning).isEmpty, "only a picture over the pixel cap warns")
+    }
+
+    /// The bound follows the variant asked for through the loader's substitution of the full object.
+    @Test func aTileWithoutAThumbnailDecodesTheFullObjectAtTheThumbnailsSide() async throws {
+        let backend = StubBackend(json: "never asked")
+        try await cache.store(ImageFiles.blankPictureData(width: 1200, height: 900, type: .png), for: "a1", variant: .full)
+
+        let handed = await box.load(attachment(on: backend, thumbnail: false),
+                                    variant: .thumbnail,
+                                    in: message,
+                                    through: makeLoader(backend))
+
+        #expect(try pixels(of: handed) == (512, 384))
+        #expect(backend.requests.isEmpty, "the cached full object serves the tile")
+    }
+
+    @Test func theViewerDecodesAtThePicturesSide() async throws {
+        let backend = StubBackend(json: "never asked")
+        try await cache.store(ImageFiles.blankPictureData(width: 3000, height: 1500, type: .png), for: "a1", variant: .full)
+
+        let handed = await box.load(attachment(on: backend), variant: .full, in: message, through: makeLoader(backend))
+
+        #expect(try pixels(of: handed) == (2048, 1024))
+    }
+
+    /// A picture over the cap fails like bytes that are no picture, and one warning names the id and the declared size.
+    @Test func aPictureOverThePixelCapFailsWithOneWarning() async throws {
+        let backend = StubBackend(json: "never asked")
+        let bomb = try ImageFiles.blankPictureData(width: 5000, height: 5000, type: .gif)
+        try await cache.store(bomb, for: "a1", variant: .thumbnail)
+
+        let handed = await box.load(attachment(on: backend), variant: .thumbnail, in: message, through: makeLoader(backend))
+
+        #expect(handed == nil && box.image == nil && box.failed)
+        #expect(logger.count(in: .chat, at: .warning, mentioning: "a1") == 1)
+        #expect(logger.hasLine(in: .chat, at: .warning, mentioning: "a1", "5000x5000"))
     }
 
     @Test func aMissingObjectFailsWithoutARequest() async {

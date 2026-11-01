@@ -42,6 +42,7 @@ final class CreateEventHarness {
                                          currencyCode: currencyCode,
                                          pushOptIn: pushOptIn ?? NoPushOptIn(),
                                          lockedGroup: lockedGroup,
+                                         tryAgainDelay: .zero,
                                          onCreated: createdEvents.record)
     }
 

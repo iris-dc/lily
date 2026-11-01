@@ -110,7 +110,8 @@ struct EventDetailViewModelTests {
 
         await harness.viewModel.join()
 
-        #expect(harness.logger.messages(in: .events, at: .warning).contains { $0.contains("Join failed") })
+        let warnings = harness.logger.messages(in: .events, at: .warning)
+        #expect(warnings.contains { $0.contains("Join for event") && $0.contains("failed") })
         #expect(harness.logger.messages(in: .events, at: .error).isEmpty)
     }
 
@@ -121,7 +122,8 @@ struct EventDetailViewModelTests {
 
         await harness.viewModel.join()
 
-        #expect(harness.logger.messages(in: .events, at: .error).contains { $0.contains("Join failed") })
+        let errors = harness.logger.messages(in: .events, at: .error)
+        #expect(errors.contains { $0.contains("Join for event") && $0.contains("failed") })
     }
 
     /// The screen showed 1 of 4 while the server already had 4 of 4: after the refusal the detail and the list
@@ -161,7 +163,7 @@ struct EventDetailViewModelTests {
         #expect(harness.viewModel.event == landed)
         #expect(harness.replaced == [landed])
         #expect(harness.errorCenter.current == nil)
-        #expect(harness.logger.messages(in: .events).contains { $0.contains("landed for event") })
+        #expect(harness.logger.messages(in: .events).contains { $0.contains("Join for event") && $0.contains("landed despite") })
     }
 
     /// A refusal is never silenced by the refetch, even one whose fresh event already shows the caller in.
@@ -192,7 +194,7 @@ struct EventDetailViewModelTests {
         #expect(harness.repository.fetchedEventIDs == [stale.id])
         #expect(harness.errorCenter.current?.error == error)
         #expect(!harness.viewModel.isBusy)
-        #expect(harness.logger.messages(in: .events, at: .warning).contains { $0.contains("Could not refresh") })
+        #expect(harness.logger.messages(in: .events, at: .warning).contains { $0.contains("Could not read back") })
     }
 
     /// A lost race is the backend's business, not the user's: the request is repeated once and succeeds quietly.

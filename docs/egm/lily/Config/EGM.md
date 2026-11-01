@@ -5,7 +5,7 @@ Source: `lily/Config/`
 ## Overview
 
 Four `nonisolated enum` namespaces, each a root file plus `+Area.swift` files that are `nonisolated extension`s of the
-root or of one of its nested enums (60 files, about 3,100 lines). `AppConfig` is the non-visual configuration: API
+root or of one of its nested enums (63 files, about 3,200 lines). `AppConfig` is the non-visual configuration: API
 paths and base URLs, limits mirrored from the Laurel backend, launch-argument literals, feature flags, Cognito ids.
 `AppBranding` holds every user-facing string as a computed `static var` or `static func` whose body is
 `localized("English text")`, so the English text is the catalog key. `DesignTokens` holds the visual constants and
@@ -18,13 +18,16 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 - Namespaces in the root file: `Auth`, `Cognito`, `Storage.Keys`, `Events` (+ `Creation`, `Editing`), `Lists`,
   `Location`, `ErrorPopup`, `Launch`, `API` (+ `Headers`, `Paths`, `Query`), `Statistics`, `LaunchArguments`,
-  `Logging`, `Version`. Added by `+Area` files: `Chat` (+ `Attachments`, `Polls`, `Pins`), `Currency`, `FeatureFlags`,
-  `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push` (+ `Payload`), `Realtime`, `Tournaments`.
+  `Logging`, `Version`. Added by `+Area` files: `Chat` (+ `Attachments`, `Polls`, `Pins`), `Currency`, `DisplayName`
+  (`lily/Config/AppConfig+Profile.swift`: `length = 1...32` code points, `backendDefault = "Player"`, both Laurel's
+  `profile.*` settings), `FeatureFlags`, `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push` (+ `Payload`),
+  `Realtime`, `Tournaments`.
 - `API` (`lily/Config/AppConfig.swift:AppConfig.API`): `localBaseURL = http://localhost:8080`,
   `productionBaseURL = https://api.iskra.red`; `baseURL` is `localBaseURL` under `#if DEBUG && targetEnvironment(simulator)`,
   else `productionBaseURL`; `sendsLocalUserHeader` is `true` under `#if DEBUG`; `requestTimeout = 15`,
   `tryAgainDelay = .milliseconds(400)`, `unauthorizedStatus = 401`, `rateLimitedStatus = 429`, `clientErrorStatuses = 400..<500`.
-  `Headers`: `X-Local-User-Id`, `X-App-Version`, `Authorization`, `Bearer `, `Accept`, `Content-Type`, `Retry-After`.
+  `Headers`: `X-Local-User-Id`, `X-App-Version`, `Authorization`, `Bearer `, `Accept`, `Content-Type`,
+  `json = "application/json"`, `Retry-After` (the last added in `AppConfig+Chat.swift`).
   `Query`: `scope`, `lat`, `lon`, `before`, `after`, `q`, `type`, `cursor`, `limit`, `ids`.
 - `API.Paths`: roots `/api/events`, `/api/profile`, `/api/interactions`, `/api/groups`, `/api/me/inbox`,
   `/api/me/inbox/read`, `/api/reports`, `/api/blocks`, `/api/me`, `/api/me/terms`, `/api/conversations`,
@@ -59,7 +62,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - `Chat` (`lily/Config/AppConfig+Chat.swift:AppConfig.Chat`): `messageMaxLength = 2000`, `historyPageSize = 50`,
   `catchUpPageSize = 200`, `maxCatchUpPages = 3`, `roomCacheLimit = 300`, `readMarkFlushInterval = 60`,
   `replyExcerptLength = 120`, `rateLimitCooldownFallback = 10`. `Chat.Attachments` (`lily/Config/AppConfig+Attachments.swift`):
-  `maxPerMessage = 10`, `imageMaxBytes = 10 MiB`, `imageMaxDimension = 2048`, `imageContentType = "image/jpeg"`,
+  `maxPerMessage = 10`, `imageMaxBytes = 10 MiB`, `imageMaxDimension = 2048`, `imageMaxDeclaredPixels = 16_000_000` (a
+  stored picture whose header declares more is not decoded), `imageContentType = "image/jpeg"`,
   `videoMaxBytes = 50 MiB`, `videoMaxDurationSeconds = 180`, `videoExportPreset = AVAssetExportPreset1280x720`,
   `fileMaxBytes`, `directVideoMaxBytes` and `directFileMaxBytes = 40 MiB`, `diskCacheBytes = 200 MiB`,
   `maxConcurrentUploads = 2`, `uploadTimeout = 120`. `Chat.Polls`: `questionMaxLength = 255`, `optionMaxLength = 100`,
@@ -82,9 +86,12 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 - Root: `static let name = "iskra"`, the shared actions `done` and `remove`, the landing, sign-in, tab-title and
   event-detail strings (`landingPrimaryAction`, `signInAction`, `homeTitle`, `exploreTitle`, `profileTitle`, `joinAction`,
-  ...), `chatsTitle`; `signInButtonTitle(for:)`, `passwordHint(minimumLength:)`, `confirmEmailSubtitle(email:)`, `hostedByTitle(for:)`.
+  ...); `signInButtonTitle(for:)`, `passwordHint(minimumLength:)`, `confirmEmailSubtitle(email:)`, `hostedByTitle(for:)`;
+  `chatsTitle` lives in `AppBranding+Inbox.swift`.
 - Nested namespaces: `Home`, `Events` (+ `Filter`, `Create`, `Edit`), `Chat` (+ `Attachments`, `Pins`, `Polls`),
-  `Groups` (+ `Create`, `Invite`), `Chats`, `Inbox`, `Intro` (+ `Chat`), `Feedback`, `Moderation`, `Forms` (`close`,
+  `Groups` (+ `Create`, `Invite`), `Chats`, `Inbox`, `Intro` (+ `Chat`), `Feedback`, `DisplayName`
+  (`lily/Config/AppBranding+Profile.swift`: `title`, `subtitle`, `defaultSubtitle`, `placeholder`, `footer`, `save`,
+  `tooLong(limit:)`), `Moderation`, `Forms` (`close`,
   `back`, `cancel`), `People`, `Settings`, `Tournaments` (+ `Create`, `Schedule`, `Match`, `Standings`).
 - Representative functions: `Events.spotsLeft(_:)`, `Events.joined(_:of:)`, `Events.Create.capacity(_:needed:)`,
   `Events.Create.name(for: PlayerLimit)`, `Events.Create.message(for: EventDraft.Issue)`, `Events.Create.coordinateText(_:)`,
@@ -118,7 +125,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 - Kebab-case, area-prefixed `static let` literals: root (`events-filter`, `create-submit`, `auth-email`, ...),
   +Groups (`chat-list`, `chat-composer`, `create-group`, ...), +Tournaments (45 literals and 6 builders, e.g. `match-score-a`), +Polls,
-  +Attachments, +Inbox, +Feedback, +Moderation, +People, +Currency, +Layout, +Landing (`intro-pager`), +Localization.
+  +Attachments, +Inbox, +Feedback, +Moderation, +People, +Profile (`profile-name`, `profile-name-field`,
+  `profile-name-save`, `profile-name-cancel`), +Currency, +Layout, +Landing (`intro-pager`), +Localization.
 - Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
   `message(clientID:)` (`message-client-<id>`), `message(id:)`, `messageQuote(id:)`, `memberRow(_:)`, `inviteCandidate(_:)`,
   `inviteSend(_:)`, `inboxItem(_:)`, `inboxAccept(_:)`, `inboxDecline(_:)`, `participantRow(_:)`, `pollOptionField(_: Int)`,
@@ -128,7 +136,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 ## Invariants
 
-- Every top-level declaration in all 60 files is `nonisolated`: the four root enums and every `extension`
+- Every top-level declaration in all 63 files is `nonisolated`: the four root enums and every `extension`
   (`grep -c nonisolated` is 33 across the 12 `DesignTokens*` files and 1 in each `AccessibilityIdentifiers*` file;
   `grep "^extension\|^enum\|^struct" lily/Config/AppBranding*.swift` returns nothing). No `Sendable`, `@MainActor` or
   other isolation annotation appears in the directory.

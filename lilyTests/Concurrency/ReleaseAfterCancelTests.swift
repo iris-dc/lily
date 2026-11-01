@@ -69,21 +69,4 @@ struct ReleaseAfterCancelTests {
 
         #expect(released == nil, "the Discover view model outlived its cancel")
     }
-
-    /// `syncProfile` captures `[profileRepository, logger]`, never the controller; the cancelled sync is awaited so its
-    /// task ends before the harness goes.
-    @Test func sessionControllerIsReleasedAfterSignOutCancelsTheProfileSync() async {
-        weak var released: SessionController?
-
-        do {
-            let harness = SessionHarness()
-            harness.profile.delay = .seconds(60)
-            released = harness.controller
-            _ = await harness.controller.signIn(with: .apple)
-            await harness.controller.signOut()
-            await harness.controller.profileSync?.value
-        }
-
-        #expect(released == nil, "the session controller outlived its sign-out")
-    }
 }

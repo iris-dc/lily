@@ -78,10 +78,10 @@ struct AppDependenciesTests {
         #expect(dependencies.myGroups.groups.isEmpty && dependencies.me.account == nil)
     }
 
-    /// Two simulators can act as two people: the flag replaces the id of every mock sign-in and names the user after it.
+    /// Two simulators can act as two people: the flag replaces the id of every mock sign-in.
     @Test func mockUserIDLaunchArgumentOverridesEveryMockSignIn() async {
         let dependencies = await makeSignedInMockDependencies(extraArguments: [AppConfig.LaunchArguments.mockUserID, "jane.doe"])
-        let expected = AuthUser(id: "jane.doe", displayName: "Jane Doe", email: "jane.doe@example.com")
+        let expected = AuthUser(id: "jane.doe", email: "jane.doe@example.com")
         #expect(dependencies.sessionController.state.user == expected)
         await dependencies.sessionController.signOut()
 
@@ -89,10 +89,22 @@ struct AppDependenciesTests {
         #expect(dependencies.identity.currentUserID == "jane.doe")
     }
 
-    /// Without the flag the defaults stay, as `LilySignInTests` asserts on "Apple Tester".
+    /// Without the flag the defaults stay, as `LilySignInTests` asserts on the Apple tester's email.
     @Test func mockSignInsKeepTheirDefaultUsersWithoutTheFlag() async {
         let dependencies = await makeSignedInMockDependencies()
         #expect(dependencies.sessionController.state.user == MockUsers.user(for: .apple))
+    }
+
+    /// The store is a session observer: the mock user's profile loads with the backend's default name and goes with
+    /// the sign-out.
+    @Test func theProfileStoreLoadsForTheMockUserAndClearsOnSignOut() async {
+        let dependencies = await makeSignedInMockDependencies()
+
+        await dependencies.profile.loadIfNeeded()
+        #expect(dependencies.profile.displayName == AppConfig.DisplayName.backendDefault && dependencies.profile.isDefaultName)
+
+        await dependencies.sessionController.signOut()
+        #expect(dependencies.profile.profile == nil)
     }
 
     /// Nothing here touches Amplify: the client configures it on its first call, and none is made.

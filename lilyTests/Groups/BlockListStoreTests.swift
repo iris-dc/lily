@@ -160,4 +160,27 @@ struct BlockListStoreTests {
         #expect(store.blockedUserIDs.isEmpty && logger.messages(in: .groups, at: .warning).isEmpty)
         #expect(logger.messages(in: .groups, at: .debug).contains { $0.contains("cancelled") })
     }
+
+    /// A sign-out and sign-in while the previous user's request is still out: the new user's load waits it out instead
+    /// of joining it, so the previous user's list is dropped and theirs is what the store holds.
+    @Test func aReloadForANewUserWaitsOutThePreviousUsersRun() async {
+        repository.blocked = ["u-9"]
+        repository.holdsRequests = true
+        let store = makeStore()
+
+        let first = Task { await store.reload() }
+        await settle(until: { repository.blocksRequestCount == 1 })
+        identity.currentUserID = "someone-else"
+        let second = Task { await store.reload() }
+        await Task.yield()
+        #expect(repository.blocksRequestCount == 1, "the new user waits, nothing runs beside the old request")
+
+        repository.blocked = ["u-2"]
+        repository.releaseRequests()
+        await first.value
+        await second.value
+
+        #expect(repository.blocksRequestCount == 2 && store.blockedUserIDs == ["u-2"])
+        #expect(logger.messages(in: .cache, at: .debug).contains { $0.contains("Block list answer") })
+    }
 }

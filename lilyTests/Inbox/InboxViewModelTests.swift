@@ -119,16 +119,60 @@ struct InboxViewModelTests {
         #expect(harness.inboxLogs(.warning).mentioning("i1", "\(AppError.inviteNotPending)").count == 1)
     }
 
-    /// An unknown outcome is shown and nothing is refetched: a repeated accept is safe, the backend replays it.
-    @Test func aLostConnectionIsShownWithoutAReload() async {
+    /// The backend commits before it answers, so an unknown outcome is read back from the inbox first; a card still
+    /// pending means the tap did not go through, and the popup says so.
+    @Test func aLostAnswerIsReadBackAndAPendingCardReachesThePopup() async {
         let viewModel = await harness.openInbox([invite])
         harness.inboxRepository.acceptError = AppError.network
+        harness.inboxRepository.pages = [.fixture([invite])]
 
         await viewModel.accept(invite)
 
-        #expect(harness.presentedError == .network && harness.inboxRepository.pageRequests.count == 1)
+        #expect(harness.presentedError == .network && harness.inboxRepository.pageRequests.count == 2)
         #expect(harness.inbox.items.first?.invite?.status == .pending)
         #expect(harness.inboxLogs(.error).mentioning("i1", "\(AppError.network)").count == 1)
+        #expect(harness.repository.requestedScopes.isEmpty && harness.navigation.chatPath.isEmpty)
+    }
+
+    /// The page names no group or tournament, so a landed accept reloads Mine, the one place the new room surfaces, and
+    /// opens nothing.
+    @Test func aLostAnswerWhoseReadBackShowsTheInviteAcceptedReloadsMineAndReportsNothing() async {
+        let viewModel = await harness.openInbox([invite])
+        harness.inboxRepository.acceptError = AppError.network
+        harness.inboxRepository.pages = [.fixture([invite.responding(.accepted, at: harness.inboxRepository.now)])]
+
+        await viewModel.accept(invite)
+
+        #expect(harness.presentedError == nil && harness.inbox.items.first?.invite?.status == .accepted)
+        #expect(harness.repository.requestedScopes == [.mine] && harness.navigation.chatPath.isEmpty)
+        #expect(harness.tournamentChanges.version == 0, "a group invite tells the tournament lists nothing")
+        #expect(harness.inboxLogs(.info).mentioning("i1", "landed").count == 1)
+        #expect(harness.inboxLogs(.error).isEmpty && !viewModel.isBusy(invite))
+    }
+
+    /// `inviteActionFailed` is the inbox routes' fallback for a 5xx; a decline that landed moves no room.
+    @Test func aFiveHundredOnADeclineIsReadBack() async {
+        let viewModel = await harness.openInbox([invite])
+        harness.inboxRepository.declineError = AppError.inviteActionFailed
+        harness.inboxRepository.pages = [.fixture([invite.responding(.declined, at: harness.inboxRepository.now)])]
+
+        await viewModel.decline(invite)
+
+        #expect(harness.presentedError == nil && harness.inbox.items.first?.invite?.status == .declined)
+        #expect(harness.repository.requestedScopes.isEmpty, "nothing reloaded in Mine")
+    }
+
+    @Test func aLostAnswerWhoseReadBackFailsReachesThePopup() async {
+        let viewModel = await harness.openInbox([invite])
+        harness.inboxRepository.acceptError = AppError.network
+        harness.inboxRepository.pageError = AppError.inboxUnavailable
+
+        await viewModel.accept(invite)
+
+        #expect(harness.presentedError == .network, "the write's failure is the last reported")
+        #expect(harness.inboxRepository.pageRequests.count == 2)
+        #expect(harness.inboxLogs(.warning).mentioning("Could not read back", "i1").count == 1)
+        #expect(harness.inbox.items.first?.invite?.status == .pending)
     }
 
     @Test func aTermsRefusalRaisesTheTermsSheet() async {

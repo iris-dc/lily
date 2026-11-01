@@ -1,8 +1,9 @@
 import Foundation
 
 /// Polls: sending one through the same pending bubble and retries as a message, voting and taking a vote back, and the
-/// voters of a public poll. A vote shows at once and the answer replaces it; a failure brings back the poll as it was,
-/// except when the outcome is unknown and a refresh shows the vote landed.
+/// voters of a public poll. A vote shows at once and the answer replaces it. After a lost answer the poll is refreshed
+/// (`LostAnswer`) and the refreshed poll stays on screen whatever it says; the poll as it was returns only when a refusal
+/// came or the refresh failed.
 extension ChatViewModel {
     var canCreatePolls: Bool {
         GroupAccess(group: group, userID: identity.currentUserID).canCreatePolls(in: group)
@@ -31,11 +32,17 @@ extension ChatViewModel {
             mutateRoom { $0.applyPoll(messageID: result.messageId, poll: result.poll, revision: result.pollRevision) }
             logger.info(.chat, "Vote of \(optionIDs.count) options in poll \(message.id) in group \(group.id)")
         } catch {
-            if let appError = error as? AppError, appError.leavesVoteOutcomeUnknown,
-               await voteLanded(optionIDs, in: message.id) {
-                return
+            let settled = await voteReadBack(for: message.id).settle("Vote in poll \(message.id)", despite: error) { state in
+                state.map { Set($0.poll.myVotes) == Set(optionIDs) }
             }
-            mutateRoom { $0.applyPoll(messageID: message.id, poll: before) }
+            switch settled {
+            case .landed:
+                return
+            case .didNotLand:
+                break
+            case .unresolved:
+                mutateRoom { $0.applyPoll(messageID: message.id, poll: before) }
+            }
             report(error, during: "Voting")
         }
     }
@@ -62,19 +69,18 @@ extension ChatViewModel {
         room.messages.first { $0.id == messageID }?.poll
     }
 
-    /// The backend commits before it answers: after a lost answer the poll's state says whether the vote is in, and
-    /// replaces the one shown either way.
-    private func voteLanded(_ optionIDs: [String], in messageID: String) async -> Bool {
-        logger.warning(.chat, "Vote outcome unknown in poll \(messageID) in group \(group.id); refreshing it")
-        let states: PollStates
-        do {
-            states = try await repository.polls(groupID: group.id, messageIDs: [messageID])
-        } catch {
-            logger.warning(.chat, "Poll refresh after an unknown vote outcome failed in group \(group.id): \(error)")
-            return false
-        }
-        guard let state = states.items.first(where: { $0.messageId == messageID }) else { return false }
-        mutateRoom { $0.applyPoll(messageID: messageID, poll: state.poll) }
-        return Set(state.poll.myVotes) == Set(optionIDs)
+    /// The backend commits before it answers: after a lost answer the poll's state says whether the vote is in; a state
+    /// the backend names replaces the one shown (other voters' counts stay), one it does not cannot tell.
+    private func voteReadBack(for messageID: String) -> LostAnswer<PollState?> {
+        LostAnswer(category: .chat,
+                   logger: logger,
+                   leavesOutcomeUnknown: { $0.leavesVoteOutcomeUnknown },
+                   refetch: { [self] in
+                       let states = try await repository.polls(groupID: group.id, messageIDs: [messageID])
+                       return states.items.first { $0.messageId == messageID }
+                   },
+                   apply: { [self] state in
+                       if let state { mutateRoom { $0.applyPoll(messageID: messageID, poll: state.poll) } }
+                   })
     }
 }

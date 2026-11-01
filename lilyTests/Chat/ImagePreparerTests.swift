@@ -1,5 +1,4 @@
 import Foundation
-import ImageIO
 import Testing
 import UIKit
 import UniformTypeIdentifiers
@@ -27,18 +26,12 @@ struct ImagePreparerTests {
         }
     }
 
-    /// A JPEG of `size` carrying an EXIF orientation, as a camera writes one: the pixels stay as rendered and the tag
-    /// says how to turn them.
+    /// A JPEG of `size` with a gradient, carrying an EXIF orientation as a camera writes one.
     private func jpeg(_ size: CGSize, orientation: Int) throws -> Data {
         let image = UIGraphicsImageRenderer(size: size, format: UIGraphicsImageRendererFormat.default()).image { context in
             drawGradient(in: context.cgContext, to: size)
         }
-        let cgImage = try #require(image.cgImage)
-        let data = NSMutableData()
-        let destination = try #require(CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil))
-        CGImageDestinationAddImage(destination, cgImage, [kCGImagePropertyOrientation: orientation] as CFDictionary)
-        #expect(CGImageDestinationFinalize(destination))
-        return data as Data
+        return try ImageFiles.encoded(try #require(image.cgImage), as: .jpeg, orientation: orientation)
     }
 
     private func drawGradient(in context: CGContext, to size: CGSize) {

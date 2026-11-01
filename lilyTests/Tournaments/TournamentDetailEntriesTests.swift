@@ -157,7 +157,7 @@ struct TournamentDetailEntriesTests {
         #expect(harness.presentedError == .tournamentFull && viewModel.participation == .join)
         #expect(harness.logs(.warning).contains { $0.contains("Join for tournament t failed") })
         #expect(harness.logs(.error).isEmpty)
-        #expect(harness.repository.fetchedIDs.count == 1, "a refusal refetches nothing")
+        #expect(harness.repository.fetchedIDs.count == 2, "a refusal refetches the detail")
         #expect(harness.groupRepository.requestedScopes.isEmpty, "a refused entry moves no room")
     }
 

@@ -12,10 +12,12 @@ struct CreateGroupViewModelTests {
 
     init() {
         viewModel = CreateGroupViewModel(repository: harness.repository,
+                                         identity: harness.identity,
                                          store: harness.store,
                                          locationService: harness.location,
                                          reporter: harness.reporter,
                                          logger: harness.logger,
+                                         tryAgainDelay: .zero,
                                          onCreated: harness.sink.record)
     }
 
@@ -52,10 +54,12 @@ struct CreateGroupViewModelTests {
         #expect(viewModel.draft.coordinate == chosen && harness.location.callCount == 1, "a chosen spot is not asked over")
 
         let unpositioned = CreateGroupViewModel(repository: harness.repository,
+                                                identity: harness.identity,
                                                 store: harness.store,
                                                 locationService: FakeLocationService(),
                                                 reporter: harness.reporter,
                                                 logger: harness.logger,
+                                                tryAgainDelay: .zero,
                                                 onCreated: harness.sink.record)
         unpositioned.draft.name = "Kreuzberg Kickers"
         unpositioned.draft.locationName = "Görlitzer Park"
@@ -159,6 +163,37 @@ struct CreateGroupViewModelTests {
         #expect(harness.logs(.error).count == 1)
     }
 
+    @Test func aTryAgainOnTheCreateIsRepeatedOnce() async {
+        fillDraft()
+        harness.repository.transientErrors = [.tryAgain]
+
+        await viewModel.submit()
+
+        #expect(viewModel.createdGroup?.id == viewModel.draft.clientId && harness.presentedError == nil)
+        #expect(harness.repository.createdDrafts.count == 2 && harness.repository.fetchedGroupIDs.isEmpty)
+        #expect(harness.logs(.info).contains { $0.contains("lost a race") })
+    }
+
+    /// Our earlier create landed with other details: the draft goes out as an update under the same id, and Mine gets
+    /// the group as updated.
+    @Test func aReusedIdUpdatesTheGroupWithTheLatestDetails() async {
+        fillDraft()
+        harness.repository.transientErrors = [.createIdReused]
+        var earlier = viewModel.draft
+        earlier.name = "Kreuzberg Kickers (old)"
+        harness.repository.result = .success([earlier.makeGroup(ownerName: "Me", now: .now)])
+
+        await viewModel.submit()
+
+        #expect(viewModel.createdGroup?.name == "Kreuzberg Kickers")
+        #expect(harness.repository.updatedDrafts.map(\.id) == [viewModel.draft.clientId])
+        #expect(harness.repository.updatedDrafts.first?.draft == viewModel.draft)
+        #expect(harness.store.groups.map(\.name) == ["Kreuzberg Kickers"])
+        #expect(harness.repository.fetchedGroupIDs.isEmpty, "no lookup")
+        #expect(harness.presentedError == nil)
+        #expect(harness.logs(.info).contains { $0.contains("updated with the latest details") })
+    }
+
     @Test func termsRequiredRaisesTheTermsSheet() async {
         fillDraft()
         harness.repository.actionError = AppError.termsRequired
@@ -175,5 +210,22 @@ struct CreateGroupViewModelTests {
         await viewModel.submit()
 
         #expect(harness.presentedError == nil && harness.logs().isEmpty && viewModel.createdGroup == nil)
+    }
+
+    /// A sign-out and sign-in while the create is out: the group is the previous caller's and must neither enter the
+    /// next caller's Mine nor open for them.
+    @Test func aCreateAnswerForAPreviousCallerIsDropped() async {
+        fillDraft()
+        harness.repository.holdsRequests = true
+
+        let submit = Task { await viewModel.submit() }
+        await settle(until: { harness.repository.createdDrafts.count == 1 })
+        harness.identity.currentUserID = "someone-else"
+        harness.repository.releaseRequests()
+        await submit.value
+
+        #expect(viewModel.createdGroup == nil && !viewModel.isDone && !viewModel.isSubmitting)
+        #expect(harness.store.groups.isEmpty && harness.changed.isEmpty && harness.presentedError == nil)
+        #expect(harness.logger.count(in: .cache, at: .debug, mentioning: "Create answer for a previous caller dropped") == 1)
     }
 }

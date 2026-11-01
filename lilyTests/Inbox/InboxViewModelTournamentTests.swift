@@ -41,6 +41,20 @@ struct InboxViewModelTournamentTests {
         #expect(!harness.inboxLogs(.info).contains { $0.contains("as entry") })
     }
 
+    /// The accept landed but its answer was lost: the read-back shows the invite accepted, so the lists are told and
+    /// Mine reloaded as a direct accept does, and nothing opens or is reported (the page names no tournament).
+    @Test func aLostAnswerWhoseReadBackShowsTheInviteAcceptedBumpsTheListsAndReloadsMine() async {
+        let viewModel = await harness.openInbox([invite])
+        harness.inboxRepository.acceptError = AppError.network
+        harness.inboxRepository.pages = [.fixture([invite.responding(.accepted, at: harness.inboxRepository.now)])]
+
+        await viewModel.accept(invite)
+
+        #expect(harness.presentedError == nil && harness.inbox.items.first?.tournamentInvite?.status == .accepted)
+        #expect(harness.tournamentChanges.version == 1 && harness.repository.requestedScopes == [.mine])
+        #expect(harness.navigation.homePath.isEmpty && harness.navigation.chatPath.isEmpty)
+    }
+
     /// The entry refusals on an accept are shown and leave the item as it is; a verdict on the invite reloads.
     @Test func refusalsAreShownAndAVerdictReloads() async {
         let viewModel = await harness.openInbox([invite])

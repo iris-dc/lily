@@ -72,4 +72,42 @@ struct InboxStoreConcurrencyTests {
         #expect(repository.pageRequests.count == 2 && store.items.map(\.id) == ["theirs"] && !store.isLoading)
         #expect(logger.messages(in: .cache, at: .debug).contains { $0.contains("previous caller") })
     }
+
+    /// A sign-out while the read marker is out: the echo is the previous user's and must not become the next user's
+    /// marker, whose dot and badge would go for an item they never saw.
+    @Test func aReadMarkerForAPreviousCallerIsDropped() async {
+        repository.pages = [.fixture(items)]
+        let store = makeStore()
+        await store.reload()
+        repository.holdsRequests = true
+
+        let marking = Task { await store.markRead() }
+        await settle(until: { repository.readMarks.count == 1 })
+        identity.currentUserID = nil
+        store.sessionDidEnd()
+        repository.releaseRequests()
+        await marking.value
+
+        #expect(store.lastReadID == nil && !store.hasUnread)
+        #expect(logger.count(in: .cache, at: .debug, mentioning: "Inbox read marker", "previous caller") == 1)
+    }
+
+    /// A sign-out while the earlier page is out: the page is dropped, and the log says for whom.
+    @Test func anEarlierPageForAPreviousCallerIsDropped() async {
+        let older = InboxItem.reminder(id: "01J9INBOX00000000000000000")
+        repository.pages = [.fixture(items, hasMore: true, nextBefore: items[0].id), .fixture([older])]
+        let store = makeStore()
+        await store.reload()
+        repository.holdsRequests = true
+
+        let earlier = Task { await store.loadOlder() }
+        await settle(until: { repository.pageRequests.count == 2 })
+        identity.currentUserID = nil
+        store.sessionDidEnd()
+        repository.releaseRequests()
+        let broughtItems = await earlier.value
+
+        #expect(!broughtItems && store.items.isEmpty && !store.hasOlder)
+        #expect(logger.count(in: .cache, at: .debug, mentioning: "Inbox page", "previous caller") == 1)
+    }
 }

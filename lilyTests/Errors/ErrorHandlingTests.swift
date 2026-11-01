@@ -17,6 +17,7 @@ struct ErrorMessageMapperTests {
     /// Pinned so a change to the refusal copy is a deliberate diff, not a side effect of editing the mapper.
     @Test func participationRefusalsHaveTheirOwnTitles() {
         #expect(ErrorMessageMapper.message(for: .tryAgain).title == "Please try again")
+        #expect(ErrorMessageMapper.message(for: .createIdReused) == ErrorMessageMapper.message(for: .tryAgain))
         #expect(ErrorMessageMapper.message(for: .participationFailed).title == "Couldn't update your spot")
     }
 
@@ -105,6 +106,11 @@ struct ErrorMessageMapperTests {
         let cap = ErrorMessageMapper.message(for: .tournamentMembershipLimit).body
         #expect(cap.contains("\(AppConfig.Tournaments.maxPerUser)"))
         #expect(!cap.contains("group"))
+    }
+
+    @Test func profileFailuresHaveTheirOwnTitles() {
+        #expect(ErrorMessageMapper.message(for: .profileUpdateFailed).title == "Couldn't save your name")
+        #expect(ErrorMessageMapper.message(for: .profileUnavailable).title == "Couldn't load this profile")
     }
 
     @Test func peopleErrorsHaveTheirOwnTitles() {
@@ -250,8 +256,8 @@ struct BackendErrorCodeTests {
             "CONTENT_REJECTED": .contentRejected, "FORBIDDEN": .insufficientRole, "NOT_A_MEMBER": .notAMember,
             "BANNED": .bannedFromGroup, "ACCOUNT_SUSPENDED": .accountSuspended, "TERMS_REQUIRED": .termsRequired,
             "GROUP_NOT_FOUND": .groupNotFound, "MESSAGE_NOT_FOUND": .messageNotFound,
-            "USER_NOT_FOUND": .userNotFound, "GROUP_ID_TAKEN": .groupCreationFailed,
-            "GROUP_ID_REUSED": .groupCreationFailed, "GROUP_FULL": .groupFull, "OWNER_CANNOT_LEAVE": .ownerCannotLeave,
+            "USER_NOT_FOUND": .userNotFound, "EVENT_ID_REUSED": .createIdReused, "GROUP_ID_TAKEN": .groupCreationFailed,
+            "GROUP_ID_REUSED": .createIdReused, "GROUP_FULL": .groupFull, "OWNER_CANNOT_LEAVE": .ownerCannotLeave,
             "MEMBER_BANNED": .memberBanned, "MEMBERSHIP_LIMIT": .membershipLimitReached,
             "INVITE_EXPIRED": .inviteExpired, "INVITE_NOT_PENDING": .inviteNotPending,
             "INBOX_ITEM_NOT_FOUND": .inviteNotPending, "ALREADY_MEMBER": .alreadyMember, "CANNOT_INVITE": .cannotInvite,
@@ -261,7 +267,7 @@ struct BackendErrorCodeTests {
             "ATTACHMENTS_DISABLED": .attachmentsDisabled, "TOURNAMENT_NOT_FOUND": .tournamentNotFound,
             "POLLS_NOT_ALLOWED": .pollsNotAllowed, "NOT_A_POLL": .notAPoll, "POLL_ANONYMOUS": .pollAnonymous,
             "NOT_PINNABLE": .notPinnable, "TOO_MANY_PINS": .tooManyPins,
-            "TOURNAMENT_ID_TAKEN": .tournamentCreationFailed, "TOURNAMENT_ID_REUSED": .tournamentCreationFailed,
+            "TOURNAMENT_ID_TAKEN": .tournamentCreationFailed, "TOURNAMENT_ID_REUSED": .createIdReused,
             "TOURNAMENT_LIMIT": .tournamentLimit, "NOT_ORGANIZER": .notOrganizer, "TOURNAMENT_LOCKED": .tournamentLocked,
             "REGISTRATION_CLOSED": .registrationClosed, "TOURNAMENT_FULL": .tournamentFull, "ALREADY_ENTERED": .alreadyEntered,
             "TEAM_FULL": .teamFull, "ENTRY_NOT_FOUND": .entryNotFound, "NOT_ENOUGH_ENTRIES": .notEnoughEntries,

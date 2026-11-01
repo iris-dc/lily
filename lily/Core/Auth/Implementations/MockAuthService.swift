@@ -77,20 +77,17 @@ nonisolated enum MockUsers {
     static func user(for provider: AuthProvider) -> AuthUser {
         switch provider {
         case .apple:
-            AuthUser(id: "mock-apple", displayName: "Apple Tester", email: email(for: "apple"))
+            AuthUser(id: "mock-apple", email: email(for: "apple"))
         case .google:
-            AuthUser(id: "mock-google", displayName: "Google Tester", email: email(for: "google"))
+            AuthUser(id: "mock-google", email: email(for: "google"))
         case .email(let credentials):
-            AuthUser(id: "mock-email-\(opaqueID(for: credentials.email))",
-                     displayName: AuthUser.displayName(fromEmail: credentials.email),
-                     email: credentials.email)
+            AuthUser(id: "mock-email-\(opaqueID(for: credentials.email))", email: credentials.email)
         }
     }
 
-    /// The user a chosen id stands for: the id as the mailbox, the display name derived from it like an email sign-in's.
+    /// The user a chosen id stands for: the id as the mailbox.
     static func user(withID id: String) -> AuthUser {
-        let email = email(for: id)
-        return AuthUser(id: id, displayName: AuthUser.displayName(fromEmail: email), email: email)
+        AuthUser(id: id, email: email(for: id))
     }
 
     private static func email(for localPart: String) -> String {

@@ -26,7 +26,8 @@ badge). No source files live at this level; the six subdirectories below hold th
 - State: [./State/EGM.md](./State/EGM.md) - `InboxStore: SessionObserver`: the newest page through `StoreLoader`,
   earlier pages on demand, live items applied in id order, the read marker, `hasUnread`, cleared on sign-out.
 - ViewModels: [./ViewModels/EGM.md](./ViewModels/EGM.md) - `InboxViewModel`: timeline rows, one answer per invite
-  with one `TRY_AGAIN` retry, verdicts reloaded as stale cards, acceptance into a group or tournament opening it,
+  with one `TRY_AGAIN` retry, a lost answer read back from the inbox before the popup, verdicts reloaded as stale
+  cards, acceptance into a group or tournament opening it,
   reminders opening their game or match.
 - Views: [./Views/EGM.md](./Views/EGM.md) - `InboxView`, `InboxRow`, `InboxItemRow` with the per-kind cards
   (`TournamentInviteCard`, `MatchReminderCard`) and the shared card parts; plain fills, never glass.

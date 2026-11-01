@@ -2,7 +2,8 @@ import Foundation
 
 /// Pinned messages: the room's pins as the latest page or answer listed them, minus messages this device knows are
 /// deleted, and pinning or unpinning a message. The answer replaces the pins; a catch-up after a pin brings the
-/// backend's note ("… pinned «…»") into the chat.
+/// backend's note ("… pinned «…»") into the chat. A lost answer is read back through one catch-up (`LostAnswer`): every
+/// page carries the pins, so the bar shows the backend's and the popup only comes when they do not show the intent.
 extension ChatViewModel {
     /// Oldest first, as the backend lists them; the bar shows the newest.
     var pins: [PinnedMessage] {
@@ -30,27 +31,27 @@ extension ChatViewModel {
 
     func pin(_ message: ChatMessage) async {
         guard canPin(message) else { return }
-        let changed = await changePins(of: message.id, during: "Pinning") {
+        let changed = await changePins(of: message.id, wanting: true, during: "Pinning") {
             try await repository.pin(groupID: group.id, messageID: message.id)
         }
-        guard changed else { return }
-        logger.info(.chat, "Message \(message.id) pinned in group \(group.id)")
-        do {
-            try await catchUp.catchUp(groupID: group.id)
-        } catch {
-            logger.warning(.chat, "Catch-up after a pin failed in group \(group.id): \(error)")
-        }
+        if changed { logger.info(.chat, "Message \(message.id) pinned in group \(group.id)") }
     }
 
     func unpin(_ messageID: String) async {
-        let changed = await changePins(of: messageID, during: "Unpinning") {
+        let changed = await changePins(of: messageID, wanting: false, during: "Unpinning") {
             try await repository.unpin(groupID: group.id, messageID: messageID)
         }
         if changed { logger.info(.chat, "Message \(messageID) unpinned in group \(group.id)") }
     }
 
-    /// Whether the backend answered; a refusal reached the popup and changed nothing.
-    private func changePins(of messageID: String, during step: String, _ work: () async throws -> PinList) async -> Bool {
+    /// Whether the pins now show `pinned` for the message, by the answer or by the read-back after a lost one; a refusal
+    /// reached the popup and changed nothing. A pin that answered catches up for the backend's note; one settled by the
+    /// read-back has caught up already. The read-back judges the room the catch-up answered, never `room`, whose stub
+    /// for a dropped room has no pins and would pass an unpin as landed.
+    private func changePins(of messageID: String,
+                            wanting pinned: Bool,
+                            during step: String,
+                            _ work: () async throws -> PinList) async -> Bool {
         do {
             let list = try await LostRace.attemptTwice(delay: tryAgainDelay,
                                                        logger: logger,
@@ -59,10 +60,32 @@ extension ChatViewModel {
                                                        work)
             mutateRoom { $0.applyPins(list.pins) }
             await adoptEpoch(list.channelEpoch)
+            if pinned { await catchUpForNote() }
             return true
         } catch {
+            let settled = await pinReadBack.settle("\(step) message \(messageID)", despite: error) { state in
+                state.map { fresh in fresh.pins.contains { $0.messageId == messageID } == pinned }
+            }
+            guard !settled.isLanded else { return true }
             report(error, during: "\(step) message \(messageID)")
             return false
+        }
+    }
+
+    /// The catch-up writes the cache itself, so there is nothing to apply.
+    private var pinReadBack: LostAnswer<ChatRoomState?> {
+        LostAnswer(category: .chat,
+                   logger: logger,
+                   leavesOutcomeUnknown: { $0.leavesPinOutcomeUnknown },
+                   refetch: { [self] in try await catchUp.catchUp(groupID: group.id) },
+                   apply: { _ in })
+    }
+
+    private func catchUpForNote() async {
+        do {
+            try await catchUp.catchUp(groupID: group.id)
+        } catch {
+            logger.warning(.chat, "Catch-up after a pin failed in group \(group.id): \(error)")
         }
     }
 }

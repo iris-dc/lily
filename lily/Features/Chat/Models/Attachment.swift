@@ -79,6 +79,16 @@ nonisolated enum AttachmentVariant: Hashable, Sendable {
         case .thumbnail: AppConfig.Chat.Attachments.thumbnailFileSuffix
         }
     }
+
+    /// The longest side a stored picture of this variant is decoded at, in pixels: what this app's own preparer uploads
+    /// for it. The bound follows the variant a view asked for, even when the loader hands over the full object for a
+    /// picture stored without a thumbnail, so a tile never decodes more than a thumbnail's bitmap.
+    var maxDecodedDimension: Int {
+        switch self {
+        case .full: AppConfig.Chat.Attachments.imageMaxDimension
+        case .thumbnail: AppConfig.Chat.Attachments.thumbnailMaxDimension
+        }
+    }
 }
 
 extension Attachment: GalleryItem {}

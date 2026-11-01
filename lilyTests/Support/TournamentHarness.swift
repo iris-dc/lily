@@ -110,6 +110,7 @@ final class TournamentHarness {
                                   now: { Self.now },
                                   pushOptIn: pushOptIn ?? NoPushOptIn(),
                                   lockedGroup: lockedGroup,
+                                  tryAgainDelay: .zero,
                                   onCreated: recordedDetails.record)
     }
 

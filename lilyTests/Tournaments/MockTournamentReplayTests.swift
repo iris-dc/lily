@@ -97,6 +97,23 @@ struct MockTournamentReplayTests {
         #expect(!logger.hasLine(in: .tournaments, mentioning: "repeated"))
     }
 
+    /// Like Laurel: the same id with other details is `TOURNAMENT_ID_REUSED`; an update makes the new details the stored
+    /// ones, so a replay of the latest draft answers the tournament.
+    @Test func aRepeatedCreateWithOtherDetailsIsIdReused() async throws {
+        let draft = TournamentDraft.fixture()
+        let created = try await repository.create(draft)
+        #expect(try await repository.create(draft) == created, "the same draft replays")
+        var edited = draft
+        edited.name = "Renamed Cup"
+
+        await #expect(throws: AppError.createIdReused) { try await repository.create(edited) }
+        #expect(try await repository.tournament(id: created.id).tournament.name == created.tournament.name, "nothing changed")
+
+        let updated = try await repository.update(id: created.id, edited)
+        #expect(try await repository.create(edited) == updated)
+        await #expect(throws: AppError.createIdReused) { try await repository.create(draft) }
+    }
+
     private func startedLeague() async throws -> TournamentDetail {
         repository.seedLeague(id: Self.leagueID)
         return try await repository.start(id: Self.leagueID)

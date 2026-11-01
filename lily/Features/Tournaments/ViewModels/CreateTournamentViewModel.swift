@@ -34,6 +34,7 @@ final class CreateTournamentViewModel {
          calendar: Calendar = .current,
          pushOptIn: any PushOptIn = NoPushOptIn(),
          lockedGroup: EventGroupRef? = nil,
+         tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
          onCreated: @escaping @MainActor (TournamentDetail) -> Void) {
         self.repository = repository
         self.locationService = locationService
@@ -46,6 +47,7 @@ final class CreateTournamentViewModel {
         flow = CreateFlow(noun: "tournament",
                           category: .tournaments,
                           logger: logger,
+                          tryAgainDelay: tryAgainDelay,
                           report: { reporter.report($0) },
                           leavesOutcomeUnknown: { $0 == .network || $0 == .tournamentCreationFailed },
                           notFound: .tournamentNotFound,
@@ -80,21 +82,38 @@ final class CreateTournamentViewModel {
 
     /// Sends the draft. A call while one is in flight is dropped; a dismissed sheet stays quiet; a failure goes to the
     /// popup unless the backend turns out to have the tournament already (`CreateFlow`: the same `clientId` travels
-    /// with every attempt, so the lookup after a lost answer finds what the backend stored).
+    /// with every attempt, so the lookup after a lost answer finds what the backend stored, and a reused id is updated
+    /// with every field the PUT carries; the structure it cannot carry keeps the first tap's, see `noteStructureKept`).
     func submit() async {
         guard canSubmit else { return }
         isSubmitting = true
         defer { isSubmitting = false }
         let created = await flow.submit(clientID: draft.clientId,
                                         describing: { "(\($0.tournament.entriesDescription))\(groupSuffix($0))" },
-                                        send: { try await repository.create(draft) })
+                                        send: { try await repository.create(draft) },
+                                        update: { try await repository.update(id: draft.clientId, draft) })
         if let created { await accept(created) }
     }
 
     private func accept(_ detail: TournamentDetail) async {
+        noteStructureKept(by: detail.tournament)
         created = detail
         onCreated(detail)
         await pushOptIn.offerReminders()
+    }
+
+    /// The update after a reused id carries neither the format, the team size, the visibility nor the group
+    /// (`UpdateTournamentPayload`, like Laurel's request), so a repeat whose edit changed one keeps the first tap's and
+    /// the screen shows the backend's. The visibility is the draft's own only without a group, whose own it inherits.
+    private func noteStructureKept(by tournament: Tournament) {
+        var kept: [String] = []
+        if tournament.format != draft.format { kept.append("format") }
+        if tournament.teamSize != draft.teamSize { kept.append("team size") }
+        if draft.group == nil, tournament.visibility != draft.visibility { kept.append("visibility") }
+        if tournament.group?.id != draft.group?.id { kept.append("group") }
+        for field in kept {
+            logger.warning(.tournaments, "Tournament \(tournament.id) keeps its \(field); the draft named another")
+        }
     }
 
     private func groupSuffix(_ detail: TournamentDetail) -> String {

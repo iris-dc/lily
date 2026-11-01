@@ -19,8 +19,9 @@ them are in [Views](../Views/EGM.md).
 
 - `CreateGroupViewModel: GroupDraftEditing`: `draft`, `private(set) isSubmitting`, `private(set) createdGroup:
   SportGroup?`, `issues`, `canSubmit`, `isDone` (`createdGroup != nil`), `prepare() async`, `submit() async`;
-  `init(repository: any GroupRepository, store: MyGroupsStore, locationService: any LocationService, reporter:
-  GroupErrorReporter, logger: any Logging, onCreated: @escaping @MainActor (SportGroup) -> Void)`; owns a private
+  `init(repository: any GroupRepository, identity: any IdentityProvider, store: MyGroupsStore,
+  locationService: any LocationService, reporter: GroupErrorReporter, logger: any Logging, tryAgainDelay: Duration =
+  AppConfig.API.tryAgainDelay, onCreated: @escaping @MainActor (SportGroup) -> Void)`; owns a private
   `CreateFlow<SportGroup>` [`lily/Features/Groups/ViewModels/CreateGroupViewModel.swift`:`CreateGroupViewModel.init`].
 - `EditGroupViewModel: GroupDraftEditing`: `draft`, `private(set) isSubmitting`, `private(set) updatedGroup`, `issues`,
   `hasChanges`, `canSubmit`, `isDone`, `submit() async` (no `prepare` override); `init(group:, repository:, reporter:,
@@ -71,6 +72,9 @@ them are in [Views](../Views/EGM.md).
   `role == .owner` (`.groupNotFound` means it did not land); `prepare()` proposes the device position only while
   `draft.coordinate == nil`, re-checked after the await
   [`lily/Features/Groups/ViewModels/CreateGroupViewModel.swift`:`CreateGroupViewModel.prepare`].
+- `CreateFlow` repeats one `TRY_AGAIN` on the create, and answers `.createIdReused` (the earlier create landed with other
+  details) with `repository.update(id: clientId, draft)`, whose answer is the created group
+  [`lily/Features/Groups/ViewModels/CreateGroupViewModel.swift`:`CreateGroupViewModel.submit`].
 - Edit: `canSubmit = !isSubmitting && hasChanges && draft.isValid` with `hasChanges = draft != GroupDraft(editing:
   original)`; one `TRY_AGAIN` repeat after `AppConfig.API.tryAgainDelay` (400 ms); no refetch on an unknown outcome
   because repeating an update is harmless [`lily/Features/Groups/ViewModels/EditGroupViewModel.swift`:`EditGroupViewModel.submit`]
@@ -104,6 +108,14 @@ them are in [Views](../Views/EGM.md).
   failure with `needsGroupRefresh` the group is refetched, and the failure is suppressed only when the outcome was
   unknown (`.groupActionFailed`, `.network`, or `.notAMember` on a leave) and the fresh group already shows the intent
   (joined, left or gone, deleted or gone) [`lily/Features/Groups/ViewModels/GroupDetailViewModel.swift`:`GroupDetailViewModel.landed`].
+- Detail writes for a previous caller: the caller is read before the request, and an answer, a failure or a refetch
+  landing after they signed out or changed is dropped (`isStillCaller`): nothing written to Mine, nothing refetched or
+  shown, only the `.cache` debug line; a failure whose caller changes during its read-back has already logged its
+  failure line before the second check drops it
+  [`lily/Features/Groups/ViewModels/GroupDetailViewModel.swift`:`GroupDetailViewModel.update`,
+  `GroupDetailViewModel.refetch`].
+- A create answered for a previous caller is dropped before `store.add` and `onCreated`: no `createdGroup`, nothing
+  in Mine, no navigation [`lily/Features/Groups/ViewModels/CreateGroupViewModel.swift`:`CreateGroupViewModel.submit`].
 - Detail gating: `showsRoster = access.canSeeMembers(in:)`; `showsOpenChat = access.canChat && context == .standalone
   && AppConfig.FeatureFlags.chat`; `canReport = access.canReport(in:)`; `showsMenu = access.canChat || canReport`;
   `refreshFromStore()` replaces `group` only when the store's `(loadVersion, changesVersion)` moved and the store
@@ -128,7 +140,8 @@ them are in [Views](../Views/EGM.md).
 
 ## Side Effects
 
-- Repository calls: `create(draft)` (and `group(id: clientId)` on an unknown outcome), `update(id:_:)`, `groups(in:
+- Repository calls: `create(draft)` (and `group(id: clientId)` on an unknown outcome, `update(id: clientId, draft)`
+  on a reused id), `update(id:_:)`, `groups(in:
   .discover(query:type:), cursor:, near:)`, `join`/`leave`/`delete(id:)` and `group(id:)` for a refetch,
   `group(id: ref.id)`, `candidates(groupID:)`, `invite(groupID:userID:)`, `members(id:)`, `bans(id:)`,
   `setRole(id:userID:_:)`, `remove(id:userID:)`, `unban(id:userID:)`, `report(_:)`
@@ -162,5 +175,5 @@ them are in [Views](../Views/EGM.md).
 - Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/Groups`, for
   example `CreateGroupViewModelTests`, `EditGroupViewModelTests`, `DiscoverGroupsViewModelTests`,
   `DiscoverGroupsMidSearchTests`, `DiscoverGroupsStalenessTests`, `DiscoverGroupsSnapshotTests`,
-  `GroupDetailViewModelTests`, `GroupDetailRefreshTests`, `GroupLoaderViewModelTests`, `InvitePeopleViewModelTests`,
+  `GroupDetailViewModelTests`, `GroupDetailCallerTests`, `GroupDetailRefreshTests`, `GroupLoaderViewModelTests`, `InvitePeopleViewModelTests`,
   `MembersViewModelTests`, `MembersViewModelGroupTests`, `ReportViewModelTests`).

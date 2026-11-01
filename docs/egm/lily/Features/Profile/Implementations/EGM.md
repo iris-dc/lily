@@ -4,33 +4,43 @@ Source: `lily/Features/Profile/Implementations/`
 
 ## Overview
 
-The two `ProfileRepository` types: `RemoteProfileRepository` puts the display name to Laurel; `MockProfileRepository`
-accepts every name, so previews, UI tests and `-mock-events` runs never need a backend.
+The two `ProfileRepository` types: `RemoteProfileRepository` reads and writes the caller's profile on Laurel;
+`MockProfileRepository` mirrors Laurel's profile rules in memory, so previews, UI tests and `-mock-events` runs see what
+a new account sees without a backend.
 
 ## Interface
 
 - `final class RemoteProfileRepository: ProfileRepository`
   `[lily/Features/Profile/Implementations/RemoteProfileRepository.swift:RemoteProfileRepository]`:
-  `init(client: any APIClient)`; `syncDisplayName(_:)`.
+  `init(client: any APIClient)`; `profile()`, `updateDisplayName(_:)`.
 - `final class MockProfileRepository: ProfileRepository`
   `[lily/Features/Profile/Implementations/MockProfileRepository.swift:MockProfileRepository]`:
-  `init(logger: any Logging)`; `syncDisplayName(_:)`.
+  `init(identity: any IdentityProvider, logger: any Logging, now: @escaping () -> Date = { .now })`; `profile()`,
+  `updateDisplayName(_:)`.
 
 ## Invariants
 
-- The remote request decodes a `Profile` and discards it; a failure falls back to `AppError.unknown`
-  `[lily/Features/Profile/Implementations/RemoteProfileRepository.swift:syncDisplayName]`.
-- The mock never throws `[lily/Features/Profile/Implementations/MockProfileRepository.swift:syncDisplayName]`.
+- The remote read falls back to `AppError.profileUnavailable`, the write to `AppError.profileUpdateFailed`; both decode
+  a `Profile` and answer it `[lily/Features/Profile/Implementations/RemoteProfileRepository.swift:profile]`,
+  `[lily/Features/Profile/Implementations/RemoteProfileRepository.swift:updateDisplayName]`.
+- The mock keeps one profile per user id: the first read creates it with `AppConfig.DisplayName.backendDefault`; a
+  rename is stored as Laurel's `normalize` stores it (trimmed, the default for a blank, the first
+  `AppConfig.DisplayName.length.upperBound` code points); no word filter, since no mock has one
+  `[lily/Features/Profile/Implementations/MockProfileRepository.swift:profile]`,
+  `[lily/Features/Profile/Implementations/MockProfileRepository.swift:normalized]`.
+- Both mock routes throw `AppError.sessionExpired` for a guest
+  `[lily/Features/Profile/Implementations/MockProfileRepository.swift:caller]`.
 - Both classes are main-actor isolated by the target's default.
 
 ## Side Effects
 
-- `PUT /api/profile` with body `ProfileUpdateRequest { displayName }`
-  `[lily/Features/Profile/Implementations/RemoteProfileRepository.swift:syncDisplayName]`,
+- `GET /api/profile` decoding `Profile`, and `PUT /api/profile` with body `ProfileUpdateRequest { displayName }`
+  decoding `Profile` `[lily/Features/Profile/Implementations/RemoteProfileRepository.swift:RemoteProfileRepository]`,
   `[lily/Config/AppConfig.swift:AppConfig.API.Paths.profile]`.
-- Mock: a debug log under `.auth`, "Mock profile sync accepted a display name" (the name itself is not logged)
-  `[lily/Features/Profile/Implementations/MockProfileRepository.swift:syncDisplayName]`.
+- Mock: debug logs under `.auth`, "Mock profile created for user <id>" and "Mock profile updated for user <id>" (ids
+  only, never the name) `[lily/Features/Profile/Implementations/MockProfileRepository.swift:MockProfileRepository]`.
 
 ## Verification
 
-- Run: `./scripts/ci.sh unit`
+- Run: `./scripts/ci.sh unit` (`lilyTests/Profile/RemoteProfileRepositoryTests.swift`,
+  `lilyTests/Profile/MockProfileRepositoryTests.swift`)

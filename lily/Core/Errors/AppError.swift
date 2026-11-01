@@ -31,6 +31,9 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case participationFailed
     /// Creating an event failed for a reason without copy of its own (a 500, a validation the form did not catch).
     case eventCreationFailed
+    /// The same client id was sent again with other details (`*_ID_REUSED`, on an event, group or tournament create):
+    /// our earlier create landed and its answer was lost; `CreateFlow` updates the stored item with the latest details.
+    case createIdReused
     /// The backend refused an edit by someone other than the host (`NOT_HOST`).
     case notHost
     /// An edit asked for fewer spots than people already in the game (`CAPACITY_TOO_LOW`).
@@ -111,6 +114,8 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case termsRequired
     /// Loading a person's profile failed for a reason without a code of its own.
     case profileUnavailable
+    /// Saving the caller's display name failed for a reason without a code of its own; the draft stays for a repeat.
+    case profileUpdateFailed
     /// Starting a direct conversation failed for a reason without a code of its own; repeating is safe (one id per pair).
     case conversationFailed
     /// The caller holds `AppConfig.People.maxConversations` conversations already (`CONVERSATION_LIMIT`).

@@ -7,8 +7,12 @@ final class RemoteProfileRepository: ProfileRepository {
         self.client = client
     }
 
-    func syncDisplayName(_ name: String) async throws {
+    func profile() async throws -> Profile {
+        try await client.send(APIRequest<Profile>.get(AppConfig.API.Paths.profile), failingWith: .profileUnavailable)
+    }
+
+    func updateDisplayName(_ name: String) async throws -> Profile {
         let request = APIRequest<Profile>.put(AppConfig.API.Paths.profile, body: ProfileUpdateRequest(displayName: name))
-        _ = try await client.send(request, failingWith: .unknown)
+        return try await client.send(request, failingWith: .profileUpdateFailed)
     }
 }

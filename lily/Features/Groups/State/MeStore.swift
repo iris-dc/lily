@@ -49,14 +49,14 @@ final class MeStore: SessionObserver {
         await reload()
     }
 
-    /// A call made while one is in flight joins it; an answer that arrives after the caller signed out or changed is
-    /// dropped.
+    /// A call for the same user joins the run in flight; one for another user waits it out and then loads for them; an
+    /// answer for a caller who signed out or changed is dropped.
     func reload() async {
         guard let userID = identity.currentUserID else {
             clear()
             return
         }
-        await load.run { [self] in await performLoad(for: userID) }
+        await load.run(key: userID) { [self] in await performLoad(for: userID) }
     }
 
     private func performLoad(for userID: String) async {
@@ -80,8 +80,11 @@ final class MeStore: SessionObserver {
     }
 
     /// Re-reads the account first, so a version bumped since the sheet opened is accepted rather than refused as
-    /// stale. `false` when nothing was recorded; the popup says why, unless the caller signed out or left mid-request.
+    /// stale. `false` when nothing was recorded; the popup says why, unless the caller signed out or left mid-request
+    /// (an acceptance, or its refusal, answered after a sign-out is dropped: the cleared store stays clear and the
+    /// landing shows no popup).
     func acceptTerms() async -> Bool {
+        guard let userID = identity.currentUserID else { return false }
         await reload()
         guard let account else {
             reportUnreadableAccount()
@@ -89,12 +92,14 @@ final class MeStore: SessionObserver {
         }
         do {
             let acceptance = try await repository.acceptTerms(version: account.termsVersion)
+            guard identity.isStillCaller(userID, orDrop: "Terms acceptance", logger: logger) else { return false }
             self.account = account.acceptingTerms(acceptance)
             termsOutdated = false
             logger.info(.groups, "Terms v\(acceptance.acceptedTermsVersion) accepted")
             return true
         } catch {
             guard !AppError.isCancellation(error) else { return false }
+            guard identity.isStillCaller(userID, orDrop: "Terms acceptance failure", logger: logger) else { return false }
             logger.error(.groups, "Accepting the terms failed: \(error)")
             errorCenter.report(error)
             return false

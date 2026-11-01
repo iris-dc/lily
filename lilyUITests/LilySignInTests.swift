@@ -31,7 +31,7 @@ final class LilySignInTests: LilyUITestCase {
         let apple = tapSignInWithApple()
 
         XCTAssertTrue(apple.waitForNonExistence(timeout: 10), "the sheet must close once the guest is signed in")
-        XCTAssertTrue(app.staticTexts["Apple Tester"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["apple@example.com"].waitForExistence(timeout: 5), "Profile shows the account")
     }
 
     /// With `-mock-auth-confirm` the mock behaves like the pool: sign-up asks for the emailed code (123456 here), and

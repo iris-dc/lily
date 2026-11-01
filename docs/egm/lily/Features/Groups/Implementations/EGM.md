@@ -87,7 +87,10 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
   owner, admins, then `joinedAt`, without banned rows, and throws `.sessionExpired` for a guest; Discover offers only
   public, live communities, by name with a prefix, nearest first with a position (no distance last, ties newest), else
   newest first [`lily/Features/Groups/Implementations/MockGroupRepository+Discover.swift`:`MockGroupRepository.discoverOrder`].
-- Mock idempotency: a `create` whose `clientId` is an existing id replays that group; `startDirect` replays (and
+- Mock idempotency: a `create` whose `clientId` is an existing id replays that group when the draft equals the stored
+  one, is refused with `.createIdReused` when it differs (`update` stores the new draft), and is refused with
+  `.groupCreationFailed` when the id names a deleted group (Laurel's `GROUP_ID_TAKEN`: the tombstone keeps the id, so
+  nothing replays it); `startDirect` replays (and
   unhides) the pair's conversation; `registerRoom` and `admitToRoom` are no-ops when already done; a pending invite for
   the same target and user is replayed [`lily/Features/Groups/Implementations/MockGroupRepository.swift`:`MockGroupRepository.create`]
   [`lily/Features/Groups/Implementations/MockInviteCandidatePool.swift`:`MockInviteLedger.isInvited`].
@@ -130,7 +133,8 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
   [`lily/Config/AppConfig+Moderation.swift`:`AppConfig.API.Paths.reports`].
 - Mock state mutation: `groups` appended by create, `startDirect`, `registerRoom` and replaced through `store(_:)` by
   every other write except `syncRoom(for:memberCount:)`, which rewrites the room in place; `rosters` rewritten by create, `registerRoom`, `startDirect`, `remove`, `unban`, `leaveRoom`,
-  `setRole`; `hiddenConversationIDs` by hide/unhide; the ledger's `sent` map and `sentCount`; `owesTerms`; `blocked`
+  `setRole`; `hiddenConversationIDs` by hide/unhide; the ledger's `sent` map and `sentCount`; `owesTerms`; `blocked`; `drafts` by
+  create and update (a repeated create with other details is `.createIdReused`)
   [`lily/Features/Groups/Implementations/MockGroupRepository.swift`:`MockGroupRepository.store`].
 - Logging, ids only, under `.groups`: debug for `groups(in:)`, candidates and `me()`; info for create, join, leave,
   direct start, hide and unhide, room register/admit/leave, terms acceptance and reports; `MockInviteLedger.send` logs

@@ -47,6 +47,31 @@ struct MockEventRepositoryCreateTests {
         #expect(try await repository.event(id: draft.clientId).participantCount == 1)
     }
 
+    /// Like Laurel, which compares the request with what it stored: the same id with other details is `EVENT_ID_REUSED`,
+    /// and an update makes the stored details the ones a later replay must match.
+    @Test func aRepeatedCreateWithOtherDetailsIsIdReused() async throws {
+        let draft = EventDraft.fixture()
+        _ = try await repository.create(draft)
+        var edited = draft
+        edited.title = "Moved to Friday"
+
+        await #expect(throws: AppError.createIdReused) { try await repository.create(edited) }
+        #expect(try await repository.event(id: draft.clientId).title == draft.trimmedTitle, "nothing changed")
+    }
+
+    @Test func anUpdateMakesTheNextReplayMatchTheNewDetails() async throws {
+        let draft = EventDraft.fixture()
+        _ = try await repository.create(draft)
+        var edited = draft
+        edited.title = "Moved to Friday"
+
+        let updated = try await repository.update(id: draft.clientId, edited)
+
+        #expect(updated.title == "Moved to Friday")
+        #expect(try await repository.create(edited) == updated, "the edited draft is now the stored one")
+        await #expect(throws: AppError.createIdReused) { try await repository.create(draft) }
+    }
+
     @Test func createCarriesTheOptionalDetails() async throws {
         var draft = EventDraft.fixture()
         draft.description = " Two halves "

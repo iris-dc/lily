@@ -92,8 +92,25 @@ struct DiskAttachmentCacheTests {
         #expect(!FileManager.default.fileExists(atPath: directory.path()))
         #expect(logger.messages(in: .cache, at: .debug).contains { $0.contains("cleared") })
         #expect(logger.entries.allSatisfy { $0.level != .warning }, "a clean clear warns about nothing")
+        cache.sessionDidEnd()
         let again = try await cache.store(bytes(1), for: "b", variant: .full)
-        #expect(again.lastPathComponent == "b", "and it works again afterwards")
+        #expect(again.lastPathComponent == "b", "and it works again once the session has ended")
+    }
+
+    /// From the sweep until the state flips, nothing may re-create the folder for the ended account.
+    @Test func aStoreWhileTheSessionEndsIsRefusedAndTheFolderStaysAbsent() async throws {
+        let cache = makeCache()
+        try await cache.store(bytes(10), for: "a", variant: .full)
+        let source = FileManager.default.temporaryDirectory.appending(path: "sent-\(UUID().uuidString).jpg")
+        try bytes(3).write(to: source)
+        await cache.sessionWillEnd()
+
+        await #expect(throws: CancellationError.self) { try await cache.store(bytes(1), for: "b", variant: .full) }
+        await #expect(throws: CancellationError.self) { try await cache.store(copying: source, for: "c", variant: .full) }
+
+        #expect(!FileManager.default.fileExists(atPath: directory.path()), "the folder stays absent")
+        #expect(logger.count(in: .cache, at: .debug, mentioning: "store refused", "session is ending") == 2)
+        #expect(logger.hasLine(in: .cache, at: .debug, mentioning: "Attachment b store refused"))
     }
 
     @Test func theDefaultDirectoryIsUnderCaches() {

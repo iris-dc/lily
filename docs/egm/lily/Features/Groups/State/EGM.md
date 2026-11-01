@@ -9,8 +9,8 @@ conform to `SessionObserver` (implementing `sessionDidEnd`; the other callbacks 
 `MyGroupsStore` is the one source of the caller's groups (`groups(in: .mine)`), seeded from and saved to a per-caller
 snapshot file, reloaded under the shared freshness rules, and reordered locally when a room message lands (it is the
 `RoomActivityRecorder` the chat layer talks to). `MeStore` holds the `GET /api/me` account and the terms-acceptance
-state; `BlockListStore` holds the caller's block list. All three load once per caller through a `SingleFlight` and drop
-an answer whose caller has changed. Protocols: [Interfaces](../Interfaces/EGM.md); value types:
+state; `BlockListStore` holds the caller's block list. All three load once per caller through a `SingleFlight` keyed by the
+caller and drop an answer whose caller has changed. Protocols: [Interfaces](../Interfaces/EGM.md); value types:
 [Models](../Models/EGM.md).
 
 ## Interface
@@ -57,6 +57,13 @@ an answer whose caller has changed. Protocols: [Interfaces](../Interfaces/EGM.md
 - Loads are single-flight keyed by user id through `StoreLoader` (a same-user call joins the flight; a version that
   moved while the request was out runs the load exactly once more inside it)
   [`lily/Core/Changes/StoreLoader.swift`:`StoreLoader.reload`].
+- `MeStore.reload` and `BlockListStore.reload` run `load.run(key: userID)`: a same-user call joins the flight, another
+  user's waits it out and loads for them [`lily/Features/Groups/State/MeStore.swift`:`MeStore.reload`;
+  `lily/Features/Groups/State/BlockListStore.swift`:`BlockListStore.reload`].
+- `acceptTerms` drops an acceptance answered after the caller signed out: `account` stays as the sign-out left it; a
+  refusal answered after the sign-out is dropped the same way (no error log, no `ErrorCenter` report), both through
+  `identity.isStillCaller` with the `.cache` debug lines "Terms acceptance for a previous caller dropped" and "Terms
+  acceptance failure for a previous caller dropped" [`lily/Features/Groups/State/MeStore.swift`:`MeStore.acceptTerms`].
 - On a load answer `groups` is replaced in the backend's order, except that a held group whose locally noted
   `lastMessageAt` is later keeps that message and its `mineOrder` position; `loadVersion` increments only here
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.applyMine`].
@@ -72,11 +79,13 @@ an answer whose caller has changed. Protocols: [Interfaces](../Interfaces/EGM.md
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.communities`].
 - `MeStore.loadIfNeeded` fetches only when `account == nil` or the loaded user differs; `needsTerms` is `termsOutdated
   || !account.termsAccepted`; `termsOutdated` is set by `noteTermsRequired()` only and cleared by a successful
-  `acceptTerms()` or a load whose account has the terms accepted
-  [`lily/Features/Groups/State/MeStore.swift`:`MeStore.needsTerms`].
+  `acceptTerms()`, a load whose account has the terms accepted, or the private `clear()` (the session's end, and a
+  load or reload with no signed-in user) [`lily/Features/Groups/State/MeStore.swift`:`MeStore.needsTerms`,
+  `MeStore.clear`].
 - `MeStore.acceptTerms` reloads first and sends the fresh `account.termsVersion`; it answers `false` silently when the
-  account is gone (sign-out meanwhile) or on cancellation, and `false` with an `ErrorCenter` report when the reload
-  failed or the acceptance was refused [`lily/Features/Groups/State/MeStore.swift`:`MeStore.acceptTerms`].
+  account is gone (sign-out meanwhile), on cancellation, or when the caller changed while the acceptance was out
+  (answer or refusal), and `false` with an `ErrorCenter` report when the reload failed or the acceptance was refused for
+  the current caller [`lily/Features/Groups/State/MeStore.swift`:`MeStore.acceptTerms`].
 - `BlockListStore` replaces, never merges: `blockedUserIDs = answer` on every load and block; `loadIfNeeded` skips a
   user it already loaded; a guest clears; load failures are a warning only, never reported
   [`lily/Features/Groups/State/BlockListStore.swift`:`BlockListStore.performLoad`].

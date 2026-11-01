@@ -3,7 +3,8 @@ import Testing
 @testable import lily
 
 /// Voting shows at once and the answer replaces it; a refusal brings back the poll as it was and reaches the popup;
-/// a lost answer asks the poll's state before deciding; a poll is sent like a message, in group chats only.
+/// a lost answer asks the poll's state before deciding and keeps what it answered; a poll is sent like a message, in
+/// group chats only.
 @MainActor
 struct ChatViewModelPollTests {
     private let group = SportGroup.fixture(id: "g", channelEpoch: 1, role: .member)
@@ -68,18 +69,29 @@ struct ChatViewModelPollTests {
         await viewModel.vote(in: poll, for: ["1"])
 
         #expect(viewModel.room.messages.first?.poll == landed && harness.errorCenter.current == nil)
-        #expect(harness.chatLogs(.warning).mentioning(["Vote outcome unknown", "m1"]).count == 1)
+        #expect(harness.chatLogs(.warning).mentioning(["Vote in poll m1", "outcome unknown", "reading back"]).count == 1)
     }
 
-    @Test func aFailedRefreshAfterALostAnswerBringsThePollBackWithThePopup() async {
+    /// The refresh could not say: the poll as it was comes back with the popup.
+    @Test func aLostAnswerWhoseRefreshFailedBringsThePollBack() async {
         let (harness, viewModel) = await makeChat()
         harness.chat.polls.voteResults = [.failure(AppError.network)]
-        harness.chat.polls.pollStates = [.failure(AppError.network)]
+        harness.chat.polls.pollStates = [.failure(AppError.chatUnavailable)]
 
         await viewModel.vote(in: poll, for: ["1"])
 
         #expect(viewModel.room.messages.first?.poll == .fixture() && harness.errorCenter.current?.error == .network)
-        #expect(harness.chatLogs(.warning).mentioning(["Poll refresh", "failed"]).count == 1)
+        #expect(harness.chatLogs(.warning).mentioning(["Could not read back", "Vote in poll m1"]).count == 1)
+    }
+
+    @Test func aLostAnswerWhoseRefreshNamesNoPollBringsThePollBack() async {
+        let (harness, viewModel) = await makeChat()
+        harness.chat.polls.voteResults = [.failure(AppError.network)]
+        harness.chat.polls.pollStates = [.success(PollStates(items: [], pollRevision: 0))]
+
+        await viewModel.vote(in: poll, for: ["1"])
+
+        #expect(viewModel.room.messages.first?.poll == .fixture() && harness.errorCenter.current?.error == .network)
     }
 
     @Test func aVoteThatLostARaceIsSentOnceMore() async {
@@ -103,15 +115,17 @@ struct ChatViewModelPollTests {
         #expect(harness.chat.polls.votes.isEmpty && !viewModel.canRetractVote(in: poll))
     }
 
-    @Test func aLostAnswerWhoseVoteDidNotLandBringsThePollBack() async {
+    /// The refresh is the backend's word: other voters' counts stay on screen, the popup explains the lost vote.
+    @Test func aLostAnswerWhoseVoteDidNotLandKeepsTheRefreshedCounts() async {
         let (harness, viewModel) = await makeChat()
         harness.chat.polls.voteResults = [.failure(AppError.network)]
-        let unchanged = PollStates(items: [PollState(messageId: "m1", poll: .fixture())], pollRevision: 0)
-        harness.chat.polls.pollStates = [.success(unchanged)]
+        let refreshed = Poll.fixture(votes: [4, 1], totalVoters: 5)
+        let states = PollStates(items: [PollState(messageId: "m1", poll: refreshed)], pollRevision: 0)
+        harness.chat.polls.pollStates = [.success(states)]
 
         await viewModel.vote(in: poll, for: ["1"])
 
-        #expect(viewModel.room.messages.first?.poll == .fixture() && harness.errorCenter.current?.error == .network)
+        #expect(viewModel.room.messages.first?.poll == refreshed && harness.errorCenter.current?.error == .network)
     }
 
     @Test func takingTheVoteBackSendsNoOptions() async {

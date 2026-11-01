@@ -18,7 +18,8 @@ nonisolated enum ErrorMessageMapper {
             ErrorMessage(title: localized("Slow down a moment"),
                          body: localized("Too many requests. Try again in a few seconds."))
         case .eventsUnavailable, .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave,
-             .tryAgain, .participationFailed, .eventCreationFailed, .notHost, .capacityTooLow, .eventUpdateFailed:
+             .tryAgain, .participationFailed, .eventCreationFailed, .createIdReused, .notHost, .capacityTooLow,
+             .eventUpdateFailed:
             eventMessage(for: error)
         case .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned,
              .ownerCannotLeave, .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed,
@@ -33,11 +34,11 @@ nonisolated enum ErrorMessageMapper {
             attachmentMessage(for: error)
         case .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired, .feedbackFailed:
             moderationMessage(for: error)
-        case .profileUnavailable, .conversationFailed, .conversationLimit, .tournamentsUnavailable, .tournamentNotFound,
-             .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed, .registrationClosed, .tournamentFull,
-             .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked, .notEnoughEntries, .notInMatch,
-             .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit, .tournamentMembershipLimit,
-             .inviteeAlreadyEntered, .cannotInviteToTournament:
+        case .profileUnavailable, .profileUpdateFailed, .conversationFailed, .conversationLimit, .tournamentsUnavailable,
+             .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed,
+             .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer,
+             .tournamentLocked, .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound, .drawNotAllowed,
+             .tournamentLimit, .tournamentMembershipLimit, .inviteeAlreadyEntered, .cannotInviteToTournament:
             peopleMessage(for: error)
         case .unknown:
             unknownMessage
@@ -101,7 +102,9 @@ nonisolated enum ErrorMessageMapper {
                          body: localized("You're not on the list for this event, so there is nothing to leave."))
         case .hostCannotLeave:
             ErrorMessage(title: localized("You're the host"), body: localized("Hosts can't leave their own event."))
-        case .tryAgain:
+        // `CreateFlow` settles a reused id by updating under it before any popup; should it ever leak, another tap runs
+        // that update again, so the lost-race copy fits.
+        case .tryAgain, .createIdReused:
             ErrorMessage(title: localized("Please try again"),
                          body: localized("Someone made a change at the same moment. Give it another tap."))
         case .participationFailed:

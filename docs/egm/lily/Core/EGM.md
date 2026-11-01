@@ -37,7 +37,7 @@ adaptive view decides. The unit suites live under `lilyTests/<Area>` (`./scripts
 - Currency: [`./Currency/EGM.md`](./Currency/EGM.md) - the currency the user types prices in and judges the price cap
   in (`CurrencyStore`: the Profile choice, else the device region's, else the default); prices on events keep their
   own currency, nothing is converted.
-- Errors: [`./Errors/EGM.md`](./Errors/EGM.md) - `AppError`, the one typed failure (90 cases, `wrapping(_:)`,
+- Errors: [`./Errors/EGM.md`](./Errors/EGM.md) - `AppError`, the one typed failure (92 cases, `wrapping(_:)`,
   `isCancellation(_:)`); `ErrorCenter`, the one funnel that shows it; `ErrorMessageMapper`, one exhaustive switch
   routing to per-area `nonisolated extension` files.
 - Foundation: [`./Foundation/EGM.md`](./Foundation/EGM.md) - `String.trimmed` and `nonBlankTrimmed`, how every typed
@@ -53,8 +53,9 @@ adaptive view decides. The unit suites live under `lilyTests/<Area>` (`./scripts
   paths, the conversation the Chats split view shows; a sign-out resets every per-user path.
 - Networking: [`./Networking/EGM.md`](./Networking/EGM.md) - the seam to Laurel: `APIClient` and
   `URLSessionAPIClient`, `APIRequest`, `APIFailureMapping.swift` (`BackendErrorCode` exhaustive, 401 to `sessionExpired`,
-  429 to `rateLimited`), `LostRace` and `WriteGate` (one `TRY_AGAIN` repeat), `CreateFlow` (a create whose answer
-  was lost is refetched under its client id), `ProgressDataTask`.
+  429 to `rateLimited`), `LostRace` and `WriteGate` (one `TRY_AGAIN` repeat), `LostAnswer` (the read-back after a
+  lost answer every write shares), `CreateFlow` (a create whose answer was lost is refetched under its client id, a
+  reused id is updated), `ProgressDataTask`.
 - Preferences: [`./Preferences/EGM.md`](./Preferences/EGM.md) - how a Profile choice (language, currency) survives a
   relaunch: `ChoiceStore`, `StoredChoice`, `UserDefaultsChoiceStore`, one string per choice.
 - Push: [`./Push/EGM.md`](./Push/EGM.md) - `PushCoordinator` keeps Laurel's device registry in step with this device,
@@ -75,4 +76,5 @@ adaptive view decides. The unit suites live under `lilyTests/<Area>` (`./scripts
   `nonisolated` aurora and grain arithmetic, `LaunchAnimations`), Theme (`LilyTheme`) and Interfaces
   (`DraftSubmitting`).
 - Validation: [`./Validation/EGM.md`](./Validation/EGM.md) - client-side checks mirroring the backend's refusals:
-  `CredentialsValidator`, `String.wireLength` (UTF-16 units like Java's `String.length()`), `Collection.first(of:)`.
+  `CredentialsValidator`, `String.wireLength` (UTF-16 units like Java's `String.length()`), `String.codePointCount` and
+  `prefix(codePoints:)` (the display name's measure), `Collection.first(of:)`.

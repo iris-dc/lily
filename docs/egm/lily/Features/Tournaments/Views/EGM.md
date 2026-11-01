@@ -120,7 +120,8 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
 - `[lily/Features/Tournaments/Views/MatchScheduleView.swift:MatchScheduleView.body]`: Save is enabled only when
   `draft.isValid`; Clear appears only when `match.hasSchedule`; the date picker's range starts at `draft.earliest`.
   `[lily/Features/Tournaments/Views/TeamNameSheet.swift:TeamNameSheet.body]`: Create is enabled only when
-  `TeamNameIssue.issue(in:) == nil`; the sheet dismisses itself once `tournament.hasEntered`.
+  `TeamNameIssue.issue(in:) == nil`; the sheet dismisses through `createTeam(named:onEntered:)`'s `onEntered`, as soon
+  as the team exists and before the reminders are offered, and as a fallback once `tournament.hasEntered`.
 - `[lily/Features/Tournaments/Views/TournamentDraftForm.swift:TournamentDraftForm.body]`: section order is fixed
   (tournament, where, when, entries, who, details); type, format and team size show only when
   `allowsStructureChanges`; max entries, draws and the dates are disabled when `isLocked`; the format is written only
@@ -156,7 +157,8 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
 - `[lily/Features/Tournaments/Views/MatchSheet.swift:MatchSheet.scoreButton]`: `viewModel.report(_:scoreA:scoreB:)`,
   `confirm(_:)`, `dispute(_:)`, `walkover(_:winnerEntryID:)` (the last in a spawned `Task`), each dismissing on
   `true`; `MatchScheduleView` calls `viewModel.schedule(_:_:)` for Save and Clear and runs `onDone` on success.
-- `[lily/Features/Tournaments/Views/TeamNameSheet.swift:TeamNameSheet.body]`: `viewModel.createTeam(named:)`;
+- `[lily/Features/Tournaments/Views/TeamNameSheet.swift:TeamNameSheet.body]`: `viewModel.createTeam(named:onEntered:)`
+  with `dismiss` as `onEntered`;
   focuses the field on appear. `EntryRow` calls `viewModel.joinTeam(entry)`; `TournamentParticipationControl` calls
   `viewModel.join()`.
 - `[lily/Features/Tournaments/Views/TournamentDraftForm.swift:TournamentDraftForm]`: writes `viewModel.draft` fields

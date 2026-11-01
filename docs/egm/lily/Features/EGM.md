@@ -18,8 +18,8 @@ conversations and the inbox) and Tournaments. The flags are read by the callers 
 feature (Shell, Events, the Landing intro slides, `ShellCommands` and `AppNavigation` outside this folder); inside the
 gated features themselves they are read by Groups (`GroupDetailSection`, `GroupDetailViewModel`, `GroupDetailView`,
 `GroupDetailMenu`, for the chat and tournaments flags) and by `TournamentDetailViewModel` (the chat flag). Every
-feature runs without a backend behind its mocks, and every feature but Profile has a unit-test folder of the same name
-under `lilyTests/` (Profile's repository is covered from `lilyTests/App`); `./scripts/ci.sh unit` runs them all.
+feature runs without a backend behind its mocks, and every feature has a unit-test folder of the same name under
+`lilyTests/`; `./scripts/ci.sh unit` runs them all.
 
 ## Subdirectories & Boundaries
 
@@ -49,9 +49,10 @@ under `lilyTests/` (Profile's repository is covered from `lilyTests/App`); `./sc
   competitions with entries and teams, a room of their own, brackets or standings, player-reported results and
   organiser-run disputes, walkovers and scheduling; the repositories send exactly once, the `TRY_AGAIN` repeat lives in
   the view models' `WriteGate` and `CreateFlow`.
-- Profile: [`./Profile/EGM.md`](./Profile/EGM.md) - the Profile tab and the caller's backend profile: identity or guest
-  prompt, language and currency settings, the contact card and Sign out; `ProfileRepository` syncs the display name
-  through `PUT /api/profile`.
+- Profile: [`./Profile/EGM.md`](./Profile/EGM.md) - the Profile tab and the caller's backend profile: the name other
+  players see (chosen on a card and sheet; the backend's "Player" until the user picks one) or the guest prompt,
+  language and currency settings, the contact card and Sign out; `ProfileStore` is the one source of that profile over
+  `ProfileRepository` (`GET` and `PUT /api/profile`).
 - Feedback: [`./Feedback/EGM.md`](./Feedback/EGM.md) - the contact form on Profile: a question, feedback or bug report
   posted once to `POST /api/feedback`.
 - Moderation: [`./Moderation/EGM.md`](./Moderation/EGM.md) - the terms-acceptance gate: a sheet presented while a
