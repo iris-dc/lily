@@ -4,14 +4,17 @@ import Foundation
 /// the backend reads them (the entry's before the root's, who may act before the registration window). Every write that
 /// puts a player in or takes them out moves the room's roster in the group mock the same way.
 extension MockTournamentRepository {
+    /// A team's name is judged first, as the backend validates the body before counting the caller's rooms; then the
+    /// caller's cap, then the root's conditions.
     func join(id: String, teamName: String?) async throws -> TournamentEntry {
         try requireCaller()
         let detail = try readable(id)
-        try requireEnterable(detail)
         let tournament = detail.tournament
-        guard !tournament.isFull else { throw AppError.tournamentFull }
         let name = teamName.trimmed
         if tournament.isTeam, TeamNameIssue.issue(in: name) != nil { throw AppError.tournamentActionFailed }
+        try requireRoomSlot(detail)
+        try requireEnterable(detail)
+        guard !tournament.isFull else { throw AppError.tournamentFull }
         let caller = MockTournamentFixtures.callerMarker
         let member = EntryMember(userId: caller, displayName: AppBranding.Tournaments.Create.mockOrganizerName)
         entrySequence += 1
@@ -27,11 +30,12 @@ extension MockTournamentRepository {
         return entry.replacingUser(caller, with: identity.currentUserID)
     }
 
-    /// The team's refusals come first (gone, the caller in it, full), then the tournament's (registration over, the
-    /// caller in another entry), as the backend's transaction reads them.
+    /// The caller's cap is judged first, then the team's refusals (gone, the caller in it, full), then the tournament's
+    /// (registration over, the caller in another entry), as the backend's transaction reads them.
     func joinTeam(id: String, entryID: String) async throws -> TournamentEntry {
         try requireCaller()
         let detail = try readable(id)
+        try requireRoomSlot(detail)
         guard let index = detail.entries.firstIndex(where: { $0.id == entryID }) else { throw AppError.entryNotFound }
         let caller = MockTournamentFixtures.callerMarker
         guard !detail.entries[index].contains(userID: caller) else { throw AppError.alreadyEntered }
@@ -83,6 +87,18 @@ extension MockTournamentRepository {
         depart(updated,
                userIDs: entry.members.map(\.userId),
                logging: "Tournament \(id): entry \(entryID) removed by the organiser")
+    }
+
+    /// The open tournaments whose room the caller is in, organiser or player, against `AppConfig.Tournaments.maxPerUser`.
+    var openInRoomsCount: Int {
+        details.values.filter { isInRoom($0.tournament) && Self.isOpen($0.tournament) }.count
+    }
+
+    /// The backend's cap on open tournaments per user, judged before the room's own conditions; a caller with a row in
+    /// this room already (the organiser, or a repeat whose answer was lost) is let through to those conditions.
+    private func requireRoomSlot(_ detail: TournamentDetail) throws {
+        guard !isInRoom(detail.tournament) else { return }
+        guard openInRoomsCount < AppConfig.Tournaments.maxPerUser else { throw AppError.tournamentMembershipLimit }
     }
 
     /// The root's conditions on an entering write: registration open (status and deadline) and the caller not in yet.

@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Every public tournament open for entries, pushed from the carousel's "See all": the cards soonest first, with
-/// distances, and a type dropdown in the toolbar. Works for guests; a card opens the tournament's detail.
+/// Every public tournament open for entries, pushed from the carousel's "See all": the cards nearest first around a
+/// position, like the backend's ranked answer, and by start without one, with distances, and a type dropdown in the
+/// toolbar. Works for guests; a card opens the tournament's detail.
 struct DiscoverTournamentsView: View {
     @State private var viewModel: TournamentListViewModel
     private let dependencies: AppDependencies

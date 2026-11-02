@@ -15,6 +15,9 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case tryAgain = "TRY_AGAIN"
     /// The caller sent too many requests; the backend answers 429 with it and a `Retry-After` header.
     case rateLimited = "RATE_LIMITED"
+    /// A 413: the JSON body is over the backend's document limit. Every body the app sends is bounded far below it, so
+    /// this is the app's drift, never a state the screen expects.
+    case requestTooLarge = "REQUEST_TOO_LARGE"
     case contentRejected = "CONTENT_REJECTED"
     case forbidden = "FORBIDDEN"
     case notAMember = "NOT_A_MEMBER"
@@ -24,6 +27,9 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case groupNotFound = "GROUP_NOT_FOUND"
     case messageNotFound = "MESSAGE_NOT_FOUND"
     case userNotFound = "USER_NOT_FOUND"
+    /// Another host owns the client id: the generic creation failure, so `CreateFlow`'s refetch by id runs as for
+    /// `groupIdTaken` and finds someone else's game, keeping the popup.
+    case eventIdTaken = "EVENT_ID_TAKEN"
     /// The same client id sent again with other details: our earlier create landed and its answer was lost, so
     /// `CreateFlow` updates the stored item instead of looking it up (`.createIdReused`).
     case eventIdReused = "EVENT_ID_REUSED"
@@ -41,6 +47,9 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case inboxItemNotFound = "INBOX_ITEM_NOT_FOUND"
     case alreadyMember = "ALREADY_MEMBER"
     case cannotInvite = "CANNOT_INVITE"
+    /// The tournament has invited as many distinct people as the backend allows (`tournaments.max-invited`); a group
+    /// invite never answers it.
+    case inviteLimit = "INVITE_LIMIT"
     case blockLimit = "BLOCK_LIMIT"
     /// The caller holds the maximum number of direct conversations.
     case conversationLimit = "CONVERSATION_LIMIT"
@@ -94,6 +103,7 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .capacityTooLow: .capacityTooLow
         case .tryAgain: .tryAgain
         case .rateLimited: .rateLimited(retryAfter: nil)
+        case .requestTooLarge: .requestTooLarge
         case .contentRejected: .contentRejected
         case .forbidden: .insufficientRole
         case .notAMember: .notAMember
@@ -104,6 +114,7 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .messageNotFound: .messageNotFound
         case .userNotFound: .userNotFound
         case .eventIdReused, .groupIdReused, .tournamentIdReused: .createIdReused
+        case .eventIdTaken: .eventCreationFailed
         case .groupIdTaken: .groupCreationFailed
         case .groupFull: .groupFull
         case .ownerCannotLeave: .ownerCannotLeave
@@ -113,6 +124,7 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .inviteNotPending, .inboxItemNotFound: .inviteNotPending
         case .alreadyMember: .alreadyMember
         case .cannotInvite: .cannotInvite
+        case .inviteLimit: .tournamentInviteLimit
         case .blockLimit: .blockLimitReached
         case .conversationLimit: .conversationLimit
         case .replyTargetNotFound: .replyTargetNotFound
@@ -146,12 +158,14 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
 }
 
 extension APIError {
-    /// A 401 means the token was rejected and a 429 that the caller was throttled, whatever was asked (both may come
-    /// without a body); a known backend code becomes its own case; every other API failure becomes `fallback`.
+    /// A 401 means the token was rejected, a 429 that the caller was throttled and a 413 that the body was over the
+    /// server's limit, whatever was asked (each may come without a body); a known backend code becomes its own case;
+    /// every other API failure becomes `fallback`.
     func appError(fallback: AppError) -> AppError {
         guard case .http(let status, let body, let retryAfter) = self else { return fallback }
         if status == AppConfig.API.unauthorizedStatus { return .sessionExpired }
         if status == AppConfig.API.rateLimitedStatus { return .rateLimited(retryAfter: retryAfter) }
+        if status == AppConfig.API.contentTooLargeStatus { return .requestTooLarge }
         guard let body, let code = BackendErrorCode(rawValue: body.code) else { return fallback }
         return code.appError
     }

@@ -5,7 +5,7 @@ Source: `lily/Core/Errors/`
 ## Overview
 
 The app's single typed failure and the one funnel that shows it. `AppError` is the `nonisolated`, `Equatable`, `Sendable`
-enum every repository and service throws (92 cases), with `wrapping(_:)` to normalise any thrown error and
+enum every repository and service throws (94 cases), with `wrapping(_:)` to normalise any thrown error and
 `isCancellation(_:)` to tell a caller leaving mid-request from a fault. `ErrorMessageMapper` turns every case into a
 localized `ErrorMessage` through one exhaustive switch that routes to per-area `nonisolated extension` files, each
 chaining to the next and ending in `unknownMessage`. `ErrorCenter`, an `@Observable` main-actor class mounted once on
@@ -17,7 +17,8 @@ draws.
 - `AppError` (`lily/Core/Errors/AppError.swift:AppError`): `nonisolated enum: Error, Equatable, Sendable`, one flat case list:
   - auth: `authCancelled`, `authFailed(provider: AuthProvider.Kind)`, `providerUnavailable(provider: AuthProvider.Kind)`,
     `invalidCredentials`, `emailTaken`, `emailNotConfirmed`, `invalidConfirmationCode`, `tooManyAttempts`, `sessionExpired`;
-  - transport: `rateLimited(retryAfter: TimeInterval?)`, `network`;
+  - transport: `rateLimited(retryAfter: TimeInterval?)`, `requestTooLarge` (a 413 `REQUEST_TOO_LARGE`: the app's own
+    drift, repeating cannot help), `network`;
   - events: `eventsUnavailable`, `eventNotFound`, `eventFull`, `alreadyJoined`, `notAParticipant`, `hostCannotLeave`,
     `tryAgain`, `participationFailed`, `eventCreationFailed`, `createIdReused` (a `*_ID_REUSED` on any create: the
     earlier create landed and `CreateFlow` updates it), `notHost`, `capacityTooLow`, `eventUpdateFailed`;
@@ -34,7 +35,9 @@ draws.
   - tournaments: `tournamentsUnavailable`, `tournamentNotFound`, `tournamentCreationFailed`, `tournamentUpdateFailed`,
     `tournamentActionFailed`, `registrationClosed`, `tournamentFull`, `alreadyEntered`, `teamFull`, `entryNotFound`,
     `notOrganizer`, `tournamentLocked`, `notEnoughEntries`, `notInMatch`, `matchNotReady`, `matchNotFound`,
-    `drawNotAllowed`, `tournamentLimit`, `tournamentMembershipLimit`, `inviteeAlreadyEntered`, `cannotInviteToTournament`;
+    `drawNotAllowed`, `tournamentLimit`, `tournamentMembershipLimit` (open tournaments only: in registration or in
+    progress), `inviteeAlreadyEntered`, `cannotInviteToTournament`, `tournamentInviteLimit` (`INVITE_LIMIT` on an invite:
+    the tournament has invited `tournaments.max-invited` distinct people);
   - and `unknown`.
 - `AppError.wrapping(_ error: any Error) -> AppError`, `AppError.isCancellation(_ error: any Error) -> Bool`
   (`lily/Core/Errors/AppError.swift:wrapping`, `isCancellation`).
@@ -47,7 +50,8 @@ draws.
   `groupWriteMessage`, `inviteMessage`, `membershipLimitMessage`, `accountSuspendedMessage`); `chatMessage(for:)` and
   `attachmentMessage(for:)` (`+Chat.swift`, private `attachmentCapsBody(_:)`); `pollAndPinMessage(for:)` (`+Polls.swift`);
   `peopleMessage(for:)` (`+People.swift`); `tournamentMessage(for:)` (`+Tournaments.swift`, private `entryMessage`,
-  `matchMessage`, `tournamentInviteMessage`, `tournamentLimitMessage`, `tournamentMembershipLimitMessage`).
+  `matchMessage`, `tournamentInviteMessage`, `tournamentLimitMessage`, `tournamentMembershipLimitMessage`); private
+  `transportMessage(for:)` in `ErrorMessageMapper.swift` for `.network`, `.rateLimited` and `.requestTooLarge`.
 - `PresentedError` (`lily/Core/Errors/ErrorCenter.swift:PresentedError`): `struct: Identifiable, Equatable` (main-actor);
   `id: UUID`, `error: AppError`, `message: ErrorMessage`.
 - `ErrorCenter` (`lily/Core/Errors/ErrorCenter.swift:ErrorCenter`): `@Observable final class`;
@@ -58,12 +62,14 @@ draws.
 
 ## Invariants
 
-- `message(for:)` is an exhaustive `switch` over all 92 cases with no `default`, so a new `AppError` case that is not
-  routed is a compile error; `.network` and `.rateLimited` are answered inline (the `retryAfter` value is not used in the
-  copy), every other case goes to an area function (`ErrorMessageMapper.swift:message(for:)`).
+- `message(for:)` is an exhaustive `switch` over all 94 cases with no `default`, so a new `AppError` case that is not
+  routed is a compile error; `.network`, `.rateLimited` and `.requestTooLarge` go to `transportMessage(for:)` (the
+  `retryAfter` value is not used in the copy; `.requestTooLarge` reads "Couldn't send that / It's larger than the server
+  accepts."), every other case goes to an area function (`ErrorMessageMapper.swift:message(for:)`).
 - Every area switch ends in a `default` that chains or returns `unknownMessage`, so no path traps:
   `eventMessage -> hostMessage`, `groupMessage -> groupWriteMessage -> inviteMessage`, `chatMessage -> pollAndPinMessage`,
-  `peopleMessage -> tournamentMessage -> entryMessage -> matchMessage -> tournamentInviteMessage`; `.createIdReused`
+  `peopleMessage -> tournamentMessage -> entryMessage -> matchMessage -> tournamentInviteMessage` (which also answers
+  `.tournamentInviteLimit`: "Can't invite more people / This tournament has invited as many people as it can."); `.createIdReused`
   shares `.tryAgain`'s copy in `eventMessage` (`CreateFlow` settles it before any popup); `authMessage`,
   `attachmentMessage` and `moderationMessage` fall straight to `unknownMessage` (`ErrorMessageMapper*.swift`).
 - Every title and body is read through `localized(_:)` (`lily/Core/Localization/Localized.swift`); the limits in the copy

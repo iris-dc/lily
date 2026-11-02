@@ -47,7 +47,8 @@ errors, and the two pieces of timing arithmetic (reconnect backoff and token ren
   `messageId`; `inbox_item` reads `item`; `member_joined` reads `groupId`, `member`, `memberCount`, `channelEpoch`;
   `member_left` reads `groupId`, `userId`, `channelEpoch`, `memberCount`; `group_updated` reads `group`;
   `group_deleted` reads `groupId`; `membership_changed` and `tournament_changed` decode their payload from the
-  envelope itself (fields beside `type`); `match_updated` reads `match`
+  envelope itself (fields beside `type`; a `membership_changed` whose `change` this build does not know still decodes,
+  `MembershipChange.Kind` being a `WireNamedKind`); `match_updated` reads `match`
   [`RealtimeEnvelope.swift:RealtimeEnvelope.init(from:)`].
 - `RealtimeEnvelope.groupID` is `nil` for `.inboxItem` and `.unknown`; a tournament event answers the tournament id
   (its room). `channelEpoch` is non-nil only for `.memberJoined`, `.memberLeft`, `.groupUpdated`

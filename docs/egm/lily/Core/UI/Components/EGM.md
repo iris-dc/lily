@@ -4,8 +4,8 @@ Source: `lily/Core/UI/Components/`
 
 ## Overview
 
-The reusable SwiftUI pieces every feature screen is built from, 40 files with no subfolders: the screen scaffold and
-its aurora (`ContentScreen`, `AuroraBackground`, `FilmGrainOverlay`), the button, chip and field modifiers that give
+The reusable SwiftUI pieces every feature screen is built from, 41 files with no subfolders: the screen scaffold and
+its aurora (`ContentScreen`, `AuroraBackground`, `FilmGrainOverlay`), the button, chip, picker and field modifiers that give
 the app its one look, the cards, titles, rows, avatars and tiles, the list and empty states, the filter dropdowns, the
 shared error popup (`errorPopup`), the create-or-edit sheet (`DraftSheet`) and the UIKit-backed growing text field
 (`GrowingTextView`). The arithmetic behind the aurora is in [Effects](../Effects/EGM.md), fonts and colors in
@@ -38,6 +38,12 @@ use the generated `Color.lily*` asset symbols.
   applies `LilyTextButtonStyle(font:color:minHeight:)`, a `ButtonStyle` for text-only actions ("See all", Reset, the
   sign-in form's text actions, the terms' links and Sign out, a poll's footer); `lilyToolbarTextButton()` is
   `.tint(Color.lilyInk)` for a plain text item in an iOS 26 toolbar (Cancel, Done, Send, Edit).
+- Pickers [`lily/Core/UI/Components/PickerModifiers.swift:View.lilyMenuPicker`]: `lilyMenuPicker()` is
+  `.pickerStyle(.menu).tint(.secondary)`, the one recipe for a menu picker in a form (the Group and Level rows of the
+  event form, the tournament form's Group row, the filter panel's Level row; a default-styled `Picker` in a `Form` is a
+  menu picker too): the control colours its value and chevron from the tint, which is the accent in every form sheet
+  and reads at about 3:1 as small text, so the recipe puts them in `.secondary` while the row's title stays primary and
+  the menu's items keep the system look.
   `BusyLabel<Content>(isBusy:, spinnerSize: ControlSize = .regular, content:)` and
   `BusyButton<Label>(isBusy:, action: (() async -> Void)?, label:)`, each with a `Text` convenience and
   `BusyButton.init(_ title:, isBusy:, write: () async -> Bool, onSuccess: () -> Void)`

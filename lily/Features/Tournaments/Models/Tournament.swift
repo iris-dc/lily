@@ -181,7 +181,7 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
 
 /// Which slice of tournaments a list shows.
 nonisolated enum TournamentScope: Hashable, Sendable {
-    /// Public tournaments in registration, soonest first; Explore.
+    /// Public tournaments in registration, ranked around the position, by start without one; Explore.
     case upcoming
     /// Every tournament whose room the caller is in; Home.
     case mine

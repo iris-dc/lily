@@ -105,6 +105,7 @@ extension TournamentDraftForm {
                     Text(group.name).tag(EventGroupRef?.some(group))
                 }
             }
+            .lilyMenuPicker()
             .accessibilityIdentifier(AccessibilityIdentifiers.createGroup)
         }
     }

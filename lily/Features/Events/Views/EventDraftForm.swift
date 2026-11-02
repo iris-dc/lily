@@ -72,6 +72,7 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
                     Text(group.name).tag(EventGroupRef?.some(group))
                 }
             }
+            .lilyMenuPicker()
             .accessibilityIdentifier(AccessibilityIdentifiers.createGroup)
         }
     }
@@ -129,6 +130,7 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
             TextField(Copy.lookingForPlaceholder, text: $viewModel.draft.lookingFor)
                 .textInputAutocapitalization(.sentences)
             SkillLevelPicker(selection: $viewModel.draft.skillLevel)
+                .lilyMenuPicker()
             priceRow
         } header: {
             Text(Copy.detailsSection)

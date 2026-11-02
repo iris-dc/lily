@@ -77,8 +77,9 @@ honour them.
 - `[lily/Features/Tournaments/Interfaces/TournamentRepository.swift:TournamentRepository]`: failures arrive as
   `AppError`; every write answers what the backend now holds.
 - `[lily/Features/Tournaments/Interfaces/TournamentRepository.swift:TournamentRepository.tournaments]`: scope
-  semantics: `.upcoming` is public tournaments in registration, soonest first, with the caller's coarse position used
-  for statistics; `.mine` is every tournament whose room the caller is in; `.group` is a group's tournaments in all
+  semantics: `.upcoming` is public tournaments in registration, ranked around the position (`lat`/`lon`, or a
+  signed-in caller's home area) with distance among the signals, by start without one (since 2026-10-07, corrected
+  2026-11-02); `.mine` is every tournament whose room the caller is in; `.group` is a group's tournaments in all
   statuses but cancelled.
 - `[lily/Features/Tournaments/Interfaces/TournamentRepository.swift:TournamentRepository.tournament]`: throws
   `AppError.tournamentNotFound` both when the tournament is gone and for a private tournament the caller may not see.

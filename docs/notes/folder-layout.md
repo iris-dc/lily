@@ -29,8 +29,9 @@ lily/
                  AccessibilityIdentifiers (the identifiers UI tests query); the groups, chat, realtime, moderation, people, shell
                  and language constants, copy, tokens and identifiers live in +Groups / +Chat / +Realtime / +Moderation / +People /
                  +Shell / +Localization / +Settings / +FeatureFlags / +Build (the kind of build: debug, staging, release; 2026-11-01) / +Tournaments / +TournamentResults / +TournamentInvites /
-                 +ChatTournaments / +Profile (the display name's limits, copy and identifiers; 2026-10-31) extension files so
-                 SwiftLint's type_body_length never trips on the four main types
+                 +ChatTournaments / +Profile (the display name's limits, copy and identifiers; 2026-10-31) / +Polls, +ChatPolls and +ChatPins
+                 (the polls' and pins' constants, copy, tokens and identifiers; 2026-10-24) and one `+Area` file per feature beyond these
+                 (`ls lily/Config` is the list; 2026-11-02) extension files so SwiftLint's type_body_length never trips on the four main types
   Core/
     Auth/        Models (AuthUser, AuthSession + StoredSession (guest, signed in, or signing out: a sign-out the pool has not confirmed yet),
                  EmailAuthResult, ConfirmOutcome, SignUpOutcome, SessionState, AuthProvider), Interfaces (AuthService, SessionStore,
@@ -64,8 +65,8 @@ lily/
                  PushPayload + PushTap (what a tapped notification opens: a game, or a tournament's match)), Interfaces (PushRegistrar, DeviceRepository, PushOptIn), Implementations (SystemPushRegistrar over
                  UNUserNotificationCenter and the relay, MockPushRegistrar, RemoteDeviceRepository, MockDeviceRepository,
                  PushEventRelay, NoPushOptIn), PushCoordinator (registration sync, the permission ask, the tapped reminder)
-    Errors/      AppError, ErrorMessageMapper (single copy source; the groups, chat, moderation, people and tournament copy in
-                 ErrorMessageMapper+Groups / +Chat / +Events / +People / +Tournaments), ErrorCenter (drives the popup)
+    Errors/      AppError, ErrorMessageMapper (single copy source; the groups, chat, moderation, people, tournament and poll copy in
+                 ErrorMessageMapper+Groups / +Chat / +Events / +People / +Tournaments / +Polls), ErrorCenter (drives the popup)
     Localization/ AppLanguage (the seven languages, the system's pick), LanguagePreference (system or fixed, a StoredChoice), AppLocale
                  (the process-wide language for lookups and formats; the region read per call), localized(_:) (the one lookup every
                  line of copy goes through), LanguageStore (the user's choice, persisted and published)
@@ -92,7 +93,7 @@ lily/
                  String+CodePoints (codePointCount and prefix(codePoints:), the backend's measure of a display name; 2026-10-31)
     UI/          Theme (fonts, aurora role-to-color mapping), Effects (aurora geometry, roles, film grain: pure, testable math;
                  LaunchAnimations, UIKit's animations off until the shell's first frame so the tab bar's pill is placed, not slid),
-                 Components (aurora background, content-screen scaffold, glass cards, button modifiers, provider buttons, error popup,
+                 Components (aurora background, content-screen scaffold, glass cards, button modifiers, picker modifiers (lilyMenuPicker; 2026-11-02), provider buttons, error popup,
                  ScreenTitle + ScreenSubtitle, AvatarCircle, String+Initials (the one initials rule, beside AvatarCircle),
                  UnreadDot, GrowingTextView (the multi-line field the chat composer owns, over a UIKit text view), ConversationRow (avatar + title + caption + dot, shared by the Chats rows and the
                  inbox row) and AvatarRowDivider (the divider that starts at their text column), EventTypeChips (the one
@@ -184,8 +185,9 @@ lily/
                  blocked senders), ChatDayLabel, ChatDestination, SystemRowContent (the system rows' texts, lookups and destinations over
                  SystemRowLinks + LinkedContent, which remembers what is gone) and SystemRowDestination (where a tapped one leads), ViewerGeometry + TileGeometry +
                  ViewerLayer (pure: where the moving picture is at each moment and which side of the composer line a layer draws),
-                 MovingPicture (the picture on its way)), Implementations (RemoteChatRepository, MockChatRepository
-                 (+ Attachments) + MockChatFixtures, InMemoryChatHistoryCache, URLSessionAttachmentUploader, DiskAttachmentCache (+ AttachmentCacheFiles, the
+                 MovingPicture (the picture on its way), Poll + PollOptionDisplay (a poll message and how an option draws) and
+                 PinnedMessage + PinnedBarPosition (the room's pins and where the bar sits; 2026-10-24)), Implementations (RemoteChatRepository, MockChatRepository
+                 (+ Attachments + Polls) + MockChatFixtures (+ Polls), InMemoryChatHistoryCache, URLSessionAttachmentUploader, DiskAttachmentCache (+ AttachmentCacheFiles, the
                  byte-moving steps off the main actor), DeviceMediaPreparer over ImagePreparer (+ ImageEncoding), VideoPreparer (+ VideoEncoding)
                  and FilePreparer (+ FileCopying), all off the main actor through DetachedWork, MockMediaPreparer (the picker stand-in), MockAttachmentStore + MockAttachmentURLProtocol,
                  MockAttachmentUploader, DisplayLinkFrameClock: the FrameClock on Core Animation's display link), Services (ChatCatchUp: the REST catch-up shared by the chat and the realtime controller;
@@ -194,7 +196,7 @@ lily/
                  timing; ImageFile: the one decode of a picture file for a view, capped at the header and downsampled to the side the
                  view needs, the upload side downsampling through it too), State (UnreadCenter, ChatOutbox: every room's unsent and failed bubbles, ViewerHero: what the tiles,
                  the viewer and the composer share for the viewer's moves, ViewerMoveDriver: the moves a frame at a time on a FrameClock), ViewModels
-                 (ChatViewModel + History + Send + Live + Events + Conversation + Clear + Reply + Attachments + Moderation, AttachmentComposerModel
+                 (ChatViewModel + History + Send + Live + Events + Conversation + Clear + Reply + Attachments + Moderation + Pins + Polls, AttachmentComposerModel
                  (+ Picking: the items picked for one message and every way in; + Upload: AttachmentWork, one item's prepare, ticket and
                  PUTs, holding the model weakly so a closed room cancels and cleans up)), Views (ChatsView (the Chats root:
                  the inbox row over the rooms), ChatView over ChatTranscript (the anchored list) over ChatRowView (one row, drawing its arrival) + MessageArrival (a row's removal transition), MessageBubble + PendingMessageBubble over
@@ -206,7 +208,9 @@ lily/
                  VideoPlayerPage; + Motion for its moves), ViewerMovingPicture (the moving picture, one Canvas per layer), ViewerStage (the
                  chat's half under the composer), ViewerHeroSource, ViewerDismissPan, QuickLookPreview, ConversationList (the Chats list, owning the clear confirmation),
                  MessageComposer, DaySeparator, SystemMessageRow, MessageContextMenu, ChatRoomMenu (the room's menu, its clear item and
-                 the shared confirmation))
+                 the shared confirmation), PollBubble + PollOptionPill + PollComposerSheet + PollVotersSheet (polls; 2026-10-24), PinnedBar +
+                 ChatTranscript+Pins (the pinned bar over the transcript), ChatTranscript+Scrolling, BubbleInk (the ink colour a bubble's small
+                 text reads in; 2026-10-27, reworked 2026-11-01), RowReveal, TranscriptWidth, ChatsSplitView (the Chats tab on a regular width; 2026-10-08))
     People/      Profiles and direct conversations: Models (UserProfile, GroupSummary, UserProfileDestination,
                  StartConversationPayload), Interfaces (UserRepository), Implementations (RemoteUserRepository, MockUserRepository
                  over the group mock's rosters), ViewModels (UserProfileViewModel), Views (UserProfileView, SharedGroupRow,
@@ -245,12 +249,12 @@ lily/
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ and Moderation/ included;
                  Profile/ holds ProfileStoreTests, DisplayNameViewModelTests, DisplayNameDraftTests and both repositories' tests
-                 (2026-10-31); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01); Support/ holds fakes
+                 (2026-10-31); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01); Support/ holds fakes
                  (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, ShellDoubles,
                  StatisticsDoubles, GroupDoubles (with FakeInviteRepository), GroupViewModelDoubles with the shared GroupHarness and the
                  TermsCountingReporter every harness uses, InboxDoubles, PeopleDoubles, LocationDoubles, PushDoubles, FeedbackDoubles,
                  ProfileDoubles (FakeProfileRepository and the Profile fixture), AttachmentDoubles, CreateEventHarness, EventDetailHarness,
-                 FakeTournamentRepository (+ Matches), TournamentHarness), the
+                 FakeTournamentRepository (+ Matches), TournamentHarness, PollFixtures and ChatPollDoubles (the poll samples and fakes; 2026-10-24)), the
                  shared test tools (RequestHold with the HoldsRequests protocol, Recorded, ScriptedAttempt, SpyLogger, TestFixtureFiles,
                  ImageFiles) and fixtures (TestFixtures,
                  GroupFixtures with the groups and invites contract JSON, InboxFixtures with the inbox's, PeopleFixtures with the profile,
@@ -258,7 +262,7 @@ lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCan
                  tournament-note contract JSON, TournamentInboxFixtures with Laurel B3's inbox, accept, invite and room-event JSON;
                  Fixtures/pairings holds the shared pairing fixtures TournamentScheduleTests reproduces)
 lilyUITests/     LilyUITestCase (launch + the primitives) + LilyUITestCase+Screens (the screen-reaching helpers), LilySmokeTests, LilySignInTests,
-                 LilyGroupsTests (+ Helpers), LilyChatTests (+ Attachments, + Rows), LilyPeopleTests, LilyEventEditTests, LilyLanguageTests,
+                 LilyGroupsTests (+ Helpers), LilyChatTests (+ Attachments, + Composer, + Polls, + Rows, + Viewer), LilyPeopleTests, LilyEventEditTests, LilyLanguageTests,
                  LilyTournamentTests (+ Helpers), LilyDiscoverTests, LilyProfileTests, LilyRosterTests, LilyStateTests, LilyIPadTests: end-to-end
                  walks against the real app in a simulator
 scripts/         ci.sh, the single entry point for lint, build and tests; l10n-check.py, the catalog-against-code and InfoPlist check it runs,
@@ -269,3 +273,5 @@ scripts/         ci.sh, the single entry point for lint, build and tests; l10n-c
 The Xcode project uses synchronized folder groups: any file added under `lily/`, `lilyTests/` or `lilyUITests/` joins the matching target automatically. The other side of that convenience is that **`lily/` must contain only Swift sources, `Assets.xcassets` and the two string catalogs** (since 2026-11-01 also `PrivacyInfo.xcprivacy`, see `build-test-and-simulator.md`) — any other file there is copied into the app bundle, and `.gitignore` does not prevent it, because Xcode reads the filesystem rather than the git index.
 
 Rules: interfaces and implementations live in separate folders, constants live under `Config/`, every user-facing error goes through `ErrorCenter`, every log line goes through `Logging`.
+
+Pass of 2026-11-02 (deep-review finding L008): the poll and pin files of 2026-10-24 (Chat Models, Views, ViewModels and Implementations, the Config and ErrorMessageMapper `+Polls` and `+ChatPins` files, the test doubles PollFixtures and ChatPollDoubles under `lilyTests/Support`, the LilyChatTests+Polls, +Composer and +Viewer UI test files) and the Chat Views that had gone unlisted (BubbleInk, RowReveal, TranscriptWidth, ChatsSplitView, ChatTranscript+Scrolling) were added above, each checked against `ls`; the Config enumeration ends in a rule, one `+Area` file per feature, rather than a list completed file by file.

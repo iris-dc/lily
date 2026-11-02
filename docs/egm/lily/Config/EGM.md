@@ -25,7 +25,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - `API` (`lily/Config/AppConfig.swift:AppConfig.API`): `localBaseURL = http://localhost:8080`,
   `productionBaseURL = https://api.iskra.red`; `baseURL` is `localBaseURL` under `#if DEBUG && targetEnvironment(simulator)`,
   else `productionBaseURL`; `sendsLocalUserHeader` is `true` under `#if DEBUG`; `requestTimeout = 15`,
-  `tryAgainDelay = .milliseconds(400)`, `unauthorizedStatus = 401`, `rateLimitedStatus = 429`, `clientErrorStatuses = 400..<500`.
+  `tryAgainDelay = .milliseconds(400)`, `unauthorizedStatus = 401`, `rateLimitedStatus = 429`, `contentTooLargeStatus = 413`
+  (a `REQUEST_TOO_LARGE` answer, never an expected refusal), `clientErrorStatuses = 400..<500`.
   `Headers`: `X-Local-User-Id`, `X-App-Version`, `Authorization`, `Bearer `, `Accept`, `Content-Type`,
   `json = "application/json"`, `Retry-After` (the last added in `AppConfig+Chat.swift`).
   `Query`: `scope`, `lat`, `lon`, `before`, `after`, `q`, `type`, `cursor`, `limit`, `ids`.
@@ -75,7 +76,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `locationNameMaxLength = Events.Creation.locationNameMaxLength`, `maxMembers = 500`, `maxMemberships = 50`,
   `discoverPageSize = 50`, `searchDebounce = .milliseconds(300)`, `queryMaxLength = 40`. `Tournaments`
   (`lily/Config/AppConfig+Tournaments.swift`): `nameLength = 3...60`, `teamSizeRange = 1...11`, `teamNameLength = 2...40`,
-  `entriesRange = 2...64`, `maxEntriesRoundRobin = 12`, `minEntriesRoundRobin = 3`, `scoreRange = 0...999`;
+  `entriesRange = 2...64`, `maxEntriesRoundRobin = 12`, `minEntriesRoundRobin = 3`, `maxOrganizedOpen = 10`,
+  `maxPerUser = 20` (both count open tournaments only, in registration or in progress; finished and cancelled ones
+  never count, as Laurel's `tournaments.max-per-user` says), `scoreRange = 0...999`;
   `maxEntries(for:)`, `minEntries(for:)`, `entriesRange(for: TournamentFormat) -> ClosedRange<Int>` (an unknown
   format takes single elimination's bounds; Laurel validates the real ones).
 - Smaller areas: `Inbox.pageSize = 50`; `Moderation` (`commentMaxLength = 500`, `maxBlocks = 500`,

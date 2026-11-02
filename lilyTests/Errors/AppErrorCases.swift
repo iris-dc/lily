@@ -6,7 +6,8 @@ enum AppErrorCases {
     static let all: [AppError] = [
         .authCancelled, .authFailed(provider: .apple), .providerUnavailable(provider: .apple), .invalidCredentials,
         .emailTaken, .emailNotConfirmed, .invalidConfirmationCode, .tooManyAttempts,
-        .sessionExpired, .rateLimited(retryAfter: nil), .network, .eventsUnavailable, .eventNotFound, .eventFull,
+        .sessionExpired, .rateLimited(retryAfter: nil), .requestTooLarge, .network, .eventsUnavailable, .eventNotFound,
+        .eventFull,
         .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain, .participationFailed, .eventCreationFailed,
         .createIdReused, .notHost, .capacityTooLow, .eventUpdateFailed,
         .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned, .ownerCannotLeave,
@@ -22,16 +23,16 @@ enum AppErrorCases {
         .tournamentsUnavailable, .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed,
         .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked,
         .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit,
-        .tournamentMembershipLimit, .inviteeAlreadyEntered, .cannotInviteToTournament, .feedbackFailed,
-        .unknown,
+        .tournamentMembershipLimit, .inviteeAlreadyEntered, .cannotInviteToTournament, .tournamentInviteLimit,
+        .feedbackFailed, .unknown,
     ]
 
     /// Exhaustive on purpose: a new `AppError` case fails to compile here, the reminder to add it to `all` too.
     static func listed(_ error: AppError) {
         switch error {
         case .authCancelled, .authFailed, .providerUnavailable, .invalidCredentials, .emailTaken, .emailNotConfirmed,
-             .invalidConfirmationCode, .tooManyAttempts, .sessionExpired, .rateLimited, .network, .eventsUnavailable,
-             .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain,
+             .invalidConfirmationCode, .tooManyAttempts, .sessionExpired, .rateLimited, .requestTooLarge, .network,
+             .eventsUnavailable, .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain,
              .participationFailed, .eventCreationFailed, .createIdReused, .notHost, .capacityTooLow, .eventUpdateFailed,
              .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned,
              .ownerCannotLeave, .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed,
@@ -45,7 +46,7 @@ enum AppErrorCases {
              .tournamentUpdateFailed, .tournamentActionFailed, .registrationClosed, .tournamentFull, .alreadyEntered,
              .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked, .notEnoughEntries, .notInMatch,
              .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit, .tournamentMembershipLimit,
-             .inviteeAlreadyEntered, .cannotInviteToTournament, .feedbackFailed, .unknown:
+             .inviteeAlreadyEntered, .cannotInviteToTournament, .tournamentInviteLimit, .feedbackFailed, .unknown:
             break
         }
     }

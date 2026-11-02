@@ -187,6 +187,29 @@ struct GroupModelsTests {
         }
     }
 
+    /// A kind a newer backend adds keeps its name and ends nothing (Mine is refetched, the room stays); the known kinds
+    /// round-trip through their wire names.
+    @Test func aMembershipChangeOfAnUnseenKindDecodesAndKeepsTheMembership() throws {
+        let json = #"{"type":"membership_changed","groupId":"g1","change":"muted","channelEpoch":5}"#
+        let change = try ContractSamples.decode(MembershipChange.self, from: json)
+        #expect(change.change.isUnknown && change.change.wireName == "muted" && !change.endsMembership)
+        #expect(change.groupId == "g1" && change.role == nil && change.channelEpoch == 5)
+        for kind in MembershipChange.Kind.known {
+            #expect(MembershipChange.Kind(wireName: kind.wireName) == kind && !kind.isUnknown)
+        }
+        #expect(MembershipChange.Kind.roleChanged.wireName == "role_changed")
+    }
+
+    /// `MemberRole` and `GroupVisibility` stay strict on purpose: a permission ladder the app also writes and a binary
+    /// access rule; Laurel refuses an unknown value of either, so a new rung needs a wire version on both sides.
+    @Test func memberRoleAndVisibilityStayStrict() {
+        #expect(MemberRole(rawValue: "moderator") == nil && GroupVisibility(rawValue: "unlisted") == nil)
+        let moderator = ContractSamples.member.replacingOccurrences(of: #""role":"owner""#, with: #""role":"moderator""#)
+        #expect(throws: DecodingError.self) { try ContractSamples.decode(GroupMember.self, from: moderator) }
+        let unlisted = ContractSamples.group.replacingOccurrences(of: #""visibility":"public""#, with: #""visibility":"x""#)
+        #expect(throws: DecodingError.self) { try ContractSamples.decode(SportGroup.self, from: unlisted) }
+    }
+
     @Test func roleAndVisibilityNamesComeFromBranding() {
         #expect(MemberRole.owner.isAdmin && MemberRole.admin.isAdmin && !MemberRole.member.isAdmin && !MemberRole.banned.isAdmin)
         #expect(MemberRole.owner.displayName == AppBranding.Groups.ownerRole)

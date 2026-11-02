@@ -17,8 +17,9 @@ nonisolated extension AppConfig {
         static let minEntriesRoundRobin = 3
         /// Open tournaments one may organise; the backend's cap.
         static let maxOrganizedOpen = 10
-        /// Tournaments one may be in, finished ones included: the backend's `tournaments.max-per-user`, answered as
-        /// `MEMBERSHIP_LIMIT` on the entry routes.
+        /// Open tournaments (in registration or in progress) one may be in at once, organiser or player; finished and
+        /// cancelled ones never count. The backend's `tournaments.max-per-user`, answered as `MEMBERSHIP_LIMIT` on the
+        /// entry routes.
         static let maxPerUser = 20
         static let scoreRange = 0...999
         static let defaultMaxEntries = 8

@@ -3,8 +3,9 @@ import Foundation
 /// Tournaments boundary. Reads answer the detail (entries, matches, standings) or the list items; every write answers
 /// what the backend now holds. Failures arrive as `AppError`, ready for the popup.
 protocol TournamentRepository {
-    /// `.upcoming` is public tournaments in registration, soonest first, with the caller's coarse position for the
-    /// statistics; `.mine` every tournament whose room the caller is in; `.group` a group's, all statuses but cancelled.
+    /// `.upcoming` is public tournaments in registration, ranked around the position (or a signed-in caller's home
+    /// area), by start without one; `.mine` every tournament whose room the caller is in; `.group` a group's, all
+    /// statuses but cancelled.
     func tournaments(in scope: TournamentScope, near position: Coordinate?) async throws -> [Tournament]
     /// Throws `AppError.tournamentNotFound` when it is gone, and for a private tournament the caller may not see.
     func tournament(id: String) async throws -> TournamentDetail

@@ -15,8 +15,12 @@ logic and data live in the Spring Boot backend Laurel (`https://api.iskra.red`, 
 AWS resources are defined in the CDK repository rose (`iris-dc/rose`, eu-central-1). Identity stays in Amazon
 Cognito (user pool `lily-users`, client `lily-ios`, email + password through Amplify Swift): the app sends the Cognito
 access token as `Authorization: Bearer <token>`, the backend validates it and reads the user id from `sub`; the app
-keeps no credentials of its own. Guests read `GET /api/events?scope=upcoming` and `GET /api/events/{id}` without a
-token; everything else answers 401.
+keeps no credentials of its own. Anonymous reads are the routes Laurel's `SecurityConfig` permits (corrected
+2026-11-02, deep-review finding L002, `docs/notes/auth-and-backend.md`): `GET /api/events` with `scope=upcoming` and
+`GET /api/events/{id}`, `GET /api/groups`, `/api/groups/{id}`, `/api/groups/{id}/events`,
+`/api/groups/{id}/tournaments`, `GET /api/tournaments` and `/api/tournaments/{id}` (a guest gets the root alone, with
+`entries`, `matches` and `standings` empty), and the legal pages `/terms` and `/privacy`; everything else answers 401
+without a token, and a bad token on a public route is still a 401.
 
 ```
  LilyApp (@main) -> AppDependencies (composition root, lily/App)
@@ -75,9 +79,12 @@ token; everything else answers 401.
   last answer on disk (`ListSnapshotStore`, a hint, never the truth) and never poll; the first Explore request waits
   up to `AppConfig.Location.firstFixWait` for the position (`HeadStart`).
 - **Wire tolerance.** Wire types keep the backend's key names, omit optionals, read and write ISO-8601 instants and
-  tolerate new enum values through `WireNamedKind` with `case unknown(String)` (`GroupVisibility`, a binary access
-  rule, is strict on purpose; `MemberRole`, `InviteCandidateSource` and `MembershipChange.Kind` remain strict, not yet
-  judged).
+  tolerate new enum values through `WireNamedKind` with `case unknown(String)`: the fourteen conformers are
+  `EventType`, `SkillLevel`, `MessageKind`, `GroupKind`, `InboxItemKind`, `AttachmentKind`, `TournamentFormat`,
+  `TournamentStatus`, `EntryStatus`, `MatchStatus`, `MatchSlot`, `InviteStatus`, `InviteCandidateSource` and
+  `MembershipChange.Kind`. `GroupVisibility` and `MemberRole` stay strict on purpose: a binary access rule and a
+  permission ladder the app also writes, and Laurel refuses an unknown value of either, so neither grows without a
+  wire version on both sides (judged 2026-11-02, `docs/notes/groups.md`).
 - **Isolation.** The app target compiles with default `@MainActor` isolation; data types are `nonisolated` and
   `Sendable`; every `extension AppConfig/AppBranding/DesignTokens/AccessibilityIdentifiers/ErrorMessageMapper/String`
   in its own file is a `nonisolated extension`; generated asset symbols are main-actor only.

@@ -20,7 +20,7 @@ colour, never glass, because the list draws many at once. The model is [ViewMode
   a `ConversationRow` button with the inbox symbol avatar, the `inbox.hasUnread` dot and the caption
   `inbox.newestVisible?.caption ?? AppBranding.Inbox.emptyCaption`; identifier `AccessibilityIdentifiers.inboxRow`.
 - `InboxItemRow(item: InboxItem, viewModel: InboxViewModel)` `[lily/Features/Inbox/Views/InboxItemRow.swift:InboxItemRow]`:
-  switches on `item.kind`; private `InviteCard` (group invite) and `ReminderCard` (game reminder).
+  switches on `item.kind`; private `InviteCard` (group invite) and `ReminderCard` (event reminder).
 - `TournamentInviteCard(item:invite: TournamentInvitePayload, viewModel:)` and
   `MatchReminderCard(item:reminder: MatchReminderPayload, viewModel:)`
   `[lily/Features/Inbox/Views/InboxItemRow+Tournaments.swift:TournamentInviteCard]`,

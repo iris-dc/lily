@@ -176,6 +176,9 @@ nonisolated enum AppConfig {
         static let unauthorizedStatus = 401
         /// The backend's rate limit; recognised by status too, in case the `{code, message}` body is missing.
         static let rateLimitedStatus = 429
+        /// A body over the backend's document limit (`REQUEST_TOO_LARGE`): the app's drift, never an expected refusal;
+        /// recognised by status too, since the load balancer's own 413 carries no `{code, message}` body.
+        static let contentTooLargeStatus = 413
         /// The range of a refusal; a known backend code inside it is an expected product state, not a fault.
         static let clientErrorStatuses = 400..<500
 

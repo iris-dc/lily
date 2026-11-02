@@ -17,18 +17,20 @@ timeouts live in `AppConfig.API` (`lily/Config/`) and are cited by name.
 - Children: [Interfaces](./Interfaces/EGM.md) (`APIClient`), [Models](./Models/EGM.md) (`APIRequest`, `APIError`,
   `AppVersion`, `Page`, `NoContent`, `OptionalBody`, `WireNamedKind`, `Coordinate.queryItems`),
   [Implementations](./Implementations/EGM.md) (`URLSessionAPIClient`, `APIJSONCoding`).
-- `nonisolated enum BackendErrorCode: String, CaseIterable, Sendable`: 58 cases whose raw values are Laurel's codes
+- `nonisolated enum BackendErrorCode: String, CaseIterable, Sendable`: 61 cases whose raw values are Laurel's codes
   (`EVENT_NOT_FOUND`, `EVENT_FULL`, `ALREADY_JOINED`, `NOT_A_PARTICIPANT`, `HOST_CANNOT_LEAVE`, `NOT_HOST`,
-  `CAPACITY_TOO_LOW`, `TRY_AGAIN`, `RATE_LIMITED`, `CONTENT_REJECTED`, `FORBIDDEN`, `NOT_A_MEMBER`, `BANNED`,
-  `ACCOUNT_SUSPENDED`, `TERMS_REQUIRED`, `GROUP_NOT_FOUND`, `MESSAGE_NOT_FOUND`, `USER_NOT_FOUND`, `EVENT_ID_REUSED`, `GROUP_ID_TAKEN`,
-  `GROUP_ID_REUSED`, `GROUP_FULL`, `OWNER_CANNOT_LEAVE`, `MEMBER_BANNED`, `MEMBERSHIP_LIMIT`, `INVITE_EXPIRED`,
-  `INVITE_NOT_PENDING`, `INBOX_ITEM_NOT_FOUND`, `ALREADY_MEMBER`, `CANNOT_INVITE`, `BLOCK_LIMIT`, `CONVERSATION_LIMIT`,
+  `CAPACITY_TOO_LOW`, `TRY_AGAIN`, `RATE_LIMITED`, `REQUEST_TOO_LARGE`, `CONTENT_REJECTED`, `FORBIDDEN`, `NOT_A_MEMBER`, `BANNED`,
+  `ACCOUNT_SUSPENDED`, `TERMS_REQUIRED`, `GROUP_NOT_FOUND`, `MESSAGE_NOT_FOUND`, `USER_NOT_FOUND`, `EVENT_ID_TAKEN`, `EVENT_ID_REUSED`,
+  `GROUP_ID_TAKEN`, `GROUP_ID_REUSED`, `GROUP_FULL`, `OWNER_CANNOT_LEAVE`, `MEMBER_BANNED`, `MEMBERSHIP_LIMIT`, `INVITE_EXPIRED`,
+  `INVITE_NOT_PENDING`, `INBOX_ITEM_NOT_FOUND`, `ALREADY_MEMBER`, `CANNOT_INVITE`, `INVITE_LIMIT`, `BLOCK_LIMIT`, `CONVERSATION_LIMIT`,
   `REPLY_TARGET_NOT_FOUND`, `ATTACHMENT_NOT_FOUND`, `ATTACHMENT_TOO_LARGE`, `ATTACHMENT_TYPE_NOT_ALLOWED`,
   `ATTACHMENTS_DISABLED`, `POLLS_NOT_ALLOWED`, `NOT_A_POLL`, `POLL_ANONYMOUS`, `NOT_PINNABLE`, `TOO_MANY_PINS`,
   `TOURNAMENT_NOT_FOUND`, `TOURNAMENT_ID_TAKEN`, `TOURNAMENT_ID_REUSED`, `TOURNAMENT_LIMIT`, `NOT_ORGANIZER`,
   `TOURNAMENT_LOCKED`, `REGISTRATION_CLOSED`, `TOURNAMENT_FULL`, `ALREADY_ENTERED`, `TEAM_FULL`, `ENTRY_NOT_FOUND`,
   `NOT_ENOUGH_ENTRIES`, `MATCH_NOT_FOUND`, `NOT_IN_MATCH`, `MATCH_NOT_READY`, `DRAW_NOT_ALLOWED`); `var appError: AppError`
-  [`lily/Core/Networking/APIFailureMapping.swift:BackendErrorCode`].
+  [`lily/Core/Networking/APIFailureMapping.swift:BackendErrorCode`]. Laurel's 69 codes are these 61 plus eight with no case
+  on purpose: the framework codes `VALIDATION_FAILED`, `UNAUTHENTICATED`, `INTERNAL_ERROR`, `NOT_FOUND`, `METHOD_NOT_ALLOWED`,
+  `UNSUPPORTED_MEDIA_TYPE` and the operator codes `REPORT_NOT_FOUND`, `FEEDBACK_NOT_FOUND`, which fall to the route's fallback.
 - `extension APIError { func appError(fallback: AppError) -> AppError }` [`lily/Core/Networking/APIFailureMapping.swift:APIError.appError(fallback:)`].
 - `extension APIClient { func send<Response: Decodable>(_ request: APIRequest<Response>, failingWith fallback: AppError) async throws -> Response }`
   [`lily/Core/Networking/APIFailureMapping.swift:APIClient.send(_:failingWith:)`].
@@ -56,16 +58,18 @@ timeouts live in `AppConfig.API` (`lily/Config/`) and are cited by name.
 
 ## Invariants
 
-- `BackendErrorCode.appError` is an exhaustive switch (a new code without a mapping fails to compile). Same-named cases
-  map one to one; the exceptions are `rateLimited` to `.rateLimited(retryAfter: nil)`, `forbidden` to
-  `.insufficientRole`, `banned` to `.bannedFromGroup`, `groupIdTaken` to `.groupCreationFailed`, `eventIdReused`,
-  `groupIdReused` and `tournamentIdReused` to `.createIdReused`, `membershipLimit` to `.membershipLimitReached`,
-  `inviteNotPending` and `inboxItemNotFound` to `.inviteNotPending`, `blockLimit` to `.blockLimitReached`,
-  `attachmentTooLarge` to `.attachmentTooLarge(caps: .group)`, `tournamentIdTaken` to `.tournamentCreationFailed`
-  [`APIFailureMapping.swift:BackendErrorCode.appError`].
+- `BackendErrorCode.appError` is an exhaustive switch (a new code without a mapping fails to compile; exhaustive as a
+  switch, not as a copy of Laurel's list). Same-named cases map one to one; the exceptions are `rateLimited` to
+  `.rateLimited(retryAfter: nil)`, `forbidden` to `.insufficientRole`, `banned` to `.bannedFromGroup`, `eventIdTaken` to
+  `.eventCreationFailed`, `groupIdTaken` to `.groupCreationFailed`, `eventIdReused`, `groupIdReused` and
+  `tournamentIdReused` to `.createIdReused`, `membershipLimit` to `.membershipLimitReached`, `inviteNotPending` and
+  `inboxItemNotFound` to `.inviteNotPending`, `inviteLimit` to `.tournamentInviteLimit`, `blockLimit` to
+  `.blockLimitReached`, `attachmentTooLarge` to `.attachmentTooLarge(caps: .group)`, `tournamentIdTaken` to
+  `.tournamentCreationFailed` [`APIFailureMapping.swift:BackendErrorCode.appError`].
 - `APIError.appError(fallback:)`: a non-`.http` error is the fallback; `AppConfig.API.unauthorizedStatus` is
-  `.sessionExpired` and `AppConfig.API.rateLimitedStatus` is `.rateLimited(retryAfter:)`, both before the body is
-  read (they may come without one); a known body code maps through `BackendErrorCode`; anything else is the fallback
+  `.sessionExpired`, `AppConfig.API.rateLimitedStatus` is `.rateLimited(retryAfter:)` and
+  `AppConfig.API.contentTooLargeStatus` is `.requestTooLarge`, all three before the body is read (they may come without
+  one); a known body code maps through `BackendErrorCode`; anything else is the fallback
   [`APIFailureMapping.swift:APIError.appError(fallback:)`].
 - `send(_:failingWith:)`: an `APIError` becomes its `appError(fallback:)`; a `URLError` other than `.cancelled`
   becomes `AppError.network`; `URLError.cancelled` and every other error pass through unchanged
@@ -123,4 +127,5 @@ timeouts live in `AppConfig.API` (`lily/Config/`) and are cited by name.
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/Networking`:
-  `SendFailingWithTests`, `LostRaceTests`, `WriteGateTests`, `LostAnswerTests`, `CreateFlowTests`)
+  `SendFailingWithTests`, `LostRaceTests`, `WriteGateTests`, `LostAnswerTests`, `CreateFlowTests`; `BackendErrorCode`'s
+  61 cases, their mappings and the eight Laurel codes without a case are pinned by `lilyTests/Errors/BackendErrorCodeTests`)

@@ -79,8 +79,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   bounded below by `viewModel.earliestStart`; the capacity `Stepper` appears only when
   `draft.playerLimit.hasCapacity`, over `viewModel.capacityRange`; the group row shows when `showsGroupRow` as the
   read-only `lockedGroup`, read-only "No group" when `explainsNoEligibleGroups`, else a `Picker` over
-  `eligibleGroups`; the title's submit moves focus to the location name; the price is typed as `draft.priceText` on
-  a `.decimalPad`.
+  `eligibleGroups` styled by `lilyMenuPicker()` (value and chevron in `.secondary`, not the form's accent tint), and
+  the details section's `SkillLevelPicker` (a default-styled `Picker` that a `Form` draws as a menu) is styled by
+  `lilyMenuPicker()` the same way; the title's submit moves focus to the location name; the price is typed as
+  `draft.priceText` on a `.decimalPad`.
 - `CreateMenuButton`: a `Menu` with game, group and (when `AppConfig.FeatureFlags.tournaments`) tournament while
   `AppConfig.FeatureFlags.groups` is on; a single game button otherwise.
 - Filter (`EventFilterPanel`): every change goes through `viewModel.updateFilter`, `toggleType` or `clearFilter`;
@@ -104,7 +106,9 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `event.skillLevel?.ifKnown` is set; `EventCard` adds a price chip when not free and a `GroupBadge` when hosted in
   a group; `EventPreviewCard` turns from a row into a column at accessibility type sizes and draws its `detail` (the
   distance) in `.secondary` like every other distance; `SkillLevelPicker` offers
-  "Any level" over `SkillLevel.known`, never an unknown level; `ParticipantRow` adds the host chip for
+  "Any level" over `SkillLevel.known`, never an unknown level; `EventDraftForm.detailsSection` styles it by
+  `lilyMenuPicker()` and `EventFilterPanel.levelRow` the same with its labels hidden, the title drawn on the left like
+  the price row's; `ParticipantRow` adds the host chip for
   `participant.isHost`.
 
 ## Side Effects

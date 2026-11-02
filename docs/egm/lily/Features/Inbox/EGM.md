@@ -5,7 +5,7 @@ Source: `lily/Features/Inbox/`
 ## Overview
 
 The inbox feature: the "iskra" conversation pinned as the first row of the Chats tab, holding group and tournament
-invites (Accept / Decline) and game and match reminders (open the game or the tournament). Data flows from
+invites (Accept / Decline) and event and match reminders (open the event or the tournament). Data flows from
 `InboxRepository` (the `/api/me/inbox` routes) into `InboxStore`, the one source of the inbox kept for the app's
 lifetime and cleared on sign-out, then through `InboxViewModel` to the views. Wire types keep the backend's key names
 and `InboxItemKind` tolerates kinds this build does not know (`.unknown`, drawn as nothing and never lighting the

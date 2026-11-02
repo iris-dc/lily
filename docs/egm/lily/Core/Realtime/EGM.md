@@ -108,9 +108,10 @@ arrives on them).
   epoch; `tournamentChanged` and `matchUpdated` bump `tournamentChanges` and adopt the epoch; `membershipChanged`,
   `inboxItem` and `unknown` on a room are ignored
   [`+Routing.swift:RealtimeSessionController.route(_:from:)`, `+Routing.swift:RealtimeSessionController.applyRoomEvent(_:groupID:subscribedEpoch:)`, `+Routing.swift:RealtimeSessionController.resubscribeJittered(_:to:memberCount:)`].
-- User-channel events: `membershipChanged` that ends the membership drops the group, otherwise notes the epoch, bumps
-  `groupChanges` and reconciles; `inboxItem` goes to `inbox.apply`; everything else is ignored
-  [`+Routing.swift:RealtimeSessionController.applyUserEvent(_:)`].
+- User-channel events: `membershipChanged` that ends the membership drops the group, otherwise (a join, a role change
+  or a kind this build does not know, `MembershipChange.Kind.unknown`) notes the epoch, bumps `groupChanges` and
+  reconciles, so Mine refetches and the room stays; the log lines name the kind by `wireName`; `inboxItem` goes to
+  `inbox.apply`; everything else is ignored [`+Routing.swift:RealtimeSessionController.applyUserEvent(_:)`].
 - `setOpenRoom` with a room whose id differs from `lastOpenRoomID` compacts that previous room and records the new
   id (the same room re-set, as `adoptEpoch` does, compacts nothing); `resetSessionState` (a user change, sign-out)
   clears `lastOpenRoomID`
@@ -148,4 +149,5 @@ arrives on them).
 
 ## Verification
 
-- Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/Realtime`)
+- Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/Realtime`; an unknown
+  membership change kind is pinned by `RealtimeMembershipChangeRoutingTests`)

@@ -129,7 +129,7 @@ struct EventFilterPanel: View {
             Text(AppBranding.Events.levelLabel)
             Spacer()
             SkillLevelPicker(selection: binding(\.skillLevel))
-                .pickerStyle(.menu)
+                .lilyMenuPicker()
                 .labelsHidden()
         }
     }

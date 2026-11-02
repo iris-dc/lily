@@ -12,11 +12,8 @@ nonisolated enum ErrorMessageMapper {
         case .authCancelled, .authFailed, .providerUnavailable, .invalidCredentials, .emailTaken, .emailNotConfirmed,
              .invalidConfirmationCode, .tooManyAttempts, .sessionExpired:
             authMessage(for: error)
-        case .network:
-            ErrorMessage(title: localized("You're offline"), body: localized("Check your connection and try again."))
-        case .rateLimited:
-            ErrorMessage(title: localized("Slow down a moment"),
-                         body: localized("Too many requests. Try again in a few seconds."))
+        case .network, .rateLimited, .requestTooLarge:
+            transportMessage(for: error)
         case .eventsUnavailable, .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave,
              .tryAgain, .participationFailed, .eventCreationFailed, .createIdReused, .notHost, .capacityTooLow,
              .eventUpdateFailed:
@@ -38,7 +35,8 @@ nonisolated enum ErrorMessageMapper {
              .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed,
              .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer,
              .tournamentLocked, .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound, .drawNotAllowed,
-             .tournamentLimit, .tournamentMembershipLimit, .inviteeAlreadyEntered, .cannotInviteToTournament:
+             .tournamentLimit, .tournamentMembershipLimit, .inviteeAlreadyEntered, .cannotInviteToTournament,
+             .tournamentInviteLimit:
             peopleMessage(for: error)
         case .unknown:
             unknownMessage
@@ -48,6 +46,22 @@ nonisolated enum ErrorMessageMapper {
     /// The fallback of every domain branch, so a case missing from one reads generic instead of crashing.
     static var unknownMessage: ErrorMessage {
         ErrorMessage(title: localized("Something went wrong"), body: localized("An unexpected error occurred. Please try again."))
+    }
+
+    /// Copy for what the transport answered before any route's logic ran: no connection, a throttle, a body the backend
+    /// refused as too large; `message(for:)` routes exactly those cases here.
+    private static func transportMessage(for error: AppError) -> ErrorMessage {
+        switch error {
+        case .network:
+            ErrorMessage(title: localized("You're offline"), body: localized("Check your connection and try again."))
+        case .rateLimited:
+            ErrorMessage(title: localized("Slow down a moment"),
+                         body: localized("Too many requests. Try again in a few seconds."))
+        case .requestTooLarge:
+            ErrorMessage(title: localized("Couldn't send that"), body: localized("It's larger than the server accepts."))
+        default:
+            unknownMessage
+        }
     }
 
     /// Copy for signing in, signing up and the session; `message(for:)` routes exactly those cases here.

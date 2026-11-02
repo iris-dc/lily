@@ -27,7 +27,8 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
 - `[lily/Features/Tournaments/Views/DiscoverTournamentsView.swift:DiscoverTournamentsView]`: `init(dependencies:
   AppDependencies)`, owns a `@State` `TournamentListViewModel` for `scope: .upcoming`; `ContentScreen` with a
   `TypeFilterButton` (`tournamentsTypeFilter`) in the toolbar, a `ProgressView` while `isInitialLoad`, else a
-  refreshable `TournamentCardList` or an `EmptyStateView`.
+  refreshable `TournamentCardList` (the cards nearest first around a position, like the backend's ranked answer, and
+  by start without one) or an `EmptyStateView`.
 - `[lily/Features/Tournaments/Views/GroupTournamentsSegment.swift:GroupTournamentsSegment]`: `ListSegment(state:
   viewModel.listState)` around a single-column, unpadded `TournamentCardList`.
 - `[lily/Features/Tournaments/Views/TournamentCard.swift:TournamentCard]`: `GlassCard` with `CardHeader` chips
@@ -138,7 +139,8 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
 - `[lily/Features/Tournaments/Views/TournamentDraftForm+Schedule.swift:TournamentDraftForm.whenSection]`: start is
   bounded by `earliestStart...`, the close date by `...startsAt` and shown only when set; "at start" clears the
   deadline, "earlier" proposes `proposedDeadline()`; the visibility picker shows only for a standalone tournament
-  with structure changes allowed; the group row is read-only for a locked group or with no eligible group.
+  with structure changes allowed; the group row is read-only for a locked group or with no eligible group, else a
+  `Picker` styled by `lilyMenuPicker()` (its value and chevron in `.secondary`, not the form's accent tint).
 - `[lily/Features/Tournaments/Views/TournamentParticipationControl.swift:TournamentMenu]`: menu items are gated by
   `permissions` (`canOpenChat`, `canInvite`, `showsStart` with Start disabled unless `canStart` and subtitled by
   `startBlockedReason`, `canEdit`, `canCancel`, `canReport`); the control is chosen by `participation` alone.

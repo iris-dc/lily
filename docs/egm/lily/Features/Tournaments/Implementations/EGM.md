@@ -35,12 +35,12 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   now: @escaping () -> Date = { .now })`.
   State: `details: [String: TournamentDetail]` (seeded from `MockTournamentFixtures.make(now:)`), `entrySequence`,
   `invitedTournamentIDs`, `drafts: [String: TournamentDraft]`. Internal helpers shared with the extensions: `readable(_:)`, `requireCaller()`,
-  `organized(_:)`, `store(_:)`, `resolved(_:)` (detail and tournament overloads), `isInRoom(_:)`,
-  `noteInvitee(of:)`, `invited(_:)`. Implements `tournaments(in:near:)`, `tournament(id:)`, `create(_:)`,
-  `update(id:_:)`, `cancel(id:)` here.
+  `organized(_:)`, `store(_:)`, `resolved(_:)` (detail and tournament overloads), `isInRoom(_:)`, `static isOpen(_:)`
+  (in registration or in progress), `openOrganizedCount`, `noteInvitee(of:)`, `invited(_:)`. Implements
+  `tournaments(in:near:)`, `tournament(id:)`, `create(_:)`, `update(id:_:)`, `cancel(id:)` here.
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository+Entries.swift:MockTournamentRepository.join(id:teamName:)]`:
-  `join`, `joinTeam`, `leave`, `removeEntry`; private `requireEnterable`, `counting(_:entries:departed:)`,
-  `enter(_:logging:)`, `depart(_:userIDs:logging:)`, `nextEntryID(in:)`.
+  `join`, `joinTeam`, `leave`, `removeEntry`; `openInRoomsCount`; private `requireRoomSlot(_:)`, `requireEnterable`,
+  `counting(_:entries:departed:)`, `enter(_:logging:)`, `depart(_:userIDs:logging:)`, `nextEntryID(in:)`.
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository+Matches.swift:MockTournamentRepository.start(id:)]`:
   `start`, `report`, `confirm`, `dispute`, `walkover`, `schedule`; private `runningMatch`, `requireOrganizer`,
   `requireSideOrOrganizer`, `requireOpen`, `requireReportedByTheOtherSide`, `standsByCaller`, `repeatsResult`,
@@ -93,7 +93,14 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   idempotent by `draft.clientId` (an existing id replays the stored tournament when the draft equals the stored one,
   `drafts`, and is `.createIdReused` when it differs; `update` stores the new draft); refusals in order: no coordinate or
   `maxEntries` below `AppConfig.Tournaments.minEntries(for:)` (`.tournamentCreationFailed`), a group that is unknown
-  or neither public nor joined (`.groupNotFound`), `GroupAccess.canCreateEvents` false (`.insufficientRole`).
+  or neither public nor joined (`.groupNotFound`, `hostingGroup(for:)`), then the organiser's cap: `openOrganizedCount`
+  (stored tournaments organised by `callerMarker` whose status `isOpen`) at `AppConfig.Tournaments.maxOrganizedOpen`
+  refuses with `.tournamentLimit`, never a replay, which answered first; then `GroupAccess.canCreateEvents` false
+  (`.insufficientRole`), the order Laurel judges them in (`groupFor`, `requireOrganizerSlot`, the role inside the
+  write's transaction).
+- `[lily/Features/Tournaments/Implementations/MockTournamentRepository.swift:MockTournamentRepository.tournament(id:)]`:
+  the read rule, then a caller with no user (`identity.currentUserID == nil`) gets the root alone (`entries`, `matches`
+  and `standings` empty, `myEntryId` nil), as Laurel answers a guest; a signed-in caller gets the resolved detail.
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository.swift:MockTournamentRepository.update(id:_:)]`:
   after registration, `startsAt`, `registrationClosesAt`, `resolvedAllowsDraws` and `maxEntries` must be unchanged
   (`.tournamentLocked`); then the format floor (`.tournamentUpdateFailed`); then `maxEntries >= entryCount`
@@ -106,9 +113,12 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   stored rows hold `callerMarker` for the caller; every answer swaps it for `identity.currentUserID` and recomputes
   `myEntryId` from the roster (nil when signed out), so one fixture set serves any mock sign-in.
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository+Entries.swift:MockTournamentRepository.join(id:teamName:)]`:
-  refusal order: `.sessionExpired`, read rule, `.registrationClosed`, `.alreadyEntered`, `.tournamentFull`, and for
-  a team a `TeamNameIssue` (`.tournamentActionFailed`). `joinTeam`: `.entryNotFound`, `.alreadyEntered` (same
-  entry), `.teamFull`, then the tournament's own refusals. `leave`: only the player, their captain or the organiser
+  refusal order: `.sessionExpired`, read rule, for a team a `TeamNameIssue` (`.tournamentActionFailed`; Laurel
+  validates the body before counting rooms), the caller's cap (`requireRoomSlot`: a caller already in this room is
+  let through; otherwise `openInRoomsCount`, the stored tournaments the caller is in whose status `isOpen`, at
+  `AppConfig.Tournaments.maxPerUser` refuses with `.tournamentMembershipLimit`), `.registrationClosed`,
+  `.alreadyEntered`, `.tournamentFull`. `joinTeam`: the
+  caller's cap, `.entryNotFound`, `.alreadyEntered` (same entry), `.teamFull`, then the tournament's own refusals. `leave`: only the player, their captain or the organiser
   (`.insufficientRole`), only during registration (`.registrationClosed`), target must be in the entry
   (`.entryNotFound`).
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository+Entries.swift:MockTournamentRepository.counting(_:entries:departed:)]`:
@@ -184,4 +194,5 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
 
 ## Verification
 
-- Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/Tournaments`).
+- Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/Tournaments`; the guest
+  root in `MockTournamentRepositoryTests.aGuestReadsTheRootAlone`, the two caps in `MockTournamentRefusalsTests+Caps`).

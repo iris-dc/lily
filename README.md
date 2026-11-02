@@ -37,24 +37,25 @@ build for trying the app on a phone).
  ┌───────────────────────────┐     ┌──────────┐     ┌─────────────────┐
  │  Laurel  (iris-dc/laurel) │────▶│ DynamoDB │     │ S3 attachments  │◀─ ─ the app uploads and
  │  Spring Boot on Fargate   │     └──────────┘     └─────────────────┘     downloads straight to S3
- │  https://api.iskra.red    │────▶ presigned S3 URLs · AppSync Events (backend side so far) · APNs · SNS
+ │  https://api.iskra.red    │────▶ presigned S3 URLs · AppSync Events (not yet: Laurel logs each publish) · APNs · SNS
  └───────────────────────────┘
        infrastructure as CDK:  rose  (iris-dc/rose, eu-central-1)
 ```
 
 The app keeps no credentials of its own: Cognito signs people in, the backend validates the token and reads the user
-id from it. Guests can browse events without signing in. The app keeps what it has loaded in memory and asks the
-backend again only when it is stale or something changed, because the backend runs on a tight budget; the tabs' lists
-also keep their last answer on disk, so a launch shows them at once and refreshes behind; pictures and files are
-cached on disk.
+id from it. Guests can browse events, public groups and tournaments without signing in. The app keeps what it has
+loaded in memory and asks the backend again only when it is stale or something changed, because the backend runs on a
+tight budget; the tabs' lists also keep their last answer on disk, so a launch shows them at once and refreshes
+behind; pictures and files are cached on disk.
 
 ## Status
 
 Early days. Sign-in, events, groups, chat, tournaments, the inbox, languages and the iPad layouts work end to end
 against the live backend; groups, chat and tournaments are behind feature flags in debug builds. Live message
-delivery over AppSync Events is not wired in the app yet: the backend publishes, the app catches up over REST when a
-room opens or comes back to the foreground. Push reminders are built on every side but cannot deliver until the
-Apple Developer Program account exists (the steps are in `docs/notes/inbox-people-and-push.md`).
+delivery over AppSync Events is not built on any side yet: the backend only logs what it would publish, the
+infrastructure for it exists as undeployed code, and the app catches up over REST when a room opens or comes back to
+the foreground. Push reminders are built on every side but cannot deliver until the Apple Developer Program account
+exists (the steps are in `docs/notes/inbox-people-and-push.md`).
 
 ## Run it
 

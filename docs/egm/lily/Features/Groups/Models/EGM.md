@@ -35,13 +35,15 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   [`lily/Features/Groups/Models/GroupVisibility.swift`:`GroupVisibility`]; `GroupScope` (`mine`,
   `discover(query: String?, type: EventType?)`; `wireName`, `searchPrefix: String?`)
   [`lily/Features/Groups/Models/GroupScope.swift`:`GroupScope`]; `MemberRole: String` (`owner`, `admin`, `member`,
-  `banned`; `isAdmin`, `displayName`) and `RoleChangePayload { role }`
-  [`lily/Features/Groups/Models/MemberRole.swift`:`MemberRole`].
+  `banned`; `isAdmin`, `displayName`; strict on purpose, like `GroupVisibility`: a permission ladder on both sides
+  that the app also writes, and Laurel refuses an unknown name, so a new rung is a wire-version change) and
+  `RoleChangePayload { role }` [`lily/Features/Groups/Models/MemberRole.swift`:`MemberRole`].
 - Roster and membership: `GroupMember { userId, displayName, role, joinedAt }` with `id == userId` and
   `withRole(_:)`, `UnbanReceipt { unbanned }` [`lily/Features/Groups/Models/GroupMember.swift`:`GroupMember`];
   `GroupMembership { role, joinedAt, lastReadMessageId?, hasUnread }`
   [`lily/Features/Groups/Models/GroupMembership.swift`:`GroupMembership`]; `MembershipChange { groupId, change: Kind,
-  role?, channelEpoch }` with `Kind` = `joined`, `left`, `removed`, `roleChanged` and `endsMembership`
+  role?, channelEpoch }` with `Kind: WireNamedKind` = `joined`, `left`, `removed`, `roleChanged` (`role_changed`),
+  `unknown(String)` (`known`, `wireName`) and `endsMembership`
   [`lily/Features/Groups/Models/MembershipChange.swift`:`MembershipChange`]; `RoomSubscription { groupID, epoch }`
   with `init(group:)` [`lily/Features/Groups/Models/RoomSubscription.swift`:`RoomSubscription`].
 - `GroupDraft: Equatable, Sendable`: `clientId` (let), `name`, `description`, `visibility` (default `.public`),
@@ -73,8 +75,8 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   { group }` [`lily/Features/Groups/Models/GroupInfoDestination.swift`:`GroupInfoDestination`]; the payload-less
   `DiscoverGroupsDestination` [`lily/Features/Groups/Models/DiscoverGroupsDestination.swift`:`DiscoverGroupsDestination`].
 - Invites: `InviteCandidate { userId, displayName, via: InviteCandidateSource, viaName, isInvited }` with `id == userId`,
-  `caption`, `markingInvited()`; `InviteCandidateSource` (`group`, `event`)
-  [`lily/Features/Groups/Models/InviteCandidate.swift`:`InviteCandidate`]; `SentInvite { id, groupId?, tournamentId?,
+  `caption`, `markingInvited()`; `InviteCandidateSource: WireNamedKind` (`group`, `event`, `unknown(String)`; `known`,
+  `wireName`) [`lily/Features/Groups/Models/InviteCandidate.swift`:`InviteCandidate`]; `SentInvite { id, groupId?, tournamentId?,
   inviteeUserId, inviteeName, status: InviteStatus, createdAt, expiresAt }`
   [`lily/Features/Groups/Models/SentInvite.swift`:`SentInvite`]; `InviteTarget` (`group(id:)`, `tournament(id:)`;
   `id`, `logName`, `logCategory`) [`lily/Features/Groups/Models/InviteTarget.swift`:`InviteTarget`].
@@ -143,7 +145,11 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   query, which is a browse [`lily/Features/Groups/Models/GroupScope.swift`:`GroupScope.searchPrefix`].
 - `MemberRole.isAdmin` is `owner || admin` [`lily/Features/Groups/Models/MemberRole.swift`:`MemberRole.isAdmin`];
   `MembershipChange.Kind.roleChanged` is the wire string `"role_changed"`, and `endsMembership` is `left || removed`
-  (a ban arrives as `removed`) [`lily/Features/Groups/Models/MembershipChange.swift`:`MembershipChange.endsMembership`].
+  (a ban arrives as `removed`; a kind this build does not know decodes as `unknown(name)` and ends nothing)
+  [`lily/Features/Groups/Models/MembershipChange.swift`:`MembershipChange.endsMembership`]. `InviteCandidate.caption` is
+  "In <viaName>" for `group`, "Played <viaName>" for `event` and the `viaName` alone for an unknown source
+  [`lily/Features/Groups/Models/InviteCandidate.swift`:`InviteCandidate.caption`]. `MemberRole` and `GroupVisibility`
+  decode strictly: an unknown value fails the payload, by design.
 - `Account.termsAccepted` is `(acceptedTermsVersion ?? 0) >= termsVersion`
   [`lily/Features/Groups/Models/Account.swift`:`Account.termsAccepted`].
 - `ReportTarget.group`/`.tournament` carry their own id as `groupID`, `.message` carries its room, `.user` none;

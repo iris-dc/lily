@@ -5,7 +5,7 @@ Source: `lily/Features/Inbox/Models/`
 ## Overview
 
 Plain `nonisolated`, `Sendable` value types for the inbox: the `InboxItem` envelope with its four payloads (group
-invite, game reminder, tournament invite, match reminder), the wire shapes for a page, an acceptance, a declination
+invite, event reminder, tournament invite, match reminder), the wire shapes for a page, an acceptance, a declination
 and the read marker, the `InviteAnswer` protocol both invite payloads share, and two pure helpers: `InboxTimeline`
 (items to list rows with day separators) and `InboxTimeCaption` (a reminder's time text). Every type decodes with the
 backend's key names; nothing here performs I/O.

@@ -36,9 +36,10 @@ base URL, the two identity headers, the version header and the status-code rules
   [`URLSessionAPIClient.swift:URLSessionAPIClient.queryAllowed`, `URLSessionAPIClient.swift:URLSessionAPIClient.url(_:path:query:)`].
 - Status handling: a non-`HTTPURLResponse` throws `APIError.notHTTPResponse`; a status outside `200..<300` throws
   `APIError.http(status:, body: the decoded {code, message} if any, retryAfter: Retry-After in seconds if present)`.
-  The failure log is a warning when the status is in `AppConfig.API.clientErrorStatuses` and the body code is a known
-  `BackendErrorCode`, or the status is `AppConfig.API.unauthorizedStatus` or `AppConfig.API.rateLimitedStatus`;
-  otherwise an error. The log carries the code, never the body
+  The failure log is a warning when the status is in `AppConfig.API.clientErrorStatuses` but not
+  `AppConfig.API.contentTooLargeStatus` (a 413 `REQUEST_TOO_LARGE` is the app's drift, so it logs at error although its
+  code is known) and the body code is a known `BackendErrorCode`, or the status is `AppConfig.API.unauthorizedStatus` or
+  `AppConfig.API.rateLimitedStatus`; otherwise an error. The log carries the code, never the body
   [`URLSessionAPIClient.swift:URLSessionAPIClient.failure(_:data:endpoint:)`, `URLSessionAPIClient.swift:URLSessionAPIClient.isRefusal(status:body:)`].
 - Decoding: empty data with an `EmptyDecodable` response type answers `.empty`; otherwise the JSON decoder runs and a
   failure throws `APIError.decodingFailed` [`URLSessionAPIClient.swift:URLSessionAPIClient.decode(_:from:endpoint:)`].

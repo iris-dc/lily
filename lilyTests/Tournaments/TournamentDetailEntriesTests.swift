@@ -168,7 +168,7 @@ struct TournamentDetailEntriesTests {
         let load = Task { await viewModel.load() }
         await settle { harness.repository.fetchedIDs.count == 1 }
         harness.repository.releaseRequests()
-        await load.value
+        _ = await load.value
         harness.repository.holdsRequests = true
 
         let first = Task { await viewModel.join() }

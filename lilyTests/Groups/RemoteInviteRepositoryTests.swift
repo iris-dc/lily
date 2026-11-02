@@ -50,6 +50,21 @@ struct RemoteInviteRepositoryTests {
         #expect(sent.expiresAt == APIJSONCoding.parseInstant("2026-10-06T10:00:00Z"))
     }
 
+    /// A source a newer backend adds (a shared tournament, a conversation) decodes and captions the shared thing's name
+    /// alone instead of failing the sheet; the known sources caption as before and round-trip through their wire names.
+    @Test func aCandidateOfAnUnseenSourceDecodesAndCaptionsTheName() throws {
+        let json = """
+        {"items":[{"userId":"seed-dev","displayName":"Dev","via":"tournament","viaName":"Kickers Cup","isInvited":false},\
+        {"userId":"seed-marta","displayName":"Marta","via":"group","viaName":"Kreuzberg Kickers","isInvited":false}]}
+        """
+        let page = try ContractSamples.decode(Page<InviteCandidate>.self, from: json)
+        #expect(page.items.count == 2)
+        let dev = page.items[0]
+        #expect(dev.via.isUnknown && dev.via.wireName == "tournament" && dev.caption == "Kickers Cup")
+        #expect(page.items[1].via == .group && page.items[1].caption == "In Kreuzberg Kickers")
+        #expect(InviteCandidateSource(wireName: "event") == .event && InviteCandidateSource.event.wireName == "event")
+    }
+
     @Test func thePayloadEncodesTheUserIdAlone() throws {
         let data = try APIJSONCoding.makeEncoder().encode(SendInvitePayload(userId: "u-2"))
         #expect(String(bytes: data, encoding: .utf8) == #"{"userId":"u-2"}"#)

@@ -3789,6 +3789,46 @@
         }
       }
     },
+    "Can't invite more people": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Больше пригласить нельзя"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se puede invitar a más personas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d'inviter d'autres personnes"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Більше запросити не можна"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie można zaprosić więcej osób"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não dá para convidar mais pessoas"
+          }
+        }
+      }
+    },
     "Find sports events": {
       "localizations": {
         "ru": {
@@ -5985,6 +6025,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Não foi possível guardar as alterações"
+          }
+        }
+      }
+    },
+    "Couldn't send that": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось отправить"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo enviar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d'envoyer"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося надіслати"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie udało się wysłać"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível enviar"
           }
         }
       }
@@ -9290,15 +9370,39 @@
           }
         },
         "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dale al equipo un nombre de al menos %lld caracteres"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Dale al equipo un nombre de al menos %lld carácter"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Dale al equipo un nombre de al menos %lld caracteres"
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Donnez à l'équipe un nom d'au moins %lld caractères"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Donnez à l'équipe un nom d'au moins %lld caractère"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Donnez à l'équipe un nom d'au moins %lld caractères"
+                }
+              }
+            }
           }
         },
         "uk": {
@@ -9362,9 +9466,21 @@
           }
         },
         "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dê à equipe um nome com pelo menos %lld caracteres"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Dê à equipe um nome com pelo menos %lld caractere"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Dê à equipe um nome com pelo menos %lld caracteres"
+                }
+              }
+            }
           }
         }
       }
@@ -9402,15 +9518,39 @@
           }
         },
         "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dale al torneo un nombre de al menos %lld caracteres"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Dale al torneo un nombre de al menos %lld carácter"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Dale al torneo un nombre de al menos %lld caracteres"
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Donnez au tournoi un nom d'au moins %lld caractères"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Donnez au tournoi un nom d'au moins %lld caractère"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Donnez au tournoi un nom d'au moins %lld caractères"
+                }
+              }
+            }
           }
         },
         "uk": {
@@ -9474,9 +9614,21 @@
           }
         },
         "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dê ao torneio um nome com pelo menos %lld caracteres"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Dê ao torneio um nome com pelo menos %lld caractere"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Dê ao torneio um nome com pelo menos %lld caracteres"
+                }
+              }
+            }
           }
         }
       }
@@ -10601,6 +10753,46 @@
         }
       }
     },
+    "It's larger than the server accepts.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запрос больше, чем принимает сервер."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es más grande de lo que acepta el servidor."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'est plus volumineux que ce que le serveur accepte."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запит більший, ніж приймає сервер."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To więcej, niż przyjmuje serwer."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "É maior do que o servidor aceita."
+          }
+        }
+      }
+    },
     "Join": {
       "localizations": {
         "ru": {
@@ -11546,15 +11738,39 @@
           }
         },
         "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mantén el nombre del equipo por debajo de %lld caracteres"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Mantén el nombre del equipo por debajo de %lld carácter"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Mantén el nombre del equipo por debajo de %lld caracteres"
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gardez le nom de l'équipe sous %lld caractères"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Gardez le nom de l'équipe sous %lld caractère"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Gardez le nom de l'équipe sous %lld caractères"
+                }
+              }
+            }
           }
         },
         "uk": {
@@ -11618,9 +11834,21 @@
           }
         },
         "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mantenha o nome da equipe abaixo de %lld caracteres"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Mantenha o nome da equipe abaixo de %lld caractere"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Mantenha o nome da equipe abaixo de %lld caracteres"
+                }
+              }
+            }
           }
         }
       }
@@ -21585,6 +21813,46 @@
         }
       }
     },
+    "This tournament has invited as many people as it can.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В этот турнир уже приглашено максимальное число людей."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este torneo ya ha invitado a todas las personas que puede."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce tournoi a déjà invité autant de personnes qu'il le peut."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "У цей турнір уже запрошено максимальну кількість людей."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ten turniej zaprosił już tyle osób, ile może."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este torneio já convidou todas as pessoas que pode."
+          }
+        }
+      }
+    },
     "This tournament is no longer available": {
       "localizations": {
         "ru": {
@@ -24766,15 +25034,39 @@
           }
         },
         "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Puedes organizar como máximo %lld torneos abiertos. Termina o cancela uno primero."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Puedes organizar como máximo %lld torneo abierto. Termina o cancela uno primero."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Puedes organizar como máximo %lld torneos abiertos. Termina o cancela uno primero."
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vous pouvez organiser au plus %lld tournois ouverts. Terminez-en ou annulez-en un d'abord."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vous pouvez organiser au plus %lld tournoi ouvert. Terminez-le ou annulez-le d'abord."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vous pouvez organiser au plus %lld tournois ouverts. Terminez-en ou annulez-en un d'abord."
+                }
+              }
+            }
           }
         },
         "uk": {
@@ -24838,9 +25130,21 @@
           }
         },
         "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Você pode organizar no máximo %lld torneios abertos. Conclua ou cancele um primeiro."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Você pode organizar no máximo %lld torneio aberto. Conclua-o ou cancele-o primeiro."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Você pode organizar no máximo %lld torneios abertos. Conclua ou cancele um primeiro."
+                }
+              }
+            }
           }
         }
       }

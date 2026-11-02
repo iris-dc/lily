@@ -172,9 +172,9 @@ extension RealtimeSessionController {
 
     private func applyMembershipChange(_ change: MembershipChange) {
         if change.endsMembership {
-            removeGroupLocally(change.groupId, reason: "membership \(change.change.rawValue)")
+            removeGroupLocally(change.groupId, reason: "membership \(change.change.wireName)")
         } else {
-            logger.info(.chat, "Membership \(change.change.rawValue) for group \(change.groupId)")
+            logger.info(.chat, "Membership \(change.change.wireName) for group \(change.groupId)")
             noteEpoch(change.channelEpoch, for: change.groupId)
             groupChanges.recordChange()
             reconcileSubscriptions()

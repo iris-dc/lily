@@ -5,7 +5,7 @@ Source: `lily/Features/Inbox/ViewModels/`
 ## Overview
 
 `InboxViewModel` is the inbox screen's model: the store's items as timeline rows, Accept and Decline on an invite, the
-game behind a game reminder and the tournament behind a match reminder. It holds no copy of the items; they live in
+event behind an event reminder and the tournament behind a match reminder. It holds no copy of the items; they live in
 `InboxStore` ([State](../State/EGM.md)), which the realtime controller and the Chats row share.
 
 ## Interface

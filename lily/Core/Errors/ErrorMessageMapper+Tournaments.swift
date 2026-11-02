@@ -98,6 +98,9 @@ nonisolated extension ErrorMessageMapper {
         case .cannotInviteToTournament:
             ErrorMessage(title: localized("Only players can invite"),
                          body: localized("Enter the tournament first, or ask the organiser to send the invite."))
+        case .tournamentInviteLimit:
+            ErrorMessage(title: localized("Can't invite more people"),
+                         body: localized("This tournament has invited as many people as it can."))
         default:
             unknownMessage
         }

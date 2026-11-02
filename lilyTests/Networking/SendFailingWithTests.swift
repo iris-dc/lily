@@ -61,6 +61,16 @@ struct SendFailingWithTests {
         await #expect(throws: AppError.rateLimited(retryAfter: nil)) { try await send() }
     }
 
+    /// A 413 is about the body's size whoever refused it: the backend's code and the load balancer's bare status both
+    /// say the request was too large.
+    @Test func aBodyTooLargeIsRequestTooLargeEvenWithoutACode() async {
+        client.error = APIError.http(status: 413, body: nil)
+        await #expect(throws: AppError.requestTooLarge) { try await send() }
+
+        client.error = APIError.http(status: 413, body: APIErrorBody(code: "REQUEST_TOO_LARGE", message: "m"))
+        await #expect(throws: AppError.requestTooLarge) { try await send() }
+    }
+
     @Test func aTransportFailureIsNetwork() async {
         client.error = URLError(.notConnectedToInternet)
         await #expect(throws: AppError.network) { try await send() }

@@ -108,8 +108,8 @@ final class URLSessionAPIClient: APIClient {
     /// Reads the backend's `{code, message}` when there is one, and `Retry-After` in seconds (the only form the
     /// backend sends; a date is ignored); the log carries the code, never the body. A refusal the product expects (a
     /// known code on a 4xx, a rejected token, a throttle) is a warning, since the view model logs its own line; a fault
-    /// (a 5xx, an unreadable body, an unknown code such as `VALIDATION_FAILED`, which means client validation drifted)
-    /// is an error.
+    /// (a 5xx, an unreadable body, an unknown code such as `VALIDATION_FAILED` or a 413 `REQUEST_TOO_LARGE`, both
+    /// meaning client validation drifted) is an error.
     private func failure(_ response: HTTPURLResponse, data: Data, endpoint: String) -> APIError {
         let status = response.statusCode
         let body = try? decoder.decode(APIErrorBody.self, from: data)
@@ -121,7 +121,9 @@ final class URLSessionAPIClient: APIClient {
     }
 
     private static func isRefusal(status: Int, body: APIErrorBody?) -> Bool {
-        guard AppConfig.API.clientErrorStatuses.contains(status) else { return false }
+        guard AppConfig.API.clientErrorStatuses.contains(status), status != AppConfig.API.contentTooLargeStatus else {
+            return false
+        }
         let isKnownCode = body.map { BackendErrorCode(rawValue: $0.code) != nil } ?? false
         return isKnownCode || status == AppConfig.API.unauthorizedStatus || status == AppConfig.API.rateLimitedStatus
     }

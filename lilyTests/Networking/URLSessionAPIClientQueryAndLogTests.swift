@@ -58,6 +58,33 @@ struct URLSessionAPIClientQueryAndLogTests {
         #expect(logger.messages(in: .network, at: .error).isEmpty)
     }
 
+    /// The create and invite refusals Laurel answers with codes of their own, like their group and tournament siblings.
+    @Test(arguments: ["EVENT_ID_TAKEN", "INVITE_LIMIT"])
+    func anExpectedConflictOnACreateOrAnInviteLogsAtWarning(code: String) async throws {
+        let backend = StubBackend(status: 409, json: #"{"code":"\#(code)","message":"x"}"#)
+        let request = APIRequest<SportEvent>.post(AppConfig.API.Paths.events)
+
+        await #expect(throws: APIError.self) { try await makeClient(backend).send(request) }
+
+        let warnings = logger.messages(in: .network, at: .warning)
+        #expect(warnings.count == 1)
+        #expect(warnings.first?.contains("409") == true && warnings.first?.contains(code) == true)
+        #expect(logger.messages(in: .network, at: .error).isEmpty)
+    }
+
+    /// A 413 is the app's own drift (every body it sends is bounded below the limit): its copy, but a fault in the log.
+    @Test func aRequestTooLargeAnswerKeepsItsCopyAndLogsAtError() async throws {
+        let backend = StubBackend(status: 413, json: #"{"code":"REQUEST_TOO_LARGE","message":"Request body is too large"}"#)
+        let request = APIRequest<SportEvent>.post(AppConfig.API.Paths.events)
+
+        let thrown = await #expect(throws: APIError.self) { try await makeClient(backend).send(request) }
+
+        #expect(thrown?.appError(fallback: .eventCreationFailed) == .requestTooLarge)
+        let errors = logger.messages(in: .network, at: .error)
+        #expect(errors.count == 1 && errors.first?.contains("413") == true && errors.first?.contains("REQUEST_TOO_LARGE") == true)
+        #expect(logger.messages(in: .network, at: .warning).isEmpty)
+    }
+
     @Test func aRejectedTokenLogsAtWarningEvenWithoutABody() async throws {
         let backend = StubBackend(status: 401)
         let request = APIRequest<[SportEvent]>.get(AppConfig.API.Paths.events)

@@ -3,10 +3,11 @@ import Testing
 
 @MainActor
 struct RemoteTournamentInviteRepositoryTests {
-    /// The two codes this route reads as invite refusals and one that falls to its fallback; the rest keep the shared mapping.
+    /// The two codes this route reads as invite refusals, the invited cap's own code, and one that falls to its fallback;
+    /// the rest keep the shared mapping.
     nonisolated private static let codeCases: [(code: String, expected: AppError)] = [
         ("ALREADY_ENTERED", .inviteeAlreadyEntered), ("FORBIDDEN", .cannotInviteToTournament),
-        ("VALIDATION_FAILED", .inviteUnavailable),
+        ("INVITE_LIMIT", .tournamentInviteLimit), ("VALIDATION_FAILED", .inviteUnavailable),
     ]
 
     private let client = FakeAPIClient()

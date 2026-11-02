@@ -27,16 +27,16 @@ that runs it is made locally, see `docs/notes/build-test-and-simulator.md`); off
 - **rose** (`/Users/makshr/rose`, GitHub `iris-dc/rose`): the CDK infrastructure (eu-central-1): Cognito user pool
   `lily-users` with client `lily-ios`, the Fargate service, DynamoDB tables, S3, AppSync Events, APNs secret, SNS.
 - **Identity stays in Cognito** (email + password through Amplify Swift, configured in code; Apple and Google later).
-  The backend never issues credentials: it validates the Cognito **access token** the app sends as
-  `Authorization: Bearer <token>` and reads the user id from `sub`. Anonymous reads: `GET /api/events?scope=upcoming`
-  and `GET /api/events/{id}`; everything else answers 401 without a token.
+  The backend never issues credentials: it validates the Cognito **access token** (`Authorization: Bearer <token>`)
+  and reads the user id from `sub`. Anonymous reads are the routes Laurel's `SecurityConfig` permits (events, public
+  groups, tournaments, the legal pages: `docs/notes/auth-and-backend.md`); anything else, or a bad token, answers 401.
 - Plans and wire contracts shared with Laurel and rose are under `~/.claude/projects/-Users-makshr-lily/groups-plan/`.
 
 ## Build, test and lint
 
 ```sh
 ./scripts/ci.sh lint            # SwiftLint (strict), the l10n check, the UI-shard check, the test-gate self-check
-./scripts/ci.sh build           # build for testing
+./scripts/ci.sh build           # xcodebuild build, the app alone; build-and-unit and all build for testing
 ./scripts/ci.sh unit            # lilyTests (Swift Testing; about 2,150 tests in seconds)
 ./scripts/ci.sh ui              # lilyUITests on an iPhone simulator (about 30 minutes on a Mac)
 ./scripts/ci.sh ui-ipad         # LilyIPadTests on an iPad simulator
@@ -186,9 +186,9 @@ decides, never the device.
 - **Wire types** keep the backend's key names, omit optionals (never `null`), read and write ISO-8601 instants, and
   tolerate new enum values: `WireNamedKind` with `case unknown(String)` (`EventType`, `SkillLevel`, `MessageKind`,
   `GroupKind`, `InboxItemKind`, `AttachmentKind`, `TournamentFormat`, `TournamentStatus`, `EntryStatus`, `MatchStatus`,
-  `MatchSlot`, `InviteStatus`; a conformer declares its cases, `known` and `wireName`, the lookup is the protocol's;
-  `GroupVisibility` stays strict on purpose, a binary access rule; `MemberRole`, `InviteCandidateSource` and
-  `MembershipChange.Kind` are strict too, not yet judged). Hand-written `init(from:)` only to default a missing key.
+  `MatchSlot`, `InviteStatus`, `InviteCandidateSource`, `MembershipChange.Kind`); `GroupVisibility` and `MemberRole`
+  stay strict on purpose (a binary access rule; a ladder the app also writes). Hand-written `init(from:)` only to
+  default a missing key.
 - **Launch arguments** (`AppConfig.LaunchArguments`, debug builds only): `-reset-session`, `-start-as-guest`,
   `-mock-location`, `-mock-auth`, `-mock-auth-confirm`, `-mock-auth-fail`, `-mock-events`, `-mock-events-fail`,
   `-mock-chat-replies`, `-mock-attachment-picker`, `-mock-terms-pending`, `-hold-popups`, `-freeze-aurora`,

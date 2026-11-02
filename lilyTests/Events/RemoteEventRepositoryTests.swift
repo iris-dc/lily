@@ -171,8 +171,9 @@ struct RemoteEventRepositoryTests {
         #expect(client.requests.isEmpty)
     }
 
-    /// The form validates against the backend's limits, so `VALIDATION_FAILED` has no copy of its own on a create;
-    /// like `EVENT_ID_TAKEN` (another user's id) and a 500 it becomes the generic creation failure.
+    /// The form validates against the backend's limits, so `VALIDATION_FAILED` has no copy of its own on a create; like
+    /// a 500 it becomes the generic creation failure, and so does `EVENT_ID_TAKEN` (another user's id), which has a
+    /// case of its own mapping there, so the refetch by client id that follows finds the other host's game.
     @Test func createFailuresWithoutCopyBecomeEventCreationFailed() async {
         let coded = ["VALIDATION_FAILED", "EVENT_ID_TAKEN"].map {
             APIError.http(status: 400, body: APIErrorBody(code: $0, message: "m"))
@@ -192,7 +193,7 @@ struct RemoteEventRepositoryTests {
     }
 
     /// The same id with other details means our earlier create landed: `CreateFlow` updates it, so the code keeps its
-    /// own case while `EVENT_ID_TAKEN` (another user's id) stays the generic creation failure.
+    /// own case while `EVENT_ID_TAKEN` (another user's id) maps to the generic creation failure.
     @Test func createMapsAReusedIdToCreateIdReused() async {
         client.error = APIError.http(status: 409, body: APIErrorBody(code: "EVENT_ID_REUSED", message: "m"))
         await #expect(throws: AppError.createIdReused) { try await repository.create(.fixture()) }

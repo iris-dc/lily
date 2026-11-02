@@ -21,11 +21,13 @@ nonisolated struct InviteCandidate: Identifiable, Hashable, Codable, Sendable {
 
     var id: String { userId }
 
-    /// The line under the name: "In Kreuzberg Kickers" or "Played Sunset 5-a-side".
+    /// The line under the name: "In Kreuzberg Kickers" or "Played Sunset 5-a-side"; a source this build does not know
+    /// shows the shared thing's name alone.
     var caption: String {
         switch via {
         case .group: AppBranding.Groups.Invite.viaGroup(viaName)
         case .event: AppBranding.Groups.Invite.viaEvent(viaName)
+        case .unknown: viaName
         }
     }
 
@@ -37,8 +39,23 @@ nonisolated struct InviteCandidate: Identifiable, Hashable, Codable, Sendable {
     }
 }
 
-/// What the caller shares with a candidate.
-nonisolated enum InviteCandidateSource: String, Codable, Sendable {
+/// What the caller shares with a candidate. A source a newer backend adds (a tournament roster, a conversation) keeps
+/// its name, so one such candidate no longer fails the whole invite sheet.
+nonisolated enum InviteCandidateSource: WireNamedKind {
     case group
     case event
+    case unknown(String)
+
+    static let known: [InviteCandidateSource] = [.group, .event]
+
+    private static let groupName = "group"
+    private static let eventName = "event"
+
+    var wireName: String {
+        switch self {
+        case .group: Self.groupName
+        case .event: Self.eventName
+        case .unknown(let name): name
+        }
+    }
 }

@@ -19,6 +19,9 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     /// The backend throttled the caller (429 `RATE_LIMITED`); the request is fine to repeat after `retryAfter`
     /// seconds, when the `Retry-After` header named them.
     case rateLimited(retryAfter: TimeInterval?)
+    /// The backend refused the body as too large (413 `REQUEST_TOO_LARGE`): the app's own drift, since every body it
+    /// sends is bounded below the limit; repeating the same request cannot help.
+    case requestTooLarge
     case network
     case eventsUnavailable
     case eventNotFound
@@ -151,12 +154,14 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     /// The organiser runs `AppConfig.Tournaments.maxOrganizedOpen` open tournaments already (`TOURNAMENT_LIMIT`).
     case tournamentLimit
     /// `MEMBERSHIP_LIMIT` answered by a tournament route or a tournament invite: the caller is in
-    /// `AppConfig.Tournaments.maxPerUser` tournaments already, finished ones included.
+    /// `AppConfig.Tournaments.maxPerUser` open tournaments already (finished and cancelled ones never count).
     case tournamentMembershipLimit
     /// The person invited into a tournament is in it already (`ALREADY_ENTERED` on an invite).
     case inviteeAlreadyEntered
     /// Only entrants and the organiser invite into a tournament (`FORBIDDEN` on an invite).
     case cannotInviteToTournament
+    /// The tournament has invited as many distinct people as the backend allows (`INVITE_LIMIT` on an invite).
+    case tournamentInviteLimit
     /// A message to us (the contact form) failed for a reason without a code of its own; Send stays available.
     case feedbackFailed
     case unknown

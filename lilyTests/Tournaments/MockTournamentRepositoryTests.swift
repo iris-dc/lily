@@ -42,6 +42,20 @@ struct MockTournamentRepositoryTests {
         #expect(disputed.isDisputed && disputed.status == .pending && disputed.scoreA == nil, "the report is dropped")
     }
 
+    /// Like the backend since its guest-root rule: a caller without a token gets the root alone, the three lists empty
+    /// and no entry of their own; signed in, the same id answers the roster.
+    @Test func aGuestReadsTheRootAlone() async throws {
+        identity.currentUserID = nil
+
+        let guest = try await repository.tournament(id: MockTournamentFixtures.kickersCupID)
+        #expect(guest.entries.isEmpty && guest.matches.isEmpty && guest.standings.isEmpty)
+        #expect(guest.tournament.entryCount == 4 && guest.tournament.myEntryId == nil)
+
+        identity.currentUserID = "mock-apple"
+        let member = try await repository.tournament(id: MockTournamentFixtures.kickersCupID)
+        #expect(member.entries.count == 4 && member.tournament.organizerUserId == "mock-apple")
+    }
+
     @Test func listsFollowTheirScopes() async throws {
         let upcoming = try await repository.tournaments(in: .upcoming, near: nil)
         #expect(upcoming.map(\.id) == [MockTournamentFixtures.kickersCupID], "the started one is off Explore")

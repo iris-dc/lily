@@ -54,7 +54,7 @@ struct TournamentDetailPreviewTests {
         #expect(viewModel.state == .previewing(tournament) && !viewModel.previewLoadFailed)
         harness.repository.details[tournament.id] = .fixture(tournament: tournament)
         harness.repository.releaseRequests()
-        await retry.value
+        _ = await retry.value
         #expect(viewModel.detail != nil)
 
         harness.repository.thrownError = AppError.tournamentNotFound

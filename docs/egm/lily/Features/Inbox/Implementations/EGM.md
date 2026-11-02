@@ -24,7 +24,7 @@ other features' fixtures, so previews, UI tests and `-mock-events` runs need no 
 - `nonisolated enum MockInboxFixtures` `[lily/Features/Inbox/Implementations/MockInboxFixtures.swift:MockInboxFixtures]`:
   `tournamentInviteID`, `reminderID`, `matchReminderID`, `inviteID` (`itemID(index:)` 1 to 4), `inviterName`
   (`"Noor"`), `itemID(index:)` (prefix `01J8MOCKNB` plus a zero-padded 16-digit index), `make(now:) -> [InboxItem]`
-  (oldest first: tournament invite, game reminder, match reminder, group invite) built from `MockTournamentFixtures`,
+  (oldest first: tournament invite, event reminder, match reminder, group invite) built from `MockTournamentFixtures`,
   `MockEventFixtures` and `MockGroupFixtures`.
 
 ## Invariants
@@ -55,7 +55,7 @@ other features' fixtures, so previews, UI tests and `-mock-events` runs need no 
   `tournaments.noteInvitee(of:)` `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:init]`.
 - Fixture ids order lexically as created; ages are 2 days, 10 min, 5 min and 60 s before `now`; a builder answering
   `nil` (a missing group, event or match fixture) is dropped; invites expire after `AppConfig.Inbox.mockInviteExpiry`
-  (7 days) and the game reminder starts after `AppConfig.Inbox.mockReminderLead` (1 hour)
+  (7 days) and the event reminder starts after `AppConfig.Inbox.mockReminderLead` (1 hour)
   `[lily/Features/Inbox/Implementations/MockInboxFixtures.swift:make]`, `[lily/Config/AppConfig+Inbox.swift:AppConfig.Inbox]`.
 - Both classes are main-actor isolated by the target's default; the mock's mutable state has no other protection
   `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:MockInboxRepository]`.

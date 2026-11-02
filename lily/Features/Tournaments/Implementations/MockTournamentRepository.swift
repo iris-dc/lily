@@ -50,13 +50,19 @@ final class MockTournamentRepository: TournamentRepository {
         }
     }
 
+    /// A guest reads the root alone, as the backend answers a caller without a token: the roster, the draw and the
+    /// table are for members.
     func tournament(id: String) async throws -> TournamentDetail {
         logger.debug(.tournaments, "Mock tournament \(id) served")
-        return resolved(try readable(id))
+        let detail = try readable(id)
+        guard identity.currentUserID != nil else { return TournamentDetail(tournament: resolved(detail.tournament)) }
+        return resolved(detail)
     }
 
     /// Like the backend: the draft's client id is the tournament id, so a repeated create answers the same tournament
-    /// and the same id with other details is `TOURNAMENT_ID_REUSED`; the room is registered with the caller as its owner.
+    /// and the same id with other details is `TOURNAMENT_ID_REUSED` (a repeat is never refused by the cap, which is
+    /// judged after the group is read and before the caller's role in it, as Laurel judges the role inside the write);
+    /// the room is registered with the caller as its owner.
     func create(_ draft: TournamentDraft) async throws -> TournamentDetail {
         if let existing = details[draft.clientId] {
             guard drafts[draft.clientId] == draft else { throw AppError.createIdReused }
@@ -64,11 +70,10 @@ final class MockTournamentRepository: TournamentRepository {
             return resolved(existing)
         }
         guard let coordinate = draft.coordinate, meetsFormatFloor(draft) else { throw AppError.tournamentCreationFailed }
-        if let groupID = draft.group?.id {
-            guard let group = groups.find(groupID), group.isPublic || group.isMember else { throw AppError.groupNotFound }
-            guard GroupAccess(group: group, userID: identity.currentUserID).canCreateEvents(in: group) else {
-                throw AppError.insufficientRole
-            }
+        let group = try hostingGroup(for: draft)
+        guard openOrganizedCount < AppConfig.Tournaments.maxOrganizedOpen else { throw AppError.tournamentLimit }
+        if let group, !GroupAccess(group: group, userID: identity.currentUserID).canCreateEvents(in: group) {
+            throw AppError.insufficientRole
         }
         let tournament = draft.makeTournament(organizerUserId: MockTournamentFixtures.callerMarker,
                                               organizerName: AppBranding.Tournaments.Create.mockOrganizerName,
@@ -106,6 +111,14 @@ final class MockTournamentRepository: TournamentRepository {
     /// route answers its own fallback.
     private func meetsFormatFloor(_ draft: TournamentDraft) -> Bool {
         draft.maxEntries >= AppConfig.Tournaments.minEntries(for: draft.format)
+    }
+
+    /// The group to host in, read before the cap as Laurel's `groupFor` reads it: unknown, or neither public nor
+    /// joined, is `.groupNotFound`; whether the caller may create there is judged after the cap.
+    private func hostingGroup(for draft: TournamentDraft) throws -> SportGroup? {
+        guard let groupID = draft.group?.id else { return nil }
+        guard let group = groups.find(groupID), group.isPublic || group.isMember else { throw AppError.groupNotFound }
+        return group
     }
 
     func cancel(id: String) async throws -> TournamentDetail {
@@ -178,6 +191,18 @@ final class MockTournamentRepository: TournamentRepository {
         return tournament.replacingOrganizer(MockTournamentFixtures.callerMarker,
                                              with: caller,
                                              myEntryId: caller == nil ? nil : myEntryId)
+    }
+
+    /// Open as the backend counts for its caps: in registration or in progress. A finished or cancelled tournament
+    /// never counts, nor does a status this build does not know.
+    static func isOpen(_ tournament: Tournament) -> Bool {
+        tournament.status == .registration || tournament.status == .inProgress
+    }
+
+    /// The open tournaments the caller organises, against `AppConfig.Tournaments.maxOrganizedOpen`.
+    var openOrganizedCount: Int {
+        let marker = MockTournamentFixtures.callerMarker
+        return details.values.filter { Self.isOpen($0.tournament) && $0.tournament.organizerUserId == marker }.count
     }
 
     /// Whether the caller is in the tournament's room: its organiser, or in one of its entries.
