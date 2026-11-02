@@ -10,7 +10,7 @@ split. `Interfaces` declares `FeedbackRepository`; `Models` the `nonisolated` va
 `FeedbackPayload`, `FeedbackReceipt`, `FeedbackDraft` with its issues, `FeedbackEnvironment`); `Implementations` the
 remote and mock repositories; `ViewModels` the `FeedbackViewModel`; `Views` the Profile row and the form sheet. Data
 flows Views → ViewModels → Interfaces → Implementations → Laurel. Contracts live out of tree under `docs/egm/`
-because `lily/` may hold only Swift sources and catalogs.
+because `lily/` may hold only Swift sources, catalogs and the privacy manifest.
 
 ## Subdirectories & Boundaries
 

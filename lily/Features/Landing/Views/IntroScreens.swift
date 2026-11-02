@@ -133,13 +133,13 @@ struct IntroTournamentScreen: View {
 /// cycling. The pager holds every slide, so the clock starts when the ring itself scrolls into view, not on
 /// `onAppear`. Nothing under Reduce Motion or with the aurora frozen.
 private struct TapPulse: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.motion) private var motion
     @Environment(\.auroraFrozen) private var auroraFrozen
     /// When the ring scrolled into view; `nil` while it is off screen, which also pauses the clock.
     @State private var startedAt: Date?
 
     var body: some View {
-        if !reduceMotion && !auroraFrozen {
+        if motion.allowsMovement && !auroraFrozen {
             TimelineView(.animation(minimumInterval: DesignTokens.Aurora.frameInterval, paused: startedAt == nil)) { context in
                 ring(TapPulseCurve.intro.frame(elapsed: startedAt.map(context.date.timeIntervalSince) ?? 0))
             }

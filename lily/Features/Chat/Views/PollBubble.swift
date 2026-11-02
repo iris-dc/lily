@@ -72,9 +72,9 @@ struct PollBubble: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.pollTotal)
             Spacer(minLength: 0)
             footerAction
-                .font(.footnote.weight(.semibold))
-                .buttonStyle(.borderless)
-                .tint(ink.accent)
+                .lilyTextButton(font: .footnote.weight(.semibold),
+                                color: ink.primary,
+                                minHeight: DesignTokens.Layout.pollFooterHeight)
         }
         .frame(minHeight: DesignTokens.Layout.pollFooterHeight)
     }
@@ -82,12 +82,10 @@ struct PollBubble: View {
     @ViewBuilder private var footerAction: some View {
         if poll.allowsMultipleAnswers, !poll.hasVoted {
             Button(Copy.vote) { onVote(poll.options.map(\.id).filter(ticked.contains)) }
-                .tappableLabel(minHeight: DesignTokens.Layout.pollFooterHeight)
                 .disabled(ticked.isEmpty)
                 .accessibilityIdentifier(AccessibilityIdentifiers.pollVote)
         } else if poll.hasVoted, !poll.isAnonymous {
             Button(Copy.viewVotes, action: onShowVoters)
-                .tappableLabel(minHeight: DesignTokens.Layout.pollFooterHeight)
                 .accessibilityIdentifier(AccessibilityIdentifiers.pollVoters)
         }
     }

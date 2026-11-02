@@ -177,6 +177,38 @@ struct DiscoverGroupsViewModelTests {
         #expect(!viewModel.isLoadingMore)
     }
 
+    /// A search cancelled on the way out under a new query (the debounce still pending) leaves the old page; the next
+    /// appearance searches for what is typed.
+    @Test func aSearchCancelledUnderANewQueryLeavesTheNextAppearanceToSearchForIt() async {
+        harness.repository.result = .success([.fixture(id: "a")])
+        let viewModel = makeViewModel()
+        await viewModel.loadIfStale()
+
+        viewModel.query = "berl"
+        await settle(until: { sleep.requested.count == 1 })
+        viewModel.cancel()
+        await settle(until: { sleep.held.isEmpty })
+
+        await viewModel.loadIfStale()
+        #expect(harness.repository.requestedScopes == [.discover(query: nil, type: nil), .discover(query: "berl", type: nil)])
+    }
+
+    /// Paging sends the scope the cursor came from, not what is typed now, so a cursor never travels with another prefix.
+    @Test func pagingAfterAQueryChangeSendsTheScopeTheCursorCameFrom() async {
+        harness.repository.result = .success([.fixture(id: "a")])
+        harness.repository.nextCursor = "c1"
+        let viewModel = makeViewModel()
+        await viewModel.loadIfStale()
+
+        viewModel.query = "berl"
+        await settle(until: { sleep.requested.count == 1 })
+        await viewModel.loadMore()
+
+        #expect(harness.repository.requestedScopes.last == .discover(query: nil, type: nil))
+        #expect(harness.repository.requestedCursors == [nil, "c1"])
+        viewModel.cancel()
+    }
+
     @Test func aFailedSearchReachesThePopup() async {
         harness.repository.result = .failure(.groupsUnavailable)
         let viewModel = makeViewModel()

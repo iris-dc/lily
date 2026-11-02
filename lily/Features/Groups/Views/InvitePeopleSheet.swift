@@ -29,7 +29,10 @@ struct InvitePeopleSheet: View {
             .navigationTitle(Copy.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button(Copy.done) { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(Copy.done) { dismiss() }
+                        .lilyToolbarTextButton()
+                }
             }
             .tint(Color.lilyAccent)
             .task { await viewModel.load() }

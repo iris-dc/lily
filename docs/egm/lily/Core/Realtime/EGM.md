@@ -22,7 +22,8 @@ arrives on them).
   no-op transports, endpoint providers).
 - `@Observable final class RealtimeSessionController: SessionObserver` (main-actor). Observable state read by
   screens: `var state: RealtimeConnectionState` (starts `.disconnected`), `var subscribedRooms: [String: Int]` (the
-  epoch each room is subscribed at), `var openRoom: RoomSubscription?`
+  epoch each room is subscribed at), `var openRoom: RoomSubscription?`, `var lastOpenRoomID: String?` (the room last
+  opened, whose pages stay until another opens)
   [`lily/Core/Realtime/RealtimeSessionController.swift:RealtimeSessionController`].
 - Internal state shared with the extensions: `isActive`, `user: AuthUser?`, `wantedRooms`, `knownEpochs: [String: Int]`,
   `connectionGeneration`, the tasks `connectionTask: Task<Bool, Never>?`, `renewalTask`, `reconnectTask`,
@@ -39,6 +40,7 @@ arrives on them).
   [`RealtimeSessionController.swift:RealtimeSessionController.init`].
 - Shell inputs: `setDesired(active: Bool, user: AuthUser?) async`, `suspend() async`, `resume() async`,
   `syncRooms()`, `setRooms(_ rooms: [RoomSubscription])`, `setOpenRoom(_ room: RoomSubscription?)`,
+  `closeRoom(_ groupID: String)` (clears the open room only while it is that one),
   `ensureSubscribed(_ room: RoomSubscription) async`, `envelopes(for groupID: String) -> AsyncStream<RealtimeEnvelope>`,
   `sessionDidEnd()`, `desiredRooms() -> [String: Int]`, `noteEpoch(_ epoch: Int, for groupID: String)`
   [`RealtimeSessionController.swift:RealtimeSessionController`].
@@ -98,7 +100,8 @@ arrives on them).
   the group. A refused user channel is only logged. Any other end closes ("connection lost") and schedules a reconnect
   [`+Routing.swift:RealtimeSessionController.streamEnded(_:id:error:)`, `+Routing.swift:RealtimeSessionController.refetchAndResubscribe(_:refusedEpoch:)`].
 - A room envelope naming another group is dropped. Room events: `message` inserts into the cache and notes it in the
-  store; a room that is not open is compacted and marked unread unless the caller sent it; `messageDeleted` marks the
+  store; a room that is not open is marked unread unless the caller sent it, and compacted unless it is
+  `lastOpenRoomID`; `messageDeleted` marks the
   row; `memberLeft` for the caller drops the group, for anyone else resubscribes with a jitter of
   `random(0...min(memberCount * AppConfig.Realtime.resubscribeJitterPerMember, AppConfig.Realtime.resubscribeJitterMax))`;
   `groupDeleted` drops the group; `groupUpdated` applies to the store and adopts the epoch; `memberJoined` adopts the
@@ -108,9 +111,14 @@ arrives on them).
 - User-channel events: `membershipChanged` that ends the membership drops the group, otherwise notes the epoch, bumps
   `groupChanges` and reconciles; `inboxItem` goes to `inbox.apply`; everything else is ignored
   [`+Routing.swift:RealtimeSessionController.applyUserEvent(_:)`].
+- `setOpenRoom` with a room whose id differs from `lastOpenRoomID` compacts that previous room and records the new
+  id (the same room re-set, as `adoptEpoch` does, compacts nothing); `resetSessionState` (a user change, sign-out)
+  clears `lastOpenRoomID`
+  [`RealtimeSessionController.swift:RealtimeSessionController.setOpenRoom(_:)`, `RealtimeSessionController.swift:RealtimeSessionController.closeRoom(_:)`].
 - `moveEpoch` writes the cache's room epoch when newer and answers whether the controller's knowledge moved;
   `removeGroupLocally` removes from the store, drops the cached room, marks it read, forgets its epoch and wanted
-  entry, clears the open room if it was that one, cancels its pending resubscribe and unsubscribes
+  entry, clears the open room and `lastOpenRoomID` if either was that one, cancels its pending resubscribe and
+  unsubscribes
   [`+Routing.swift:RealtimeSessionController.moveEpoch(of:to:)`, `+Routing.swift:RealtimeSessionController.removeGroupLocally(_:reason:)`].
 - `ensureSubscribed` waits out every pending resubscribe for the room in a loop before reconciling
   [`RealtimeSessionController.swift:RealtimeSessionController.ensureSubscribed(_:)`].

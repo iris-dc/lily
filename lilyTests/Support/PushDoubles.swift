@@ -133,14 +133,16 @@ final class PushHarness {
 }
 
 /// Counts how often a view model offered the reminder permission. `onOffer` runs first, so a test can read the view
-/// model's state at the moment of the offer.
+/// model's state at the moment of the offer; with `holdsRequests` the offer then waits, as the system prompt does.
 @MainActor
-final class SpyPushOptIn: PushOptIn {
+final class SpyPushOptIn: PushOptIn, HoldsRequests {
     var onOffer: () -> Void = {}
     private(set) var offerCount = 0
+    let hold = RequestHold()
 
     func offerReminders() async {
         onOffer()
         offerCount += 1
+        await hold.wait()
     }
 }

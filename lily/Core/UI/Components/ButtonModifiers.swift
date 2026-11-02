@@ -45,6 +45,41 @@ extension View {
             .buttonBorderShape(.circle)
             .controlSize(controlSize)
     }
+
+    /// A text-only action ("See all", Reset, "Resend code", the terms' links): the label in ink (the accent reads at
+    /// about 3:1 as small text over the aurora, so it never colours one), `.secondary` while disabled, dimmed while
+    /// pressed, with the standard 44pt hit area built in. `color` is for a label on another fill (white on the caller's
+    /// bubble); the accent stays on marks and the prominent capsule.
+    func lilyTextButton(font: Font = LilyTheme.Fonts.button,
+                        color: Color = .lilyInk,
+                        minHeight: CGFloat = DesignTokens.Layout.controlHeight) -> some View {
+        buttonStyle(LilyTextButtonStyle(font: font, color: color, minHeight: minHeight))
+    }
+
+    /// A plain text action in an iOS 26 toolbar (Cancel, Done, Send, Edit): the bar draws the item's glass capsule and
+    /// colours the label from the tint, so the ink goes in through the tint. A `.borderless` or custom style there
+    /// collapses the item to an icon-sized circle (`DraftSheet` records the "Ca…"), and the bar still dims a disabled
+    /// tinted label itself.
+    func lilyToolbarTextButton() -> some View {
+        tint(Color.lilyInk)
+    }
+}
+
+/// The look behind `lilyTextButton(font:color:minHeight:)`. A style rather than a `.borderless` button with an explicit
+/// foreground style, because an explicit style would never dim: the disabled look needs `isEnabled` read here.
+struct LilyTextButtonStyle: ButtonStyle {
+    let font: Font
+    let color: Color
+    let minHeight: CGFloat
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(font)
+            .foregroundStyle(isEnabled ? AnyShapeStyle(color) : AnyShapeStyle(.secondary))
+            .opacity(configuration.isPressed ? DesignTokens.Opacity.pressedTextButton : 1)
+            .tappableLabel(minHeight: minHeight)
+    }
 }
 
 private extension View {

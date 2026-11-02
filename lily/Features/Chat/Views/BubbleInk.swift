@@ -7,7 +7,7 @@ struct BubbleInk {
 
     /// Body text, and what a quote's or a card's wash is made of.
     var primary: Color { own ? .white : .lilyInk }
-    /// Marks and controls: a quote's bar, a poll's tick, its buttons.
+    /// Marks: a quote's bar, a poll's tick. Text, buttons included, reads `primary` or `secondary`.
     var accent: Color { own ? .white : .lilyAccent }
     /// Captions, where `.secondary` would turn grey on the accent.
     var secondary: Color { own ? Color.white.opacity(DesignTokens.Opacity.secondaryOnAccent) : .secondary }

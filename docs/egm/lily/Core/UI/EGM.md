@@ -18,13 +18,16 @@ main-actor isolated, so the arithmetic that must run anywhere (`Effects`, `Layou
 ## Subdirectories & Boundaries
 
 - Components: [./Components/EGM.md](./Components/EGM.md) - The reusable views and modifiers: `ContentScreen`,
-  `AuroraBackground` (a wall-clock `TimelineView` over a `MeshGradient`, frozen under reduce-motion or
-  `-freeze-aurora`), `FilmGrainOverlay`, `lilyProminentButton` / `lilyGlassButton` / `lilyIconButton`, `lilyChip`,
-  `ChoiceChip`, `lilyField`, `GlassCard`, `FlowLayout`, titles, `AvatarCircle`, `ConversationRow`, `TileCarousel`,
+  `AuroraBackground` (a wall-clock `TimelineView` over a `MeshGradient`, frozen under `\.motion == .reduced` or
+  `-freeze-aurora`), `FilmGrainOverlay`, `lilyProminentButton` / `lilyGlassButton` / `lilyIconButton` /
+  `lilyTextButton` / `lilyToolbarTextButton` (text actions in ink, never the accent), `lilyChip`,
+  `ChoiceChip`, `lilyField`, `GlassCard`, `FlowLayout`, titles, `ChevronLink`, `ValidationHint`, `AvatarCircle`,
+  `ConversationRow`, `TileCarousel`,
   `EntriesBar`, `EmptyStateView`, `ListSegment`, `FilterDropdownButton`, `ErrorPopupView` and `errorPopup(_:)`
   (the topmost mount draws, auto- and swipe-dismiss), `DraftSheet`, `GrowingTextView` with `PlaceholderTextView`.
 - Layout: [./Layout/EGM.md](./Layout/EGM.md) - `LayoutMode` (compact, regular, wide) resolved from the size class and
-  width and published with `windowWidth` / `windowHeight` by `layoutModeProvider()`; `UsableWidth.of`; the pure
+  width and published with `windowWidth` / `windowHeight` by `layoutModeProvider()`; `MotionPreference` (full, reduced)
+  resolved once from Reduce Motion and published as `\.motion` by `motionProvider()`; `UsableWidth.of`; the pure
   `FlowArrangement` row packing; `AdaptiveCardGrid`, `TileGrid`, `readableColumn`, `lilyFormSheet`; `TabBarHiding` with
   `animatesTabBar(depth:)` and `hidesTabBarOnCompact()` (the bar never hides on a regular layout); `onArrival`,
   `Binding.isPresent` and the item-driven dialogs; `KeyboardDismissal.dismissAndWait(atMost:)`.

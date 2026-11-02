@@ -146,14 +146,14 @@ extension RealtimeSessionController {
         }
     }
 
-    /// Into the cache; a room that is not open also gets its unread dot and, since only the open chat pages through a
-    /// room, keeps just the cache's newest rows.
+    /// Into the cache; a room that is not open also gets its unread dot and, unless it is the one last open (whose
+    /// reader may be coming back to their place), keeps just the cache's newest rows.
     private func applyMessage(_ message: ChatMessage, groupID: String) {
         cache.update(groupID: groupID) { $0.insert(message) }
         // A room not cached never reaches the cache's own note.
         store.noteMessage(message, in: groupID)
         guard openRoom?.groupID != groupID else { return }
-        cache.compact(groupID: groupID)
+        if lastOpenRoomID != groupID { cache.compact(groupID: groupID) }
         if !message.isSent(by: identity.currentUserID) { unread.markUnread(groupID: groupID, messageID: message.id) }
     }
 
@@ -228,6 +228,7 @@ extension RealtimeSessionController {
         knownEpochs[groupID] = nil
         wantedRooms.removeAll { $0.groupID == groupID }
         if openRoom?.groupID == groupID { openRoom = nil }
+        if lastOpenRoomID == groupID { lastOpenRoomID = nil }
         pendingResubscribes[groupID]?.cancel()
         pendingResubscribes[groupID] = nil
         if let epoch = subscribedRooms[groupID] { unsubscribe(groupID: groupID, epoch: epoch) }

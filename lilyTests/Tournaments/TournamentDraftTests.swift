@@ -5,6 +5,11 @@ import Testing
 struct TournamentDraftTests {
     private static let now = Date(timeIntervalSince1970: 1_800_000_000)
 
+    /// The format picker offers what this build can draw; a format a newer backend sends is never among them.
+    @Test func theFormatPickerOffersTheKnownFormatsOnly() {
+        #expect(TournamentFormat.known == [.singleElimination, .roundRobin])
+    }
+
     @Test func aCompleteDraftHasNoIssues() {
         let draft = TournamentDraft.fixture(now: Self.now)
         #expect(draft.issues(now: Self.now).isEmpty && draft.isValid(now: Self.now))

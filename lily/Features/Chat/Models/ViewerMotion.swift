@@ -16,6 +16,12 @@ nonisolated struct ViewerMotion: Equatable, Sendable {
     /// Whether a drag moves the picture now.
     var takesDrag: Bool { phase == .opening || phase == .open || phase == .dragging }
 
+    /// Whether a move draws the picture itself, out of its tile and back onto it: it needs a picture, a tile to land on
+    /// and motion the user allows; otherwise the pager fades in place.
+    static func movesPicture(hasPicture: Bool, hasTile: Bool, motion: MotionPreference) -> Bool {
+        hasPicture && hasTile && motion.allowsMovement
+    }
+
     /// The way in; answers the move's number for its completion.
     mutating func startOpening() -> Int {
         phase = .opening

@@ -23,10 +23,12 @@ lily/
                  + AppDependencies+Feedback + AppDependencies+Profile (the display name editor's view model over the root's
                  ProfileStore; 2026-10-31) + AppDependencies+LaunchArguments (the value-taking arguments' URL helpers)
   Localizable.xcstrings, InfoPlist.xcstrings   the string catalogs: every line of copy in seven languages, and the usage descriptions
+  PrivacyInfo.xcprivacy   the privacy manifest: the two required-reason API categories the app calls (UserDefaults, file timestamps),
+                 shipped at the bundle root by the synchronized group (2026-11-01)
   Config/        AppConfig (non-visual constants), AppBranding (product copy, every line read through localized(_:)), DesignTokens (spacing, radii, durations, SF Symbol names),
                  AccessibilityIdentifiers (the identifiers UI tests query); the groups, chat, realtime, moderation, people, shell
                  and language constants, copy, tokens and identifiers live in +Groups / +Chat / +Realtime / +Moderation / +People /
-                 +Shell / +Localization / +Settings / +FeatureFlags / +Tournaments / +TournamentResults / +TournamentInvites /
+                 +Shell / +Localization / +Settings / +FeatureFlags / +Build (the kind of build: debug, staging, release; 2026-11-01) / +Tournaments / +TournamentResults / +TournamentInvites /
                  +ChatTournaments / +Profile (the display name's limits, copy and identifiers; 2026-10-31) extension files so
                  SwiftLint's type_body_length never trips on the four main types
   Core/
@@ -73,7 +75,7 @@ lily/
                  Implementations (UserDefaultsChoiceStore, the one store behind the language and the currency choices)
     Logging/     Logging facade + OSLogLogger
     Networking/  APIClient interface, APIRequest/APIError models, WireNamedKind (a kind sent as one string, with an unknown case
-                 every kind keeps: MessageKind, GroupKind, InboxItemKind, EventType, SkillLevel, AttachmentKind), EmptyBody (NoContent and OptionalBody, the answers of routes that may say nothing),
+                 every kind keeps: MessageKind, GroupKind, InboxItemKind, EventType, SkillLevel, AttachmentKind and, since 2026-11-01, TournamentFormat, TournamentStatus, EntryStatus, MatchStatus, MatchSlot, InviteStatus), EmptyBody (NoContent and OptionalBody, the answers of routes that may say nothing),
                  Coordinate+QueryItems (the coarse lat/lon every Explore list sends), Page (the {items, nextCursor} envelope every
                  paged list decodes), URLSessionAPIClient + JSON conventions (queries percent-encoded, refusals logged at warning and
                  faults at error), APIFailureMapping (backend codes to AppError, one exhaustive switch), LostRace (the one TRY_AGAIN
@@ -99,12 +101,12 @@ lily/
                  amber glass circle, drawn through AvatarCircle; the preview card's type glyph), BusyButton (a title with a spinner: join, leave,
                  Message, the tournament controls), TileCarousel + TileLink + TileContent (the group and tournament carousels, swapping to
                  TileGrid on a regular width), CardHeader (the chips-and-time header of the event and tournament cards), OwnerTitleBlock
-                 (title, host or organiser line and group line of the two details), ListSegment (a list segment's loading / empty / failed
+                 (title, host or organiser line and group line of the two details), ChevronLink (secondary label + .caption2 chevron, the linked line OwnerTitleBlock and HostedInLine draw; 2026-11-01), ValidationHint (accent glyph hidden from accessibility + secondary words, the form footers' hints; 2026-11-01), ListSegment (a list segment's loading / empty / failed
                  / content over ListState), VisibilityChip, DraftSheet (the one sheet around every create and edit form: Cancel, submit,
                  form sizing, own popup) + DraftSubmitButton + CaptionedControl (a caption over a control), SettingsLinkRow
                  (a glass link card: icon, title, subtitle, chevron; Profile's display name and contact rows share it; 2026-10-31),
                  FilterDropdown (FilterDropdownButton + DropdownPanel, the dropdown scaffold of the event and type filters), ...), Interfaces
-                 (DraftSubmitting: what DraftSheet reads from a form's view model), Layout (LayoutMode, ReadableColumn, AdaptiveCardGrid,
+                 (DraftSubmitting: what DraftSheet reads from a form's view model), Layout (LayoutMode, MotionPreference (full or reduced, resolved once from Reduce Motion and read as `\.motion`; 2026-11-01), ReadableColumn, AdaptiveCardGrid,
                  TileGrid, FormSheet, UsableWidth, FlowArrangement (the pure wrapping arithmetic behind FlowLayout), Binding+IsPresent
                  (confirmationDialog(item:)), HidesTabBarOnCompact + TabBarHiding (the stack root's animated tab-bar
                  visibility, by the hiding screen's depth))
@@ -243,7 +245,7 @@ lily/
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ and Moderation/ included;
                  Profile/ holds ProfileStoreTests, DisplayNameViewModelTests, DisplayNameDraftTests and both repositories' tests
-                 (2026-10-31); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests and CreateFlowTests; Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01); Support/ holds fakes
+                 (2026-10-31); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01); Support/ holds fakes
                  (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, ShellDoubles,
                  StatisticsDoubles, GroupDoubles (with FakeInviteRepository), GroupViewModelDoubles with the shared GroupHarness and the
                  TermsCountingReporter every harness uses, InboxDoubles, PeopleDoubles, LocationDoubles, PushDoubles, FeedbackDoubles,
@@ -264,6 +266,6 @@ scripts/         ci.sh, the single entry point for lint, build and tests; l10n-c
 .github/         GitHub Actions workflow and the Dependabot config
 ```
 
-The Xcode project uses synchronized folder groups: any file added under `lily/`, `lilyTests/` or `lilyUITests/` joins the matching target automatically. The other side of that convenience is that **`lily/` must contain only Swift sources, `Assets.xcassets` and the two string catalogs** — any other file there is copied into the app bundle, and `.gitignore` does not prevent it, because Xcode reads the filesystem rather than the git index.
+The Xcode project uses synchronized folder groups: any file added under `lily/`, `lilyTests/` or `lilyUITests/` joins the matching target automatically. The other side of that convenience is that **`lily/` must contain only Swift sources, `Assets.xcassets` and the two string catalogs** (since 2026-11-01 also `PrivacyInfo.xcprivacy`, see `build-test-and-simulator.md`) — any other file there is copied into the app bundle, and `.gitignore` does not prevent it, because Xcode reads the filesystem rather than the git index.
 
 Rules: interfaces and implementations live in separate folders, constants live under `Config/`, every user-facing error goes through `ErrorCenter`, every log line goes through `Logging`.

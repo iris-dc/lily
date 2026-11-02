@@ -20,8 +20,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Location`, `ErrorPopup`, `Launch`, `API` (+ `Headers`, `Paths`, `Query`), `Statistics`, `LaunchArguments`,
   `Logging`, `Version`. Added by `+Area` files: `Chat` (+ `Attachments`, `Polls`, `Pins`), `Currency`, `DisplayName`
   (`lily/Config/AppConfig+Profile.swift`: `length = 1...32` code points, `backendDefault = "Player"`, both Laurel's
-  `profile.*` settings), `FeatureFlags`, `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push` (+ `Payload`),
-  `Realtime`, `Tournaments`.
+  `profile.*` settings), `Build`, `FeatureFlags`, `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push`
+  (+ `Payload`), `Realtime`, `Tournaments`.
 - `API` (`lily/Config/AppConfig.swift:AppConfig.API`): `localBaseURL = http://localhost:8080`,
   `productionBaseURL = https://api.iskra.red`; `baseURL` is `localBaseURL` under `#if DEBUG && targetEnvironment(simulator)`,
   else `productionBaseURL`; `sendsLocalUserHeader` is `true` under `#if DEBUG`; `requestTimeout = 15`,
@@ -43,6 +43,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `static func appLanguage(from: [String]) -> AppLanguage?` (`lily/Config/AppConfig+Localization.swift`).
 - `FeatureFlags` (`lily/Config/AppConfig+FeatureFlags.swift:AppConfig.FeatureFlags`): `groups`, `chat`, and
   `tournaments` (`lily/Config/AppConfig+Tournaments.swift`) are `true` under `#if DEBUG || STAGING`, else `false`.
+- `Build` (`lily/Config/AppConfig+Build.swift:AppConfig.Build`): `enum Configuration: Sendable { debug, staging, release }`;
+  `static let configuration` is `.debug` under `#if DEBUG`, `.staging` under `#elseif STAGING`, else `.release`: the one
+  place that names the kind of build (Debug and Staging run from Xcode development-signed, Release alone is archived).
 - `Cognito`: `region = "eu-central-1"`, `userPoolId = "eu-central-1_JmfE31ODT"`, `appClientId = "54dul3essertek166u2st78s4a"`,
   `confirmationCodeLength = 6`, `localeMetadataKey = "locale"`. `Auth`: `minimumPasswordLength = 8`,
   `mockConfirmationCode = "123456"`, `emailLocalPartMaxLength = 64` (`lily/Config/AppConfig+Validation.swift`).
@@ -73,7 +76,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `discoverPageSize = 50`, `searchDebounce = .milliseconds(300)`, `queryMaxLength = 40`. `Tournaments`
   (`lily/Config/AppConfig+Tournaments.swift`): `nameLength = 3...60`, `teamSizeRange = 1...11`, `teamNameLength = 2...40`,
   `entriesRange = 2...64`, `maxEntriesRoundRobin = 12`, `minEntriesRoundRobin = 3`, `scoreRange = 0...999`;
-  `maxEntries(for:)`, `minEntries(for:)`, `entriesRange(for: TournamentFormat) -> ClosedRange<Int>`.
+  `maxEntries(for:)`, `minEntries(for:)`, `entriesRange(for: TournamentFormat) -> ClosedRange<Int>` (an unknown
+  format takes single elimination's bounds; Laurel validates the real ones).
 - Smaller areas: `Inbox.pageSize = 50`; `Moderation` (`commentMaxLength = 500`, `maxBlocks = 500`,
   `supportEmail = "support@iskra.red"`, `termsURL`, `privacyURL`); `People.maxConversations = 200`; `Feedback`
   (`messageMaxLength = 2000`, `replyEmailMaxLength = 254`, `detailMaxLength = 80`); `Currency` (`defaultCode = "EUR"`,
@@ -109,7 +113,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `quote 10`, `screen 32`, `pollPill 14`), `Duration` (`fast 0.2`, `normal 0.35`, `slow 0.6`, `viewerTransition 0.28`),
   `Layout` (`screenMargin = Spacing.lg`, `detailMargin = Spacing.xl`, `fieldHeight 50`, `controlHeight 44`, `popupMaxWidth 520`;
   iPad `wideMinWidth 1000`, `readableWidth 720`, `cardMinWidth 340`, `cardMaxWidth 520`, `chatsSidebarIdealWidth 360`),
-  `Opacity` (`glassTint 0.22`, ...), `Aurora` (`landingIntensity 0.85`, `contentIntensity 0.55`, `frameInterval 1/30`,
+  `Opacity` (`glassTint 0.22`, `secondaryOnAccent 0.82` in `+Polls.swift`, white at which reads 4.66:1 on the accent,
+  `pressedTextButton 0.6` in `+Layout.swift`, ...), `Aurora` (`landingIntensity 0.85`, `contentIntensity 0.55`, `frameInterval 1/30`,
   `revealDuration 3.5`, `driftPeriods [19, 23, 29, 37]`, `driftWeights [0.5, 0.3, 0.2]`, `grainSeed 0x4C69_6C79`),
   `Typography` (`headlineSize 44`, `headlineTracking -1.8`, `titleTracking -0.5`), `Symbols` (SF Symbol names:
   `home = "house"`, `explore = "binoculars"`, `game = "calendar"`, `profile = "person"`, `groups = "person.3"`,
@@ -143,14 +148,18 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - `AppConfig` is only `static let` constants and pure `static func` builders (`lily/Config/AppConfig.swift:AppConfig`).
   `baseURL` is local only under `#if DEBUG && targetEnvironment(simulator)`; `sendsLocalUserHeader` and
   `LaunchArguments.isHonored` are `true` only under `#if DEBUG`; the three `FeatureFlags` are `true` only under
-  `#if DEBUG || STAGING`. `LaunchArguments.value(following:in:)` returns `nil` when the flag is absent, is last, or the
+  `#if DEBUG || STAGING`; `Build.configuration` is `.release` only when neither `DEBUG` nor `STAGING` is set.
+  `LaunchArguments.value(following:in:)` returns `nil` when the flag is absent, is last, or the
   next argument starts with `flagPrefix`: a prefixed argument is a flag, never a value.
 - Limits mirror Laurel's, counted in UTF-16 units, so a draft that passes here never earns a 400: `Events.Creation`,
   `Chat.Attachments` (every image leaves as JPEG, every video as `video/mp4` at 1280x720), `Chat.Polls`,
   `Chat.replyExcerptLength = 120`, `Auth.emailLocalPartMaxLength = 64`, `Statistics.maxFilterTypes = 32` (Laurel's
   `FilterSummaryDto.MAX_TYPES`); `Groups.locationNameMaxLength` aliases `Events.Creation`'s (`lily/Config/AppConfig+Groups.swift`).
-- `Tournaments.entriesRange(for:)` is always `minEntries(for:)...maxEntries(for:)`: single elimination `2...64`, round
-  robin `3...12` (`lily/Config/AppConfig+Tournaments.swift`). `Lists.snapshotFormat = 2`: a directory written under
+- `Tournaments.entriesRange(for:)` is always `minEntries(for:)...maxEntries(for:)`: single elimination and an unknown
+  format `2...64`, round robin `3...12` (`lily/Config/AppConfig+Tournaments.swift`). `Chat.tournamentStarted(format:)`
+  answers the generic "The tournament started" for `nil` and for an unknown format; `Tournaments.Match.status(_:)`
+  answers an unknown status's raw name (`lily/Config/AppBranding+ChatTournaments.swift`,
+  `lily/Config/AppBranding+TournamentResults.swift`). `Lists.snapshotFormat = 2`: a directory written under
   another number is swept. `Realtime.productionEndpoint` stays `nil` until the stack is deployed; in debug the
   `-realtime-endpoint` argument decides. `Push.redactedToken` stands in for the device token in log lines.
   `URL(string:)!` is force-unwrapped on literals only (`API.localBaseURL`, `API.productionBaseURL`, `Moderation.supportURL`,
@@ -190,7 +199,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `AppLocale.current` and calls `String(localized:bundle:locale:)` (`lily/Core/Localization/Localized.swift:localized`).
   No file in the directory touches `Locale`, `UserDefaults`, `FileManager`, `ProcessInfo`, `CommandLine`, `Date()` or a formatter.
 - `DesignTokens` and `AccessibilityIdentifiers`: none; `TabBar.symbolWeight` is an enum case, not a built `UIImage`.
-  `#if DEBUG`, `#if DEBUG && targetEnvironment(simulator)` and `#if DEBUG || STAGING` select values at build time only.
+  `#if DEBUG`, `#if DEBUG && targetEnvironment(simulator)`, `#if DEBUG || STAGING` and `Build`'s
+  `#if DEBUG` / `#elseif STAGING` / `#else` select values at build time only.
 
 ## Verification
 

@@ -25,7 +25,7 @@ struct DisplayNameSheet: View {
                         .accessibilityIdentifier(AccessibilityIdentifiers.profileNameField)
                 } footer: {
                     if let hint = model.draft.hint {
-                        Text(hint).foregroundStyle(Color.lilyAccent)
+                        ValidationHint(hint)
                     } else {
                         Text(Copy.footer)
                     }

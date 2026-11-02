@@ -62,7 +62,7 @@ struct TournamentDraftForm<Model: TournamentDraftEditing>: View {
     private var formatPicker: some View {
         CaptionedControl(Copy.format) {
             Picker(Copy.format, selection: formatSelection) {
-                ForEach(TournamentFormat.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                ForEach(TournamentFormat.known, id: \.self) { Text($0.displayName).tag($0) }
             }
             .pickerStyle(.segmented)
             .accessibilityIdentifier(AccessibilityIdentifiers.tournamentFormat)

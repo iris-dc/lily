@@ -69,7 +69,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   with `onChange: viewModel.replace`.
 - Detail (`EventDetailView.participationControl`) switches on `viewModel.participation`: `.hidden` nothing, `.join` a
   prominent `BusyButton` → `join()`, `.leave` a glass `BusyButton` → `leave()`, `.full` a prominent `BusyButton`
-  with no action, `.hosting` a caption. The Edit toolbar item shows only when `canEdit`; the roster only when
+  with no action, `.hosting` a caption. The Edit toolbar item (`lilyToolbarTextButton()`) shows only when `canEdit`;
+  the roster only when
   `showsParticipants`; `.task` calls `recordViewed()` then `loadParticipants()`.
 - Form (`EventDraftForm`): each section footer shows the first matching `viewModel.issue(for:)`: game
   `.titleMissing` / `.titleTooLong` / `.startsAtTooSoon`, where `.locationNameMissing` / `.locationNameTooLong` /
@@ -83,7 +84,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
 - `CreateMenuButton`: a `Menu` with game, group and (when `AppConfig.FeatureFlags.tournaments`) tournament while
   `AppConfig.FeatureFlags.groups` is on; a single game button otherwise.
 - Filter (`EventFilterPanel`): every change goes through `viewModel.updateFilter`, `toggleType` or `clearFilter`;
-  Reset shows only while `filter.isActive`; distance offers `AppConfig.Events.filterRadiiMeters` (2, 5, 10, 25 km)
+  Reset (`lilyTextButton(font: LilyTheme.Fonts.caption)`) shows only while `filter.isActive`; distance offers
+  `AppConfig.Events.filterRadiiMeters` (2, 5, 10, 25 km)
   plus "anywhere" (`nil`), replaced by a note while `userLocation == nil`; "Free only" toggles `maxPrice` between
   `0` and `nil`; typed text clears the cap when empty, sets it when parseable and leaves it when not
   (`applyTypedCap`); dates on proposes `DateWindow.proposal()`, each end edited as whole days through
@@ -100,7 +102,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `AppConfig.Location.pickerRegionMeters` (1,500 m), none follows the user.
 - Components: `EventFactsCard` shows the price only when `!event.isFree` and the level only when
   `event.skillLevel?.ifKnown` is set; `EventCard` adds a price chip when not free and a `GroupBadge` when hosted in
-  a group; `EventPreviewCard` turns from a row into a column at accessibility type sizes; `SkillLevelPicker` offers
+  a group; `EventPreviewCard` turns from a row into a column at accessibility type sizes and draws its `detail` (the
+  distance) in `.secondary` like every other distance; `SkillLevelPicker` offers
   "Any level" over `SkillLevel.known`, never an unknown level; `ParticipantRow` adds the host chip for
   `participant.isHost`.
 

@@ -5,7 +5,8 @@ Source: `lily/Features/Moderation/Views/`
 ## Overview
 
 The terms sheet the root presents while `TermsViewModel.isPresented` holds: a title and message that scroll, three legal
-links in a wrapping row, a prominent "I agree" button and a text-only "Sign out" under it. It cannot be swiped away and
+links in a wrapping row, a prominent "I agree" button and a text-only "Sign out" under it, the text actions in ink
+through `lilyTextButton`. It cannot be swiped away and
 mounts its own `.errorPopup` because a sheet draws above the root's.
 
 Files: `lily/Features/Moderation/Views/TermsSheet.swift`.
@@ -19,13 +20,13 @@ Files: `lily/Features/Moderation/Views/TermsSheet.swift`.
   `.interactiveDismissDisabled()`, `.errorPopup(errorCenter)`.
 - `[TermsSheet.swift:TermsSheet.legalLinks]`: a `FlowLayout(spacing: DesignTokens.Spacing.lg, rowSpacing: 0)` of
   `legalLink(_:to:)` for `AppBranding.Moderation.termsLink` → `viewModel.termsURL`, `.privacyLink` →
-  `viewModel.privacyURL`, `.supportLink` → `viewModel.supportURL`; each a `.borderless` `Link(destination:)` with a
-  `.subheadline` `tappableLabel()`.
+  `viewModel.privacyURL`, `.supportLink` → `viewModel.supportURL`; each a `Link(_:destination:)` under
+  `lilyTextButton(font: .subheadline)` (`lily/Core/UI/Components/ButtonModifiers.swift`), which supplies the 44pt label.
 - `[TermsSheet.swift:TermsSheet.acceptButton]`: `lilyProminentButton()` labelled `AppBranding.Moderation.accept`, a
   small `ProgressView` with `.accessibilityLabel(Copy.accept)` while `viewModel.isAccepting`;
   `AccessibilityIdentifiers.termsAccept`.
-- `[TermsSheet.swift:TermsSheet.signOutButton]`: `.borderless` text button `AppBranding.signOutAction` in
-  `LilyTheme.Fonts.button` with `tappableLabel()`; `AccessibilityIdentifiers.termsSignOut`.
+- `[TermsSheet.swift:TermsSheet.signOutButton]`: a full-width text button `AppBranding.signOutAction` under
+  `lilyTextButton()` (the button font, ink, the 44pt label); `AccessibilityIdentifiers.termsSignOut`.
 
 ## Invariants
 

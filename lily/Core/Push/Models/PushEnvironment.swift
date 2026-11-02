@@ -1,16 +1,17 @@
 import Foundation
 
-/// Which APNs host issued the device token: a debug build registers with Apple's sandbox, a release build with
-/// production, and the backend must send to the matching host or the token is refused.
+/// Which APNs host issued the device token: the `aps-environment` of the profile the build is signed with. A build run
+/// from Xcode (Debug, Staging) is development-signed and holds a sandbox token, an archived Release a production one;
+/// the backend must send to the matching host or the token is refused.
 nonisolated enum PushEnvironment: String, Codable, Sendable {
     case sandbox
     case production
 
     static var current: PushEnvironment {
-        #if DEBUG
-        .sandbox
-        #else
-        .production
-        #endif
+        forBuild(AppConfig.Build.configuration)
+    }
+
+    static func forBuild(_ configuration: AppConfig.Build.Configuration) -> PushEnvironment {
+        configuration == .release ? .production : .sandbox
     }
 }

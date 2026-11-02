@@ -9,10 +9,7 @@ struct HostedInLine: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
             if group.isLinkable {
-                NavigationLink(value: group) {
-                    label.foregroundStyle(Color.lilyAccent)
-                }
-                .buttonStyle(.plain)
+                ChevronLink(value: group) { label }
             } else {
                 label.foregroundStyle(.secondary)
             }

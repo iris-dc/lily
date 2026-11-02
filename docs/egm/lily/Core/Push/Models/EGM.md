@@ -24,7 +24,8 @@ notification's payload. Every type is `nonisolated` and `Sendable`; none perform
   [`lily/Core/Push/Models/PushAuthorization.swift:PushAuthorization`].
 - `nonisolated enum PushRegistrationError: Error, Equatable, Sendable`: `.refused(String)`, `.timedOut`
   [`lily/Core/Push/Models/PushAuthorization.swift:PushRegistrationError`].
-- `nonisolated enum PushEnvironment: String, Codable, Sendable`: `.sandbox`, `.production`; `static var current`
+- `nonisolated enum PushEnvironment: String, Codable, Sendable`: `.sandbox`, `.production`; `static var current`;
+  `static func forBuild(_ configuration: AppConfig.Build.Configuration) -> PushEnvironment`
   [`lily/Core/Push/Models/PushEnvironment.swift:PushEnvironment`].
 - `nonisolated enum PushTap: Hashable, Sendable`: `.event(id: String)`, `.match(tournamentID: String, matchID: String)`;
   `var logName: String` (ids only) [`lily/Core/Push/Models/PushPayload.swift:PushTap`].
@@ -37,8 +38,9 @@ notification's payload. Every type is `nonisolated` and `Sendable`; none perform
   `now - registeredAt < interval`; `locale` is optional because registrations stored before the app spoke more than
   one language have none, and a `nil` stored locale never compares equal to a current one
   [`DeviceRegistration.swift:LastDeviceRegistration.isCurrent(token:userID:locale:now:within:)`].
-- `PushEnvironment.current` is `.sandbox` under `#if DEBUG` and `.production` otherwise
-  [`PushEnvironment.swift:PushEnvironment.current`].
+- `PushEnvironment.forBuild` is `.production` for `.release` alone and `.sandbox` for `.debug` and `.staging` (every
+  build run from Xcode is development-signed and holds a sandbox token); `current` is
+  `forBuild(AppConfig.Build.configuration)` [`PushEnvironment.swift:PushEnvironment.forBuild(_:)`].
 - `PushPayload.tap(from:)` reads `AppConfig.Push.Payload.kind`; `eventReminder` needs `AppConfig.Push.Payload.eventID`,
   `matchReminder` needs both `tournamentID` and `matchID`; an empty string counts as missing; any other kind or a
   missing id answers `nil`. Only strings are read, so the result can cross to the main actor

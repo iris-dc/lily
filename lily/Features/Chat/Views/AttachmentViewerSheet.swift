@@ -15,8 +15,9 @@ import SwiftUI
 /// `ViewerHero` (`progress`, `drag`, `landing`, `moving`), because the cover draws only the picture's and the black's
 /// part above the composer line, over the bars; the chat draws the part below it under the composer, which fades with
 /// the move (`ViewerStage`), so a tile partly under the composer opens and closes whole. A video moves as its poster.
-/// Without a picture or a tile (a page with nothing loaded yet, a zoomed picture) the pager fades
-/// instead, over black on the whole screen. `ViewerMotion` decides which phase the viewer is in and which move's
+/// Without a picture or a tile (a page with nothing loaded yet, a zoomed picture), or under Reduce Motion (`\.motion`),
+/// the pager fades instead, over black on the whole screen, and a drag still follows the finger before it settles or
+/// closes on the same ramp. `ViewerMotion` decides which phase the viewer is in and which move's
 /// completion still counts. A zoomed picture does not close on a drag (a double tap returns it to size first), nor does
 /// one being pinched. An accessibility container (`attachment-viewer`), so Close keeps its own identifier.
 struct AttachmentViewerSheet: View {
@@ -32,6 +33,7 @@ struct AttachmentViewerSheet: View {
     /// The pictures zoomed in or being pinched, which a drag does not close.
     @State private var zoomedIDs: Set<String> = []
     @State var layout = ViewerPageLayout()
+    @Environment(\.motion) private var motionPreference
 
     private typealias Copy = AppBranding.Chat.Attachments
 
@@ -109,7 +111,9 @@ struct AttachmentViewerSheet: View {
     /// Hands the chat and this cover the picture a move draws, from where its page lays it out; none when the pager
     /// fades instead.
     func stage() {
-        guard let picture, tile != nil else {
+        let picture = picture
+        guard ViewerMotion.movesPicture(hasPicture: picture != nil, hasTile: tile != nil, motion: motionPreference),
+              let picture else {
             hero.moving = nil
             return
         }

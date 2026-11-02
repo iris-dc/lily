@@ -53,6 +53,9 @@ struct AppRootView: View {
         .sheet(isPresented: termsPresented) {
             TermsSheet(viewModel: terms, errorCenter: dependencies.errorCenter)
         }
+        // Outside the sheet: a presentation reads the environment above its modifier, and the terms sheet's aurora
+        // judges the preference too.
+        .motionProvider()
     }
 
     /// The setter is empty on purpose: the sheet cannot be swiped away. It follows `MeStore.needsTerms` and goes only

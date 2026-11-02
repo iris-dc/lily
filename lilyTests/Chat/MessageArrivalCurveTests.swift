@@ -52,4 +52,16 @@ struct MessageArrivalCurveTests {
         #expect(MessageArrivalCurve.standard.bounce == DesignTokens.MessageArrival.bounce)
         #expect(MessageArrivalCurve.standard.startScale == Double(DesignTokens.MessageArrival.scale))
     }
+
+    /// Under Reduce Motion the row is whole from its first frame and never arrives: a duration of 0 is no spring, so the
+    /// curve answers before one is built (`Spring(duration: 0)` is undefined).
+    @Test func theStillCurveRestsFromTheFirstFrameAndSettlesAtOnce() {
+        let still = MessageArrivalCurve.still
+        #expect(still.duration == 0)
+        #expect(still.settlingDuration == 0)
+        #expect(still.frame(elapsed: -1) == .resting)
+        #expect(still.frame(elapsed: 0) == .resting)
+        #expect(still.frame(elapsed: 0.001) == .resting)
+        #expect(still.frame(elapsed: 60) == .resting)
+    }
 }

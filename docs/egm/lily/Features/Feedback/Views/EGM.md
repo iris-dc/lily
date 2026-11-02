@@ -19,7 +19,8 @@ mount, and swipe-to-dismiss blocked while sending. It drives `FeedbackViewModel`
   chevron (`lily/Core/UI/Components/SettingsLinkRow.swift`).
 - `FeedbackSheet` (`lily/Features/Feedback/Views/FeedbackSheet.swift`): `init(viewModel: FeedbackViewModel,
   errorCenter: ErrorCenter)`; keeps the view model in `@State` (`State(initialValue:)`), reads
-  `@Environment(\.dismiss)`. Private `form`, `hint(for: FeedbackField) -> Text?`, `toolbar`. Identifiers:
+  `@Environment(\.dismiss)`. Private `form`, `hint(for: FeedbackField) -> ValidationHint?`, `toolbar` (Done and Cancel
+  are `lilyToolbarTextButton()`). Identifiers:
   `feedbackKind`, `feedbackMessage`, `feedbackEmail`, `feedbackSubmit`, `feedbackDone`
   (`lily/Config/AccessibilityIdentifiers+Feedback.swift`).
 
@@ -40,8 +41,9 @@ mount, and swipe-to-dismiss blocked while sending. It drives `FeedbackViewModel`
   `.lineLimit(DesignTokens.Layout.feedbackMessageLines)`, footer `hint(for: .message)`; an email `TextField`
   (`.emailAddress` keyboard and content type, no capitalisation, no autocorrection) whose footer is
   `hint(for: .replyEmail)` or `Copy.replyEmailFooter`, followed by `Copy.attachedDetails(viewModel.environment.summary)`.
-- `hint(for:)` maps `viewModel.draft.hint(for:)` to accent-coloured `Text` and is `nil` when the draft has no hint for
-  the field (so `.messageMissing` shows nothing).
+- `hint(for:)` maps `viewModel.draft.hint(for:)` to a `ValidationHint` (`lily/Core/UI/Components`: the words in
+  `Color.secondary`, the plain colour rather than the hierarchical style, the accent on the glyph) and is `nil` when the draft has no hint for the field (so `.messageMissing`
+  shows nothing); the email footer branches on it with `if let`, since a `ValidationHint` and a `Text` cannot share `??`.
 - `FeedbackRow` is stateless; the guest-to-sign-in gating its doc comment mentions lives in the caller.
 
 ## Side Effects

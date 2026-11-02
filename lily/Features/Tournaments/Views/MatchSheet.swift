@@ -89,9 +89,8 @@ struct MatchSheet: View {
                            identifier: AccessibilityIdentifiers.matchScoreB)
             }
             if scores.isDisallowedDraw(permitsDraws: permitsDraws) {
-                Text(Copy.drawsNotAllowed)
+                ValidationHint(Copy.drawsNotAllowed)
                     .font(LilyTheme.Fonts.caption)
-                    .foregroundStyle(Color.lilyAccent)
             }
         }
     }
@@ -107,6 +106,8 @@ struct MatchSheet: View {
                 .multilineTextAlignment(.center)
                 .lilyField()
                 .frame(width: DesignTokens.Layout.scoreFieldWidth)
+                // Named by whose score it takes; the title alone would make VoiceOver say "0".
+                .accessibilityLabel(name)
                 .accessibilityIdentifier(identifier)
         }
     }

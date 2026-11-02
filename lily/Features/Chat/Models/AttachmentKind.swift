@@ -9,18 +9,11 @@ nonisolated enum AttachmentKind: WireNamedKind {
     case file
     case unknown(String)
 
+    static let known: [AttachmentKind] = [.image, .video, .file]
+
     private static let imageName = "image"
     private static let videoName = "video"
     private static let fileName = "file"
-
-    init(wireName: String) {
-        switch wireName {
-        case Self.imageName: self = .image
-        case Self.videoName: self = .video
-        case Self.fileName: self = .file
-        default: self = .unknown(wireName)
-        }
-    }
 
     var wireName: String {
         switch self {
@@ -38,10 +31,5 @@ nonisolated enum AttachmentKind: WireNamedKind {
         case .image, .video: true
         case .file, .unknown: false
         }
-    }
-
-    var isUnknown: Bool {
-        if case .unknown = self { return true }
-        return false
     }
 }

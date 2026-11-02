@@ -97,7 +97,7 @@ struct IntroSlideView: View {
 /// on the first until the user has swiped, so the row never shifts a caption.
 private struct SwipeHint: View {
     let isShown: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.motion) private var motion
     @ScaledMetric(relativeTo: .footnote) private var rowHeight = DesignTokens.Layout.introHintRowHeight
 
     var body: some View {
@@ -106,7 +106,7 @@ private struct SwipeHint: View {
             .foregroundStyle(.secondary)
             .symbolEffect(.bounce.up,
                           options: .repeat(.periodic(delay: DesignTokens.Duration.introHintBouncePause)),
-                          isActive: isShown && !reduceMotion)
+                          isActive: isShown && motion.allowsMovement)
             .frame(height: rowHeight)
             .opacity(isShown ? 1 : 0)
             .animation(.easeOut(duration: DesignTokens.Duration.normal), value: isShown)

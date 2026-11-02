@@ -47,12 +47,8 @@ struct TermsSheet: View {
     }
 
     private func legalLink(_ title: String, to destination: URL) -> some View {
-        Link(destination: destination) {
-            Text(title)
-                .font(.subheadline)
-                .tappableLabel()
-        }
-        .buttonStyle(.borderless)
+        Link(title, destination: destination)
+            .lilyTextButton(font: .subheadline)
     }
 
     /// A spinner stands in for the label while the acceptance is in flight; VoiceOver keeps reading "I agree".
@@ -79,11 +75,9 @@ struct TermsSheet: View {
             Task { await viewModel.signOut() }
         } label: {
             Text(AppBranding.signOutAction)
-                .font(LilyTheme.Fonts.button)
                 .frame(maxWidth: .infinity)
-                .tappableLabel()
         }
-        .buttonStyle(.borderless)
+        .lilyTextButton()
         .disabled(viewModel.isAccepting)
         .accessibilityIdentifier(AccessibilityIdentifiers.termsSignOut)
     }

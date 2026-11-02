@@ -19,9 +19,9 @@ backend's key names; nothing here performs I/O.
   `responding(_:at:) -> InboxItem` (a copy with the invite payload answered).
 - `InboxItemKind: WireNamedKind` `[lily/Features/Inbox/Models/InboxItem.swift:InboxItemKind]`: `.groupInvite`
   (`group_invite`), `.eventReminder` (`event_reminder`), `.tournamentInvite` (`tournament_invite`), `.matchReminder`
-  (`match_reminder`), `.unknown(String)`; `init(wireName:)`, `wireName`.
-- `InviteStatus: String, Codable, Sendable` `[lily/Features/Inbox/Models/InboxItem.swift:InviteStatus]`: `pending`,
-  `accepted`, `declined` (no unknown case).
+  (`match_reminder`), `.unknown(String)`; `known`, `wireName` (the lookup is `WireNamedKind`'s default).
+- `InviteStatus: WireNamedKind` `[lily/Features/Inbox/Models/InboxItem.swift:InviteStatus]`: `pending`, `accepted`,
+  `declined`, `.unknown(String)`; `known`, `wireName`.
 - `InvitePayload: Hashable, Codable, Sendable, InviteAnswer` `[lily/Features/Inbox/Models/InboxItem.swift:InvitePayload]`:
   `groupId`, `groupName`, `groupVisibility: GroupVisibility`, `inviterUserId`, `inviterName`, `status` (default
   `.pending`), `expiresAt`, `respondedAt?`; `responding(_:at:)`.
@@ -37,7 +37,7 @@ backend's key names; nothing here performs I/O.
   `destination: TournamentDestination` (id, name and `matchID`).
 - `protocol InviteAnswer` `[lily/Features/Inbox/Models/InviteAnswer.swift:InviteAnswer]`: `status`, `expiresAt`;
   extension `isOpen(now:)` and `statusCaption(now:) -> String?` (`AppBranding.Inbox.joined`, `.declined`,
-  `.expired`; `nil` while open).
+  `.expired`; `nil` while open and for an unknown status).
 - `InboxItem.caption: String?` `[lily/Features/Inbox/Models/InboxItem+Caption.swift:InboxItem.caption]`: the one-line
   caption per kind, `nil` for `.unknown` or a missing payload. `InboxTimeCaption.text(for:now:calendar:)`
   `[lily/Features/Inbox/Models/InboxItem+Caption.swift:InboxTimeCaption]`; `ReminderPayload.startsAtCaption(now:calendar:)`
@@ -53,8 +53,12 @@ backend's key names; nothing here performs I/O.
 
 ## Invariants
 
-- An unknown wire name never fails decoding: it becomes `.unknown(name)` and round-trips through `wireName`
-  `[lily/Features/Inbox/Models/InboxItem.swift:InboxItemKind]`.
+- An unknown wire name never fails decoding: it becomes `.unknown(name)` and round-trips through `wireName`, for the
+  kind and for an invite's status alike; an invite with an unknown status is visible, `isOpen` is false and
+  `statusCaption` is `nil`, so its card shows neither buttons nor a caption. `GroupVisibility` stays strict on
+  purpose (a binary access rule), so an unknown visibility still fails the page
+  `[lily/Features/Inbox/Models/InboxItem.swift:InboxItemKind]`, `[lily/Features/Inbox/Models/InboxItem.swift:InviteStatus]`,
+  `[lily/Features/Inbox/Models/InviteAnswer.swift:InviteAnswer.statusCaption]`.
 - An item is drawable only when `kind` is known and that kind's payload is present; `.unknown` is never visible
   `[lily/Features/Inbox/Models/InboxItem.swift:InboxItem.isVisible]`.
 - `responding(_:at:)` answers `self` unchanged for an item with neither invite payload; answering never mutates, it

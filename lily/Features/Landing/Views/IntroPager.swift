@@ -9,7 +9,7 @@ struct IntroPager: View {
     let showsSwipeHint: Bool
     @Binding var visibleSlide: IntroSlide?
     @Environment(\.dynamicTypeSize) private var typeSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.motion) private var motion
 
     private var pages: Bool { !typeSize.isAccessibilitySize }
 
@@ -24,7 +24,7 @@ struct IntroPager: View {
     @ViewBuilder
     private func feed(pageHeight: CGFloat?) -> some View {
         // Read here: the transition closure runs off the main actor and may not touch the view's environment.
-        let reduceMotion = reduceMotion
+        let allowsMovement = motion.allowsMovement
         let feed = ScrollView(.vertical) {
             VStack(spacing: 0) {
                 ForEach(slides) { slide in
@@ -35,7 +35,7 @@ struct IntroPager: View {
                         .scrollTransition(.interactive) { content, phase in
                             content
                                 .opacity(phase.isIdentity ? 1 : DesignTokens.Opacity.introSlideLeaving)
-                                .scaleEffect(Self.leavingScale(phase, reduceMotion: reduceMotion))
+                                .scaleEffect(Self.leavingScale(phase, allowsMovement: allowsMovement))
                         }
                         .id(slide)
                 }
@@ -52,7 +52,7 @@ struct IntroPager: View {
         }
     }
 
-    nonisolated private static func leavingScale(_ phase: ScrollTransitionPhase, reduceMotion: Bool) -> CGFloat {
-        phase.isIdentity || reduceMotion ? 1 : DesignTokens.Layout.introSlideLeavingScale
+    nonisolated private static func leavingScale(_ phase: ScrollTransitionPhase, allowsMovement: Bool) -> CGFloat {
+        phase.isIdentity || !allowsMovement ? 1 : DesignTokens.Layout.introSlideLeavingScale
     }
 }

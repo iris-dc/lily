@@ -42,7 +42,8 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `loadingSlot` (`tournamentLoading`), `bracketInset`.
 - `[lily/Features/Tournaments/Views/TournamentHeader.swift:TournamentHeader]`: `(tournament, organizerProfile:
   UserProfileDestination?, winnerName: String?)`: chips (type, format, status), `OwnerTitleBlock`
-  (`tournamentOrganizer`), the winner line (`tournamentWinner`) or cancelled notice, `HostedInLine`.
+  (`tournamentOrganizer`), the winner line (`tournamentWinner`: a `Label` whose text is in the primary ink and whose
+  trophy `DesignTokens.Symbols.winner` is in `Color.lilyAccent`) or cancelled notice, `HostedInLine`.
   `TournamentFacts(tournament:)`: start, registration close, place, team size, `EntriesBar`.
 - `[lily/Features/Tournaments/Views/TournamentEntriesSegment.swift:TournamentEntriesSegment]`: `(viewModel, detail,
   onRemove: (TournamentEntry) -> Void)` lists `detail.registeredEntries` as `EntryRow(entry:viewModel:teamSize:)`:
@@ -57,7 +58,8 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   (`tournamentMatches`). `[lily/Features/Tournaments/Views/StandingsTable.swift:StandingsTable]`: rank, name,
   played, won, drawn (when `permitsDraws`), lost, difference, points (`tournamentStandings`, `standing(entryId)`).
 - `[lily/Features/Tournaments/Views/MatchCell.swift:MatchCell]`: `(match, detail, showsDetails)` two sides with
-  scores, seeds, dispute flag, status, time and place caption; `MatchButton` wraps it (`match(id)`); `RoundTitle`
+  scores, seeds, the accent dispute flag, and a `.secondary` caption of status ("Disputed" too), time and place;
+  `MatchButton` wraps it (`match(id)`); `RoundTitle`
   draws `BracketLayout.roundTitle`.
 - `[lily/Features/Tournaments/Views/TournamentParticipationControl.swift:TournamentParticipationControl]`:
   `(viewModel, onCreateTeam, onLeave)` switches `viewModel.participation` into Join (`tournamentJoin`), Create team
@@ -66,7 +68,9 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `tournamentOpenChat`, `tournamentInvite`, `tournamentStart`, `tournamentEdit`, `tournamentCancel`,
   `tournamentReport`).
 - `[lily/Features/Tournaments/Views/MatchSheet.swift:MatchSheet]`: `(viewModel, matchID, errorCenter)` in its own
-  `NavigationStack`; `MatchCell`, a notice, two score `TextField`s (`matchScoreA`, `matchScoreB`) and the action
+  `NavigationStack`; `MatchCell`, a notice, two score `TextField`s (`matchScoreA`, `matchScoreB`; titled "0", the
+  placeholder, with `.accessibilityLabel` the entry's name, so VoiceOver says whose score each takes), a
+  `ValidationHint` while the draft is a disallowed draw, and the action
   buttons Record/Report, Confirm, Dispute, a walkover `Menu` (`matchWalkover`, `matchWalkoverWinner(id)`) and a
   Schedule link (`matchSchedule`) to `MatchScheduleView`.
 - `[lily/Features/Tournaments/Views/MatchScheduleView.swift:MatchScheduleView]`: `(viewModel, match, now, onDone)`
@@ -74,7 +78,8 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `PlaceFields` (`matchLocationName`, `matchPickOnMap`), Clear (`matchScheduleClear`) and a `DraftSubmitButton` Save
   (`matchScheduleSave`).
 - `[lily/Features/Tournaments/Views/TeamNameSheet.swift:TeamNameSheet]`: `(viewModel, errorCenter)` with one
-  `TextField` (`tournamentTeamName`), a `TeamNameIssue` footer and a `DraftSubmitButton` (`tournamentTeamSubmit`).
+  `TextField` (`tournamentTeamName`), a `TeamNameIssue` footer, a `lilyToolbarTextButton()` Cancel and a
+  `DraftSubmitButton` (`tournamentTeamSubmit`).
 - `[lily/Features/Tournaments/Views/TournamentDraftForm.swift:TournamentDraftForm]`: `struct
   TournamentDraftForm<Model: TournamentDraftEditing>` with `@Bindable viewModel`; sections tournament (name
   `tournamentName`, `EventTypeChips`, format `tournamentFormat`), where (`PlaceFields`, `tournamentLocationName`,
@@ -110,11 +115,13 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
 - `[lily/Features/Tournaments/Views/StandingsTable.swift:StandingsTable.row]`: rows keep `detail.standings` order;
   the Drawn column appears only when `permitsDraws`; the caller's own entry is highlighted.
   `[lily/Features/Tournaments/Views/MatchCell.swift:MatchCell.side]`: the dispute flag draws only on side A for an
-  open dispute; the winner is semibold, the loser faded; a bye reads `Copy.bye`; the caller's match gets the accent
-  border.
+  open dispute and is the one accent in the cell besides the border, the "Disputed" caption reading `.secondary` with
+  the rest of `details`; the winner is semibold, the loser faded; a bye reads `Copy.bye`; the caller's match gets the
+  accent border.
 - `[lily/Features/Tournaments/Views/MatchSheet.swift:MatchSheet.actionButtons]`: buttons follow
   `viewModel.actions(for:)`: Record or Report (exclusive), Confirm, Dispute, walkover, Schedule; Report/Record is
-  disabled unless `scores.canSubmit(permitsDraws:)`, with a draws-not-allowed caption; the notice is dispute, then
+  disabled unless `scores.canSubmit(permitsDraws:)`, with a draws-not-allowed `ValidationHint` in the caption font;
+  the notice is dispute, then
   awaiting the other side, then "reported by"; dismissal is disabled while `isBusy`; a walkover offers only present
   sides.
 - `[lily/Features/Tournaments/Views/MatchScheduleView.swift:MatchScheduleView.body]`: Save is enabled only when
@@ -126,7 +133,7 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   (tournament, where, when, entries, who, details); type, format and team size show only when
   `allowsStructureChanges`; max entries, draws and the dates are disabled when `isLocked`; the format is written only
   through `draft.select(format:)`; every footer shows the first matching `viewModel.issue(for:)`; format, deadline,
-  draws and visibility are segmented pickers, the type is `EventTypeChips`, team size and max entries are `Stepper`s;
+  draws and visibility are segmented pickers (the format over `TournamentFormat.known`), the type is `EventTypeChips`, team size and max entries are `Stepper`s;
   no toggles.
 - `[lily/Features/Tournaments/Views/TournamentDraftForm+Schedule.swift:TournamentDraftForm.whenSection]`: start is
   bounded by `earliestStart...`, the close date by `...startsAt` and shown only when set; "at start" clears the

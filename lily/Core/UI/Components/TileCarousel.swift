@@ -21,10 +21,8 @@ struct TileCarousel<Item: Identifiable, SeeAll: Hashable, Tile: View>: View {
                 SectionTitle(text: title) {
                     NavigationLink(value: seeAll) {
                         Text(AppBranding.Groups.seeAll)
-                            .font(LilyTheme.Fonts.button)
-                            .tappableLabel()
                     }
-                    .buttonStyle(.borderless)
+                    .lilyTextButton()
                     .accessibilityIdentifier(seeAllIdentifier)
                 }
                 if sizeClass == .regular {

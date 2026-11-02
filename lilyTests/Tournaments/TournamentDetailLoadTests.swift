@@ -117,7 +117,7 @@ struct TournamentDetailLoadTests {
         let viewModel = harness.makeDetailViewModel(for: destination)
         await viewModel.load()
         harness.repository.holdsRequests = true
-        let refresh = Task { await viewModel.load() }
+        let refresh = Task { _ = await viewModel.load() }
         await settle(until: { harness.repository.fetchedIDs.count == 2 })
         return (viewModel, refresh)
     }

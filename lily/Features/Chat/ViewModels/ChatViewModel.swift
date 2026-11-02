@@ -161,13 +161,16 @@ final class ChatViewModel {
         await loadMembers()
     }
 
-    /// Leaving the screen: the live task ends, the marker is flushed, the room shrinks to what the cache keeps.
+    /// Leaving the screen: the live task and the older page in flight end, the open room is closed while it is still
+    /// this screen's (on an iPad switch the next room may have registered first), the marker is flushed. The rows
+    /// stay: the controller compacts a room once another one is looked at, so a reader coming back from a profile
+    /// finds their place.
     func cancel() async {
         liveTask?.cancel()
         liveTask = nil
-        realtime.setOpenRoom(nil)
+        olderPageTask?.cancel()
+        realtime.closeRoom(group.id)
         await readMarker.flush()
-        cache.compact(groupID: group.id)
     }
 
     func sceneDidEnterBackground() async {

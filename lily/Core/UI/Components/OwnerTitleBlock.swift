@@ -13,16 +13,8 @@ struct OwnerTitleBlock<Destination: Hashable>: View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
             ScreenTitle(text: title)
             if let destination {
-                NavigationLink(value: destination) {
-                    HStack(spacing: DesignTokens.Spacing.xs) {
-                        subtitleLine
-                        Image(systemName: DesignTokens.Symbols.chevron)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier(identifier)
+                ChevronLink(value: destination) { subtitleLine }
+                    .accessibilityIdentifier(identifier)
             } else {
                 subtitleLine
             }

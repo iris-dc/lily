@@ -9260,9 +9260,33 @@
     "Give the team a name of at least %lld characters": {
       "localizations": {
         "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Название команды: не меньше %lld символов"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название команды: не меньше %lld символа"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название команды: не меньше %lld символов"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название команды: не меньше %lld символов"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название команды: не меньше %lld символов"
+                }
+              }
+            }
           }
         },
         "es": {
@@ -9278,15 +9302,63 @@
           }
         },
         "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Назва команди: щонайменше %lld символів"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва команди: щонайменше %lld символ"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва команди: щонайменше %lld символи"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва команди: щонайменше %lld символів"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва команди: щонайменше %lld символів"
+                }
+              }
+            }
           }
         },
         "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nadaj drużynie nazwę o długości co najmniej %lld znaków"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nadaj drużynie nazwę o długości co najmniej %lld znaku"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nadaj drużynie nazwę o długości co najmniej %lld znaków"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nadaj drużynie nazwę o długości co najmniej %lld znaków"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nadaj drużynie nazwę o długości co najmniej %lld znaków"
+                }
+              }
+            }
           }
         },
         "pt": {
@@ -9300,9 +9372,33 @@
     "Give the tournament a name of at least %lld characters": {
       "localizations": {
         "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Название турнира: не меньше %lld символов"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название турнира: не меньше %lld символа"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название турнира: не меньше %lld символов"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название турнира: не меньше %lld символов"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название турнира: не меньше %lld символов"
+                }
+              }
+            }
           }
         },
         "es": {
@@ -9318,15 +9414,63 @@
           }
         },
         "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Назва турніру: щонайменше %lld символів"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва турніру: щонайменше %lld символ"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва турніру: щонайменше %lld символи"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва турніру: щонайменше %lld символів"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва турніру: щонайменше %lld символів"
+                }
+              }
+            }
           }
         },
         "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nadaj turniejowi nazwę o długości co najmniej %lld znaków"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nadaj turniejowi nazwę o długości co najmniej %lld znaku"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nadaj turniejowi nazwę o długości co najmniej %lld znaków"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nadaj turniejowi nazwę o długości co najmniej %lld znaków"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nadaj turniejowi nazwę o długości co najmniej %lld znaków"
+                }
+              }
+            }
           }
         },
         "pt": {
@@ -11372,9 +11516,33 @@
     "Keep the team name under %lld characters": {
       "localizations": {
         "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Название команды: не больше %lld символов"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название команды: не больше %lld символа"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название команды: не больше %lld символов"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название команды: не больше %lld символов"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Название команды: не больше %lld символов"
+                }
+              }
+            }
           }
         },
         "es": {
@@ -11390,15 +11558,63 @@
           }
         },
         "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Назва команди: не більше %lld символів"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва команди: не більше %lld символа"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва команди: не більше %lld символів"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва команди: не більше %lld символів"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Назва команди: не більше %lld символів"
+                }
+              }
+            }
           }
         },
         "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nazwa drużyny może mieć najwyżej %lld znaków"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nazwa drużyny może mieć najwyżej %lld znak"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nazwa drużyny może mieć najwyżej %lld znaki"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nazwa drużyny może mieć najwyżej %lld znaków"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Nazwa drużyny może mieć najwyżej %lld znaków"
+                }
+              }
+            }
           }
         },
         "pt": {
@@ -24520,9 +24736,33 @@
     "You can run at most %lld open tournaments. Finish or cancel one first.": {
       "localizations": {
         "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Одновременно можно проводить не более %lld турниров. Сначала завершите или отмените один."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Одновременно можно проводить не более %lld турнира. Сначала завершите или отмените один."
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Одновременно можно проводить не более %lld турниров. Сначала завершите или отмените один."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Одновременно можно проводить не более %lld турниров. Сначала завершите или отмените один."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Одновременно можно проводить не более %lld турниров. Сначала завершите или отмените один."
+                }
+              }
+            }
           }
         },
         "es": {
@@ -24538,15 +24778,63 @@
           }
         },
         "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Можна вести не більше %lld відкритих турнірів. Спершу завершіть або скасуйте один."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можна вести не більше %lld відкритого турніру. Спершу завершіть або скасуйте один."
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можна вести не більше %lld відкритих турнірів. Спершу завершіть або скасуйте один."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можна вести не більше %lld відкритих турнірів. Спершу завершіть або скасуйте один."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Можна вести не більше %lld відкритих турнірів. Спершу завершіть або скасуйте один."
+                }
+              }
+            }
           }
         },
         "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Możesz prowadzić najwyżej %lld otwartych turniejów. Najpierw zakończ lub odwołaj jeden."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Możesz prowadzić najwyżej %lld otwarty turniej. Najpierw zakończ lub odwołaj jeden."
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Możesz prowadzić najwyżej %lld otwarte turnieje. Najpierw zakończ lub odwołaj jeden."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Możesz prowadzić najwyżej %lld otwartych turniejów. Najpierw zakończ lub odwołaj jeden."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Możesz prowadzić najwyżej %lld otwartych turniejów. Najpierw zakończ lub odwołaj jeden."
+                }
+              }
+            }
           }
         },
         "pt": {

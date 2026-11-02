@@ -218,4 +218,28 @@ struct ChatViewModelLifecycleTests {
         #expect(!viewModel.historyLoadFailed && !viewModel.isLoadingHistory)
         #expect(viewModel.rows.isEmpty && harness.errorCenter.current == nil)
     }
+
+    /// A room popped keeps every row, so a reader who paged deep and pushed a profile finds their place on the way back;
+    /// another room opening compacts it to what the cache keeps.
+    @Test func aCoveredRoomKeepsItsRowsUntilAnotherRoomOpens() async {
+        let other = SportGroup.fixture(id: "h", channelEpoch: 1, role: .member)
+        let harness = RealtimeHarness()
+        harness.groups.result = .success([group, other])
+        let count = AppConfig.Chat.roomCacheLimit + 1
+        let rows = (1...count).map { ChatMessage.fixture(id: String(format: "m%04d", $0)) }
+        harness.cache.store(.fixture(groupID: "g", messages: rows), for: "g")
+        await harness.connect()
+        let viewModel = harness.makeChatViewModel(for: group)
+
+        await viewModel.appear()
+        await viewModel.cancel()
+        await viewModel.appear()
+        #expect(viewModel.room.messages.count == count, "a pop and a return keep the rows")
+        await viewModel.cancel()
+
+        let next = harness.makeChatViewModel(for: other)
+        await next.appear()
+        #expect(harness.cache.room(for: "g")?.messages.count == AppConfig.Chat.roomCacheLimit, "another room opened")
+        await next.cancel()
+    }
 }

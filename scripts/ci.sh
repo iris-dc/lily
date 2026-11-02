@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Builds Lily and runs unit + UI tests on an iPhone simulator, and the iPad UI tests on an iPad simulator.
-# Locally: ./scripts/ci.sh [lint|build|unit|ui|ui-ipad|all]
+# Locally: ./scripts/ci.sh [lint|build|unit|ui|ui-ipad|all]; ./scripts/ci.sh release-archive <build-number> archives
+# Release for a device under that build number (the only signed run).
 # GitHub Actions: ./scripts/ci.sh build-and-unit on one runner, then ./scripts/ci.sh ui-shard <1..N|ipad> on one
 # runner per shard, each from the build products the first one archived (see .github/workflows/ci.yml).
 set -euo pipefail
@@ -30,6 +31,12 @@ DERIVED_DATA="${DERIVED_DATA:-build/DerivedData}"
 PRODUCTS_DIR="$DERIVED_DATA/Build/Products"
 # What the build job hands the UI shard jobs (the simulator products and the .xctestrun), relative to the repository root.
 PRODUCTS_ARCHIVE="${PRODUCTS_ARCHIVE:-build/products.tgz}"
+# Where release-archive writes the device archive.
+ARCHIVE_PATH="${ARCHIVE_PATH:-build/lily.xcarchive}"
+# The app folder is a synchronized group: every file in it ships inside the app bundle, so only sources, the asset
+# catalog, the string catalogs and the privacy manifest (which App Store Connect reads at the bundle root) belong there.
+APP_FOLDER="lily"
+PRIVACY_MANIFEST="$APP_FOLDER/PrivacyInfo.xcprivacy"
 # The app the UI stages warm the simulator up with, and how long its one launch is given before it is terminated.
 APP_BUNDLE_ID="iris.lily"
 WARM_UP_SECONDS=8
@@ -146,9 +153,28 @@ warm_up_simulator() {
   fi
 }
 
-# One xcodebuild run: the log and the result bundle land under RESULTS_DIR/<label>.*, tests run without simulator clones
-# (clones make the unit suite take minutes on a loaded runner and a timing-based test flaky), a failure is shown with
-# the log's tail, and a test action must prove that it ran a test.
+# One xcodebuild invocation: the whole log lands in RESULTS_DIR/<label>.log, the console shows the filtered lines, and
+# a failure is shown with the log's tail.
+xcodebuild_logged() {
+  local label="$1"; shift
+  local log="$RESULTS_DIR/${label}.log"
+  show_xcode_version
+  echo "==> ${label}"
+  set +e
+  # Amplify pulls in smithy-swift, whose build plug-in xcodebuild refuses to validate without an interactive approval.
+  xcodebuild "$@" -skipPackagePluginValidation 2>&1 | tee "$log" | { grep -E "$CONSOLE_FILTER" || true; }
+  local status=${PIPESTATUS[0]}
+  set -e
+  if [[ $status -ne 0 ]]; then
+    echo "==> ${label} FAILED (exit ${status}); last lines:" >&2
+    tail -n 40 "$log" >&2
+    exit "$status"
+  fi
+}
+
+# One unsigned xcodebuild run: the result bundle lands under RESULTS_DIR/<label>.xcresult, tests run without simulator
+# clones (clones make the unit suite take minutes on a loaded runner and a timing-based test flaky), and a test action
+# must prove that it ran a test.
 run_logged() {
   local label="$1" action="$2"; shift 2
   local log="$RESULTS_DIR/${label}.log" is_test=0
@@ -158,21 +184,49 @@ run_logged() {
       set -- "$@" -parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/${label}.xcresult"
       ;;
   esac
-  show_xcode_version
   rm -rf "$RESULTS_DIR/${label}.xcresult"
-  echo "==> ${label}"
-  set +e
-  # Amplify pulls in smithy-swift, whose build plug-in xcodebuild refuses to validate without an interactive approval.
-  xcodebuild "$action" "$@" -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$log" \
-    | { grep -E "$CONSOLE_FILTER" || true; }
-  local status=${PIPESTATUS[0]}
-  set -e
-  if [[ $status -ne 0 ]]; then
-    echo "==> ${label} FAILED (exit ${status}); last lines:" >&2
-    tail -n 40 "$log" >&2
-    exit "$status"
-  fi
+  xcodebuild_logged "$label" "$action" "$@" CODE_SIGNING_ALLOWED=NO
   [[ $is_test -eq 0 ]] || { require_executed_tests "$label" "$log"; report_retried_tests "$label" "$log"; }
+}
+
+# A Release archive for a generic iOS device numbered by the caller (a workflow passes its run number, a Mac
+# `git rev-list --count HEAD`): the pbxproj keeps CURRENT_PROJECT_VERSION = 1, so "1.0 (1)" means a build from Xcode
+# and only an archive carries a number. The one signed xcodebuild run: -allowProvisioningUpdates lets Xcode fetch the
+# profile, so run_logged (CODE_SIGNING_ALLOWED=NO) is not used. Refuses anything but an integer, so no archive is ever
+# numbered by accident, and fails unless the archive's Info.plist carries the number.
+run_release_archive() {
+  local build_number="$1"
+  if ! [[ "$build_number" =~ ^[0-9]+$ ]]; then
+    echo "Usage: $0 release-archive <build-number> (an integer: a workflow's run number, or git rev-list --count HEAD)" >&2
+    exit 2
+  fi
+  rm -rf "$ARCHIVE_PATH"
+  xcodebuild_logged release-archive archive -scheme "$SCHEME" -configuration Release -destination 'generic/platform=iOS' \
+    -archivePath "$ARCHIVE_PATH" -derivedDataPath "$DERIVED_DATA" -allowProvisioningUpdates \
+    "CURRENT_PROJECT_VERSION=${build_number}"
+  local plist="$ARCHIVE_PATH/Products/Applications/${SCHEME}.app/Info.plist" archived
+  archived=$(plutil -extract CFBundleVersion raw "$plist")
+  if [[ "$archived" != "$build_number" ]]; then
+    echo "the archive's CFBundleVersion is '${archived}', not ${build_number}" >&2
+    exit 1
+  fi
+  echo "==> archived $(plutil -extract CFBundleShortVersionString raw "$plist") (${archived}) -> $ARCHIVE_PATH"
+}
+
+# Every file under lily/ ships, so a stray one (a note, a script, a plist that is not the manifest) is a lint failure;
+# hidden files are Finder's and Xcode never ships them. The manifest must also parse, or the upload is refused.
+check_app_folder() {
+  echo "==> app folder"
+  local stray
+  stray=$(find "$APP_FOLDER" -type f ! -name '*.swift' ! -name '*.xcstrings' ! -name "${PRIVACY_MANIFEST##*/}" \
+    ! -name '.*' | grep -v Assets.xcassets || true)
+  if [[ -n "$stray" ]]; then
+    while IFS= read -r path; do
+      echo "lily/ ships every file it holds; $path is not a source, a catalog or the privacy manifest" >&2
+    done <<< "$stray"
+    exit 1
+  fi
+  plutil -lint "$PRIVACY_MANIFEST"
 }
 
 # Names every test that failed and then passed within one run (a CI retry), so the log shows the flake.
@@ -402,12 +456,14 @@ run_lint() {
   require_swiftlint
   swiftlint --strict --quiet --reporter emoji
   # Every localized("...") in the code must be a catalog key translated into every language the app ships, and the
-  # usage descriptions a Release build sets must be in InfoPlist.xcstrings. The checker's own tests run first:
-  # `placeholders` and `values` can regress with the real catalog still passing. Both import only the standard
-  # library, so isolated mode costs nothing and keeps a planted module out.
+  # usage descriptions the shipping configurations (Release and Staging, which set the same ones) set must be in
+  # InfoPlist.xcstrings. The checker's own tests run first: `placeholders` and `values` can regress with the real
+  # catalog still passing. Both import only the standard library, so isolated mode costs nothing and keeps a planted
+  # module out.
   echo "==> l10n"
   python3 -I scripts/test_l10n_check.py
   python3 -I scripts/l10n-check.py
+  check_app_folder
   check_ui_test_classes_grep
   check_ui_shards
   check_warm_up_tests
@@ -473,6 +529,10 @@ case "$STAGE" in
     mkdir -p "$PRODUCTS_DIR"
     tar -xzf "$PRODUCTS_ARCHIVE" -C "$PRODUCTS_DIR"
     ;;
+  # A device archive of Release under the given build number (see run_release_archive).
+  release-archive)
+    run_release_archive "${2:-}"
+    ;;
   # CI's parallel jobs: one shard of the iPhone UI classes, or the iPad class on an iPad, from the archived products.
   ui-shard)
     use_software_keyboard
@@ -496,7 +556,7 @@ case "$STAGE" in
     run_ipad_ui_tests test-without-building
     ;;
   *)
-    echo "Usage: $0 [lint|build|unit|ui|ui-ipad|all|build-and-unit|ui-shard <1..${#UI_SHARDS[@]}|ipad>]" >&2
+    echo "Usage: $0 [lint|build|unit|ui|ui-ipad|all|build-and-unit|ui-shard <1..${#UI_SHARDS[@]}|ipad>|release-archive <build-number>]" >&2
     exit 2
     ;;
 esac

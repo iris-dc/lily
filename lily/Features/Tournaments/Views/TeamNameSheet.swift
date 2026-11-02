@@ -38,6 +38,7 @@ struct TeamNameSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(AppBranding.Events.Create.cancel, role: .cancel) { dismiss() }
+                        .lilyToolbarTextButton()
                         .disabled(viewModel.isBusy)
                 }
                 ToolbarItem(placement: .confirmationAction) {

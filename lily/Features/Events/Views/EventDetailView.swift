@@ -59,9 +59,10 @@ struct EventDetailView: View {
         }
     }
 
-    /// A plain toolbar button, like the sheets' Cancel: `.borderless` collapses to an icon-sized circle in an iOS 26 bar.
+    /// A plain toolbar button, like the sheets' Cancel.
     private var editButton: some View {
         Button(AppBranding.Events.Edit.action) { isEditing = true }
+            .lilyToolbarTextButton()
             .accessibilityIdentifier(AccessibilityIdentifiers.eventEdit)
     }
 

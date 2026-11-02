@@ -73,7 +73,11 @@ struct FeedbackSheet: View {
                 Text(Copy.replyEmailTitle)
             } footer: {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-                    hint(for: .replyEmail) ?? Text(Copy.replyEmailFooter)
+                    if let hint = hint(for: .replyEmail) {
+                        hint
+                    } else {
+                        Text(Copy.replyEmailFooter)
+                    }
                     Text(Copy.attachedDetails(viewModel.environment.summary))
                 }
             }
@@ -82,20 +86,22 @@ struct FeedbackSheet: View {
         .readableColumn()
     }
 
-    /// The field's issue in the accent, or nothing.
-    private func hint(for field: FeedbackField) -> Text? {
-        viewModel.draft.hint(for: field).map { Text($0).foregroundStyle(Color.lilyAccent) }
+    /// The field's issue, or nothing.
+    private func hint(for field: FeedbackField) -> ValidationHint? {
+        viewModel.draft.hint(for: field).map { ValidationHint($0) }
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         if viewModel.isSubmitted {
             ToolbarItem(placement: .confirmationAction) {
                 Button(Copy.done) { dismiss() }
+                    .lilyToolbarTextButton()
                     .accessibilityIdentifier(AccessibilityIdentifiers.feedbackDone)
             }
         } else {
             ToolbarItem(placement: .cancellationAction) {
                 Button(AppBranding.Events.Create.cancel, role: .cancel) { dismiss() }
+                    .lilyToolbarTextButton()
                     .disabled(viewModel.isSubmitting)
             }
             ToolbarItem(placement: .confirmationAction) {

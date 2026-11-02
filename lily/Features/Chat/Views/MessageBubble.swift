@@ -69,7 +69,7 @@ struct MessageBubble: View {
         if row.message.isDeleted {
             Text(AppBranding.Chat.deletedPlaceholder)
                 .italic()
-                .foregroundStyle(.secondary)
+                .foregroundStyle(BubbleInk(own: row.isOwn).secondary)
                 .bubbleFill(own: row.isOwn)
         } else if let poll = row.message.poll {
             PollBubble(poll: poll, own: row.isOwn, onVote: onVote, onShowVoters: onShowVoters)

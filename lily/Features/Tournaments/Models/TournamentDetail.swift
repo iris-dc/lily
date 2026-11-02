@@ -129,6 +129,7 @@ nonisolated struct TournamentDetail: Identifiable, Hashable, Codable, Sendable {
         return switch tournament.format {
         case .singleElimination: matches.first { $0.nextMatchId == nil }?.winnerEntryId
         case .roundRobin: standings.first?.entryId
+        case .unknown: nil
         }
     }
 }

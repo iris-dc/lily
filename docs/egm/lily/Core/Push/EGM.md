@@ -39,7 +39,8 @@ the `-mock-events` run never meets the permission alert.
 - One registration in flight: a `sync()` made meanwhile joins the running `registration` task
   [`PushCoordinator.swift:PushCoordinator.register(for:)`].
 - A registration is skipped when `registered.isCurrent(token:userID:locale:now:within: AppConfig.Push.reregisterInterval)`.
-  The payload is `platform: AppConfig.Push.platform`, `environment: .current`, `appVersion: appVersion.headerValue`,
+  The payload is `platform: AppConfig.Push.platform`, `environment: .current` (sandbox for Debug and Staging,
+  production for Release), `appVersion: appVersion.headerValue`,
   `locale: languageCode()`. The answer is stored only if `identity.isStillCaller(userID, orDrop:)` still holds. A
   `PushRegistrationError.refused` sets `tokenRefused` for the rest of the process; a cancellation is silent; any other
   failure is a warning [`PushCoordinator.swift:PushCoordinator.performRegistration(for:)`].

@@ -31,13 +31,10 @@ struct EventFilterPanel: View {
 
     /// Shown in the title row while any criterion is active.
     private var resetButton: some View {
-        Button {
+        Button(Copy.reset) {
             viewModel.clearFilter()
-        } label: {
-            Text(Copy.reset).tappableLabel()
         }
-        .buttonStyle(.borderless)
-        .font(LilyTheme.Fonts.caption)
+        .lilyTextButton(font: LilyTheme.Fonts.caption)
     }
 
     /// Multi-select; "Any type" is on while nothing is chosen.

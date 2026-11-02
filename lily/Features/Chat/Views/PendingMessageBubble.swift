@@ -10,6 +10,7 @@ struct PendingMessageBubble: View {
     let message: PendingMessage
     let viewModel: ChatViewModel
     var onTapQuote: (ReplyQuote) -> Void = { _ in }
+    @Environment(\.motion) private var motion
 
     private typealias Copy = AppBranding.Chat
 
@@ -66,8 +67,9 @@ struct PendingMessageBubble: View {
     @ViewBuilder private var failedMenu: some View {
         Button(Copy.retry, systemImage: DesignTokens.Symbols.send) { Task { await viewModel.retry(message) } }
         Button(Copy.deleteMessage, systemImage: DesignTokens.Symbols.delete, role: .destructive) {
-            // Animated, so the bubble's removal transition plays and the rows below close up.
-            withAnimation(.messageArrival) { viewModel.discard(message) }
+            // Animated, so the bubble's removal transition plays and the rows below close up; under Reduce Motion the
+            // animation is nil and the row is cut.
+            withAnimation(.messageArrival(motion)) { viewModel.discard(message) }
         }
     }
 }

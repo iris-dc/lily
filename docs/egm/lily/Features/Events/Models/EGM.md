@@ -29,8 +29,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - `EventLocation` (`EventLocation.swift`): `name`, `coordinate: Coordinate`; `distance(from:)`.
   `EventParticipant` (`EventParticipant.swift`): `userId` (the `id`), `displayName`, `joinedAt`, `isHost`.
 - `EventType` (`EventType.swift`): `WireNamedKind` with 20 known cases (`football` ... `other`) plus
-  `unknown(String)`; `known`, `init(wireName:)`, `wireName` (snake_case, e.g. `table_tennis`), `isUnknown`,
-  `displayName`, `symbolName`. `SkillLevel` (`SkillLevel.swift`): `beginner`, `intermediate`, `advanced`,
+  `unknown(String)`; `known`, `wireName` (snake_case, e.g. `table_tennis`), `displayName`, `symbolName`, with
+  `init(wireName:)` and `isUnknown` from `WireNamedKind`'s defaults. `SkillLevel` (`SkillLevel.swift`): `beginner`,
+  `intermediate`, `advanced`,
   `unknown(String)`; `known`, `ifKnown`, `displayName`.
 - `Price` (`Price.swift`): `amount: Decimal`, `currencyCode`; `isFree`, `text`, `text(in:)`, `symbol(for:locale:)`,
   `name(for:locale:)`, `inputFormat`, `inputText(_:locale:)`, `parseAmount(_:locale:) -> Decimal?`.
@@ -74,7 +75,7 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - Decoding (`SportEvent.init(from:)`): `capacity`, `hostUserId`, `isJoined`, `description`, `lookingFor`,
   `skillLevel`, `price`, `group` may be absent; a missing `allowsExtraParticipants` reads as `false`; the other keys
   are required. Encoding omits `nil` optionals (synthesized), never writes `null`.
-- Unknown wire values survive: `EventType.init(wireName:)` and `SkillLevel.init(wireName:)` yield `.unknown(name)`
+- Unknown wire values survive: `WireNamedKind`'s default `init(wireName:)` yields `.unknown(name)` for `EventType` and `SkillLevel`
   and re-encode the same name; `known` excludes `.unknown`; `SkillLevel.ifKnown` is `nil` for it;
   `PersistedEventFilter.filter` drops unknown types and an unknown level.
 - Capacity arithmetic (`SportEvent`): `playerLimit = PlayerLimit(capacity:allowsExtraParticipants:)` (`nil` →

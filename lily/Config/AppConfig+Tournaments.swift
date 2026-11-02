@@ -28,10 +28,11 @@ nonisolated extension AppConfig {
         /// Where the deadline lands when the organiser switches one on: a day before the start.
         static let defaultDeadlineLead: TimeInterval = 24 * 60 * 60
 
-        /// The most entries a format takes: a start writes every match in one transaction, hence the caps.
+        /// The most entries a format takes: a start writes every match in one transaction, hence the caps. A format
+        /// this build does not know takes the widest range; the backend validates the real one.
         static func maxEntries(for format: TournamentFormat) -> Int {
             switch format {
-            case .singleElimination: entriesRange.upperBound
+            case .singleElimination, .unknown: entriesRange.upperBound
             case .roundRobin: maxEntriesRoundRobin
             }
         }
@@ -39,7 +40,7 @@ nonisolated extension AppConfig {
         /// The fewest entries a format starts with, and the least its cap may be set to.
         static func minEntries(for format: TournamentFormat) -> Int {
             switch format {
-            case .singleElimination: minEntriesSingleElimination
+            case .singleElimination, .unknown: minEntriesSingleElimination
             case .roundRobin: minEntriesRoundRobin
             }
         }

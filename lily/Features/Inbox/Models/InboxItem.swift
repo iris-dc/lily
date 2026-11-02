@@ -66,20 +66,12 @@ nonisolated enum InboxItemKind: WireNamedKind {
     case matchReminder
     case unknown(String)
 
+    static let known: [InboxItemKind] = [.groupInvite, .eventReminder, .tournamentInvite, .matchReminder]
+
     private static let groupInviteName = "group_invite"
     private static let eventReminderName = "event_reminder"
     private static let tournamentInviteName = "tournament_invite"
     private static let matchReminderName = "match_reminder"
-
-    init(wireName: String) {
-        switch wireName {
-        case Self.groupInviteName: self = .groupInvite
-        case Self.eventReminderName: self = .eventReminder
-        case Self.tournamentInviteName: self = .tournamentInvite
-        case Self.matchReminderName: self = .matchReminder
-        default: self = .unknown(wireName)
-        }
-    }
 
     var wireName: String {
         switch self {
@@ -92,8 +84,26 @@ nonisolated enum InboxItemKind: WireNamedKind {
     }
 }
 
-nonisolated enum InviteStatus: String, Codable, Sendable {
+/// Where an invite's answer stands. A status a newer backend sends is kept by name: the card shows neither buttons nor
+/// caption for it, and the rest of the page is untouched.
+nonisolated enum InviteStatus: WireNamedKind {
     case pending, accepted, declined
+    case unknown(String)
+
+    static let known: [InviteStatus] = [.pending, .accepted, .declined]
+
+    private static let pendingName = "pending"
+    private static let acceptedName = "accepted"
+    private static let declinedName = "declined"
+
+    var wireName: String {
+        switch self {
+        case .pending: Self.pendingName
+        case .accepted: Self.acceptedName
+        case .declined: Self.declinedName
+        case .unknown(let name): name
+        }
+    }
 }
 
 /// The `invite` payload of a `group_invite` item: who asked the caller into which group, and where the answer stands.

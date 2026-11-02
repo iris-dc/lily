@@ -23,6 +23,14 @@ struct TournamentInboxContractTests {
         #expect(invite.details == "Football · Single elimination · Teams of 5")
     }
 
+    /// A format a newer backend added decodes; the details line shows the name as it came.
+    @Test func anInviteOfAnUnseenFormatDecodesAndNamesTheFormatAsItCame() throws {
+        let json = Laurel.tournamentInvite.replacingOccurrences(of: #""format":"single_elimination""#, with: #""format":"swiss""#)
+        let item = try ContractSamples.decode(InboxItem.self, from: json)
+        #expect(item.isVisible && item.tournamentInvite?.format == .unknown("swiss"))
+        #expect(item.tournamentInvite?.details == "Football · swiss · Teams of 5")
+    }
+
     @Test func theMatchReminderDecodesWithAndWithoutAPlace() throws {
         let item = try ContractSamples.decode(InboxItem.self, from: Laurel.matchReminder)
 

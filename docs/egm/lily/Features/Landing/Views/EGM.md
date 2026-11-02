@@ -29,10 +29,10 @@ Files: `lily/Features/Landing/Views/LandingView.swift`, `lily/Features/Landing/V
   one line at `DesignTokens.Layout.headlineMinimumScale`, then a wrapped line; font `LilyTheme.Fonts.headline(scale:)`,
   tracking `DesignTokens.Typography.headlineTracking * scale`.
 - `[IntroPager.swift:IntroPager]`: `slides: [IntroSlide]`, `content: IntroContent`, `showsSwipeHint: Bool`, `@Binding
-  visibleSlide: IntroSlide?`; reads `\.dynamicTypeSize` and `\.accessibilityReduceMotion`. A vertical `ScrollView` of
+  visibleSlide: IntroSlide?`; reads `\.dynamicTypeSize` and `\.motion` (`MotionPreference`, `lily/Core/UI/Layout`). A vertical `ScrollView` of
   `IntroSlideView`s with `.scrollTargetLayout()`, `.scrollPosition(id: $visibleSlide)`, `.scrollIndicators(.hidden)`
   and `.accessibilityIdentifier(AccessibilityIdentifiers.introPager)`; `nonisolated private static func
-  leavingScale(_: ScrollTransitionPhase, reduceMotion: Bool) -> CGFloat`.
+  leavingScale(_: ScrollTransitionPhase, allowsMovement: Bool) -> CGFloat`.
 - `[IntroSlideView.swift:IntroSlideView]`: `slide: IntroSlide`, `content: IntroContent`, `showsSwipeHint: Bool`; reads
   `\.dynamicTypeSize` and `\.horizontalSizeClass`; `stacked` (compact) or `sideBySide` (regular) layouts;
   `.accessibilityElement(children: .contain)` then `.accessibilityIdentifier(AccessibilityIdentifiers.introSlide(slide))`.
@@ -40,7 +40,7 @@ Files: `lily/Features/Landing/Views/LandingView.swift`, `lily/Features/Landing/V
   `content.joinEvent` exists), `.groups` to `IntroChatScreen(eventTitle:)`, `.tournaments` to
   `IntroTournamentScreen(detail:)`. `[IntroSlideView.swift:SwipeHint]` is `private`: `Label(AppBranding.Intro.swipeHint,
   systemImage: DesignTokens.Symbols.swipeUp)` at `@ScaledMetric(relativeTo: .footnote)` height
-  `DesignTokens.Layout.introHintRowHeight`.
+  `DesignTokens.Layout.introHintRowHeight`; reads `\.motion` and bounces only while `isShown && motion.allowsMovement`.
 - `[IntroScreenFrame.swift:IntroScreenFrame]`: `struct IntroScreenFrame<Content: View>` with `fadesBottom = true`,
   `alignment: Alignment = .top`, `width: CGFloat = DesignTokens.Layout.introScreenWidth`, `@ViewBuilder content`;
   `@State contentHeight`, `frameHeight`. Applies `.dynamicTypeSize(DesignTokens.Layout.introScreenTypeSize)`, a
@@ -59,7 +59,7 @@ Files: `lily/Features/Landing/Views/LandingView.swift`, `lily/Features/Landing/V
 - `[IntroScreens.swift:IntroTournamentScreen]`: `detail: TournamentDetail`; `EventTypeChip`, `TournamentStatusChip`,
   `ScreenTitle(text: detail.tournament.name, subtitle: AppBranding.Tournaments.organizedBy(name:))` and
   `BracketView(detail:) { _ in }`.
-- `[IntroScreens.swift:TapPulse]`: `private`; reads `\.accessibilityReduceMotion` and `\.auroraFrozen`, `@State
+- `[IntroScreens.swift:TapPulse]`: `private`; reads `\.motion` and `\.auroraFrozen`, `@State
   startedAt: Date?`; a `TimelineView(.animation(minimumInterval: DesignTokens.Aurora.frameInterval, paused: startedAt ==
   nil))` drawing a `Circle().strokeBorder(Color.white, lineWidth: DesignTokens.Layout.introPulseLineWidth)` of
   `DesignTokens.Layout.controlHeight` scaled and faded by `TapPulseCurve.intro.frame(elapsed:)`.
@@ -74,9 +74,9 @@ Files: `lily/Features/Landing/Views/LandingView.swift`, `lily/Features/Landing/V
 - `[IntroPager.swift:IntroPager.pages]`: paging (`.scrollTargetBehavior(.paging)` and a page height equal to the
   pager's own measured height) only while `!typeSize.isAccessibilitySize`; at accessibility sizes the feed is a plain
   scroll of natural heights. The height comes from the `GeometryReader`, never `containerRelativeFrame`.
-- `[IntroPager.swift:IntroPager.feed]`: `reduceMotion` is copied to a local before the `scrollTransition` closure,
-  which runs off the main actor; a leaving slide gets `DesignTokens.Opacity.introSlideLeaving` and
-  `DesignTokens.Layout.introSlideLeavingScale`, or scale 1 under Reduce Motion (`leavingScale`).
+- `[IntroPager.swift:IntroPager.feed]`: `motion.allowsMovement` is copied to a local before the `scrollTransition`
+  closure, which runs off the main actor; a leaving slide gets `DesignTokens.Opacity.introSlideLeaving` and
+  `DesignTokens.Layout.introSlideLeavingScale`, or scale 1 when movement is not allowed (`leavingScale`).
 - `[IntroPager.swift:IntroPager.feed]`: the swipe hint is passed as `showsSwipeHint && slide == slides.first`, so only
   the first slide ever shows it.
 - `[IntroSlideView.swift:IntroSlideView.frame]`: the frame crops at `.bottom` and does not fade when
@@ -86,7 +86,7 @@ Files: `lily/Features/Landing/Views/LandingView.swift`, `lily/Features/Landing/V
 - `[IntroScreenFrame.swift:IntroScreenFrame.fadesTop]`: the top fades only when `alignment == .bottom && frameHeight >
   0 && contentHeight > frameHeight + DesignTokens.Layout.introScreenOverflowTolerance`; the mask's top stop is capped
   so it never crosses the bottom fade.
-- `[IntroScreens.swift:TapPulse.body]`: nothing is drawn when `reduceMotion || auroraFrozen` (the environment the
+- `[IntroScreens.swift:TapPulse.body]`: nothing is drawn when `!motion.allowsMovement || auroraFrozen` (the environment the
   `-freeze-aurora` launch argument sets); the clock starts on `onScrollVisibilityChange(threshold:
   DesignTokens.Layout.introPulseVisibilityThreshold)` (`startedAt = isVisible ? .now : nil`), not on `onAppear`.
 - `[IntroScreens.swift:IntroDetailScreen]`, `[IntroScreens.swift:IntroChatScreen.composer]`: the Join and send buttons

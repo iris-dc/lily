@@ -88,10 +88,12 @@ struct TournamentCodingTests {
     }
 
     @Test func wireNamesAreSnakeCase() throws {
-        #expect(TournamentFormat.singleElimination.rawValue == "single_elimination")
-        #expect(TournamentFormat.roundRobin.rawValue == "round_robin")
-        #expect(TournamentStatus.inProgress.rawValue == "in_progress" && EntryStatus.withdrawn.rawValue == "withdrawn")
-        #expect(MatchStatus.walkover.rawValue == "walkover" && MatchSlot.b.rawValue == "b")
+        #expect(TournamentFormat.singleElimination.wireName == "single_elimination")
+        #expect(TournamentFormat(wireName: "round_robin") == .roundRobin && TournamentFormat.roundRobin.wireName == "round_robin")
+        #expect(TournamentStatus.inProgress.wireName == "in_progress" && TournamentStatus(wireName: "in_progress") == .inProgress)
+        #expect(EntryStatus.withdrawn.wireName == "withdrawn" && EntryStatus(wireName: "withdrawn") == .withdrawn)
+        #expect(MatchStatus.walkover.wireName == "walkover" && MatchStatus(wireName: "walkover") == .walkover)
+        #expect(MatchSlot.b.wireName == "b" && MatchSlot(wireName: "b") == .b)
         #expect(GroupKind(wireName: "tournament") == .tournament && GroupKind.tournament.wireName == "tournament")
     }
 

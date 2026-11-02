@@ -24,6 +24,30 @@ struct EventDetailPushOptInTests {
         #expect(busyAtOffer == false)
     }
 
+    /// A Leave tapped while the prompt is up owns the control to its own end: the join released its guard before the
+    /// offer, so nothing clears the leave's flag early, and a second tap during it is dropped.
+    @Test func aLeaveStartedDuringTheReminderOfferKeepsItsGuardUntilItLands() async {
+        let harness = makeHarness()
+        spy.holdsRequests = true
+        let join = Task { await harness.viewModel.join() }
+        await settle(until: { spy.isHolding })
+        #expect(!harness.viewModel.isBusy, "the control is free while the prompt is up")
+
+        harness.repository.holdsRequests = true
+        let leave = Task { await harness.viewModel.leave() }
+        await settle(until: { harness.viewModel.isBusy })
+        spy.releaseRequests()
+        await join.value
+        #expect(harness.viewModel.isBusy, "the join's return leaves the leave's guard alone")
+        await harness.viewModel.leave()
+        #expect(harness.repository.leftEventIDs.count == 1, "a second leave during the first is dropped")
+
+        harness.repository.releaseRequests()
+        await leave.value
+        #expect(!harness.viewModel.isBusy && harness.repository.leftEventIDs == [harness.viewModel.event.id])
+        #expect(spy.offerCount == 1)
+    }
+
     @Test func aLeaveNeverOffersReminders() async {
         let harness = makeHarness(participants: 2, isJoined: true)
 

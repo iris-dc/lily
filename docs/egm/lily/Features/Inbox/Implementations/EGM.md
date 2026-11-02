@@ -41,10 +41,11 @@ other features' fixtures, so previews, UI tests and `-mock-events` runs need no 
   check `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:markRead]`.
 - An unknown id or an item without an invite payload throws `AppError.inviteNotPending`
   `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:invite(at:)]`.
-- Accept: `.declined` throws `inviteNotPending`; `.accepted` replays the same shape without re-joining; `.pending`
+- Accept: `.declined` or an `.unknown` status throws `inviteNotPending` (Laurel refuses a non-pending invite);
+  `.accepted` replays the same shape without re-joining; `.pending`
   past `expiresAt` throws `AppError.inviteExpired`; otherwise admission runs before the item turns accepted, so a
   refused admission leaves it pending `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:accept]`.
-- Decline: `.accepted` throws `inviteNotPending`; `.declined` answers the same item; `.pending` is declined at
+- Decline: `.accepted` or an `.unknown` status throws `inviteNotPending`; `.declined` answers the same item; `.pending` is declined at
   `now()`; expiry is not checked `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:decline]`.
 - Admission: a group invite calls `groups.admit(id:)` on every accept, replay included; a tournament invite calls
   `tournaments.join(id:teamName: nil)` only when entering and `!invite.isTeam`, and always answers

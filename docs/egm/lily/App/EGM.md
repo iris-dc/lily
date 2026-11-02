@@ -24,7 +24,8 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
   methods answer `[.banner, .sound, .list]` and route `PushPayload.tap(from:)` to `PushEventRelay.shared.notificationTapped(_:)`.
 - `AppRootView` (`lily/App/AppRootView.swift:AppRootView`): `init(dependencies:)` seeds `@State terms` and `@State sync`;
   body is `MainTabView(dependencies:, showsContent: showsShell)` keyed by `navigation.shellGeneration` under `LandingView`
-  keyed by `language.language` while `!showsShell`, with `.errorPopup(dependencies.errorCenter)` and the `TermsSheet`;
+  keyed by `language.language` while `!showsShell`, with `.errorPopup(dependencies.errorCenter)` and the `TermsSheet`,
+  then `.motionProvider()` outermost (`lily/Core/UI/Layout/MotionPreference.swift`), so the sheet reads `\.motion` too;
   `private struct SyncKey { phase; userID; language }` keys `.task(id:) { await sync.run(active:user:) }`.
 - `ShellCommands` (`lily/App/ShellCommands.swift:ShellCommands`): new event Cmd-N (`navigation.requestCreate(.game)`),
   new group Cmd-Shift-N (only if `AppConfig.FeatureFlags.groups`), new tournament Cmd-Shift-T (only if
@@ -139,6 +140,8 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
 - `AppRootView` builds the shell once under the landing, keyed by `navigation.shellGeneration`; the landing is keyed
   by `language.language`; the terms sheet's binding has an empty setter so it cannot be swiped away; one `sync.run`
   per `SyncKey` (`lily/App/AppRootView.swift:AppRootView.body`, `AppRootView.termsPresented`, `AppRootView.SyncKey`).
+  The root is the one place `motionProvider()` and `layoutModeProvider()` are applied; the layout provider sits inside
+  the sheet modifier, the motion provider outside it (`lily/App/AppRootView.swift:AppRootView.body`).
 - Every shell command is a no-op outside the shell and the group and tournament commands exist only under their
   feature flags (`lily/App/ShellCommands.swift:ShellCommands.inShell`); both notification-center callbacks are
   `nonisolated` and only a `PushTap` crosses to the main actor (`lily/App/LilyAppDelegate.swift:LilyAppDelegate`);
@@ -178,4 +181,4 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
 
 ## Verification
 
-- Run: `./scripts/ci.sh unit` (the suites for this directory are `lilyTests/App/AppDependencies*Tests.swift`).
+- Run: `./scripts/ci.sh unit` (the suites for this directory are `lilyTests/App/AppDependencies*Tests.swift` and `lilyTests/App/PrivacyManifestTests.swift`, which pins `lily/PrivacyInfo.xcprivacy` from the bundle).

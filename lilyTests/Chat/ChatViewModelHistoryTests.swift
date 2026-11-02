@@ -19,7 +19,8 @@ struct ChatViewModelHistoryTests {
     }
 
     /// A room holding "m0001" up to "m\(count)" with history before them; one over the cache limit, so that a
-    /// compaction drops its oldest row and the anchor of the page before moves.
+    /// compaction (a live line while the room is neither open nor last open) drops its oldest row and the anchor of
+    /// the page before moves.
     private func room(holding count: Int = AppConfig.Chat.roomCacheLimit + 1) -> ChatRoomState {
         var room = ChatRoomState(groupID: "g", channelEpoch: 1)
         room.applyNewest(.fixture(messages(1...count), hasMore: true))
@@ -38,20 +39,58 @@ struct ChatViewModelHistoryTests {
         return load
     }
 
-    /// Back during the request: `cancel()` compacts the room to the cache limit, which drops "m0001" and moves the
-    /// anchor to "m0002"; the page asked for before "m0001" would sit below a hole, so it is refused.
-    @Test func anOlderPageForAMovedAnchorIsDropped() async {
+    /// A compaction during the request drops "m0001" and moves the anchor to "m0002"; the page asked for before "m0001"
+    /// would sit below a hole, so it is refused.
+    @Test func anOlderPageForAnAnchorCompactedAwayIsDropped() async {
         let (harness, viewModel) = await makeOpenChat(room: room())
         let load = await holdOlderPage(of: viewModel, in: harness)
         #expect(harness.chat.olderRequests.map(\.before) == ["m0001"])
 
-        await viewModel.cancel()
+        harness.cache.compact(groupID: "g")
         harness.chat.releaseRequests()
 
         #expect(await !load.value, "nothing was prepended")
         #expect(viewModel.room.messages.count == AppConfig.Chat.roomCacheLimit && viewModel.room.oldestID == "m0002")
         #expect(harness.chatLogs(.debug).contains { $0.hasPrefix("Older page before m0001 dropped") })
         #expect(!viewModel.isLoadingOlder)
+    }
+
+    /// Back during the request: `cancel()` cancels the page, whose cancellation is as quiet as the first page's; the
+    /// rows stay, since the reader may come back to their place.
+    @Test func anOlderPageInFlightWhenTheScreenLeavesStaysQuiet() async {
+        let (harness, viewModel) = await makeOpenChat(room: room())
+        let load = await holdOlderPage(of: viewModel, in: harness)
+
+        await viewModel.cancel()
+        harness.chat.pageError = AppError.chatUnavailable
+        harness.chat.releaseRequests()
+
+        #expect(await !load.value, "a cancelled page prepends nothing")
+        #expect(harness.errorCenter.current == nil && harness.chatLogs(.error).isEmpty, "no popup for a screen nobody sees")
+        #expect(!viewModel.isLoadingOlder)
+        #expect(viewModel.room.messages.count == AppConfig.Chat.roomCacheLimit + 1 && viewModel.room.oldestID == "m0001")
+    }
+
+    /// A quote tap waiting on the page the screen left asks for nothing more.
+    @Test func aQuoteTapWaitingOnAPageTheScreenLeftAsksNoMore() async {
+        let (m3, m4, m5) = (ChatMessage.fixture(id: "m3"), ChatMessage.fixture(id: "m4"), ChatMessage.fixture(id: "m5"))
+        var room = ChatRoomState(groupID: "g", channelEpoch: 1)
+        room.applyNewest(.fixture([m5], hasMore: true))
+        let (harness, viewModel) = await makeOpenChat(room: room)
+        harness.chat.olderPages = [.fixture([m4], hasMore: true), .fixture([m3], hasMore: true)]
+        harness.chat.holdsRequests = true
+        let transcriptLoad = Task { await viewModel.loadOlder() }
+        await settle(until: { harness.chat.olderRequests.count == 1 })
+        let reveal = Task { await viewModel.revealQuoted(id: "m3") }
+        await harness.yield()
+
+        await viewModel.cancel()
+        harness.chat.releaseRequests()
+
+        let revealed = await reveal.value
+        let loaded = await transcriptLoad.value
+        #expect(!revealed && !loaded)
+        #expect(harness.chat.olderRequests.count == 1, "the lookup asks for no page after the one the screen left")
     }
 
     @Test func anOlderPageForTheCurrentAnchorIsPrepended() async {

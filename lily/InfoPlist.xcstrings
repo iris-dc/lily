@@ -118,6 +118,53 @@
           }
         }
       }
+    },
+    "NSPhotoLibraryAddUsageDescription": {
+      "comment": "Privacy - Photo Library Additions Usage Description",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra saves the pictures you pick from a chat to your photo library."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra guarda las fotos que eliges de un chat en tu fototeca."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra enregistre dans votre photothèque les photos que vous choisissez dans une discussion."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra zapisuje zdjęcia wybrane z czatu w Twojej bibliotece zdjęć."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A iskra guarda as fotos que escolhe numa conversa na sua biblioteca de fotos."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra сохраняет выбранные в чате фото в вашу медиатеку."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra зберігає вибрані в чаті фото у вашу медіатеку."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

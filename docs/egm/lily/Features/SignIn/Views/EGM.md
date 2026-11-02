@@ -42,8 +42,9 @@ Files: `lily/Features/SignIn/Views/SignInSheet.swift`, `lily/Features/SignIn/Vie
   with a small `ProgressView` while `isSubmitting`, `AccessibilityIdentifiers.authSubmit`; `resendButton`
   (`AppBranding.resendCodeAction`, `AccessibilityIdentifiers.authResendCode`); `modeToggle`
   (`viewModel.mode.toggleLabel`, `AccessibilityIdentifiers.authModeToggle`); `backButton` (`DesignTokens.Symbols.back`,
-  `AppBranding.Forms.back`, `AccessibilityIdentifiers.authBack`); private `textButton(_:identifier:action:)` is
-  `.borderless`, `Color.lilyAccent`, `LilyTheme.Fonts.caption` with `tappableLabel()`.
+  `AppBranding.Forms.back`, `AccessibilityIdentifiers.authBack`); private `textButton(_:identifier:action:)` is a
+  full-width label under `lilyTextButton(font: LilyTheme.Fonts.caption)` (`lily/Core/UI/Components/ButtonModifiers.swift`):
+  ink, `.secondary` while disabled, the 44pt hit area from the style.
 - `[EmailSignInView.swift:View.firstTapGrowsTheSheet]`: `private extension View`; `func firstTapGrowsTheSheet(detent:
   PresentationDetent, action: @escaping () -> Void) -> some View`, a clear tap-catching overlay present only while
   `detent != .large`, hidden from accessibility.

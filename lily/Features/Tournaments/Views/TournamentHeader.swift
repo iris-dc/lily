@@ -29,13 +29,18 @@ struct TournamentHeader: View {
         }
     }
 
-    /// "Winner: Marta" in the accent under the title, or the cancelled notice; nothing while the tournament runs.
+    /// "Winner: Marta" under the title, the trophy in the accent, or the cancelled notice; nothing while the tournament
+    /// runs.
     @ViewBuilder private var outcome: some View {
         if tournament.status == .completed, let winnerName {
-            Label(Copy.winner(winnerName), systemImage: DesignTokens.Symbols.winner)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(Color.lilyAccent)
-                .accessibilityIdentifier(AccessibilityIdentifiers.tournamentWinner)
+            Label {
+                Text(Copy.winner(winnerName))
+            } icon: {
+                Image(systemName: DesignTokens.Symbols.winner)
+                    .foregroundStyle(Color.lilyAccent)
+            }
+            .font(.body.weight(.semibold))
+            .accessibilityIdentifier(AccessibilityIdentifiers.tournamentWinner)
         } else if tournament.status == .cancelled {
             Text(Copy.cancelledNotice)
                 .font(.subheadline)

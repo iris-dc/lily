@@ -5,8 +5,9 @@ Source: `lily/`
 ## Overview
 
 The iOS app target of iskra (module, scheme and bundle id `iris.lily` keep the code name `lily`). The folder holds
-only Swift sources, `Assets.xcassets` and the two string catalogs (`Localizable.xcstrings`, `InfoPlist.xcstrings`):
-Xcode's synchronized folder groups ship every other file inside the app bundle, which is why these contracts live
+only Swift sources, `Assets.xcassets`, the two string catalogs (`Localizable.xcstrings`, `InfoPlist.xcstrings`) and
+`PrivacyInfo.xcprivacy` (the privacy manifest, which must ship at the bundle root): Xcode's synchronized folder groups
+ship every other file inside the app bundle, which is why these contracts live
 under `docs/egm/` and not beside the code. Four top-level folders: `App` is the composition root and the only place
 that knows concrete types; `Config` holds every constant, string, token and identifier as `nonisolated` enum
 namespaces; `Core` is the shared machinery (auth, networking, realtime, changes and freshness, localisation, UI

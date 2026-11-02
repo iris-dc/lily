@@ -4,7 +4,8 @@ This file is the Elephant-and-Goldfish Model (EGM) root contract of the reposito
 the invariants that cross them and the side effects that leave the process. `README.md` is the human introduction,
 `AGENTS.md` the engineering rules for every session, `docs/notes/` the dated engineering notes. Per-directory
 contracts live beside the code for `scripts/` and, for everything under `lily/`, mirrored under `docs/egm/lily/`
-(the app folder may hold only Swift sources and catalogs; Xcode ships every other file in the app bundle).
+(the app folder may hold only Swift sources, catalogs and the privacy manifest; Xcode ships every other file in the
+app bundle).
 
 ## System Overview
 
@@ -74,7 +75,9 @@ token; everything else answers 401.
   last answer on disk (`ListSnapshotStore`, a hint, never the truth) and never poll; the first Explore request waits
   up to `AppConfig.Location.firstFixWait` for the position (`HeadStart`).
 - **Wire tolerance.** Wire types keep the backend's key names, omit optionals, read and write ISO-8601 instants and
-  tolerate new enum values through `WireNamedKind` with `case unknown(String)`.
+  tolerate new enum values through `WireNamedKind` with `case unknown(String)` (`GroupVisibility`, a binary access
+  rule, is strict on purpose; `MemberRole`, `InviteCandidateSource` and `MembershipChange.Kind` remain strict, not yet
+  judged).
 - **Isolation.** The app target compiles with default `@MainActor` isolation; data types are `nonisolated` and
   `Sendable`; every `extension AppConfig/AppBranding/DesignTokens/AccessibilityIdentifiers/ErrorMessageMapper/String`
   in its own file is a `nonisolated extension`; generated asset symbols are main-actor only.
@@ -85,8 +88,9 @@ token; everything else answers 401.
   (`AppConfig.FeatureFlags`), read by the callers that show or route to them (Shell, Groups, Events, the Landing
   intro slides, `ShellCommands`, `AppNavigation`) and, for the chat flag, by `TournamentDetailViewModel`; launch arguments
   (`AppConfig.LaunchArguments`) are read in debug builds only.
-- **Folder hygiene.** `lily/` holds only Swift sources, `Assets.xcassets` and the two string catalogs; new files join
-  their target through synchronized folder groups with no `.pbxproj` edit.
+- **Folder hygiene.** `lily/` holds only Swift sources, `Assets.xcassets`, the two string catalogs and
+  `PrivacyInfo.xcprivacy` (the privacy manifest, which must ship at the bundle root; `ci.sh lint`'s `check_app_folder`
+  fails on any other file); new files join their target through synchronized folder groups with no `.pbxproj` edit.
 
 ## Global Side Effects
 
@@ -102,13 +106,14 @@ token; everything else answers 401.
   (`UserDefaultsChoiceStore`), Explore's filter (`UserDefaultsEventFilterStore`) and the last push registration
   (`PushCoordinator`); the `tmp/AttachmentPreviews` QuickLook copies; CoreLocation one-shot fixes; the
   pasteboard; APNs registration and `UNUserNotificationCenter` permission through `SystemPushRegistrar`, the
-  `PushRegistrar` that `PushCoordinator` drives (`MockPushRegistrar` in mock runs).
+  `PushRegistrar` that `PushCoordinator` drives (`MockPushRegistrar` in mock runs); the attachment viewer's share
+  sheet can write a picture to Photos in-process under the add-only permission (`NSPhotoLibraryAddUsageDescription`).
 - **Process-wide state.** `UIView.setAnimationsEnabled(false)` from launch until the shell's first frame commits
   (`LaunchAnimations`, with a fallback timer); `AppLocale.current` behind a `Mutex`; `PushEventRelay.shared`;
   `os.Logger` lines by `LogCategory`, ids only, never secrets, names, query text or tokens.
 - **Tooling.** `scripts/ci.sh` writes logs and `.xcresult` bundles under `build/results/`, boots and warms up
   simulators, switches the simulator's hardware keyboard off before UI stages, and runs SwiftLint and the two Python
-  checks.
+  checks; `ci.sh release-archive <n>` writes `$ARCHIVE_PATH` (`build/lily.xcarchive`) through the one signed xcodebuild run.
 
 ## System Verification
 

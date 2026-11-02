@@ -37,6 +37,7 @@ struct PollVotersSheet: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(AppBranding.done) { dismiss() }
+                        .lilyToolbarTextButton()
                 }
             }
             .tint(Color.lilyAccent)

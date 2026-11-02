@@ -136,12 +136,15 @@ final class TournamentDetailViewModel {
     /// The view's one entry, re-run on every change of the tracker: the first load, and a reload whenever a tournament
     /// changed elsewhere (a live room event, a sibling screen) since this screen last agreed with the tracker. A change
     /// this screen made itself is acknowledged in `accept`, so it costs no second request; a gone tournament asks for
-    /// nothing more.
+    /// nothing more. A reload the keyed task cancelled (a push over the detail) settled nothing, so the change is
+    /// heard again on return; a reported failure stays acknowledged (Try again and the pull cover it).
     func loadIfNeeded() async {
         let version = changes.version
         guard !isGone, detail == nil || acknowledgedVersion != version else { return }
+        let previous = acknowledgedVersion
         acknowledgedVersion = version
-        await load()
+        let settled = await load()
+        if !settled, acknowledgedVersion == version { acknowledgedVersion = previous }
     }
 
     /// Fetches the detail. With `reportingFailures` a failure reaches the popup and sets `.failed` only while nothing
@@ -149,25 +152,29 @@ final class TournamentDetailViewModel {
     /// passes `false`: the fresh detail goes on to the lists through `accept`, and a failure records a change for the
     /// view's task to reload on, because the write landed and the stale control must not stay. A 404 marks the
     /// tournament gone either way; an answer older than a write accepted meanwhile is dropped, its failure too.
-    func load(reportingFailures: Bool = true) async {
+    /// Answers whether the load settled: `false` only for a cancellation while this was still the current load.
+    @discardableResult
+    func load(reportingFailures: Bool = true) async -> Bool {
         if detail == nil { state = Self.initialState(for: destination) }
         previewLoadFailed = false
         loadGeneration += 1
         let generation = loadGeneration
         do {
             let fresh = try await repository.tournament(id: destination.id)
-            guard generation == loadGeneration else { return }
+            guard generation == loadGeneration else { return true }
             if reportingFailures { state = .loaded(fresh) } else { accept(fresh) }
             decideLinkedMatch(in: fresh)
             recordViewed(fresh.tournament)
         } catch AppError.tournamentNotFound {
-            guard generation == loadGeneration else { return }
+            guard generation == loadGeneration else { return true }
             logger.info(.tournaments, "Tournament \(destination.id) is not available to the caller")
             markGone()
         } catch {
-            guard !AppError.isCancellation(error), generation == loadGeneration else { return }
+            guard generation == loadGeneration else { return true }
+            guard !AppError.isCancellation(error) else { return false }
             if reportingFailures { reportLoadFailure(error) } else { noteRefreshFailure(error) }
         }
+        return true
     }
 
     /// The opener's copy stays on screen with a Try again under it; the failed state is for a screen with nothing to show.

@@ -3,15 +3,15 @@ import SwiftUI
 /// Ember mesh: a slowly flowing red-on-black gradient under live film grain, behind every screen. Mesh, grain and
 /// the fade-in all follow the wall clock (`AuroraGeometry`, `FilmGrain`, `AuroraReveal`), so every instance shows the
 /// same frame and a tab, push or sheet that appears mid-fade continues it instead of starting from black. Frozen on
-/// its first frame, shown at once, when Reduce Motion is on or the root asks for it (`\.auroraFrozen`, the UI tests'
-/// launch argument).
+/// its first frame, shown at once, when Reduce Motion is on (`\.motion`) or the root asks for it (`\.auroraFrozen`, the
+/// UI tests' launch argument).
 struct AuroraBackground: View {
     var intensity: Double = 1
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.motion) private var motion
     @Environment(\.auroraFrozen) private var auroraFrozen
 
-    private var frozen: Bool { reduceMotion || auroraFrozen }
+    private var frozen: Bool { !motion.allowsMovement || auroraFrozen }
 
     var body: some View {
         ZStack {

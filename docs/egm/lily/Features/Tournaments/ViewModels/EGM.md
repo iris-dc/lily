@@ -45,7 +45,8 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   `participation: TournamentParticipation`, `permissions: TournamentPermissions` (with `chatEnabled:
   AppConfig.FeatureFlags.chat`), `reportTarget`, `winnerName`, `isSelf(_:)`.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.loadIfNeeded]`:
-  `loadIfNeeded() async`, `load(reportingFailures: Bool = true) async`, `accept(_ detail:)`,
+  `loadIfNeeded() async`, `@discardableResult load(reportingFailures: Bool = true) async -> Bool` (`false` only
+  for a cancellation while still the current load), `accept(_ detail:)`,
   `consumeLinkedMatch()`, and the shared write frame
   `@discardableResult perform(_ action: String, _ work: () async throws -> Void) async -> Bool` with its
   `perform(_ action: String, settling: (any Error) async -> Bool, _ work: () async throws -> Void) async -> Bool`
@@ -106,7 +107,9 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.load]`: the
   initial state is `.previewing(destination.preview)` or `.loading`; every load, `accept` and `markGone` bumps
   `loadGeneration`, and an answer from an older generation is dropped. `loadIfNeeded` runs only when `!isGone` and
-  (`detail == nil` or `acknowledgedVersion != changes.version`).
+  (`detail == nil` or `acknowledgedVersion != changes.version`); it acknowledges the version before loading and
+  restores the previous acknowledgement when `load()` answers `false` with the acknowledgement still its own, so a
+  reload cancelled by a disappearance is asked again on return while a reported failure stays acknowledged.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.reportLoadFailure]`:
   a failed reload never blanks a loaded detail: with a preview `previewLoadFailed = true`, with nothing `state =
   .failed`, with a detail nothing changes; the error is reported in all three cases. `.tournamentNotFound` before

@@ -41,6 +41,21 @@ struct InboxItemCodingTests {
         #expect(!item.isVisible && item.caption == nil && item.invite == nil && item.reminder == nil)
     }
 
+    /// One invite whose status a newer backend added decodes with the rest of the page; its card offers neither buttons
+    /// nor a caption, and the status goes back out as it came.
+    @Test func anInviteWithAnUnseenStatusDecodesWithoutButtonsAndKeepsThePage() throws {
+        let json = ContractSamples.inboxPage.replacingOccurrences(of: #""status":"pending""#, with: #""status":"revoked""#)
+        let page = try ContractSamples.decode(InboxPage.self, from: json)
+        #expect(page.items.map(\.kind) == [.groupInvite, .eventReminder])
+
+        let item = try #require(page.items.first)
+        let invite = try #require(item.invite)
+        #expect(item.isVisible && invite.status == .unknown("revoked") && invite.status.isUnknown)
+        #expect(!invite.isOpen(now: Self.now) && invite.statusCaption(now: Self.now) == nil)
+        let encoded = try #require(String(bytes: try APIJSONCoding.makeEncoder().encode(item), encoding: .utf8))
+        #expect(encoded.contains(#""status":"revoked""#))
+    }
+
     @Test func kindsEncodeAsTheirWireNames() throws {
         let data = try APIJSONCoding.makeEncoder().encode(InboxItem.reminder())
         let text = try #require(String(bytes: data, encoding: .utf8))

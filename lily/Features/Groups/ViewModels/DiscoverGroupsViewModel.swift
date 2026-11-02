@@ -34,6 +34,10 @@ final class DiscoverGroupsViewModel {
     /// `nil` for none. Set by an answer only, so a search that failed or was cancelled leaves it truthful, and a browse
     /// made for another position than the user's now is stale.
     @ObservationIgnored private(set) var searchedPosition: Coordinate?
+    /// The query and type the pages on screen were searched for; set by an answer only, so a search cancelled on the
+    /// way out under a new query is run on the next appearance, and a page is asked for under the scope its cursor
+    /// came from.
+    @ObservationIgnored private(set) var searchedScope: GroupScope?
     /// Known once the location service answered; distances on the cards and the position a browse sends need it.
     private(set) var userLocation: Coordinate?
     /// Off for the carousel on Explore: the events list there reports its own failure, and a second popup would only
@@ -82,8 +86,9 @@ final class DiscoverGroupsViewModel {
         ListSnapshotKey(list: AppConfig.Lists.discoverGroupsSnapshot, userID: userID)
     }
 
-    /// A browse with nothing typed and no type chosen: the page the carousel shows, and the one worth a snapshot.
-    private var isPlainBrowse: Bool { effectiveQuery == nil && typeFilter == nil }
+    /// A browse with nothing typed and no type chosen: the page the carousel shows, and the one worth a snapshot. Judged
+    /// from the scope a page was fetched for, never from the field when the answer lands.
+    private static func isPlainBrowse(_ scope: GroupScope) -> Bool { scope == .discover(query: nil, type: nil) }
 
     /// Nothing to show yet: no page and no answer, success or failure, from the first frame through the location wait
     /// and the first search, so the screen spins rather than drawing an empty grid before the list was asked.
@@ -106,10 +111,10 @@ final class DiscoverGroupsViewModel {
     }
 
     /// Nothing searched yet, or the pages on screen were fetched for another caller, before a group changed anywhere,
-    /// or for another position than the one a browse would send now.
+    /// for another position than the one a browse would send now, or for another query or type.
     private var isStale: Bool {
         !hasSearched || searchedUserID != identity.currentUserID || searchedChangesVersion != changes.version
-            || searchedPosition != browsePosition
+            || searchedPosition != browsePosition || searchedScope != requestScope
     }
 
     private var requestScope: GroupScope {
@@ -137,6 +142,7 @@ final class DiscoverGroupsViewModel {
         searchedUserID = nil
         searchedChangesVersion = nil
         searchedPosition = nil
+        searchedScope = nil
     }
 
     /// A browse as the carousel and the launch make it: the position first, for `AppConfig.Location.firstFixWait` at
@@ -193,12 +199,13 @@ final class DiscoverGroupsViewModel {
     /// group-changes version stamped on the page are read before the request, so a `group_updated`, a join or a sign-in
     /// landing while the page was out leaves it stale and the next appearance searches again; a sign-out meanwhile went
     /// through `clear()`, whose generation this page no longer matches, and the snapshot is written under the caller
-    /// the page was fetched for.
+    /// the page was fetched for, only when the scope it was fetched for was a plain browse.
     private func performSearch(near position: Coordinate?, generation: Int) async -> Bool {
         let userID = identity.currentUserID
         let version = changes.version
+        let scope = requestScope
         do {
-            let page = try await repository.groups(in: requestScope, cursor: nil, near: position)
+            let page = try await repository.groups(in: scope, cursor: nil, near: position)
             guard generation == searchGeneration else { return false }
             groups = page.items
             nextCursor = page.nextCursor
@@ -207,7 +214,8 @@ final class DiscoverGroupsViewModel {
             searchedUserID = userID
             searchedChangesVersion = version
             searchedPosition = position
-            if isPlainBrowse { snapshots.save(groups, for: Self.snapshotKey(for: userID)) }
+            searchedScope = scope
+            if Self.isPlainBrowse(scope) { snapshots.save(groups, for: Self.snapshotKey(for: userID)) }
             recordSearch(resultCount: page.items.count)
             return true
         } catch {
@@ -219,15 +227,15 @@ final class DiscoverGroupsViewModel {
         }
     }
 
-    /// The next page, appended without repeating a group two pages both carry; it asks as the first page did, so the
-    /// cursor is read against the same order.
+    /// The next page, appended without repeating a group two pages both carry; it asks as the first page did (the
+    /// searched scope and position, not what is typed now), so the cursor is read against the same order.
     func loadMore() async {
-        guard let cursor = nextCursor, canLoadMore else { return }
+        guard let cursor = nextCursor, let scope = searchedScope, canLoadMore else { return }
         isLoadingMore = true
         defer { isLoadingMore = false }
         let generation = searchGeneration
         do {
-            let page = try await repository.groups(in: requestScope, cursor: cursor, near: searchedPosition)
+            let page = try await repository.groups(in: scope, cursor: cursor, near: searchedPosition)
             guard generation == searchGeneration else { return }
             let known = Set(groups.map(\.id))
             groups += page.items.filter { !known.contains($0.id) }

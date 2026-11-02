@@ -70,7 +70,6 @@ struct MatchCell: View {
         FlowLayout(spacing: DesignTokens.Spacing.md, rowSpacing: DesignTokens.Spacing.xs) {
             if match.status != .bye {
                 Text(match.isOpenDispute ? Copy.Match.disputed : Copy.Match.status(match.status))
-                    .foregroundStyle(match.isOpenDispute ? AnyShapeStyle(Color.lilyAccent) : AnyShapeStyle(.secondary))
             }
             if let scheduledAt = match.scheduledAt {
                 Label {

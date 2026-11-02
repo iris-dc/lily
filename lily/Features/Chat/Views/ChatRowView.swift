@@ -22,8 +22,11 @@ struct ChatRowView: View {
     let arrivedAt: Date?
     /// Flipped when the arrival is over, so body runs again and the timeline pauses.
     @State private var hasArrived = false
+    @Environment(\.motion) private var motion
 
-    private let curve = MessageArrivalCurve.standard
+    /// Under Reduce Motion a row is whole from its first frame: the still curve never arrives, so the timeline stays
+    /// paused and the reveal is full.
+    private var curve: MessageArrivalCurve { motion.allowsMovement ? .standard : .still }
 
     var body: some View {
         TimelineView(.animation(paused: !isArriving)) { context in

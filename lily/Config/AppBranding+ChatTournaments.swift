@@ -6,12 +6,13 @@ import Foundation
 nonisolated extension AppBranding.Chat {
     static var matchResultFallback: String { localized("A result is in") }
 
-    /// "The bracket is out" or "The schedule is out"; a generic line until the tournament's format is known.
+    /// "The bracket is out" or "The schedule is out"; a generic line until the tournament's format is known, and for a
+    /// format this build cannot name.
     static func tournamentStarted(format: TournamentFormat?) -> String {
         switch format {
         case .singleElimination: localized("The bracket is out")
         case .roundRobin: localized("The schedule is out")
-        case nil: localized("The tournament started")
+        case .unknown, nil: localized("The tournament started")
         }
     }
 

@@ -161,16 +161,13 @@ struct EmailSignInView: View {
         }
     }
 
-    /// Text-only action in the accent colour with the standard 44pt hit area.
+    /// Text-only action in ink with the standard 44pt hit area.
     private func textButton(_ title: String, identifier: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
                 .frame(maxWidth: .infinity)
-                .tappableLabel()
         }
-        .font(LilyTheme.Fonts.caption)
-        .buttonStyle(.borderless)
-        .foregroundStyle(Color.lilyAccent)
+        .lilyTextButton(font: LilyTheme.Fonts.caption)
         .accessibilityIdentifier(identifier)
     }
 }

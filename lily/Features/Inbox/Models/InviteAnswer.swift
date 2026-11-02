@@ -19,6 +19,7 @@ nonisolated extension InviteAnswer {
         case .accepted: AppBranding.Inbox.joined
         case .declined: AppBranding.Inbox.declined
         case .pending: expiresAt > now ? nil : AppBranding.Inbox.expired
+        case .unknown: nil
         }
     }
 }

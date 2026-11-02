@@ -91,13 +91,31 @@ extension ChatTranscript {
             // Asked for from the geometry report of the layout that grew the content, where a scroll lands at once; a
             // turn later it is a change of its own and the spring applies.
             Task {
-                withAnimation(.messageArrival) { position.scrollTo(id: Self.endMarkerID, anchor: .bottom) }
+                withAnimation(.messageArrival(motion)) { position.scrollTo(id: Self.endMarkerID, anchor: .bottom) }
             }
         case .scrollTo(let y):
             position.scrollTo(y: y)
         case .loadOlder:
             tracker.policy.willLoadOlder(at: tracker.geometry, oldestID: viewModel.oldestID)
             Task { await loadOlderPage() }
+        }
+    }
+
+    /// Scrolls to the quoted original once the view model has it on hand, then washes it for `messageHighlight`.
+    func reveal(_ quote: ReplyQuote) {
+        revealing?.cancel()
+        revealing = Task {
+            guard await viewModel.revealQuoted(id: quote.messageId) else { return }
+            // A second tap or the screen's leaving cancelled this one while the lookup ran: nothing to scroll to.
+            guard !Task.isCancelled else { return }
+            log("scrolls to a quoted message")
+            let rowID = viewModel.rows.first { $0.messageID == quote.messageId }?.id ?? quote.messageId
+            withAnimation(motion.allowsMovement ? Animation.smooth(duration: DesignTokens.Duration.fast) : nil) {
+                position.scrollTo(id: rowID, anchor: .center)
+            }
+            highlightedMessageID = quote.messageId
+            try? await Task.sleep(for: .seconds(DesignTokens.Duration.messageHighlight))
+            if highlightedMessageID == quote.messageId { highlightedMessageID = nil }
         }
     }
 

@@ -52,9 +52,11 @@ extension ChatViewModel {
     /// message not held before arrived, which tells the transcript a taller layout is coming (the first row is a day
     /// chip, so a same-day prepend keeps the first row's id and cannot be judged from the rows). One page is in flight
     /// at a time: this answers `false` while one is, and a caller that needs that page awaits `olderPageTask` instead.
+    /// A caller the screen's leaving cancelled asks for nothing; `cancel()` cancels the page in flight, whose
+    /// cancellation stays as quiet as the first page's.
     @discardableResult
     func loadOlder() async -> Bool {
-        guard hasOlder, olderPageTask == nil, let anchor = room.olderPageAnchor else { return false }
+        guard !Task.isCancelled, hasOlder, olderPageTask == nil, let anchor = room.olderPageAnchor else { return false }
         // The slot is let go inside the task, so every waiter resuming on its value already finds it empty.
         let task = Task { [self] in
             defer { olderPageTask = nil }
@@ -83,13 +85,15 @@ extension ChatViewModel {
     }
 
     /// Any group-scoped answer or event carrying an epoch newer than the one this screen subscribed: the controller
-    /// notes it for the cached room, then this resubscribes there and catches up what the gap hid.
+    /// notes it for the cached room, then this resubscribes there and catches up what the gap hid. The open room is
+    /// re-registered at the new epoch only while it is still this screen's: on an iPad switch the next room may have
+    /// registered before this one's `cancel()`, and taking it back would leave that room closed.
     func adoptEpoch(_ epoch: Int) async {
         guard epoch > subscribedEpoch else { return }
         realtime.moveEpoch(of: group.id, to: epoch)
         subscribedEpoch = epoch
         let subscription = RoomSubscription(groupID: group.id, epoch: epoch)
-        if liveTask != nil { realtime.setOpenRoom(subscription) }
+        if liveTask != nil, realtime.openRoom?.groupID == group.id { realtime.setOpenRoom(subscription) }
         await realtime.ensureSubscribed(subscription)
         do {
             try await catchUp.catchUp(groupID: group.id)

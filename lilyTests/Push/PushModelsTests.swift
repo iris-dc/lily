@@ -57,8 +57,19 @@ struct PushModelsTests {
 
     @Test func theCurrentEnvironmentIsTheSandboxInADebugBuild() {
         #if DEBUG
+        #expect(AppConfig.Build.configuration == .debug)
         #expect(PushEnvironment.current == .sandbox)
         #endif
+    }
+
+    /// Every build run from Xcode is development-signed, so its token is the sandbox's whatever its optimisation.
+    @Test func aBuildRunFromXcodeRegistersWithTheSandbox() {
+        #expect(PushEnvironment.forBuild(.debug) == .sandbox)
+        #expect(PushEnvironment.forBuild(.staging) == .sandbox)
+    }
+
+    @Test func anArchivedReleaseRegistersWithProduction() {
+        #expect(PushEnvironment.forBuild(.release) == .production)
     }
 
     @Test func thePayloadWritesLowerCaseWireNamesAndTheLocale() throws {

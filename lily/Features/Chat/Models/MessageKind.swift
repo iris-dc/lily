@@ -16,6 +16,10 @@ nonisolated enum MessageKind: WireNamedKind {
     case messagePinned
     case unknown(String)
 
+    static let known: [MessageKind] = [
+        .text, .eventCreated, .tournamentStarted, .matchResult, .matchDisputed, .tournamentCompleted, .poll, .messagePinned,
+    ]
+
     private static let textName = "text"
     private static let eventCreatedName = "event_created"
     private static let tournamentStartedName = "tournament_started"
@@ -24,20 +28,6 @@ nonisolated enum MessageKind: WireNamedKind {
     private static let tournamentCompletedName = "tournament_completed"
     private static let pollName = "poll"
     private static let messagePinnedName = "message_pinned"
-
-    init(wireName: String) {
-        switch wireName {
-        case Self.textName: self = .text
-        case Self.eventCreatedName: self = .eventCreated
-        case Self.tournamentStartedName: self = .tournamentStarted
-        case Self.matchResultName: self = .matchResult
-        case Self.matchDisputedName: self = .matchDisputed
-        case Self.tournamentCompletedName: self = .tournamentCompleted
-        case Self.pollName: self = .poll
-        case Self.messagePinnedName: self = .messagePinned
-        default: self = .unknown(wireName)
-        }
-    }
 
     var wireName: String {
         switch self {
@@ -68,10 +58,5 @@ nonisolated enum MessageKind: WireNamedKind {
         case .eventCreated, .tournamentStarted, .matchResult, .matchDisputed, .tournamentCompleted, .messagePinned,
              .unknown: false
         }
-    }
-
-    var isUnknown: Bool {
-        if case .unknown = self { return true }
-        return false
     }
 }

@@ -11,7 +11,7 @@ one's own. The directory holds no source files of its own; its six folders follo
 the decision enums); `Implementations` the remote and mock repositories and the filter stores; `Services` the
 `EventOpener`; `ViewModels` the four `@Observable` owners of screen state; `Views` the SwiftUI screens and reusable
 cards. Data flows Views → ViewModels → Interfaces → Implementations → Laurel (`/api/events...`), with `Models` shared
-by every layer. Contracts live out of tree under `docs/egm/` because `lily/` may hold only Swift sources and catalogs.
+by every layer. Contracts live out of tree under `docs/egm/` because `lily/` may hold only Swift sources, catalogs and the privacy manifest.
 
 ## Subdirectories & Boundaries
 

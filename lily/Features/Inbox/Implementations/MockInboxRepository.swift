@@ -52,7 +52,7 @@ final class MockInboxRepository: InboxRepository {
         try requireUser()
         let (index, answer) = try invite(at: itemID)
         switch answer.status {
-        case .declined:
+        case .declined, .unknown:
             throw AppError.inviteNotPending
         case .accepted:
             return try await admittance(for: items[index], entering: false)
@@ -68,7 +68,7 @@ final class MockInboxRepository: InboxRepository {
         try requireUser()
         let (index, answer) = try invite(at: itemID)
         switch answer.status {
-        case .accepted:
+        case .accepted, .unknown:
             throw AppError.inviteNotPending
         case .declined:
             return items[index]

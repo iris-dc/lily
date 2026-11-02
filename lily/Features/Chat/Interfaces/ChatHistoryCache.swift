@@ -9,7 +9,9 @@ protocol ChatHistoryCache: AnyObject {
     func store(_ room: ChatRoomState, for groupID: String)
     /// The caller is out of the group (left, removed, banned, or it was deleted): its history must go.
     func drop(groupID: String, reason: String)
-    /// Keeps only the newest `AppConfig.Chat.roomCacheLimit` messages of a room nobody is looking at.
+    /// Keeps only the newest `AppConfig.Chat.roomCacheLimit` messages of a room nobody is looking at or coming back
+    /// to: the realtime controller calls it for the room last open once another opens, and for a room neither open
+    /// nor last open when a live line lands in it.
     func compact(groupID: String)
     func clear()
 }

@@ -85,8 +85,11 @@ final class EventDetailViewModel {
         recorder.record(.viewed(event, at: now()))
     }
 
+    /// A join that landed, directly or by the read-back, earns the reminder prompt once the control is free: the
+    /// offer runs after `update` released `isBusy`, so a Leave tapped during the prompt owns the flag to its own end.
     func join() async {
-        await update("Join", wantsToParticipate: true) { try await repository.join(eventId: event.id) }
+        guard await update("Join", wantsToParticipate: true, { try await repository.join(eventId: event.id) }) else { return }
+        await pushOptIn.offerReminders()
     }
 
     func leave() async {
@@ -99,26 +102,24 @@ final class EventDetailViewModel {
     /// after the event on screen has been read back, so the popup and the numbers agree; a failure that leaves the
     /// outcome unknown is shown only when the read-back does not already show what the user asked for (`LostAnswer`):
     /// Laurel commits a join before it reads the event back, so the write may have landed, and a popup saying otherwise
-    /// would only send the user into an "already joined" refusal. A join that landed either way earns the prompt.
-    private func update(_ action: String, wantsToParticipate: Bool, _ change: () async throws -> SportEvent) async {
-        guard !isBusy else { return }
+    /// would only send the user into an "already joined" refusal. Answers whether the change landed; `isBusy` is held
+    /// exactly as long as the write is settling.
+    @discardableResult
+    private func update(_ action: String, wantsToParticipate: Bool, _ change: () async throws -> SportEvent) async -> Bool {
+        guard !isBusy else { return false }
         isBusy = true
         defer { isBusy = false }
         let what = "\(action) for event \(event.id)"
-        let done = await gate.run(what,
-                                  settling: { [self] error in
-                                      await readBack(what, despite: error, wantsToParticipate: wantsToParticipate)
-                                  },
-                                  { [self] in
-                                      let updated = try await change()
-                                      apply(updated)
-                                      logSuccess(action, updated)
-                                      await loadParticipants()
-                                  })
-        guard done else { return }
-        // The control is done before the permission prompt comes up, so it never spins behind the alert.
-        isBusy = false
-        if wantsToParticipate { await pushOptIn.offerReminders() }
+        return await gate.run(what,
+                              settling: { [self] error in
+                                  await readBack(what, despite: error, wantsToParticipate: wantsToParticipate)
+                              },
+                              { [self] in
+                                  let updated = try await change()
+                                  apply(updated)
+                                  logSuccess(action, updated)
+                                  await loadParticipants()
+                              })
     }
 
     private func logSuccess(_ action: String, _ updated: SportEvent) {

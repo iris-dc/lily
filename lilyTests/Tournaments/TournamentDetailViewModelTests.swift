@@ -49,6 +49,42 @@ struct TournamentDetailViewModelTests {
         #expect(harness.repository.fetchedIDs == ["t", "t"], "an own change costs no request")
     }
 
+    /// The keyed task is cancelled by a push over the detail and re-runs with the same version on return: a reload that
+    /// settled nothing is asked again.
+    @Test func aReloadCancelledByADisappearanceIsAskedAgainOnReturn() async {
+        let detail = TournamentDetail.fixture(tournament: .fixture(id: "t"))
+        harness.repository.details["t"] = detail
+        let viewModel = harness.makeDetailViewModel(for: destination)
+        await viewModel.loadIfNeeded()
+        harness.changes.recordChange()
+        harness.repository.holdsRequests = true
+        let reload = Task { await viewModel.loadIfNeeded() }
+        await settle(until: { harness.repository.fetchedIDs.count == 2 })
+
+        reload.cancel()
+        harness.repository.releaseRequests()
+        await reload.value
+        await viewModel.loadIfNeeded()
+
+        #expect(harness.repository.fetchedIDs == ["t", "t", "t"], "the change is heard again on return")
+        #expect(viewModel.detail == detail && harness.presentedError == nil && harness.logs(.error).isEmpty)
+    }
+
+    /// A reload that failed stays acknowledged: Try again and the pull cover it, and a return from a pushed profile
+    /// raises no second popup.
+    @Test func aReloadThatFailedStaysAcknowledgedUntilTheNextChange() async {
+        harness.repository.details["t"] = .fixture(tournament: .fixture(id: "t"))
+        let viewModel = harness.makeDetailViewModel(for: destination)
+        await viewModel.loadIfNeeded()
+        harness.changes.recordChange()
+        harness.repository.detailError = AppError.network
+
+        await viewModel.loadIfNeeded()
+        #expect(harness.presentedError == .network)
+        await viewModel.loadIfNeeded()
+        #expect(harness.repository.fetchedIDs.count == 2, "a reported failure is not asked again until the next change")
+    }
+
     /// A completed tournament names its winner from the entries; an unknown entry names nobody.
     @Test func theWinnerIsNamedFromTheEntriesOnceCompleted() async {
         let marta = TournamentEntry.fixture(id: "e1", name: "Marta")

@@ -63,9 +63,11 @@ struct PollComposerSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(AppBranding.Forms.cancel, role: .cancel) { dismiss() }
+                        .lilyToolbarTextButton()
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(AppBranding.Chat.send, action: send)
+                        .lilyToolbarTextButton()
                         .disabled(!draft.isValid)
                         .accessibilityIdentifier(AccessibilityIdentifiers.pollSend)
                 }

@@ -44,9 +44,10 @@ nothing here performs I/O or touches shared state. Limits come from
   captainUserId, members: [EntryMember(userId, displayName)], seed, status: EntryStatus, createdAt)`; `memberCount`,
   `isRegistered`, `isFull(teamSize:)`, `contains(userID:)`, `isCaptain(_:)`; copy-returning `adding(_:)`,
   `removing(userID:)`, `replacingUser(_:with:)`.
-- `[lily/Features/Tournaments/Models/TournamentFormat.swift:TournamentFormat]`: `String` enums `TournamentFormat`
-  (`single_elimination`, `round_robin`; `displayName`, `entriesRange`, `minimumEntriesToStart`, `drawsBracket`),
-  `TournamentStatus` (`registration`, `in_progress`, `completed`, `cancelled`; `isOver`), `EntryStatus` (`registered`,
+- `[lily/Features/Tournaments/Models/TournamentFormat.swift:TournamentFormat]`: five `WireNamedKind` enums, each
+  with `known`, `wireName` and a `case unknown(String)` (no `CaseIterable`): `TournamentFormat` (`single_elimination`,
+  `round_robin`; `displayName`, `entriesRange`, `minimumEntriesToStart`, `drawsBracket`), `TournamentStatus`
+  (`registration`, `in_progress`, `completed`, `cancelled`; `displayName`, `isOver`), `EntryStatus` (`registered`,
   `withdrawn`), `MatchStatus` (`pending`, `scheduled`, `reported`, `confirmed`, `walkover`, `bye`; `isDecided`,
   `isOpen`), `MatchSlot` (`a`, `b`).
 - `[lily/Features/Tournaments/Models/TournamentMatch.swift:TournamentMatch]`: immutable `id`, `tournamentId`, `round`,
@@ -96,8 +97,11 @@ nothing here performs I/O or touches shared state. Limits come from
   (`Tournament`, `TournamentDetail`, `TournamentChange`, `TournamentEntry`, `TournamentMatch`, `MatchSchedule`,
   `TournamentStanding`, `TournamentSchedule.Pairing`): no `CodingKeys`, no hand-written `init(from:)`, so property
   names are the wire keys, non-optional keys must be present and nil optionals are omitted.
-- `[lily/Features/Tournaments/Models/TournamentFormat.swift:TournamentFormat]`: none of the five status enums has an
-  `unknown` case; only the listed raw values decode.
+- `[lily/Features/Tournaments/Models/TournamentFormat.swift:TournamentFormat]`: a value this build does not know
+  decodes as `.unknown(name)` and re-encodes as it came; for it `drawsBracket`, `isOver`, `isDecided`, `isOpen` and
+  `TournamentEntry.isRegistered` are false, `displayName` is the raw name, `entriesRange` is the widest
+  (`AppConfig.Tournaments`), `TournamentSchedule.pairings` is `[]`, `TournamentDetail.champion` is `nil` and
+  `TournamentMatch.placing(_:in:)` with an unknown slot leaves the match unchanged.
 - `[lily/Features/Tournaments/Models/Tournament.swift:Tournament.isRegistrationOpen(now:)]`: `status == .registration
   && (registrationClosesAt.map { now < $0 } ?? true)`; `isFull = entryCount >= maxEntries`; `isListed = isPublic &&
   status == .registration`; `canStart = status == .registration && entryCount >= format.minimumEntriesToStart`;
@@ -109,7 +113,7 @@ nothing here performs I/O or touches shared state. Limits come from
 - `[lily/Features/Tournaments/Models/TournamentDetail.swift:TournamentDetail.settling(_:at:)]`: unchanged when no
   held match has the id; otherwise swaps the match, advances a decided winner into `nextMatchId`/`nextSlot`,
   recomputes standings (round robin only) and completes the tournament only when every match is decided (`champion`:
-  the final's winner or the table leader). `registeredEntries` filters `isRegistered` and sorts by `seed` on every
+  the final's winner or the table leader, `nil` for an unknown format). `registeredEntries` filters `isRegistered` and sorts by `seed` on every
   access.
 - `[lily/Features/Tournaments/Models/TournamentDraft.swift:TournamentDraft.issues]`: `nameIssues + placeIssues +
   scheduleIssues + entriesIssues + detailIssues`, in form order. Name `3...60` (`AppConfig.Tournaments.nameLength`),
@@ -163,7 +167,8 @@ nothing here performs I/O or touches shared state. Limits come from
 - `[lily/Features/Tournaments/Models/BracketLayout.swift:BracketLayout]`: columns are rounds ascending, positions
   ascending; `slotHeight` spans `2^(round-1)` feeders; single-elimination titles are final, semi-finals,
   quarter-finals, then "round of 2^(d+1)"; other formats use numbered rounds.
-- `[lily/Features/Tournaments/Models/TournamentSchedule.swift:TournamentSchedule.pairings]`: `[]` below two seeds;
+- `[lily/Features/Tournaments/Models/TournamentSchedule.swift:TournamentSchedule.pairings]`: `[]` below two seeds
+  and for an unknown format;
   ids are `r%02dp%03d`; single elimination fills the smallest power-of-two bracket in `bracketOrder` (seed 1 meets
   seed N, byes fall to top seeds and advance at once); round robin is the circle method, no `nextMatchId`.
 - `[lily/Features/Tournaments/Models/TeamNameIssue.swift:TeamNameIssue.issue(in:)]`: trimmed `wireLength` against

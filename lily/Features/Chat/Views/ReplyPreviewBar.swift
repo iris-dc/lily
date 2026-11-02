@@ -13,7 +13,7 @@ struct ReplyPreviewBar: View {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                 Text(AppBranding.Chat.replyingTo(quote.senderName))
                     .font(LilyTheme.Fonts.caption)
-                    .foregroundStyle(Color.lilyAccent)
+                    .foregroundStyle(.primary)
                 Text(verbatim: quote.displayText)
                     .font(.footnote)
                     .foregroundStyle(.secondary)

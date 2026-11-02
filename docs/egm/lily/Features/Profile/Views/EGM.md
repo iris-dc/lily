@@ -28,7 +28,7 @@ rather than being rebuilt like the other tabs, whose rebuild would crossfade ove
   `[lily/Features/Profile/Views/DisplayNameSheet.swift:DisplayNameSheet]`: a `DraftSheet` titled
   `AppBranding.DisplayName.title` with Save (`AccessibilityIdentifiers.profileNameSave`) and Cancel (`profileNameCancel`)
   around one `Form` `TextField` (`profileNameField`; words capitalised, `.name` content type, no autocorrection) whose
-  footer is the draft's `hint` in the accent colour, else `AppBranding.DisplayName.footer`.
+  footer is the draft's `hint` as a `ValidationHint` (`lily/Core/UI/Components`), else `AppBranding.DisplayName.footer`.
 - `LanguageRow(language: LanguageStore)` `[lily/Features/Profile/Views/LanguageRow.swift:LanguageRow]`: choices "System"
   (`AppBranding.Settings.systemLanguage`) plus every `AppLanguage.allCases` by its `nativeName`; identifier
   `AccessibilityIdentifiers.profileLanguage`.

@@ -153,40 +153,88 @@ class LiteralProblemsTests(unittest.TestCase):
         self.assertIn("'Leave'", problems[0])
 
 
+CAMERA = "NSCameraUsageDescription"
+LOCAL_NETWORK = "NSLocalNetworkUsageDescription"
+PHOTO_LIBRARY_ADD = "NSPhotoLibraryAddUsageDescription"
+
+
 class UsageKeysTests(unittest.TestCase):
-    def test_release_keys_and_debug_only_keys_are_told_apart(self):
-        pbxproj = configuration(
-            "Debug", INFOPLIST_KEY_NSCameraUsageDescription="a", INFOPLIST_KEY_NSLocalNetworkUsageDescription="b"
-        ) + configuration("Release", INFOPLIST_KEY_NSCameraUsageDescription="a")
+    def test_a_quoted_configuration_name_closes_its_own_block(self):
+        text = configuration('"Release Beta"', INFOPLIST_KEY_NSCameraUsageDescription="x") + configuration(
+            "Debug", INFOPLIST_KEY_NSLocalNetworkUsageDescription="y"
+        )
         self.assertEqual(
-            l10n_check.usage_keys(pbxproj), ({"NSCameraUsageDescription"}, {"NSLocalNetworkUsageDescription"})
+            l10n_check.usage_keys(text), {"Release Beta": {CAMERA}, "Debug": {LOCAL_NETWORK}}
         )
 
-    def test_a_key_in_both_configurations_is_not_debug_only(self):
-        pbxproj = configuration("Debug", INFOPLIST_KEY_NSCameraUsageDescription="a") + configuration(
-            "Release", INFOPLIST_KEY_NSCameraUsageDescription="a"
+    def test_a_staging_block_between_release_and_debug_closes_at_its_own_name(self):
+        pbxproj = (
+            configuration("Release", INFOPLIST_KEY_NSCameraUsageDescription="a")
+            + configuration("Staging", INFOPLIST_KEY_NSCameraUsageDescription="a")
+            + configuration(
+                "Debug", INFOPLIST_KEY_NSCameraUsageDescription="a", INFOPLIST_KEY_NSLocalNetworkUsageDescription="b"
+            )
         )
-        self.assertEqual(l10n_check.usage_keys(pbxproj), ({"NSCameraUsageDescription"}, set()))
+        self.assertEqual(
+            l10n_check.usage_keys(pbxproj),
+            {"Release": {CAMERA}, "Staging": {CAMERA}, "Debug": {CAMERA, LOCAL_NETWORK}},
+        )
+
+    def test_a_staging_block_at_the_end_of_the_file_is_read(self):
+        pbxproj = configuration("Debug") + configuration("Staging", INFOPLIST_KEY_NSCameraUsageDescription="a")
+        self.assertEqual(l10n_check.usage_keys(pbxproj), {"Debug": set(), "Staging": {CAMERA}})
+
+    def test_blocks_of_one_name_are_merged(self):
+        pbxproj = configuration("Release") + configuration("Release", INFOPLIST_KEY_NSCameraUsageDescription="a")
+        self.assertEqual(l10n_check.usage_keys(pbxproj), {"Release": {CAMERA}})
 
 
 class InfoPlistProblemsTests(unittest.TestCase):
-    def test_a_release_usage_key_missing_from_the_catalog_is_reported(self):
-        problems = l10n_check.infoplist_problems({}, {"NSCameraUsageDescription"}, set())
+    SHIPPING_AND_DEBUG = {"Debug": {CAMERA, LOCAL_NETWORK}, "Release": {CAMERA}, "Staging": {CAMERA}}
+
+    def test_a_shipping_usage_key_missing_from_the_catalog_is_reported(self):
+        problems = l10n_check.infoplist_problems({}, self.SHIPPING_AND_DEBUG)
         self.assertEqual(len(problems), 1)
-        self.assertIn("'NSCameraUsageDescription'", problems[0])
+        self.assertIn(f"lacks '{CAMERA}'", problems[0])
+        self.assertIn("Release, Staging", problems[0])
 
     def test_a_debug_only_usage_key_in_the_catalog_is_reported(self):
-        strings = {"NSLocalNetworkUsageDescription": {}}
-        problems = l10n_check.infoplist_problems(strings, set(), {"NSLocalNetworkUsageDescription"})
+        strings = {CAMERA: {}, LOCAL_NETWORK: {}}
+        problems = l10n_check.infoplist_problems(strings, self.SHIPPING_AND_DEBUG)
         self.assertEqual(len(problems), 1)
-        self.assertIn("'NSLocalNetworkUsageDescription'", problems[0])
+        self.assertIn(f"carries '{LOCAL_NETWORK}'", problems[0])
+        self.assertIn("development-only", problems[0])
 
     def test_keys_present_as_the_configurations_set_them_pass(self):
-        strings = {"NSCameraUsageDescription": {}}
-        problems = l10n_check.infoplist_problems(
-            strings, {"NSCameraUsageDescription"}, {"NSLocalNetworkUsageDescription"}
-        )
-        self.assertEqual(problems, [])
+        self.assertEqual(l10n_check.infoplist_problems({CAMERA: {}}, self.SHIPPING_AND_DEBUG), [])
+
+    def test_a_key_only_staging_sets_is_shipping_not_debug_only(self):
+        keys = {"Debug": {CAMERA}, "Release": {CAMERA}, "Staging": {CAMERA, PHOTO_LIBRARY_ADD}}
+        problems = l10n_check.infoplist_problems({CAMERA: {}}, keys)
+        self.assertTrue(any(f"lacks '{PHOTO_LIBRARY_ADD}'" in problem for problem in problems), problems)
+        self.assertFalse(any("development-only" in problem for problem in problems), problems)
+
+    def test_a_release_key_staging_lacks_is_reported(self):
+        keys = {"Debug": {CAMERA}, "Release": {CAMERA, PHOTO_LIBRARY_ADD}, "Staging": {CAMERA}}
+        problems = l10n_check.infoplist_problems({CAMERA: {}, PHOTO_LIBRARY_ADD: {}}, keys)
+        self.assertEqual(len(problems), 1)
+        self.assertIn(f"'{PHOTO_LIBRARY_ADD}' is set by Release alone", problems[0])
+
+    def test_a_staging_key_release_lacks_is_reported(self):
+        keys = {"Debug": {CAMERA}, "Release": {CAMERA}, "Staging": {CAMERA, PHOTO_LIBRARY_ADD}}
+        problems = l10n_check.infoplist_problems({CAMERA: {}, PHOTO_LIBRARY_ADD: {}}, keys)
+        self.assertEqual(len(problems), 1)
+        self.assertIn(f"'{PHOTO_LIBRARY_ADD}' is set by Staging alone", problems[0])
+
+    def test_a_project_without_a_staging_block_is_not_asked_for_parity(self):
+        keys = {"Debug": {CAMERA, LOCAL_NETWORK}, "Release": {CAMERA}}
+        self.assertEqual(l10n_check.infoplist_problems({CAMERA: {}}, keys), [])
+
+    def test_a_configuration_with_an_unknown_name_is_reported_instead_of_ignored(self):
+        keys = {"Debug": {CAMERA}, "Release": {CAMERA}, "Staging": {CAMERA}, "Release Beta": {CAMERA, LOCAL_NETWORK}}
+        problems = l10n_check.infoplist_problems({CAMERA: {}}, keys)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("configuration 'Release Beta' is neither shipping", problems[0])
 
 
 if __name__ == "__main__":

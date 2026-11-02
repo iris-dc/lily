@@ -20,8 +20,7 @@ that runs it is made locally, see `docs/notes/build-test-and-simulator.md`); off
 
 ## Repositories and backend
 
-- **lily** (this repository): the iOS app. The only git repository is the project root; `lily/` is a source folder,
-  not a repo.
+- **lily** (this repository): the iOS app. The only git repository is the project root; `lily/` is a folder, not a repo.
 - **Laurel** (`/Users/makshr/laurel`, GitHub `iris-dc/laurel`): the Spring Boot 4 backend. Business logic and data
   live there (DynamoDB on demand, S3 for attachments). One small ECS Fargate task behind an ALB at
   `https://api.iskra.red`. It has its own `CLAUDE.md`, Gradle build and GitHub Actions.
@@ -44,10 +43,10 @@ that runs it is made locally, see `docs/notes/build-test-and-simulator.md`); off
 ./scripts/ci.sh all             # what CI runs: lint, build, unit, ui, ui-ipad
 ./scripts/ci.sh build-and-unit  # CI's first job: lint, build for testing, unit (the workflow then runs archive-products)
 ./scripts/ci.sh ui-shard 2      # one CI UI shard (1..4 or ipad) from archived products, no rebuild
+./scripts/ci.sh release-archive <n>  # Release archive for a device, build number n (a workflow's run number, or git rev-list --count HEAD)
 ```
 
-- xcodebuild output is huge: redirect it to a file and grep it. `ci.sh` writes logs and `.xcresult` bundles to
-  `build/results/`.
+- xcodebuild output is huge: redirect it to a file and grep it; `ci.sh` puts logs and `.xcresult`s in `build/results/`.
 - Run one test with `-only-testing:lilyUITests/LilySmokeTests/<name>` (or `lilyTests/<Suite>`). When the identifier
   matches nothing, xcodebuild still exits 0: confirm a `Test Case '...' passed` line (or Swift Testing's
   `Test run with N tests ... passed`) before trusting a green run. `ci.sh` enforces this (`require_executed_tests`).
@@ -102,19 +101,17 @@ undo your own edit in a dirty tree: it drops the user's uncommitted work on that
 ## Before every commit
 
 1. Spawn a review agent to review all uncommitted changes deeply.
-2. It checks and, where needed, fixes: simplicity and readability; no redundancy; interfaces and implementations in
-   separate folders; constants in config files; logic covered by passing tests; no memory or connection leaks;
-   distributed-systems safety; errors reach the shared popup; key events logged; everything runs locally; **every UI
-   change checked as rendered on a simulator**, not only by reading the code; `README.md` and the `docs/notes/`
-   file of the area reflect the change.
+2. It checks and fixes: simplicity and readability; no redundancy; interfaces and implementations in separate folders;
+   constants in config files; logic covered by passing tests; no memory or connection leaks; distributed-systems safety;
+   errors reach the shared popup; key events logged; everything runs locally; **every UI change checked as rendered on a
+   simulator**, not only by reading the code; `README.md` and the `docs/notes/` file of the area reflect the change.
 3. Refactor and re-run until the review passes, then run `./scripts/ci.sh all`.
 4. Only then commit, and only when the user asks.
 
 ## Where things live
 
 - `lily/App/`: `LilyApp`, `LilyAppDelegate` (the UIKit push callbacks), `AppRootView` (wiring only), `ShellCommands`
-  (keyboard shortcuts) and `AppDependencies` (+ extension files per area), the **only place that knows concrete
-  types**.
+  (keyboard shortcuts) and `AppDependencies` (+ extension files per area), the **only place that knows concrete types**.
 - `lily/Config/`: `AppConfig` (API paths and base URLs, limits, `LaunchArguments`, `FeatureFlags`, `Cognito`),
   `AppBranding` (every string, through `localized`), `DesignTokens`, `AccessibilityIdentifiers`; each extension
   file is a `nonisolated extension` (see Conventions).
@@ -137,22 +134,21 @@ undo your own edit in a dirty tree: it drops the user's uncommitted work on that
 - `scripts/`: `ci.sh`, `l10n-check.py` (+ its unittest), `make-app-icon.swift`.
 - The full tree with one line per file group: `docs/notes/folder-layout.md`.
 
-**Who owns what.** `SessionController` owns the session state machine (`SessionState`: signedOut, guest, signedIn).
-The first frame shows the cached choice from `SessionStore`, no network answer awaited; `restore()` then verifies it
-with Cognito once per process and settles a disagreement (a pool without a session ends the cached one like a
-sign-out, a pool session the cache missed signs in, an unreachable pool keeps the cache; a refresh token the pool
-refuses later ends the session mid-run, once, through `endExpiredSession()` with the "Session expired" popup).
-`ShellSync.run`, Home's and Chats' loads join that check first, so nothing loads for a user the pool has not confirmed;
-the start tab is picked from the cached state in `AppDependencies.init`. `ErrorCenter` is the one funnel for errors.
+**Who owns what.** `SessionController` owns the session state machine (`SessionState`: signedOut, guest, signedIn). The
+first frame shows the cached choice from `SessionStore`, no network answer awaited; `restore()` then verifies it with
+Cognito once per process and settles a disagreement (the pool wins, an unreachable pool keeps the cache; a refresh token
+the pool refuses later ends the session once, through `endExpiredSession()` and the "Session expired" popup; the rules
+are in `docs/notes/auth-and-backend.md`). `ShellSync.run`, Home's and Chats' loads join that check first, so nothing
+loads for a user the pool has not confirmed; the start tab is picked from the cached state in `AppDependencies.init`.
 `ShellLists` (`AppDependencies.lists`) owns the Home and Explore list view models for the app's lifetime: each starts
-from the last answer kept on disk for the caller (`ListSnapshotStore`, a hint shown on the first frame while the load
-runs, cleared with the session), and `ShellSync.run` loads Explore's right after launch, so a tab never opens empty.
-`EventListViewModel` owns a list (scopes `upcoming`, `joined`, `group`) and reloads on `ContentFreshness` rules and
-`ChangeTracker` bumps; `EventDetailViewModel` owns the event on screen and the join/leave rules (`Participation`).
-`MyGroupsStore` is the one source of the caller's groups (rooms and conversations are groups of kind `tournament` and
-`direct`; `communities` leaves them out). The chat room cache (`ChatHistoryCache`) is the truth the realtime controller
-and `ChatViewModel` both write. `InboxStore` is the one source for the inbox. `LayoutMode` (compact, regular, wide) is
-how every adaptive view decides, never the device.
+from the last answer kept on disk for the caller (`ListSnapshotStore`, a first-frame hint, cleared with the session),
+and `ShellSync.run` loads Explore's right after launch, so a tab never opens empty. `EventListViewModel` owns a list
+(scopes `upcoming`, `joined`, `group`) and reloads on `ContentFreshness` rules and `ChangeTracker` bumps;
+`EventDetailViewModel` owns the event on screen and the join/leave rules (`Participation`). `MyGroupsStore` is the one
+source of the caller's groups (rooms and conversations are groups of kind `tournament` and `direct`; `communities`
+leaves them out). The chat room cache (`ChatHistoryCache`) is the truth the realtime controller and `ChatViewModel` both
+write. `InboxStore` is the one source for the inbox. `LayoutMode` (compact, regular, wide) is how every adaptive view
+decides, never the device.
 
 ## Conventions that bite
 
@@ -170,8 +166,10 @@ how every adaptive view decides, never the device.
 - **Synchronized folder groups.** New files under `lily/`, `lilyTests/`, `lilyUITests/` join their target with no
   `.pbxproj` edit. Info.plist is generated: plist keys are `INFOPLIST_KEY_*` build settings, and a key Xcode has no
   such setting for goes in `lily-Info.plist` at the repository root, which the generated one merges. **`lily/` holds
-  only Swift sources, `Assets.xcassets` and the two string catalogs**; anything else ships inside the app bundle.
-  `find lily -type f ! -name '*.swift' ! -name '*.xcstrings' | grep -v Assets.xcassets` must print nothing.
+  only Swift sources, `Assets.xcassets`, the two string catalogs and `PrivacyInfo.xcprivacy`** (the privacy manifest
+  must ship at the bundle root); anything else ships inside the app bundle.
+  `find lily -type f ! -name '*.swift' ! -name '*.xcstrings' ! -name 'PrivacyInfo.xcprivacy' | grep -v Assets.xcassets`
+  must print nothing (`ci.sh lint` checks it, hidden files excepted).
   Entitlements live at the repository root (`lily.entitlements` for Release, `lily.debug.entitlements` for Debug).
 - **SwiftLint (strict, `.swiftlint.yml`).** Line 130/160, function body 40/60, type body 200/300, file 300/400,
   cyclomatic complexity 10/15 (switch cases count, computed properties are not checked), at most five parameters,
@@ -187,9 +185,10 @@ how every adaptive view decides, never the device.
   present. Languages: en, ru, es, fr, uk, pl, pt; `-app-language <code>` for a run.
 - **Wire types** keep the backend's key names, omit optionals (never `null`), read and write ISO-8601 instants, and
   tolerate new enum values: `WireNamedKind` with `case unknown(String)` (`EventType`, `SkillLevel`, `MessageKind`,
-  `GroupKind`, `InboxItemKind`, `AttachmentKind`). Hand-written `init(from:)` only where a missing key needs a
-  default. Contract samples for Laurel's JSON are `ContractSamples` (declared in `lilyTests/Support/NetworkingDoubles.swift`,
-  extended per area in the `*Fixtures.swift` and `AttachmentDoubles.swift` files) and are pinned by tests.
+  `GroupKind`, `InboxItemKind`, `AttachmentKind`, `TournamentFormat`, `TournamentStatus`, `EntryStatus`, `MatchStatus`,
+  `MatchSlot`, `InviteStatus`; a conformer declares its cases, `known` and `wireName`, the lookup is the protocol's;
+  `GroupVisibility` stays strict on purpose, a binary access rule; `MemberRole`, `InviteCandidateSource` and
+  `MembershipChange.Kind` are strict too, not yet judged). Hand-written `init(from:)` only to default a missing key.
 - **Launch arguments** (`AppConfig.LaunchArguments`, debug builds only): `-reset-session`, `-start-as-guest`,
   `-mock-location`, `-mock-auth`, `-mock-auth-confirm`, `-mock-auth-fail`, `-mock-events`, `-mock-events-fail`,
   `-mock-chat-replies`, `-mock-attachment-picker`, `-mock-terms-pending`, `-hold-popups`, `-freeze-aurora`,
@@ -210,12 +209,16 @@ how every adaptive view decides, never the device.
   transparent screens. The aurora, the grain and the fade-in follow the wall clock (`AuroraGeometry`, `FilmGrain`,
   `AuroraReveal`); phases are reduced modulo their period in `Double` before becoming `Float`.
 - Design language: SF Pro only with tight tracking, accent `#B72734` (`LilyAccent`) over maroon `#5E0C26`, the aurora
-  core frozen at `#B31B3F`, amber as a sparing secondary, Liquid Glass surfaces, dark only, native iOS 26 buttons.
-  Chat bubbles are plain fills, never glass. The decisions the user made by eye are in `docs/notes/design-and-ui.md`;
-  do not revisit them without new evidence.
-- Buttons go through `lilyProminentButton(sizing:)` / `lilyGlassButton(sizing:labelColor:)`, text-only buttons are
-  `.borderless` with `tappableLabel()`, chips through `lilyChip(_:)`; nothing puts a `frame` on a capsule label.
-  Filter criteria live in dropdown panels, never as a chip row on a screen.
+  core frozen at `#B31B3F`, amber as a sparing secondary, Liquid Glass surfaces, dark only, native iOS 26 buttons. Chat
+  bubbles are plain fills, never glass. The decisions the user made by eye are in `docs/notes/design-and-ui.md`; do not
+  revisit them without new evidence. Motion that is not the user's own drag reads `\.motion` (`MotionPreference`, set
+  once by the root's `motionProvider()`), never `accessibilityReduceMotion` directly.
+- Buttons go through `lilyProminentButton(sizing:)` / `lilyGlassButton(sizing:labelColor:)`, text-only buttons through
+  `lilyTextButton(font:color:minHeight:)` (ink, the 44 pt hit area built in), toolbar text actions through
+  `lilyToolbarTextButton()`, chips through `lilyChip(_:)`; nothing puts a `frame` on a capsule label. The accent never
+  colours text below the headline size (it reads at about 3:1 over the aurora): it goes on a mark (glyph, stripe,
+  chevron, fill) beside ink or `.secondary` text (`ValidationHint`, `ChevronLink`). Filter criteria live in dropdown
+  panels, never as a chip row on a screen.
 - iOS 26 layering: a toolbar item draws its own glass capsule, so a segmented `Picker` in one needs
   `.sharedBackgroundVisibility(.hidden)`; the tab bar floats, so only a full-bleed `Map` ignores the bottom safe
   area, with overlays as siblings in a `ZStack`.
@@ -290,12 +293,10 @@ how every adaptive view decides, never the device.
 - `events.md`: the feed and its filter, join and leave, creating and editing a game, player limits, event types,
   prices and currency, relevance and position staleness, statistics.
 - `groups.md`: the groups data layer, view models and screens, roles and invites, games in groups, tolerant kinds.
-- `chat.md`: the room cache and realtime controller, chat screens, clearing a chat, replies, attachments (pictures,
-  videos, files) and their caps.
+- `chat.md`: the room cache and realtime controller, chat screens, clearing a chat, replies, attachments and their caps.
 - `inbox-people-and-push.md`: the Chats tab and inbox, direct invites, profiles and direct conversations, push
   notifications and the pending Apple Developer account steps.
-- `tournaments.md`: entries and teams, brackets and standings, results and disputes, scheduling, invites, contract
-  checks against Laurel.
+- `tournaments.md`: entries and teams, brackets, standings, results and disputes, scheduling, invites, contract checks.
 - `localization.md`: the seven languages, the catalog rules, the Russian register pass.
 - `ipad.md`: `LayoutMode`, the split Chats view, grids, readable columns, form sheets, the wide landing.
 - `profile-and-feedback.md`: the contact form.

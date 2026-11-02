@@ -33,8 +33,9 @@ performs network I/O.
   [`lily/Core/Networking/Models/EmptyBody.swift:EmptyDecodable`, `NoContent`, `OptionalBody`].
 - `nonisolated struct Page<Item: Codable & Hashable & Sendable>: Codable, Hashable, Sendable`: `let items: [Item]`,
   `let nextCursor: String?`; `init(items:nextCursor: = nil)` [`lily/Core/Networking/Models/Page.swift:Page`].
-- `nonisolated protocol WireNamedKind: Hashable, Codable, Sendable { init(wireName: String); var wireName: String }`
-  with default `init(from:)` and `encode(to:)` [`lily/Core/Networking/Models/WireNamedKind.swift:WireNamedKind`].
+- `nonisolated protocol WireNamedKind: Hashable, Codable, Sendable { static var known: [Self]; static func unknown(_
+  name: String) -> Self; init(wireName: String); var wireName: String }` with default `init(wireName:)`, `isUnknown`,
+  `init(from:)` and `encode(to:)` [`lily/Core/Networking/Models/WireNamedKind.swift:WireNamedKind`].
 
 ## Invariants
 
@@ -50,9 +51,13 @@ performs network I/O.
   [`EmptyBody.swift:NoContent.init(from:)`, `EmptyBody.swift:OptionalBody.init(from:)`].
 - `Page.nextCursor` is optional: absent on the last page, and a plain `{items}` decodes
   [`Page.swift:Page`].
-- `WireNamedKind` encodes and decodes as one string through a single-value container, so a conformer's `unknown`
-  case keeps any name this build does not know instead of failing the payload
-  [`WireNamedKind.swift:WireNamedKind.init(from:)`, `WireNamedKind.swift:WireNamedKind.encode(to:)`].
+- `WireNamedKind` requires `static var known: [Self]`, `static func unknown(_ name: String) -> Self` (a `case
+  unknown(String)` satisfies it) and `wireName`; the extension's default `init(wireName:)` answers the first of
+  `known` with that name, else `unknown(name)`, and `isUnknown` is `self == Self.unknown(wireName)`, so a kept name
+  never passes for the case it spells. It encodes and decodes as one string through a single-value container, so a
+  conformer's `unknown` case keeps any name this build does not know instead of failing the payload
+  [`WireNamedKind.swift:WireNamedKind.init(wireName:)`, `WireNamedKind.swift:WireNamedKind.isUnknown`,
+  `WireNamedKind.swift:WireNamedKind.init(from:)`, `WireNamedKind.swift:WireNamedKind.encode(to:)`].
 - `APIError.http.retryAfter` is the `Retry-After` header in seconds when the response carried one
   [`APIError.swift:APIError.http`].
 

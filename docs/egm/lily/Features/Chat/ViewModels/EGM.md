@@ -79,15 +79,20 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   dropped meanwhile (`ChatCatchUp.loadNewest` caches the stub). `pending` is a view on the `ChatOutbox`, never a copy.
 - `[ChatViewModel.swift:ChatViewModel.appear]` Order: record the open once, `setOpenRoom` and `ensureSubscribed`,
   `loadHistory()`, then only if neither `Task.isCancelled` nor `isGone`: `startLive()`, `readMarker.opened()`,
-  the roster. `cancel()` ends the live task, clears the open room, flushes the marker and compacts the cache.
+  the roster. `cancel()` ends the live task, cancels the older page in flight, closes the open room through
+  `RealtimeSessionController.closeRoom` (only while it is still this screen's) and flushes the marker; it never
+  compacts, the controller does once another room opens.
 - `[ChatViewModel+History.swift:ChatViewModel.adoptEpoch]` `subscribedEpoch` only grows (`guard epoch >
-  subscribedEpoch`); a newer epoch moves the controller, resubscribes and catches up once.
+  subscribedEpoch`); a newer epoch moves the controller, resubscribes and catches up once, and re-registers the open
+  room at the new epoch only while the live task runs and `realtime.openRoom` is still this room (an iPad switch where
+  the next room registered first keeps that room open).
 - `[ChatViewModel+History.swift:ChatViewModel.loadHistory]` A cached room (`room.hasHistory`) catches up from the
   watermark, else the newest page is loaded; `historyLoadFailed` is set only when the error is not a cancellation
   and does not end room access. `isAwaitingHistory` is `isLoadingHistory || (!hasLoadedHistory &&
   !historyLoadFailed)`.
 - `[ChatViewModel+History.swift:ChatViewModel.loadOlder]` One older page in flight at a time: answers `false` while
-  `olderPageTask` is set or `hasOlder` is false; the slot is released inside the task.
+  `olderPageTask` is set, `hasOlder` is false or the caller is cancelled; the slot is released inside the task, and a
+  page cancelled by `cancel()` reports nothing (`report` is quiet for cancellations).
 - `[ChatViewModel.swift:ChatViewModel.canSend]` `outgoingDraft.isValid && !attachments.isBusy && !isCoolingDown &&
   !isGone`. `[ChatViewModel+Send.swift:ChatViewModel.send]` is optimistic: the bubble is appended and the draft and
   composer reset before the request; the client id is kept through every retry. `retry` finds the bubble by
@@ -121,7 +126,8 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   `myVotes` equal to the choice means landed (no popup); `before` returns only when the settlement is `.unresolved` (a
   refusal, a failed refresh, no state named). `retractVote` is a vote for `[]`.
 - `[ChatViewModel+Reply.swift:ChatViewModel.revealQuoted]` Loads at most `AppConfig.Chat.maxReplyLookupPages`
-  older pages; an in-flight `olderPageTask` is awaited and not counted; "before the history" is `id < oldestID`.
+  older pages; an in-flight `olderPageTask` is awaited and not counted, and ends the lookup when it was cancelled
+  (the screen left); "before the history" is `id < oldestID`.
 - `[ChatViewModel+Attachments.swift:ChatViewModel.confirmPending]` The bubble's files are seeded into the cache
   under the stored ids before the bubble is removed.
 - `[AttachmentComposerModel.swift:AttachmentComposerModel.add]` Refused when `isFull` (`drafts.count >=
@@ -143,9 +149,9 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
 - `[ChatViewModel]` Network through `ChatRepository` (`send`, `delete`, `older`, `pin`, `unpin`, `vote`, `voters`,
   `polls`), `GroupRepository.members`, `ChatCatchUp.catchUp` and `loadNewest`, `ChatHistoryClearer.clear`,
   `BlockListStore.block`.
-- `[ChatViewModel]` Realtime: `RealtimeSessionController.setOpenRoom`, `ensureSubscribed`, `moveEpoch`,
-  `removeGroupLocally`, and `envelopes(for:)` consumed by `liveTask`. Cache: `ChatHistoryCache.update`, `room`,
-  `compact`. Outbox writes through `pending`. Read marker through `ReadMarkerFlusher.opened`, `flush`, `noteRead`,
+- `[ChatViewModel]` Realtime: `RealtimeSessionController.setOpenRoom`, `closeRoom`, `ensureSubscribed`, `moveEpoch`,
+  `removeGroupLocally`, and `envelopes(for:)` consumed by `liveTask`. Cache: `ChatHistoryCache.update`, `room`.
+  Outbox writes through `pending`. Read marker through `ReadMarkerFlusher.opened`, `flush`, `noteRead`,
   `reset`. `SystemRowContent.recordChange(for:)` on live messages; `recorder.record(.chatOpened)` once;
   `pasteboard.copy`; `GroupErrorReporter.report` for the popup (and the terms sheet on `TERMS_REQUIRED`).
 - `[ChatViewModel]` Logs under `.chat` (`.cache` for "Room cache hit/miss for group"): "Message sent", "deleted in

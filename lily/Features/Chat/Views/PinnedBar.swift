@@ -25,7 +25,7 @@ struct PinnedBar: View {
                     VStack(alignment: .leading, spacing: 0) {
                         Text(pins.count > 1 ? Copy.pinnedMessage(shownIndex + 1, of: pins.count) : Copy.pinnedMessage)
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color.lilyAccent)
+                            .foregroundStyle(.primary)
                         Text(verbatim: shown.quote.displayText)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)

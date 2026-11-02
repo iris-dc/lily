@@ -40,7 +40,7 @@ struct EventPreviewCard: View {
             if let detail {
                 Text(detail)
                     .font(LilyTheme.Fonts.caption)
-                    .foregroundStyle(Color.lilyAccent)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(DesignTokens.Spacing.md)

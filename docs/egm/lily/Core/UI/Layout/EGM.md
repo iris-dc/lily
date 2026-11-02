@@ -4,9 +4,11 @@ Source: `lily/Core/UI/Layout/`
 
 ## Overview
 
-How every adaptive view decides and measures. `LayoutMode` (compact, regular, wide) is resolved from the window's
-horizontal size class and width and published through the environment by `layoutModeProvider()` together with
-`windowWidth` and `windowHeight`; `UsableWidth` is the width a row may use once the window's safe-area regions (the
+How every adaptive view decides and measures, and the one motion preference. `LayoutMode` (compact, regular, wide) is
+resolved from the window's horizontal size class and width and published through the environment by
+`layoutModeProvider()` together with `windowWidth` and `windowHeight`; `MotionPreference` (full, reduced) is resolved
+once from the system's Reduce Motion by `motionProvider()` and read as `\.motion` by every animation site (the aurora,
+the intro, the attachment viewer, the transcript); `UsableWidth` is the width a row may use once the window's safe-area regions (the
 iPad sidebar) are subtracted; `FlowArrangement` is the pure row-packing arithmetic behind `FlowLayout` (in
 [Components](../Components/EGM.md)); the grids (`AdaptiveCardGrid`, `TileGrid`), the readable column and the form-sheet
 sizing shape the regular widths; and the tab bar's hide-and-show across a `NavigationStack` is owned by `TabBarHiding`
@@ -22,6 +24,12 @@ device; the mode is the only switch. Widths, counts and durations come from `Des
   [`lily/Core/UI/Layout/LayoutMode.swift:EnvironmentValues.layoutMode`]. `func layoutModeProvider() -> some View`
   [`lily/Core/UI/Layout/LayoutMode.swift:View.layoutModeProvider`]: measures the root with `onGeometryChange` and
   publishes `\.layoutMode`, `\.windowWidth` and `\.windowHeight` to every descendant (`DesignTokens.Layout.wideMinWidth`).
+- `nonisolated enum MotionPreference: Equatable, Sendable { case full, reduced }`
+  [`lily/Core/UI/Layout/MotionPreference.swift:MotionPreference`]: `static func resolve(reduceMotion: Bool) -> MotionPreference`;
+  `var allowsMovement: Bool` (`self == .full`). `@Entry var motion: MotionPreference = .full` on `EnvironmentValues`
+  [`lily/Core/UI/Layout/MotionPreference.swift:EnvironmentValues.motion`]. `func motionProvider() -> some View`
+  [`lily/Core/UI/Layout/MotionPreference.swift:View.motionProvider`]: reads `\.accessibilityReduceMotion` once and
+  publishes `\.motion` to every descendant; it goes on the root outside its sheets, so a presentation reads it too.
 - `nonisolated enum UsableWidth` [`lily/Core/UI/Layout/UsableWidth.swift:UsableWidth`]:
   `static func of(leading: CGFloat, trailing: CGFloat, frameInWindow: CGRect, windowWidth: CGFloat?) -> CGFloat`, the
   frame's width less the parts that overlap the window's leading and trailing safe-area regions. `@Entry var windowWidth: CGFloat?`
@@ -85,6 +93,10 @@ device; the mode is the only switch. Widths, counts and durations come from `Des
   `size.height + safeAreaInsets.top + safeAreaInsets.bottom`; published as `windowWidth = width > 0 ? width : nil`,
   `windowHeight = height > 0 ? height : nil`, `layoutMode = LayoutMode.resolve(sizeClass:width:)`
   [`lily/Core/UI/Layout/LayoutMode.swift:LayoutModeProvider`].
+- `MotionPreference.resolve` is `reduceMotion ? .reduced : .full`, and only `.full` `allowsMovement`; a drag that follows
+  the finger is the user's own motion and is not judged by it, a fade in place is allowed either way
+  [`lily/Core/UI/Layout/MotionPreference.swift:MotionPreference`]. No view reads `accessibilityReduceMotion` itself;
+  `MotionProvider` is the one reader [`lily/Core/UI/Layout/MotionPreference.swift:MotionProvider`].
 - `UsableWidth.of`: `max(width - coveredLeading - coveredTrailing, 0)`, where `coveredLeading` is the frame's overlap
   with `[0, leading]`, `coveredTrailing` its overlap with `[windowWidth - trailing, windowWidth]` when the window width is
   known and `min(trailing, width)` otherwise; `overlap = max(min(frame.maxX, end) - max(frame.minX, start), 0)`
@@ -130,14 +142,15 @@ device; the mode is the only switch. Widths, counts and durations come from `Des
   `try? await Deadline.within(timeout)` (a timeout is swallowed); the key window is the first `isKeyWindow` across
   `UIApplication.shared.connectedScenes`, and with none `endEditing` is not called
   [`lily/Core/UI/Layout/KeyboardDismissal.swift:KeyboardDismissal.dismissAndWait`].
-- Isolation: `LayoutMode`, `UsableWidth`, `FlowArrangement`, `AdaptiveCardGrid.columns(for:)`, `TileGrid.columns` and
+- Isolation: `LayoutMode`, `MotionPreference`, `UsableWidth`, `FlowArrangement`, `AdaptiveCardGrid.columns(for:)`, `TileGrid.columns` and
   `TileGrid.shown(of:)` are `nonisolated` (testable without a view); the views, modifiers, `TabBarHiding` and
   `KeyboardDismissal` are main-actor isolated.
 
 ## Side Effects
 
 - Environment writes: `layoutModeProvider()` sets `\.layoutMode`, `\.windowWidth`, `\.windowHeight`
-  [`lily/Core/UI/Layout/LayoutMode.swift:LayoutModeProvider.body`]; `animatesTabBar(depth:)` sets `\.tabBarHiding`,
+  [`lily/Core/UI/Layout/LayoutMode.swift:LayoutModeProvider.body`]; `motionProvider()` sets `\.motion`
+  [`lily/Core/UI/Layout/MotionPreference.swift:MotionProvider.body`]; `animatesTabBar(depth:)` sets `\.tabBarHiding`,
   `\.navigationDepth` and `toolbarVisibility(_, for: .tabBar)` [`lily/Core/UI/Layout/TabBarHiding.swift:AnimatesTabBar.body`];
   `hidesTabBarOnCompact()` sets `toolbarVisibility` when no `TabBarHiding` is present
   [`lily/Core/UI/Layout/HidesTabBarOnCompact.swift:HidesTabBarOnCompact.body`].
@@ -157,6 +170,7 @@ device; the mode is the only switch. Widths, counts and durations come from `Des
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (from the repository root; the suites are `lilyTests/UI/LayoutModeTests.swift`,
-  `UsableWidthTests.swift`, `FlowArrangementTests.swift`, `TabBarHidingTests.swift`, `BindingIsPresentTests.swift` and
-  `RegularWidthLayoutTests.swift`). Compact, regular and wide rendering is checked by screenshot on iPhone and iPad
-  simulators per `AGENTS.md` (evidence in `docs/notes/ipad.md` and `docs/notes/shell-and-navigation.md`).
+  `MotionPreferenceTests.swift`, `UsableWidthTests.swift`, `FlowArrangementTests.swift`, `TabBarHidingTests.swift`,
+  `BindingIsPresentTests.swift` and `RegularWidthLayoutTests.swift`). Compact, regular and wide rendering is checked by
+  screenshot on iPhone and iPad simulators per `AGENTS.md` (evidence in `docs/notes/ipad.md` and
+  `docs/notes/shell-and-navigation.md`); Reduce Motion by a simulator recording (`docs/notes/chat.md`, 2026-11-01).

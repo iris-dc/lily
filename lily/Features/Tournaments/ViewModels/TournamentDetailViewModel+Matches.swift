@@ -33,7 +33,7 @@ extension TournamentDetailViewModel {
     func report(_ match: TournamentMatch, scoreA: Int, scoreB: Int) async -> Bool {
         await writeMatch("Report result", match, asking: .result(scoreA: scoreA, scoreB: scoreB)) { [self] in
             let answer = try await repository.report(id: destination.id, matchID: match.id, scoreA: scoreA, scoreB: scoreB)
-            logMatch(match.id, "result \(answer.match(id: match.id)?.status.rawValue ?? "unknown")")
+            logMatch(match.id, "result \(answer.match(id: match.id)?.status.wireName ?? "unknown")")
             return answer
         }
     }

@@ -23,7 +23,10 @@ struct ChatTranscript: View {
     @State var tracker = ScrollTracker()
     @State private var arrivals = ArrivalTracker()
     /// The message a tapped quote led to, while its wash shows.
-    @State private var highlightedMessageID: String?
+    @State var highlightedMessageID: String?
+    /// The scroll to a quoted original; cancelled with `opening` when the screen leaves, so a lookup still paging asks
+    /// for nothing more.
+    @State var revealing: Task<Void, Never>?
     /// The list's usable width, for the rows' fractions (`\.transcriptWidth`); `nil` before the first layout.
     @State private var transcriptWidth: CGFloat?
     /// The picture or video open full screen.
@@ -45,6 +48,7 @@ struct ChatTranscript: View {
     @State private var votersOf: ChatMessage?
     /// The pin the bar shows, counted from the oldest; `nil` shows the newest.
     @State var shownPinIndex: Int?
+    @Environment(\.motion) var motion
 
     init(viewModel: ChatViewModel, dependencies: AppDependencies, hero: ViewerHero) {
         self.viewModel = viewModel
@@ -74,7 +78,7 @@ struct ChatTranscript: View {
                                     onBlock: { blocking = $0 },
                                     onShowVoters: { votersOf = $0 },
                                     arrivedAt: arrived.start(of: row.id))
-                            .transition(MessageRemovalTransition(for: row))
+                            .transition(MessageRemovalTransition(for: row, motion: motion))
                     }
                 }
                 .scrollTargetLayout()
@@ -116,7 +120,10 @@ struct ChatTranscript: View {
             log("back on screen at the bottom, pinned")
             apply(.scrollToBottom)
         }
-        .onDisappear { opening?.cancel() }
+        .onDisappear {
+            opening?.cancel()
+            revealing?.cancel()
+        }
         .scrollDismissesKeyboard(.interactively)
         .accessibilityIdentifier(AccessibilityIdentifiers.chatList)
         // Outside the list's identifier, which would be stamped on the bar's buttons too; a bar, so the rows scrolling
@@ -196,21 +203,6 @@ struct ChatTranscript: View {
     func loadOlderPage() async {
         let loaded = await viewModel.loadOlder()
         if !loaded { tracker.policy.didNotLoadOlder() }
-    }
-
-    /// Scrolls to the quoted original once the view model has it on hand, then washes it for `messageHighlight`.
-    func reveal(_ quote: ReplyQuote) {
-        Task {
-            guard await viewModel.revealQuoted(id: quote.messageId) else { return }
-            log("scrolls to a quoted message")
-            let rowID = viewModel.rows.first { $0.messageID == quote.messageId }?.id ?? quote.messageId
-            withAnimation(.smooth(duration: DesignTokens.Duration.fast)) {
-                position.scrollTo(id: rowID, anchor: .center)
-            }
-            highlightedMessageID = quote.messageId
-            try? await Task.sleep(for: .seconds(DesignTokens.Duration.messageHighlight))
-            if highlightedMessageID == quote.messageId { highlightedMessageID = nil }
-        }
     }
 }
 

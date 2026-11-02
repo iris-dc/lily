@@ -62,6 +62,7 @@ nonisolated extension AppBranding.Tournaments {
             case .confirmed: localized("Played")
             case .walkover: walkover
             case .bye: bye
+            case .unknown(let name): name
             }
         }
     }

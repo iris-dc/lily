@@ -12,6 +12,8 @@ final class RealtimeSessionController: SessionObserver {
     /// The epoch each room is subscribed at.
     var subscribedRooms: [String: Int] = [:]
     var openRoom: RoomSubscription?
+    /// The room last opened, which keeps every page its reader loaded until another room opens.
+    var lastOpenRoomID: String?
 
     /// Someone reading `envelopes(for:)` for one room.
     struct Consumer {
@@ -148,11 +150,23 @@ final class RealtimeSessionController: SessionObserver {
         reconcileSubscriptions()
     }
 
-    /// The chat on screen, always subscribed whatever its place in Mine.
+    /// The chat on screen, always subscribed whatever its place in Mine. Opening a different room than the last one
+    /// compacts that one: a reader who paged deep, pushed a profile and came back still finds every row.
     func setOpenRoom(_ room: RoomSubscription?) {
         openRoom = room
-        if let room { noteEpoch(room.epoch, for: room.groupID) }
+        if let room {
+            noteEpoch(room.epoch, for: room.groupID)
+            if let previous = lastOpenRoomID, previous != room.groupID { cache.compact(groupID: previous) }
+            lastOpenRoomID = room.groupID
+        }
         reconcileSubscriptions()
+    }
+
+    /// A screen leaving its room: cleared only while it is still the open one, so an iPad switch where the next room
+    /// registered before this one left keeps the next room open.
+    func closeRoom(_ groupID: String) {
+        guard openRoom?.groupID == groupID else { return }
+        setOpenRoom(nil)
     }
 
     /// Makes sure the room is subscribed at `room.epoch` (or a newer one already known), waiting out every jittered
@@ -198,6 +212,7 @@ final class RealtimeSessionController: SessionObserver {
 
     private func resetSessionState() {
         knownEpochs = [:]
+        lastOpenRoomID = nil
         lastExpiry = nil
         backoff.reset()
         reconnectsWithoutToken = 0

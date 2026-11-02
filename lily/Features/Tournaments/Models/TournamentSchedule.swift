@@ -24,6 +24,7 @@ nonisolated enum TournamentSchedule {
         return switch format {
         case .singleElimination: singleElimination(seeds: seeds)
         case .roundRobin: roundRobin(seeds: seeds)
+        case .unknown: []
         }
     }
 
@@ -83,6 +84,7 @@ nonisolated enum TournamentSchedule {
             switch slot {
             case .a: matches[next].entryAId = entry
             case .b: matches[next].entryBId = entry
+            case .unknown: break
             }
         }
         return matches

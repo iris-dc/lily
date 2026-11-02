@@ -14,15 +14,6 @@ nonisolated enum SkillLevel: WireNamedKind {
     private static let intermediateName = "intermediate"
     private static let advancedName = "advanced"
 
-    init(wireName: String) {
-        switch wireName {
-        case Self.beginnerName: self = .beginner
-        case Self.intermediateName: self = .intermediate
-        case Self.advancedName: self = .advanced
-        default: self = .unknown(wireName)
-        }
-    }
-
     var wireName: String {
         switch self {
         case .beginner: Self.beginnerName
@@ -30,11 +21,6 @@ nonisolated enum SkillLevel: WireNamedKind {
         case .advanced: Self.advancedName
         case .unknown(let name): name
         }
-    }
-
-    var isUnknown: Bool {
-        if case .unknown = self { return true }
-        return false
     }
 
     /// `self` for a level this build can name, `nil` for an unknown one, so a site that treats such a level like none

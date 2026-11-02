@@ -15,7 +15,8 @@ hierarchies draw from one shared `ViewerHero`) complete the set. Views read `Cha
 `AttachmentComposerModel` (`../ViewModels/EGM.md`) and the objects in `../State/EGM.md`; strings come from
 `AppBranding`, numbers from `DesignTokens` and `AppConfig.Chat`, identifiers from `AccessibilityIdentifiers`.
 Explicit isolation is rare: `@MainActor` on `AttachmentImageLoad`, `ScrollTracker`, `ArrivalTracker` (private to `ChatTranscript.swift`) and the
-viewer's private `LoadedPictures`; `nonisolated` on `TranscriptScrollPolicy.Snapshot.init`;
+viewer's private `LoadedPictures`; `nonisolated` on `TranscriptScrollPolicy.Snapshot.init` and on the static
+`MessageRemovalTransition.leavingScale(motion:)` and `Animation.messageArrival(_:)`;
 everything else takes the app target's default `@MainActor`.
 
 ## Interface
@@ -34,8 +35,8 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   view model and a `ViewerHero` as `@State`; transcript, `ViewerStage` overlay, composer inset, toolbar info link
   and `ChatRoomMenu`, empty and failed placeholders.
 - `[ChatTranscript.swift:ChatTranscript]` `init(viewModel:dependencies:hero:)`; `static let endMarkerID`; `@State`
-  `ScrollPosition`, `ScrollTracker`, `FirstPageReveal`, the presented items, `shownPinIndex`; `reveal(_ quote:)`,
-  `loadOlderPage()`. Same file: `nonisolated TranscriptScrollPolicy.Snapshot.init(_: ScrollGeometry)`; `@MainActor
+  `ScrollPosition`, `ScrollTracker`, `FirstPageReveal`, the presented items, `shownPinIndex`, `highlightedMessageID`,
+  `revealing: Task<Void, Never>?`; `reveal(_ quote:)` (in `+Scrolling.swift`), `loadOlderPage()`. Same file: `nonisolated TranscriptScrollPolicy.Snapshot.init(_: ScrollGeometry)`; `@MainActor
   final class ScrollTracker` (`policy`, `geometry`, `endMarkerY`, `composerLine`, `endIsOnComposer`, `watch`,
   `record`, `finishWatching`, `logsEveryReport(for:)`).
 - `[ChatTranscript+Scrolling.swift:ChatTranscript]` `geometryChanged(to:laidOutRows:)`, `scrollPhaseChanged(from:to:)`,
@@ -46,15 +47,18 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   callbacks, `arrivedAt: Date?`; one row with its clock-driven arrival and `MessageContextMenu`.
 - `[MessageComposer.swift:MessageComposer]` `@Bindable viewModel`; `ReplyPreviewBar`, `AttachmentStrip`,
   `AttachmentMenuButton`, a `GrowingTextView` on `draft.text`, send, caption, `PollComposerSheet`.
-- `[ReplyPreviewBar.swift:ReplyPreviewBar]` `quote: ReplyQuote`, `onCancel`; a `QuoteBar` with a "Replying to" caption
-  and a cancel button, an accessibility container `chatReplyPreview`.
-- `[PinnedBar.swift:PinnedBar]` `pins`, `shownIndex`, `canUnpin`, `onTap`, `onUnpin`.
+- `[ReplyPreviewBar.swift:ReplyPreviewBar]` `quote: ReplyQuote`, `onCancel`; an accent `QuoteBar` with a "Replying to"
+  caption in `.primary` and a cancel button, an accessibility container `chatReplyPreview`.
+- `[PinnedBar.swift:PinnedBar]` `pins`, `shownIndex`, `canUnpin`, `onTap`, `onUnpin`; the accent stripe, the title in
+  `.primary`, the quote in `.secondary`.
   `[DaySeparator.swift:DaySeparator]` `day`, `now` (`ChatDayLabel`). `[ChatRoomMenu.swift:ChatRoomMenu]` `group`,
   `userID`, `onClear`; `ChatClearMenuItem(group:action:)`; `View.chatClearConfirmation(for: Binding<SportGroup?>,
   onConfirm:)`, an `.alert(item:)` worded by `ChatClearPrompt`.
 - `[TranscriptWidth.swift:EnvironmentValues.transcriptWidth]` `@Entry CGFloat?`; `View.transcriptFraction
   (_:alignment:)`, `View.measuringTranscriptWidth(_:)`. `[MessageArrival.swift:MessageRemovalTransition]`
-  `init(for row:)`; `ChatRow.arrivalCorner`; `Animation.messageArrival`. `[RowReveal.swift:RowReveal]` a `Layout`.
+  `init(for row:, motion: MotionPreference)`, `nonisolated static func leavingScale(motion:) -> CGFloat`;
+  `ChatRow.arrivalCorner`; `nonisolated static func Animation.messageArrival(_ motion: MotionPreference) -> Animation?`.
+  `[RowReveal.swift:RowReveal]` a `Layout`.
 
 ### Bubbles, quotes and polls
 
@@ -67,11 +71,14 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - `[PendingMessageBubble.swift:PendingMessageBubble]` `message: PendingMessage`, `viewModel`, `onTapQuote`.
   `[SystemMessageRow.swift:SystemMessageRow]` `message`, `viewModel`, `onTap`, `onOpen: (SystemRowDestination) ->
   Void`. `[MessageContextMenu.swift:MessageContextMenu]` `items: MessageMenuItems`, `row`, `viewModel`, `onReport`,
-  `onBlock`. `[QuoteBlock.swift:QuoteBlock]` `quote`, `isDeleted`, `own`; `QuoteBar(color:)`; `QuoteStack: Layout`.
-- `[PollBubble.swift:PollBubble]` `poll`, `own`, `isEnabled`, `onVote`, `onShowVoters`.
+  `onBlock`. `[QuoteBlock.swift:QuoteBlock]` `quote`, `isDeleted`, `own`; the bar in `BubbleInk.accent`, the sender's
+  name in `BubbleInk.primary`; `QuoteBar(color:)`; `QuoteStack: Layout`.
+- `[PollBubble.swift:PollBubble]` `poll`, `own`, `isEnabled`, `onVote`, `onShowVoters`; Vote and View votes are
+  `lilyTextButton(font: .footnote.weight(.semibold), color: ink.primary, minHeight: DesignTokens.Layout.pollFooterHeight)`.
   `[PollOptionPill.swift:PollOptionPill]` `option`, `display: PollOptionDisplay`, `own`, `onTap`.
-  `[PollComposerSheet.swift:PollComposerSheet]` `onSend: (PollDraft) -> Void`.
-  `[PollVotersSheet.swift:PollVotersSheet]` `message`, `viewModel`, `errorCenter`.
+  `[PollComposerSheet.swift:PollComposerSheet]` `onSend: (PollDraft) -> Void`; Cancel and Send are
+  `lilyToolbarTextButton()`. `[PollVotersSheet.swift:PollVotersSheet]` `message`, `viewModel`, `errorCenter`; Done is
+  `lilyToolbarTextButton()`.
 
 ### Attachments: composing, galleries and the viewer
 
@@ -128,11 +135,18 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   DesignTokens.Layout.olderPageTriggerDistance`.
 - `[ChatTranscript+Scrolling.swift:ChatTranscript.geometryChanged]` Compares against the last report the policy saw;
   `canLoadOlder = hasOlder && !isLoadingOlder`; `.loadOlder` calls `policy.willLoadOlder` before loading;
-  `.animateToBottom` defers the scroll into a task under `withAnimation(.messageArrival)`. `Phase.init`:
+  `.animateToBottom` defers the scroll into a task under `withAnimation(.messageArrival(motion))`, `nil` and so
+  instant under Reduce Motion. `Phase.init`:
   `.interacting` is `.touched`, `.idle` is `.resting`, else `.moving`.
-- `[ChatTranscript.swift:ChatTranscript.reveal]` Scrolls and highlights only when `viewModel.revealQuoted(id:)`
-  answers true; `openViewer` cancels an earlier opening task and sets `viewing` only if not cancelled.
-- `[ChatRowView.swift:ChatRowView]` The arrival clock runs only while `arrivedAt` is set, not settled and within
+- `[ChatTranscript+Scrolling.swift:ChatTranscript.reveal]` Keeps its task in `revealing` (an earlier one cancelled),
+  scrolls and highlights only when `viewModel.revealQuoted(id:)` answers true and the task was not cancelled while the
+  lookup ran (`Task.isCancelled` checked after the answer), the scroll under `.smooth` or, with
+  `!motion.allowsMovement`, no animation; `onDisappear` cancels `opening` and `revealing`, so a lookup still paging
+  asks for nothing more; `openViewer` cancels an earlier opening task and sets `viewing` only if not cancelled. Each
+  row's removal is `MessageRemovalTransition(for: row, motion: motion)` (`\.motion`).
+- `[ChatRowView.swift:ChatRowView]` The curve is `MessageArrivalCurve.standard` while `motion.allowsMovement`, else
+  `.still`, whose `settlingDuration` is 0, so under Reduce Motion no row is ever arriving and the reveal is whole from
+  the first frame; the arrival clock runs only while `arrivedAt` is set, not settled and within
   `MessageArrivalCurve.settlingDuration`; a context menu only when `MessageMenuItems.items(...).hasEnabledItems`; a
   system row gets a tap only for `.messagePinned` with a `replyTo`.
 - `[MessageComposer.swift:MessageComposer]` The menu button only when `attachmentsEnabled || canCreatePolls`
@@ -142,7 +156,9 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   pins; the index is normalised by `PinnedBarPosition.shown`; unpin only when `canChangePins`; a tap reveals then
   steps back; the index resets when the pin ids change (`[ChatTranscript.swift:ChatTranscript]`, the `onChange` on
   the pin ids).
-- `[MessageBubble.swift:MessageBubble]` Order: `isDeleted`, else `poll`, else content; avatar column only for others,
+- `[MessageBubble.swift:MessageBubble]` Order: `isDeleted`, else `poll`, else content; the tombstone is italic in
+  `BubbleInk(own:).secondary` (white at `DesignTokens.Opacity.secondaryOnAccent` on the caller's bubble, never
+  `.secondary`, which turns grey on the accent); avatar column only for others,
   avatar and name only on the first bubble of a run, timestamp on the last; the identifier prefers `clientMessageId`.
 - `[BubbleContent.swift:View.bubbleFill]` A plain `BubbleInk.background` colour in a rounded rect; a media-only
   bubble (`BubbleFill.standsAlone`) has no fill and no padding. `[QuoteBlock.swift:QuoteStack]` width is the widest
@@ -170,7 +186,8 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   the viewer). `[VideoAttachmentView.swift:VideoAttachmentView]` passes
   `available: thumbnailUrl != nil`.
 - `[AttachmentViewerSheet.swift:AttachmentViewerSheet]` The pan is taken only while `motion.takesDrag` and the
-  picture is not zoomed; `stage()` sets `hero.moving` only when a picture and a tile exist, else the pager fades;
+  picture is not zoomed; `stage()` sets `hero.moving` only when `ViewerMotion.movesPicture(hasPicture:hasTile:motion:)`
+  holds (a picture, a tile and `\.motion.allowsMovement`), else the pager fades in place and a drag offsets it;
   picture priority `hero.preloaded`, `layout.pictures`, `hero.thumbnail`, `layout.previews`; the backdrop covers the
   screen unless a picture moves (then `ViewerGeometry.overComposer` only); `presentationBackground(.clear)`.
 - `[AttachmentViewerSheet+Motion.swift:AttachmentViewerSheet]` Every move is gated by `ViewerMotion`; `letGo` closes
@@ -210,7 +227,7 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `SystemRowDestination.open(through: navigation)`. `[MessageContextMenu.swift:MessageContextMenu]`,
   `[PendingMessageBubble.swift:PendingMessageBubble]` call `startReply(to:)` and `copy(_:)` directly and spawn
   `Task`s into `pin`, `unpin`, `retractVote`, `delete`, `retry`; `discard` runs synchronously under
-  `withAnimation(.messageArrival)`.
+  `withAnimation(.messageArrival(motion))` (`\.motion`).
   `[SystemMessageRow.swift:SystemMessageRow]` `loadLinkedContent(for:)` on task, `destination(for:)` on tap.
 - `[MessageComposer.swift:MessageComposer]` A `.task(id: cooldownUntil)` ticking every `AppConfig.Chat.cooldownTick`
   while cooling down; `send()`, `sendPoll(_:)`, `cancelReply()`; keyboard focus; the poll sheet.
@@ -227,7 +244,9 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `loader.logger.warning` for a header over the cap; `[AttachmentTile.swift:LocalImage]` the same decode for a draft's
   file.
 - `[AttachmentViewerSheet.swift:AttachmentViewerSheet]` Writes `hero.shownID`, `hero.moving`, `forgetPreloaded()`,
-  `endMove()`, `driver.cancel()`; a `ShareLink`; installs the pan recognizer.
+  `endMove()`, `driver.cancel()`; a `ShareLink` (`ShareControl`) whose sheet offers Save Image because the app target
+  sets `NSPhotoLibraryAddUsageDescription` (`project.pbxproj`, translated in `lily/InfoPlist.xcstrings`); without it
+  iOS 26 withholds the row; installs the pan recognizer.
   `[AttachmentViewerSheet+Motion.swift:AttachmentViewerSheet]` `driver.run` writes `hero.progress`, `hero.drag`,
   `hero.landing` every frame; `hero.log(...)`; `dismiss()` in a `Transaction` with `disablesAnimations`.
   `[ViewerHeroSource.swift:ViewerHeroSource]` `hero.place(TileGeometry, for:)` on frame change, `nil` on disappear.
@@ -239,6 +258,7 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 
 - Run: `./scripts/ci.sh unit` (from the repository root). The logic these views delegate to is pinned under
   `lilyTests/Chat`: `TranscriptScrollPolicyTests` (+Appends), `TranscriptArrivalsTests`, `MessageArrivalCurveTests`,
+  `MessageArrivalTests` (the removal's scale and the spring under Reduce Motion),
   `ReturnKeyPolicyTests`, `PinnedBarPositionTests`, `ChatClearPromptTests`, `ConversationSelectionTests`,
   `BubbleFillTests`, `GalleryLayoutTests`, `AttachmentImageLoadTests`, `AttachmentVariantTests`, `ImageFileTests`,
   `FileAttachmentCardTests`,

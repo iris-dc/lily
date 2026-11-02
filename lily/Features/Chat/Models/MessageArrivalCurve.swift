@@ -23,18 +23,23 @@ nonisolated struct MessageArrivalCurve: Equatable, Sendable {
     static let standard = MessageArrivalCurve(duration: DesignTokens.MessageArrival.duration,
                                               bounce: DesignTokens.MessageArrival.bounce,
                                               startScale: Double(DesignTokens.MessageArrival.scale))
+    /// No arrival at all, under Reduce Motion: the row is whole from its first frame and settles at once.
+    static let still = MessageArrivalCurve(duration: 0, bounce: 0, startScale: 1)
 
+    /// Whether there is a spring to read; `Spring(duration: 0)` is not one.
+    private var moves: Bool { duration > 0 }
     private var spring: Spring { Spring(duration: duration, bounce: bounce) }
     /// The fade's spring: the same without its bounce, so the row only ever brightens.
     private var fade: Spring { Spring(duration: duration, bounce: 0) }
 
     /// How long the spring takes to come to rest; from then on the row is drawn as it is.
-    var settlingDuration: TimeInterval { spring.settlingDuration }
+    var settlingDuration: TimeInterval { moves ? spring.settlingDuration : 0 }
 
     /// The row `elapsed` seconds after it arrived: invisible, at `startScale` and taking no height until then, at rest
     /// once the spring has settled; the scale keeps the spring's overshoot, the bounce, while the fade and the height
-    /// rise without one, so the rows above never move back down.
+    /// rise without one, so the rows above never move back down. A still curve rests at every instant.
     func frame(elapsed: TimeInterval) -> Frame {
+        guard moves else { return .resting }
         guard elapsed > 0 else { return Frame(opacity: 0, scale: startScale, reveal: 0) }
         guard elapsed < settlingDuration else { return .resting }
         let rise = min(max(fade.value(target: 1.0, time: elapsed), 0), 1)

@@ -29,6 +29,8 @@ nonisolated extension DesignTokens.Layout {
 nonisolated extension DesignTokens.Opacity {
     /// The accent wash behind the conversation row a split view's detail shows.
     static let selectedRow: Double = 0.18
+    /// A text-only button's label while pressed (`lilyTextButton`), in place of the system style's dim.
+    static let pressedTextButton: Double = 0.6
 }
 
 nonisolated extension DesignTokens.Layout {

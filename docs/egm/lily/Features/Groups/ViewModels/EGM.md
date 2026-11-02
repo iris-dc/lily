@@ -29,7 +29,8 @@ them are in [Views](../Views/EGM.md).
   Void)`; owns a private `WriteGate` [`lily/Features/Groups/ViewModels/EditGroupViewModel.swift`:`EditGroupViewModel.init`].
 - `DiscoverGroupsViewModel`: settable `query`, `typeFilter: EventType?`, `reportsSearchFailures` (default true);
   `private(set)` `groups`, `isLoading`, `isLoadingMore`, `hasSearched`, `searchFailed`, `userLocation: Coordinate?`;
-  `@ObservationIgnored` `nextCursor`, `searchedUserID`, `searchedChangesVersion`, `searchedPosition`; computed
+  `@ObservationIgnored` `nextCursor`, `searchedUserID`, `searchedChangesVersion`, `searchedPosition`,
+  `searchedScope: GroupScope?`; computed
   `isInitialLoad`, `nothingMatched`, `canLoadMore`, `effectiveQuery: String?`, `browsePosition: Coordinate?`; methods
   `loadIfStale()`, `loadIfStaleNearTheUser()`, `loadUserLocation()`, `search()`, `loadMore()`, `refresh()`,
   `cancel()`, `clear()`, `distanceText(for:) -> String?`; `init(changes: ChangeTracker, repository:, identity:,
@@ -92,15 +93,18 @@ them are in [Views](../Views/EGM.md).
   [`lily/Config/AppConfig.swift`:`AppConfig.Location.firstFixWait`].
 - Discover states: `isInitialLoad = !hasSearched && groups.isEmpty && !searchFailed`; `nothingMatched = hasSearched &&
   groups.isEmpty && !isLoading`; `canLoadMore = nextCursor != nil && !isLoadingMore && !isLoading`; `isStale` is
-  "never searched, or the caller, the `ChangeTracker` version or the browse position changed" (no time threshold)
+  "never searched, or the caller, the `ChangeTracker` version, the browse position or the scope (query and type)
+  changed" (no time threshold; `searchedScope` is stamped by an answer, so a search cancelled on the way out under a
+  new query is run on the next appearance)
   [`lily/Features/Groups/ViewModels/DiscoverGroupsViewModel.swift`:`DiscoverGroupsViewModel.isInitialLoad`].
 - Discover guards: `search()` bumps a `searchGeneration` and both the search and `loadMore` drop an answer of an older
-  generation; cancellation never sets `searchFailed`; `loadMore` dedups by id and reuses the searched position, with
-  the scope rebuilt from the current query and type (a change of either restarts the search and bumps the
-  generation); `clear()` cancels, bumps the generation and resets the list and
+  generation; cancellation never sets `searchFailed`; `loadMore` dedups by id and reuses the searched position and
+  the searched scope (`searchedScope`, stamped by the answer the cursor came from, never what is typed now; without
+  one it returns), while a change of query or type restarts the search and bumps the generation; `clear()` cancels, bumps the generation and resets the list and
   the searched marks but keeps `userLocation`, `query` and `typeFilter`
   [`lily/Features/Groups/ViewModels/DiscoverGroupsViewModel.swift`:`DiscoverGroupsViewModel.clear`].
-- Discover snapshot: written only for a plain browse (no query, no type), keyed by
+- Discover snapshot: written only when the scope the page was fetched for was a plain browse (no query, no type;
+  `isPlainBrowse(_ scope:)` judges the captured scope, never the field when the answer lands), keyed by
   `AppConfig.Lists.discoverGroupsSnapshot` (`"groups-discover"`) and the caller; a seeded snapshot leaves
   `hasSearched` false [`lily/Features/Groups/ViewModels/DiscoverGroupsViewModel.swift`:`DiscoverGroupsViewModel.snapshotKey`]
   [`lily/Config/AppConfig.swift`:`AppConfig.Lists.discoverGroupsSnapshot`].

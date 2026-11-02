@@ -103,8 +103,16 @@ final class LilyTournamentTests: LilyUITestCase {
 
         pickSection("Matches")
         openMatch("r03p002")
-        enter("1", into: app.textFields["match-score-a"])
-        enter("3", into: app.textFields["match-score-b"])
+        // The fields are named by whose score they take, so VoiceOver says "Dev" and "You" and never "0": the circle
+        // method's third round pairs Dev (side A) with the caller (side B).
+        let scoreA = app.textFields["match-score-a"]
+        let scoreB = app.textFields["match-score-b"]
+        XCTAssertTrue(scoreA.waitForExistence(timeout: 5))
+        XCTAssertEqual(scoreA.label, "Dev", "side A is Dev")
+        XCTAssertTrue(scoreB.waitForExistence(timeout: 5))
+        XCTAssertEqual(scoreB.label, "You", "side B is the caller, named by their own marker")
+        enter("1", into: scoreA)
+        enter("3", into: scoreB)
         app.buttons["match-report"].tap()
         XCTAssertTrue(app.navigationBars["Match"].waitForNonExistence(timeout: 10), "the sheet closes once reported")
         let reported = app.buttons["match-r03p002"]

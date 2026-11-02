@@ -77,12 +77,14 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   `freshness.reset()`; no snapshot is written.
 - `updateFilter` is the one way views change `filter`, saving through `filterStore` every time;
   `filterPanelClosed()` records `.filterApplied` only when the filter differs from when the panel opened.
-- Detail write (`EventDetailViewModel.update`): one change at a time (`isBusy`); the write runs through
+- Detail write (`EventDetailViewModel.update`, `@discardableResult ... -> Bool`): one change at a time (`isBusy`,
+  held exactly while the write settles); the write runs through
   `WriteGate.run(_:settling:_:)` with `what` = "<action> for event <id>" (one `TRY_AGAIN` repeated after
   `tryAgainDelay`, a cancellation silent, a 409 in `isParticipationConflict` (`.eventFull`, `.alreadyJoined`,
   `.notAParticipant`, `.hostCannotLeave`, `.tryAgain`) logged at warning, anything else at error, the failure
-  reported unless the read-back found it landed); on success `apply` (→ `onChange`), log, `loadParticipants()`; then,
-  for a join that went through or landed by the read-back, `pushOptIn.offerReminders()` only after `isBusy` was reset.
+  reported unless the read-back found it landed); on success `apply` (→ `onChange`), log, `loadParticipants()`; it
+  answers whether the change landed, and `join()` runs `pushOptIn.offerReminders()` after a landed update returned, so
+  the offer never holds `isBusy` and a leave started during the prompt owns the flag to its own end.
 - Detail read-back (`LostAnswer<SportEvent>`, `eventReadBack`): `.participationFailed` and `.network` leave the
   outcome unknown, every `isParticipationConflict` refusal is worth another look; `repository.event(id:)` is applied
   before the popup and the roster reloads after every fresh event; an unknown outcome whose fresh event shows

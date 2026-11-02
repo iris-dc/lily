@@ -12,18 +12,11 @@ nonisolated enum GroupKind: WireNamedKind {
     case tournament
     case unknown(String)
 
+    static let known: [GroupKind] = [.group, .direct, .tournament]
+
     private static let groupName = "group"
     private static let directName = "direct"
     private static let tournamentName = "tournament"
-
-    init(wireName: String) {
-        switch wireName {
-        case Self.groupName: self = .group
-        case Self.directName: self = .direct
-        case Self.tournamentName: self = .tournament
-        default: self = .unknown(wireName)
-        }
-    }
 
     var wireName: String {
         switch self {
@@ -32,10 +25,5 @@ nonisolated enum GroupKind: WireNamedKind {
         case .tournament: Self.tournamentName
         case .unknown(let name): name
         }
-    }
-
-    var isUnknown: Bool {
-        if case .unknown = self { return true }
-        return false
     }
 }

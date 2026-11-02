@@ -99,12 +99,13 @@ nonisolated struct TournamentMatch: Identifiable, Hashable, Codable, Sendable {
         entryID != nil && (entryAId == entryID || entryBId == entryID)
     }
 
-    /// The side a winner's feeder match sends it into.
+    /// The side a winner's feeder match sends it into; a slot this build cannot name places nobody.
     func placing(_ entryID: String, in slot: MatchSlot) -> TournamentMatch {
         var copy = self
         switch slot {
         case .a: copy.entryAId = entryID
         case .b: copy.entryBId = entryID
+        case .unknown: break
         }
         return copy
     }

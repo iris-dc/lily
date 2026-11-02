@@ -29,8 +29,8 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   [`lily/Features/Groups/Models/SportGroup.swift`:`SportGroup`].
 - `SportGroup` captions: `caption(suffix:)`, `placeCaption(distance:) -> String?`, `avatarSymbol: String?`
   [`lily/Features/Groups/Models/SportGroup+Caption.swift`:`SportGroup.caption`].
-- `GroupKind: WireNamedKind` with `group`, `direct`, `tournament`, `unknown(String)`; `init(wireName:)`, `wireName`,
-  `isUnknown` [`lily/Features/Groups/Models/GroupKind.swift`:`GroupKind`].
+- `GroupKind: WireNamedKind` with `group`, `direct`, `tournament`, `unknown(String)`; `known`, `wireName`;
+  `init(wireName:)` and `isUnknown` are `WireNamedKind`'s defaults [`lily/Features/Groups/Models/GroupKind.swift`:`GroupKind`].
 - `GroupVisibility: String` (`public`, `private`; `displayName`, `symbolName`)
   [`lily/Features/Groups/Models/GroupVisibility.swift`:`GroupVisibility`]; `GroupScope` (`mine`,
   `discover(query: String?, type: EventType?)`; `wireName`, `searchPrefix: String?`)
@@ -98,7 +98,7 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   [`lily/Features/Groups/Models/Account.swift`:`Account.init(from:)`].
 - `GroupKind` travels as one string (`"group"`, `"direct"`, `"tournament"`); any other name is kept in `unknown`, so a
   newer backend's kind still decodes; the single-value `Codable` comes from `WireNamedKind`
-  [`lily/Features/Groups/Models/GroupKind.swift`:`GroupKind.init(wireName:)`]
+  [`lily/Features/Groups/Models/GroupKind.swift`:`GroupKind.known`]
   [`lily/Core/Networking/Models/WireNamedKind.swift`:`WireNamedKind`].
 - `SportGroup.role` is `nil` for a `banned` membership, so a banned marker never counts as `isMember`;
   `isCommunity` is `kind == .group`; `lastActivityAt` is `lastMessageAt ?? createdAt`; `mineOrder` is most recent

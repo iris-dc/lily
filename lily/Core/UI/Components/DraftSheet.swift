@@ -43,6 +43,7 @@ struct DraftSheet<Model: DraftSubmitting, Form: View>: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(AppBranding.Forms.cancel, role: .cancel) { dismiss() }
+                        .lilyToolbarTextButton()
                         .disabled(viewModel.isSubmitting)
                         .accessibilityIdentifier(cancelIdentifier)
                 }

@@ -4,7 +4,7 @@ Source: `lily/Core/UI/Components/`
 
 ## Overview
 
-The reusable SwiftUI pieces every feature screen is built from, 38 files with no subfolders: the screen scaffold and
+The reusable SwiftUI pieces every feature screen is built from, 40 files with no subfolders: the screen scaffold and
 its aurora (`ContentScreen`, `AuroraBackground`, `FilmGrainOverlay`), the button, chip and field modifiers that give
 the app its one look, the cards, titles, rows, avatars and tiles, the list and empty states, the filter dropdowns, the
 shared error popup (`errorPopup`), the create-or-edit sheet (`DraftSheet`) and the UIKit-backed growing text field
@@ -28,11 +28,16 @@ use the generated `Color.lily*` asset symbols.
   tiles one of `DesignTokens.Aurora.grainFrameCount` static `CGImage`s from `FilmGrain.makeImage`, chosen by
   `FilmGrain.frameIndex`; `.interpolation(.none)`, `.blendMode(.plusLighter)`, `.allowsHitTesting(false)`.
 - Buttons [`lily/Core/UI/Components/ButtonModifiers.swift:View.lilyProminentButton`, `View.lilyGlassButton`,
-  `View.lilyIconButton`, `View.lilyGlassIconButton`, `View.lilyFloatingActionButton`]:
+  `View.lilyIconButton`, `View.lilyGlassIconButton`, `View.lilyFloatingActionButton`, `View.lilyTextButton`,
+  `View.lilyToolbarTextButton`, `LilyTextButtonStyle`]:
   `lilyProminentButton(sizing: ButtonSizing = .flexible, controlSize: ControlSize? = .large)` (`.glassProminent`,
   `Color.lilyAccent`); `lilyGlassButton(sizing: ButtonSizing = .flexible, controlSize: ControlSize? = .large, labelColor: Color? = nil)`
   (`.glass`); `lilyIconButton(controlSize: ControlSize = .large)` and `lilyGlassIconButton(controlSize: ControlSize = .large)`
-  (glass circles); `lilyFloatingActionButton()` = `lilyIconButton(controlSize: .extraLarge)`.
+  (glass circles); `lilyFloatingActionButton()` = `lilyIconButton(controlSize: .extraLarge)`;
+  `lilyTextButton(font: Font = LilyTheme.Fonts.button, color: Color = .lilyInk, minHeight: CGFloat = DesignTokens.Layout.controlHeight)`
+  applies `LilyTextButtonStyle(font:color:minHeight:)`, a `ButtonStyle` for text-only actions ("See all", Reset, the
+  sign-in form's text actions, the terms' links and Sign out, a poll's footer); `lilyToolbarTextButton()` is
+  `.tint(Color.lilyInk)` for a plain text item in an iOS 26 toolbar (Cancel, Done, Send, Edit).
   `BusyLabel<Content>(isBusy:, spinnerSize: ControlSize = .regular, content:)` and
   `BusyButton<Label>(isBusy:, action: (() async -> Void)?, label:)`, each with a `Text` convenience and
   `BusyButton.init(_ title:, isBusy:, write: () async -> Bool, onSuccess: () -> Void)`
@@ -61,7 +66,13 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/ScreenTitle.swift:ScreenTitle`, `ScreenSubtitle`]; `SectionTitle<Trailing>(text:, trailing:)`
   with `init(text:)` for `EmptyView` [`lily/Core/UI/Components/SectionTitle.swift:SectionTitle`];
   `OwnerTitleBlock<Destination: Hashable>(title:, subtitle:, destination: Destination?, identifier:)`
-  [`lily/Core/UI/Components/OwnerTitleBlock.swift:OwnerTitleBlock`];
+  [`lily/Core/UI/Components/OwnerTitleBlock.swift:OwnerTitleBlock`] (its link is a `ChevronLink`);
+  `ChevronLink<Value: Hashable, Label>(value:, label:)` [`lily/Core/UI/Components/ChevronLink.swift:ChevronLink`], a
+  `.plain` `NavigationLink(value:)` whose label and `.caption2` `DesignTokens.Symbols.chevron` read `.secondary`;
+  `ValidationHint(_ message: String)` [`lily/Core/UI/Components/ValidationHint.swift:ValidationHint`], a `Label` of the
+  words in `Color.secondary` (the fixed label colour, not the hierarchical `.secondary`, which inside a form footer
+  steps down to tertiary) and `DesignTokens.Symbols.error` in `Color.lilyAccent`, hidden from accessibility, in the
+  caller's font;
   `CardHeader<Chips>(startsAt: Date, chips: (_ badgeCapped: Bool) -> Chips)` [`lily/Core/UI/Components/CardHeader.swift:CardHeader`]
   (`ViewThatFits`: one row with `chips(true)`, else a `FlowLayout` with `chips(false)` over
   `Text(startsAt, format: .relative(presentation: .named))`); `CaptionedControl<Content>(_ title:, content:)`
@@ -110,7 +121,8 @@ use the generated `Color.lily*` asset symbols.
 
 ## Invariants
 
-- Aurora: frozen when `reduceMotion || auroraFrozen`; then the `TimelineView` is paused, the time is 0 (the t = 0
+- Aurora: frozen when `!motion.allowsMovement || auroraFrozen` (`\.motion`, see [Layout](../Layout/EGM.md); never
+  `accessibilityReduceMotion` directly); then the `TimelineView` is paused, the time is 0 (the t = 0
   frame) and the opacity 1, otherwise the opacity is `AuroraReveal.opacity(at: context.date)`; mesh and grain sit in
   one inner `ZStack` so they layer [`lily/Core/UI/Components/AuroraBackground.swift:AuroraBackground`].
   `ContentScreen` gives it `windowHeight.map { $0 - proxy.safeAreaInsets.top }`, unconstrained while `\.windowHeight`
@@ -121,7 +133,16 @@ use the generated `Color.lily*` asset symbols.
   `LilyTheme.Fonts.button`, and write `\.controlSize` only when `controlSize != nil`, so `controlSize: nil` keeps a
   toolbar's inherited size; no `frame` is put on a label [`lily/Core/UI/Components/ButtonModifiers.swift:View.lilyButtonMetrics`].
   `lilyGlassButton` tints `labelColor ?? .accentColor` because `tint(nil)` would not restore the accent
-  [`lily/Core/UI/Components/ButtonModifiers.swift:View.lilyGlassButton`]. `BusyButton` is
+  [`lily/Core/UI/Components/ButtonModifiers.swift:View.lilyGlassButton`]. The accent never colours text below the
+  headline size: `LilyTextButtonStyle` draws the label in `color` (ink by default) while enabled and `.secondary` while
+  not (`@Environment(\.isEnabled)`), at `DesignTokens.Opacity.pressedTextButton` while pressed, and applies
+  `tappableLabel(minHeight:)` itself, so the hit area is the style's and no site adds one
+  [`lily/Core/UI/Components/ButtonModifiers.swift:LilyTextButtonStyle.makeBody`]; `lilyToolbarTextButton` is a tint
+  and not a style because a `.borderless` or custom style collapses an iOS 26 toolbar item to an icon-sized circle and
+  the bar dims a disabled tinted label itself [`lily/Core/UI/Components/ButtonModifiers.swift:View.lilyToolbarTextButton`].
+  `ValidationHint` puts the accent on the glyph only, `ChevronLink` on nothing: the chevron is the link's cue
+  [`lily/Core/UI/Components/ValidationHint.swift:ValidationHint`, `lily/Core/UI/Components/ChevronLink.swift:ChevronLink`].
+  `BusyButton` is
   `.disabled(action == nil || isBusy)` and unstyled [`lily/Core/UI/Components/BusyButton.swift:BusyButton`];
   `DraftSubmitButton` is `.disabled(!isEnabled)`, shows a small `ProgressView` labelled `title` while submitting and is
   `lilyProminentButton(sizing: .fitted, controlSize: nil)` [`lily/Core/UI/Components/DraftSubmitButton.swift:DraftSubmitButton`];
@@ -154,10 +175,11 @@ use the generated `Color.lily*` asset symbols.
   the swipe dismiss fires only for `translation.height < 0` past `DesignTokens.Layout.swipeDismissDistance`
   [`lily/Core/UI/Components/ErrorPopup.swift:ErrorPopupModifier`]. `ErrorPopupView` is one accessibility element
   (`.combine`) [`lily/Core/UI/Components/ErrorPopup.swift:ErrorPopupView`].
-- `DraftSheet`: cancel is `.disabled(viewModel.isSubmitting)`, `.interactiveDismissDisabled(viewModel.isSubmitting)`,
+- `DraftSheet`: cancel is `lilyToolbarTextButton()` and `.disabled(viewModel.isSubmitting)`, `.interactiveDismissDisabled(viewModel.isSubmitting)`,
   submit is enabled by `canSubmit`, the sheet dismisses itself in `.onChange(of: viewModel.isDone)`, and its own
   `.errorPopup(errorCenter)` is mounted on the sheet root [`lily/Core/UI/Components/DraftSheet.swift:DraftSheet`].
-- `TileCarousel` renders nothing unless `!items.isEmpty`; it is a `TileGrid` when `sizeClass == .regular`, else a
+- `TileCarousel` renders nothing unless `!items.isEmpty`; its "See all" is a `NavigationLink(value: seeAll)` under
+  `lilyTextButton()`; it is a `TileGrid` when `sizeClass == .regular`, else a
   view-aligned horizontal `LazyHGrid`; the grid applies `.accessibilityElement(children: .contain)` before
   `.accessibilityIdentifier(identifier)` [`lily/Core/UI/Components/TileCarousel.swift:TileCarousel.body`, `TileCarousel.grid`, `TileCarousel.scroll`].
 - `EntriesBar` draws the track only `if showsTrack`, fills `proxy.size.width * fillRatio` with no clamp here, and picks
@@ -187,14 +209,16 @@ use the generated `Color.lily*` asset symbols.
   on `onDisappear` and `dismiss(id)` on tap, swipe or timeout [`lily/Core/UI/Components/ErrorPopup.swift:ErrorPopupModifier`];
   `DraftSheet` calls the `\.dismiss` action on cancel and when `isDone` turns true.
 - Environment writes: `\.controlSize` from the button modifiers when non-nil
-  [`lily/Core/UI/Components/ButtonModifiers.swift:View.lilyButtonMetrics`]; `.tint(Color.lilyAccent)` from
+  [`lily/Core/UI/Components/ButtonModifiers.swift:View.lilyButtonMetrics`]; `.tint(Color.lilyInk)` from
+  `lilyToolbarTextButton()` on the item it styles; `.tint(Color.lilyAccent)` from
   `DropdownPanel` and `DraftSheet`, `.presentationBackground(.clear)` from `DropdownPanel`
   [`lily/Core/UI/Components/FilterDropdown.swift:DropdownPanel`].
 - UIKit: the `Coordinator` writes the `text` and `isFocused` bindings from the `UITextViewDelegate` callbacks;
   `PlaceholderTextView.init` adds the placeholder label and a `NotificationCenter` observer for
   `UITextView.textDidChangeNotification` (object `self`, no explicit `removeObserver`); `takeFocus()` calls
   `becomeFirstResponder()` [`lily/Core/UI/Components/GrowingTextView.swift:GrowingTextView.Coordinator`, `PlaceholderTextView`].
-- Navigation and bindings: `TileCarousel`, `TileLink` and `OwnerTitleBlock` push through `NavigationLink(value:)`;
+- Navigation and bindings: `TileCarousel`, `TileLink`, `ChevronLink` and (through it) `OwnerTitleBlock` push through
+  `NavigationLink(value:)`;
   `FilterDropdownButton` reports `onPresentedChange?(isPresented)` on every change; `TypeFilterPanel` writes the
   `EventType?` binding [`lily/Core/UI/Components/TileCarousel.swift:TileLink`,
   `lily/Core/UI/Components/FilterDropdown.swift:FilterDropdownButton`, `lily/Core/UI/Components/TypeFilterButton.swift:TypeFilterPanel`].

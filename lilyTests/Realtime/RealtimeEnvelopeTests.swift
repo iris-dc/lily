@@ -62,6 +62,21 @@ struct RealtimeEnvelopeTests {
         #expect(envelope.groupID == nil && envelope.channelEpoch == nil)
     }
 
+    /// A room event carrying a tournament or match state this build does not know still decodes, so the detail refetches.
+    @Test func tournamentEnvelopesWithUnseenStatesStillDecode() throws {
+        let paused = LaurelTournamentInboxJSON.tournamentChangedEnvelope
+            .replacingOccurrences(of: #""status":"in_progress""#, with: #""status":"paused""#)
+        let changed = try ContractSamples.decode(RealtimeEnvelope.self, from: paused)
+        guard case .tournamentChanged(let change) = changed else { Issue.record("expected .tournamentChanged"); return }
+        #expect(change.status == .unknown("paused") && changed.groupID == "t1" && changed.channelEpoch == 3)
+
+        let forfeit = LaurelTournamentInboxJSON.matchUpdatedEnvelope
+            .replacingOccurrences(of: #""status":"scheduled""#, with: #""status":"forfeit""#)
+        let updated = try ContractSamples.decode(RealtimeEnvelope.self, from: forfeit)
+        guard case .matchUpdated(let match) = updated else { Issue.record("expected .matchUpdated"); return }
+        #expect(match.status == .unknown("forfeit") && !match.isDecided)
+    }
+
     @Test func messageKindsDecodeByWireName() throws {
         let system = try ContractSamples.decode(ChatMessage.self, from: ContractSamples.systemMessage)
         let deleted = try ContractSamples.decode(ChatMessage.self, from: ContractSamples.deletedMessage)

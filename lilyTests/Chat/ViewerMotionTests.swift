@@ -4,6 +4,15 @@ import Testing
 /// The viewer's phases: only the latest move finishes, a picture on its way in or open takes the finger, and a close is
 /// final.
 struct ViewerMotionTests {
+    /// The picture moves out of its tile only with a picture, a tile and motion the user allows; under Reduce Motion the
+    /// pager fades instead, the path a zoomed picture already takes.
+    @Test func aReducedMotionViewerFadesInsteadOfMoving() {
+        #expect(ViewerMotion.movesPicture(hasPicture: true, hasTile: true, motion: .full))
+        #expect(!ViewerMotion.movesPicture(hasPicture: true, hasTile: true, motion: .reduced))
+        #expect(!ViewerMotion.movesPicture(hasPicture: false, hasTile: true, motion: .full))
+        #expect(!ViewerMotion.movesPicture(hasPicture: true, hasTile: false, motion: .full))
+    }
+
     @Test func theWayInEndsOpenAndADragSpringsBack() {
         var motion = ViewerMotion()
         let opening = motion.startOpening()

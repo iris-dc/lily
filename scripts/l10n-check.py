@@ -2,12 +2,13 @@
 """Keeps the code and the two string catalogs in step. Localizable.xcstrings: every `localized("...")` literal in
 lily/ must be a key of the catalog, every key must be used by the code (or marked manual), every key must be
 translated into every language the app ships, and every value (the English plural forms included) must carry the
-key's placeholders. InfoPlist.xcstrings: every usage description the Release configuration sets (an
-`INFOPLIST_KEY_NS...UsageDescription` build setting, since Info.plist is generated) must be in the catalog in every
-language, the brand keys stay English alone, and a usage description that only the Debug configuration sets must not
-be in it, because a development-only permission string must not ship. Run by ./scripts/ci.sh lint; exits 1 with one
-line per problem. The checks are functions over data (a catalog's `strings`, the literals, the pbxproj text) so a
-test can hand them fixtures; the pbxproj is read, never written."""
+key's placeholders. InfoPlist.xcstrings: every usage description a shipping configuration sets (Release or Staging;
+an `INFOPLIST_KEY_NS...UsageDescription` build setting, since Info.plist is generated) must be in the catalog in every
+language, the brand keys stay English alone, a usage description that only the Debug configuration sets must not be
+in it, because a development-only permission string must not ship, and Staging, Release's build for the phone, must
+set exactly Release's usage descriptions. Run by ./scripts/ci.sh lint; exits 1 with one line per problem. The checks
+are functions over data (a catalog's `strings`, the literals, the pbxproj text) so a test can hand them fixtures; the
+pbxproj is read, never written."""
 import json
 import re
 import sys
@@ -27,8 +28,12 @@ MULTILINE = re.compile(r'localized\("""\n(.*?)\n[ \t]*"""', re.DOTALL)
 INTERPOLATION = re.compile(r"\\\((?:[^()]|\([^()]*\))*\)")
 PLACEHOLDER = re.compile(r"%(?:\d+\$)?(?:lld|ld|d|@|lf|f|s)")
 USAGE_KEY = re.compile(r"INFOPLIST_KEY_(NS\w+UsageDescription)")
-# One XCBuildConfiguration's settings with the configuration they belong to.
-BUILD_CONFIGURATION = re.compile(r"buildSettings = \{(.*?)\};\s*name = (Debug|Release);", re.DOTALL)
+# One XCBuildConfiguration's settings with the configuration they belong to; a block closes at its own name, whatever
+# the name (Xcode quotes one with a space or a hyphen), so a third configuration is never swallowed into the next block.
+BUILD_CONFIGURATION = re.compile(r"buildSettings = \{(.*?)\};\s*name = \"?([^\";]+)\"?;", re.DOTALL)
+# What ships: Release, and Staging (Release's optimised build run on the phone). Debug alone is development.
+SHIPPING_CONFIGURATIONS = frozenset({"Release", "Staging"})
+DEVELOPMENT_CONFIGURATION = "Debug"
 
 
 def literals():
@@ -109,24 +114,55 @@ def translation_problems(strings, languages, source_only=frozenset(), catalog="L
 
 
 def usage_keys(pbxproj_text):
-    """The usage descriptions the configurations set: those of any Release block, and those of Debug blocks only."""
-    release, debug = set(), set()
+    """The usage descriptions each configuration sets, by name; the project's and the targets' blocks of one name are
+    merged."""
+    by_configuration = {}
     for match in BUILD_CONFIGURATION.finditer(pbxproj_text):
         settings, configuration = match.groups()
-        (release if configuration == "Release" else debug).update(USAGE_KEY.findall(settings))
-    return release, debug - release
+        by_configuration.setdefault(configuration, set()).update(USAGE_KEY.findall(settings))
+    return by_configuration
 
 
-def infoplist_problems(strings, release_keys, debug_only_keys):
-    """A usage description that ships is in the catalog; one that only development sets is not."""
+def infoplist_problems(strings, keys_by_configuration):
+    """A usage description a shipping configuration sets is in the catalog; one that only development sets is not;
+    Staging sets exactly Release's."""
+    shipping = set().union(*(keys_by_configuration.get(name, set()) for name in SHIPPING_CONFIGURATIONS))
+    debug_only = keys_by_configuration.get(DEVELOPMENT_CONFIGURATION, set()) - shipping
+    names = ", ".join(sorted(SHIPPING_CONFIGURATIONS))
     problems = []
-    for key in sorted(release_keys - strings.keys()):
-        problems.append(f"InfoPlist.xcstrings lacks {key!r}, a usage description the Release configuration sets")
-    for key in sorted(debug_only_keys & strings.keys()):
+    for name in sorted(keys_by_configuration.keys() - SHIPPING_CONFIGURATIONS - {DEVELOPMENT_CONFIGURATION}):
         problems.append(
-            f"InfoPlist.xcstrings carries {key!r}, which only the Debug configuration sets; "
+            f"configuration {name!r} is neither shipping ({names}) nor {DEVELOPMENT_CONFIGURATION}; a renamed or new "
+            "configuration must be named in l10n-check.py so its usage descriptions are checked"
+        )
+    for key in sorted(shipping - strings.keys()):
+        problems.append(
+            f"InfoPlist.xcstrings lacks {key!r}, a usage description a shipping configuration ({names}) sets"
+        )
+    for key in sorted(debug_only & strings.keys()):
+        problems.append(
+            f"InfoPlist.xcstrings carries {key!r}, which only the {DEVELOPMENT_CONFIGURATION} configuration sets; "
             "a development-only permission string must not ship"
         )
+    return problems + parity_problems(keys_by_configuration)
+
+
+def parity_problems(keys_by_configuration):
+    """The shipping configurations set the same usage descriptions, once the project has every one of them (a
+    project without a Staging block is not asked)."""
+    if not SHIPPING_CONFIGURATIONS <= keys_by_configuration.keys():
+        return []
+    names = ", ".join(sorted(SHIPPING_CONFIGURATIONS))
+    problems = []
+    for alone in sorted(SHIPPING_CONFIGURATIONS):
+        others = sorted(SHIPPING_CONFIGURATIONS - {alone})
+        set_by_every_other = set.intersection(*(keys_by_configuration[name] for name in others))
+        for key in sorted(keys_by_configuration[alone] - set_by_every_other):
+            lacking = ", ".join(name for name in others if key not in keys_by_configuration[name])
+            problems.append(
+                f"{key!r} is set by {alone} alone; the shipping configurations ({names}) set the same usage "
+                f"descriptions, Staging being Release's build for the phone (add it to {lacking} or remove it)"
+            )
     return problems
 
 
@@ -137,7 +173,7 @@ def main():
         literal_problems(strings, literals())
         + translation_problems(strings, LANGUAGES)
         + translation_problems(info, LANGUAGES, source_only=BRAND_KEYS, catalog="InfoPlist.xcstrings")
-        + infoplist_problems(info, *usage_keys(PBXPROJ.read_text()))
+        + infoplist_problems(info, usage_keys(PBXPROJ.read_text()))
     )
     for problem in problems:
         print(problem)

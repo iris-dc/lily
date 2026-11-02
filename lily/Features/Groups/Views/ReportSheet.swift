@@ -63,11 +63,13 @@ struct ReportSheet: View {
         if viewModel.isSubmitted {
             ToolbarItem(placement: .confirmationAction) {
                 Button(Copy.done) { dismiss() }
+                    .lilyToolbarTextButton()
                     .accessibilityIdentifier(AccessibilityIdentifiers.reportDone)
             }
         } else {
             ToolbarItem(placement: .cancellationAction) {
                 Button(AppBranding.Events.Create.cancel, role: .cancel) { dismiss() }
+                    .lilyToolbarTextButton()
                     .disabled(viewModel.isSubmitting)
             }
             ToolbarItem(placement: .confirmationAction) {

@@ -15,7 +15,7 @@ struct QuoteBlock: View {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                 Text(quote.senderName)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(barColor)
+                    .foregroundStyle(BubbleInk(own: own).primary)
                 Text(verbatim: text)
                     .font(.caption)
                     .italic(isDeleted)

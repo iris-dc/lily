@@ -44,6 +44,7 @@ nonisolated extension DesignTokens.Opacity {
     static let pollPressed = 0.6
     /// The pinned bar's segments of the pins not shown.
     static let pinStripeIdle = 0.36
-    /// Captions on the caller's accent bubble, where `.secondary` would turn grey.
-    static let secondaryOnAccent = 0.75
+    /// Captions and the tombstone on the caller's accent bubble, where `.secondary` would turn grey; white at this
+    /// opacity reads 4.66:1 on the accent, over the 4.5:1 body-text bar.
+    static let secondaryOnAccent = 0.82
 }

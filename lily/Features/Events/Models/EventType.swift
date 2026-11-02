@@ -17,12 +17,6 @@ nonisolated enum EventType: WireNamedKind {
         .tableTennis, .badminton, .martialArts, .fitness, .skiing, .hiking, .travel, .esports, .boardGames, .other,
     ]
 
-    private static let byWireName: [String: EventType] = Dictionary(uniqueKeysWithValues: known.map { ($0.wireName, $0) })
-
-    init(wireName: String) {
-        self = Self.byWireName[wireName] ?? .unknown(wireName)
-    }
-
     /// The backend's lower-cased constant name; an unknown type's is the one it came with.
     var wireName: String {
         switch self {
@@ -48,11 +42,6 @@ nonisolated enum EventType: WireNamedKind {
         case .other: "other"
         case .unknown(let name): name
         }
-    }
-
-    var isUnknown: Bool {
-        if case .unknown = self { return true }
-        return false
     }
 
     var displayName: String {

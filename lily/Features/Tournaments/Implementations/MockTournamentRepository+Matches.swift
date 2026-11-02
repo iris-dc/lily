@@ -34,7 +34,7 @@ extension MockTournamentRepository {
         } else {
             scored = match.reporting(scoreA, scoreB, by: caller, at: now())
         }
-        logger.info(.tournaments, "Mock result for match \(matchID) of \(id): \(scored.status.rawValue)")
+        logger.info(.tournaments, "Mock result for match \(matchID) of \(id): \(scored.status.wireName)")
         return resolved(settle(scored, in: detail))
     }
 

@@ -37,7 +37,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   [`lily/Features/Groups/Views/GroupTile.swift`:`GroupTile`]; `GroupCard(group:, distance:)`
   [`lily/Features/Groups/Views/GroupCard.swift`:`GroupCard`]; `GroupBadge(ref: EventGroupRef, capsWidth:)`
   [`lily/Features/Groups/Views/GroupBadge.swift`:`GroupBadge`]; `HostedInLine(group: EventGroupRef)`
-  [`lily/Features/Groups/Views/HostedInLine.swift`:`HostedInLine`].
+  [`lily/Features/Groups/Views/HostedInLine.swift`:`HostedInLine`], a `ChevronLink` (`lily/Core/UI/Components`) when
+  the group is linkable, the same label in `.secondary` otherwise.
 - `GroupDraftSheet<Model: GroupDraftEditing>(viewModel:, title:, submitTitle:, allowsVisibilityChoice:, errorCenter:)`
   over the shared `DraftSheet` (identifiers `createGroupCancel`, `createGroupSubmit`)
   [`lily/Features/Groups/Views/GroupDraftSheet.swift`:`GroupDraftSheet`]; `GroupDraftForm(draft: Binding<GroupDraft>,
@@ -46,15 +47,15 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`]; `CreateGroupSheet(viewModel:, errorCenter:)`
   and `EditGroupSheet(viewModel:, errorCenter:)` [`lily/Features/Groups/Views/CreateGroupSheet.swift`:`CreateGroupSheet`]
   [`lily/Features/Groups/Views/EditGroupSheet.swift`:`EditGroupSheet`].
-- `InvitePeopleSheet(viewModel:, errorCenter:)` (identifier `inviteSearch`) and `InviteCandidateRow(candidate:,
-  isSending:, onInvite:)` (identifiers `inviteCandidate(id)`, `inviteSend(id)`)
+- `InvitePeopleSheet(viewModel:, errorCenter:)` (identifier `inviteSearch`; Done is `lilyToolbarTextButton()`) and
+  `InviteCandidateRow(candidate:, isSending:, onInvite:)` (identifiers `inviteCandidate(id)`, `inviteSend(id)`)
   [`lily/Features/Groups/Views/InvitePeopleSheet.swift`:`InvitePeopleSheet`]
   [`lily/Features/Groups/Views/InviteCandidateRow.swift`:`InviteCandidateRow`].
 - `MembersList(viewModel: MembersViewModel, confirm: (GroupConfirmation) -> Void)` (identifier `membersList`) and
   `MemberRow(member:, isSelf:)` (identifier `memberRow(id)`) [`lily/Features/Groups/Views/MembersList.swift`:`MembersList`]
   [`lily/Features/Groups/Views/MemberRow.swift`:`MemberRow`].
-- `ReportSheet(viewModel: ReportViewModel, errorCenter:)` (identifiers `reportComment`, `reportDone`, `reportSubmit`)
-  [`lily/Features/Groups/Views/ReportSheet.swift`:`ReportSheet`].
+- `ReportSheet(viewModel: ReportViewModel, errorCenter:)` (identifiers `reportComment`, `reportDone`, `reportSubmit`;
+  Done and Cancel are `lilyToolbarTextButton()`) [`lily/Features/Groups/Views/ReportSheet.swift`:`ReportSheet`].
 - `GroupRow(group:, hasUnread:, now:)`, `GroupRowContent(name:, visibility:, caption:, hasUnread:, isPerson:,
   avatarSymbol:)` [`lily/Features/Groups/Views/GroupRow.swift`:`GroupRow`]; `GroupRowList<RowMenu: View>(groups:,
   unread: UnreadCenter?, selectedID:, rowMenu:, onOpen:)` (identifier `groupRow(id)` per row) and its `RowMenu ==
@@ -115,7 +116,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
 - Rows: `GroupRow` draws a person row for a `counterpart`, else a group row with the visibility glyph and
   `avatarSymbol`, adding "Active today" only when `isActive(on: now)`; `GroupRowList` attaches a context menu only when
   a `rowMenu` is given; `MemberRow` shows a role chip for owner and admin only; `GroupCard`/`GroupTile` add the joined
-  caption only for members; `HostedInLine` links only when `ref.isLinkable`
+  caption only for members; `HostedInLine` links only when `ref.isLinkable`, and the chevron, never a colour, is the
+  link's cue
   [`lily/Features/Groups/Views/GroupRow.swift`:`GroupRow`] [`lily/Features/Groups/Views/HostedInLine.swift`:`HostedInLine`].
 - No file branches on `LayoutMode`; adaptive layout is delegated to `AdaptiveCardGrid`, `TileCarousel` and `TileGrid`
   [`lily/Features/Groups/Views/GroupCarousel.swift`:`GroupCarousel`].

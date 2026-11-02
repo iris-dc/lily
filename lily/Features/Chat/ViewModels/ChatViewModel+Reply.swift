@@ -35,6 +35,8 @@ extension ChatViewModel {
         while liesBeforeHistory(id), pagesLoaded < AppConfig.Chat.maxReplyLookupPages {
             if let inFlight = olderPageTask {
                 _ = await inFlight.value
+                // The screen left while that page was out: a lookup for it asks for nothing more.
+                if inFlight.isCancelled { break }
                 continue
             }
             guard await loadOlder() else { break }

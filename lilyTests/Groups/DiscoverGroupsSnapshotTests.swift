@@ -8,6 +8,7 @@ import Testing
 struct DiscoverGroupsSnapshotTests {
     private let harness = GroupHarness()
     private let snapshots = InMemoryListSnapshotStore()
+    private let sleep = HeldSleep()
     private let held = [SportGroup.fixture(id: "held")]
     private let fresh = [SportGroup.fixture(id: "fresh")]
     private let key = ListSnapshotKey(list: "groups-discover", userID: TestFixtures.user.id)
@@ -20,6 +21,7 @@ struct DiscoverGroupsSnapshotTests {
                                 errorCenter: harness.errorCenter,
                                 recorder: harness.recorder,
                                 logger: harness.logger,
+                                sleep: { [sleep] in try await sleep.sleep(for: $0) },
                                 snapshots: snapshots)
     }
 
@@ -46,6 +48,24 @@ struct DiscoverGroupsSnapshotTests {
         await settle(until: { harness.repository.requestedScopes.count == 2 && !viewModel.isLoading })
 
         #expect(snapshots.saveCount == 1)
+    }
+
+    /// A search whose answer lands after the field was cleared is still that search's page: judged by the scope it was
+    /// fetched for, not by what is typed when it answers, it is no snapshot.
+    @Test func aSearchAnsweringAfterTheQueryWasClearedIsNoSnapshot() async {
+        harness.repository.result = .success(fresh)
+        let viewModel = makeViewModel()
+        viewModel.query = "berl"
+        harness.repository.holdsRequests = true
+        let search = Task { await viewModel.refresh() }
+        await settle(until: { harness.repository.requestedScopes == [.discover(query: "berl", type: nil)] })
+
+        viewModel.query = ""
+        harness.repository.releaseRequests()
+        await search.value
+
+        #expect(viewModel.groups == fresh && viewModel.searchedScope == .discover(query: "berl", type: nil))
+        #expect(snapshots.saveCount == 0 && snapshots.storedFiles.isEmpty, "a search's page is never the browse's snapshot")
     }
 
     /// The tab opening during the launch's warm-up joins the search out rather than spending a second request.

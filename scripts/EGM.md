@@ -6,8 +6,9 @@ Source: `scripts/`
 
 Three standalone scripts and the unittest of one of them, with no package manifest. `ci.sh` (bash) is the one entry point for local runs and GitHub
 Actions: lint, build, unit, UI and iPad UI stages over the `lily` scheme, with the UI test classes split into four
-shards that CI runs from archived build-for-testing products. Every xcodebuild run logs under `build/results/`, and a
-test stage fails unless the log proves a test ran. `l10n-check.py` (Python, read-only) validates the two string
+shards that CI runs from archived build-for-testing products, and the Release archive for a device
+(`release-archive`). Every xcodebuild run logs under `build/results/`, and a test stage fails unless the log proves a
+test ran. `l10n-check.py` (Python, read-only) validates the two string
 catalogs against every `localized("...")` call site under `lily/` and the project's usage-description settings.
 `make-app-icon.swift` renders the 1024 px app icon in three appearances plus Icon Composer layers and a preview strip;
 `ci.sh` does not invoke it. `test_l10n_check.py` is the unittest for `l10n-check.py` and runs inside `lint`.
@@ -30,11 +31,13 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
 | `archive-products` | `tar -czf "$PRODUCTS_ARCHIVE"` of `$PRODUCTS_DIR/Debug-iphonesimulator` and `*.xctestrun` (`COPYFILE_DISABLE=1`) |
 | `restore-products` | `mkdir -p "$PRODUCTS_DIR"`, `tar -xzf "$PRODUCTS_ARCHIVE" -C "$PRODUCTS_DIR"` |
 | `ui-shard <1..4 or ipad>` | `use_software_keyboard`, then `run_prebuilt_tests` on the shard's classes, or on `LilyIPadTests` for `ipad` |
+| `release-archive <build-number>` | `run_release_archive`: refuses a missing or non-integer argument (usage line, `exit 2`); `xcodebuild archive -scheme lily -configuration Release -destination 'generic/platform=iOS' -archivePath "$ARCHIVE_PATH" -derivedDataPath "$DERIVED_DATA" -allowProvisioningUpdates CURRENT_PROJECT_VERSION=<n>` through `xcodebuild_logged` (no `CODE_SIGNING_ALLOWED=NO`); fails unless the archive's `CFBundleVersion` equals `<n>` |
 | `all` | `run_lint`, build-for-testing, then unit, ui and ui-ipad as `test-without-building` |
 | other | usage line to stderr, `exit 2` |
 
 - Environment variables (`scripts/ci.sh:RESULTS_DIR`): `RESULTS_DIR` (default `build/results`), `DERIVED_DATA`
   (`build/DerivedData`; `PRODUCTS_DIR="$DERIVED_DATA/Build/Products"`), `PRODUCTS_ARCHIVE` (`build/products.tgz`),
+  `ARCHIVE_PATH` (`build/lily.xcarchive`, what `release-archive` writes),
   `XCODEBUILD_DESTINATION` (replaces the resolved iPhone destination in `run_xcodebuild`), `DESTINATION` and
   `IPAD_DESTINATION` (a pre-resolved `platform=iOS Simulator,id=<udid>`), `SWIFTLINT_VERSION` (pin checked by
   `require_swiftlint`). No `TEST_RUNNER_*` variable is read.
@@ -42,7 +45,8 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
   `UI_BASE_CLASS="LilyUITestCase"`, `APP_BUNDLE_ID="iris.lily"`, `WARM_UP_SECONDS=8`, `CI_TEST_ITERATIONS=2`,
   `WARM_UP_TEST_IPHONE="lilyUITests/LilySmokeTests/testPrimaryActionReachesExploreFeed"`,
   `WARM_UP_TEST_IPAD="lilyUITests/LilyIPadTests/testLandingPlacesTheMiniatureBesideTheCopyOnIPad"`,
-  `WARM_UP_TEST_SECONDS=300`, `CONSOLE_FILTER` (the `grep -E` shown on the console:
+  `WARM_UP_TEST_SECONDS=300`, `APP_FOLDER="lily"`, `PRIVACY_MANIFEST="lily/PrivacyInfo.xcprivacy"`, `CONSOLE_FILTER`
+  (the `grep -E` shown on the console:
   `error:|/lily/.*: warning:|Test Suite .* (passed|failed)|Test Case .* (passed|failed)|Executed|Test case .* (passed|failed)|\*\* .* (SUCCEEDED|FAILED) \*\*`).
 - `UI_SHARDS` (`scripts/ci.sh:UI_SHARDS`), four entries: 1 `LilyChatTests LilyProfileTests LilyDiscoverTests`;
   2 `LilyTournamentTests LilySignInTests LilyStateTests`; 3 `LilyEventEditTests LilyRosterTests LilyLanguageTests`;
@@ -50,16 +54,20 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
 - Functions: `pick_device <family> <preferred>` (last available device matching `preferred`, else the family's last),
   `device_name <udid>`, `destination_udid <destination>`, `show_xcode_version`, `resolve_iphone_destination`
   (prefers `iPhone 17 Pro (`), `resolve_ipad_destination` (prefers `iPad Pro 13-inch`), `warm_up_simulator <udid>`,
-  `run_logged <label> <action> [args]`, `report_retried_tests <label> <log>`, `run_xcodebuild <label> <action> [args]`,
+  `xcodebuild_logged <label> [xcodebuild args]` (one invocation: log, console filter, tail on failure),
+  `run_logged <label> <action> [args]`, `run_release_archive <build-number>`, `check_app_folder`,
+  `report_retried_tests <label> <log>`, `run_xcodebuild <label> <action> [args]`,
   `require_executed_tests <label> <log>`, `check_executed_tests_gate`,
   `run_prebuilt_tests <label> <destination> <warm_up_test> [args]`, `warm_up_test_session`, `check_warm_up_tests`,
   `ui_test_classes [dir]`, `check_ui_test_classes_grep`, `check_ui_shards`, `ui_shard_only_testing <index>`,
   `require_swiftlint`, `run_lint`, `use_software_keyboard`, `run_unit_tests <action>`, `run_ui_tests <action>`,
   `run_ipad_ui_tests <action>`.
 - `run_lint` (`scripts/ci.sh:run_lint`), in order: `require_swiftlint`; `swiftlint --strict --quiet --reporter emoji`;
-  `python3 -I scripts/test_l10n_check.py`; `python3 -I scripts/l10n-check.py`; `check_ui_test_classes_grep`;
-  `check_ui_shards`; `check_warm_up_tests`; `check_executed_tests_gate`.
-- xcodebuild flags (`scripts/ci.sh:run_logged`): every run passes `-skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO`;
+  `python3 -I scripts/test_l10n_check.py`; `python3 -I scripts/l10n-check.py`; `check_app_folder` (the find under
+  `lily/` with the manifest exception and hidden files skipped, then `plutil -lint` of the manifest);
+  `check_ui_test_classes_grep`; `check_ui_shards`; `check_warm_up_tests`; `check_executed_tests_gate`.
+- xcodebuild flags (`scripts/ci.sh:xcodebuild_logged`, `scripts/ci.sh:run_logged`): every run passes
+  `-skipPackagePluginValidation`, and every run but `release-archive` `CODE_SIGNING_ALLOWED=NO`;
   test actions add `-parallel-testing-enabled NO -resultBundlePath "$RESULTS_DIR/<label>.xcresult"`; `run_xcodebuild`
   adds `-scheme lily -destination <...> -derivedDataPath "$DERIVED_DATA"`; `run_prebuilt_tests` adds
   `-xctestrun <file> -retry-tests-on-failure -test-iterations 2`; `run_unit_tests` passes `-only-testing:lilyTests`,
@@ -75,10 +83,15 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
 - Functions: `literals()` (literal to the set of files using it), `joined(block)` (a multi-line literal as Swift
   reads it), `pattern(literal)` (an anchored regex over keys where each `\(...)` stands for one placeholder),
   `placeholders(text)`, `values(localization)` (the value and its plural variants), `literal_problems(strings, literals)`,
-  `translation_problems(strings, languages, source_only, catalog)`, `usage_keys(pbxproj_text)` (Release and
-  Debug-only `NS...UsageDescription` names), `infoplist_problems(strings, release_keys, debug_only_keys)`.
+  `translation_problems(strings, languages, source_only, catalog)`, `usage_keys(pbxproj_text) -> {configuration: set}`
+  (the `NS...UsageDescription` names each configuration sets, the project's and the targets' blocks of one name
+  merged), `infoplist_problems(strings, keys_by_configuration)`, `parity_problems(keys_by_configuration)`.
+- Constants: `SHIPPING_CONFIGURATIONS = {"Release", "Staging"}`, `DEVELOPMENT_CONFIGURATION = "Debug"`
+  (`scripts/l10n-check.py:SHIPPING_CONFIGURATIONS`).
 - Regexes: `LITERAL`, `MULTILINE`, `INTERPOLATION`, `PLACEHOLDER = %(?:\d+\$)?(?:lld|ld|d|@|lf|f|s)`,
-  `USAGE_KEY = INFOPLIST_KEY_(NS\w+UsageDescription)`, `BUILD_CONFIGURATION` (`scripts/l10n-check.py:LITERAL`).
+  `USAGE_KEY = INFOPLIST_KEY_(NS\w+UsageDescription)`,
+  `BUILD_CONFIGURATION = buildSettings = \{(.*?)\};\s*name = \"?([^\";]+)\"?;` (a block closes at its own name,
+  quoted or not, whatever the name) (`scripts/l10n-check.py:LITERAL`).
 
 ### `make-app-icon.swift`
 
@@ -105,15 +118,23 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
   runs under `set -euo pipefail`, so one violation of `swiftlint --strict` fails `lint` (`scripts/ci.sh:require_swiftlint`).
 - A `ui-shard` run needs a `*.xctestrun` directly under `$PRODUCTS_DIR` (`scripts/ci.sh:run_prebuilt_tests`); `SHARD`
   must be `ipad` or an integer in `1..4`, else `exit 2` (`scripts/ci.sh:ui_shard_only_testing`). A non-zero xcodebuild
-  exit aborts the script with that code after printing the log's last 40 lines (`scripts/ci.sh:run_logged`).
+  exit aborts the script with that code after printing the log's last 40 lines (`scripts/ci.sh:xcodebuild_logged`).
+- `release-archive` needs an integer build number, else `exit 2` with its usage line; it fails (`exit 1`) when the
+  archive's `CFBundleVersion` differs from the number (`scripts/ci.sh:run_release_archive`).
+- Every file under `lily/` must be a `*.swift`, a `*.xcstrings`, `PrivacyInfo.xcprivacy` or inside `Assets.xcassets`
+  (hidden files excepted), named one per line as `lily/ ships every file it holds; <path> is not a source, a catalog or
+  the privacy manifest`, and the manifest must pass `plutil -lint` (`scripts/ci.sh:check_app_folder`).
 - `l10n-check.py`: every `localized("...")` literal must match exactly one catalog key, and every key must be matched
   unless its `extractionState` is `manual` (`scripts/l10n-check.py:literal_problems`); every `Localizable.xcstrings`
   key, and every `InfoPlist.xcstrings` key outside `BRAND_KEYS`, must have all six languages, and each value's
   placeholders (plural variants included, positional prefixes ignored) must equal the key's
-  (`scripts/l10n-check.py:translation_problems`); every `INFOPLIST_KEY_NS...UsageDescription` set in a Release
-  configuration must be an `InfoPlist.xcstrings` key, and one set only in Debug must not be
-  (`scripts/l10n-check.py:infoplist_problems`). The script only `json.loads` the catalogs; it has no round-trip or
-  formatting check.
+  (`scripts/l10n-check.py:translation_problems`); every `INFOPLIST_KEY_NS...UsageDescription` set in a shipping
+  configuration (Release, Staging) must be an `InfoPlist.xcstrings` key, one set only in Debug must not be, and once
+  the project has every shipping configuration (the pair is read from `SHIPPING_CONFIGURATIONS`, never named in the
+  check), they must set the same usage descriptions, and a configuration named neither in `SHIPPING_CONFIGURATIONS`
+  nor as `DEVELOPMENT_CONFIGURATION` is a problem in itself, never silently skipped
+  (`scripts/l10n-check.py:infoplist_problems`, `scripts/l10n-check.py:parity_problems`). The script only `json.loads`
+  the catalogs; it has no round-trip or formatting check.
 - `make-app-icon.swift` enforces nothing beyond `try!` and force unwraps: PNG encoding, the font glyph lookup and the
   CoreImage output must succeed or the script traps (`scripts/make-app-icon.swift:write`).
 
@@ -123,7 +144,9 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
 - Writes `$RESULTS_DIR/<label>.log` for labels `build`, `unit-tests`, `ui-tests`, `ui-ipad-tests`, `ui-shard-<N>`;
   for test actions `rm -rf` then writes `$RESULTS_DIR/<label>.xcresult`; `warm_up_test_session` writes
   `$RESULTS_DIR/<label>-warm-up.log`; derived data goes under `$DERIVED_DATA`; `archive-products` writes
-  `$PRODUCTS_ARCHIVE` (`scripts/ci.sh:run_logged`, `scripts/ci.sh:archive-products`).
+  `$PRODUCTS_ARCHIVE` (`scripts/ci.sh:run_logged`, `scripts/ci.sh:archive-products`); `release-archive` removes and
+  writes `$ARCHIVE_PATH` and logs to `$RESULTS_DIR/release-archive.log`; it is the one run that signs
+  (`-allowProvisioningUpdates` may ask for keychain access) (`scripts/ci.sh:run_release_archive`).
 - Simulator (`scripts/ci.sh:warm_up_simulator`, all `|| true`): `xcrun simctl bootstatus "$udid" -b`,
   `xcrun simctl install` of `lily.app`,
   `xcrun simctl launch "$udid" iris.lily -reset-session -mock-location -mock-auth -mock-events -freeze-aurora -app-language en`,
@@ -132,8 +155,8 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
   never calls `simctl boot`, `simctl shutdown`, `open -a Simulator` or `killall`.
 - `defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false` changes the host's Simulator.app
   preference in `run_ui_tests`, `run_ipad_ui_tests` and `ui-shard` (`scripts/ci.sh:use_software_keyboard`).
-- Lint spawns `swiftlint` twice (`version`, then `--strict --quiet --reporter emoji`) and `python3 -I` twice, never
-  `xcodebuild`; `check_ui_shards` reads
+- Lint spawns `swiftlint` twice (`version`, then `--strict --quiet --reporter emoji`), `python3 -I` twice, `find` and
+  `plutil -lint` once each (`check_app_folder`), never `xcodebuild`; `check_ui_shards` reads
   `.github/workflows/ci.yml`; the two self-checks write fixtures into `mktemp -d` directories and remove them
   (`scripts/ci.sh:check_executed_tests_gate`, `scripts/ci.sh:check_ui_test_classes_grep`). No network access.
 - `l10n-check.py` reads the catalogs, the pbxproj and the Swift sources, prints to stdout and writes nothing
@@ -144,6 +167,9 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
 
 ## Verification
 
-- Run: `./scripts/ci.sh lint` (SwiftLint, then `python3 -I scripts/test_l10n_check.py`, `python3 -I scripts/l10n-check.py`
-  and the four `ci.sh` self-checks).
+- Run: `./scripts/ci.sh lint` (SwiftLint, then `python3 -I scripts/test_l10n_check.py`, `python3 -I scripts/l10n-check.py`,
+  `check_app_folder` and the four `ci.sh` self-checks).
+- Run: `./scripts/ci.sh release-archive` and `./scripts/ci.sh release-archive abc` (both exit 2 with the usage line);
+  `xcodebuild -showBuildSettings -project lily.xcodeproj -target lily -configuration Release CURRENT_PROJECT_VERSION=42 | grep CURRENT_PROJECT_VERSION`
+  (42, what the archive stage passes).
 - Run: `python3 -I scripts/test_l10n_check.py` (the unittest for `l10n-check.py` on its own).
