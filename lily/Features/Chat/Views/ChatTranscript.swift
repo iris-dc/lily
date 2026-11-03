@@ -78,6 +78,7 @@ struct ChatTranscript: View {
                                     onBlock: { blocking = $0 },
                                     onShowVoters: { votersOf = $0 },
                                     arrivedAt: arrived.start(of: row.id))
+                            .equatable()
                             .transition(MessageRemovalTransition(for: row, motion: motion))
                     }
                 }

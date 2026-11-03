@@ -28,5 +28,8 @@ amplify_outputs.json
 # Xcode shared schemes: the local one passes -api-base-url for production runs and must not ship
 lily.xcodeproj/xcshareddata/
 
+# This Mac's signing team, read by Signing.xcconfig
+Signing.local.xcconfig
+
 # Python
 __pycache__/

@@ -111,6 +111,9 @@ final class PlaceholderTextView: UITextView {
 
     override init(frame: CGRect, textContainer: NSTextContainer?) {
         super.init(frame: frame, textContainer: textContainer)
+        // A tap on the status bar scrolls the transcript to its top only while no second scroll view claims it, as a draft
+        // long enough to scroll would.
+        scrollsToTop = false
         placeholderLabel.textColor = .secondaryLabel
         placeholderLabel.adjustsFontForContentSizeCategory = true
         placeholderLabel.isAccessibilityElement = false

@@ -74,6 +74,10 @@ one. Either start Laurel on your Mac with its `local` profile (how: `docs/notes/
 same note covers a physical iPhone), or add `-mock-events -mock-auth` under Product > Scheme > Edit Scheme > Run >
 Arguments to run on fixtures. The shared scheme is gitignored, so your own copy may already carry `-api-base-url`.
 
+A build for an iPhone signs with the team in `Signing.local.xcconfig` at the repository root, which git ignores: create
+it with one line, `DEVELOPMENT_TEAM = <your team id>` (the id is under Xcode > Settings > Accounts). Simulator builds
+need none.
+
 A build for a device is `./scripts/ci.sh release-archive <build-number>` (a Release archive numbered by the caller;
 every build from Xcode reports `1.0 (1)`); a release bumps the marketing version with
 `xcrun agvtool new-marketing-version <x.y>`.

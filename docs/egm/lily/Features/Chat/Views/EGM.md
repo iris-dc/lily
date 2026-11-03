@@ -46,7 +46,9 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `summarizeArrival(of:)`, `log(_:)`; `TranscriptScrollPolicy.Phase.init(_: ScrollPhase)`.
   `[ChatTranscript+Pins.swift:ChatTranscript.pinnedBar]` the `PinnedBar` in the top safe-area bar.
 - `[ChatRowView.swift:ChatRowView]` `row: ChatRow`, `viewModel`, `dependencies`, `highlightedMessageID`, tap
-  callbacks, `arrivedAt: Date?`; one row with its clock-driven arrival and `MessageContextMenu`.
+  callbacks, `arrivedAt: Date?`; one row with its clock-driven arrival and `MessageContextMenu`. `Equatable` on `row`,
+  `highlightedMessageID`, `arrivedAt` and the identity of `viewModel` and `dependencies`; `ChatTranscript` wraps it in
+  `equatable()`, so the body run a pin causes leaves unchanged rows as drawn.
 - `[MessageComposer.swift:MessageComposer]` `@Bindable viewModel`; `ReplyPreviewBar`, `AttachmentStrip`,
   `AttachmentMenuButton`, a `GrowingTextView` on `draft.text`, send, caption, `PollComposerSheet`.
 - `[ReplyPreviewBar.swift:ReplyPreviewBar]` `quote: ReplyQuote`, `onCancel`; an accent `QuoteBar` with a "Replying to"

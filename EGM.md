@@ -98,6 +98,8 @@ without a token, and a bad token on a public route is still a 401.
 - **Folder hygiene.** `lily/` holds only Swift sources, `Assets.xcassets`, the two string catalogs and
   `PrivacyInfo.xcprivacy` (the privacy manifest, which must ship at the bundle root; `ci.sh lint`'s `check_app_folder`
   fails on any other file); new files join their target through synchronized folder groups with no `.pbxproj` edit.
+  `Signing.xcconfig` at the root includes the git-ignored `Signing.local.xcconfig` with this Mac's team, so the pbxproj
+  carries no per-Mac setting.
 
 ## Global Side Effects
 

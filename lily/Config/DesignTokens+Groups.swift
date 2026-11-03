@@ -81,7 +81,7 @@ nonisolated extension DesignTokens {
     /// How a row arriving in a transcript moves: a spring up from the bottom with a little bounce, grown from the
     /// sender's corner, as if it left the composer; what leaves (a discarded bubble) only fades and shrinks.
     enum MessageArrival {
-        static let duration: TimeInterval = Duration.normal
+        static let duration: TimeInterval = 0.25
         static let bounce: Double = 0.25
         static let scale: CGFloat = 0.8
     }

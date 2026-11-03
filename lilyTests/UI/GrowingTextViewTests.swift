@@ -14,6 +14,12 @@ struct GrowingTextViewTests {
         #expect(GrowingTextView.Metrics.height(fitting: 400, lineHeight: 22, maxLines: 0) == 22, "a limit under one line is one")
     }
 
+    /// The transcript answers a tap on the status bar; UIKit ignores the tap while a second scroll view claims it too.
+    @MainActor
+    @Test func theFieldLeavesTheStatusBarTapToTheTranscript() {
+        #expect(PlaceholderTextView().scrollsToTop == false)
+    }
+
     @Test func uiKitModifiersMapToSwiftUIOnes() {
         #expect(EventModifiers(UIKeyModifierFlags()).isEmpty)
         #expect(EventModifiers(.shift) == .shift)

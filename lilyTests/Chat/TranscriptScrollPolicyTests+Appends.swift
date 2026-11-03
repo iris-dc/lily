@@ -53,6 +53,35 @@ extension TranscriptScrollPolicyTests {
                 == .none)
     }
 
+    /// UIKit scrolls to the top on a tap of the status bar with no phase SwiftUI reports: the scroll view moves up on its
+    /// own, which ends following from its first frame, so the growth a lazy stack measures on the way is not pinned; near
+    /// the top the older page is asked for as after any scroll.
+    @Test func aScrollUpTheReaderDidNotMakeEndsFollowingWithoutAPin() {
+        var policy = settled()
+        let atBottom = snapshot(offsetY: 1_200)
+        let firstFrame = snapshot(offsetY: 1_180, contentHeight: 2_030, isAtBottom: false)
+        #expect(policy.geometryChanged(from: atBottom, to: firstFrame, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        #expect(!policy.isFollowing)
+        let nearTop = snapshot(offsetY: 10, contentHeight: 2_200, isAtBottom: false, isNearTop: true)
+        #expect(policy.geometryChanged(from: firstFrame, to: nearTop, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .loadOlder)
+    }
+
+    /// A pin after a shrink lowers the offset too (a tombstone, the lazy stack's correction), and so does the keyboard
+    /// going with its inset: the reader keeps following and is pinned.
+    @Test func aLowerOffsetWithAShrinkOrAnInsetChangeIsNotAScroll() {
+        var policy = settled()
+        let atBottom = snapshot(offsetY: 1_200)
+        let shrunk = snapshot(offsetY: 1_150, contentHeight: 1_950)
+        #expect(policy.geometryChanged(from: atBottom, to: shrunk, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
+        let keyboardGone = snapshot(offsetY: 1_070, contentHeight: 1_950, bottomInset: 0)
+        #expect(policy.geometryChanged(from: shrunk, to: keyboardGone, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
+        #expect(policy.isFollowing)
+    }
+
     /// The slide that fetches the reader is aimed before the row has grown in: its rest resumes following and pins,
     /// wherever the row left it; the reader's touch during it takes over.
     @Test func theSlidesRestResumesFollowingAndPins() {

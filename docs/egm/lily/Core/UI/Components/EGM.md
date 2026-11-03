@@ -173,7 +173,9 @@ use the generated `Color.lily*` asset symbols.
   text only when `view.text != text` (dropping marked text) [`lily/Core/UI/Components/GrowingTextView.swift:GrowingTextView.updateUIView`];
   focus is taken in a deferred `Task` and resigned at once [`lily/Core/UI/Components/GrowingTextView.swift:GrowingTextView.syncFocus`].
   `PlaceholderTextView`: the placeholder is hidden iff the text is non-empty
-  [`lily/Core/UI/Components/GrowingTextView.swift:PlaceholderTextView.refreshPlaceholder`]; `canBecomeFirstResponder`
+  [`lily/Core/UI/Components/GrowingTextView.swift:PlaceholderTextView.refreshPlaceholder`]; `scrollsToTop` is false from
+  `init`, so a chat's transcript is the one scroll view answering a tap on the status bar
+  [`lily/Core/UI/Components/GrowingTextView.swift:PlaceholderTextView.init(frame:textContainer:)`]; `canBecomeFirstResponder`
   is `acceptsFocus && super.canBecomeFirstResponder`, cleared by `willMove(toWindow: nil)` and set again by a hit,
   `accessibilityActivate()` or `takeFocus()`, so a field that left the window does not re-take the keyboard by itself
   [`lily/Core/UI/Components/GrowingTextView.swift:PlaceholderTextView.canBecomeFirstResponder`]; hardware Return for

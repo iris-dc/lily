@@ -5,8 +5,10 @@ import SwiftUI
 /// drawn from a clock (`MessageArrivalCurve`) while the arrival lasts, so the unsent bubble turning into the stored
 /// message mid-way cuts nothing short. The timeline and the reveal wrap every row, paused and at full height when
 /// nothing arrives, because a row that changed its structure when its arrival ended would rebuild its bubble and reload
-/// its pictures.
-struct ChatRowView: View {
+/// its pictures. The transcript's body runs on every pin, once a frame while a row arrives, so a row compares as a value
+/// (`Equatable`, wrapped in `equatable()` by the transcript): an unchanged row is left as drawn, and what it reads from
+/// the view model is observed and re-runs it on its own.
+struct ChatRowView: View, Equatable {
     let row: ChatRow
     let viewModel: ChatViewModel
     let dependencies: AppDependencies
@@ -23,6 +25,12 @@ struct ChatRowView: View {
     /// Flipped when the arrival is over, so body runs again and the timeline pauses.
     @State private var hasArrived = false
     @Environment(\.motion) private var motion
+
+    /// The closures are the transcript's and act through its state; the view model and the dependencies are the room's.
+    nonisolated static func == (lhs: ChatRowView, rhs: ChatRowView) -> Bool {
+        lhs.row == rhs.row && lhs.highlightedMessageID == rhs.highlightedMessageID && lhs.arrivedAt == rhs.arrivedAt
+            && lhs.viewModel === rhs.viewModel && lhs.dependencies === rhs.dependencies
+    }
 
     /// Under Reduce Motion a row is whole from its first frame: the still curve never arrives, so the timeline stays
     /// paused and the reveal is full.

@@ -2,8 +2,8 @@ import Foundation
 
 /// Turns a room's messages into rows: blocked senders and rows of a kind this build does not know hidden, system
 /// notes centred, day dividers between days, one sender's messages within `groupingWindow` drawn as a run, the
-/// caller's unsent messages at the end, their first one continuing the caller's run. Pure, so the rules are tested
-/// without a view.
+/// caller's unsent messages at the end, their first one continuing the caller's run and one on a new day behind its
+/// day divider. Pure, so the rules are tested without a view.
 nonisolated enum ChatTimeline {
     struct Input {
         var messages: [ChatMessage]
@@ -25,7 +25,7 @@ nonisolated enum ChatTimeline {
         var rows: [ChatRow] = []
         var previous: ChatMessage?
         for (index, message) in visible.enumerated() {
-            if startsDay(after: previous, message, input) {
+            if startsDay(after: previous?.sentAt, message.sentAt, input) {
                 rows.append(.day(input.calendar.startOfDay(for: message.sentAt)))
             }
             if message.isSystem {
@@ -42,7 +42,22 @@ nonisolated enum ChatTimeline {
             }
             previous = message
         }
-        rows += unsent.map(ChatRow.pending)
+        rows += unsentRows(unsent, after: previous?.sentAt, input)
+        return rows
+    }
+
+    /// The unsent messages after the stored ones, one on a new day behind its day divider: the divider arrives with the
+    /// bubble, and the stored message replacing it brings the same rows, so the confirmation adds nothing above them.
+    private static func unsentRows(_ unsent: [PendingMessage], after lastSentAt: Date?, _ input: Input) -> [ChatRow] {
+        var rows: [ChatRow] = []
+        var previous = lastSentAt
+        for pending in unsent {
+            if startsDay(after: previous, pending.sentAt, input) {
+                rows.append(.day(input.calendar.startOfDay(for: pending.sentAt)))
+            }
+            rows.append(.pending(pending))
+            previous = pending.sentAt
+        }
         return rows
     }
 
@@ -62,9 +77,9 @@ nonisolated enum ChatTimeline {
     }
 
     /// The first message shown, or the first of a new day, starts a day row.
-    private static func startsDay(after previous: ChatMessage?, _ message: ChatMessage, _ input: Input) -> Bool {
+    private static func startsDay(after previous: Date?, _ sentAt: Date, _ input: Input) -> Bool {
         guard let previous else { return true }
-        return !input.calendar.isDate(previous.sentAt, inSameDayAs: message.sentAt)
+        return !input.calendar.isDate(previous, inSameDayAs: sentAt)
     }
 
     /// Two consecutive text messages of one sender, close in time and on the same day, form one run.

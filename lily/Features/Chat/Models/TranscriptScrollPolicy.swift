@@ -3,10 +3,12 @@ import Foundation
 /// What the chat transcript's scroll position does after each geometry report, each scroll phase and each appended row;
 /// pure, so the rules can be checked without a view. Following the bottom is a state, not a reading of the geometry: it
 /// starts with the first page's pin, any scroll that comes to rest away from the bottom ends it (the reader's, a tapped
-/// quote's, VoiceOver's), and any rest at the bottom resumes it. While the reader follows, every change of the content's
-/// height, of the bottom inset or of the visible height pins the bottom (a row growing in on the arrival clock, a lazy
-/// stack correcting its estimates, a picture loading, the keyboard, a window resized), so the newest row stays on the
-/// composer frame by frame and the rows above glide up with a row growing in. A report taken mid-layout, between a
+/// quote's, VoiceOver's), so does a scroll the scroll view makes on its own from its first frame (UIKit's scroll to the
+/// top on a tap of the status bar, which SwiftUI reports no phase for), and any rest at the bottom resumes it. While
+/// the reader follows, every change of the content's height, of the bottom inset or of the visible height pins the
+/// bottom (a row growing in on the arrival clock, a lazy stack correcting its estimates, a picture loading, the
+/// keyboard, a window resized), so the newest row stays on the composer frame by frame and the rows above glide up with
+/// a row growing in. A report taken mid-layout, between a
 /// safe-area change and the inset that follows it, may read as away from the bottom; it changes nothing, since only a
 /// rest moves the state. A reader of older messages is left where they are, an older page keeps what was on screen
 /// where it was, and the page before is requested only once the reader has scrolled near the top after the first
@@ -37,6 +39,14 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
         func movesTheBottom(from previous: Snapshot) -> Bool {
             contentHeight != previous.contentHeight || bottomInset != previous.bottomInset
                 || visibleHeight != previous.visibleHeight
+        }
+
+        /// Whether the scroll view moved up on its own: the offset fell while the content did not shrink and neither the
+        /// inset nor the visible height changed. A pin lowers the offset only after a shrink; UIKit's scroll to the top
+        /// on a tap of the status bar is the one scroll that fits, and a lazy stack measuring rows on the way only grows.
+        func wasScrolledUp(from previous: Snapshot) -> Bool {
+            offsetY < previous.offsetY && contentHeight >= previous.contentHeight
+                && bottomInset == previous.bottomInset && visibleHeight == previous.visibleHeight
         }
     }
 
@@ -73,6 +83,9 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     private var isSliding = false
     /// The older page being prepended; cleared when the taller content has been laid out or the page brought nothing.
     private(set) var pendingRestore: PendingRestore?
+    /// A restore asked for and not yet seen to move the offset: until it has, a report near the top is the old place,
+    /// not the reader's, and asks for no page.
+    private var isRestoreLanding = false
 
     /// Called before an older page is requested, with the geometry the reader currently sees and the oldest message held.
     mutating func willLoadOlder(at snapshot: Snapshot, oldestID: String?) {
@@ -100,6 +113,7 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
             isFollowing = false
             isSliding = false
             followsNextGrowth = false
+            isRestoreLanding = false
         case .resting:
             if isSliding {
                 isSliding = false
@@ -139,8 +153,16 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
             isSliding = true
             return .animateToBottom
         }
+        // Ends from the first frame, so no pin fights the scroll; the state has no rest to wait for.
+        if isFollowing, current.wasScrolledUp(from: previous) {
+            isFollowing = false
+        }
         if isFollowing, current.movesTheBottom(from: previous) {
             return .scrollToBottom
+        }
+        if isRestoreLanding {
+            guard current.offsetY != previous.offsetY else { return .none }
+            isRestoreLanding = false
         }
         if current.isNearTop, canLoadOlder {
             return .loadOlder
@@ -155,7 +177,8 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
 
     /// While an older page is pending: growth with the same oldest message is below the reader and becomes the new
     /// baseline; a moved oldest message at the old height is the page held but not laid out yet; the taller layout
-    /// after it is the prepend, compensated against the reader's latest offset.
+    /// after it is the prepend, compensated against the reader's latest offset. The compensation lands a layout later:
+    /// a report before it (a lazy stack correcting the page's estimates) still reads the old offset, near the top.
     private mutating func restoring(_ restore: PendingRestore, at current: Snapshot, oldestID: String?) -> Action {
         guard oldestID != restore.oldestID else {
             pendingRestore?.geometry.contentHeight = current.contentHeight
@@ -167,6 +190,7 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
             return .none
         }
         pendingRestore = nil
+        isRestoreLanding = true
         return .scrollTo(y: restore.geometry.offsetY + (current.contentHeight - restore.geometry.contentHeight))
     }
 }

@@ -98,6 +98,23 @@ struct ChatTimelineTests {
         #expect(names == ["Marta B.", "Jonas"])
     }
 
+    /// An unsent message on a new day brings its day divider: the rows the stored message will have, so the divider
+    /// arrives with the bubble and the confirmation adds nothing above them.
+    @Test func anUnsentMessageOnANewDayBringsItsDayDivider() {
+        let unsent = PendingMessage(draft: MessageDraft(clientMessageID: "c-1"), sentAt: Self.noon.addingTimeInterval(.day))
+        let before = rows([message("m1", after: 0)], pending: [unsent])
+        #expect(before.map(\.id) == ["day-1799971200", "m1", "day-1800057600", "c-1"])
+
+        let stored = message("m2", from: "u-1", name: "Me", after: .day, clientMessageID: "c-1")
+        let after = rows([message("m1", after: 0), stored], pending: [unsent])
+        #expect(after.map(\.id) == before.map(\.id), "the confirmation keeps every row")
+    }
+
+    @Test func theFirstUnsentMessageOfAnEmptyRoomOpensItsDay() {
+        let unsent = PendingMessage(draft: MessageDraft(clientMessageID: "c-1"), sentAt: Self.noon)
+        #expect(rows([], pending: [unsent]).map(\.id) == ["day-1799971200", "c-1"])
+    }
+
     @Test func pendingMessagesComeLastAndKeepTheirClientIds() {
         var draft = MessageDraft(clientMessageID: "c-1")
         draft.text = "on my way"

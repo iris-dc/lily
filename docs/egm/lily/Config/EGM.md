@@ -190,7 +190,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `startTooSoon(minutes:)`, `tooLong(limit:)`; `lily/Config/AppBranding+Forms.swift`) and `Feedback.kindContact` aliases
   `Chat.Polls.question`, so every catalog key has one declaration. `+Capacity`, `+Intro`, `+TournamentInvites` and
   `+TournamentResults` split `AppBranding` and `AppBranding.Tournaments` under SwiftLint's type-body limit.
-- `DesignTokens` aliases keep one source: `Layout.tournamentTileWidth = groupTileWidth`, `Symbols.currency = Symbols.price`, `MessageArrival.duration = Duration.normal`. `Symbols.fileGlyphs` is ordered,
+- `DesignTokens` aliases keep one source: `Layout.tournamentTileWidth = groupTileWidth`, `Symbols.currency = Symbols.price`. `Symbols.fileGlyphs` is ordered,
   first match wins, `Symbols.file` for the rest. `Aurora.driftPeriods` are pairwise incommensurate, `driftWeights` sum
   to one, `grainSeed` is deterministic so every launch and test sees the same grain (`lily/Config/DesignTokens.swift:DesignTokens.Aurora`).
   `TabBar.symbolWeight` exists because the iOS 26 tab bar ignores `symbolVariants` and `fontWeight`.
