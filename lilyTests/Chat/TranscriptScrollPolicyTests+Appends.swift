@@ -59,6 +59,9 @@ extension TranscriptScrollPolicyTests {
     @Test func aScrollUpTheReaderDidNotMakeEndsFollowingWithoutAPin() {
         var policy = settled()
         let atBottom = snapshot(offsetY: 1_200)
+        // The first pin's landing: the report after a pin is never a scroll-up, so the rest comes first.
+        #expect(policy.geometryChanged(from: snapshot(), to: atBottom, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
         let firstFrame = snapshot(offsetY: 1_180, contentHeight: 2_030, isAtBottom: false)
         #expect(policy.geometryChanged(from: atBottom, to: firstFrame, hasRows: true, canLoadOlder: true, oldestID: oldest)
                 == .none)
@@ -66,6 +69,35 @@ extension TranscriptScrollPolicyTests {
         let nearTop = snapshot(offsetY: 10, contentHeight: 2_200, isAtBottom: false, isNearTop: true)
         #expect(policy.geometryChanged(from: firstFrame, to: nearTop, hasRows: true, canLoadOlder: true, oldestID: oldest)
                 == .loadOlder)
+    }
+
+    /// An append takes the previous bubble's time line with it: the content shrinks, the pin lands a report later with
+    /// the offset a few points lower and the content as it was, which is no scroll of anyone's, so the reader keeps
+    /// following and the row growing in is pinned (on the simulator every other send stayed under the composer without
+    /// this). The pin the transcript makes when it comes back on screen is one of ours too.
+    @Test func thePinsOwnLandingIsNotAScrollUp() {
+        var policy = settled()
+        let atBottom = snapshot(offsetY: 660, contentHeight: 1_174)
+        let shrunk = snapshot(offsetY: 660, contentHeight: 1_105)
+        #expect(policy.geometryChanged(from: atBottom, to: shrunk, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
+        let landed = snapshot(offsetY: 648, contentHeight: 1_105)
+        #expect(policy.geometryChanged(from: shrunk, to: landed, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        #expect(policy.isFollowing, "the landing is ours")
+        let grown = snapshot(offsetY: 648, contentHeight: 1_116)
+        #expect(policy.geometryChanged(from: landed, to: grown, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
+
+        var returned = settled()
+        #expect(returned.reappeared() == .scrollToBottom)
+        let before = snapshot(offsetY: 600)
+        let afterReturn = snapshot(offsetY: 590, contentHeight: 2_000)
+        #expect(returned.geometryChanged(from: before, to: afterReturn, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        #expect(returned.isFollowing)
+        var reader = reading()
+        #expect(reader.reappeared() == .none, "a reader of older messages is left where they are")
     }
 
     /// A pin after a shrink lowers the offset too (a tombstone, the lazy stack's correction), and so does the keyboard

@@ -117,9 +117,10 @@ struct ChatTranscript: View {
         // it is back on screen, in a frame the user sees: a transcript that left at the bottom comes back pinned to it.
         .onAppear {
             tracker.logsEveryReport(for: AppConfig.Chat.transcriptOpeningLogWindow)
-            guard tracker.policy.isFollowing else { return }
+            let action = tracker.policy.reappeared()
+            guard action != .none else { return }
             log("back on screen at the bottom, pinned")
-            apply(.scrollToBottom)
+            apply(action)
         }
         .onDisappear {
             opening?.cancel()

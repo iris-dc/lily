@@ -41,9 +41,10 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
                 || visibleHeight != previous.visibleHeight
         }
 
-        /// Whether the scroll view moved up on its own: the offset fell while the content did not shrink and neither the
-        /// inset nor the visible height changed. A pin lowers the offset only after a shrink; UIKit's scroll to the top
-        /// on a tap of the status bar is the one scroll that fits, and a lazy stack measuring rows on the way only grows.
+        /// Whether the scroll view moved up, read against the report before: the offset fell while the content did not
+        /// shrink and neither the inset nor the visible height changed. A pin lowers the offset only after a shrink, and
+        /// its landing is the report after it, which the policy exempts; UIKit's scroll to the top on a tap of the
+        /// status bar is the one scroll that fits, and a lazy stack measuring rows on the way only grows.
         func wasScrolledUp(from previous: Snapshot) -> Bool {
             offsetY < previous.offsetY && contentHeight >= previous.contentHeight
                 && bottomInset == previous.bottomInset && visibleHeight == previous.visibleHeight
@@ -86,6 +87,9 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     /// A restore asked for and not yet seen to move the offset: until it has, a report near the top is the old place,
     /// not the reader's, and asks for no page.
     private var isRestoreLanding = false
+    /// The last action was a pin: the report after it shows the pin landing, whose offset is ours, lower when the content
+    /// had shrunk (the previous bubble's time line going with an append), never a scroll of the reader's or UIKit's.
+    private var lastActionWasPin = false
 
     /// Called before an older page is requested, with the geometry the reader currently sees and the oldest message held.
     mutating func willLoadOlder(at snapshot: Snapshot, oldestID: String?) {
@@ -108,6 +112,30 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     /// needs: the row kept growing after the slide was aimed.
     @discardableResult
     mutating func scrollPhaseChanged(to phase: Phase, at snapshot: Snapshot) -> Action {
+        let action = judgePhase(phase, at: snapshot)
+        lastActionWasPin = action == .scrollToBottom
+        return action
+    }
+
+    /// The transcript is back on screen: a reader who follows is pinned before the first report, since the bottom may
+    /// have moved while the screen was covered.
+    mutating func reappeared() -> Action {
+        guard isFollowing else { return .none }
+        lastActionWasPin = true
+        return .scrollToBottom
+    }
+
+    mutating func geometryChanged(from previous: Snapshot,
+                                  to current: Snapshot,
+                                  hasRows: Bool,
+                                  canLoadOlder: Bool,
+                                  oldestID: String?) -> Action {
+        let action = judge(from: previous, to: current, hasRows: hasRows, canLoadOlder: canLoadOlder, oldestID: oldestID)
+        lastActionWasPin = action == .scrollToBottom
+        return action
+    }
+
+    private mutating func judgePhase(_ phase: Phase, at snapshot: Snapshot) -> Action {
         switch phase {
         case .touched:
             isFollowing = false
@@ -131,11 +159,11 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
         return .none
     }
 
-    mutating func geometryChanged(from previous: Snapshot,
-                                  to current: Snapshot,
-                                  hasRows: Bool,
-                                  canLoadOlder: Bool,
-                                  oldestID: String?) -> Action {
+    private mutating func judge(from previous: Snapshot,
+                                to current: Snapshot,
+                                hasRows: Bool,
+                                canLoadOlder: Bool,
+                                oldestID: String?) -> Action {
         // A reader who follows does not care where older rows land: the bottom is pinned as ever.
         if isFollowing { pendingRestore = nil }
         if let restore = pendingRestore {
@@ -153,8 +181,9 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
             isSliding = true
             return .animateToBottom
         }
-        // Ends from the first frame, so no pin fights the scroll; the state has no rest to wait for.
-        if isFollowing, current.wasScrolledUp(from: previous) {
+        // Ends from the first frame, so no pin fights the scroll; the state has no rest to wait for. The report after a
+        // pin of ours is the pin landing, not a scroll.
+        if isFollowing, !lastActionWasPin, current.wasScrolledUp(from: previous) {
             isFollowing = false
         }
         if isFollowing, current.movesTheBottom(from: previous) {
