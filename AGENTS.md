@@ -170,8 +170,7 @@ decides, never the device.
   must ship at the bundle root); anything else ships inside the app bundle.
   `find lily -type f ! -name '*.swift' ! -name '*.xcstrings' ! -name 'PrivacyInfo.xcprivacy' | grep -v Assets.xcassets`
   must print nothing (`ci.sh lint` checks it, hidden files excepted).
-  Entitlements live at the repository root (`lily.entitlements` for Release, `lily.debug.entitlements` for Debug), with
-  `Signing.xcconfig`, which includes the git-ignored `Signing.local.xcconfig` holding this Mac's `DEVELOPMENT_TEAM`.
+  Entitlements live at the repository root (`lily.entitlements` for Release, `lily.debug.entitlements` for Debug).
 - **SwiftLint (strict, `.swiftlint.yml`).** Line 130/160, function body 40/60, type body 200/300, file 300/400,
   cyclomatic complexity 10/15 (switch cases count, computed properties are not checked), at most five parameters,
   `empty_count` (write `isEmpty`), `empty_collection_literal` (no `== []`), `empty_string` (no `== ""`), two closure

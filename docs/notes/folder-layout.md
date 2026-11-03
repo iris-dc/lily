@@ -275,7 +275,7 @@ scripts/         ci.sh, the single entry point for lint, build and tests; l10n-c
 .github/         GitHub Actions workflow and the Dependabot config
 ```
 
-The Xcode project uses synchronized folder groups: any file added under `lily/`, `lilyTests/` or `lilyUITests/` joins the matching target automatically. The other side of that convenience is that **`lily/` must contain only Swift sources, `Assets.xcassets` and the two string catalogs** (since 2026-11-01 also `PrivacyInfo.xcprivacy`, see `build-test-and-simulator.md`) — any other file there is copied into the app bundle, and `.gitignore` does not prevent it, because Xcode reads the filesystem rather than the git index. Signing: `Signing.xcconfig` at the root is the lily target's base configuration in Debug, Release and Staging and includes the git-ignored `Signing.local.xcconfig` with the Mac's `DEVELOPMENT_TEAM` (2026-11-03).
+The Xcode project uses synchronized folder groups: any file added under `lily/`, `lilyTests/` or `lilyUITests/` joins the matching target automatically. The other side of that convenience is that **`lily/` must contain only Swift sources, `Assets.xcassets` and the two string catalogs** (since 2026-11-01 also `PrivacyInfo.xcprivacy`, see `build-test-and-simulator.md`) — any other file there is copied into the app bundle, and `.gitignore` does not prevent it, because Xcode reads the filesystem rather than the git index.
 
 Rules: interfaces and implementations live in separate folders, constants live under `Config/`, every user-facing error goes through `ErrorCenter`, every log line goes through `Logging`.
 

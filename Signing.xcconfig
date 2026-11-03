@@ -1,5 +1,0 @@
-// The lily target's signing, read by its Debug, Release and Staging configurations. The team that signs a device build
-// is this Mac's own and stays out of git: put it in Signing.local.xcconfig (ignored) as
-//   DEVELOPMENT_TEAM = ABCDE12345
-// with the id Xcode shows under Settings > Accounts; a simulator build needs none.
-#include? "Signing.local.xcconfig"
