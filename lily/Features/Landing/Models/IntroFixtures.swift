@@ -18,7 +18,7 @@ nonisolated enum IntroFixtures {
 
     /// The live preview's count, so samples and live data fill the cropped frame to the same length.
     static func events(now: Date) -> [SportEvent] {
-        MockEventFixtures.make(now: now, count: AppConfig.Events.landingPreviewCount)
+        MockEventFixtures.make(now: now, count: AppConfig.Events.introSampleEventCount)
     }
 
     /// The mock's cup under way: organised by the room's sender rather than the mock's caller, whose seat would read

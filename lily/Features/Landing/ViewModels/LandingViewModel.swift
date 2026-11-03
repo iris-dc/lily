@@ -1,15 +1,15 @@
 import Foundation
 import Observation
 
-/// Drives the landing screen: the intro slides, the events their miniature screens show (real upcoming ones once the
-/// preview arrived), the tournament whose bracket the last slide draws, and the two ways into the app.
+/// Drives the landing screen: the intro slides, the events and the tournament their miniature screens draw, and the two
+/// ways into the app. The miniatures draw fixtures, never a live answer: a screen that changed under the reader a moment
+/// after the app opened read as a glitch, and the landing is seen before anything of theirs is known.
 @Observable
 final class LandingViewModel {
     let slides = IntroSlide.shown()
-    private(set) var previewEvents: [SportEvent] = []
-    /// The events the miniatures show until the live preview arrives: the mock feed's first ones, like a screenshot.
+    /// The events the Explore miniature shows: the mock feed's first ones, like a screenshot.
     let sampleEvents: [SportEvent]
-    /// The tournament the bracket miniature shows: always the fixture, since a live one may be in any state.
+    /// The tournament the bracket miniature shows: the fixture, since a live one may be in any state.
     let sampleTournament: TournamentDetail
     /// The slide on screen, as the pager last reported one.
     private(set) var currentSlide: IntroSlide = .first
@@ -18,36 +18,19 @@ final class LandingViewModel {
     var isSignInPresented = false
 
     private let session: SessionController
-    private let repository: any EventRepository
     private let logger: any Logging
 
-    init(session: SessionController, repository: any EventRepository, logger: any Logging) {
+    init(session: SessionController, logger: any Logging) {
         self.session = session
-        self.repository = repository
         self.logger = logger
         let now = Date.now
         sampleEvents = IntroFixtures.events(now: now)
         sampleTournament = IntroFixtures.tournament(now: now)
     }
 
-    /// What the slides' screens draw: the live events once loaded, the samples before and when the load failed.
+    /// What the slides' screens draw.
     var introContent: IntroContent {
-        IntroContent(events: previewEvents.isEmpty ? sampleEvents : previewEvents, tournament: sampleTournament)
-    }
-
-    /// Preview is decorative: on failure the landing still works, so nothing is shown to the user. Leaving the
-    /// landing mid-load cancels the request, which is not a failure and stays at debug.
-    func loadPreview() async {
-        do {
-            let events = try await repository.events(in: .upcoming, near: nil)
-            previewEvents = Array(events.prefix(AppConfig.Events.landingPreviewCount))
-        } catch {
-            guard !AppError.isCancellation(error) else {
-                logger.debug(.events, "Landing preview load cancelled")
-                return
-            }
-            logger.warning(.events, "Landing preview unavailable: \(error)")
-        }
+        IntroContent(events: sampleEvents, tournament: sampleTournament)
     }
 
     /// The pager's report of the slide at rest: `nil` while a swipe is in flight, and the same slide again after a

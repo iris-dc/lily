@@ -45,8 +45,8 @@ nonisolated enum AppConfig {
         static let mockFeedSize = 9
         /// Fill ratio at which an event is called "nearly full" and highlighted.
         static let nearlyFullRatio = 0.75
-        /// Number of upcoming events previewed on the landing screen.
-        static let landingPreviewCount = 3
+        /// Events the landing's Explore miniature draws, the mock feed's first ones.
+        static let introSampleEventCount = 3
         /// Distance choices in the Explore filter, in metres from the reference point, and the one applied by default.
         static let filterRadiiMeters: [Double] = [2_000, 5_000, 10_000, 25_000]
         static let defaultFilterRadiusMeters: Double = 10_000

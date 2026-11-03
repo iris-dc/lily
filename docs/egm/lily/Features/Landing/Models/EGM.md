@@ -34,7 +34,7 @@ Files: `lily/Features/Landing/Models/IntroSlide.swift`, `lily/Features/Landing/M
 - `[IntroFixtures.swift:IntroFixtures]`: `nonisolated enum IntroFixtures` with `static let groupName = "Kreuzberg
   Kickers"`, `static let memberCount = 12`, `static let senderName = MockChatFixtures.senders[0]`;
   `static func events(now: Date) -> [SportEvent]` returns `MockEventFixtures.make(now: now, count:
-  AppConfig.Events.landingPreviewCount)`; `static func tournament(now: Date) -> TournamentDetail` builds
+  AppConfig.Events.introSampleEventCount)`; `static func tournament(now: Date) -> TournamentDetail` builds
   `MockTournamentFixtures.kickersCup(now:organizerUserID:organizerName:)`, starts it (`.starting(at: now)`) and settles
   the two results in `private static let semiFinals` (`TournamentSchedule.matchID(round: 1, position: 1)` 3:1 and
   `(round: 1, position: 2)` 2:0).

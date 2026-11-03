@@ -37,7 +37,6 @@ struct LandingView: View {
         // scroll came back mid-way between two slides once the sheet was swiped away with the keyboard up.
         .ignoresSafeArea(.keyboard)
         .onChange(of: visibleSlide) { viewModel.slideShown(visibleSlide) }
-        .task { await viewModel.loadPreview() }
         .sheet(isPresented: $viewModel.isSignInPresented) {
             SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
         }

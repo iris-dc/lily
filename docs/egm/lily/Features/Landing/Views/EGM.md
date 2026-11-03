@@ -96,8 +96,7 @@ Files: `lily/Features/Landing/Views/LandingView.swift`, `lily/Features/Landing/V
 
 ## Side Effects
 
-- `[LandingView.swift:LandingView.body]`: `.task { await viewModel.loadPreview() }` starts the network preview and
-  cancels it when the view leaves; `.onChange(of: visibleSlide) { viewModel.slideShown(visibleSlide) }` (logs at debug
+- `[LandingView.swift:LandingView.body]`: no request is made from the landing; `.onChange(of: visibleSlide) { viewModel.slideShown(visibleSlide) }` (logs at debug
   through the view model); the buttons call `viewModel.enterApp()` (guest session) and `viewModel.presentSignIn()`.
 - `[IntroScreens.swift:TapPulse]`: a wall-clock `TimelineView` at `DesignTokens.Aurora.frameInterval` reading
   `context.date` while the ring is visible; `AuroraBackground` under the landing runs its own clock.

@@ -56,7 +56,7 @@ struct IntroSlideTests {
     }
 
     @Test func theMiniatureShowsAsManyCardsAsTheLivePreview() {
-        #expect(IntroFixtures.events(now: .now).count == AppConfig.Events.landingPreviewCount)
+        #expect(IntroFixtures.events(now: .now).count == AppConfig.Events.introSampleEventCount)
     }
 
     /// The bracket miniature shows a knockout under way, organised by a person rather than the mock's caller (whose

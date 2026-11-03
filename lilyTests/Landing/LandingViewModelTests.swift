@@ -4,82 +4,22 @@ import Testing
 
 @MainActor
 struct LandingViewModelTests {
-    private func makeViewModel(_ repository: FakeEventRepository, harness: SessionHarness) -> LandingViewModel {
-        LandingViewModel(session: harness.controller, repository: repository, logger: harness.logger)
+    private func makeViewModel(harness: SessionHarness) -> LandingViewModel {
+        LandingViewModel(session: harness.controller, logger: harness.logger)
     }
 
-    @Test func previewIsLimitedToConfiguredCount() async {
-        let harness = SessionHarness()
-        let repository = FakeEventRepository()
-        repository.result = .success(MockEventFixtures.make(now: .now, count: 8))
-        let viewModel = makeViewModel(repository, harness: harness)
-
-        await viewModel.loadPreview()
-
-        #expect(viewModel.previewEvents.count == AppConfig.Events.landingPreviewCount)
-        #expect(repository.requestedScopes == [.upcoming])
-    }
-
-    @Test func previewFailureIsSilentButLogged() async {
-        let harness = SessionHarness()
-        let repository = FakeEventRepository()
-        repository.result = .failure(.network)
-        let viewModel = makeViewModel(repository, harness: harness)
-
-        await viewModel.loadPreview()
-
-        #expect(viewModel.previewEvents.isEmpty)
-        #expect(harness.errorCenter.current == nil)
-        #expect(harness.logger.messages(in: .events, at: .warning).contains { $0.contains("preview") })
-    }
-
-    /// Entering the app before the preview arrived cancels its load: the normal flow, never a warning.
-    @Test func cancelledPreviewLoadIsADebugLine() async {
-        for cancellation: any Error in [URLError(.cancelled), CancellationError()] {
-            let harness = SessionHarness()
-            let repository = FakeEventRepository()
-            repository.thrownError = cancellation
-            let viewModel = makeViewModel(repository, harness: harness)
-
-            await viewModel.loadPreview()
-
-            #expect(viewModel.previewEvents.isEmpty)
-            #expect(harness.logger.messages(in: .events, at: .warning).isEmpty)
-            #expect(harness.logger.messages(in: .events, at: .debug).contains { $0.contains("cancelled") })
-        }
-    }
-
-    /// The miniatures draw the samples until the preview answered, and the live games from then on.
-    @Test func theIntroContentFollowsThePreview() async {
-        let harness = SessionHarness()
-        let repository = FakeEventRepository()
-        let live = MockEventFixtures.make(now: .now, count: 2)
-        repository.result = .success(live)
-        let viewModel = makeViewModel(repository, harness: harness)
+    /// The miniatures draw the fixtures, dated from launch, and never a live answer: nothing changes under the reader.
+    @Test func theIntroContentIsTheFixtures() {
+        let viewModel = makeViewModel(harness: SessionHarness())
 
         #expect(viewModel.introContent.events == viewModel.sampleEvents)
+        #expect(viewModel.sampleEvents.count == AppConfig.Events.introSampleEventCount)
         #expect(viewModel.introContent.tournament == viewModel.sampleTournament)
-        #expect(viewModel.sampleEvents.count == AppConfig.Events.landingPreviewCount)
-
-        await viewModel.loadPreview()
-
-        #expect(viewModel.introContent.events == live)
-        #expect(viewModel.introContent.tournament == viewModel.sampleTournament, "the bracket is always the fixture")
-    }
-
-    @Test func aFailedPreviewKeepsTheSamplesOnTheSlides() async {
-        let harness = SessionHarness()
-        let repository = FakeEventRepository()
-        repository.result = .failure(.network)
-        let viewModel = makeViewModel(repository, harness: harness)
-
-        await viewModel.loadPreview()
-
-        #expect(viewModel.introContent.events == viewModel.sampleEvents)
+        #expect(viewModel.introContent.joinEvent != nil, "the detail slide has a game to join")
     }
 
     @Test func theIntroStartsOnTheFirstSlideWithTheHint() {
-        let viewModel = makeViewModel(FakeEventRepository(), harness: SessionHarness())
+        let viewModel = makeViewModel(harness: SessionHarness())
         #expect(viewModel.slides == IntroSlide.shown())
         #expect(viewModel.currentSlide == .first)
         #expect(viewModel.showsSwipeHint)
@@ -87,7 +27,7 @@ struct LandingViewModelTests {
 
     @Test func showingAnotherSlideHidesTheHintAndLogsIt() {
         let harness = SessionHarness()
-        let viewModel = makeViewModel(FakeEventRepository(), harness: harness)
+        let viewModel = makeViewModel(harness: harness)
 
         viewModel.slideShown(.join)
 
@@ -105,7 +45,7 @@ struct LandingViewModelTests {
     /// swipe, so the hint stays and nothing is logged.
     @Test func aPositionInFlightOrTheSameSlideChangesNothing() {
         let harness = SessionHarness()
-        let viewModel = makeViewModel(FakeEventRepository(), harness: harness)
+        let viewModel = makeViewModel(harness: harness)
 
         viewModel.slideShown(nil)
         viewModel.slideShown(.first)
@@ -117,13 +57,13 @@ struct LandingViewModelTests {
 
     @Test func enterAppUsesGuestMode() {
         let harness = SessionHarness()
-        makeViewModel(FakeEventRepository(), harness: harness).enterApp()
+        makeViewModel(harness: harness).enterApp()
         #expect(harness.controller.state == .guest)
     }
 
     @Test func presentSignInTogglesSheet() {
         let harness = SessionHarness()
-        let viewModel = makeViewModel(FakeEventRepository(), harness: harness)
+        let viewModel = makeViewModel(harness: harness)
         viewModel.presentSignIn()
         #expect(viewModel.isSignInPresented)
     }
