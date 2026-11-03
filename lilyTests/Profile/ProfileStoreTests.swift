@@ -9,9 +9,54 @@ struct ProfileStoreTests {
     private let repository = FakeProfileRepository()
     private let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
     private let logger = SpyLogger()
+    private let snapshots = InMemoryListSnapshotStore()
 
     private func makeStore() -> ProfileStore {
-        ProfileStore(repository: repository, identity: identity, logger: logger)
+        ProfileStore(repository: repository, identity: identity, snapshots: snapshots, logger: logger)
+    }
+
+    private var snapshotKey: ListSnapshotKey {
+        ListSnapshotKey(list: AppConfig.Lists.profileSnapshot, userID: TestFixtures.user.id)
+    }
+
+    /// The last profile shown is the next launch's first frame, and a hint only: the load still runs once and its
+    /// answer replaces it; a rename writes the snapshot too; a guest's launch reads none.
+    @Test func startsFromTheSnapshotAndStillLoadsOnce() async throws {
+        snapshots.seed(Profile.fixture(displayName: "Alex Kim"), for: snapshotKey)
+        repository.profileResult = .success(.fixture(displayName: "Alex K."))
+        let store = makeStore()
+        #expect(store.displayName == "Alex Kim" && !store.isLoading, "the snapshot is the first frame")
+
+        await store.loadIfNeeded()
+        #expect(repository.profileCallCount == 1)
+        #expect(store.displayName == "Alex K.", "the backend's answer replaces the snapshot")
+        #expect(snapshots.load(Profile.self, for: snapshotKey)?.displayName == "Alex K.")
+        await store.loadIfNeeded()
+        #expect(repository.profileCallCount == 1, "the answer, not the snapshot, counts as loaded")
+
+        repository.updateResult = .success(.fixture(displayName: "Alexandra"))
+        _ = try await store.rename(to: "Alexandra")
+        #expect(snapshots.load(Profile.self, for: snapshotKey)?.displayName == "Alexandra")
+        #expect(snapshots.saveCount == 2)
+
+        identity.currentUserID = nil
+        #expect(makeStore().displayName == nil, "a guest's launch reads no snapshot")
+    }
+
+    /// A user who signs in after launch finds their snapshot when Profile opens, for the frames the load takes.
+    @Test func aSignInAfterLaunchFindsItsSnapshotOnOpen() async {
+        identity.currentUserID = nil
+        let store = makeStore()
+        snapshots.seed(Profile.fixture(displayName: "Alex Kim"), for: snapshotKey)
+        repository.holdsRequests = true
+        identity.currentUserID = TestFixtures.user.id
+
+        let load = Task { await store.loadIfNeeded() }
+        await settle(until: { repository.isHolding })
+        #expect(store.displayName == "Alex Kim" && store.isLoading, "the snapshot shows while the load is out")
+        repository.releaseRequests()
+        await load.value
+        #expect(repository.profileCallCount == 1)
     }
 
     @Test func loadsOncePerUserAndExposesTheName() async {

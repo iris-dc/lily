@@ -63,8 +63,8 @@ struct ProfileView: View {
         }
     }
 
-    /// The name is the backend's: a glyph and a spinner stand in while the first load runs, nothing when it failed (the
-    /// card below still renames).
+    /// The name is the backend's, or the last one shown while the load runs: a glyph and a spinner stand in only for a
+    /// first load, nothing when it failed (the card below still renames); the glyph crossfades into the initials.
     private func signedIn(_ user: AuthUser) -> some View {
         VStack(spacing: DesignTokens.Spacing.lg) {
             AvatarCircle(initials: profile.displayName?.initials ?? "",
@@ -82,6 +82,7 @@ struct ProfileView: View {
             Button(AppBranding.signOutAction) { Task { await session.signOut() } }
                 .lilyGlassButton()
         }
+        .animation(.easeInOut(duration: DesignTokens.Duration.fast), value: profile.displayName)
     }
 
     /// Laid straight on the screen, not in a card, so the heading shares the navigation title's leading edge.

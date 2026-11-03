@@ -94,23 +94,22 @@ final class LilyChatTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Sunset 5-a-side"].exists)
     }
 
-    /// Deleting the conversation from the room's menu, after the confirmation: the chat closes, the Chats root no
-    /// longer lists Marta, and the other rooms still open.
+    /// Deleting the conversation from its Chats row, after the confirmation: the Chats root no longer lists Marta, the
+    /// room itself has no menu to do it from, and the other rooms still open.
     @MainActor
     func testDeletingTheConversationWithMartaRemovesItFromChats() {
         tapSignInWithApple()
         openRoom(MockIDs.martaConversationRow, titled: "Marta")
-        let marta = app.buttons[MockIDs.martaConversationRow]
+        XCTAssertEqual(app.navigationBars["Marta"].buttons.count, 2, "back and the profile: the room offers no more menu")
+        app.navigationBars.buttons.firstMatch.tap()
+        let marta = chatsRow(MockIDs.martaConversationRow)
+        waitUntilHittableAndStill(marta)
 
-        let more = app.buttons["chat-more"]
-        XCTAssertTrue(more.waitForExistence(timeout: 5))
-        more.tap()
         let delete = app.buttons["chat-clear"]
-        XCTAssertTrue(delete.waitForExistence(timeout: 5), "the room's menu offers Delete chat")
+        openContextMenu(on: marta, until: delete)
         delete.tap()
         confirmAlert("Delete chat")
 
-        XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 10), "the chat closes")
         XCTAssertTrue(marta.waitForNonExistence(timeout: 5), "the conversation left the Chats tab")
         let kickers = app.buttons[MockIDs.kickersRow]
         XCTAssertTrue(kickers.exists)

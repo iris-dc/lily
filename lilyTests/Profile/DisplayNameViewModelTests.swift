@@ -14,7 +14,7 @@ struct DisplayNameViewModelTests {
 
     init() {
         errorCenter = ErrorCenter(logger: logger)
-        store = ProfileStore(repository: repository, identity: identity, logger: logger)
+        store = ProfileStore(repository: repository, identity: identity, snapshots: InMemoryListSnapshotStore(), logger: logger)
     }
 
     private func makeViewModel() -> DisplayNameViewModel {

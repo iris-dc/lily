@@ -59,7 +59,7 @@ struct ConversationList: View {
         return nil
     }
 
-    /// What a long press on a room offers: the same clear or delete item as the room's menu, for anyone who may chat.
+    /// What a long press on a room offers: the clear or delete item, for anyone who may chat; the room has no menu.
     @ViewBuilder private func rowMenu(for group: SportGroup) -> some View {
         if GroupAccess(group: group, userID: dependencies.identity.currentUserID).canChat {
             ChatClearMenuItem(group: group) { clearing = group }

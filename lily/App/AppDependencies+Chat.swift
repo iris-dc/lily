@@ -67,7 +67,6 @@ extension AppDependencies {
                       attachmentLoader: groups.attachments.loader,
                       identity: identity,
                       reporter: groups.errorReporter,
-                      clearer: makeChatHistoryClearer(),
                       outbox: outbox,
                       recorder: interactionRecorder,
                       logger: logger)

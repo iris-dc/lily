@@ -209,8 +209,8 @@ lily/
                  PlayBadge + DurationBadge, FileAttachmentCard + FileCard, AttachmentViewerSheet (the pager over ImageViewerPage and
                  VideoPlayerPage; + Motion for its moves), ViewerMovingPicture (the moving picture, one Canvas per layer), ViewerBackdrop (the black of one layer; 2026-11-02), ViewerStage (the
                  chat's half under the composer), ViewerHeroSource, ViewerDismissPan, QuickLookPreview, ConversationList (the Chats list, owning the clear confirmation),
-                 MessageComposer, DaySeparator, SystemMessageRow, MessageContextMenu, ChatRoomMenu (the room's menu, its clear item and
-                 the shared confirmation), PollBubble + PollOptionPill + PollComposerSheet + PollVotersSheet (polls; 2026-10-24), PinnedBar +
+                 MessageComposer, DaySeparator, SystemMessageRow, MessageContextMenu, ChatClearMenuItem (the Chats rows' clear item and its
+                 confirmation; the room's own menu was removed 2026-11-03), PollBubble + PollOptionPill + PollComposerSheet + PollVotersSheet (polls; 2026-10-24), PinnedBar +
                  ChatTranscript+Pins (the pinned bar over the transcript), ChatTranscript+Scrolling, BubbleInk (the ink colour a bubble's small
                  text reads in; 2026-10-27, reworked 2026-11-01), RowReveal, TranscriptWidth, ChatsSplitView (the Chats tab on a regular width; 2026-10-08))
     People/      Profiles and direct conversations: Models (UserProfile, GroupSummary, UserProfileDestination,

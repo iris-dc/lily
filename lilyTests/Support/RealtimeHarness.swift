@@ -116,7 +116,6 @@ final class RealtimeHarness {
                       attachmentLoader: attachmentLoader,
                       identity: identity,
                       reporter: reporter,
-                      clearer: clearer,
                       outbox: outbox,
                       recorder: recorder,
                       logger: logger,

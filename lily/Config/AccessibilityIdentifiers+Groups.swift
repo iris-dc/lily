@@ -24,7 +24,6 @@ nonisolated extension AccessibilityIdentifiers {
     static let chatSend = "chat-send"
     static let chatTitle = "chat-title"
     /// The room's "more" menu and its one item, Clear chat or Delete chat.
-    static let chatMore = "chat-more"
     static let chatClear = "chat-clear"
     /// The Report and Block items of a bubble's long-press menu.
     static let messageReport = "message-report"

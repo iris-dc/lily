@@ -12,7 +12,6 @@ struct ChatView: View {
     /// What the transcript's tiles and the viewer share for the viewer's coming and going.
     @State private var hero: ViewerHero
     /// The room awaiting the caller's word on a clear; `nil` while nothing is asked.
-    @State private var clearing: SportGroup?
     private let dependencies: AppDependencies
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
@@ -41,12 +40,6 @@ struct ChatView: View {
         .hidesTabBarOnCompact()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { infoButton }
-            ToolbarItem(placement: .topBarTrailing) {
-                ChatRoomMenu(group: group, userID: viewModel.identity.currentUserID) { clearing = group }
-            }
-        }
-        .chatClearConfirmation(for: $clearing) { _ in
-            Task { await viewModel.clearHistory() }
         }
         .task { await viewModel.appear() }
         .onDisappear { Task { await viewModel.cancel() } }

@@ -48,8 +48,6 @@ final class ChatViewModel {
     let identity: any IdentityProvider
     /// Failures reach the popup through it, and a `TERMS_REQUIRED` raises the terms sheet as on the groups screens.
     let reporter: GroupErrorReporter
-    /// Clears the room for the caller; shared with the Chats rows, so both do exactly the same.
-    let clearer: ChatHistoryClearer
     let outbox: ChatOutbox
     let recorder: any InteractionRecorder
     let logger: any Logging
@@ -71,7 +69,6 @@ final class ChatViewModel {
          attachmentLoader: AttachmentLoader,
          identity: any IdentityProvider,
          reporter: GroupErrorReporter,
-         clearer: ChatHistoryClearer,
          outbox: ChatOutbox,
          recorder: any InteractionRecorder,
          logger: any Logging,
@@ -100,7 +97,6 @@ final class ChatViewModel {
         self.attachmentLoader = attachmentLoader
         self.identity = identity
         self.reporter = reporter
-        self.clearer = clearer
         self.outbox = outbox
         self.recorder = recorder
         self.logger = logger

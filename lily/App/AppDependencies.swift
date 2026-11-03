@@ -87,7 +87,7 @@ final class AppDependencies {
         // The repositories were built around `identity` before the controller existed; close the loop before the
         // stores are built, since they read the caller for the snapshot they start from.
         identity.session = sessionController
-        profile = ProfileStore(repository: profileRepository, identity: identity, logger: logger)
+        profile = ProfileStore(repository: profileRepository, identity: identity, snapshots: listSnapshots, logger: logger)
         self.groups = GroupDependencies(repositories: groupRepositories,
                                         identity: identity,
                                         tokenProvider: tokenProvider,

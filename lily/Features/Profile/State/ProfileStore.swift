@@ -4,21 +4,38 @@ import Observation
 /// The caller's `GET /api/profile`: the name other players see, loaded once per signed-in session when Profile opens
 /// and replaced by the answer of a rename; a read that answers after a rename is dropped, the rename being the newer
 /// name. A failed load is logged, never shown: the header draws a placeholder and the editor still works, since the
-/// write does not need the read.
+/// write does not need the read. The last profile shown is kept on the device (`ListSnapshotStore`, swept with the
+/// session) and is the first frame of the next launch, so the header does not turn from a glyph into the name once
+/// per launch; a hint only, the load still runs once.
 @Observable
 final class ProfileStore: SessionObserver {
     private(set) var profile: Profile?
+    /// The user the profile was loaded for; `nil` while it is the snapshot's.
     private var loadedUserID: String?
     private let load = SingleFlight()
 
     private let repository: any ProfileRepository
     private let identity: any IdentityProvider
+    private let snapshots: any ListSnapshotStore
     private let logger: any Logging
 
-    init(repository: any ProfileRepository, identity: any IdentityProvider, logger: any Logging) {
+    init(repository: any ProfileRepository,
+         identity: any IdentityProvider,
+         snapshots: any ListSnapshotStore,
+         logger: any Logging) {
         self.repository = repository
         self.identity = identity
+        self.snapshots = snapshots
         self.logger = logger
+        profile = identity.currentUserID.flatMap(snapshot(for:))
+    }
+
+    private func snapshotKey(for userID: String) -> ListSnapshotKey {
+        ListSnapshotKey(list: AppConfig.Lists.profileSnapshot, userID: userID)
+    }
+
+    private func snapshot(for userID: String) -> Profile? {
+        snapshots.load(Profile.self, for: snapshotKey(for: userID))
     }
 
     var displayName: String? { profile?.displayName }
@@ -32,10 +49,12 @@ final class ProfileStore: SessionObserver {
             clear()
             return
         }
-        guard profile == nil || loadedUserID != userID else {
+        guard loadedUserID != userID else {
             logger.debug(.cache, "Profile reused for the signed-in user")
             return
         }
+        // A user who signed in after launch finds their snapshot here, for the frames the load takes.
+        if profile == nil { profile = snapshot(for: userID) }
         await load.run(key: userID) { [self] in await performLoad(for: userID) }
     }
 
@@ -44,12 +63,11 @@ final class ProfileStore: SessionObserver {
             let loaded = try await repository.profile()
             guard identity.isStillCaller(userID, orDrop: "Profile answer", logger: logger) else { return }
             // A rename that landed while this read was out holds the newer name; the read's answer is the older one.
-            guard profile == nil || loadedUserID != userID else {
+            guard loadedUserID != userID else {
                 logger.debug(.cache, "Profile answer superseded by a rename; dropped")
                 return
             }
-            profile = loaded
-            loadedUserID = userID
+            keep(loaded, for: userID)
             logger.info(.auth, "Profile loaded for user \(userID)")
         } catch {
             guard !AppError.isCancellation(error) else {
@@ -74,11 +92,17 @@ final class ProfileStore: SessionObserver {
             updated = landed
         }
         if identity.isStillCaller(userID, orDrop: "Rename answer", logger: logger) {
-            profile = updated
-            loadedUserID = userID
+            keep(updated, for: userID)
             logger.info(.auth, "Display name updated for user \(userID)")
         }
         return updated
+    }
+
+    /// The backend's profile becomes the header's and the next launch's first frame.
+    private func keep(_ loaded: Profile, for userID: String) {
+        profile = loaded
+        loadedUserID = userID
+        snapshots.save(loaded, for: snapshotKey(for: userID))
     }
 
     /// The profile read back after a failure that leaves the outcome unknown, when it shows the rename landed (the

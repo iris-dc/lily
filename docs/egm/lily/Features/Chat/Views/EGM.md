@@ -33,7 +33,7 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `onOpenRoom: (SportGroup) -> Void`; `InboxRow` over `GroupRowList`, Clear/Delete long-press item, pull-to-refresh.
 - `[ChatView.swift:ChatView]` `init(viewModel: ChatViewModel, dependencies:)` (no `onGone`: the split view's
   watcher is the one mechanism); owns the view model and a `ViewerHero` as `@State`; transcript, `ViewerStage`
-  overlay, composer inset, toolbar info link and `ChatRoomMenu`, empty and failed placeholders through
+  overlay, composer inset, toolbar info link (the room offers no menu), empty and failed placeholders through
   `FadingPresence` (`lily/Core/UI/Components/FadingPresence.swift`) on `Animation.firstPageFade`.
 - `[ChatTranscript.swift:ChatTranscript]` `init(viewModel:dependencies:hero:)`; `static let endMarkerID`; `@State`
   `ScrollPosition`, `ScrollTracker`, `FirstPageReveal`, the presented items, `shownPinIndex`, `highlightedMessageID`,
@@ -55,8 +55,8 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   caption in `.primary` and a cancel button, an accessibility container `chatReplyPreview`.
 - `[PinnedBar.swift:PinnedBar]` `pins`, `shownIndex`, `canUnpin`, `onTap`, `onUnpin`; the accent stripe, the title in
   `.primary`, the quote in `.secondary`.
-  `[DaySeparator.swift:DaySeparator]` `day`, `now` (`ChatDayLabel`). `[ChatRoomMenu.swift:ChatRoomMenu]` `group`,
-  `userID`, `onClear`; `ChatClearMenuItem(group:action:)`; `View.chatClearConfirmation(for: Binding<SportGroup?>,
+  `[DaySeparator.swift:DaySeparator]` `day`, `now` (`ChatDayLabel`). `[ChatClearMenuItem.swift:ChatClearMenuItem]`
+  `group`, `action`; `View.chatClearConfirmation(for: Binding<SportGroup?>,
   onConfirm:)`, an `.alert(item:)` worded by `ChatClearPrompt`.
 - `[TranscriptWidth.swift:EnvironmentValues.transcriptWidth]` `@Entry CGFloat?`; `View.transcriptFraction
   (_:alignment:)`, `View.measuringTranscriptWidth(_:)`. `[MessageArrival.swift:MessageRemovalTransition]`
@@ -128,8 +128,8 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `HomeContent(for:) == .overview`, `myGroups.loadIfStale()` before `inbox.loadIfStale()`.
 - `[ChatsSplitView.swift:ChatsSplitView]` A selected room not `isAvailable(in: myGroups.groups)` clears
   `navigation.selectedConversation`; each room's `ChatView` is `.id(id)`, so `appear()` and `cancel()` run per room.
-- `[ConversationList.swift:ConversationList]`, `[ChatRoomMenu.swift:ChatRoomMenu]` Clear/Delete only when
-  `GroupAccess(group:userID:).canChat`, and only after the alert's destructive button.
+- `[ConversationList.swift:ConversationList]` Clear/Delete only from a Chats row's context menu, only when
+  `GroupAccess(group:userID:).canChat`, and only after the alert's destructive button; the room has no menu.
 - `[ChatView.swift:ChatView]` The placeholder shows only when `rows.isEmpty && !isAwaitingHistory`, Try again only
   when `historyLoadFailed`; `isGone` calls `dismiss()`; the info link is the counterpart's profile, else the
   tournament, else the group, one `chat-title` identifier on the `Group` around the three.

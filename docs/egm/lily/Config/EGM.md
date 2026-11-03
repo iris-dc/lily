@@ -60,7 +60,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `minimumLeadTimeMinutes = 15`, `priceLimitExclusive = 10_000_000`. `Editing`: `startMargin = 60`, `minimumLeadTime = 0`.
 - `Lists`: `staleAfter = 60`, `retryAfterFailure = 10`, `snapshotDirectoryName = "ListSnapshots"`, `snapshotFormat = 2`,
   `snapshotFormatFileName = "format"`, `guestSnapshotName = "guest"`, the snapshot names (`events-upcoming`,
-  `events-joined`, `tournaments-upcoming`, `tournaments-mine`, `groups-mine`, `groups-discover`,
+  `events-joined`, `tournaments-upcoming`, `tournaments-mine`, `groups-mine`, `groups-discover`, `profile`,
   `groupEventsSnapshot(_:)`, `groupTournamentsSnapshot(_:)`). `Location`: `mockCenter = Coordinate(52.5200, 13.4050)`,
   `fixTimeout = .seconds(8)`, `firstFixWait = .seconds(1.5)`, `fixTTL = .seconds(300)`, `failedFixTTL = .seconds(30)`.
   `Statistics`: `batchSize = 10`, `flushDelay = .seconds(30)`, `maxBuffered = 100`, `maxFilterTypes = 32`.

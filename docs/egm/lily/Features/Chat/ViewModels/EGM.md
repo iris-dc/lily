@@ -20,7 +20,7 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   Pasteboard`, `cache: any ChatHistoryCache`, `realtime: RealtimeSessionController`, `catchUp: ChatCatchUp`,
   `unread: UnreadCenter`, `me: MeStore`, `blocks: BlockListStore`, `attachments: AttachmentComposerModel`,
   `attachmentLoader: AttachmentLoader`, `identity: any IdentityProvider`, `reporter: GroupErrorReporter`,
-  `clearer: ChatHistoryClearer`, `outbox: ChatOutbox`, `recorder: any InteractionRecorder`, `logger: any Logging`,
+  `outbox: ChatOutbox`, `recorder: any InteractionRecorder`, `logger: any Logging`,
   `now`, `sleep`, `tryAgainDelay = AppConfig.API.tryAgainDelay`; builds `SystemRowContent` and `ReadMarkerFlusher`.
 - `[ChatViewModel.swift:ChatViewModel]` Observed state: `group`, `draft: MessageDraft`, `attachments`,
   `private(set) members: [GroupMember]`, `isLoadingHistory`, `historyLoadsFinished`, `hasLoadedHistory`,
@@ -39,7 +39,7 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
 - `[ChatViewModel+Live.swift:ChatViewModel]` `startLive()`, `handle(_ envelope: RealtimeEnvelope) async`.
 - `[ChatViewModel+Attachments.swift:ChatViewModel]` `attachmentsEnabled` (from `MeStore`), `outgoingDraft`,
   `confirmPending(clientMessageID:with:) async`.
-- `[ChatViewModel+Clear.swift:ChatViewModel.clearHistory]`, `[ChatViewModel+Conversation.swift:ChatViewModel]`
+- `[ChatViewModel+Conversation.swift:ChatViewModel]`
   `subtitle: String?`, `profile(of row: MessageRow) -> UserProfileDestination`.
 - `[ChatViewModel+Events.swift:ChatViewModel]` `systemText(for:)`, `loadLinkedContent(for:) async`,
   `destination(for:) async -> SystemRowDestination?`, `copy(_:)`, `canDelete(_:) -> Bool`.
@@ -149,8 +149,7 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
 ## Side Effects
 
 - `[ChatViewModel]` Network through `ChatRepository` (`send`, `delete`, `older`, `pin`, `unpin`, `vote`, `voters`,
-  `polls`), `GroupRepository.members`, `ChatCatchUp.catchUp` and `loadNewest`, `ChatHistoryClearer.clear`,
-  `BlockListStore.block`.
+  `polls`), `GroupRepository.members`, `ChatCatchUp.catchUp` and `loadNewest`, `BlockListStore.block`.
 - `[ChatViewModel]` Realtime: `RealtimeSessionController.setOpenRoom`, `closeRoom`, `ensureSubscribed`, `moveEpoch`,
   `removeGroupLocally`, and `envelopes(for:)` consumed by `liveTask`. Cache: `ChatHistoryCache.update`, `room`.
   Outbox writes through `pending`. Read marker through `ReadMarkerFlusher.opened`, `flush`, `noteRead`,

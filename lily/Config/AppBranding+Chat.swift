@@ -21,7 +21,6 @@ nonisolated extension AppBranding {
         static var loadFailedTitle: String { localized("Couldn't load messages") }
         /// The room's "more" menu and its one item: a group's history is cleared for the caller, a conversation is
         /// deleted for them (it returns, without the old messages, when the other person writes).
-        static var more: String { localized("More") }
         static var clearChat: String { localized("Clear chat") }
         static var deleteChat: String { localized("Delete chat") }
         static var clearConfirmationTitle: String { localized("Clear chat history?") }

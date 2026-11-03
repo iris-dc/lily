@@ -111,6 +111,7 @@ nonisolated enum AppConfig {
         static let mineTournamentsSnapshot = "tournaments-mine"
         static let mineGroupsSnapshot = "groups-mine"
         static let discoverGroupsSnapshot = "groups-discover"
+        static let profileSnapshot = "profile"
         /// A group's segments are built when the group opens and keep no snapshot; the name is for the key alone.
         static func groupEventsSnapshot(_ groupID: String) -> String { "events-group-\(groupID)" }
         static func groupTournamentsSnapshot(_ groupID: String) -> String { "tournaments-group-\(groupID)" }

@@ -5,22 +5,29 @@ Source: `lily/Features/Profile/State/`
 ## Overview
 
 `ProfileStore`, the one source of the caller's backend profile (`GET /api/profile`): the name other players see, loaded
-once per signed-in session when Profile opens, replaced by the answer of a rename and cleared with the session. A failed
-load is logged, never shown, since the header draws a placeholder and the editor works without the read. The store is
-built by the composition root (`lily/App/AppDependencies.swift`) and registered as a `SessionObserver`.
+once per signed-in session when Profile opens, replaced by the answer of a rename and cleared with the session. The
+last profile shown is kept in the `ListSnapshotStore` and is the first frame of the next launch, a hint the load still
+runs over. A failed load is logged, never shown, since the header draws a placeholder and the editor works without the
+read. The store is built by the composition root (`lily/App/AppDependencies.swift`) and registered as a
+`SessionObserver`.
 
 ## Interface
 
 - `@Observable final class ProfileStore: SessionObserver` `[lily/Features/Profile/State/ProfileStore.swift:ProfileStore]`:
-  `init(repository: any ProfileRepository, identity: any IdentityProvider, logger: any Logging)`;
+  `init(repository: any ProfileRepository, identity: any IdentityProvider, snapshots: any ListSnapshotStore, logger: any Logging)`;
   `private(set) var profile: Profile?`, `displayName: String?`, `isDefaultName: Bool`, `isLoading: Bool`;
   `loadIfNeeded() async`, `rename(to:) async throws -> Profile`, `sessionDidEnd()`.
 
 ## Invariants
 
-- `loadIfNeeded` clears the store for a guest, reuses a profile loaded for the current user (one debug line), and
-  otherwise runs one load per user id through `SingleFlight`, so concurrent callers join one request
-  `[lily/Features/Profile/State/ProfileStore.swift:loadIfNeeded]`.
+- `init` starts from the snapshot of the current user, if any (`ListSnapshotKey(list: AppConfig.Lists.profileSnapshot,
+  userID:)`), with `loadedUserID` nil, so the snapshot shows but never counts as loaded
+  `[lily/Features/Profile/State/ProfileStore.swift:ProfileStore.init]`.
+- `loadIfNeeded` clears the store for a guest, reuses a profile loaded for the current user (one debug line), otherwise
+  reads the user's snapshot when nothing shows yet and runs one load per user id through `SingleFlight`, so concurrent
+  callers join one request `[lily/Features/Profile/State/ProfileStore.swift:loadIfNeeded]`.
+- A load's answer and a rename's both go through `keep(_:for:)`: the profile, `loadedUserID` and the snapshot
+  `[lily/Features/Profile/State/ProfileStore.swift:keep]`.
 - A load's answer is kept only while the same user is the caller (`IdentityProvider.isStillCaller`) and only if no
   rename landed meanwhile: the rename is the newer name, so the read's answer is dropped with a debug line
   `[lily/Features/Profile/State/ProfileStore.swift:performLoad]`.
@@ -37,6 +44,8 @@ built by the composition root (`lily/App/AppDependencies.swift`) and registered 
 
 - Network through `ProfileRepository`: `profile()` on a load and on the read-back after an unknown outcome,
   `updateDisplayName(_:)` on a rename.
+- `ListSnapshotStore.load` at init and at a load for a user whose profile is not shown, `save` with every kept profile;
+  the sweep on sign-out is the store's own (`sessionDidEnd` clears memory only).
 - Logging, ids only, never the name: `.auth` info for a loaded profile, an updated name and a rename that landed despite
   a failure; `.auth` warning for a failed load and a read-back that failed; `.auth` debug for a cancelled load and a
   rename that did not land; `.cache` debug for a reused profile, a dropped answer (two lines: `isStillCaller`'s
