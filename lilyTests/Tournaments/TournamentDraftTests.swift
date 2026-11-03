@@ -12,7 +12,7 @@ struct TournamentDraftTests {
 
     @Test func aCompleteDraftHasNoIssues() {
         let draft = TournamentDraft.fixture(now: Self.now)
-        #expect(draft.issues(now: Self.now).isEmpty && draft.isValid(now: Self.now))
+        #expect(draft.issues(now: Self.now).isEmpty)
         #expect(draft.resolvedAllowsDraws, "football draws by default")
         #expect(draft.effectiveVisibility == .public && !draft.isTeam)
     }

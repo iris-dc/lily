@@ -20,8 +20,9 @@ arrives on them).
   [Models](./Models/EGM.md) (`RealtimeEnvelope`, `RealtimeChannel`, `RealtimeConnectionState`,
   `RealtimeTransportError`, `Backoff`, `RenewalDelay`), [Implementations](./Implementations/EGM.md) (mock and
   no-op transports, endpoint providers).
-- `@Observable final class RealtimeSessionController: SessionObserver` (main-actor). Observable state read by
-  screens: `var state: RealtimeConnectionState` (starts `.disconnected`), `var subscribedRooms: [String: Int]` (the
+- `final class RealtimeSessionController: SessionObserver` (main-actor; not `@Observable`: no view reads it; its holders call its
+  methods, and the one property read outside (`ChatViewModel+History`'s `realtime.openRoom`) is a plain read in an
+  async method). State: `var state: RealtimeConnectionState` (starts `.disconnected`), `var subscribedRooms: [String: Int]` (the
   epoch each room is subscribed at), `var openRoom: RoomSubscription?`, `var lastOpenRoomID: String?` (the room last
   opened, whose pages stay until another opens)
   [`lily/Core/Realtime/RealtimeSessionController.swift:RealtimeSessionController`].
@@ -45,7 +46,8 @@ arrives on them).
   `sessionDidEnd()`, `desiredRooms() -> [String: Int]`, `noteEpoch(_ epoch: Int, for groupID: String)`
   [`RealtimeSessionController.swift:RealtimeSessionController`].
 - Connection (`+Connection.swift`): `connect(fresh: Bool) async`, `scheduleRenewal(for token: String?, fresh: Bool)`,
-  `scheduleReconnect(reason: String)`, `reconnect(reason: String) async`, `close(reason: String) async`,
+  `scheduleReconnect(reason: String)`, `arm(_ slot: ReferenceWritableKeyPath<RealtimeSessionController, Task<Void, Never>?>, after: TimeInterval, then: @MainActor (RealtimeSessionController) async -> Void)`
+  (the one timer shape of the renewal, the reconnect and a jittered resubscribe), `reconnect(reason: String) async`, `close(reason: String) async`,
   `catchUpOpenRoomWithoutConnection() async`, `adoptCachedEpochs() -> Set<String>`
   [`lily/Core/Realtime/RealtimeSessionController+Connection.swift:RealtimeSessionController.connect(fresh:)`].
 - Routing (`+Routing.swift`): `reconcileSubscriptions()`, `subscribe(to channel: RealtimeChannel)`,
@@ -75,7 +77,9 @@ arrives on them).
   [`+Connection.swift:RealtimeSessionController.token(fresh:)`, `+Connection.swift:RealtimeSessionController.noteMissingToken(fresh:)`].
 - Renewal follows `RenewalDelay` from the token's `exp` (`JWTClaims.expiration`), `lastExpiry` and `now()`; the
   previous `renewalTask` is cancelled; the task clears its slot before `reconnect(reason: "token renewal")`
-  [`+Connection.swift:RealtimeSessionController.scheduleRenewal(for:fresh:)`].
+  [`+Connection.swift:RealtimeSessionController.scheduleRenewal(for:fresh:)`]. All three timers go through `arm(_:after:then:)`:
+  cancel the slot's occupant, sleep, clear the slot, then act, so a `close()` inside the action never cancels the task doing it
+  [`+Connection.swift:RealtimeSessionController.arm(_:after:then:)`].
 - `scheduleReconnect` needs `isActive`, a user and no `reconnectTask` already armed; the delay is `backoff.next`. A
   connect that lands cancels a stale reconnect timer [`+Connection.swift:RealtimeSessionController.scheduleReconnect(reason:)`].
 - After a connect: subscribe `.user(sub: user.id)`, reconcile rooms, then the resume protocol: `store.reload()`, bail
@@ -107,7 +111,7 @@ arrives on them).
   `groupDeleted` drops the group; `groupUpdated` applies to the store and adopts the epoch; `memberJoined` adopts the
   epoch; `tournamentChanged` and `matchUpdated` bump `tournamentChanges` and adopt the epoch; `membershipChanged`,
   `inboxItem` and `unknown` on a room are ignored
-  [`+Routing.swift:RealtimeSessionController.route(_:from:)`, `+Routing.swift:RealtimeSessionController.applyRoomEvent(_:groupID:subscribedEpoch:)`, `+Routing.swift:RealtimeSessionController.resubscribeJittered(_:to:memberCount:)`].
+  (the two ignore lines name the channel's `path`) [`+Routing.swift:RealtimeSessionController.route(_:from:)`, `+Routing.swift:RealtimeSessionController.applyRoomEvent(_:groupID:on:)`, `+Routing.swift:RealtimeSessionController.resubscribeJittered(_:to:memberCount:)`].
 - User-channel events: `membershipChanged` that ends the membership drops the group, otherwise (a join, a role change
   or a kind this build does not know, `MembershipChange.Kind.unknown`) notes the epoch, bumps `groupChanges` and
   reconciles, so Mine refetches and the room stays; the log lines name the kind by `wireName`; `inboxItem` goes to

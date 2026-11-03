@@ -41,7 +41,7 @@ struct MatchReminderCard: View {
                     .font(LilyTheme.Fonts.caption)
                     .foregroundStyle(.secondary)
                 Text(verbatim: reminder.tournamentName)
-                    .font(.body.weight(.semibold))
+                    .font(LilyTheme.Fonts.itemTitle)
                 Text(Copy.versus(reminder.opponentName))
                     .font(.subheadline)
                 if let place = reminder.locationName {

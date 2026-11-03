@@ -7,8 +7,6 @@ struct GroupRow: View {
     let group: SportGroup
     /// From `UnreadCenter`, which the live connection and the open chat keep current between Mine loads.
     let hasUnread: Bool
-    /// Whether "Active today" applies is judged against this clock, so previews and screenshots are stable.
-    var now: Date = .now
 
     var body: some View {
         if let counterpart = group.counterpart {
@@ -27,7 +25,7 @@ struct GroupRow: View {
     }
 
     private var caption: String {
-        group.caption(suffix: group.isActive(on: now) ? AppBranding.Groups.activeTodayCaption : nil)
+        group.caption(suffix: group.isActive(on: .now) ? AppBranding.Groups.activeTodayCaption : nil)
     }
 }
 

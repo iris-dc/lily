@@ -80,9 +80,6 @@ struct UserProfileView: View {
             }
         }
         .padding(.horizontal, DesignTokens.Layout.screenMargin)
-        // A container, not a stamp on every row: the rows keep their `group-row-<id>` identifiers.
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(AccessibilityIdentifiers.profileSharedGroups)
     }
 
     /// The popup said what went wrong; the section offers the retry.

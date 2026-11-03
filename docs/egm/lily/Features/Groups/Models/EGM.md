@@ -81,8 +81,9 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   [`lily/Features/Groups/Models/SentInvite.swift`:`SentInvite`]; `InviteTarget` (`group(id:)`, `tournament(id:)`;
   `id`, `logName`, `logCategory`) [`lily/Features/Groups/Models/InviteTarget.swift`:`InviteTarget`].
 - Moderation: `ReportReason: String` (`spam`, `harassment`, `inappropriate`, `other`; `displayName`); `ReportTarget
-  { kind: Kind, id, groupID? }` with `Kind` = `message`, `group`, `user`, `tournament`, `logCategory` and the factories
-  `message(id:groupID:)`, `group(id:)`, `tournament(id:)`, `user(id:)`; `ReportReceipt { id, createdAt }`;
+  { kind: Kind, id, groupID? }` with `Kind` = `message`, `group`, `tournament` (no `user`: the app files no user report;
+  Laurel's `USER` stays unused), `logCategory` and the factories `message(id:groupID:)`, `group(id:)`,
+  `tournament(id:)`; `groupID` stays optional for the wire's optional `groupId`; `ReportReceipt { id, createdAt }`;
   `BlockedUsers { blockedUserIds }` [`lily/Features/Groups/Models/Report.swift`:`ReportTarget`].
 - Cross-feature values: `EventGroupRef { id, name, visibility, isDeleted }` with `isLinkable`, `isPrivate`
   [`lily/Features/Groups/Models/EventGroupRef.swift`:`EventGroupRef`]; `Counterpart { userId, displayName }` with

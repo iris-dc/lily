@@ -3,7 +3,6 @@ import Foundation
 nonisolated extension AppBranding {
     /// Copy of reporting, blocking and the terms sheet.
     enum Moderation {
-        static var report: String { localized("Report") }
         static var reportMessage: String { localized("Report message") }
         static var block: String { localized("Block") }
         /// The confirmation before a block: "Block Marta?" over the line that says what a block does.
@@ -32,9 +31,5 @@ nonisolated extension AppBranding {
         static var privacyLink: String { localized("Privacy policy") }
         static var supportLink: String { localized("Support") }
         static var accept: String { localized("I agree") }
-
-        static func contact(email: String) -> String {
-            localized("Questions? Write to \(email)")
-        }
     }
 }

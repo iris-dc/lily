@@ -21,8 +21,7 @@ struct GroupTournamentsSegment: View {
     }
 
     private var loadFailedState: EmptyStateView {
-        EmptyStateView(symbolName: DesignTokens.Symbols.error,
-                       title: Copy.loadFailedTitle,
-                       message: AppBranding.Events.loadFailedMessage)
+        EmptyStateView.loadFailed(title: Copy.loadFailedTitle,
+                                  message: AppBranding.Events.loadFailedMessage)
     }
 }

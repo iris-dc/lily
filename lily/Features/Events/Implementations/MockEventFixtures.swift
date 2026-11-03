@@ -135,7 +135,6 @@ nonisolated enum MockEventFixtures {
     /// Hours until the first fixture starts, and the gap between consecutive fixtures.
     private static let firstStartHours = 3.0
     private static let hoursBetweenEvents = 7.0
-    private static let secondsPerHour = 3600.0
 
     static func make(now: Date, count: Int) -> [SportEvent] {
         (0..<count).map { index in
@@ -145,7 +144,7 @@ nonisolated enum MockEventFixtures {
                 id: "mock-event-\(index)",
                 title: template.title,
                 type: template.type,
-                startsAt: now.addingTimeInterval(hoursAhead * secondsPerHour),
+                startsAt: now.addingTimeInterval(hoursAhead * .hour),
                 location: EventLocation(name: template.location, coordinate: coordinate(for: template)),
                 capacity: template.capacity,
                 allowsExtraParticipants: template.allowsExtraParticipants,

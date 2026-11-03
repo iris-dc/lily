@@ -7,4 +7,14 @@ extension View {
     func lilyFormSheet() -> some View {
         presentationSizing(.form)
     }
+
+    /// `lilyFormSheet()` for a sheet that writes: the grabber is the hint that a swipe closes it, the swipe is refused
+    /// while a write is out so its outcome is never unknown, and the popup is mounted here because a sheet is drawn
+    /// above the root's.
+    func lilyFormSheet(errorCenter: ErrorCenter, lockedWhile isBusy: Bool) -> some View {
+        lilyFormSheet()
+            .presentationDragIndicator(.visible)
+            .interactiveDismissDisabled(isBusy)
+            .errorPopup(errorCenter)
+    }
 }

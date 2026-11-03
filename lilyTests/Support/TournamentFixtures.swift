@@ -186,7 +186,7 @@ extension ContractSamples {
     {"tournament":\(startedTournament),"entries":[\(entry)],"matches":[\(confirmedMatch)],"standings":[\(standing)]}
     """
     static let tournamentList = #"{"items":[\#(tournament)]}"#
-    /// The system rows of a tournament's room (plan 2.4): `tournamentId` on every one, `matchId` on a result and a
+    /// The system rows of a tournament's room: `tournamentId` on every one, `matchId` on a result and a
     /// dispute, the server-rendered names as `text`; Laurel appends the two ids after the message's other fields.
     static let tournamentStartedMessage = """
     {"id":"01J8ZK7Q9X2M4N6P8R0T2V4W80","groupId":"0d9e8f7a-6b5c-4d3e-9f2a-1b0c9d8e7f6a","senderUserId":"seed-marta",\

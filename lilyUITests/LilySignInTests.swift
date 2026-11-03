@@ -90,7 +90,7 @@ final class LilySignInTests: LilyUITestCase {
         accept.tap()
         XCTAssertTrue(accept.waitForNonExistence(timeout: 10), "the recorded acceptance closes the sheet")
 
-        openRoom("group-row-mock-group-kickers", titled: "Kreuzberg Kickers")
+        openRoom(MockIDs.kickersRow, titled: "Kreuzberg Kickers")
 
         let text = "See you at seven"
         enter(text, into: app.descendants(matching: .any)["chat-composer"])

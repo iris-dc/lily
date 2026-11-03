@@ -98,17 +98,17 @@ extension RealtimeSessionController {
         switch channel {
         case .user:
             applyUserEvent(envelope)
-        case .room(let groupID, let epoch):
+        case .room(let groupID, _):
             guard envelope.groupID == nil || envelope.groupID == groupID else {
                 logger.warning(.chat, "Dropped an envelope of another group (\(envelope.groupID ?? "?")) on \(channel.path)")
                 return
             }
-            applyRoomEvent(envelope, groupID: groupID, subscribedEpoch: epoch)
+            applyRoomEvent(envelope, groupID: groupID, on: channel)
             deliver(envelope, to: groupID)
         }
     }
 
-    private func applyRoomEvent(_ envelope: RealtimeEnvelope, groupID: String, subscribedEpoch: Int) {
+    private func applyRoomEvent(_ envelope: RealtimeEnvelope, groupID: String, on channel: RealtimeChannel) {
         switch envelope {
         case .message(let message):
             applyMessage(message, groupID: groupID)
@@ -129,10 +129,8 @@ extension RealtimeSessionController {
             adoptEpoch(envelope.channelEpoch, for: groupID)
         case .membershipChanged, .inboxItem:
             // Both belong to the user channel; on a room they say nothing about the room.
-            let channel = RealtimeChannel.room(groupID: groupID, epoch: subscribedEpoch)
             logger.debug(.chat, "Ignored a user-channel event on \(channel.path)")
         case .unknown(let type):
-            let channel = RealtimeChannel.room(groupID: groupID, epoch: subscribedEpoch)
             logger.debug(.chat, "Ignored a \(type) event on \(channel.path)")
         }
     }
@@ -210,12 +208,7 @@ extension RealtimeSessionController {
         let delay = random(0...min(Double(memberCount) * timing.resubscribeJitterPerMember, timing.resubscribeJitterMax))
         // One decimal, not Int(delay): a sub-second jitter would print as 0.
         logger.debug(.chat, "Resubscribing to group \(groupID) at epoch \(epoch) in \(String(format: "%.1f", delay))s")
-        pendingResubscribes[groupID]?.cancel()
-        pendingResubscribes[groupID] = Task { [weak self, sleep] in
-            guard (try? await sleep(.seconds(delay))) != nil, let self else { return }
-            pendingResubscribes[groupID] = nil
-            reconcileSubscriptions()
-        }
+        arm(\.pendingResubscribes[groupID], after: delay) { $0.reconcileSubscriptions() }
     }
 
     /// The caller is out of the group, whichever way (an event, a page or write refused with `NOT_A_MEMBER` or

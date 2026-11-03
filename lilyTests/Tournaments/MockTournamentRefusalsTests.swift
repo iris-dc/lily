@@ -18,7 +18,7 @@ struct MockTournamentRefusalsTests {
 
     var now: Date { Self.clock }
     /// Keeps registration open for a seeded tournament without a deadline.
-    var tomorrow: Date { Self.clock.addingTimeInterval(MockTournamentFixtures.secondsPerDay) }
+    var tomorrow: Date { Self.clock.addingTimeInterval(.day) }
 
     func seed(_ tournament: Tournament, entries: [TournamentEntry] = []) {
         repository.details[tournament.id] = .fixture(tournament: tournament, entries: entries)

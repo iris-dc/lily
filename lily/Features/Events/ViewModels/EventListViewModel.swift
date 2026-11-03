@@ -23,8 +23,8 @@ final class EventListViewModel {
 
     /// Shared with the filter and freshness extensions in the sibling files, hence not `private`.
     let recorder: any InteractionRecorder
-    let logger: any Logging
     let now: () -> Date
+    private let logger: any Logging
     /// What the wait for the first fix sleeps on; injected so a test moves it by hand.
     private let sleep: Sleep
     /// The user's currency (`CurrencyStore.currencyCode`): what the price cap is typed and judged in.
@@ -110,16 +110,19 @@ final class EventListViewModel {
     /// is down does not hammer it, unless an event changed elsewhere or the caller changed meanwhile, which proves
     /// the backend is up and the answer different; `load()` (pull-to-refresh) never waits.
     func loadIfStale() async {
-        guard !isWaitingToRetry else {
+        let decision = freshness.decision(now: now(),
+                                          version: changes.version,
+                                          userID: identity.currentUserID,
+                                          position: requestPosition)
+        switch decision {
+        case .waitAfterFailure:
             logger.debug(.cache, "Events for scope \(scope) failed to load recently; not retrying yet")
-            return
-        }
-        guard let reason = stalenessReason else {
+        case .fresh:
             logger.debug(.cache, "Events for scope \(scope) are fresh; skipping reload")
-            return
+        case .stale(let reason):
+            logger.debug(.cache, "Events for scope \(scope) are stale (\(reason)); reloading")
+            await load()
         }
-        logger.debug(.cache, "Events for scope \(scope) are stale (\(reason)); reloading")
-        await load()
     }
 
     /// Always asks the repository (pull-to-refresh); a call made while one is in flight is dropped. Whatever landed

@@ -20,8 +20,8 @@ avatar, name, Message when allowed, the shared groups). Loading and writes belon
 - `UserProfileView(viewModel: UserProfileViewModel)` `[lily/Features/People/Views/UserProfileView.swift:UserProfileView]`:
   `ContentScreen` with a `ScrollView` in a `readableColumn()`, inline title `viewModel.displayName`; private `header`,
   `messageButton` (a `BusyButton` with `lilyProminentButton()`, identifier `AccessibilityIdentifiers.profileMessage`,
-  `profile-message`), `sharedGroups`, `sharedGroupsContent`, `rows(_:)` (container identifier
-  `AccessibilityIdentifiers.profileSharedGroups`, `profile-shared-groups`), `loadFailed`, `note(_:)`.
+  `profile-message`), `sharedGroups`, `sharedGroupsContent`, `rows(_:)` (a `LazyVStack` of `SharedGroupRow`s, no container identifier),
+  `loadFailed`, `note(_:)`.
 - Copy: `AppBranding.People.message`, `sharedGroupsTitle`, `noSharedGroups`, `loadFailedTitle`,
   `AppBranding.Groups.tryAgain` `[lily/Features/People/Views/UserProfileView.swift:UserProfileView]`.
 
@@ -40,7 +40,7 @@ avatar, name, Message when allowed, the shared groups). Loading and writes belon
   `sharedGroups` the "no shared groups" note; otherwise the rows in the order received (no filtering or sorting), each
   followed by `AvatarRowDivider()` `[lily/Features/People/Views/UserProfileView.swift:sharedGroupsContent]`,
   `[lily/Features/People/Views/UserProfileView.swift:rows]`.
-- The rows container is `.accessibilityElement(children: .contain)` before `profileSharedGroups`, so each row keeps
+- The rows container carries no accessibility element or identifier of its own, so each row keeps
   its `group-row-<id>` `[lily/Features/People/Views/UserProfileView.swift:rows]`.
 - No `LayoutMode` references in the three files.
 

@@ -19,12 +19,10 @@ final class PushCoordinator: SessionObserver, PushOptIn {
     private let identity: any IdentityProvider
     private let opener: EventOpener
     private let tournamentOpener: TournamentOpener
-    private let relay: PushEventRelay
     private let defaults: UserDefaults
     private let appVersion: AppVersion
     /// The language the app shows, read at each registration so the backend's reminder follows a change.
     private let languageCode: () -> String
-    private let unregisterTimeout: Duration
     private let sleep: Sleep
     private let logger: any Logging
     private let now: () -> Date
@@ -38,7 +36,6 @@ final class PushCoordinator: SessionObserver, PushOptIn {
          defaults: UserDefaults,
          appVersion: AppVersion = .current(),
          languageCode: @escaping () -> String,
-         unregisterTimeout: Duration = AppConfig.Push.unregisterTimeout,
          sleep: @escaping Sleep = systemSleep,
          logger: any Logging,
          now: @escaping () -> Date = { .now }) {
@@ -47,11 +44,9 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         self.identity = identity
         self.opener = opener
         self.tournamentOpener = tournamentOpener
-        self.relay = relay
         self.defaults = defaults
         self.appVersion = appVersion
         self.languageCode = languageCode
-        self.unregisterTimeout = unregisterTimeout
         self.sleep = sleep
         self.logger = logger
         self.now = now
@@ -103,13 +98,15 @@ final class PushCoordinator: SessionObserver, PushOptIn {
 
     /// Runs while the Bearer is still sent, so the backend stops pushing to this device before the session is gone. A
     /// registration in flight is awaited first, or its PUT could leave the device registered to the departed account.
-    /// The whole waits `unregisterTimeout` at most: the row expires on its own, and another account registering the
-    /// token takes it over.
+    /// The whole waits `AppConfig.Push.unregisterTimeout` at most: the row expires on its own, and another account
+    /// registering the token takes it over.
     func sessionWillEnd() async {
         guard registered != nil || registration != nil else { return }
         let tokenBefore = registered?.token
         do {
-            try await Deadline.within(unregisterTimeout, sleep: sleep, orThrow: PushRegistrationError.timedOut) { [self] in
+            try await Deadline.within(AppConfig.Push.unregisterTimeout,
+                                      sleep: sleep,
+                                      orThrow: PushRegistrationError.timedOut) { [self] in
                 // Awaited, never cancelled: a cancelled PUT may have landed, and nothing here would know its token.
                 await registration?.value
                 try await unregister(tokens: [tokenBefore, registered?.token].compactMap { $0 })

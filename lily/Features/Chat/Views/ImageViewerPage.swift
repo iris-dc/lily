@@ -11,12 +11,12 @@ struct ImageViewerPage: View {
     let message: ChatMessage
     let loader: AttachmentLoader
     /// The full picture, when the chat decoded it before the viewer opened.
-    var preloaded: UIImage?
+    let preloaded: UIImage?
     /// The tile's thumbnail, when the chat had it on screen.
-    var thumbnail: UIImage?
-    var onPreview: (UIImage) -> Void = { _ in }
-    var onLoaded: (UIImage) -> Void = { _ in }
-    var onZoomed: (Bool) -> Void = { _ in }
+    let thumbnail: UIImage?
+    let onPreview: (UIImage) -> Void
+    let onLoaded: (UIImage) -> Void
+    let onZoomed: (Bool) -> Void
     @State private var picture = AttachmentImageLoad()
     @State private var preview = AttachmentImageLoad()
     @State private var zoom: CGFloat = 1

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Cards in one column on a compact width (exactly what a `LazyVStack` draws today) and in as many adaptive columns
-/// as fit between `cardMinWidth` and `cardMaxWidth` on a regular width.
+/// Cards in one column on a compact width and in as many adaptive columns as fit between `cardMinWidth` and
+/// `cardMaxWidth` on a regular width.
 struct AdaptiveCardGrid<Data: RandomAccessCollection, Content: View>: View where Data.Element: Identifiable {
     let data: Data
     /// One flexible column whatever the width: for a list inside a readable column, which is too narrow for two cards

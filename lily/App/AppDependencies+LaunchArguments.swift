@@ -1,7 +1,6 @@
 import Foundation
 
-/// The value-taking launch arguments that name a URL (`-api-base-url`, `-realtime-endpoint`): read here so the
-/// composition root stays within its type-body limit.
+/// The value-taking launch arguments that name a URL (`-api-base-url`, `-realtime-endpoint`).
 extension AppDependencies {
     /// The `-api-base-url` value when it is a URL with a scheme and a host, otherwise `AppConfig.API.baseURL`.
     static func apiBaseURL(from arguments: [String], logger: any Logging) -> URL {

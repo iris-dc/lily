@@ -41,6 +41,16 @@ struct AttachmentCodingTests {
         #expect(sent.message == message && sent.channelEpoch == 3)
     }
 
+    /// What the gallery tiles and the viewer pages: the pictures and videos in their order, never the files.
+    @Test func mediaIsThePicturesAndVideosInGalleryOrder() {
+        let image = Attachment.fixture(id: "img-1")
+        let video = Attachment.videoFixture()
+        let message = ChatMessage.fixture(id: "m1", attachments: [image, .fileFixture(), video])
+
+        #expect(message.media == [image, video])
+        #expect(ChatMessage.fixture(id: "m2", attachments: [.fileFixture()]).media.isEmpty)
+    }
+
     /// Every sample from before attachments decodes as a message without any.
     @Test func aMessageWithoutAttachmentsDecodesAsNone() throws {
         for sample in [ContractSamples.message, ContractSamples.systemMessage, ContractSamples.deletedMessage,
@@ -106,7 +116,7 @@ struct AttachmentCodingTests {
     /// The ticket request as Laurel's `UploadRequest` reads it: optionals omitted, the thumbnail nested.
     @Test func theUploadRequestEncodesTheContractKeys() throws {
         let draft = AttachmentDraft.fixture()
-        let body = try #require(try json(of: draft.uploadRequest))
+        let body = try ContractSamples.jsonObject(of: draft.uploadRequest)
 
         #expect(body.keys.sorted() == ["clientAttachmentId", "contentType", "height", "kind", "sizeBytes", "thumbnail", "width"])
         #expect(body["clientAttachmentId"] as? String == "d1" && body["kind"] as? String == "image")
@@ -119,14 +129,15 @@ struct AttachmentCodingTests {
                                    fileURL: draft.fileURL,
                                    contentType: "image/jpeg",
                                    sizeBytes: 9)
-        #expect(try json(of: bare.uploadRequest)?.keys.sorted() == ["clientAttachmentId", "contentType", "kind", "sizeBytes"])
+        let keys = try ContractSamples.jsonObject(of: bare.uploadRequest).keys.sorted()
+        #expect(keys == ["clientAttachmentId", "contentType", "kind", "sizeBytes"])
     }
 
     /// A send that is its pictures alone omits `text`; its element names the ticket's id and `hasThumbnail` always.
     @Test func theSendPayloadNamesTheRefsAndOmitsABlankText() throws {
         var draft = MessageDraft(clientMessageID: "c-1")
         draft.attachments = [.fixture(state: .uploaded(.fixture(attachmentID: "01ARYZ6S41TSV4RRFFQ69G5FB0")))]
-        let body = try #require(try json(of: draft.payload))
+        let body = try ContractSamples.jsonObject(of: draft.payload)
 
         #expect(body.keys.sorted() == ["attachments", "clientMessageId"])
         let element = try #require((body["attachments"] as? [[String: Any]])?.first)
@@ -134,7 +145,7 @@ struct AttachmentCodingTests {
         #expect(element["attachmentId"] as? String == "01ARYZ6S41TSV4RRFFQ69G5FB0" && element["hasThumbnail"] as? Bool == true)
 
         draft.text = "Here"
-        #expect(try json(of: draft.payload)?.keys.sorted() == ["attachments", "clientMessageId", "text"])
+        #expect(try ContractSamples.jsonObject(of: draft.payload).keys.sorted() == ["attachments", "clientMessageId", "text"])
     }
 
     /// The quote of a picture message names its kind, so the reply reads "Photo" where the excerpt would be.
@@ -156,9 +167,5 @@ struct AttachmentCodingTests {
         let replaced = sample.replacingOccurrences(of: #""kind":"image""#, with: #""kind":"audio""#)
         try #require(replaced != sample)
         return replaced
-    }
-
-    private func json(of payload: some Encodable) throws -> [String: Any]? {
-        try JSONSerialization.jsonObject(with: APIJSONCoding.makeEncoder().encode(payload)) as? [String: Any]
     }
 }

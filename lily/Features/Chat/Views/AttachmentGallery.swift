@@ -15,16 +15,18 @@ struct AttachmentGallery: View {
     @Environment(\.galleryCornerRadius) private var cornerRadius
 
     var body: some View {
-        let media = GalleryLayout.partition(message.attachments.map(\.kind)).media.map { message.attachments[$0] }
-        AttachmentColumn(items: message.attachments, alignment: alignment) { index, attachment in
-            tile(attachment, at: index, among: media)
+        let media = message.media
+        AttachmentColumn(items: message.attachments, alignment: alignment) { index, attachment, layout in
+            tile(attachment, at: index, among: media, in: layout)
         } card: { attachment in
             FileAttachmentCard(attachment: attachment, message: message, loader: loader, own: own, onOpen: onOpenFile)
         }
     }
 
-    @ViewBuilder private func tile(_ attachment: Attachment, at index: Int, among media: [Attachment]) -> some View {
-        let layout = GalleryLayout(count: media.count)
+    @ViewBuilder private func tile(_ attachment: Attachment,
+                                   at index: Int,
+                                   among media: [Attachment],
+                                   in layout: GalleryLayout) -> some View {
         let radii = GalleryTileShape.radii(at: index, in: layout, galleryRadius: cornerRadius)
         // The "+N" tile stands for every hidden picture too.
         let heroIDs = media[index...].prefix(layout.showsOverflow(at: index) ? media.count : 1).map(\.id)
@@ -52,7 +54,7 @@ struct DraftGallery: View {
     let alignment: Alignment
 
     var body: some View {
-        AttachmentColumn(items: drafts, alignment: alignment) { _, draft in
+        AttachmentColumn(items: drafts, alignment: alignment) { _, draft, _ in
             DraftMediaTile(draft: draft)
         } card: { draft in
             FileCard(info: FileCardInfo(fileName: draft.fileName, contentType: draft.contentType, sizeBytes: draft.sizeBytes),
@@ -65,21 +67,22 @@ struct DraftGallery: View {
 /// The one column both galleries draw: the pictures and videos in a `GalleryGrid`, the file cards under it. The pending
 /// bubble is swapped for the stored one when a send settles, and sharing the layout is what keeps that swap from moving
 /// anything. `tileIndex` is the grid's index, which `AttachmentSelection(tappedTile:)` takes, not the item's position
-/// among all attachments.
+/// among all attachments; `layout` is the grid's, so a tile needs no partition of its own.
 struct AttachmentColumn<Item: GalleryItem, Tile: View, Card: View>: View {
     let items: [Item]
     let alignment: Alignment
-    @ViewBuilder let tile: (_ tileIndex: Int, _ item: Item) -> Tile
+    @ViewBuilder let tile: (_ tileIndex: Int, _ item: Item, _ layout: GalleryLayout) -> Tile
     @ViewBuilder let card: (Item) -> Card
 
     var body: some View {
         let partition = GalleryLayout.partition(items.map(\.kind))
         VStack(alignment: alignment.horizontal, spacing: DesignTokens.Spacing.xs) {
             if !partition.media.isEmpty {
-                GalleryGrid(layout: GalleryLayout(count: partition.media.count),
+                let layout = GalleryLayout(count: partition.media.count)
+                GalleryGrid(layout: layout,
                             singleAspectRatio: items[partition.media[0]].aspectRatio,
                             alignment: alignment) { index in
-                    tile(index, items[partition.media[index]])
+                    tile(index, items[partition.media[index]], layout)
                 }
             }
             ForEach(partition.files, id: \.self) { index in

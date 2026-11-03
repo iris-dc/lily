@@ -33,8 +33,8 @@ and Staging, off in Release). Everything runs without AWS credentials behind the
 - Config: [`./Config/EGM.md`](./Config/EGM.md) - `AppConfig` (API paths and base URLs, limits mirrored from Laurel,
   `LaunchArguments`, `FeatureFlags`, `Cognito`), `AppBranding` (every user-facing string as a computed `static var` or
   `static func` through `localized(_:)`, the English text being the catalog key), `DesignTokens` (spacing, radii,
-  durations, layout, opacity, aurora tuning, SF Symbol names) and `AccessibilityIdentifiers` (mirrored by hand in
-  `lilyUITests`). Nothing holds state; the only runtime read is `Bundle.main.bundleIdentifier`.
+  durations, layout, opacity, aurora tuning, SF Symbol names) and `AccessibilityIdentifiers` (a UI test that reads one
+  mirrors the literal by hand). Nothing holds state; the only runtime read is `Bundle.main.bundleIdentifier`.
 - Core: [`./Core/EGM.md`](./Core/EGM.md) - eighteen single-purpose areas: `SessionController` and the session state
   machine (Auth), `AppError` and `ErrorCenter` (Errors), the networking seam and its retry and idempotency rules
   (Networking), freshness and change tracking (Changes), the concurrency helpers, `RealtimeSessionController`

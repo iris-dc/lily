@@ -55,7 +55,7 @@ nonisolated enum PreviewFiles {
     static func named(_ name: String,
                       for id: String,
                       linking source: URL,
-                      in directory: URL = PreviewFiles.directory) throws -> URL {
+                      in directory: URL) throws -> URL {
         let folder = directory.appending(path: id)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let url = folder.appending(path: name)
@@ -75,7 +75,7 @@ nonisolated enum PreviewFiles {
 
     /// Every preview copy; the disk cache's sign-out sweep calls it, because a hard link keeps a cleared object's bytes
     /// alive until the link goes too.
-    static func removeAll(in directory: URL = PreviewFiles.directory) throws {
+    static func removeAll(in directory: URL) throws {
         try FileManager.default.removeItemIfPresent(at: directory)
     }
 }

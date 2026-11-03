@@ -1,6 +1,6 @@
 import Foundation
 
-/// Chat from the Laurel backend (plan section 3.4). Reads, the read marker and the clear fall back to
+/// Chat from the Laurel backend. Reads, the read marker and the clear fall back to
 /// `.chatUnavailable`, a send to `.messageSendFailed`, an upload ticket to `.attachmentUploadFailed` and a link
 /// refresh to `.attachmentUnavailable`, a vote to `.voteFailed` and a pin to `.pinFailed`; the codes with copy of their own
 /// map through the shared `BackendErrorCode`.

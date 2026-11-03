@@ -72,9 +72,7 @@ final class LilyIPadTests: LilyUITestCase {
     @MainActor
     func testDiscoverGroupsUsesAGrid() {
         relaunchAsGuest()
-        let seeAll = app.buttons["groups-see-all"]
-        XCTAssertTrue(seeAll.waitForExistence(timeout: 10))
-        seeAll.tap()
+        showDiscover()
         let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'group-row-'"))
         XCTAssertTrue(rows.element(boundBy: 1).waitForExistence(timeout: 10), app.debugDescription)
         let first = rows.element(boundBy: 0), second = rows.element(boundBy: 1)
@@ -88,7 +86,7 @@ final class LilyIPadTests: LilyUITestCase {
     func testHomeTilesShowTheDistanceToEachGroup() {
         tapSignInWithApple()
         openHomeTab()
-        let tile = app.buttons["group-row-mock-group-kickers"]
+        let tile = app.buttons[MockIDs.kickersRow]
         XCTAssertTrue(tile.waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertTrue(tile.label.contains(" km") || tile.label.contains(" m"),
                       "the tile shows the distance from the mock position: \(tile.label)")
@@ -104,7 +102,7 @@ final class LilyIPadTests: LilyUITestCase {
         XCTAssertTrue(app.otherElements["chats-nothing-chosen"].waitForExistence(timeout: 5),
                       "nothing is chosen yet, so the detail says so")
 
-        let kickers = app.buttons["group-row-mock-group-kickers"]
+        let kickers = app.buttons[MockIDs.kickersRow]
         XCTAssertTrue(kickers.waitForExistence(timeout: 10))
         kickers.tap()
         let composer = app.descendants(matching: .any)["chat-composer"]
@@ -127,7 +125,7 @@ final class LilyIPadTests: LilyUITestCase {
         let inbox = app.buttons["inbox-row"]
         let accept = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'inbox-accept-'")).firstMatch
         XCTAssertTrue(accept.waitForExistence(timeout: 10), "the inbox's cards are in the detail column")
-        XCTAssertTrue(inbox.exists && app.buttons["group-row-mock-group-kickers"].exists, "the list stays beside it")
+        XCTAssertTrue(inbox.exists && app.buttons[MockIDs.kickersRow].exists, "the list stays beside it")
     }
 
     /// A sheet that is a form is a centred form sheet on an iPad, not a page as wide as the screen.

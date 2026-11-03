@@ -1,8 +1,7 @@
 import Foundation
 
-/// Copy for profiles (a person's, and the caller's own name) and direct conversations; `message(for:)` routes those
-/// cases here, and the tournament cases fall through to `tournamentMessage(for:)` so the main switch stays under the
-/// complexity limit.
+/// Copy for profiles (a person's, and the caller's own name) and direct conversations; `message(for:)` routes exactly
+/// those cases here.
 nonisolated extension ErrorMessageMapper {
     static func peopleMessage(for error: AppError) -> ErrorMessage {
         switch error {
@@ -16,7 +15,7 @@ nonisolated extension ErrorMessageMapper {
             ErrorMessage(title: localized("You have too many conversations"),
                          body: localized("You can have at most \(AppConfig.People.maxConversations) conversations."))
         default:
-            tournamentMessage(for: error)
+            unknownMessage
         }
     }
 }

@@ -161,11 +161,10 @@ nonisolated extension AppBranding {
                 let limits = AppConfig.Tournaments.self
                 return switch issue {
                 case .nameTooShort: localized("Give the tournament a name of at least \(limits.nameLength.lowerBound) characters")
-                case .nameTooLong: localized("Keep the name under \(limits.nameLength.upperBound) characters")
-                case .descriptionTooLong: localized("Keep the description under \(limits.descriptionMaxLength) characters")
-                case .locationNameMissing: localized("Name the place")
-                case .locationNameTooLong:
-                    localized("Keep the place name under \(AppConfig.Events.Creation.locationNameMaxLength) characters")
+                case .nameTooLong: Forms.nameTooLong(limit: limits.nameLength.upperBound)
+                case .descriptionTooLong: Forms.descriptionTooLong(limit: limits.descriptionMaxLength)
+                case .locationNameMissing: Forms.placeNameMissing
+                case .locationNameTooLong: Forms.placeNameTooLong(limit: AppConfig.Events.Creation.locationNameMaxLength)
                 default: nil
                 }
             }
@@ -181,8 +180,7 @@ nonisolated extension AppBranding {
                 case .maxEntriesOutOfRange:
                     localized("Between \(range.lowerBound) and \(range.upperBound) entries")
                 case .maxEntriesBelowEntries: localized("Keep at least as many entries as are already in")
-                case .startsAtTooSoon:
-                    localized("Pick a start at least \(AppConfig.Events.Creation.minimumLeadTimeMinutes) minutes from now")
+                case .startsAtTooSoon: Forms.startTooSoon(minutes: AppConfig.Events.Creation.minimumLeadTimeMinutes)
                 case .registrationClosesAfterStart: localized("Registration must close before the start")
                 case .coordinateMissing: Events.Create.pickOnMap
                 default: ""

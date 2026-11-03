@@ -31,7 +31,6 @@ final class CreateTournamentViewModel {
          reporter: GroupErrorReporter,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
-         calendar: Calendar = .current,
          pushOptIn: any PushOptIn = NoPushOptIn(),
          lockedGroup: EventGroupRef? = nil,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
@@ -53,7 +52,7 @@ final class CreateTournamentViewModel {
                           notFound: .tournamentNotFound,
                           lookup: { try await repository.tournament(id: $0) },
                           isOurs: { $0.tournament.isOrganized(by: identity.currentUserID) })
-        self.draft = TournamentDraft(startsAt: Self.defaultStart(now: now(), calendar: calendar))
+        self.draft = TournamentDraft(startsAt: Self.defaultStart(now: now()))
         self.draft.group = lockedGroup
     }
 
@@ -121,8 +120,8 @@ final class CreateTournamentViewModel {
     }
 
     /// `AppConfig.Tournaments.defaultStartOffset` ahead, rounded up to the next full hour.
-    private static func defaultStart(now: Date, calendar: Calendar) -> Date {
-        calendar.nextFullHour(after: now.addingTimeInterval(AppConfig.Tournaments.defaultStartOffset))
+    private static func defaultStart(now: Date) -> Date {
+        Calendar.current.nextFullHour(after: now.addingTimeInterval(AppConfig.Tournaments.defaultStartOffset))
     }
 }
 

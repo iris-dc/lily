@@ -5,30 +5,15 @@ import Testing
 /// The detail on a game that allows extra players. The main detail suite is at its type-body limit.
 @MainActor
 struct EventDetailCapacityTests {
-    private let repository = FakeEventRepository()
-    private let logger = SpyLogger()
-
-    private func makeViewModel(event: SportEvent) -> EventDetailViewModel {
-        repository.result = .success([event])
-        return EventDetailViewModel(event: event,
-                                    repository: repository,
-                                    identity: FakeIdentityProvider(currentUserID: TestFixtures.user.id),
-                                    errorCenter: ErrorCenter(logger: logger),
-                                    recorder: SpyInteractionRecorder(),
-                                    logger: logger,
-                                    tryAgainDelay: .zero,
-                                    onChange: { _ in })
-    }
-
     /// Reaching the number needed is not reaching capacity: the game stays open, so the key event is not logged.
     @Test func aJoinThatMeetsTheNumberNeededDoesNotLogCapacityReached() async {
-        let viewModel = makeViewModel(
+        let harness = EventDetailHarness(
             event: .fixture(capacity: 2, allowsExtraParticipants: true, participants: 1, hostUserId: "host"))
 
-        await viewModel.join()
+        await harness.viewModel.join()
 
-        #expect(viewModel.event.hasPlayersNeeded && !viewModel.event.isFull)
-        #expect(viewModel.participation == .leave)
-        #expect(!logger.messages(in: .events).contains { $0.contains("Capacity reached") })
+        #expect(harness.viewModel.event.hasPlayersNeeded && !harness.viewModel.event.isFull)
+        #expect(harness.viewModel.participation == .leave)
+        #expect(!harness.logger.messages(in: .events).contains { $0.contains("Capacity reached") })
     }
 }

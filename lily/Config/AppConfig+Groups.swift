@@ -12,8 +12,6 @@ nonisolated extension AppConfig {
         static let discoverPageSize = 50
         static let searchDebounce: Duration = .milliseconds(300)
         static let queryMaxLength = 40
-        /// The fixture communities; the fixtures add one direct conversation (with Marta) on top.
-        static let mockGroupCount = 6
     }
 }
 

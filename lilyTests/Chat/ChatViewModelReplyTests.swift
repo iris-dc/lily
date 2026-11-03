@@ -12,12 +12,7 @@ struct ChatViewModelReplyTests {
     /// A connected controller, the room cached with `messages` (Marta's line alone by default) and the chat open.
     private func makeOpenChat(room: ChatRoomState? = nil) async -> (RealtimeHarness, ChatViewModel) {
         let harness = RealtimeHarness()
-        harness.groups.result = .success([group])
-        harness.cache.store(room ?? .fixture(messages: [martas]), for: "g")
-        await harness.connect()
-        let viewModel = harness.makeChatViewModel(for: group)
-        await viewModel.appear()
-        return (harness, viewModel)
+        return (harness, await harness.openChat(for: group, room: room ?? .fixture(messages: [martas])))
     }
 
     private func row(of message: ChatMessage, in viewModel: ChatViewModel) throws -> MessageRow {

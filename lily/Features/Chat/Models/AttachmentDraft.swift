@@ -84,15 +84,6 @@ nonisolated struct AttachmentDraft: Identifiable, Hashable, Sendable {
         return nil
     }
 
-    /// The share uploaded so far while uploading, one once uploaded; `nil` otherwise.
-    var progress: Double? {
-        switch state {
-        case .uploading(let progress): progress
-        case .uploaded: 1
-        case .preparing, .failed: nil
-        }
-    }
-
     /// The file the strip and the unsent bubble show: the thumbnail when there is one.
     var previewURL: URL { thumbnailURL ?? fileURL }
 

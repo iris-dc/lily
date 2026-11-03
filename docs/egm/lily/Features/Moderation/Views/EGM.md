@@ -19,8 +19,8 @@ Files: `lily/Features/Moderation/Views/TermsSheet.swift`.
   `signOutButton`, padded `DesignTokens.Spacing.xl` under `.readableColumn()`, then `.lilyFormSheet()`,
   `.interactiveDismissDisabled()`, `.errorPopup(errorCenter)`.
 - `[TermsSheet.swift:TermsSheet.legalLinks]`: a `FlowLayout(spacing: DesignTokens.Spacing.lg, rowSpacing: 0)` of
-  `legalLink(_:to:)` for `AppBranding.Moderation.termsLink` → `viewModel.termsURL`, `.privacyLink` →
-  `viewModel.privacyURL`, `.supportLink` → `viewModel.supportURL`; each a `Link(_:destination:)` under
+  `legalLink(_:to:)` for `AppBranding.Moderation.termsLink` → `AppConfig.Moderation.termsURL`, `.privacyLink` →
+  `.privacyURL`, `.supportLink` → `.supportURL` (the private `Links` alias); each a `Link(_:destination:)` under
   `lilyTextButton(font: .subheadline)` (`lily/Core/UI/Components/ButtonModifiers.swift`), which supplies the 44pt label.
 - `[TermsSheet.swift:TermsSheet.acceptButton]`: `lilyProminentButton()` labelled `AppBranding.Moderation.accept`, a
   small `ProgressView` with `.accessibilityLabel(Copy.accept)` while `viewModel.isAccepting`;
@@ -38,8 +38,7 @@ Files: `lily/Features/Moderation/Views/TermsSheet.swift`.
   reading "I agree" on the spinner.
 - `[TermsSheet.swift:TermsSheet.body]`: the copy scrolls (`.scrollBounceBehavior(.basedOnSize)`) while the two buttons
   stay below it, so accessibility sizes read the message whole.
-- `[TermsSheet.swift:TermsSheet.legalLinks]`: the URLs come from the view model (`AppConfig.Moderation`), never typed
-  inline.
+- `[TermsSheet.swift:TermsSheet.legalLinks]`: the URLs come from `AppConfig.Moderation`, never typed inline.
 
 ## Side Effects
 

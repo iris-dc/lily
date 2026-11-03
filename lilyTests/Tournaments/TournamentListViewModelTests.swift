@@ -19,7 +19,7 @@ struct TournamentListViewModelTests {
         #expect(harness.repository.requestedScopes == [.upcoming, .mine])
         #expect(harness.repository.requestedPositions[0] == AppConfig.Location.mockCenter)
         #expect(harness.repository.requestedPositions[1] == nil)
-        #expect(explore.tournaments.count == 1 && explore.hasLoaded && !explore.isLoading)
+        #expect(explore.tournaments.count == 1 && !explore.isInitialLoad && !explore.isLoading)
         #expect(explore.distanceText(for: .fixture()) != nil && mine.distanceText(for: .fixture()) == nil)
     }
 

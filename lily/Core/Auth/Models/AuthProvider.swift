@@ -13,7 +13,7 @@ nonisolated enum AuthProvider: Hashable, Sendable {
     case email(EmailCredentials)
 
     /// Credential-free identity of the provider, safe to log and display.
-    enum Kind: String, CaseIterable, Sendable {
+    enum Kind: String, Sendable {
         case apple, google, email
 
         var displayName: String {

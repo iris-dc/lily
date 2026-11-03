@@ -8,16 +8,10 @@ final class DeviceMediaPreparer: MediaPreparer {
     private let videos: VideoPreparer
     private let files: FilePreparer
 
-    convenience init(logger: any Logging) {
-        self.init(images: ImagePreparer(logger: logger),
-                  videos: VideoPreparer(logger: logger),
-                  files: FilePreparer(logger: logger))
-    }
-
-    init(images: ImagePreparer, videos: VideoPreparer, files: FilePreparer) {
-        self.images = images
-        self.videos = videos
-        self.files = files
+    init(logger: any Logging) {
+        images = ImagePreparer(logger: logger)
+        videos = VideoPreparer(logger: logger)
+        files = FilePreparer(logger: logger)
     }
 
     func prepareImage(_ data: Data, id: String, caps: AttachmentCaps) async throws -> AttachmentDraft {

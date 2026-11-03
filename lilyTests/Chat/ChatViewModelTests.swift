@@ -12,10 +12,8 @@ struct ChatViewModelTests {
     /// A connected controller and a view model for `group`, with Mine holding the group.
     private func makeHarness(cached: [ChatMessage]? = nil) async -> (RealtimeHarness, ChatViewModel) {
         let harness = RealtimeHarness()
-        harness.groups.result = .success([group])
-        if let cached { harness.cache.store(.fixture(messages: cached), for: "g") }
-        await harness.connect()
-        return (harness, harness.makeChatViewModel(for: group))
+        let viewModel = await harness.openChat(for: group, room: cached.map { .fixture(messages: $0) }, appear: false)
+        return (harness, viewModel)
     }
 
     @Test func appearWithoutACacheLoadsTheNewestPageAndMarksItRead() async {

@@ -37,7 +37,6 @@ final class CreateEventViewModel {
          errorCenter: ErrorCenter,
          logger: any Logging,
          now: @escaping () -> Date = { .now },
-         calendar: Calendar = .current,
          currencyCode: String,
          pushOptIn: any PushOptIn = NoPushOptIn(),
          lockedGroup: EventGroupRef? = nil,
@@ -56,11 +55,11 @@ final class CreateEventViewModel {
                           logger: logger,
                           tryAgainDelay: tryAgainDelay,
                           report: { errorCenter.report($0) },
-                          leavesOutcomeUnknown: { $0.leavesCreateOutcomeUnknown },
+                          leavesOutcomeUnknown: { $0 == .network || $0 == .eventCreationFailed },
                           notFound: .eventNotFound,
                           lookup: { try await repository.event(id: $0) },
                           isOurs: { $0.hostUserId != nil && $0.hostUserId == identity.currentUserID })
-        self.draft = EventDraft(startsAt: Self.defaultStart(now: now(), calendar: calendar), currencyCode: currencyCode)
+        self.draft = EventDraft(startsAt: Self.defaultStart(now: now()), currencyCode: currencyCode)
         self.draft.group = lockedGroup
     }
 
@@ -132,18 +131,8 @@ final class CreateEventViewModel {
     }
 
     /// `AppConfig.Events.Creation.defaultStartOffset` ahead, rounded up to the next full hour: a round time to edit from.
-    private static func defaultStart(now: Date, calendar: Calendar) -> Date {
-        calendar.nextFullHour(after: now.addingTimeInterval(AppConfig.Events.Creation.defaultStartOffset))
-    }
-}
-
-private extension AppError {
-    /// Failures after which the create may still have landed (a 500 or a lost connection after the commit): the
-    /// create counterpart of `EventDetailViewModel`'s `eventReadBack` (`.network` and the route's fallback, without the
-    /// participation 409s); a create's own 409s are settled without a lookup (a `TRY_AGAIN` is repeated, a reused id
-    /// is updated).
-    var leavesCreateOutcomeUnknown: Bool {
-        self == .network || self == .eventCreationFailed
+    private static func defaultStart(now: Date) -> Date {
+        Calendar.current.nextFullHour(after: now.addingTimeInterval(AppConfig.Events.Creation.defaultStartOffset))
     }
 }
 

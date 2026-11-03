@@ -27,7 +27,7 @@ struct ExploreTab: View {
     }
 
     private func refreshCarousels() async {
-        if AppConfig.FeatureFlags.groups { await discover.refresh() }
+        if AppConfig.FeatureFlags.groups { await discover.search() }
         if AppConfig.FeatureFlags.tournaments { await tournaments.load() }
     }
 

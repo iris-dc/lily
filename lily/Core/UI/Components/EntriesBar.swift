@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Thin bar filled with an occupied share: accent normally, amber when nearly full, muted when full, with the count
 /// under it. The track is faint so that an empty one reads as empty; without a share to fill (a game with no limit) the
-/// count stands alone. The event's `CapacityBar` and a tournament's entries both draw through it.
+/// count stands alone. An event's capacity and a tournament's entries both draw through it.
 struct EntriesBar: View {
     let fillRatio: Double
     let text: String
@@ -32,7 +32,7 @@ struct EntriesBar: View {
                         .frame(width: proxy.size.width * fillRatio)
                 }
             }
-            .frame(height: DesignTokens.Layout.entriesBarHeight)
+            .frame(height: DesignTokens.Layout.capacityBarHeight)
     }
 
     private var fillStyle: AnyShapeStyle {
@@ -43,6 +43,15 @@ struct EntriesBar: View {
 }
 
 extension EntriesBar {
+    /// An event's share of its capacity; a game without a limit shows its count alone.
+    init(event: SportEvent) {
+        self.init(fillRatio: event.fillRatio,
+                  text: event.capacityText,
+                  isFull: event.isFull,
+                  isNearlyFull: event.isNearlyFull,
+                  showsTrack: event.playerLimit.hasCapacity)
+    }
+
     /// A tournament's entries of its maximum, amber once three quarters are in.
     init(tournament: Tournament) {
         self.init(fillRatio: tournament.fillRatio,

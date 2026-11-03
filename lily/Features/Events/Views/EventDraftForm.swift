@@ -146,15 +146,12 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
         HStack(spacing: DesignTokens.Spacing.xs) {
             Text(Copy.price)
             Spacer()
-            TextField(Copy.pricePlaceholder, text: $viewModel.draft.priceText)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: DesignTokens.Layout.priceFieldWidth)
-                .accessibilityIdentifier(AccessibilityIdentifiers.createPrice)
-                .accessibilityLabel(Copy.price)
-            Text(Price.symbol(for: viewModel.draft.currencyCode))
-                .foregroundStyle(.secondary)
-                .accessibilityIdentifier(AccessibilityIdentifiers.createPriceCurrency)
+            PriceAmountField(text: $viewModel.draft.priceText,
+                             placeholder: Copy.pricePlaceholder,
+                             currencyCode: viewModel.draft.currencyCode,
+                             label: Copy.price,
+                             identifier: AccessibilityIdentifiers.createPrice,
+                             currencyIdentifier: AccessibilityIdentifiers.createPriceCurrency)
         }
     }
 }

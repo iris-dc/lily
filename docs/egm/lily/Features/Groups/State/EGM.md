@@ -30,7 +30,8 @@ caller and drop an answer whose caller has changed. Protocols: [Interfaces](../I
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.add`].
 - `MeStore: SessionObserver`; `init(repository: any MeRepository, identity: any IdentityProvider, errorCenter:
   ErrorCenter, logger: any Logging)`; state `private(set) var account: Account?`, `private(set) var termsOutdated:
-  Bool`; computed `needsTerms`, `isOperator`, `realtimeEndpoint: URL?`, `attachmentsEnabled`, `isLoading`; methods
+  Bool`; computed `needsTerms`, `realtimeEndpoint: URL?`, `attachmentsEnabled`, `isLoading` (`account?.isOperator` is read
+  on the account itself); methods
   `loadIfNeeded() async`, `reload() async`, `acceptTerms() async -> Bool`, `noteTermsRequired()`, `sessionDidEnd()`
   [`lily/Features/Groups/State/MeStore.swift`:`MeStore.acceptTerms`].
 - `BlockListStore: SessionObserver`; `init(repository: any ModerationRepository, identity: any IdentityProvider,
@@ -67,7 +68,9 @@ caller and drop an answer whose caller has changed. Protocols: [Interfaces](../I
 - On a load answer `groups` is replaced in the backend's order, except that a held group whose locally noted
   `lastMessageAt` is later keeps that message and its `mineOrder` position; `loadVersion` increments only here
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.applyMine`].
-- Local edits keep `SportGroup.mineOrder`: `add` replaces any same-id group and inserts in order; `replace` removes a
+- Local edits keep `SportGroup.mineOrder` through the one private `place(_:in:)` (remove by id, insert where
+  `mineOrder` puts it, on a local copy so `groups` is written once), shared by `add`, `applyMine` and `noteMessage`:
+  `add` replaces any same-id group and inserts in order; `replace` removes a
   group the caller is no longer in or that is deleted and never inserts an unknown one; `apply` (a `group_updated`
   broadcast) ignores groups not in Mine and keeps the stored membership through `keepingMembership(of:)`; `noteMessage`
   moves a group only when `noting(_:)` answers non-nil (a later message) and records no change

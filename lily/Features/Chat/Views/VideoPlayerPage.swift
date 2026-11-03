@@ -13,7 +13,7 @@ struct VideoPlayerPage: View {
     let loader: AttachmentLoader
     let isCurrent: Bool
     /// The tile's thumbnail, drawn where the clip will play until it does.
-    var poster: UIImage?
+    let poster: UIImage?
     @State private var player: AVPlayer?
     @State private var previewURL: URL?
     @State private var progress = 0.0

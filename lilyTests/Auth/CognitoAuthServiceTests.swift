@@ -150,12 +150,14 @@ struct CognitoAuthServiceTests {
         harness.client.signInResult = .failure(clientError)
         harness.client.signUpResult = .failure(clientError)
         harness.client.confirmError = clientError
+        harness.client.resendError = clientError
 
         await #expect(throws: expected) { try await harness.service.signIn(with: .email(credentials)) }
         await #expect(throws: expected) {
             try await harness.service.signUp(email: credentials.email, password: credentials.password)
         }
         await #expect(throws: expected) { try await harness.service.confirmSignUp(email: credentials.email, code: "123456") }
+        await #expect(throws: expected) { try await harness.service.resendConfirmationCode(email: credentials.email) }
     }
 
     // MARK: Sign-up, confirm, resend, sign-out

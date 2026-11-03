@@ -56,7 +56,7 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   [`lily/Features/Groups/Views/MemberRow.swift`:`MemberRow`].
 - `ReportSheet(viewModel: ReportViewModel, errorCenter:)` (identifiers `reportComment`, `reportDone`, `reportSubmit`;
   Done and Cancel are `lilyToolbarTextButton()`) [`lily/Features/Groups/Views/ReportSheet.swift`:`ReportSheet`].
-- `GroupRow(group:, hasUnread:, now:)`, `GroupRowContent(name:, visibility:, caption:, hasUnread:, isPerson:,
+- `GroupRow(group:, hasUnread:)`, `GroupRowContent(name:, visibility:, caption:, hasUnread:, isPerson:,
   avatarSymbol:)` [`lily/Features/Groups/Views/GroupRow.swift`:`GroupRow`]; `GroupRowList<RowMenu: View>(groups:,
   unread: UnreadCenter?, selectedID:, rowMenu:, onOpen:)` (identifier `groupRow(id)` per row) and its `RowMenu ==
   EmptyView` convenience `init(groups:, unread:, onOpen:)` [`lily/Features/Groups/Views/GroupRowList.swift`:`GroupRowList`].
@@ -80,8 +80,9 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   item is added only when `viewModel.showsMenu` [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
 - `GroupDetailView` roots in `ContentScreen { ScrollView }` with `.refreshable`, `detailMargin` padding and
   `readableColumn()`; `sections = GroupDetailSection.available(for:in:)`, the segmented picker shows only for more than
-  one section, and a selection that disappears falls back to `.events`; `MembersList` renders only for `.members`
-  with a members model, the tournaments segment only when the section is offered
+  one section, and a selection that disappears falls back to `.events`: the private `shownSection` (`.members` only
+  with a members model, `.tournaments` only when `sections` offers it, else `.events`) drives both `segment` and the
+  pull-to-refresh `refresh()`, so the two cannot drift
   [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
 - Leave, Delete, Remove and Ban never run directly: they set `confirmation` and run only from the destructive button
   of `.confirmationDialog(item: $confirmation)` titled by `GroupConfirmation.title(groupName:)`; `MembersList` routes
@@ -109,12 +110,14 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
 - Identified containers set `.accessibilityElement(children: .contain)` before their identifier (`InviteCandidateRow`,
   `MembersList`); the Invite button is disabled when `isInvited || isSending` and reads "sent" once invited
   [`lily/Features/Groups/Views/InviteCandidateRow.swift`:`InviteCandidateRow`].
-- Sheets are forms: `InvitePeopleSheet` and `ReportSheet` root in `NavigationStack { ContentScreen }`, mount their
-  own `.errorPopup(errorCenter)` and `.lilyFormSheet()`; `ReportSheet` uses detents `.medium`/`.large`, disables
-  interactive dismiss while submitting and shows only Done once submitted
+- Sheets are forms: `InvitePeopleSheet` and `ReportSheet` root in `NavigationStack { ContentScreen }` and mount their
+  own popup; `InvitePeopleSheet` through `.lilyFormSheet()` and `.errorPopup(errorCenter)`, `ReportSheet` through
+  `.lilyFormSheet(errorCenter:lockedWhile: viewModel.isSubmitting)` after detents `.medium`/`.large` (the grabber, the
+  dismissal lock while submitting and the popup in one modifier); its Cancel reads `AppBranding.Forms.cancel` and it
+  shows only Done once submitted
   [`lily/Features/Groups/Views/ReportSheet.swift`:`ReportSheet`].
 - Rows: `GroupRow` draws a person row for a `counterpart`, else a group row with the visibility glyph and
-  `avatarSymbol`, adding "Active today" only when `isActive(on: now)`; `GroupRowList` attaches a context menu only when
+  `avatarSymbol`, adding "Active today" only when `isActive(on: .now)`; `GroupRowList` attaches a context menu only when
   a `rowMenu` is given; `MemberRow` shows a role chip for owner and admin only; `GroupCard`/`GroupTile` add the joined
   caption only for members; `HostedInLine` links only when `ref.isLinkable`, and the chevron, never a colour, is the
   link's cue
@@ -125,7 +128,7 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
 ## Side Effects
 
 - View-model calls: `loadIfStaleNearTheUser()` on Discover's `.task`, `cancel()` on disappear, `loadMore()` when the
-  last card appears, `refresh()` on pull; `recordViewed()`, `events.loadIfStale()` keyed on `eventChanges.version`,
+  last card appears, `search()` on pull; `recordViewed()`, `events.loadIfStale()` keyed on `eventChanges.version`,
   `refreshFromStore()` keyed on `(groupChanges.version, myGroups.loadVersion)`, `tournaments.loadIfStale()` keyed on
   `tournamentChanges.version`, `loadUserLocation()` for both lists on the detail; `join()` from the action row;
   `leave()`, `delete()`, `members.perform(.remove|.ban, on:)` after confirmation; `loadIfNeeded()`/`load()` on the

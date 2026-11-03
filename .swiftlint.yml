@@ -3,9 +3,6 @@ included:
   - lily
   - lilyTests
   - lilyUITests
-excluded:
-  - build
-  - lily.xcodeproj
 
 opt_in_rules:
   - closure_end_indentation
@@ -70,7 +67,7 @@ cyclomatic_complexity:
 
 identifier_name:
   min_length: 2
-  excluded: [id, a, b, x, y, t, km, lr, lg, lb, dr, dg, db]
+  excluded: [a, b, x, y, t]
 
 nesting:
   type_level: 2

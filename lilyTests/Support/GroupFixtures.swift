@@ -151,7 +151,8 @@ extension ContractSamples {
     {"id":"01J9B4X6KQ2M8N0P3R5T7V9W1Y","groupId":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","inviteeUserId":"seed-marta",\
     "inviteeName":"Marta","status":"pending","createdAt":"2026-09-29T10:00:00Z","expiresAt":"2026-10-06T10:00:00Z"}
     """
-    /// `GET /api/me`; `attachmentsEnabled` is its last field since chat wave 3 (B-C), always present.
+    /// `GET /api/me` as Laurel's `MeControllerIt` pins it; `attachmentsEnabled` is a primitive there, so always present
+    /// (`minimalMe` is an older backend's answer without it).
     static let me = """
     {"userId":"u-1","isOperator":true,"termsVersion":2,"acceptedTermsVersion":1,\
     "realtimeEndpoint":"https://abc.appsync-api.eu-central-1.amazonaws.com/event","attachmentsEnabled":true}

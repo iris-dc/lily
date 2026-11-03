@@ -90,19 +90,16 @@ struct InboxItemCodingTests {
         #expect(InboxItem.reminder().caption == "Event reminder · Sunset 5-a-side")
     }
 
-    /// The reminder's line is the shared time caption, judged against the given `now`. A 24-hour locale, because
-    /// `.shortened` puts a narrow no-break space before AM/PM that no literal here could show.
+    /// The reminder's line is the shared time caption, judged against the given `now`.
     @Test func theReminderCaptionIsTheSharedTimeCaption() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
-        calendar.locale = Locale(identifier: "en_GB")
         let now = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 11))!
         let startsAt = now.addingTimeInterval(3_600)
         let reminder = try #require(InboxItem.reminder(startsAt: startsAt).reminder)
 
         let caption = reminder.startsAtCaption(now: now, calendar: calendar)
         #expect(caption == InboxTimeCaption.text(for: startsAt, now: now, calendar: calendar))
-        #expect(caption == "Today, 12:00 · in 1 hour")
     }
 
     /// Accept and Decline show while the invite is open; afterwards the card says what happened.

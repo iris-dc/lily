@@ -101,8 +101,6 @@ nonisolated enum MockGroupFixtures {
         ),
     ]
 
-    private static let secondsPerHour = 3600.0
-    private static let secondsPerDay = 86_400.0
     /// Marta wrote first, two weeks ago.
     private static let conversationAgeDays = 14.0
 
@@ -111,7 +109,7 @@ nonisolated enum MockGroupFixtures {
     }
 
     private static func makeGroup(_ template: Template, now: Date) -> SportGroup {
-        let joinedAt = now.addingTimeInterval(-template.createdDaysAgo * secondsPerDay / 2)
+        let joinedAt = now.addingTimeInterval(-template.createdDaysAgo * .day / 2)
         return SportGroup(
             id: template.id,
             name: template.name,
@@ -122,8 +120,8 @@ nonisolated enum MockGroupFixtures {
             memberCount: template.memberCount,
             maxMembers: template.maxMembers,
             lastMessageId: template.lastMessageHoursAgo.map { _ in MockChatFixtures.newestMessageID(for: template.id) },
-            lastMessageAt: template.lastMessageHoursAgo.map { now.addingTimeInterval(-$0 * secondsPerHour) },
-            createdAt: now.addingTimeInterval(-template.createdDaysAgo * secondsPerDay),
+            lastMessageAt: template.lastMessageHoursAgo.map { now.addingTimeInterval(-$0 * .hour) },
+            createdAt: now.addingTimeInterval(-template.createdDaysAgo * .day),
             membership: template.role.map {
                 GroupMembership(role: $0,
                                 joinedAt: joinedAt,
@@ -138,7 +136,7 @@ nonisolated enum MockGroupFixtures {
 
     /// The fixture conversation: Marta started it two weeks ago, and her last line (`MockChatFixtures`) is unread.
     private static func martaConversation(now: Date) -> SportGroup {
-        let started = now.addingTimeInterval(-conversationAgeDays * secondsPerDay)
+        let started = now.addingTimeInterval(-conversationAgeDays * .day)
         let membership = GroupMembership(role: .member,
                                          joinedAt: started,
                                          lastReadMessageId: MockChatFixtures.lastReadMessageID(for: martaConversationID),
@@ -186,15 +184,15 @@ nonisolated enum MockGroupFixtures {
             return [GroupMember(userId: conversationCounterpart.userId,
                                 displayName: conversationCounterpart.displayName,
                                 role: .member,
-                                joinedAt: now.addingTimeInterval(-conversationAgeDays * secondsPerDay))]
+                                joinedAt: now.addingTimeInterval(-conversationAgeDays * .day))]
         }
         guard let template = templates.first(where: { $0.id == groupID }) else { return [] }
-        let createdAt = now.addingTimeInterval(-template.createdDaysAgo * secondsPerDay)
+        let createdAt = now.addingTimeInterval(-template.createdDaysAgo * .day)
         return template.roster.enumerated().map { index, entry in
             GroupMember(userId: memberID(for: entry.name),
                         displayName: entry.name,
                         role: entry.role,
-                        joinedAt: createdAt.addingTimeInterval(Double(index) * secondsPerDay))
+                        joinedAt: createdAt.addingTimeInterval(Double(index) * .day))
         }
     }
 

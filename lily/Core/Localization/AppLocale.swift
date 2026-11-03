@@ -53,9 +53,6 @@ nonisolated enum AppLocale {
         state.withLock { $0 }
     }
 
-    /// The bundle copy is read from.
-    static var bundle: Bundle { current.bundle }
-
     /// The locale numbers, dates and plural rules follow.
     static var locale: Locale { current.locale }
 

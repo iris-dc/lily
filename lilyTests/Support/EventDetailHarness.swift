@@ -10,7 +10,7 @@ final class EventDetailHarness {
     nonisolated static let now = Date(timeIntervalSince1970: 1_800_000_000)
 
     let repository = FakeEventRepository()
-    let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
+    let identity: FakeIdentityProvider
     let recorder = SpyInteractionRecorder()
     let logger = SpyLogger()
     let errorCenter: ErrorCenter
@@ -19,7 +19,8 @@ final class EventDetailHarness {
 
     var replaced: [SportEvent] { changed.values }
 
-    init(event: SportEvent, pushOptIn: (any PushOptIn)? = nil) {
+    init(event: SportEvent, userID: String? = TestFixtures.user.id, pushOptIn: (any PushOptIn)? = nil) {
+        identity = FakeIdentityProvider(currentUserID: userID)
         errorCenter = ErrorCenter(logger: logger)
         repository.result = .success([event])
         viewModel = EventDetailViewModel(event: event,

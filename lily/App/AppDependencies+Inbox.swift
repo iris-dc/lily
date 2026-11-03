@@ -1,7 +1,7 @@
 import Foundation
 
 extension AppDependencies {
-    var inboxRepository: any InboxRepository { groups.inboxRepository }
+    var inboxRepository: any InboxRepository { groups.repositories.inbox }
     var inbox: InboxStore { groups.inbox }
 
     /// The inbox screen over the shared store; an accepted invite's group goes into Mine and its chat opens, an accepted

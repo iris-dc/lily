@@ -14,4 +14,14 @@ nonisolated enum ViewerLayer: Sendable {
         case .underComposer: ViewerGeometry.underComposer(viewport: viewport, screen: screen)
         }
     }
+
+    /// The black this layer draws behind the picture, in the screen's coordinates: the cover's is the whole screen while
+    /// the pager fades (no move) and the part above the composer line during a move; the chat's is the part below the
+    /// line, nothing without a move.
+    func backdrop(viewport: CGRect?, screen: CGRect, moving: Bool) -> CGRect? {
+        switch self {
+        case .overBars: moving ? ViewerGeometry.overComposer(viewport: viewport, screen: screen) : screen
+        case .underComposer: moving ? ViewerGeometry.underComposer(viewport: viewport, screen: screen) : nil
+        }
+    }
 }

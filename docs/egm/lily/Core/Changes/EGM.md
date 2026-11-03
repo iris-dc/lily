@@ -14,10 +14,10 @@ layer that keeps a list's last answer on the device is in `Interfaces/` and `Imp
 
 - `ContentFreshness` (`lily/Core/Changes/ContentFreshness.swift:ContentFreshness`): `nonisolated struct: Equatable, Sendable`;
   `init(staleAfter: TimeInterval, retryAfterFailure: TimeInterval)`, `static let standard` (from
-  `AppConfig.Lists.staleAfter` and `retryAfterFailure`); `lastLoadedAt: Date?`, `loadFailed: Bool`, `hasLoaded: Bool`;
+  `AppConfig.Lists.staleAfter` and `retryAfterFailure`); `loadFailed: Bool`, `hasLoaded: Bool` (the instant itself is private);
   `mutating recordSuccess(at:version:userID:position: Coordinate? = nil)`, `recordFailure(at:version:userID:)`,
   `acknowledge(version:)`, `reset()`; `isWaitingToRetry(now:version:userID:) -> Bool`,
-  `decision(now:version:userID:position:) -> LoadDecision`, `stalenessReason(now:version:userID:position:) -> String?`,
+  `decision(now:version:userID:position: = nil) -> LoadDecision` (the one `switch` of `StoreLoader` and of the two list view models, which pass the position their request carries), `stalenessReason(now:version:userID:position:) -> String?`,
   `positionReason(for:) -> String?`. Nested `LoadDecision`: `.waitAfterFailure`, `.fresh`, `.stale(reason: String)`.
 - `ChangeTracker` (`lily/Core/Changes/ChangeTracker.swift:ChangeTracker`): `@Observable final class`;
   `private(set) var version = 0`; `recordChange()` increments it. One instance per kind of data, shared through `AppDependencies`.

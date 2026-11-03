@@ -9,33 +9,25 @@ nonisolated struct TileGeometry: Equatable, Sendable {
 /// Where the viewer draws its picture at one moment of its coming and going, as rules: `progress` 0 is the picture
 /// fitted to its page, 1 is the picture on its tile, filling it as the tile crops it and rounded like it; the drag moves
 /// it up or down only, at full size. The picture fills `rect`, so the crop follows the rect's shape on the way; every
-/// value is linear in `progress`, so the frames the `ViewerMoveDriver` writes stay on the path. Without a tile to land on, the
-/// picture fades instead. Pure, so the frames can be checked without a view.
+/// value is linear in `progress`, so the frames the `ViewerMoveDriver` writes stay on the path. Pure, so the frames can
+/// be checked without a view.
 nonisolated struct ViewerGeometry: Equatable, Sendable {
     var rect: CGRect
     var radii: RectangleCornerRadii
-    var opacity: Double
 
     /// - Parameters:
     ///   - page: where the page lays its picture out, fitted, in the same coordinates as `tile`.
     ///   - aspectRatio: width over height of the picture; it fills the page when unknown.
-    ///   - tile: the tile the picture opens out of and closes into; `nil` fades instead.
+    ///   - tile: the tile the picture opens out of and closes into.
     ///   - progress: 0 fitted to the page, 1 on the tile.
     ///   - drag: how far up (negative) or down the picture is dragged.
-    init(page: CGRect, aspectRatio: CGFloat?, tile: TileGeometry?, progress: CGFloat, drag: CGFloat) {
+    init(page: CGRect, aspectRatio: CGFloat?, tile: TileGeometry, progress: CGFloat, drag: CGFloat) {
         let start = Self.fit(aspectRatio, in: page).offsetBy(dx: 0, dy: drag)
-        guard let tile else {
-            rect = start
-            radii = RectangleCornerRadii(topLeading: 0, bottomLeading: 0, bottomTrailing: 0, topTrailing: 0)
-            opacity = 1 - Double(progress)
-            return
-        }
         rect = Self.mix(start, tile.frame, progress)
         radii = RectangleCornerRadii(topLeading: tile.radii.topLeading * progress,
                                      bottomLeading: tile.radii.bottomLeading * progress,
                                      bottomTrailing: tile.radii.bottomTrailing * progress,
                                      topTrailing: tile.radii.topTrailing * progress)
-        opacity = 1
     }
 
     /// What of the moving picture the viewer's cover draws, over the bars: everything above the composer line (the

@@ -57,7 +57,7 @@ final class MockInboxRepository: InboxRepository {
         case .accepted:
             return try await admittance(for: items[index], entering: false)
         case .pending:
-            guard answer.expiresAt > now() else { throw AppError.inviteExpired }
+            guard answer.isOpen(now: now()) else { throw AppError.inviteExpired }
             let admitted = try await admittance(for: items[index], entering: true)
             items[index] = items[index].responding(.accepted, at: now())
             return InviteAcceptance(item: items[index], group: admitted.group, tournament: admitted.tournament)

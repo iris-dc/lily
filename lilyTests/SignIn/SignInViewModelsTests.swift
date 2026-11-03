@@ -182,12 +182,14 @@ struct EmailSignInViewModelTests {
 
     @Test func cancelStopsInFlightSignInWithoutAnError() async {
         let harness = SessionHarness()
-        harness.auth.delay = .milliseconds(200)
+        harness.auth.holdsRequests = true
         let viewModel = makeViewModel(harness)
 
         viewModel.submit()
         let task = viewModel.submitTask
+        await settle(until: { harness.auth.isHolding })
         viewModel.cancel()
+        harness.auth.releaseRequests()
         await task?.value
 
         #expect(harness.controller.state == .signedOut)
@@ -198,13 +200,15 @@ struct EmailSignInViewModelTests {
 
     @Test func cancelStopsInFlightSignUpWithoutAnError() async {
         let harness = SessionHarness()
-        harness.auth.delay = .milliseconds(200)
+        harness.auth.holdsRequests = true
         let viewModel = makeViewModel(harness)
         viewModel.toggleMode()
 
         viewModel.submit()
         let task = viewModel.submitTask
+        await settle(until: { harness.auth.isHolding })
         viewModel.cancel()
+        harness.auth.releaseRequests()
         await task?.value
 
         #expect(harness.controller.state == .signedOut)
@@ -235,12 +239,14 @@ struct SignInViewModelTests {
     /// Dismissing the sheet mid sign-in must neither sign the user in later nor show an error popup.
     @Test func cancelStopsInFlightSignInQuietly() async {
         let harness = SessionHarness()
-        harness.auth.delay = .milliseconds(200)
+        harness.auth.holdsRequests = true
         let viewModel = SignInViewModel(session: harness.controller)
 
         viewModel.signInWithApple()
         let task = viewModel.signInTask
+        await settle(until: { harness.auth.isHolding })
         viewModel.cancel()
+        harness.auth.releaseRequests()
         await task?.value
 
         #expect(harness.controller.state == .signedOut)

@@ -38,9 +38,7 @@ extension LilyUITestCase {
     @MainActor
     func openFromHome(_ element: XCUIElement) {
         openHomeTab()
-        _ = element.waitForExistence(timeout: 10)
-        scrollUntilHittable(element)
-        element.tap()
+        tapAfterScrolling(element)
     }
 
     /// Opens the card titled `title` from Home. `@nonobjc`: the two overloads would otherwise share the Objective-C
@@ -57,6 +55,15 @@ extension LilyUITestCase {
     func card(containing terms: String...) -> XCUIElement {
         let predicates = terms.map { NSPredicate(format: "label CONTAINS %@", $0) }
         return app.buttons.matching(NSCompoundPredicate(andPredicateWithSubpredicates: predicates)).firstMatch
+    }
+
+    /// Pushes Discover from the carousel's "See all" on Explore; the carousel shows once Discover has answered.
+    @MainActor
+    func showDiscover() {
+        let seeAll = app.buttons["groups-see-all"]
+        XCTAssertTrue(seeAll.waitForExistence(timeout: 10))
+        seeAll.tap()
+        XCTAssertTrue(app.navigationBars["Discover groups"].waitForExistence(timeout: 5))
     }
 
     /// Opens the sign-in sheet from whatever screen shows "Sign in": the landing, Home's guest prompt or Profile.

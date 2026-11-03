@@ -31,13 +31,13 @@ struct ViewerMoveDriverTests {
         var ways: [Double] = []
         var completions = 0
         driver.run(duration: 1, curve: .linear, now: 10, apply: { ways.append($0) }, completion: { completions += 1 })
-        #expect(driver.isRunning && clock.isRunning)
+        #expect(clock.isRunning)
         clock.tick(at: 10.5)
         clock.tick(at: 11)
         clock.tick(at: 11.5)
         #expect(ways == [0.5, 1], "the frame past the end is not written")
         #expect(completions == 1)
-        #expect(!driver.isRunning && !clock.isRunning, "the clock stops with the move")
+        #expect(!clock.isRunning, "the clock stops with the move")
     }
 
     @Test func aNewRunDropsTheOneBeforeAndItsCompletion() {
@@ -58,6 +58,6 @@ struct ViewerMoveDriverTests {
         driver.run(duration: 1, curve: .linear, now: 0, apply: { _ in written += 1 }, completion: { completions += 1 })
         driver.cancel()
         clock.tick(at: 1)
-        #expect(written == 0 && completions == 0 && !driver.isRunning)
+        #expect(written == 0 && completions == 0 && !clock.isRunning)
     }
 }

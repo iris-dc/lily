@@ -71,7 +71,7 @@ struct AppDependenciesTests {
         let dependencies = await makeSignedInMockDependencies()
         await dependencies.myGroups.reload()
         await dependencies.me.loadIfNeeded()
-        #expect(dependencies.myGroups.groups.count == 6 && dependencies.me.isOperator)
+        #expect(dependencies.myGroups.groups.count == 6 && dependencies.me.account != nil)
 
         await dependencies.sessionController.signOut()
 

@@ -40,6 +40,7 @@ nonisolated enum DesignTokens {
         static let labelIconColumn: CGFloat = 24
         static let providerIconSize: CGFloat = 22
         static let avatarSize: CGFloat = 72
+        /// The one how-full bar (`EntriesBar`): an event's capacity and a tournament's entries.
         static let capacityBarHeight: CGFloat = 6
         static let popupMaxWidth: CGFloat = 520
         /// Width of the filter panel dropped down from the Explore toolbar.

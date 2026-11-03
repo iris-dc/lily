@@ -5,7 +5,7 @@ Source: `lily/Config/`
 ## Overview
 
 Four `nonisolated enum` namespaces, each a root file plus `+Area.swift` files that are `nonisolated extension`s of the
-root or of one of its nested enums (63 files, about 3,200 lines). `AppConfig` is the non-visual configuration: API
+root or of one of its nested enums (64 files, about 3,200 lines). `AppConfig` is the non-visual configuration: API
 paths and base URLs, limits mirrored from the Laurel backend, launch-argument literals, feature flags, Cognito ids.
 `AppBranding` holds every user-facing string as a computed `static var` or `static func` whose body is
 `localized("English text")`, so the English text is the catalog key. `DesignTokens` holds the visual constants and
@@ -26,7 +26,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `productionBaseURL = https://api.iskra.red`; `baseURL` is `localBaseURL` under `#if DEBUG && targetEnvironment(simulator)`,
   else `productionBaseURL`; `sendsLocalUserHeader` is `true` under `#if DEBUG`; `requestTimeout = 15`,
   `tryAgainDelay = .milliseconds(400)`, `unauthorizedStatus = 401`, `rateLimitedStatus = 429`, `contentTooLargeStatus = 413`
-  (a `REQUEST_TOO_LARGE` answer, never an expected refusal), `clientErrorStatuses = 400..<500`.
+  (a `REQUEST_TOO_LARGE` answer, never an expected refusal), `clientErrorStatuses = 400..<500`, `successStatuses = 200..<300`
+  (a delivered request; the API client, the attachment uploader and the attachment loader all judge by it).
   `Headers`: `X-Local-User-Id`, `X-App-Version`, `Authorization`, `Bearer `, `Accept`, `Content-Type`,
   `json = "application/json"`, `Retry-After` (the last added in `AppConfig+Chat.swift`).
   `Query`: `scope`, `lat`, `lon`, `before`, `after`, `q`, `type`, `cursor`, `limit`, `ids`.
@@ -82,7 +83,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `maxEntries(for:)`, `minEntries(for:)`, `entriesRange(for: TournamentFormat) -> ClosedRange<Int>` (an unknown
   format takes single elimination's bounds; Laurel validates the real ones).
 - Smaller areas: `Inbox.pageSize = 50`; `Moderation` (`commentMaxLength = 500`, `maxBlocks = 500`,
-  `supportEmail = "support@iskra.red"`, `termsURL`, `privacyURL`); `People.maxConversations = 200`; `Feedback`
+  `supportEmail = "support@iskra.red"`, `termsURL` and `privacyURL` = `API.productionBaseURL.appending(path:)` `terms` / `privacy`); `People.maxConversations = 200`; `Feedback`
   (`messageMaxLength = 2000`, `replyEmailMaxLength = 254`, `detailMaxLength = 80`); `Currency` (`defaultCode = "EUR"`,
   `offered`, 14 codes); `Push` (`reregisterInterval = 24 * 60 * 60`, `tokenTimeout = .seconds(10)`, `platform = "ios"`,
   `redactedToken = "<token>"`, `Payload` keys `kind`, `eventId`, `event_reminder`, `match_reminder`, `tournamentId`,
@@ -144,7 +145,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 ## Invariants
 
-- Every top-level declaration in all 63 files is `nonisolated`: the four root enums and every `extension`
+- Every top-level declaration in all 64 files is `nonisolated`: the four root enums and every `extension`
   (`grep -c nonisolated` is 33 across the 12 `DesignTokens*` files and 1 in each `AccessibilityIdentifiers*` file;
   `grep "^extension\|^enum\|^struct" lily/Config/AppBranding*.swift` returns nothing). No `Sendable`, `@MainActor` or
   other isolation annotation appears in the directory.
@@ -166,7 +167,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   another number is swept. `Realtime.productionEndpoint` stays `nil` until the stack is deployed; in debug the
   `-realtime-endpoint` argument decides. `Push.redactedToken` stands in for the device token in log lines.
   `URL(string:)!` is force-unwrapped on literals only (`API.localBaseURL`, `API.productionBaseURL`, `Moderation.supportURL`,
-  `termsURL`, `privacyURL`, `Realtime.mockEndpoint`).
+  `Realtime.mockEndpoint`); `termsURL` and `privacyURL` are appended to `API.productionBaseURL`. The `/api/me` routes derive from
+  `Paths.me` (`inbox`, `inboxRead`, `devices`, `meTerms`), as every nested path derives from its parent.
 - `AppBranding`: every localized member is a computed `static var` or a `static func`, never `static let`; the eight
   `static let`s are non-localized constants (`name`, `Events.separatorGlyph = "·"`, `Events.captionSeparator`,
   `Events.Create.coordinateFormat = "%.4f, %.4f"`, `Inbox.title`, `Tournaments.Match.scoreSeparator = "–"`,
@@ -177,21 +179,26 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `"Any (price)"` (`AppBranding.Events.Filter.anyPrice`), `"Message (verb)"` (`AppBranding.People.message`),
   `"Not allowed (draws)"` (`AppBranding.Tournaments.Create.drawsNotAllowed`). Shared one-word actions (`done`, `remove`)
   are declared once at the root and aliased by the feature namespaces, so each is one catalog key. Caption parts are
-  joined with `Events.captionSeparator`, through `Groups.caption(_:)` inside `AppBranding`
-  (`lily/Config/AppBranding+Groups.swift`) and directly by `PollBubble`, `FeedbackEnvironment` and `EventPreviewCard`.
+  joined with `Events.captionSeparator` through `Groups.caption(_:)` (`lily/Config/AppBranding+Groups.swift`), the
+  token's only `joined(separator:)` consumer (`PollBubble`, `FeedbackEnvironment` and `EventPreviewCard` call the
+  joiner since 2026-11-02; `PlaceLine` draws the bare `separatorGlyph`). `Events.Create` has no `cancel` alias: every
+  sheet reads `Forms.cancel`.
 - Validation copy never hard-codes a limit: `Events.Create.message(for:)`, `Groups.Create.message(for:)`,
   `Tournaments.teamNameMessage(for:)` and `Tournaments.Create.message(for:format:)` interpolate `AppConfig` values; the
-  `valueMessage` helpers end in `default: ""`. `+Capacity`, `+Intro`, `+TournamentInvites` and `+TournamentResults`
-  exist because `AppBranding` and `AppBranding.Tournaments` are at SwiftLint's type-body limit.
-- `DesignTokens` aliases keep one source: `Layout.tournamentTileWidth = groupTileWidth`, `Layout.entriesBarHeight = capacityBarHeight`,
-  `Symbols.currency = Symbols.price`, `MessageArrival.duration = Duration.normal`. `Symbols.fileGlyphs` is ordered,
+  `valueMessage` helpers end in `default: ""`. The hints shared by the three forms and the contact sheet are declared once in
+  `AppBranding.Forms` (`nameTooLong(limit:)`, `descriptionTooLong(limit:)`, `placeNameMissing`, `placeNameTooLong(limit:)`,
+  `startTooSoon(minutes:)`, `tooLong(limit:)`; `lily/Config/AppBranding+Forms.swift`) and `Feedback.kindContact` aliases
+  `Chat.Polls.question`, so every catalog key has one declaration. `+Capacity`, `+Intro`, `+TournamentInvites` and
+  `+TournamentResults` split `AppBranding` and `AppBranding.Tournaments` under SwiftLint's type-body limit.
+- `DesignTokens` aliases keep one source: `Layout.tournamentTileWidth = groupTileWidth`, `Symbols.currency = Symbols.price`, `MessageArrival.duration = Duration.normal`. `Symbols.fileGlyphs` is ordered,
   first match wins, `Symbols.file` for the rest. `Aurora.driftPeriods` are pairwise incommensurate, `driftWeights` sum
   to one, `grainSeed` is deterministic so every launch and test sees the same grain (`lily/Config/DesignTokens.swift:DesignTokens.Aurora`).
   `TabBar.symbolWeight` exists because the iOS 26 tab bar ignores `symbolVariants` and `fontWeight`.
-- `AccessibilityIdentifiers` literals are mirrored by hand in `lilyUITests` (as are the launch arguments): a rename
+- A UI test that reads an `AccessibilityIdentifiers` literal mirrors it by hand in `lilyUITests` (as it does the launch arguments): a rename
   here must be repeated there (`lily/Config/AccessibilityIdentifiers.swift:AccessibilityIdentifiers`). Only `introPager`
-  is mirrored from +Landing; the report sheet's reason rows and the feedback kind segments carry no identifiers and are
-  found by label; the event Edit sheet reuses the create identifiers; `createGroup` is the group row of both the event
+  is mirrored from +Landing; the report sheet's reason rows and the feedback kind picker carry no identifiers and are
+  found by label; the inbox's "Load earlier" button, the profile's shared-group rows container and the owner line of an
+  event's and a tournament's title carry none either (no test read them); the event Edit sheet reuses the create identifiers; `createGroup` is the group row of both the event
   and the tournament form; `message(clientID:)` is stable across the optimistic-to-stored swap.
 
 ## Side Effects

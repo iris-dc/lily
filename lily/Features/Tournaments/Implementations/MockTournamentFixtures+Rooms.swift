@@ -8,7 +8,7 @@ nonisolated extension MockTournamentFixtures {
     static func rooms(now: Date) -> [SportGroup] {
         make(now: now).map { detail in
             let tournament = detail.tournament
-            let lastMessageAt = now.addingTimeInterval(-tableTennisLastMessageHoursAgo * secondsPerHour)
+            let lastMessageAt = now.addingTimeInterval(-tableTennisLastMessageHoursAgo * .hour)
             return room(for: tournament,
                         organizerName: tournament.organizerName,
                         memberCount: playerCount(of: detail),
@@ -21,7 +21,7 @@ nonisolated extension MockTournamentFixtures {
     /// The caller's row in a tournament's room: owner as its organiser, member through an entry, none otherwise.
     private static func callerMembership(in detail: TournamentDetail) -> GroupMembership? {
         let tournament = detail.tournament
-        let isOrganizer = tournament.organizerUserId == callerMarker
+        let isOrganizer = tournament.isOrganized(by: callerMarker)
         let callerEntry = detail.entry(containing: callerMarker)
         guard isOrganizer || callerEntry != nil else { return nil }
         return GroupMembership(role: isOrganizer ? .owner : .member,
@@ -64,7 +64,7 @@ nonisolated extension MockTournamentFixtures {
             }
         }
         let organizer = detail.tournament
-        if organizer.organizerUserId != callerMarker, !members.contains(where: { $0.userId == organizer.organizerUserId }) {
+        if !organizer.isOrganized(by: callerMarker), !members.contains(where: { $0.userId == organizer.organizerUserId }) {
             members.insert(GroupMember(userId: organizer.organizerUserId,
                                        displayName: organizer.organizerName,
                                        role: .owner,

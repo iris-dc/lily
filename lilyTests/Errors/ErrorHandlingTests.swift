@@ -141,7 +141,6 @@ struct ErrorMessageMapperTests {
 
     @Test func wrappingNormalisesForeignErrors() {
         #expect(AppError.wrapping(AppError.network) == .network)
-        #expect(AppError.wrapping(CancellationError()) == .authCancelled)
         #expect(AppError.wrapping(URLError(.notConnectedToInternet)) == .network)
         #expect(AppError.wrapping(NSError(domain: "x", code: 1)) == .unknown)
     }

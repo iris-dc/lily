@@ -3,7 +3,7 @@ import Testing
 @testable import lily
 
 /// Where the viewer draws its picture on the way in and out: fitted to its page at 0, on its tile at 1, dragged up or
-/// down only at full size, fading where there is no tile.
+/// down only at full size.
 struct ViewerGeometryTests {
     private let page = CGRect(x: 0, y: 62, width: 402, height: 778)
     private let tile = TileGeometry(
@@ -59,7 +59,7 @@ struct ViewerGeometryTests {
     @Test func atZeroThePictureIsFittedToItsPage() {
         let open = ViewerGeometry(page: page, aspectRatio: 1.5, tile: tile, progress: 0, drag: 0)
         #expect(open.rect == CGRect(x: 0, y: 62 + (778 - 268) / 2, width: 402, height: 268))
-        #expect(open.radii.topLeading == 0 && open.opacity == 1)
+        #expect(open.radii.topLeading == 0)
     }
 
     @Test func atOneThePictureIsTheTile() {
@@ -77,6 +77,11 @@ struct ViewerGeometryTests {
         #expect(up.rect == open.rect.offsetBy(dx: 0, dy: -90))
     }
 
+    @Test func anUnknownShapeFillsThePage() {
+        let open = ViewerGeometry(page: page, aspectRatio: nil, tile: tile, progress: 0, drag: 40)
+        #expect(open.rect == page.offsetBy(dx: 0, dy: 40), "an unknown shape fills the page")
+    }
+
     /// Halfway is halfway in every value, so the frames written along the progress stay on the path.
     @Test func halfwayIsHalfwayInEveryValue() {
         let open = ViewerGeometry(page: page, aspectRatio: 1.5, tile: tile, progress: 0, drag: 0)
@@ -84,12 +89,6 @@ struct ViewerGeometryTests {
         #expect(half.rect.midX == (open.rect.midX + tile.frame.midX) / 2)
         #expect(half.rect.width == (open.rect.width + tile.frame.width) / 2)
         #expect(half.radii.topLeading == 7.5)
-    }
-
-    @Test func withoutATileThePictureFadesWhereItIs() {
-        let fading = ViewerGeometry(page: page, aspectRatio: nil, tile: nil, progress: 0.25, drag: 40)
-        #expect(fading.rect == page.offsetBy(dx: 0, dy: 40), "an unknown shape fills the page")
-        #expect(fading.opacity == 0.75)
     }
 
     /// The black goes with the picture onto its tile, and fades as it is dragged, gone at the fade distance.
@@ -165,5 +164,18 @@ struct ViewerGeometryTests {
                 == ViewerGeometry.clip(viewport: viewport, screen: screen, progress: 0.5))
         #expect(ViewerLayer.underComposer.window(viewport: viewport, screen: screen, progress: 0.5)
                 == ViewerGeometry.underComposer(viewport: viewport, screen: screen))
+    }
+
+    /// The black's side of the line: the cover's is the whole screen while the pager fades and the part above the
+    /// composer line during a move; the chat's is the part below it, and nothing without a move.
+    @Test func theLayersBackdropsAreTheScreenOrTheTwoRegions() {
+        let screen = CGRect(x: 0, y: 0, width: 402, height: 874)
+        let viewport = CGRect(x: 0, y: 116, width: 402, height: 642)
+        #expect(ViewerLayer.overBars.backdrop(viewport: viewport, screen: screen, moving: false) == screen)
+        #expect(ViewerLayer.overBars.backdrop(viewport: viewport, screen: screen, moving: true)
+                == ViewerGeometry.overComposer(viewport: viewport, screen: screen))
+        #expect(ViewerLayer.underComposer.backdrop(viewport: viewport, screen: screen, moving: true)
+                == ViewerGeometry.underComposer(viewport: viewport, screen: screen))
+        #expect(ViewerLayer.underComposer.backdrop(viewport: viewport, screen: screen, moving: false) == nil)
     }
 }

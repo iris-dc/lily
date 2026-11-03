@@ -11,9 +11,9 @@ final class EditEventViewModel {
     private(set) var updatedEvent: SportEvent?
 
     private let original: SportEvent
+    /// The game as it is, as a draft: nothing to save until `draft` differs from it.
+    private let originalDraft: EventDraft
     private let rules: EventDraft.Rules
-    /// The user's currency, for a price added to a game that had none; a priced game keeps its own.
-    private let currencyCode: String
     private let repository: any EventRepository
     private let logger: any Logging
     private let now: () -> Date
@@ -29,8 +29,8 @@ final class EditEventViewModel {
          currencyCode: String,
          onChange: @escaping @MainActor (SportEvent) -> Void) {
         self.original = event
-        self.currencyCode = currencyCode
-        self.draft = EventDraft(editing: event, currencyCode: currencyCode)
+        originalDraft = EventDraft(editing: event, currencyCode: currencyCode)
+        draft = originalDraft
         self.rules = .editing(participantCount: event.participantCount)
         self.repository = repository
         self.logger = logger
@@ -41,8 +41,7 @@ final class EditEventViewModel {
 
     var issues: [EventDraft.Issue] { draft.issues(now: now(), rules: rules) }
 
-    /// Nothing to save until something differs from the game as it is.
-    var hasChanges: Bool { draft != EventDraft(editing: original, currencyCode: currencyCode) }
+    var hasChanges: Bool { draft != originalDraft }
 
     var canSubmit: Bool { !isSubmitting && hasChanges && issues.isEmpty }
 

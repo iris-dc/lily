@@ -15,7 +15,7 @@ colour, never glass, because the list draws many at once. The model is [ViewMode
 - `InboxView(viewModel: InboxViewModel)` `[lily/Features/Inbox/Views/InboxView.swift:InboxView]`: `ContentScreen` with a
   bottom-anchored `ScrollView` and `LazyVStack` in a `readableColumn()`, title `AppBranding.Inbox.title`,
   `hidesTabBarOnCompact()`; rows from `viewModel.rows` (`DaySeparator` for `.day`, `InboxItemRow` for `.item`); the
-  "Load earlier" button is stamped `AccessibilityIdentifiers.inboxLoadEarlier`.
+  "Load earlier" button carries no identifier (no test reads it).
 - `InboxRow(inbox: InboxStore, isSelected: Bool = false, onOpen: () -> Void)` `[lily/Features/Inbox/Views/InboxRow.swift:InboxRow]`:
   a `ConversationRow` button with the inbox symbol avatar, the `inbox.hasUnread` dot and the caption
   `inbox.newestVisible?.caption ?? AppBranding.Inbox.emptyCaption`; identifier `AccessibilityIdentifiers.inboxRow`.

@@ -79,7 +79,9 @@ struct TournamentPermissionsTests {
     @Test func startIsOfferedToTheOrganiserInRegistrationAndEnabledAtTheMinimum() {
         let short = permissions(for: knockout(entryCount: 1, organizerUserId: me), as: me)
         #expect(short.showsStart && !short.canStart)
-        #expect(short.startBlockedReason == AppBranding.Tournaments.startNeeds(2, teamSize: 5))
+        #expect(short.startBlockedReason == "Needs at least 2 teams")
+        let fewPlayers = permissions(for: .fixture(format: .roundRobin, entryCount: 2, organizerUserId: me), as: me)
+        #expect(fewPlayers.showsStart && !fewPlayers.canStart && fewPlayers.startBlockedReason == "Needs at least 3 players")
 
         let enough = permissions(for: knockout(entryCount: 4, organizerUserId: me), as: me)
         #expect(enough.showsStart && enough.canStart && enough.startBlockedReason == nil)
@@ -109,23 +111,5 @@ struct TournamentPermissionsTests {
         let silent = permissions(for: .fixture(status: .completed, organizerUserId: me), as: me, chatEnabled: false)
         #expect(!silent.showsMenu)
         #expect(!TournamentPermissions.none.showsMenu)
-    }
-}
-
-@MainActor
-struct TournamentDetailPermissionsTests {
-    private let harness = TournamentHarness()
-    private let destination = TournamentDestination(id: "t", name: "Tuesday Table Tennis")
-
-    @Test func permissionsAreNoneBeforeTheLoadAndFollowTheLoadedDetail() async {
-        harness.repository.details["t"] = .fixture(tournament: .fixture(organizerUserId: TestFixtures.user.id))
-        let viewModel = harness.makeDetailViewModel(for: destination)
-        #expect(viewModel.permissions == .none)
-
-        await viewModel.load()
-        #expect(viewModel.permissions.canEdit && viewModel.permissions.showsStart)
-
-        await viewModel.cancel()
-        #expect(!viewModel.permissions.canEdit, "the value follows the detail")
     }
 }

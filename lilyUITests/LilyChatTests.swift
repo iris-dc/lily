@@ -21,9 +21,9 @@ final class LilyChatTests: LilyUITestCase {
         XCTAssertTrue(app.buttons["inbox-row"].waitForExistence(timeout: 10))
         XCTAssertTrue(labelled("Noor invited you to Climbing Buddies").waitForExistence(timeout: 5),
                       "the inbox row previews its newest item")
-        XCTAssertTrue(app.buttons["group-row-mock-group-kickers"].exists, "the caller's rooms follow the inbox")
+        XCTAssertTrue(app.buttons[MockIDs.kickersRow].exists, "the caller's rooms follow the inbox")
 
-        openRoomAndComeBack("group-row-mock-group-kickers")
+        openRoomAndComeBack(MockIDs.kickersRow)
         expectBadge(of: chats, toRead: "2 unread chats")
     }
 
@@ -32,20 +32,18 @@ final class LilyChatTests: LilyUITestCase {
     func testSendingInARoomMovesItToTheTopOfChats() {
         tapSignInWithApple()
         let rooms = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'group-row-'"))
-        chatsRow("group-row-mock-group-runners")
-        XCTAssertEqual(rooms.firstMatch.identifier, "group-row-mock-group-kickers", "the busiest room comes first")
+        chatsRow(MockIDs.runnersRow)
+        XCTAssertEqual(rooms.firstMatch.identifier, MockIDs.kickersRow, "the busiest room comes first")
 
-        openRoom("group-row-mock-group-runners", titled: "Tempelhof Runners")
+        openRoom(MockIDs.runnersRow, titled: "Tempelhof Runners")
         enter("Anyone running Sunday?", into: app.descendants(matching: .any)["chat-composer"])
         app.buttons["chat-send"].tap()
         XCTAssertTrue(app.staticTexts["Anyone running Sunday?"].waitForExistence(timeout: 10))
         app.navigationBars.buttons.firstMatch.tap()
 
         XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 5))
-        let first = NSPredicate(format: "identifier == %@", "group-row-mock-group-runners")
-        XCTAssertEqual(XCTWaiter().wait(for: [expectation(for: first, evaluatedWith: rooms.firstMatch)], timeout: 5),
-                       .completed,
-                       "the room with the latest line is first, not \(rooms.firstMatch.identifier)")
+        XCTAssertTrue(rooms.firstMatch.wait(for: \.identifier, toEqual: MockIDs.runnersRow, timeout: 5),
+                      "the room with the latest line is first, not \(rooms.firstMatch.identifier)")
     }
 
     /// Accepting joins the group and opens its chat on the Chats stack; on the way back the card says "You joined",
@@ -67,7 +65,7 @@ final class LilyChatTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 5))
 
         openHomeTab()
-        XCTAssertTrue(app.buttons["group-row-mock-group-climbing"].waitForExistence(timeout: 10), "Home lists the new group")
+        XCTAssertTrue(app.buttons[MockIDs.climbingRow].waitForExistence(timeout: 10), "Home lists the new group")
     }
 
     @MainActor
@@ -101,8 +99,8 @@ final class LilyChatTests: LilyUITestCase {
     @MainActor
     func testDeletingTheConversationWithMartaRemovesItFromChats() {
         tapSignInWithApple()
-        openRoom("group-row-mock-dm-mock-user-marta", titled: "Marta")
-        let marta = app.buttons["group-row-mock-dm-mock-user-marta"]
+        openRoom(MockIDs.martaConversationRow, titled: "Marta")
+        let marta = app.buttons[MockIDs.martaConversationRow]
 
         let more = app.buttons["chat-more"]
         XCTAssertTrue(more.waitForExistence(timeout: 5))
@@ -110,13 +108,11 @@ final class LilyChatTests: LilyUITestCase {
         let delete = app.buttons["chat-clear"]
         XCTAssertTrue(delete.waitForExistence(timeout: 5), "the room's menu offers Delete chat")
         delete.tap()
-        let confirmation = app.alerts.firstMatch
-        XCTAssertTrue(confirmation.waitForExistence(timeout: 5), "the confirmation asks first")
-        confirmation.buttons["Delete chat"].tap()
+        confirmAlert("Delete chat")
 
         XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 10), "the chat closes")
         XCTAssertTrue(marta.waitForNonExistence(timeout: 5), "the conversation left the Chats tab")
-        let kickers = app.buttons["group-row-mock-group-kickers"]
+        let kickers = app.buttons[MockIDs.kickersRow]
         XCTAssertTrue(kickers.exists)
         kickers.tap()
         XCTAssertTrue(app.navigationBars["Kreuzberg Kickers"].waitForExistence(timeout: 10), "other rooms still open")
@@ -127,7 +123,7 @@ final class LilyChatTests: LilyUITestCase {
     @MainActor
     func testReplyingQuotesTheOriginalInTheBubble() {
         tapSignInWithApple()
-        openRoom("group-row-mock-group-kickers", titled: "Kreuzberg Kickers")
+        openRoom(MockIDs.kickersRow, titled: "Kreuzberg Kickers")
         let original = "Anyone up for a game this week?"
         let line = app.staticTexts[original]
         XCTAssertTrue(line.waitForExistence(timeout: 10))
@@ -234,8 +230,7 @@ final class LilyChatTests: LilyUITestCase {
     @MainActor
     func testAProfileOpenedFromARoomKeepsTheTabBarHidden() {
         tapSignInWithApple()
-        openChatsTab()
-        openRoom("group-row-mock-dm-mock-user-marta", titled: "Marta")
+        openRoom(MockIDs.martaConversationRow, titled: "Marta")
         XCTAssertTrue(app.tabBars.buttons["Home"].waitForNonExistence(timeout: 5), "a room hides the bar")
 
         app.buttons["chat-title"].tap()
@@ -252,9 +247,8 @@ private extension LilyChatTests {
     /// Waits for the tab's value to read `expected`, naming what it read instead when it never does.
     @MainActor
     func expectBadge(of tab: XCUIElement, toRead expected: String) {
-        let reads = expectation(for: NSPredicate(format: "value == %@", expected), evaluatedWith: tab)
-        let outcome = XCTWaiter().wait(for: [reads], timeout: 10)
-        XCTAssertEqual(outcome, .completed, "the Chats badge reads \(tab.value as? String ?? "nothing"), not \(expected)")
+        XCTAssertTrue(waitUntil(tab, holds: "value == %@", expected, timeout: 10),
+                      "the Chats badge reads \(tab.value as? String ?? "nothing"), not \(expected)")
     }
 
     @MainActor

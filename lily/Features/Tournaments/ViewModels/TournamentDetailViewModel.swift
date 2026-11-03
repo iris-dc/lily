@@ -27,16 +27,16 @@ final class TournamentDetailViewModel {
     /// The tournament was there and is gone now (an operator deleted it): the screen dismisses, as a gone group's does.
     private(set) var isGone = false
 
-    /// Shared with the `+Entries` file, hence not `private`.
+    /// Shared with the `+Actions`, `+Entries` and `+Matches` files, hence not `private`.
     let repository: any TournamentRepository
     /// Entering and leaving move the caller's room, so the entry writes reload Mine and a gone tournament drops it.
     let myGroups: MyGroupsStore
     let identity: any IdentityProvider
-    let reporter: GroupErrorReporter
     let logger: any Logging
-    let now: () -> Date
     let pushOptIn: any PushOptIn
-    let onChange: @MainActor (Tournament) -> Void
+    private let reporter: GroupErrorReporter
+    private let now: () -> Date
+    private let onChange: @MainActor (Tournament) -> Void
     /// Read by the `+Actions` file: the chat opener fetches the room and pushes it.
     let groupRepository: any GroupRepository
     let navigation: AppNavigation

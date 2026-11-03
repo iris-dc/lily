@@ -146,13 +146,17 @@ final class GroupHarness {
         InvitePeopleViewModel(target: target, repository: invites, reporter: reporter, logger: logger, tryAgainDelay: .zero)
     }
 
-    func makeDiscoverGroupsViewModel() -> DiscoverGroupsViewModel {
+    /// `snapshots` is optional because a main-actor default value cannot be built in the parameter list.
+    func makeDiscoverGroupsViewModel(sleep: @escaping Sleep = systemSleep,
+                                     snapshots: (any ListSnapshotStore)? = nil) -> DiscoverGroupsViewModel {
         DiscoverGroupsViewModel(changes: changes,
                                 repository: repository,
                                 identity: identity,
                                 locationService: location,
                                 errorCenter: errorCenter,
                                 recorder: recorder,
-                                logger: logger)
+                                logger: logger,
+                                sleep: sleep,
+                                snapshots: snapshots ?? NoOpListSnapshotStore())
     }
 }

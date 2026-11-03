@@ -22,7 +22,7 @@ struct InboxViewModelTests {
         harness.inboxRepository.pages = [.fixture([])]
         let viewModel = harness.makeInboxViewModel()
 
-        #expect(viewModel.isInitialLoad && !harness.inbox.isLoading, "before the view's task started the load")
+        #expect(viewModel.isInitialLoad && harness.inboxRepository.pageRequests.isEmpty, "before the view's task asked")
         await viewModel.appear()
 
         #expect(!viewModel.isInitialLoad && viewModel.rows.isEmpty, "the empty state is earned by an answer")

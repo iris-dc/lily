@@ -42,18 +42,18 @@ struct MessageDraftAttachmentTests {
         draft.attachments = [.fixture()]
         let pending = PendingMessage(draft: draft, sentAt: .now)
 
-        #expect(pending.hasAttachments && pending.attachments == draft.attachments && pending.text == "Look")
+        #expect(pending.attachments == draft.attachments && pending.text == "Look")
         #expect(pending.draft.attachments == draft.attachments && pending.draft.payload == draft.payload)
         #expect(pending.droppingReply().attachments == draft.attachments)
     }
 
     @Test func draftStatesAnswerTheirQuestions() {
         let uploading = AttachmentDraft.fixture(state: .uploading(0.25))
-        #expect(uploading.isInFlight && !uploading.hasFailed && uploading.progress == 0.25 && uploading.uploadedRef == nil)
+        #expect(uploading.isInFlight && !uploading.hasFailed && uploading.uploadedRef == nil)
         let uploaded = AttachmentDraft.fixture(state: .uploaded(.fixture()))
-        #expect(!uploaded.isInFlight && uploaded.progress == 1 && uploaded.uploadedRef == .fixture())
+        #expect(!uploaded.isInFlight && uploaded.uploadedRef == .fixture())
         let failed = AttachmentDraft.fixture(state: .failed)
-        #expect(failed.hasFailed && failed.progress == nil && !failed.isInFlight)
+        #expect(failed.hasFailed && !failed.isInFlight)
         #expect(AttachmentDraft.fixture(state: .preparing).isInFlight)
         #expect(uploaded.previewURL == uploaded.thumbnailURL && uploaded.localFiles.count == 2)
         #expect(uploaded.aspectRatio.isAbout(4.0 / 3.0))

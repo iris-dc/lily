@@ -5,19 +5,13 @@ extension UserProfile {
     /// Marta, sharing Kreuzberg Kickers with the caller unless told otherwise.
     static func fixture(userId: String = "u-2",
                         displayName: String = "Marta",
-                        sharedGroups: [GroupSummary] = [.fixture()]) -> UserProfile {
+                        sharedGroups: [GroupSummary] = [.fixture]) -> UserProfile {
         UserProfile(userId: userId, displayName: displayName, sharedGroups: sharedGroups)
     }
 }
 
 extension GroupSummary {
-    static func fixture(id: String = "g",
-                        name: String = "Kreuzberg Kickers",
-                        visibility: GroupVisibility = .public,
-                        type: EventType? = .football,
-                        memberCount: Int = 34) -> GroupSummary {
-        GroupSummary(id: id, name: name, visibility: visibility, type: type, memberCount: memberCount)
-    }
+    static let fixture = GroupSummary(id: "g", name: "Kreuzberg Kickers", visibility: .public, type: .football, memberCount: 34)
 }
 
 extension UserProfileDestination {

@@ -3,23 +3,15 @@ import SwiftUI
 /// One message's pictures and videos over black, paged from the tapped one in the gallery's order, so the ones behind a
 /// "+N" tile are a swipe away; files stay cards that open in QuickLook. A picture page zooms (`ImageViewerPage`), a
 /// video page plays only while it is on screen (`VideoPlayerPage`); Close, the "n / m" position and Share sit in glass
-/// at the top. The viewer draws its own coming and going over the chat, which the cover leaves in place
-/// (`presentationBackground(.clear)`, presented and taken away without the cover's slide): the picture grows out of its
-/// tile to fill the screen as the black comes in, and the tile shows the accent while its picture is in the viewer
-/// (`ViewerHero`). A drag up or down (`ViewerDismissPan`, `ViewerDismissal`) moves the picture up or down only, at full
-/// size, fading the black so the chat shows through; letting go far enough, or Close, or VoiceOver's escape, puts it
-/// back onto its tile, the one of the page on screen, and the chat is back; short of it the picture springs back.
-/// On the way in and out, and while dragged, the picture is drawn by itself over the hidden pager, each move's ends as
-/// `ViewerGeometry` places them from where its page lays the picture out and the frames between written by the
-/// `ViewerMoveDriver`: a transformed pager re-laid its UIKit page out on alternate frames. The move lives in the
-/// `ViewerHero` (`progress`, `drag`, `landing`, `moving`), because the cover draws only the picture's and the black's
-/// part above the composer line, over the bars; the chat draws the part below it under the composer, which fades with
-/// the move (`ViewerStage`), so a tile partly under the composer opens and closes whole. A video moves as its poster.
-/// Without a picture or a tile (a page with nothing loaded yet, a zoomed picture), or under Reduce Motion (`\.motion`),
-/// the pager fades instead, over black on the whole screen, and a drag still follows the finger before it settles or
-/// closes on the same ramp. `ViewerMotion` decides which phase the viewer is in and which move's
-/// completion still counts. A zoomed picture does not close on a drag (a double tap returns it to size first), nor does
-/// one being pinched. An accessibility container (`attachment-viewer`), so Close keeps its own identifier.
+/// at the top. The cover leaves the chat in place (`presentationBackground(.clear)`, presented and taken away without
+/// the cover's slide) and draws its own coming and going: the picture grows out of its tile to fill the screen as the
+/// black comes in, and back onto the tile of the page on screen on Close, a drag far enough or VoiceOver's escape; a
+/// video moves as its poster. On the way and while dragged the picture is drawn by itself over the hidden pager,
+/// because a transformed pager re-laid its UIKit page out on alternate frames. The move is `ViewerHero`'s, run frame
+/// by frame by `ViewerMoveDriver`, drawn by `ViewerMovingPicture` on both sides of the composer line (`ViewerStage`
+/// below it), its phases `ViewerMotion`'s, the drag's rules `ViewerDismissal`'s. Without a picture or a tile (a page
+/// with nothing loaded yet, a zoomed picture), or under Reduce Motion (`\.motion`), the pager fades instead, the drag
+/// still following the finger. An accessibility container (`attachment-viewer`), so Close keeps its own identifier.
 struct AttachmentViewerSheet: View {
     let selection: AttachmentSelection
     let loader: AttachmentLoader
@@ -48,7 +40,7 @@ struct AttachmentViewerSheet: View {
         let backdrop = ViewerGeometry.backdropOpacity(progress: hero.progress, drag: hero.drag)
         let drawsPicture = hero.moving != nil
         ZStack {
-            black(opacity: backdrop)
+            ViewerBackdrop(hero: hero, layer: .overBars)
             pages
                 .opacity(isOpen ? 1 : drawsPicture ? 0 : 1 - Double(hero.progress))
                 .offset(y: drawsPicture ? 0 : hero.drag)
@@ -80,26 +72,12 @@ struct AttachmentViewerSheet: View {
         }
     }
 
-    /// The black behind the picture: above the composer line while the chat draws the picture's and the black's part
-    /// below it, the whole screen while the pager fades instead (`ViewerGeometry.overComposer`).
-    private func black(opacity: Double) -> some View {
-        GeometryReader { proxy in
-            let space = proxy.frame(in: .global)
-            let region = hero.moving == nil ? space : ViewerGeometry.overComposer(viewport: hero.viewport, screen: space)
-            Color.black
-                .opacity(opacity)
-                .frame(width: region.width, height: region.height)
-                .offset(y: region.minY - space.minY)
-        }
-        .ignoresSafeArea()
-    }
-
     private var isOpen: Bool { motion.phase == .open }
 
     /// The picture on screen at its best: the full one decoded before the viewer opened or by its page, else the
     /// tile's thumbnail, else the one the page loaded for a picture behind "+N".
     private var picture: UIImage? {
-        hero.preloaded[current.id] ?? layout.pictures[current.id] ?? hero.thumbnail(for: current.id)
+        hero.preloaded[current.id] ?? pictures.byID[current.id] ?? hero.thumbnail(for: current.id)
             ?? layout.previews[current.id]
     }
 
@@ -159,10 +137,7 @@ struct AttachmentViewerSheet: View {
                             preloaded: hero.preloaded[attachment.id],
                             thumbnail: hero.thumbnail(for: attachment.id),
                             onPreview: { layout.previews[attachment.id] = $0 },
-                            onLoaded: { loaded in
-                                pictures.byID[attachment.id] = loaded
-                                layout.pictures[attachment.id] = loaded
-                            },
+                            onLoaded: { pictures.byID[attachment.id] = $0 },
                             onZoomed: { isZoomed in
                                 if isZoomed { zoomedIDs.insert(attachment.id) } else { zoomedIDs.remove(attachment.id) }
                             })
@@ -202,18 +177,18 @@ struct AttachmentViewerSheet: View {
     }
 }
 
-/// Where each page lays its picture out and the full pictures the pages loaded, for the picture the viewer draws on its
-/// way in and out. Written on every layout and load, so kept out of observation: nothing redraws for them, and the
-/// viewer reads them when its own state moves.
+/// Where each page lays its picture out and the previews loaded for the pictures behind "+N", for the picture the viewer
+/// draws on its way in and out. Written on every layout and load, so kept out of observation: nothing redraws for them,
+/// and the viewer reads them when its own state moves.
 final class ViewerPageLayout {
     var frames: [String: CGRect] = [:]
-    var pictures: [String: UIImage] = [:]
     var previews: [String: UIImage] = [:]
 }
 
-/// The pictures the pages loaded, by attachment id, so Share offers the one on screen. A reference that the pages write
-/// and only `ShareControl` reads, so a picture finishing its load re-renders that control and never the pager: a
-/// `TabView` re-rendered while its page controller is still settling can stick between two pages.
+/// The full pictures the pages loaded, by attachment id: Share offers the one on screen, and a move draws it. A
+/// reference that the pages write, `ShareControl` reads in its body and the viewer's `stage()` reads outside any body
+/// (action closures only, never `body`), so a picture finishing its load re-renders that control and never the pager:
+/// a `TabView` re-rendered while its page controller is still settling can stick between two pages.
 @Observable @MainActor
 private final class LoadedPictures {
     var byID: [String: UIImage] = [:]

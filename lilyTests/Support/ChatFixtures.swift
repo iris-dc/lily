@@ -76,7 +76,7 @@ extension ContractSamples {
     {"id":"01J8ZK7Q9X2M4N6P8R0T2V4W70","groupId":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","senderUserId":"seed-jonas",\
     "senderName":"Jonas","kind":"text","sentAt":"2026-09-24T18:06:00Z","isDeleted":true}
     """
-    /// A reply as the backend stores it (plan 2.1): the quote snapshotted at the end, no `attachmentKind` for a text target.
+    /// A reply as the backend stores it: the quote snapshotted at the end, no `attachmentKind` for a text target.
     static let replyMessage = """
     {"id":"01J8ZK7Q9X2M4N6P8R0T2V4W71","groupId":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","senderUserId":"seed-marta",\
     "senderName":"Marta","kind":"text","text":"Here","clientMessageId":"9b2f3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5e",\

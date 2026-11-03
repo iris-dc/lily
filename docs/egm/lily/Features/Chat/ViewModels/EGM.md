@@ -60,7 +60,8 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   `maxPerMessage = AppConfig.Chat.Attachments.maxPerMessage`,
   `maxConcurrentUploads = AppConfig.Chat.Attachments.maxConcurrentUploads` (a `SlotGate`).
 - `[AttachmentComposerModel.swift:AttachmentComposerModel]` `private(set) drafts: [AttachmentDraft]`,
-  `private(set) tasks`; `isEmpty`, `isFull`, `remainingSlots`, `isBusy`, `refs: [AttachmentRef]`;
+  `private maxPerMessage`, `private tasks`; `isEmpty`, `isFull`, `remainingSlots`, `isBusy` (the send reads
+  `MessageDraft.uploadedRefs`; the model keeps no `refs` of its own);
   `add(_ source: MediaSource) -> AttachmentDraft?`, `remove(_:)`, `retry(_:)`, `reset()`,
   `seedCache(_ sent:, with stored: [Attachment]) async`; pipeline writes `holds(_:)`, `replace(_:with:) -> Bool`,
   `setState(of:to:)`, `dropRefused(_:_:)`, `finishUpload(_:ref:)`, `failUpload(_:_:)`.
@@ -110,10 +111,11 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   user) confirms the pending bubble; `memberLeft` naming the caller or `groupDeleted` sets `isGone`;
   `tournamentChanged`, `matchUpdated`, `messageDeleted`, `membershipChanged`, `inboxItem`, `unknown` change nothing
   here.
-- `[ChatViewModel+Events.swift:ChatViewModel.canDelete]` Not deleted, not system, and the sender or
-  `GroupAccess.canEdit`. `[ChatViewModel+Pins.swift:ChatViewModel.canPin]` not deleted, not system,
-  `GroupAccess.canPin(in:)`; `pins` leaves out messages the room marks deleted.
-  `[ChatViewModel+Reply.swift:ChatViewModel.canReply]` not deleted, not system.
+- `[ChatViewModel+Events.swift:ChatViewModel.canDelete]` `ChatMessage.isLiveMemberMessage` (not deleted, not
+  system; the one predicate the three share) and the sender or `GroupAccess.canEdit`.
+  `[ChatViewModel+Pins.swift:ChatViewModel.canPin]` `isLiveMemberMessage` and `GroupAccess.canPin(in:)`; `pins`
+  leaves out messages the room marks deleted. `[ChatViewModel+Reply.swift:ChatViewModel.canReply]`
+  `isLiveMemberMessage`.
 - `[ChatViewModel+Pins.swift:ChatViewModel.changePins]` A pin or unpin answered applies the answer's pins and adopts
   its epoch; a pin then catches up once for the backend's note. A `.network` or `.pinFailed`
   (`leavesPinOutcomeUnknown`) is read back through `LostAnswer` with one `catchUp.catchUp(groupID:)` (every page
@@ -131,8 +133,8 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
 - `[ChatViewModel+Attachments.swift:ChatViewModel.confirmPending]` The bubble's files are seeded into the cache
   under the stored ids before the bubble is removed.
 - `[AttachmentComposerModel.swift:AttachmentComposerModel.add]` Refused when `isFull` (`drafts.count >=
-  maxPerMessage`); pickers take `prefix(remainingSlots)`. `isBusy` is any draft `isInFlight`; `refs` are uploaded
-  refs only. `retry` requires `hasFailed` and `holds(id)`.
+  maxPerMessage`); pickers take `prefix(remainingSlots)`. `isBusy` is any draft `isInFlight`. `retry` requires
+  `hasFailed` and `holds(id)`, marks the slot `.uploading(0)` and hands the draft as received to the upload.
 - `[AttachmentComposerModel.swift:AttachmentComposerModel.seedCache]` Each stored id is claimed in `seeded` before
   the first await, so the answer and the live echo settling the same message copy and delete once.
 - `[AttachmentComposerModel+Upload.swift:AttachmentWork]` Holds the owner weakly; the owner is resolved only for

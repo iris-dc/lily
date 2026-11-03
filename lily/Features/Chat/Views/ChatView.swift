@@ -14,17 +14,13 @@ struct ChatView: View {
     /// The room awaiting the caller's word on a clear; `nil` while nothing is asked.
     @State private var clearing: SportGroup?
     private let dependencies: AppDependencies
-    /// What leaves the screen once the room is gone: the pop by default, or clearing the split view's selection when
-    /// the room is the detail column's root, where there is nothing to pop.
-    private let onGone: (() -> Void)?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
 
-    init(viewModel: ChatViewModel, dependencies: AppDependencies, onGone: (() -> Void)? = nil) {
+    init(viewModel: ChatViewModel, dependencies: AppDependencies) {
         _viewModel = State(initialValue: viewModel)
         _hero = State(initialValue: ViewerHero(logger: viewModel.logger))
         self.dependencies = dependencies
-        self.onGone = onGone
     }
 
     private var group: SportGroup { viewModel.group }
@@ -59,51 +55,42 @@ struct ChatView: View {
         }
         // Out of the group, the group is gone, or the conversation was deleted: nothing left to show here.
         .onChange(of: viewModel.isGone) {
-            guard viewModel.isGone else { return }
-            if let onGone { onGone() } else { dismiss() }
+            if viewModel.isGone { dismiss() }
         }
     }
 
     /// The group's detail, the other person's profile in a direct conversation (reached from the chat, so it offers
     /// no "Message" back into it), or the tournament of a tournament's room; one identifier either way.
-    @ViewBuilder private var infoButton: some View {
-        if let counterpart = group.counterpart {
-            NavigationLink(value: counterpart.profile(context: .fromChat)) {
-                Label(AppBranding.profileTitle, systemImage: DesignTokens.Symbols.info)
+    private var infoButton: some View {
+        Group {
+            if let counterpart = group.counterpart {
+                NavigationLink(value: counterpart.profile(context: .fromChat)) { infoLabel(AppBranding.profileTitle) }
+            } else if group.isTournamentRoom {
+                NavigationLink(value: TournamentDestination(id: group.id, name: group.name)) {
+                    infoLabel(AppBranding.Tournaments.tournament)
+                }
+            } else {
+                NavigationLink(value: GroupInfoDestination(group: group)) { infoLabel(AppBranding.Groups.title) }
             }
-            .accessibilityIdentifier(AccessibilityIdentifiers.chatTitle)
-        } else if group.isTournamentRoom {
-            NavigationLink(value: TournamentDestination(id: group.id, name: group.name)) {
-                Label(AppBranding.Tournaments.tournament, systemImage: DesignTokens.Symbols.info)
-            }
-            .accessibilityIdentifier(AccessibilityIdentifiers.chatTitle)
-        } else {
-            NavigationLink(value: GroupInfoDestination(group: group)) {
-                Label(AppBranding.Groups.title, systemImage: DesignTokens.Symbols.info)
-            }
-            .accessibilityIdentifier(AccessibilityIdentifiers.chatTitle)
         }
+        .accessibilityIdentifier(AccessibilityIdentifiers.chatTitle)
+    }
+
+    private func infoLabel(_ title: String) -> some View {
+        Label(title, systemImage: DesignTokens.Symbols.info)
     }
 
     /// Over an empty transcript once its history is no longer awaited (the transcript's spinner shows until then), fading
     /// in as the spinner fades out: Try again when the load failed, else the empty state (also for a room just cleared).
     private var placeholder: some View {
-        let isShown = viewModel.rows.isEmpty && !viewModel.isAwaitingHistory
-        return ZStack {
-            if isShown {
-                emptyState
-                    .transition(.opacity)
-            }
-        }
-        .animation(.easeOut(duration: DesignTokens.Duration.fast), value: isShown)
+        FadingPresence(isShown: viewModel.rows.isEmpty && !viewModel.isAwaitingHistory, animation: .firstPageFade) { emptyState }
     }
 
     @ViewBuilder private var emptyState: some View {
         if viewModel.historyLoadFailed {
-            EmptyStateView(symbolName: DesignTokens.Symbols.error,
-                           title: AppBranding.Chat.loadFailedTitle,
-                           message: AppBranding.Groups.loadFailedMessage,
-                           actionTitle: AppBranding.Groups.tryAgain) {
+            EmptyStateView.loadFailed(title: AppBranding.Chat.loadFailedTitle,
+                                      message: AppBranding.Groups.loadFailedMessage,
+                                      actionTitle: AppBranding.Groups.tryAgain) {
                 Task { await viewModel.loadHistory() }
             }
         } else {

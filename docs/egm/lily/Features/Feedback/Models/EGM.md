@@ -27,10 +27,11 @@ are `nonisolated`; every type but the caseless `DeviceModel` namespace is `Senda
   `messageMissing`, `messageTooLong`, `emailInvalid`, `emailTooLong`; `field: FeedbackField`, `hint: String?`.
 - `FeedbackEnvironment` (`lily/Features/Feedback/Models/FeedbackEnvironment.swift`): `Equatable, Sendable`;
   `appVersion`, `osVersion`, `device`, `locale: String`; `summary`;
-  `static current(appVersion: AppVersion = .current(), languageCode: String, processInfo: = .processInfo)`;
+  `static current(appVersion: AppVersion = .current(), languageCode: String)` (reads `ProcessInfo.processInfo`
+  itself);
   `static osVersionText(_ version: OperatingSystemVersion) -> String`.
-- `DeviceModel` (`FeedbackEnvironment.swift`): `static identifier(environment: [String: String] =
-  ProcessInfo.processInfo.environment) -> String`; private `machine()`.
+- `DeviceModel` (`FeedbackEnvironment.swift`): `static identifier(environment: [String: String]) -> String` (no
+  default; every caller passes the environment); private `machine()`.
 
 ## Invariants
 
@@ -51,18 +52,18 @@ are `nonisolated`; every type but the caseless `DeviceModel` namespace is `Senda
   (`Feedback.swift`). `FeedbackKind` raw values are the wire names; `allCases` order is `contact`, `feedback`, `bug`.
 - `FeedbackEnvironment.current`: `appVersion = AppVersion.headerValue` ("marketing (build)" from
   `CFBundleShortVersionString` and `CFBundleVersion`, `"0"` for a missing key); `osVersion =
-  osVersionText(processInfo.operatingSystemVersion)`, which is `"\(AppConfig.Feedback.osName) major.minor"` with
+  osVersionText(ProcessInfo.processInfo.operatingSystemVersion)`, which is `"\(AppConfig.Feedback.osName) major.minor"` with
   `.patch` appended only when non-zero; `device = DeviceModel.identifier(environment:)`; `locale` is the
-  `languageCode` argument verbatim. `summary` joins `appVersion`, `osVersion` and `device` with
-  `AppBranding.Events.captionSeparator` and leaves `locale` out.
+  `languageCode` argument verbatim. `summary` joins `appVersion`, `osVersion` and `device` through
+  `AppBranding.Groups.caption` (the dot every caption uses) and leaves `locale` out.
 - `DeviceModel.identifier` returns `environment[AppConfig.Feedback.simulatorModelKey]`
   (`SIMULATOR_MODEL_IDENTIFIER`) when present and non-empty, else `utsname().machine` (e.g. `iPhone17,1`).
 
 ## Side Effects
 
-- `FeedbackEnvironment.current` default arguments read `Bundle.main.infoDictionary` (through `AppVersion.current()`)
-  and `ProcessInfo.processInfo.operatingSystemVersion` and `.environment`; `DeviceModel.identifier` reads
-  `ProcessInfo.processInfo.environment` by default (`FeedbackEnvironment.swift`).
+- `FeedbackEnvironment.current` reads `Bundle.main.infoDictionary` through its `appVersion` default
+  (`AppVersion.current()`) and, in its body, `ProcessInfo.processInfo.operatingSystemVersion` and `.environment`, which
+  it hands to `DeviceModel.identifier(environment:)` (`FeedbackEnvironment.swift`).
 - `DeviceModel.machine` calls `uname(&utsname)` and rebinds `machine` to `CChar` to build the string
   (`FeedbackEnvironment.swift`).
 - `FeedbackKind` and `FeedbackDraft` have none: pure computed properties over `AppConfig` and `AppBranding` statics.

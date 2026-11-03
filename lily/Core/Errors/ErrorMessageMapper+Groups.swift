@@ -1,7 +1,8 @@
 import Foundation
 
 /// Copy for groups and moderation (the chat's is in `ErrorMessageMapper+Chat.swift`); `message(for:)` routes exactly
-/// those cases here. In its own file because the mapper's type body is at SwiftLint's limit.
+/// those cases here. `groupMessage` is at the complexity limit, so the writes and the invites fall through to
+/// `groupWriteMessage` and `inviteMessage`.
 nonisolated extension ErrorMessageMapper {
     static func groupMessage(for error: AppError) -> ErrorMessage {
         switch error {

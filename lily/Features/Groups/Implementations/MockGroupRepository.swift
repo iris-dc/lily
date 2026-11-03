@@ -126,7 +126,7 @@ final class MockGroupRepository: GroupRepository {
     func members(id: String) async throws -> [GroupMember] {
         guard let callerID = identity.currentUserID else { throw AppError.sessionExpired }
         let group = try readable(id)
-        let others = others(in: id).filter { $0.role != .banned }
+        let others = roster(of: id).filter { $0.role != .banned }
         guard let role = group.role, let membership = group.membership else { return others.sorted(by: Self.rosterOrder) }
         let me = GroupMember(userId: callerID,
                              displayName: AppBranding.Groups.Create.mockOwnerName,
@@ -139,7 +139,7 @@ final class MockGroupRepository: GroupRepository {
         let group = try readable(id)
         guard group.role?.isAdmin == true else { throw AppError.insufficientRole }
         try requireGroupRoute(group)
-        return others(in: id).filter { $0.role == .banned }
+        return roster(of: id).filter { $0.role == .banned }
     }
 
     func unban(id: String, userID: String) async throws {
@@ -199,15 +199,11 @@ final class MockGroupRepository: GroupRepository {
 
     /// The other members of a group with its banned rows, live: the invite mock sifts them the way the backend does.
     func roster(of groupID: String) -> [GroupMember] {
-        others(in: groupID)
-    }
-
-    private func others(in groupID: String) -> [GroupMember] {
         rosters[groupID] ?? []
     }
 
     private func other(_ userID: String, in group: SportGroup) throws -> GroupMember {
-        guard let member = others(in: group.id).first(where: { $0.userId == userID }) else { throw AppError.notAMember }
+        guard let member = roster(of: group.id).first(where: { $0.userId == userID }) else { throw AppError.notAMember }
         return member
     }
 

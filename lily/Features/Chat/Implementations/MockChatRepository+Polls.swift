@@ -5,11 +5,7 @@ import Foundation
 /// message and posts the note Laurel posts, an unpin posts nothing.
 extension MockChatRepository {
     func vote(groupID: String, messageID: String, optionIDs: [String]) async throws -> VoteResult {
-        let (_, messages) = try await visibleRoom(groupID)
-        guard let message = messages.first(where: { $0.id == messageID }), !message.isDeleted else {
-            throw AppError.messageNotFound
-        }
-        guard let poll = message.poll else { throw AppError.notAPoll }
+        let poll = try await visiblePoll(groupID: groupID, messageID: messageID)
         let known = Set(poll.options.map(\.id))
         guard Set(optionIDs).count == optionIDs.count, optionIDs.allSatisfy(known.contains),
               poll.allowsMultipleAnswers || optionIDs.count <= 1 else { throw AppError.voteFailed }
@@ -33,13 +29,9 @@ extension MockChatRepository {
 
     /// The fixture voters, and the caller under the options they picked.
     func voters(groupID: String, messageID: String) async throws -> PollVoters {
-        let (_, messages) = try await visibleRoom(groupID)
-        guard let message = messages.first(where: { $0.id == messageID }), !message.isDeleted else {
-            throw AppError.messageNotFound
-        }
-        guard let poll = message.poll else { throw AppError.notAPoll }
+        let poll = try await visiblePoll(groupID: groupID, messageID: messageID)
         guard !poll.isAnonymous else { throw AppError.pollAnonymous }
-        let caller = PollVoters.Voter(userId: identity.currentUserID ?? "", name: AppBranding.Groups.Create.mockOwnerName)
+        let caller = PollVoters.Voter(userId: callerID, name: callerName)
         let fixture = pollVoters[messageID] ?? [:]
         return PollVoters(options: poll.options.map { option in
             let voters = (fixture[option.id] ?? []) + (poll.myVotes.contains(option.id) ? [caller] : [])
@@ -58,8 +50,8 @@ extension MockChatRepository {
         pins[groupID] = current + [PinnedMessage(quote: quote, pinnedAt: now())]
         post(ChatMessage(id: nextID(in: groupID),
                          groupId: groupID,
-                         senderUserId: identity.currentUserID ?? "",
-                         senderName: AppBranding.Groups.Create.mockOwnerName,
+                         senderUserId: callerID,
+                         senderName: callerName,
                          kind: .messagePinned,
                          sentAt: now(),
                          replyTo: quote),
@@ -75,14 +67,28 @@ extension MockChatRepository {
         return PinList(pins: pins[groupID] ?? [], channelEpoch: group.channelEpoch)
     }
 
+    /// Laurel's order: the pinner's rights before the row is looked up.
     private func pinTarget(groupID: String, messageID: String) async throws -> (SportGroup, ChatMessage) {
         let (group, messages) = try await visibleRoom(groupID)
         try requirePinRights(in: group)
+        let message = try visibleMessage(messageID, in: messages)
+        guard !message.isSystem else { throw AppError.notPinnable }
+        return (group, message)
+    }
+
+    /// A tombstone is as missing as an unknown id, as on the backend.
+    private func visibleMessage(_ messageID: String, in messages: [ChatMessage]) throws -> ChatMessage {
         guard let message = messages.first(where: { $0.id == messageID }), !message.isDeleted else {
             throw AppError.messageNotFound
         }
-        guard !message.isSystem else { throw AppError.notPinnable }
-        return (group, message)
+        return message
+    }
+
+    /// The backend's `requirePoll`: the message first (404), then its poll (409).
+    private func visiblePoll(groupID: String, messageID: String) async throws -> Poll {
+        let (_, messages) = try await visibleRoom(groupID)
+        guard let poll = try visibleMessage(messageID, in: messages).poll else { throw AppError.notAPoll }
+        return poll
     }
 
     private func requirePinRights(in group: SportGroup) throws {

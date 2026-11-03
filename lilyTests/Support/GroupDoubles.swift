@@ -142,6 +142,21 @@ final class FakeGroupRepository: GroupRepository, HoldsRequests {
     }
 }
 
+/// A harness whose `MyGroupsStore` reads from a `FakeGroupRepository`; the conformance supplies `loadGroups(_:)`.
+@MainActor
+protocol LoadsGroups: AnyObject {
+    var groupRepository: FakeGroupRepository { get }
+    var groups: MyGroupsStore { get }
+}
+
+extension LoadsGroups {
+    /// Puts groups into the store the way the sign-in load does.
+    func loadGroups(_ groups: [SportGroup]) async {
+        groupRepository.result = .success(groups)
+        await self.groups.reload()
+    }
+}
+
 /// Scriptable `InviteRepository`: candidates answer from `candidatesResult`, invites from `inviteResult` or, without
 /// one, an invite built from the request; every call is recorded. `holdsRequests` parks every request until released.
 @MainActor
@@ -229,12 +244,6 @@ final class FakeModerationRepository: ModerationRepository, HoldsRequests {
         blockedUserIDs.append(userID)
         try await answer()
         blocked.insert(userID)
-        return blocked
-    }
-
-    func unblock(userID: String) async throws -> Set<String> {
-        try await answer()
-        blocked.remove(userID)
         return blocked
     }
 

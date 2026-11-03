@@ -56,7 +56,6 @@ struct InboxView: View {
             Button(Copy.loadEarlier) { Task { await viewModel.loadOlder() } }
                 .lilyGlassButton(sizing: .fitted, labelColor: .lilyInk)
                 .disabled(viewModel.isLoadingOlder)
-                .accessibilityIdentifier(AccessibilityIdentifiers.inboxLoadEarlier)
         }
     }
 
@@ -66,9 +65,8 @@ struct InboxView: View {
             if viewModel.isInitialLoad {
                 ProgressView()
             } else if viewModel.loadFailed {
-                EmptyStateView(symbolName: DesignTokens.Symbols.error,
-                               title: Copy.loadFailedTitle,
-                               message: AppBranding.Events.loadFailedMessage)
+                EmptyStateView.loadFailed(title: Copy.loadFailedTitle,
+                                          message: AppBranding.Events.loadFailedMessage)
             } else {
                 EmptyStateView(symbolName: DesignTokens.Symbols.inbox, title: Copy.emptyTitle, message: Copy.emptyMessage)
             }

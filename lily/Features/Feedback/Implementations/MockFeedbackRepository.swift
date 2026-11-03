@@ -1,7 +1,7 @@
 import Foundation
 
-/// Accepts every message, so previews, UI tests and `-mock-events` runs never need a backend; keeps what was sent for
-/// the run, like the other mocks keep their writes.
+/// Accepts every message, so previews, UI tests and `-mock-events` runs never need a backend. `sent` is kept so
+/// `AppDependenciesFeedbackTests` can prove the view model is wired to the dependencies' own repository.
 final class MockFeedbackRepository: FeedbackRepository {
     private(set) var sent: [FeedbackPayload] = []
     private let logger: any Logging

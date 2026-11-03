@@ -20,7 +20,7 @@ the `-mock-events` run never meets the permission alert.
   (`SystemPushRegistrar`, `RemoteDeviceRepository`, `PushEventRelay`, the mocks).
 - `final class PushCoordinator: SessionObserver, PushOptIn` (main-actor): `private(set) var registered: LastDeviceRegistration?`,
   `private(set) var pendingTap: PushTap?`;
-  `init(registrar: any PushRegistrar, devices: any DeviceRepository, identity: any IdentityProvider, opener: EventOpener, tournamentOpener: TournamentOpener, relay: PushEventRelay = .shared, defaults: UserDefaults, appVersion: AppVersion = .current(), languageCode: @escaping () -> String, unregisterTimeout: Duration = AppConfig.Push.unregisterTimeout, sleep: @escaping Sleep = systemSleep, logger: any Logging, now: @escaping () -> Date = { .now })`
+  `init(registrar: any PushRegistrar, devices: any DeviceRepository, identity: any IdentityProvider, opener: EventOpener, tournamentOpener: TournamentOpener, relay: PushEventRelay = .shared, defaults: UserDefaults, appVersion: AppVersion = .current(), languageCode: @escaping () -> String, sleep: @escaping Sleep = systemSleep, logger: any Logging, now: @escaping () -> Date = { .now })`
   [`lily/Core/Push/PushCoordinator.swift:PushCoordinator`].
 - `func sync() async` (every shell sync for a signed-in user), `func offerReminders() async`,
   `func handleTap(_ tap: PushTap)`, `func openPendingTap() async`, `func sessionWillEnd() async`,
@@ -29,7 +29,7 @@ the `-mock-events` run never meets the permission alert.
 ## Invariants
 
 - `init` loads `registered` from `defaults.data(forKey: AppConfig.Push.lastRegistrationKey)` (JSON) and installs
-  itself as `relay.tapHandler`, so a tap held by the relay before the composition root existed is delivered at once
+  itself as `relay.tapHandler` (the relay is not stored), so a tap held by the relay before the composition root existed is delivered at once
   [`PushCoordinator.swift:PushCoordinator.init`, `PushCoordinator.swift:PushCoordinator.loadRegistration(from:)`].
 - `sync()` registers only when `identity.currentUserID` is set, `registrar.authorization()` is `.authorized`, and the
   system has not refused a token in this process (`tokenRefused`); each skip is a debug line
@@ -49,7 +49,7 @@ the `-mock-events` run never meets the permission alert.
   through `tournamentOpener.open(tournamentID:matchID:from:)` [`PushCoordinator.swift:PushCoordinator.handleTap(_:)`, `PushCoordinator.swift:PushCoordinator.openPendingTap()`].
 - `sessionWillEnd()` runs only when a registration is stored or in flight; it awaits the in-flight registration
   (never cancels it, since a cancelled PUT may have landed), then unregisters the set of the token known before and the
-  token stored meanwhile; the whole is bounded by `Deadline.within(unregisterTimeout, sleep:, orThrow: .timedOut)`;
+  token stored meanwhile; the whole is bounded by `Deadline.within(AppConfig.Push.unregisterTimeout, sleep:, orThrow: .timedOut)`;
   any failure is a warning; the stored registration is cleared regardless
   [`PushCoordinator.swift:PushCoordinator.sessionWillEnd()`, `PushCoordinator.swift:PushCoordinator.unregister(tokens:)`].
 - `sessionDidEnd()` clears the stored registration and the pending tap [`PushCoordinator.swift:PushCoordinator.sessionDidEnd()`].

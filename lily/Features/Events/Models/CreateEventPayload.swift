@@ -12,7 +12,7 @@ nonisolated struct CreateEventPayload: Encodable, Equatable, Sendable {
             self.coordinate = coordinate
         }
 
-        /// A stored place as a payload's, for the group bodies that send one.
+        /// A stored place as a payload's, for the bodies that send one.
         init(_ location: EventLocation) {
             self.init(name: location.name, coordinate: location.coordinate)
         }

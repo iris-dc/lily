@@ -12,7 +12,7 @@ struct EventCard: View {
                     Text(event.title).font(LilyTheme.Fonts.cardTitle)
                     PlaceLine(name: event.locationName, distance: distance)
                 }
-                CapacityBar(event: event)
+                EntriesBar(event: event)
             }
         }
     }

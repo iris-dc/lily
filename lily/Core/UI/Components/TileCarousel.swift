@@ -88,17 +88,7 @@ struct TileContent: View {
     var body: some View {
         HStack(spacing: DesignTokens.Spacing.md) {
             avatar
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-                Text(title)
-                    .font(.body.weight(.semibold))
-                    .lineLimit(1)
-                ForEach(Array(lines.enumerated()), id: \.offset) { line in
-                    Text(line.element)
-                        .font(LilyTheme.Fonts.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
+            CaptionedTitle(lines: lines) { Text(title) }
             Spacer(minLength: 0)
         }
     }

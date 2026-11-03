@@ -12,7 +12,7 @@ because the delegate is created by SwiftUI before the composition root, so the d
 
 ## Interface
 
-- `final class PushEventRelay`: `static let shared`; `var tapHandler: ((PushTap) -> Void)?`; `var isWaiting: Bool`;
+- `final class PushEventRelay`: `static let shared`; `var tapHandler: ((PushTap) -> Void)?`;
   `init(sleep: @escaping Sleep = systemSleep)`;
   `func token(timeout: Duration, register: () -> Void) async throws -> String`; `func deliver(token: Data)`;
   `func fail(_ error: any Error)`; `func notificationTapped(_ tap: PushTap)`
@@ -22,7 +22,7 @@ because the delegate is created by SwiftUI before the composition root, so the d
 - `final class RemoteDeviceRepository: DeviceRepository`: `init(client: any APIClient)`
   [`lily/Core/Push/Implementations/RemoteDeviceRepository.swift:RemoteDeviceRepository`].
 - `final class MockDeviceRepository: DeviceRepository`: `private(set) var registrations: [DeviceRegistrationPayload]`;
-  `init(identity: any IdentityProvider, logger: any Logging, now: @escaping () -> Date = { .now })`
+  `init(identity: any IdentityProvider, logger: any Logging)` (`registeredAt` is `.now`)
   [`lily/Core/Push/Implementations/MockDeviceRepository.swift:MockDeviceRepository`].
 - `final class MockPushRegistrar: PushRegistrar`: `private(set) var status: PushAuthorization` (starts
   `.notDetermined`); `init(logger: any Logging)` [`lily/Core/Push/Implementations/MockPushRegistrar.swift:MockPushRegistrar`].

@@ -8,7 +8,6 @@ import Foundation
 final class RealtimeHarness {
     let transport = FakeRealtimeTransport()
     let endpoint = FakeRealtimeEndpointProvider()
-    let tokens: FakeAuthTokenProvider?
     let chat = FakeChatRepository()
     let groups = FakeGroupRepository()
     let inboxRepository = FakeInboxRepository()
@@ -47,7 +46,6 @@ final class RealtimeHarness {
     var termsRequiredCount: Int { terms.termsRequiredCount }
 
     init(tokens: FakeAuthTokenProvider? = nil) {
-        self.tokens = tokens
         errorCenter = ErrorCenter(logger: logger)
         terms = TermsCountingReporter(errorCenter: errorCenter)
         store = MyGroupsStore(repository: groups, identity: identity, changes: changes, errorCenter: errorCenter, logger: logger)
@@ -127,6 +125,17 @@ final class RealtimeHarness {
                       tryAgainDelay: .zero)
     }
 
+    /// Mine holding `group`, its room cached as `room` when given, the controller connected and the chat built;
+    /// `appear` opens it as the screen would.
+    func openChat(for group: SportGroup, room: ChatRoomState? = nil, appear: Bool = true) async -> ChatViewModel {
+        groups.result = .success([group])
+        if let room { cache.store(room, for: group.id) }
+        await connect()
+        let viewModel = makeChatViewModel(for: group)
+        if appear { await viewModel.appear() }
+        return viewModel
+    }
+
     func makeAttachmentComposer(for group: SportGroup,
                                 maxPerMessage: Int = AppConfig.Chat.Attachments.maxPerMessage) -> AttachmentComposerModel {
         AttachmentComposerModel(groupID: group.id,
@@ -140,9 +149,9 @@ final class RealtimeHarness {
                                 maxPerMessage: maxPerMessage)
     }
 
-    /// Gives fire-and-forget work every chance to run, so "nothing more happened" can be asserted.
+    /// `drain()` under the name the chat suites read off the harness.
     func yield() async {
-        for _ in 0..<20 { await Task.yield() }
+        await drain()
     }
 
     /// Reads what the controller hands the room's consumers from now on.

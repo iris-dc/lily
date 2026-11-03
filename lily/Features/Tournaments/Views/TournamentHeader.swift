@@ -20,8 +20,7 @@ struct TournamentHeader: View {
             }
             OwnerTitleBlock(title: tournament.name,
                             subtitle: Copy.organizedBy(name: tournament.organizerName),
-                            destination: organizerProfile,
-                            identifier: AccessibilityIdentifiers.tournamentOrganizer)
+                            destination: organizerProfile)
             outcome
             if let group = tournament.group {
                 HostedInLine(group: group)

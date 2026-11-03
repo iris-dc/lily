@@ -23,7 +23,8 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   logger: any Logging, failsFirstLoad: Bool = false)`; the same seven methods over an in-memory `[SportEvent]`.
 - `MockEventFixtures` (`lily/Features/Events/Implementations/MockEventFixtures.swift`,
   `MockEventFixtures+Participants.swift`): `static func make(now: Date, count: Int) -> [SportEvent]`;
-  `static let participantNames` (11 names), `hostJoinLead: TimeInterval` (7 days), `joinSpacing` (1 hour);
+  `static let participantNames` (11 names), `hostJoinLead: TimeInterval` (7 days), `joinSpacing` (1 hour); the
+  fixtures start `firstStartHours` (3) plus `hoursBetweenEvents` (7) per index after `now`, in `TimeInterval.hour`;
   `static func participantNames(for: SportEvent, count: Int) -> [String]`.
 - `UserDefaultsEventFilterStore` (`lily/Features/Events/Implementations/UserDefaultsEventFilterStore.swift`):
   `final class`, `init(defaults: UserDefaults = .standard, logger: any Logging)`; `load() -> EventFilter?`,

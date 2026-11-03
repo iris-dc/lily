@@ -9,7 +9,7 @@ struct TournamentResultsSegment: View {
     let detail: TournamentDetail
     let onSelect: (TournamentMatch) -> Void
     /// Where the bracket's columns start; see `BracketView.contentInset`.
-    var bracketInset: CGFloat = DesignTokens.Layout.detailMargin
+    let bracketInset: CGFloat
 
     private var section: TournamentDetailSection { showsMatches ? .matches : .results }
 

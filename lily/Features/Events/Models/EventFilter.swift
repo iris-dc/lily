@@ -1,8 +1,7 @@
 import Foundation
 
-/// Which events a list shows out of the ones it loaded. Together the criteria narrow the loaded page on device; the
-/// backend will take the same criteria as query parameters later. The default already limits distance to
-/// `AppConfig.Events.defaultFilterRadiusMeters` around the reference point (the user's position for now).
+/// Which events a list shows out of the ones it loaded, judged on device. The default already limits distance to
+/// `AppConfig.Events.defaultFilterRadiusMeters` around the user's position.
 nonisolated struct EventFilter: Hashable, Sendable {
     var types: Set<EventType> = []
     /// Radius around the reference point; `nil` means anywhere.

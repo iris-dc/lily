@@ -128,10 +128,6 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
         nameIssues() + placeIssues() + scheduleIssues(now: now, rules: rules) + entriesIssues(rules: rules) + detailIssues()
     }
 
-    func isValid(now: Date, rules: Rules = .creation) -> Bool {
-        issues(now: now, rules: rules).isEmpty
-    }
-
     /// The Tournament section: the name.
     private func nameIssues() -> [Issue] {
         let limits = AppConfig.Tournaments.nameLength

@@ -56,12 +56,7 @@ struct DraftSheet<Model: DraftSubmitting, Form: View>: View {
             }
             .tint(Color.lilyAccent)
         }
-        .lilyFormSheet()
-        .presentationDragIndicator(.visible)
-        // Swiping the sheet away mid-request would leave the outcome unknown to the user.
-        .interactiveDismissDisabled(viewModel.isSubmitting)
-        // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
-        .errorPopup(errorCenter)
+        .lilyFormSheet(errorCenter: errorCenter, lockedWhile: viewModel.isSubmitting)
         .task { await viewModel.prepare() }
         .onChange(of: viewModel.isDone) {
             if viewModel.isDone { dismiss() }

@@ -4,7 +4,7 @@ Source: `lily/Core/UI/Components/`
 
 ## Overview
 
-The reusable SwiftUI pieces every feature screen is built from, 41 files with no subfolders: the screen scaffold and
+The reusable SwiftUI pieces every feature screen is built from, 42 files with no subfolders: the screen scaffold and
 its aurora (`ContentScreen`, `AuroraBackground`, `FilmGrainOverlay`), the button, chip, picker and field modifiers that give
 the app its one look, the cards, titles, rows, avatars and tiles, the list and empty states, the filter dropdowns, the
 shared error popup (`errorPopup`), the create-or-edit sheet (`DraftSheet`) and the UIKit-backed growing text field
@@ -32,7 +32,7 @@ use the generated `Color.lily*` asset symbols.
   `View.lilyToolbarTextButton`, `LilyTextButtonStyle`]:
   `lilyProminentButton(sizing: ButtonSizing = .flexible, controlSize: ControlSize? = .large)` (`.glassProminent`,
   `Color.lilyAccent`); `lilyGlassButton(sizing: ButtonSizing = .flexible, controlSize: ControlSize? = .large, labelColor: Color? = nil)`
-  (`.glass`); `lilyIconButton(controlSize: ControlSize = .large)` and `lilyGlassIconButton(controlSize: ControlSize = .large)`
+  (`.glass`); `lilyIconButton(controlSize: ControlSize = .large)` and `lilyGlassIconButton()` (always `.large`)
   (glass circles); `lilyFloatingActionButton()` = `lilyIconButton(controlSize: .extraLarge)`;
   `lilyTextButton(font: Font = LilyTheme.Fonts.button, color: Color = .lilyInk, minHeight: CGFloat = DesignTokens.Layout.controlHeight)`
   applies `LilyTextButtonStyle(font:color:minHeight:)`, a `ButtonStyle` for text-only actions ("See all", Reset, the
@@ -71,7 +71,7 @@ use the generated `Color.lily*` asset symbols.
 - Titles and text: `ScreenTitle(text:, subtitle: String? = nil)` and `ScreenSubtitle(text:)`
   [`lily/Core/UI/Components/ScreenTitle.swift:ScreenTitle`, `ScreenSubtitle`]; `SectionTitle<Trailing>(text:, trailing:)`
   with `init(text:)` for `EmptyView` [`lily/Core/UI/Components/SectionTitle.swift:SectionTitle`];
-  `OwnerTitleBlock<Destination: Hashable>(title:, subtitle:, destination: Destination?, identifier:)`
+  `OwnerTitleBlock<Destination: Hashable>(title:, subtitle:, destination: Destination?)`
   [`lily/Core/UI/Components/OwnerTitleBlock.swift:OwnerTitleBlock`] (its link is a `ChevronLink`);
   `ChevronLink<Value: Hashable, Label>(value:, label:)` [`lily/Core/UI/Components/ChevronLink.swift:ChevronLink`], a
   `.plain` `NavigationLink(value:)` whose label and `.caption2` `DesignTokens.Symbols.chevron` read `.secondary`;
@@ -91,19 +91,25 @@ use the generated `Color.lily*` asset symbols.
   `nonisolated extension String { var initials: String }` [`lily/Core/UI/Components/String+Initials.swift:String.initials`];
   `ConversationRow<Title, Trailing>(caption:, avatar: AvatarCircle, title:, trailing:)` with
   `init(caption:, hasUnread: Bool, avatar:, title:)` where `Trailing == UnreadDot?`, and `AvatarRowDivider()`
-  [`lily/Core/UI/Components/ConversationRow.swift:ConversationRow`, `AvatarRowDivider`];
+  [`lily/Core/UI/Components/ConversationRow.swift:ConversationRow`, `AvatarRowDivider`]; `CaptionedTitle<Title>(lines: [String], title:)`
+  (the title in `LilyTheme.Fonts.itemTitle` over one caption line per entry, the text column `ConversationRow` and `TileContent` share)
+  [`lily/Core/UI/Components/CaptionedTitle.swift:CaptionedTitle`];
   `SettingsLinkRow(title:, subtitle:, systemImage:, identifier:, action:)` (a whole-card `GlassCard` button with icon,
   title, subtitle and chevron, `.buttonStyle(.plain)`, `.lilyHoverable()`; Profile's display name and contact rows)
   [`lily/Core/UI/Components/SettingsLinkRow.swift:SettingsLinkRow`];
   `EntriesBar(fillRatio: Double, text: String, isFull: = false, isNearlyFull: = false, showsTrack: = true)` with
-  `init(tournament: Tournament)` [`lily/Core/UI/Components/EntriesBar.swift:EntriesBar`]; `CapacityBar(event: SportEvent)`
-  [`lily/Core/UI/Components/CapacityBar.swift:CapacityBar`].
+  `init(event: SportEvent)` (the track only while `event.playerLimit.hasCapacity`) and `init(tournament: Tournament)`
+  [`lily/Core/UI/Components/EntriesBar.swift:EntriesBar`]; its height is `DesignTokens.Layout.capacityBarHeight`.
 - Carousel: `TileCarousel<Item: Identifiable, SeeAll: Hashable, Tile>(items:, title:, seeAll:, seeAllIdentifier:, identifier:, rows: Int = 1, tileHeight: CGFloat, tile: (Item, _ fillsWidth: Bool) -> Tile)`,
-  `TileLink<Value: Hashable, Tile>(value:, identifier:, tile:)`, `TileContent(avatar: AvatarCircle, title:, lines: [String])`
+  `TileLink<Value: Hashable, Tile>(value:, identifier:, tile:)`, `TileContent(avatar: AvatarCircle, title:, lines: [String])` (an `HStack` of the avatar, a `CaptionedTitle` and a spacer)
   [`lily/Core/UI/Components/TileCarousel.swift:TileCarousel`, `TileLink`, `TileContent`].
 - Lists and states: `EmptyStateView(symbolName:, title:, message:, actionTitle: String? = nil, action: (() -> Void)? = nil)`
+  and `static loadFailed(title:, message:, actionTitle: String? = nil, action: (() -> Void)? = nil) -> EmptyStateView`
+  (the one place that fixes `DesignTokens.Symbols.error` for a failed load; ten sites use it)
   [`lily/Core/UI/Components/EmptyStateView.swift:EmptyStateView`]; `ListSegment<Content>(state: ListState, empty: EmptyStateView, failed: EmptyStateView, content:)`
-  [`lily/Core/UI/Components/ListSegment.swift:ListSegment`].
+  [`lily/Core/UI/Components/ListSegment.swift:ListSegment`]; `FadingPresence<Content>(isShown: Bool, animation: Animation, content:)`,
+  `content` while `isShown`, fading in and out on the caller's `animation` inside a `ZStack` that keeps its place (the
+  chat's first-page spinner and empty state pass `.firstPageFade`) [`lily/Core/UI/Components/FadingPresence.swift:FadingPresence`].
 - Fields: `lilyField()` (capsule glass) and `lilyMultilineField()` (rounded rect), both `frame(minHeight: DesignTokens.Layout.fieldHeight)`
   [`lily/Core/UI/Components/FieldModifiers.swift:View.lilyField`, `View.lilyMultilineField`].
   `GrowingTextView: UIViewRepresentable` (`text: Binding<String>`, `isFocused: Binding<Bool>`, `placeholder: String`,
@@ -123,7 +129,7 @@ use the generated `Color.lily*` asset symbols.
   `DraftSheet<Model: DraftSubmitting, Form>(viewModel:, title:, submitTitle:, cancelIdentifier:, submitIdentifier:, errorCenter: ErrorCenter, form: (Model) -> Form)`
   [`lily/Core/UI/Components/DraftSheet.swift:DraftSheet`]: `NavigationStack { ContentScreen { form(viewModel) } }`
   with `.cancellationAction` (`AppBranding.Forms.cancel`) and `.confirmationAction` (`DraftSubmitButton`) toolbar
-  items, `lilyFormSheet()`, `.errorPopup(errorCenter)`.
+  items, `lilyFormSheet(errorCenter:lockedWhile: viewModel.isSubmitting)` (sizing, grabber, dismissal lock, popup).
 
 ## Invariants
 
@@ -181,9 +187,11 @@ use the generated `Color.lily*` asset symbols.
   the swipe dismiss fires only for `translation.height < 0` past `DesignTokens.Layout.swipeDismissDistance`
   [`lily/Core/UI/Components/ErrorPopup.swift:ErrorPopupModifier`]. `ErrorPopupView` is one accessibility element
   (`.combine`) [`lily/Core/UI/Components/ErrorPopup.swift:ErrorPopupView`].
-- `DraftSheet`: cancel is `lilyToolbarTextButton()` and `.disabled(viewModel.isSubmitting)`, `.interactiveDismissDisabled(viewModel.isSubmitting)`,
-  submit is enabled by `canSubmit`, the sheet dismisses itself in `.onChange(of: viewModel.isDone)`, and its own
-  `.errorPopup(errorCenter)` is mounted on the sheet root [`lily/Core/UI/Components/DraftSheet.swift:DraftSheet`].
+- `DraftSheet`: cancel is `lilyToolbarTextButton()` and `.disabled(viewModel.isSubmitting)`, interactive dismiss is
+  disabled while submitting and the popup is mounted on the sheet root, both through
+  `lilyFormSheet(errorCenter:lockedWhile:)` [`lily/Core/UI/Layout/FormSheet.swift:View.lilyFormSheet`]; submit is
+  enabled by `canSubmit`, the sheet dismisses itself in `.onChange(of: viewModel.isDone)`
+  [`lily/Core/UI/Components/DraftSheet.swift:DraftSheet`].
 - `TileCarousel` renders nothing unless `!items.isEmpty`; its "See all" is a `NavigationLink(value: seeAll)` under
   `lilyTextButton()`; it is a `TileGrid` when `sizeClass == .regular`, else a
   view-aligned horizontal `LazyHGrid`; the grid applies `.accessibilityElement(children: .contain)` before

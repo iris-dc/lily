@@ -2,7 +2,8 @@ import Foundation
 import Testing
 @testable import lily
 
-/// `GET /api/me` with and without `attachmentsEnabled`: present since chat wave 3, read as off when absent.
+/// `GET /api/me` with and without `attachmentsEnabled`: present on a current backend, read as off when an older one
+/// leaves it out.
 struct AccountCodingTests {
     @Test func attachmentsEnabledIsReadAndDefaultsToOff() throws {
         let current = try ContractSamples.decode(Account.self, from: ContractSamples.me)

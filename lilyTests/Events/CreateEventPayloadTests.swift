@@ -25,17 +25,11 @@ struct CreateEventPayloadTests {
         return draft
     }
 
-    /// Encoded with the app's conventions and read back as plain JSON, so the keys are checked as the wire shows them.
-    private func encode(_ payload: CreateEventPayload) throws -> [String: Any] {
-        let data = try APIJSONCoding.makeEncoder().encode(payload)
-        return try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
-    }
-
     @Test func encodesEveryFieldUnderTheContractKeys() throws {
         let draft = Self.makeFullDraft()
         let payload = try #require(CreateEventPayload(draft: draft))
 
-        let json = try encode(payload)
+        let json = try ContractSamples.jsonObject(of: payload)
 
         #expect(Set(json.keys) == Self.requiredKeys.union(Self.optionalKeys))
         #expect(json["clientEventId"] as? String == draft.clientId)
@@ -54,7 +48,7 @@ struct CreateEventPayloadTests {
         let payload = try #require(CreateEventPayload(draft: Self.makeFullDraft()))
         let centre = AppConfig.Location.mockCenter
 
-        let json = try encode(payload)
+        let json = try ContractSamples.jsonObject(of: payload)
 
         let location = try #require(json["location"] as? [String: Any])
         #expect(location["name"] as? String == "Test Park")
@@ -71,7 +65,7 @@ struct CreateEventPayloadTests {
         draft.lookingFor = ""
         let payload = try #require(CreateEventPayload(draft: draft))
 
-        let json = try encode(payload)
+        let json = try ContractSamples.jsonObject(of: payload)
 
         #expect(Set(json.keys) == Self.requiredKeys)
         #expect(json["allowsExtraParticipants"] as? Bool == false, "always sent, so the backend never guesses")
@@ -86,7 +80,7 @@ struct CreateEventPayloadTests {
         draft.capacity = 7
         let payload = try #require(CreateEventPayload(draft: draft))
 
-        let json = try encode(payload)
+        let json = try ContractSamples.jsonObject(of: payload)
 
         #expect(payload.capacity == nil && !payload.allowsExtraParticipants)
         #expect(json["capacity"] == nil && json["allowsExtraParticipants"] as? Bool == false)
@@ -97,7 +91,7 @@ struct CreateEventPayloadTests {
         let payload = try #require(CreateEventPayload(draft: .fixture(now: Self.now)))
 
         #expect(payload.groupId == nil)
-        #expect(try encode(payload)["groupId"] == nil)
+        #expect(try ContractSamples.jsonObject(of: payload)["groupId"] == nil)
     }
 
     /// A missing price is free; a zero would be a paid game costing nothing.
@@ -107,7 +101,7 @@ struct CreateEventPayloadTests {
         let payload = try #require(CreateEventPayload(draft: draft))
 
         #expect(payload.price == nil)
-        #expect(try encode(payload)["price"] == nil)
+        #expect(try ContractSamples.jsonObject(of: payload)["price"] == nil)
     }
 
     @Test func textsAreTrimmed() throws {
@@ -135,7 +129,7 @@ struct CreateEventPayloadTests {
 
         for draft in drafts {
             let payload = try #require(CreateEventPayload(draft: draft))
-            let id = try #require(try encode(payload)["clientEventId"] as? String)
+            let id = try #require(try ContractSamples.jsonObject(of: payload)["clientEventId"] as? String)
             #expect(TestFixtures.isBackendEventId(id), "\(id)")
             #expect(id == id.lowercased(), "\(id)")
         }

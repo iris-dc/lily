@@ -43,13 +43,11 @@ struct FileAttachmentCard: View {
         Task {
             progress = 0
             defer { progress = nil }
-            do {
-                let url = try await loader.previewFile(for: attachment, in: message) { progress = $0 }
-                isCached = true
-                onOpen(url)
-            } catch {
-                guard !AppError.isCancellation(error) else { return }
+            guard let url = try? await loader.previewFile(for: attachment, in: message, progress: { progress = $0 }) else {
+                return
             }
+            isCached = true
+            onOpen(url)
         }
     }
 }

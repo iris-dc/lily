@@ -34,7 +34,7 @@ base URL, the two identity headers, the version header and the status-code rules
   the keychain [`URLSessionAPIClient.swift:URLSessionAPIClient.makeURLRequest(_:)`].
 - Query items are percent-encoded with `urlQueryAllowed` minus `+&=`, so a `+` in a search reaches the backend as `+`
   [`URLSessionAPIClient.swift:URLSessionAPIClient.queryAllowed`, `URLSessionAPIClient.swift:URLSessionAPIClient.url(_:path:query:)`].
-- Status handling: a non-`HTTPURLResponse` throws `APIError.notHTTPResponse`; a status outside `200..<300` throws
+- Status handling: a non-`HTTPURLResponse` throws `APIError.notHTTPResponse`; a status outside `AppConfig.API.successStatuses` (`200..<300`) throws
   `APIError.http(status:, body: the decoded {code, message} if any, retryAfter: Retry-After in seconds if present)`.
   The failure log is a warning when the status is in `AppConfig.API.clientErrorStatuses` but not
   `AppConfig.API.contentTooLargeStatus` (a 413 `REQUEST_TOO_LARGE` is the app's drift, so it logs at error although its

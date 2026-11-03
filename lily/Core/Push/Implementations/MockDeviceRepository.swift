@@ -5,19 +5,17 @@ final class MockDeviceRepository: DeviceRepository {
     private(set) var registrations: [DeviceRegistrationPayload] = []
     private let identity: any IdentityProvider
     private let logger: any Logging
-    private let now: () -> Date
 
-    init(identity: any IdentityProvider, logger: any Logging, now: @escaping () -> Date = { .now }) {
+    init(identity: any IdentityProvider, logger: any Logging) {
         self.identity = identity
         self.logger = logger
-        self.now = now
     }
 
     func register(_ payload: DeviceRegistrationPayload) async throws -> DeviceRegistration {
         guard identity.currentUserID != nil else { throw AppError.sessionExpired }
         registrations.append(payload)
         logger.info(.push, "Mock device registered (\(payload.environment.rawValue))")
-        return DeviceRegistration(token: payload.token.lowercased(), environment: payload.environment, registeredAt: now())
+        return DeviceRegistration(token: payload.token.lowercased(), environment: payload.environment, registeredAt: .now)
     }
 
     func unregister(token: String) async throws -> DeviceRemoval {

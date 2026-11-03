@@ -36,8 +36,8 @@ backend's key names; nothing here performs I/O.
   `tournamentId`, `tournamentName`, `matchId`, `opponentName`, `scheduledAt`, `locationName?`;
   `destination: TournamentDestination` (id, name and `matchID`).
 - `protocol InviteAnswer` `[lily/Features/Inbox/Models/InviteAnswer.swift:InviteAnswer]`: `status`, `expiresAt`;
-  extension `isOpen(now:)` and `statusCaption(now:) -> String?` (`AppBranding.Inbox.joined`, `.declined`,
-  `.expired`; `nil` while open and for an unknown status).
+  extension `isOpen(now:)` (pending and before its deadline, the one rule) and `statusCaption(now:) -> String?`
+  (`nil` through `isOpen`, else `AppBranding.Inbox.joined`, `.declined`, `.expired`; `nil` for an unknown status).
 - `InboxItem.caption: String?` `[lily/Features/Inbox/Models/InboxItem+Caption.swift:InboxItem.caption]`: the one-line
   caption per kind, `nil` for `.unknown` or a missing payload. `InboxTimeCaption.text(for:now:calendar:)`
   `[lily/Features/Inbox/Models/InboxItem+Caption.swift:InboxTimeCaption]`; `ReminderPayload.startsAtCaption(now:calendar:)`
@@ -46,7 +46,8 @@ backend's key names; nothing here performs I/O.
   `lastReadId?`), `InviteAcceptance` (`item`, `group: SportGroup?`, `tournament: Tournament?`), `InviteDeclination`
   (`item`), `InboxReadPayload: Encodable` (`itemId`, the PUT body), `InboxReadMarker` (`lastReadId`).
 - `InboxTimelineRow: Identifiable, Hashable, Sendable` `[lily/Features/Inbox/Models/InboxTimeline.swift:InboxTimelineRow]`:
-  `.day(Date)` (id `day-<epoch seconds>`) and `.item(InboxItem)` (id = the item's id);
+  `.day(Date)` (id `day-<epoch seconds>` through `ChatDayLabel.rowID(for:)`, shared with `ChatRow`) and
+  `.item(InboxItem)` (id = the item's id);
   `InboxTimeline.rows(_:calendar:) -> [InboxTimelineRow]` `[lily/Features/Inbox/Models/InboxTimeline.swift:InboxTimeline]`.
 - `InboxDestination: Hashable, Sendable {}` `[lily/Features/Inbox/Models/InboxDestination.swift:InboxDestination]`:
   the empty navigation value that pushes the inbox on the Chats stack.
@@ -55,7 +56,8 @@ backend's key names; nothing here performs I/O.
 
 - An unknown wire name never fails decoding: it becomes `.unknown(name)` and round-trips through `wireName`, for the
   kind and for an invite's status alike; an invite with an unknown status is visible, `isOpen` is false and
-  `statusCaption` is `nil`, so its card shows neither buttons nor a caption. `GroupVisibility` stays strict on
+  `statusCaption` is `nil`; the card decides by `statusCaption == nil` alone, so it shows no caption and still offers
+  Accept and Decline (recorded 2026-11-02, owner's call whether the card should read `isOpen`). `GroupVisibility` stays strict on
   purpose (a binary access rule), so an unknown visibility still fails the page
   `[lily/Features/Inbox/Models/InboxItem.swift:InboxItemKind]`, `[lily/Features/Inbox/Models/InboxItem.swift:InviteStatus]`,
   `[lily/Features/Inbox/Models/InviteAnswer.swift:InviteAnswer.statusCaption]`.

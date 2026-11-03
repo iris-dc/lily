@@ -17,10 +17,8 @@ struct ChatViewModelTournamentRowsTests {
 
     private func makeChat() async -> (RealtimeHarness, ChatViewModel) {
         let harness = RealtimeHarness()
-        harness.groups.result = .success([room])
-        harness.cache.store(.fixture(groupID: "t", messages: [.fixture(id: "m1", groupID: "t")]), for: "t")
-        await harness.connect()
-        return (harness, harness.makeChatViewModel(for: room))
+        let cached = ChatRoomState.fixture(groupID: "t", messages: [.fixture(id: "m1", groupID: "t")])
+        return (harness, await harness.openChat(for: room, room: cached, appear: false))
     }
 
     @Test func theStartNamesTheFormatOnceTheTournamentLoadedAndFetchesItOnce() async {

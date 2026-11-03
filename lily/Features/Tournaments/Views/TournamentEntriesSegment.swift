@@ -56,7 +56,7 @@ struct EntryRow: View {
         GlassCard {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
                 HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.sm) {
-                    Text(entry.name).font(.body.weight(.semibold))
+                    Text(entry.name).font(LilyTheme.Fonts.itemTitle)
                     Spacer(minLength: DesignTokens.Spacing.sm)
                     seedChip
                 }

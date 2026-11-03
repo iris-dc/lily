@@ -23,8 +23,6 @@ nonisolated extension DesignTokens.Layout {
     static let tournamentTileWidth: CGFloat = groupTileWidth
     /// Two lines beside the mark; the group tile grew a third for its place.
     static let tournamentTileHeight: CGFloat = 64
-    /// The bar under a tournament's facts: the capacity bar's height, one look for every "how full" bar.
-    static let entriesBarHeight: CGFloat = capacityBarHeight
     /// One round of a bracket (`BracketView`), one match cell in it, and the gaps between columns and cells; a later
     /// round's cell is centred on the two cells that feed it (`BracketLayout.slotHeight`).
     static let bracketColumnWidth: CGFloat = 220

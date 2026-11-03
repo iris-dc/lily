@@ -1,6 +1,6 @@
 import Foundation
 
-/// One attachment of a stored message, as the backend answers it (plan 2.1): what the object is, the hints the sender
+/// One attachment of a stored message, as the backend answers it: what the object is, the hints the sender
 /// gave (name, dimensions, duration), and presigned links that die with the backend's credentials, so the app never
 /// caches a link, only the bytes under `id` (`AttachmentCache`), and refreshes a link through `AttachmentLoader`.
 nonisolated struct Attachment: Identifiable, Hashable, Codable, Sendable {

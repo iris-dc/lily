@@ -1,7 +1,7 @@
 import Foundation
 
-/// Identifiers of the landing's intro. `introPager` is mirrored by hand in `lilyUITests` like the rest; the slides'
-/// name their page in a hierarchy dump and the test reads the page on screen from the headlines instead.
+/// Identifiers of the landing's intro. `introPager` is the one a UI test reads (mirrored by hand); the slides name
+/// their page in a hierarchy dump and the test reads the page on screen from the headlines instead.
 nonisolated extension AccessibilityIdentifiers {
     /// The vertical pager of slides; the two buttons under it are found by their titles.
     static let introPager = "intro-pager"

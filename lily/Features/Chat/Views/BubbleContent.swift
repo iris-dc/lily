@@ -44,20 +44,6 @@ struct BubbleContent<Media: View>: View {
     }
 }
 
-extension BubbleContent where Media == EmptyView {
-    /// Words and a quote only.
-    init(text: String, quote: ReplyQuote?, isQuoteDeleted: Bool, own: Bool, onTapQuote: @escaping (ReplyQuote) -> Void) {
-        self.init(text: text,
-                  quote: quote,
-                  isQuoteDeleted: isQuoteDeleted,
-                  own: own,
-                  attachmentKinds: [],
-                  onTapQuote: onTapQuote) {
-            EmptyView()
-        }
-    }
-}
-
 extension View {
     /// Body text on a plain rounded fill: accent with white text for the caller, surface with ink for the others.
     func bubbleFill(own: Bool) -> some View {

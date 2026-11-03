@@ -121,10 +121,10 @@ nonisolated extension AppBranding {
                 let limits = AppConfig.Groups.self
                 return switch issue {
                 case .nameTooShort: localized("Give the group a name of at least \(limits.nameLength.lowerBound) characters")
-                case .nameTooLong: localized("Keep the name under \(limits.nameLength.upperBound) characters")
-                case .descriptionTooLong: localized("Keep the description under \(limits.descriptionMaxLength) characters")
+                case .nameTooLong: Forms.nameTooLong(limit: limits.nameLength.upperBound)
+                case .descriptionTooLong: Forms.descriptionTooLong(limit: limits.descriptionMaxLength)
                 case .locationNameMissing: localized("Name the place where the group plays")
-                case .locationNameTooLong: localized("Keep the place name under \(limits.locationNameMaxLength) characters")
+                case .locationNameTooLong: Forms.placeNameTooLong(limit: limits.locationNameMaxLength)
                 case .coordinateMissing: AppBranding.Events.Create.pickOnMap
                 }
             }

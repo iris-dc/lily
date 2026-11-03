@@ -16,8 +16,6 @@ nonisolated enum MockTournamentFixtures {
     /// Stands for the caller wherever a fixture names them; `MockTournamentRepository.resolved` replaces it.
     static let callerMarker = "mock-caller"
     static let tableTennisOrganizer = "Marta"
-    /// The caller's seed in the table-tennis fixture (third to register).
-    static let callerTableTennisSeed = 3
 
     /// The teams of the Kickers Cup in registration order: the captain first, then the teammates in.
     static let kickersTeams: [(name: String, players: [String])] = [
@@ -58,9 +56,6 @@ nonisolated enum MockTournamentFixtures {
     static let tableTennisLocation = EventLocation(name: "Prenzlauer Berg Sports Hall",
                                                    coordinate: coordinate(offset: (0.9, 0.2)))
 
-    /// Shared with `MockTournamentFixtures+PadelOpen.swift`, hence not private.
-    static let secondsPerHour = 3600.0
-    static let secondsPerDay = 86_400.0
     private static let kickersStartsInDays = 9.0
     private static let kickersDeadlineInDays = 7.0
     private static let kickersCreatedDaysAgo = 12.0
@@ -95,7 +90,7 @@ nonisolated enum MockTournamentFixtures {
     static func kickersCup(now: Date,
                            organizerUserID: String = callerMarker,
                            organizerName: String = AppBranding.Tournaments.Create.mockOrganizerName) -> TournamentDetail {
-        let createdAt = now.addingTimeInterval(-kickersCreatedDaysAgo * secondsPerDay)
+        let createdAt = now.addingTimeInterval(-kickersCreatedDaysAgo * .day)
         let entries = kickersTeams.enumerated().map { index, team in
             TournamentEntry(id: entryID(tournamentID: kickersCupID, index: index),
                             tournamentId: kickersCupID,
@@ -105,7 +100,7 @@ nonisolated enum MockTournamentFixtures {
                                 EntryMember(userId: MockGroupFixtures.memberID(for: $0), displayName: $0)
                             },
                             seed: index + 1,
-                            createdAt: createdAt.addingTimeInterval(Double(index + 1) * secondsPerDay))
+                            createdAt: createdAt.addingTimeInterval(Double(index + 1) * .day))
         }
         let tournament = Tournament(id: kickersCupID,
                                     name: "Kickers Cup",
@@ -117,8 +112,8 @@ nonisolated enum MockTournamentFixtures {
                                     entryCount: entries.count,
                                     // Football's default, as the backend fills it; a knockout refuses a draw regardless.
                                     allowsDraws: true,
-                                    startsAt: now.addingTimeInterval(kickersStartsInDays * secondsPerDay),
-                                    registrationClosesAt: now.addingTimeInterval(kickersDeadlineInDays * secondsPerDay),
+                                    startsAt: now.addingTimeInterval(kickersStartsInDays * .day),
+                                    registrationClosesAt: now.addingTimeInterval(kickersDeadlineInDays * .day),
                                     location: EventLocation(name: "Görlitzer Park pitch",
                                                             coordinate: coordinate(offset: (0.4, -0.5))),
                                     organizerUserId: organizerUserID,
@@ -129,8 +124,8 @@ nonisolated enum MockTournamentFixtures {
     }
 
     private static func tableTennis(now: Date) -> TournamentDetail {
-        let createdAt = now.addingTimeInterval(-tableTennisCreatedDaysAgo * secondsPerDay)
-        let startedAt = now.addingTimeInterval(-tableTennisStartedDaysAgo * secondsPerDay)
+        let createdAt = now.addingTimeInterval(-tableTennisCreatedDaysAgo * .day)
+        let startedAt = now.addingTimeInterval(-tableTennisStartedDaysAgo * .day)
         let entries = tableTennisPlayers.enumerated().map { index, player in
             let userID = player == callerMarker ? callerMarker : MockGroupFixtures.memberID(for: player)
             let name = player == callerMarker ? AppBranding.Tournaments.Create.mockOrganizerName : player
@@ -140,7 +135,7 @@ nonisolated enum MockTournamentFixtures {
                                    captainUserId: userID,
                                    members: [EntryMember(userId: userID, displayName: name)],
                                    seed: index + 1,
-                                   createdAt: createdAt.addingTimeInterval(Double(index + 1) * secondsPerDay))
+                                   createdAt: createdAt.addingTimeInterval(Double(index + 1) * .day))
         }
         let organizerID = MockGroupFixtures.memberID(for: tableTennisOrganizer)
         let matches = tableTennisMatches(entries: entries, organizerID: organizerID, startedAt: startedAt, now: now)
@@ -170,7 +165,7 @@ nonisolated enum MockTournamentFixtures {
                                            organizerID: String,
                                            startedAt: Date,
                                            now: Date) -> [TournamentMatch] {
-        let reportedAt = now.addingTimeInterval(-tableTennisReportedDaysAgo * secondsPerDay)
+        let reportedAt = now.addingTimeInterval(-tableTennisReportedDaysAgo * .day)
         var matches = TournamentSchedule.pairings(format: .roundRobin, seeds: entries.map(\.id)).map {
             TournamentMatch(pairing: $0, tournamentId: tableTennisID)
         }

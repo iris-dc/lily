@@ -58,7 +58,7 @@ extension MockTournamentRepository {
         let entry = detail.entries[index]
         let caller = MockTournamentFixtures.callerMarker
         let target = userID == identity.currentUserID ? caller : userID
-        guard target == caller || entry.isCaptain(caller) || detail.tournament.organizerUserId == caller else {
+        guard target == caller || entry.isCaptain(caller) || detail.tournament.isOrganized(by: caller) else {
             throw AppError.insufficientRole
         }
         guard detail.tournament.status == .registration else { throw AppError.registrationClosed }

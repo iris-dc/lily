@@ -8,7 +8,7 @@ nonisolated enum InboxTimelineRow: Identifiable, Hashable, Sendable {
 
     var id: String {
         switch self {
-        case .day(let date): "day-\(Int(date.timeIntervalSince1970))"
+        case .day(let date): ChatDayLabel.rowID(for: date)
         case .item(let item): item.id
         }
     }

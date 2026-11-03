@@ -59,7 +59,7 @@ struct GroupRepositories {
                      logger: any Logging,
                      autoReplies: Bool,
                      mockPicker: Bool,
-                     termsPending: Bool = false) -> GroupRepositories {
+                     termsPending: Bool) -> GroupRepositories {
         let groups = MockGroupRepository(identity: identity, logger: logger)
         let tournaments = MockTournamentRepository(groups: groups, identity: identity, logger: logger)
         let transport = MockRealtimeTransport(logger: logger)
@@ -124,18 +124,6 @@ struct GroupDependencies {
     let groupChanges = ChangeTracker()
     /// Counts tournament changes made anywhere, the realtime controller's included; every tournament list reloads on it.
     let tournamentChanges = ChangeTracker()
-    /// Where the lists keep their last answer for the first frame of the next launch. Carried with the group
-    /// collaborators, whose Mine is the one store reading it; the root and the tabs' lists read it from here.
-    let snapshots: any ListSnapshotStore
-
-    var groupRepository: any GroupRepository { repositories.groups }
-    var inviteRepository: any InviteRepository { repositories.invites }
-    var tournamentInviteRepository: any InviteRepository { repositories.tournamentInvites }
-    var inboxRepository: any InboxRepository { repositories.inbox }
-    var meRepository: any MeRepository { repositories.me }
-    var moderationRepository: any ModerationRepository { repositories.moderation }
-    var chatRepository: any ChatRepository { repositories.chat }
-    var userRepository: any UserRepository { repositories.users }
 
     /// `snapshots` is where Mine keeps its last answer for the first frame of the next launch; the identity must
     /// already answer for the cached session, since the store reads the caller to pick the snapshot it starts from.
@@ -146,7 +134,6 @@ struct GroupDependencies {
          logger: any Logging,
          snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) {
         self.repositories = repositories
-        self.snapshots = snapshots
         let myGroups = MyGroupsStore(repository: repositories.groups,
                                      identity: identity,
                                      changes: groupChanges,
@@ -191,14 +178,12 @@ struct GroupDependencies {
 }
 
 extension AppDependencies {
-    var groupRepository: any GroupRepository { groups.groupRepository }
-    var inviteRepository: any InviteRepository { groups.inviteRepository }
-    var tournamentInviteRepository: any InviteRepository { groups.tournamentInviteRepository }
-    var meRepository: any MeRepository { groups.meRepository }
-    var moderationRepository: any ModerationRepository { groups.moderationRepository }
+    var groupRepository: any GroupRepository { groups.repositories.groups }
+    var inviteRepository: any InviteRepository { groups.repositories.invites }
+    var tournamentInviteRepository: any InviteRepository { groups.repositories.tournamentInvites }
+    var meRepository: any MeRepository { groups.repositories.me }
+    var moderationRepository: any ModerationRepository { groups.repositories.moderation }
     var myGroups: MyGroupsStore { groups.myGroups }
-    /// Where the tabs' lists keep their last answer; see `AppDependencies+Shell.swift`.
-    var listSnapshots: any ListSnapshotStore { groups.snapshots }
     var me: MeStore { groups.me }
     var blocks: BlockListStore { groups.blocks }
     var groupChanges: ChangeTracker { groups.groupChanges }

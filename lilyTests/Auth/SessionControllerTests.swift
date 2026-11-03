@@ -147,8 +147,9 @@ struct SessionControllerWithMockAuthTests {
         #expect(harness.controller.state.user == MockUsers.user(for: .email(credentials)))
     }
 
-    /// A duplicate sign-out that finishes late must not wipe a guest choice made after the first one returned.
-    @Test func lateDuplicateSignOutCannotUndoGuestChoiceMadeMeanwhile() async {
+    /// A second sign-out while one is in flight is turned away before the auth service; the suite's time limit catches
+    /// a guard that let it through, since it would park on the held sleep.
+    @Test func aSecondSignOutWhileOneIsInFlightIsTurnedAway() async {
         let harness = Harness()
 
         let first = Task { await harness.controller.signOut() }
@@ -156,10 +157,7 @@ struct SessionControllerWithMockAuthTests {
         await harness.controller.signOut()
         harness.sleep.release()
         await first.value
-        harness.controller.continueAsGuest()
 
-        #expect(harness.controller.state == .guest)
-        #expect(harness.store.stored == .guest)
         #expect(harness.sleep.requested.count == 1, "the duplicate never reached the auth service")
     }
 

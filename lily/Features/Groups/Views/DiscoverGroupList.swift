@@ -48,6 +48,6 @@ struct DiscoverGroupList: View {
 
     private func refreshableScroll(@ViewBuilder _ content: @escaping () -> some View) -> some View {
         ScrollView { content() }
-            .refreshable { await viewModel.refresh() }
+            .refreshable { await viewModel.search() }
     }
 }

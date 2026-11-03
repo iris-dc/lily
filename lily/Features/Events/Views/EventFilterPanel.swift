@@ -86,19 +86,13 @@ struct EventFilterPanel: View {
     /// Drawn like the compact date pickers' capsule, so the trailing controls read as one family. The text is the
     /// source while typing (`applyTypedCap`); only a value set elsewhere (Reset, the chip) rewrites it.
     private var priceField: some View {
-        HStack(spacing: DesignTokens.Spacing.xs) {
-            TextField(Copy.anyPrice, text: $priceText)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .focused($isPriceFocused)
-                .frame(width: DesignTokens.Layout.priceFieldWidth)
-                .accessibilityIdentifier(AccessibilityIdentifiers.filterMaxPrice)
-                .accessibilityLabel(Copy.maxPrice)
-            Text(Price.symbol(for: viewModel.priceCurrencyCode))
-                .foregroundStyle(.secondary)
-                .fixedSize()
-                .accessibilityIdentifier(AccessibilityIdentifiers.filterPriceCurrency)
-        }
+        PriceAmountField(text: $priceText,
+                         placeholder: Copy.anyPrice,
+                         currencyCode: viewModel.priceCurrencyCode,
+                         label: Copy.maxPrice,
+                         identifier: AccessibilityIdentifiers.filterMaxPrice,
+                         currencyIdentifier: AccessibilityIdentifiers.filterPriceCurrency,
+                         focus: $isPriceFocused)
         .padding(.horizontal, DesignTokens.Spacing.md)
         .padding(.vertical, DesignTokens.Layout.chipVerticalPadding)
         .glassEffect(.regular, in: .capsule)

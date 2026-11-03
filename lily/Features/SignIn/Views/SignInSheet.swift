@@ -52,7 +52,6 @@ struct SignInSheet: View {
         }
         .presentationDetents([.medium, .large], selection: $detent)
         .lilyFormSheet()
-        // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
         .errorPopup(errorCenter)
         // Guests are already inside the app, so watch for a user rather than for entering the app.
         .onChange(of: session.state.user) { _, user in

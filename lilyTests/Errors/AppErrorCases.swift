@@ -4,7 +4,7 @@ import Testing
 /// Every `AppError` once, payload cases sampled.
 enum AppErrorCases {
     static let all: [AppError] = [
-        .authCancelled, .authFailed(provider: .apple), .providerUnavailable(provider: .apple), .invalidCredentials,
+        .authFailed(provider: .apple), .providerUnavailable(provider: .apple), .invalidCredentials,
         .emailTaken, .emailNotConfirmed, .invalidConfirmationCode, .tooManyAttempts,
         .sessionExpired, .rateLimited(retryAfter: nil), .requestTooLarge, .network, .eventsUnavailable, .eventNotFound,
         .eventFull,
@@ -30,7 +30,7 @@ enum AppErrorCases {
     /// Exhaustive on purpose: a new `AppError` case fails to compile here, the reminder to add it to `all` too.
     static func listed(_ error: AppError) {
         switch error {
-        case .authCancelled, .authFailed, .providerUnavailable, .invalidCredentials, .emailTaken, .emailNotConfirmed,
+        case .authFailed, .providerUnavailable, .invalidCredentials, .emailTaken, .emailNotConfirmed,
              .invalidConfirmationCode, .tooManyAttempts, .sessionExpired, .rateLimited, .requestTooLarge, .network,
              .eventsUnavailable, .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave, .tryAgain,
              .participationFailed, .eventCreationFailed, .createIdReused, .notHost, .capacityTooLow, .eventUpdateFailed,

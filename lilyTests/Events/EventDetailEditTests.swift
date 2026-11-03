@@ -5,40 +5,23 @@ import Testing
 /// Who may edit from the detail, and how the edit sheet's answer reaches it.
 @MainActor
 struct EventDetailEditTests {
-    private let repository = FakeEventRepository()
-    private let identity = FakeIdentityProvider(currentUserID: "host")
-    private let logger = SpyLogger()
-    private let changed = Recorded<SportEvent>()
-
-    private func makeViewModel(for event: SportEvent) -> EventDetailViewModel {
-        EventDetailViewModel(event: event,
-                             repository: repository,
-                             identity: identity,
-                             errorCenter: ErrorCenter(logger: logger),
-                             recorder: SpyInteractionRecorder(),
-                             logger: logger,
-                             tryAgainDelay: .zero,
-                             onChange: changed.record)
-    }
-
     @Test func onlyTheHostMayEdit() {
         let hosted = SportEvent.fixture(hostUserId: "host", isJoined: true)
         let joined = SportEvent.fixture(hostUserId: "someone", isJoined: true)
 
-        #expect(makeViewModel(for: hosted).canEdit)
-        #expect(!makeViewModel(for: joined).canEdit)
-        identity.currentUserID = nil
-        #expect(!makeViewModel(for: hosted).canEdit, "a guest is nobody's host")
+        #expect(EventDetailHarness(event: hosted, userID: "host").viewModel.canEdit)
+        #expect(!EventDetailHarness(event: joined, userID: "host").viewModel.canEdit)
+        #expect(!EventDetailHarness(event: hosted, userID: nil).viewModel.canEdit, "a guest is nobody's host")
     }
 
     @Test func acceptReplacesTheEventAndTellsTheList() {
         let event = SportEvent.fixture(title: "Old", hostUserId: "host", isJoined: true)
-        let viewModel = makeViewModel(for: event)
+        let harness = EventDetailHarness(event: event, userID: "host")
         let edited = event.updating(with: { var draft = EventDraft(editing: event); draft.title = "New"; return draft }())
 
-        viewModel.accept(edited)
+        harness.viewModel.accept(edited)
 
-        #expect(viewModel.event.title == "New")
-        #expect(changed.values == [edited])
+        #expect(harness.viewModel.event.title == "New")
+        #expect(harness.replaced == [edited])
     }
 }

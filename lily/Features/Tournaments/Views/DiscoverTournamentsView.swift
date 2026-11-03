@@ -50,9 +50,8 @@ struct DiscoverTournamentsView: View {
 
     private var emptyState: EmptyStateView {
         if viewModel.loadFailed {
-            EmptyStateView(symbolName: DesignTokens.Symbols.error,
-                           title: Copy.loadFailedTitle,
-                           message: AppBranding.Events.loadFailedMessage)
+            EmptyStateView.loadFailed(title: Copy.loadFailedTitle,
+                                      message: AppBranding.Events.loadFailedMessage)
         } else if viewModel.typeFilter != nil {
             EmptyStateView(symbolName: DesignTokens.Symbols.tournament,
                            title: AppBranding.Groups.discoverEmptyTitle,

@@ -8,6 +8,7 @@ struct TermsSheet: View {
     let errorCenter: ErrorCenter
 
     private typealias Copy = AppBranding.Moderation
+    private typealias Links = AppConfig.Moderation
 
     var body: some View {
         ContentScreen {
@@ -33,16 +34,15 @@ struct TermsSheet: View {
         .lilyFormSheet()
         // Agreeing or signing out are the only ways out; on iPad a tap beside a form sheet must not dismiss it either.
         .interactiveDismissDisabled()
-        // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
         .errorPopup(errorCenter)
     }
 
     /// The three legal links in a row that wraps at accessibility sizes; the 44pt labels keep the lines apart.
     private var legalLinks: some View {
         FlowLayout(spacing: DesignTokens.Spacing.lg, rowSpacing: 0) {
-            legalLink(Copy.termsLink, to: viewModel.termsURL)
-            legalLink(Copy.privacyLink, to: viewModel.privacyURL)
-            legalLink(Copy.supportLink, to: viewModel.supportURL)
+            legalLink(Copy.termsLink, to: Links.termsURL)
+            legalLink(Copy.privacyLink, to: Links.privacyURL)
+            legalLink(Copy.supportLink, to: Links.supportURL)
         }
     }
 

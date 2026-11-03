@@ -93,7 +93,7 @@ struct ChatTranscript: View {
                                       of: { $0.frame(in: .scrollView).minY },
                                       action: { tracker.endMarkerY = $0 })
             }
-            .animation(.easeOut(duration: DesignTokens.Duration.fast)) { $0.opacity(firstPageReveal.isShown ? 1 : 0) }
+            .animation(.firstPageFade) { $0.opacity(firstPageReveal.isShown ? 1 : 0) }
         }
         .environment(\.viewerHero, hero)
         .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }, action: { hero.viewport = $0 })
@@ -252,11 +252,9 @@ extension TranscriptScrollPolicy.Snapshot {
 
     /// Starts watching the newest row's arrival from the geometry the transcript last reported. Called from body, which
     /// is the first to know a row arrived (the geometry report of its first layout may come before any `onChange`);
-    /// repeated runs change nothing.
-    /// Whether the row is new to the watch.
-    @discardableResult
-    func watch(_ rowID: String?) -> Bool {
-        guard let rowID, rowID != watchedRowID else { return false }
+    /// repeated runs change nothing and answer false; true means the row is new to the watch.
+    func watch(_ rowID: String) -> Bool {
+        guard rowID != watchedRowID else { return false }
         watchedRowID = rowID
         motions[rowID] = ArrivalMotion(rowID: rowID, offset: geometry.offsetY, contentHeight: geometry.contentHeight)
         return true

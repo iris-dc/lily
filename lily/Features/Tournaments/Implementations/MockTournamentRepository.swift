@@ -161,7 +161,7 @@ final class MockTournamentRepository: TournamentRepository {
     func organized(_ id: String) throws -> TournamentDetail {
         try requireCaller()
         let detail = try readable(id)
-        guard detail.tournament.organizerUserId == MockTournamentFixtures.callerMarker else { throw AppError.notOrganizer }
+        guard detail.tournament.isOrganized(by: MockTournamentFixtures.callerMarker) else { throw AppError.notOrganizer }
         return detail
     }
 
@@ -202,13 +202,13 @@ final class MockTournamentRepository: TournamentRepository {
     /// The open tournaments the caller organises, against `AppConfig.Tournaments.maxOrganizedOpen`.
     var openOrganizedCount: Int {
         let marker = MockTournamentFixtures.callerMarker
-        return details.values.filter { Self.isOpen($0.tournament) && $0.tournament.organizerUserId == marker }.count
+        return details.values.filter { Self.isOpen($0.tournament) && $0.tournament.isOrganized(by: marker) }.count
     }
 
     /// Whether the caller is in the tournament's room: its organiser, or in one of its entries.
     func isInRoom(_ tournament: Tournament) -> Bool {
         guard identity.currentUserID != nil, let detail = details[tournament.id] else { return false }
-        return tournament.organizerUserId == MockTournamentFixtures.callerMarker
+        return tournament.isOrganized(by: MockTournamentFixtures.callerMarker)
             || detail.entry(containing: MockTournamentFixtures.callerMarker) != nil
     }
 

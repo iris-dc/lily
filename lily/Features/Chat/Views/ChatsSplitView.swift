@@ -36,8 +36,7 @@ struct ChatsSplitView: View {
         .navigationSplitViewStyle(.balanced)
         .conversationLoads(dependencies: dependencies)
         // The detail falls back to the empty state by itself, but the selection must go too, or the room would come
-        // back into the detail on its own the moment Mine lists it again (a cleared conversation the other side writes
-        // to); `ChatView.onGone` cannot do it, since the room leaves Mine before `isGone` flips and the view is gone.
+        // back into the detail the moment Mine lists it again (a cleared conversation the other side writes to).
         // `initial`, because the room may have left while the tab was compact (a Split View third) and no split view
         // was watching.
         .onChange(of: selectionIsAvailable, initial: true) {
@@ -61,9 +60,7 @@ private struct ConversationDetail: View {
                 .id(ConversationSelection.inbox)
         case .room(let id):
             if let group = dependencies.myGroups.groups.first(where: { $0.id == id }) {
-                ChatView(viewModel: dependencies.makeChatViewModel(for: group),
-                         dependencies: dependencies,
-                         onGone: { dependencies.navigation.selectedConversation = nil })
+                ChatView(viewModel: dependencies.makeChatViewModel(for: group), dependencies: dependencies)
                     .id(id)
             } else {
                 nothingChosen

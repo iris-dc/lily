@@ -39,8 +39,6 @@ DEVELOPMENT_CONFIGURATION = "Debug"
 def literals():
     found = {}
     for path in SOURCES.rglob("*.swift"):
-        if path.name == "Localized.swift":
-            continue
         text = path.read_text()
         for match in LITERAL.finditer(text):
             found.setdefault(match.group(1), set()).add(path.relative_to(ROOT))

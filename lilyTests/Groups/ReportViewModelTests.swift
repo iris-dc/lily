@@ -52,7 +52,7 @@ struct ReportViewModelTests {
 
     @Test func theLogCategoryFollowsTheTarget() {
         #expect(ReportTarget.tournament(id: "t").logCategory == .tournaments)
-        #expect(ReportTarget.group(id: "g").logCategory == .groups && ReportTarget.user(id: "u").logCategory == .groups)
+        #expect(ReportTarget.group(id: "g").logCategory == .groups)
         #expect(ReportTarget.message(id: "m", groupID: "g").logCategory == .groups)
         #expect(InviteTarget.tournament(id: "t").logCategory == .tournaments)
         #expect(InviteTarget.group(id: "g").logCategory == .groups)

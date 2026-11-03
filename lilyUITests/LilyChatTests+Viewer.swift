@@ -19,8 +19,7 @@ extension LilyChatTests {
             XCTAssertTrue(viewer.waitForExistence(timeout: 5), "a tap opens the viewer")
             if drag.waits {
                 XCTAssertTrue(close.waitForExistence(timeout: 5))
-                let hittable = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: close)
-                XCTAssertEqual(XCTWaiter().wait(for: [hittable], timeout: 5), .completed, "the viewer has grown in")
+                XCTAssertTrue(close.wait(for: \.isHittable, toEqual: true, timeout: 5), "the viewer has grown in")
             }
             viewer.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
                 .press(forDuration: 0.05,

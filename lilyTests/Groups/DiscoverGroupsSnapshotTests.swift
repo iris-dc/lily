@@ -14,15 +14,7 @@ struct DiscoverGroupsSnapshotTests {
     private let key = ListSnapshotKey(list: "groups-discover", userID: TestFixtures.user.id)
 
     private func makeViewModel() -> DiscoverGroupsViewModel {
-        DiscoverGroupsViewModel(changes: harness.changes,
-                                repository: harness.repository,
-                                identity: harness.identity,
-                                locationService: harness.location,
-                                errorCenter: harness.errorCenter,
-                                recorder: harness.recorder,
-                                logger: harness.logger,
-                                sleep: { [sleep] in try await sleep.sleep(for: $0) },
-                                snapshots: snapshots)
+        harness.makeDiscoverGroupsViewModel(sleep: { [sleep] in try await sleep.sleep(for: $0) }, snapshots: snapshots)
     }
 
     /// Content on the first frame, the browse still made (nothing was searched), the page kept as the next snapshot.
@@ -57,7 +49,7 @@ struct DiscoverGroupsSnapshotTests {
         let viewModel = makeViewModel()
         viewModel.query = "berl"
         harness.repository.holdsRequests = true
-        let search = Task { await viewModel.refresh() }
+        let search = Task { await viewModel.search() }
         await settle(until: { harness.repository.requestedScopes == [.discover(query: "berl", type: nil)] })
 
         viewModel.query = ""

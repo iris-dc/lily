@@ -19,8 +19,8 @@ Files: `lily/Features/Landing/ViewModels/LandingViewModel.swift`.
   `let sampleTournament: TournamentDetail`; `private(set) var currentSlide: IntroSlide = .first`;
   `private(set) var showsSwipeHint = true`; `var isSignInPresented = false`.
 - `[LandingViewModel.swift:LandingViewModel.init]`: `init(session: SessionController, repository: any
-  EventRepository, logger: any Logging, now: Date = .now)`; fills `sampleEvents` from `IntroFixtures.events(now:)` and
-  `sampleTournament` from `IntroFixtures.tournament(now:)`.
+  EventRepository, logger: any Logging)`; fills `sampleEvents` from `IntroFixtures.events(now: .now)` and
+  `sampleTournament` from `IntroFixtures.tournament(now: .now)`, so the samples are dated from launch.
 - `[LandingViewModel.swift:LandingViewModel.introContent]`: `var introContent: IntroContent` =
   `IntroContent(events: previewEvents.isEmpty ? sampleEvents : previewEvents, tournament: sampleTournament)`.
 - `[LandingViewModel.swift:LandingViewModel.loadPreview]`: `func loadPreview() async` loads the anonymous upcoming

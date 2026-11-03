@@ -14,7 +14,7 @@ final class FileListSnapshotStore: ListSnapshotStore {
     /// them until a clear succeeds (the next launch sweeps again).
     private var holdsAnotherFormat = false
 
-    init(directory: URL = FileListSnapshotStore.defaultDirectory, logger: any Logging) {
+    init(directory: URL, logger: any Logging) {
         self.directory = directory
         self.logger = logger
         sweepAnotherFormat()

@@ -54,7 +54,6 @@ struct MockMeAndModerationRepositoryTests {
         #expect(try await repository.blocks().isEmpty)
         #expect(try await repository.block(userID: "u-2") == ["u-2"])
         #expect(try await repository.block(userID: "u-2") == ["u-2"])
-        #expect(try await repository.unblock(userID: "u-2").isEmpty)
 
         for index in 0..<AppConfig.Moderation.maxBlocks {
             _ = try await repository.block(userID: "u-\(index)")

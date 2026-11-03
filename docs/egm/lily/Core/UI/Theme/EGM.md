@@ -20,9 +20,10 @@ the aurora's cell roles and per-cell intensities (see [Effects](../Effects/EGM.m
     `.system(size: DesignTokens.Typography.headlineSize * scale, weight: .bold)` (the landing headline, shrunk so a
     line fits in one).
   - `screenTitle` (`.largeTitle`, bold), `cardTitle` (`.title3`, semibold), `sectionTitle` (`.title2`, bold),
-    `button` (`.body`, semibold), `floatingAction` (`.title2`, bold; the floating create button's glyph), `caption`
+    `button` (`.body`, semibold), `floatingAction` (`.title2`, bold; the floating create button's glyph), `itemTitle`
+    (`.body`, semibold; the name line of a row, tile or card over a caption), `caption`
     (`.footnote`, medium), `glyph` (`.title3`, medium; the symbol mark in a `GlassGlyph`).
-  - `avatarInitials(size: CGFloat)` [`lily/Core/UI/Theme/LilyTheme+Groups.swift:LilyTheme.Fonts.avatarInitials(size:)`] =
+  - `avatarInitials(size: CGFloat)` [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.Fonts.avatarInitials(size:)`] =
     `.system(size: size * DesignTokens.Layout.avatarInitialsFraction, weight: .bold)`, the initials inside an avatar
     circle of `size` points.
 - `nonisolated enum LilyTheme.DateStyles` [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.DateStyles`]:

@@ -5,9 +5,9 @@ import Foundation
 /// whose terms requests are counted. Collaborators are created in the body: a main-actor default argument would run
 /// off the actor.
 @MainActor
-final class TournamentHarness {
-    /// 08:25:07 UTC, so "the next full hour" is unambiguous. `nonisolated`: read by `@Test(arguments:)` off the actor.
-    nonisolated static let now = Date(timeIntervalSince1970: 1_800_000_000 + 25 * 60 + 7)
+final class TournamentHarness: LoadsGroups {
+    /// `nonisolated`: read by `@Test(arguments:)` off the actor.
+    nonisolated static let now = TestFixtures.offTheHour
 
     let repository = FakeTournamentRepository()
     let groupRepository = FakeGroupRepository()
@@ -122,11 +122,5 @@ final class TournamentHarness {
                                 tryAgainDelay: .zero,
                                 now: { Self.now },
                                 onChange: recordedDetails.record)
-    }
-
-    /// Puts groups into the store the way the sign-in load does.
-    func loadGroups(_ groups: [SportGroup]) async {
-        groupRepository.result = .success(groups)
-        await self.groups.reload()
     }
 }

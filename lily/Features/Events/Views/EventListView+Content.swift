@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The sheets Explore presents (the create forms and sign-in) and the content states of the list, apart from the
-/// screen's composition in `EventListView.swift`, which is at SwiftLint's type-body limit.
+/// screen's composition in `EventListView.swift`, so the type body stays under SwiftLint's 200-line limit (the two
+/// together are over it).
 extension EventListView {
     /// The sheet for one `ExploreSheet` case.
     @ViewBuilder
@@ -81,21 +82,13 @@ extension EventListView {
     /// Each state in a `refreshableScroll` of its own, so a state change starts the scroll afresh.
     @ViewBuilder
     var listContent: some View {
-        switch screenState {
+        switch viewModel.screenState {
         case .loading: refreshableScroll { stateSlot { ProgressView() } }
         case .failed: refreshableScroll { stateSlot { loadFailedState } }
         case .empty: refreshableScroll { stateSlot { emptyState } }
         case .filteredOut: refreshableScroll { stateSlot { filteredOutState } }
         case .list: refreshableScroll { eventList }
         }
-    }
-
-    var screenState: EventListScreenState {
-        .resolve(isInitialLoad: viewModel.isInitialLoad,
-                 loadFailed: viewModel.loadFailed,
-                 hasEvents: !viewModel.events.isEmpty,
-                 isEverythingFilteredOut: viewModel.isEverythingFilteredOut,
-                 awaitsAnswerForPosition: viewModel.awaitsAnswerForPosition)
     }
 
     var eventList: some View {
@@ -119,9 +112,8 @@ extension EventListView {
     }
 
     var loadFailedState: EmptyStateView {
-        EmptyStateView(symbolName: DesignTokens.Symbols.error,
-                       title: AppBranding.Events.loadFailedTitle,
-                       message: AppBranding.Events.loadFailedMessage)
+        EmptyStateView.loadFailed(title: AppBranding.Events.loadFailedTitle,
+                                  message: AppBranding.Events.loadFailedMessage)
     }
 
     var emptyState: EmptyStateView {

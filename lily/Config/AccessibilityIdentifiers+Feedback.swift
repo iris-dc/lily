@@ -1,11 +1,10 @@
 import Foundation
 
-/// Identifiers of the contact form; mirrored by hand in `lilyUITests` like the rest. The kind picker is segmented, so
+/// Identifiers of the contact form; a UI test that reads one mirrors the literal by hand. The kind picker is segmented, so
 /// its segments are plain buttons XCUITest finds by label.
 nonisolated extension AccessibilityIdentifiers {
     /// The "Contact & feedback" row on Profile.
     static let profileFeedback = "profile-feedback"
-    static let feedbackKind = "feedback-kind"
     static let feedbackMessage = "feedback-message"
     static let feedbackEmail = "feedback-email"
     static let feedbackSubmit = "feedback-submit"

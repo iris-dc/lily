@@ -1,7 +1,7 @@
 import Foundation
 
 /// Copy of a tournament's invites, its report, the organiser's match schedule and the outcome lines of a finished
-/// tournament. An extension file because `AppBranding.Tournaments` is at the type-body limit.
+/// tournament.
 nonisolated extension AppBranding.Tournaments {
     /// The menu item; the sheet it opens is the groups' report sheet with this title.
     static var report: String { localized("Report tournament") }

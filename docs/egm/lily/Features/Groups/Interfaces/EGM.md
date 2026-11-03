@@ -26,7 +26,7 @@ in [ViewModels](../ViewModels/EGM.md). Failures surface as `AppError`.
 - `MeRepository`: `me() async throws -> Account`, `acceptTerms(version: Int) async throws -> TermsAcceptance`
   [`lily/Features/Groups/Interfaces/MeRepository.swift`:`MeRepository`].
 - `ModerationRepository`: `report(_: ReportPayload) async throws -> ReportReceipt`, `blocks() -> Set<String>`,
-  `block(userID:) -> Set<String>`, `unblock(userID:) -> Set<String>`
+  `block(userID:) -> Set<String>` (no unblock: the app has no screen for one; Laurel's `DELETE /api/blocks/{userId}` has no caller)
   [`lily/Features/Groups/Interfaces/ModerationRepository.swift`:`ModerationRepository`].
 - `RoomActivityRecorder: AnyObject`: one synchronous, non-throwing requirement
   `noteMessage(_ message: ChatMessage, in groupID: String)`

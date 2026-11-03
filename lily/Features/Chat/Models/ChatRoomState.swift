@@ -48,10 +48,6 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
         return true
     }
 
-    mutating func insert(contentsOf page: [ChatMessage]) {
-        page.forEach { insert($0) }
-    }
-
     /// A page's messages: new ones inserted, and a poll already held takes the page's counts when the page is at least
     /// as fresh as the room (`revision`, the page's `pollRevision`): a page generated before a vote's answer landed would
     /// otherwise undo the vote, and no refresh would follow, since the room is already past the page.
@@ -162,10 +158,6 @@ nonisolated struct ChatRoomState: Hashable, Sendable {
     /// The stored message a send from this device produced, found by the client id its bubble carried.
     func message(clientMessageID: String) -> ChatMessage? {
         messages.first { $0.clientMessageId == clientMessageID }
-    }
-
-    func contains(clientMessageID: String) -> Bool {
-        message(clientMessageID: clientMessageID) != nil
     }
 
     func contains(id: String) -> Bool {

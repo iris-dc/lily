@@ -3,18 +3,13 @@ import XCTest
 /// Polls and pins in Sunday Padel Crew's room, where the caller is the owner and the mock has a public poll by Marta
 /// and a pin by Jonas; a test in an extension is discovered only when `@objc`.
 extension LilyChatTests {
-    private var padelRow: String { "group-row-mock-group-padel" }
-
     /// A tap on an option votes and turns the options into results; View votes lists the caller under their pick.
     @objc @MainActor
     func testVotingInAPollShowsItsResultsAndVoters() {
         tapSignInWithApple()
-        openChatsTab()
-        openRoom(padelRow, titled: "Sunday Padel Crew")
+        openRoom(MockIDs.padelRow, titled: "Sunday Padel Crew")
         let option = app.descendants(matching: .any)["poll-option-1"].firstMatch
-        XCTAssertTrue(option.waitForExistence(timeout: 10))
-        scrollUntilHittable(option)
-        option.tap()
+        tapAfterScrolling(option)
 
         let total = app.staticTexts["poll-total"].firstMatch
         XCTAssertTrue(total.waitForExistence(timeout: 5))
@@ -30,8 +25,7 @@ extension LilyChatTests {
     @objc @MainActor
     func testAPollIsCreatedFromThePlusMenu() {
         tapSignInWithApple()
-        openChatsTab()
-        openRoom(padelRow, titled: "Sunday Padel Crew")
+        openRoom(MockIDs.padelRow, titled: "Sunday Padel Crew")
         let attach = app.buttons["chat-attach"]
         XCTAssertTrue(attach.waitForExistence(timeout: 10))
         attach.tap()
@@ -53,8 +47,7 @@ extension LilyChatTests {
     @objc @MainActor
     func testPinningAMessageShowsItInTheBarAndTheBarUnpinsIt() {
         tapSignInWithApple()
-        openChatsTab()
-        openRoom(padelRow, titled: "Sunday Padel Crew")
+        openRoom(MockIDs.padelRow, titled: "Sunday Padel Crew")
         let bar = app.buttons["chat-pinned-bar"]
         XCTAssertTrue(bar.waitForExistence(timeout: 10), "the room has a pin already")
         let line = app.staticTexts["Ha. See you Thursday."].firstMatch
@@ -62,24 +55,20 @@ extension LilyChatTests {
         openContextMenu(on: line, until: app.buttons["message-pin"])
         app.buttons["message-pin"].tap()
 
-        let pinned = NSPredicate(format: "label CONTAINS %@", "Ha. See you Thursday.")
-        expectation(for: pinned, evaluatedWith: bar)
-        waitForExpectations(timeout: 5)
+        XCTAssertTrue(waitUntil(bar, holds: "label CONTAINS %@", "Ha. See you Thursday."), "the bar reads \(bar.label)")
         XCTAssertTrue(bar.label.contains("2 of 2"), "the newest of two pins shows")
         XCTAssertTrue(app.staticTexts["You pinned «Ha. See you Thursday.»"].waitForExistence(timeout: 5), "the note lands")
 
         app.buttons["chat-pinned-bar-unpin"].tap()
-        let earlier = NSPredicate(format: "NOT (label CONTAINS %@)", "Ha. See you Thursday.")
-        expectation(for: earlier, evaluatedWith: bar)
-        waitForExpectations(timeout: 5)
+        XCTAssertTrue(waitUntil(bar, holds: "NOT (label CONTAINS %@)", "Ha. See you Thursday."),
+                      "the bar still reads \(bar.label)")
     }
 
     /// A poll with several answers ticks its options and Vote sends them; the shares then show for every option.
     @objc @MainActor
     func testAMultipleAnswerPollTicksThenVotes() {
         tapSignInWithApple()
-        openChatsTab()
-        openRoom(padelRow, titled: "Sunday Padel Crew")
+        openRoom(MockIDs.padelRow, titled: "Sunday Padel Crew")
         app.buttons["chat-attach"].tap()
         XCTAssertTrue(app.buttons["chat-attach-poll"].waitForExistence(timeout: 5))
         app.buttons["chat-attach-poll"].tap()
@@ -94,8 +83,7 @@ extension LilyChatTests {
         // trailing end (a tap in the middle lands on the label).
         scrollUntilHittable(multiple)
         multiple.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
-        expectation(for: NSPredicate(format: "value == '1'"), evaluatedWith: multiple)
-        waitForExpectations(timeout: 5)
+        XCTAssertTrue(waitUntil(multiple, holds: "value == '1'"), "the toggle reads \(String(describing: multiple.value))")
         app.buttons["poll-send"].tap()
         XCTAssertTrue(app.staticTexts["Which evenings?"].waitForExistence(timeout: 10), "the poll lands in the room")
 
@@ -109,11 +97,10 @@ extension LilyChatTests {
         XCTAssertTrue(vote.isEnabled, "two ticks make a vote")
         vote.tap()
 
-        let total = app.staticTexts.matching(identifier: "poll-total").allElementsBoundByIndex.last
-        XCTAssertNotNil(total)
-        let counted = NSPredicate(format: "label == %@", "1 vote")
-        expectation(for: counted, evaluatedWith: total)
-        waitForExpectations(timeout: 5)
+        guard let total = app.staticTexts.matching(identifier: "poll-total").allElementsBoundByIndex.last else {
+            return XCTFail("no poll total")
+        }
+        XCTAssertTrue(total.wait(for: \.label, toEqual: "1 vote", timeout: 5), "the total reads \(total.label), not 1 vote")
         XCTAssertTrue(vote.waitForNonExistence(timeout: 5), "Vote leaves once voted")
     }
 
@@ -121,12 +108,9 @@ extension LilyChatTests {
     @objc @MainActor
     func testRetractVoteFromTheLongPressHidesTheShares() {
         tapSignInWithApple()
-        openChatsTab()
-        openRoom(padelRow, titled: "Sunday Padel Crew")
+        openRoom(MockIDs.padelRow, titled: "Sunday Padel Crew")
         let option = app.descendants(matching: .any)["poll-option-1"].firstMatch
-        XCTAssertTrue(option.waitForExistence(timeout: 10))
-        scrollUntilHittable(option)
-        option.tap()
+        tapAfterScrolling(option)
         let voters = app.buttons["poll-voters"].firstMatch
         XCTAssertTrue(voters.waitForExistence(timeout: 5))
 
@@ -136,8 +120,6 @@ extension LilyChatTests {
 
         XCTAssertTrue(voters.waitForNonExistence(timeout: 5), "View votes goes once the vote is taken back")
         let total = app.staticTexts["poll-total"].firstMatch
-        let back = NSPredicate(format: "label == %@", "3 votes")
-        expectation(for: back, evaluatedWith: total)
-        waitForExpectations(timeout: 5)
+        XCTAssertTrue(total.wait(for: \.label, toEqual: "3 votes", timeout: 5), "the total reads \(total.label), not 3 votes")
     }
 }

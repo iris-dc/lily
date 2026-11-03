@@ -25,9 +25,7 @@ nonisolated enum ChatTimeline {
         var rows: [ChatRow] = []
         var previous: ChatMessage?
         for (index, message) in visible.enumerated() {
-            if let previous, !input.calendar.isDate(previous.sentAt, inSameDayAs: message.sentAt) {
-                rows.append(.day(input.calendar.startOfDay(for: message.sentAt)))
-            } else if previous == nil {
+            if startsDay(after: previous, message, input) {
                 rows.append(.day(input.calendar.startOfDay(for: message.sentAt)))
             }
             if message.isSystem {
@@ -61,6 +59,12 @@ nonisolated enum ChatTimeline {
         guard let unsent, !unsent.hasFailed, !message.isSystem, message.isSent(by: input.currentUserID) else { return false }
         return unsent.sentAt.timeIntervalSince(message.sentAt) < input.groupingWindow
             && input.calendar.isDate(message.sentAt, inSameDayAs: unsent.sentAt)
+    }
+
+    /// The first message shown, or the first of a new day, starts a day row.
+    private static func startsDay(after previous: ChatMessage?, _ message: ChatMessage, _ input: Input) -> Bool {
+        guard let previous else { return true }
+        return !input.calendar.isDate(previous.sentAt, inSameDayAs: message.sentAt)
     }
 
     /// Two consecutive text messages of one sender, close in time and on the same day, form one run.

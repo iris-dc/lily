@@ -27,7 +27,8 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
 - `[lily/Features/Tournaments/ViewModels/TournamentListViewModel.swift:TournamentListViewModel.tournaments]`: state
   `scope`, `private(set) tournaments`, `private(set) isLoading`, `private(set) userLocation: Coordinate?`,
   `typeFilter: EventType?`, `reportsFailures` (false for the Explore carousel); computed `isInitialLoad`,
-  `listState: ListState`, `loadFailed`, `hasLoaded`, `visibleTournaments` (filtered by `typeFilter`).
+  `listState: ListState`, `loadFailed`, `visibleTournaments` (filtered by `typeFilter`); no `hasLoaded`, the screens
+  judge by `isInitialLoad`, `listState` and `loadFailed`.
 - `[lily/Features/Tournaments/ViewModels/TournamentListViewModel.swift:TournamentListViewModel.loadIfStale]`:
   `loadIfStale() async`, `load() async` (pull to refresh), `loadIfStaleNearTheUser() async` (position head start
   then `loadIfStale`), `loadUserLocation() async`, `replace(_ tournament:)`, `add(_ tournament:)`, `clear()`,
@@ -51,8 +52,9 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   `@discardableResult perform(_ action: String, _ work: () async throws -> Void) async -> Bool` with its
   `perform(_ action: String, settling: (any Error) async -> Bool, _ work: () async throws -> Void) async -> Bool`
   overload; `extension AppError { var isTournamentRefusal: Bool; var leavesTournamentWriteOutcomeUnknown: Bool }` is
-  internal, the second shared by the `+Entries` and `+Matches` files; `groupRepository` and `navigation` are internal
-  `let`s for the `+Actions` file.
+  internal, the second shared by the `+Entries` and `+Matches` files; `repository`, `myGroups`, `identity`, `logger`
+  and `pushOptIn` are internal `let`s for the `+Actions`, `+Entries` and `+Matches` files, `groupRepository` and
+  `navigation` for the `+Actions` file; `reporter`, `now`, `onChange`, `recorder`, `gate` and `changes` are private.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Actions.swift:TournamentDetailViewModel.openChat]`:
   `openChat() async`, `cancel() async`, the menu actions that write no entry and no match.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Entries.swift:TournamentDetailViewModel.join]`:
@@ -64,7 +66,7 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   `walkover(_:winnerEntryID:)`, `schedule(_:_:)`.
 - `[lily/Features/Tournaments/ViewModels/CreateTournamentViewModel.swift:CreateTournamentViewModel.init]`:
   `init(repository:, identity:, locationService:, groups: MyGroupsStore, reporter:, logger:, now: @escaping () -> Date =
-  { .now }, calendar: Calendar = .current, pushOptIn:, lockedGroup: EventGroupRef? = nil, tryAgainDelay: Duration =
+  { .now }, pushOptIn:, lockedGroup: EventGroupRef? = nil, tryAgainDelay: Duration =
   AppConfig.API.tryAgainDelay, onCreated: @MainActor (TournamentDetail) -> Void)`; builds a `CreateFlow<TournamentDetail>` keyed on the draft's client id. State `draft`, `isSubmitting`,
   `created`, `eligibleGroups`, `belongsToGroups`, `lockedGroup`; the `TournamentDraftEditing` members
   (`issues`, `canSubmit`, `isDone`, `earliestStart`, `proposedDeadline()`, `entriesRange`, `isLocked = false`,
@@ -87,9 +89,10 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   the caller captured before the request, `replace`/`add` under the current caller; `clear()` and the guest `.mine`
   branch save nothing.
 - `[lily/Features/Tournaments/ViewModels/TournamentListViewModel.swift:TournamentListViewModel.loadIfStale]`: a
-  guest's `.mine` is answered empty with no request; otherwise skip while `freshness.isWaitingToRetry`
-  (`AppConfig.Lists.retryAfterFailure`) or while `stalenessReason` is nil (never loaded, changed elsewhere, caller
-  changed, older than `AppConfig.Lists.staleAfter`, or a position arrived).
+  guest's `.mine` is answered empty with no request; otherwise one `switch` on
+  `freshness.decision(now:version:userID:position: requestPosition)`: `.waitAfterFailure` (`AppConfig.Lists.retryAfterFailure`)
+  and `.fresh` skip, `.stale(reason)` (never loaded, changed elsewhere, caller changed, older than
+  `AppConfig.Lists.staleAfter`, or a position arrived or moved) loads.
 - `[lily/Features/Tournaments/ViewModels/TournamentListViewModel.swift:TournamentListViewModel.load]`: single flight
   (`guard !isLoading`); the load generation is captured first and a `clear()` meanwhile disowns the answer without
   touching `isLoading`; after a successful answer a non-nil `stalenessReason` triggers a further `load()`, bounded
@@ -144,8 +147,11 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   a landed write returns the fresh detail and reports nothing; a write that did not land still accepts the fresh
   detail before the error goes on; a failed read leaves the screen untouched.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Matches.swift:TournamentDetailViewModel.schedule]`:
-  `schedule` places the answered `TournamentMatch` into the loaded detail (`replacing(match:)`) and does nothing
-  without one; every other match write and `start` replace the whole detail through `accept`.
+  `schedule` goes through `writeMatch` like every match write: the answered `TournamentMatch` takes its place in the
+  loaded detail (`replacing(match:)`), and without a loaded detail the tournament is fetched back instead (a read
+  that 404s or fails reports like every sibling write); the "scheduled" / "schedule cleared" info line is logged
+  once after the write landed, directly or through the read-back.
+  Every other match write and `start` replace the whole detail through `accept`.
 - `[lily/Features/Tournaments/ViewModels/CreateTournamentViewModel.swift:CreateTournamentViewModel.submit]`:
   `canSubmit = !isSubmitting && issues.isEmpty` under `Rules.creation`; `isSubmitting` guards a second tap. The
   default start is `AppConfig.Tournaments.defaultStartOffset` ahead rounded to the next full hour; the position is

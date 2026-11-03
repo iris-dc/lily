@@ -87,7 +87,7 @@ final class FakeMediaPreparer: MediaPreparer, HoldsRequests {
 }
 
 /// An attachment cache in memory: bytes go to a directory of the instance's own (removed by `clear()`), copies are
-/// recorded and answered as the source itself, `evict()` does nothing, and `storeError` (a full disk) refuses both stores.
+/// recorded and answered as the source itself, and `storeError` (a full disk) refuses both stores.
 /// `holdsRequests` parks the byte store (not the copy) until released, as a write in progress; it does not throw on
 /// cancellation, as the real cache's detached write does not.
 @MainActor
@@ -127,8 +127,6 @@ final class FakeAttachmentCache: AttachmentCache, HoldsRequests {
         files[id + variant.fileSuffix] = fileURL
         return fileURL
     }
-
-    func evict() async {}
 
     func clear() async {
         files = [:]

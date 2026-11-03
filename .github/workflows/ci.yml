@@ -21,12 +21,11 @@ concurrency:
   cancel-in-progress: true
 
 # One build, then the UI suite in parallel shards: run end to end on one macOS runner the suite outgrew the 45-minute
-# job limit (lint, build, unit and 22 minutes of UI tests on a developer Mac, longer on a runner). The build job lints,
-# builds for testing once, runs the unit tests and archives the simulator products; each UI job restores them and
-# runs its shard through the .xctestrun without rebuilding (scripts/ci.sh ui-shard). Lint fails when a UI test class
-# is in no shard or the matrix below misses a shard, so neither can slip past CI. The build job hands the Xcode it
-# selected to the UI jobs as a job output (DEVELOPER_DIR), so every shard runs the products under the Xcode that
-# built them.
+# job limit. The build job lints, builds for testing once, runs the unit tests and archives the simulator products;
+# each UI job restores them and runs its shard through the .xctestrun without rebuilding (scripts/ci.sh ui-shard).
+# Lint fails when a UI test class is in no shard or the matrix below misses a shard, so neither can slip past CI. The
+# build job hands the Xcode it selected to the UI jobs as a job output (DEVELOPER_DIR), so every shard runs the
+# products under the Xcode that built them.
 jobs:
   build-and-unit:
     name: Lint, build for testing, unit tests

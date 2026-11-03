@@ -20,12 +20,8 @@ final class SpyLogger: Logging {
         entries.filter { $0.category == category && (level == nil || $0.level == level) }.map(\.message)
     }
 
-    /// The messages of one category (and level) mentioning every part, so a test pins a line's ids and key words rather
+    /// Whether a line of one category (and level) mentions every part, so a test pins a line's ids and key words rather
     /// than its whole sentence.
-    func lines(in category: LogCategory, at level: LogLevel? = nil, mentioning parts: String...) -> [String] {
-        messages(in: category, at: level).mentioning(parts)
-    }
-
     func hasLine(in category: LogCategory, at level: LogLevel? = nil, mentioning parts: String...) -> Bool {
         !messages(in: category, at: level).mentioning(parts).isEmpty
     }

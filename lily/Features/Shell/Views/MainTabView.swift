@@ -25,18 +25,18 @@ struct MainTabView: View {
             Tab(value: .home) {
                 content { HomeTab(dependencies: dependencies).id(language) }
             } label: {
-                tabLabel(AppBranding.homeTitle, symbol: DesignTokens.Symbols.home)
+                tabLabel(for: .home, symbol: DesignTokens.Symbols.home)
             }
             Tab(value: .explore) {
                 content { ExploreTab(dependencies: dependencies).id(language) }
             } label: {
-                tabLabel(AppBranding.exploreTitle, symbol: DesignTokens.Symbols.explore)
+                tabLabel(for: .explore, symbol: DesignTokens.Symbols.explore)
             }
             if AppConfig.FeatureFlags.chat {
                 Tab(value: .chat) {
                     content { ChatTab(dependencies: dependencies).id(language) }
                 } label: {
-                    tabLabel(AppBranding.chatsTitle, symbol: DesignTokens.Symbols.chat)
+                    tabLabel(for: .chat, symbol: DesignTokens.Symbols.chat)
                 }
                 .badge(unreadChats)
                 // A tab badge is not in the accessibility tree; the value says what it means and lets tests see it.
@@ -45,7 +45,7 @@ struct MainTabView: View {
             Tab(value: .profile) {
                 content { ProfileView(dependencies: dependencies, language: language) }
             } label: {
-                tabLabel(AppBranding.profileTitle, symbol: DesignTokens.Symbols.profile)
+                tabLabel(for: .profile, symbol: DesignTokens.Symbols.profile)
             }
         }
         // iPadOS draws the tabs as a top bar on its own; the iPhone keeps its floating bar. `.sidebarAdaptable` was tried
@@ -74,11 +74,11 @@ struct MainTabView: View {
 
     /// A light outline glyph over the title. `Tab(_:systemImage:)` would draw the symbol at the bar's own heavy weight
     /// and fill it in both states; a `UIImage` with a symbol configuration is the one route the iOS 26 tab bar honours
-    /// (`DesignTokens.TabBar`). The tab stays findable by its title.
-    private func tabLabel(_ title: String, symbol: String) -> some View {
+    /// (`DesignTokens.TabBar`). The tab stays findable by its title, the one `AppTab.title` the shortcuts menu names it by.
+    private func tabLabel(for tab: AppTab, symbol: String) -> some View {
         let configuration = UIImage.SymbolConfiguration(weight: DesignTokens.TabBar.symbolWeight)
         return Label {
-            Text(title)
+            Text(tab.title)
         } icon: {
             Image(uiImage: UIImage(systemName: symbol, withConfiguration: configuration) ?? UIImage())
                 .renderingMode(.template)

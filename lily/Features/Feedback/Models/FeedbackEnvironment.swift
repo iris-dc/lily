@@ -11,16 +11,15 @@ nonisolated struct FeedbackEnvironment: Equatable, Sendable {
 
     /// "1.0 (42) · iOS 26.0.1 · iPhone17,1", the footer's summary.
     var summary: String {
-        [appVersion, osVersion, device].joined(separator: AppBranding.Events.captionSeparator)
+        AppBranding.Groups.caption([appVersion, osVersion, device])
     }
 
-    static func current(appVersion: AppVersion = .current(),
-                        languageCode: String,
-                        processInfo: ProcessInfo = .processInfo) -> FeedbackEnvironment {
-        FeedbackEnvironment(appVersion: appVersion.headerValue,
-                            osVersion: osVersionText(processInfo.operatingSystemVersion),
-                            device: DeviceModel.identifier(environment: processInfo.environment),
-                            locale: languageCode)
+    static func current(appVersion: AppVersion = .current(), languageCode: String) -> FeedbackEnvironment {
+        let process = ProcessInfo.processInfo
+        return FeedbackEnvironment(appVersion: appVersion.headerValue,
+                                   osVersion: osVersionText(process.operatingSystemVersion),
+                                   device: DeviceModel.identifier(environment: process.environment),
+                                   locale: languageCode)
     }
 
     /// "iOS 26.0" or "iOS 26.0.1": the patch only when there is one.
@@ -34,7 +33,7 @@ nonisolated struct FeedbackEnvironment: Equatable, Sendable {
 /// The hardware model identifier ("iPhone17,1"), from `uname` on a device and from the simulator's environment on a
 /// Mac, where `uname` would answer the host's architecture.
 nonisolated enum DeviceModel {
-    static func identifier(environment: [String: String] = ProcessInfo.processInfo.environment) -> String {
+    static func identifier(environment: [String: String]) -> String {
         if let simulated = environment[AppConfig.Feedback.simulatorModelKey], !simulated.isEmpty {
             return simulated
         }

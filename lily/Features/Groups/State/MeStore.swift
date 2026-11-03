@@ -1,8 +1,8 @@
 import Foundation
 import Observation
 
-/// The caller's `GET /api/me`, loaded once per signed-in session: whether the terms are owed, whether they operate,
-/// and where live chat connects. A failed load is logged and not shown: a write the terms gate refuses reaches the
+/// The caller's `GET /api/me`, loaded once per signed-in session: whether the terms are owed and where live chat
+/// connects. A failed load is logged and not shown: a write the terms gate refuses reaches the
 /// popup on its own and re-raises the sheet through `noteTermsRequired()`. An acceptance re-reads the account first,
 /// so the version it sends is the current one (Laurel answers 400 for a stale one).
 @Observable
@@ -30,7 +30,6 @@ final class MeStore: SessionObserver {
 
     /// Whether the current terms are still owed: the backend said so on the load, or a write was refused since.
     var needsTerms: Bool { termsOutdated || account.map { !$0.termsAccepted } ?? false }
-    var isOperator: Bool { account?.isOperator ?? false }
     var realtimeEndpoint: URL? { account?.realtimeEndpoint }
     /// Whether the backend takes chat attachments; off until the account is known, so no button shows for nothing.
     var attachmentsEnabled: Bool { account?.attachmentsEnabled ?? false }

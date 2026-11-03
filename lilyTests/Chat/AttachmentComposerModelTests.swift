@@ -19,12 +19,12 @@ struct AttachmentComposerModelTests {
         let model = makeModel()
 
         let slot = try #require(model.add(imageData: photo))
-        #expect(model.drafts.map(\.state) == [.preparing] && model.isBusy && model.refs.isEmpty)
+        #expect(model.drafts.map(\.state) == [.preparing] && model.isBusy && model.drafts.compactMap(\.uploadedRef).isEmpty)
         await settle(until: { !model.isBusy })
 
         let draft = try #require(model.drafts.first)
         #expect(draft.id == slot.id && draft.uploadedRef?.attachmentId == "att-1" && draft.sizeBytes == 1000)
-        #expect(model.refs.map(\.attachmentId) == ["att-1"] && !model.isEmpty)
+        #expect(model.drafts.compactMap(\.uploadedRef).map(\.attachmentId) == ["att-1"] && !model.isEmpty)
         #expect(harness.chat.uploadRequests.map(\.groupID) == ["g"])
         let request = harness.chat.uploadRequests[0].request
         #expect(request.sizeBytes == 1000 && request.thumbnail != nil && request.clientAttachmentId == slot.id)
@@ -108,7 +108,7 @@ struct AttachmentComposerModelTests {
         model.add(imageData: photo)
         await settle(until: { !model.isBusy })
 
-        #expect(model.drafts.map(\.hasFailed) == [true] && model.refs.isEmpty)
+        #expect(model.drafts.map(\.hasFailed) == [true] && model.drafts.compactMap(\.uploadedRef).isEmpty)
         #expect(harness.errorCenter.current?.error == .attachmentUploadFailed)
         #expect(harness.chatLogs(.error).contains { $0.hasPrefix("Attachment \(model.drafts[0].id) upload failed in group g") })
 
@@ -130,7 +130,7 @@ struct AttachmentComposerModelTests {
 
         harness.uploader.releaseRequests()
         await settle(until: { !model.isBusy })
-        #expect(harness.uploader.uploads.count == 3 && model.refs.count == 3)
+        #expect(harness.uploader.uploads.count == 3 && model.drafts.compactMap(\.uploadedRef).count == 3)
     }
 
     /// The third picture is parked for a slot; removing it hands the slot on (or frees it) rather than keeping it, or
@@ -144,7 +144,8 @@ struct AttachmentComposerModelTests {
         model.remove(model.drafts[2])
         harness.uploader.releaseRequests()
         await settle(until: { !model.isBusy })
-        #expect(harness.chat.uploadRequests.count == 2 && harness.uploader.uploads.count == 2 && model.refs.count == 2)
+        #expect(harness.chat.uploadRequests.count == 2 && harness.uploader.uploads.count == 2)
+        #expect(model.drafts.compactMap(\.uploadedRef).count == 2)
 
         harness.uploader.holdsRequests = true
         for _ in 0..<2 { model.add(imageData: photo) }
@@ -243,6 +244,6 @@ struct AttachmentComposerModelTests {
         await settle(until: { !model.isBusy })
 
         model.reset()
-        #expect(model.isEmpty && !model.isBusy && model.refs.isEmpty)
+        #expect(model.isEmpty && !model.isBusy && model.drafts.compactMap(\.uploadedRef).isEmpty)
     }
 }

@@ -84,6 +84,6 @@ nonisolated struct MatchSchedulePayload: Encodable, Equatable, Sendable {
 
     init(schedule: MatchSchedule) {
         scheduledAt = schedule.scheduledAt
-        location = schedule.location.map { CreateEventPayload.Location(name: $0.name, coordinate: $0.coordinate) }
+        location = schedule.location.map(CreateEventPayload.Location.init)
     }
 }

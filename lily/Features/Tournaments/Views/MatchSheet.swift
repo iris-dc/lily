@@ -37,12 +37,8 @@ struct MatchSheet: View {
             .tint(Color.lilyAccent)
         }
         .presentationDetents([.medium, .large])
-        .lilyFormSheet()
         // No Done button: the sheet closes by a swipe down (the grabber says so) or when an action lands.
-        .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(viewModel.isBusy)
-        // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
-        .errorPopup(errorCenter)
+        .lilyFormSheet(errorCenter: errorCenter, lockedWhile: viewModel.isBusy)
     }
 
     private func content(_ match: TournamentMatch, actions: MatchActions) -> some View {

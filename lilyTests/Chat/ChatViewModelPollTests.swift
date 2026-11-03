@@ -13,10 +13,8 @@ struct ChatViewModelPollTests {
     private func makeChat(_ group: SportGroup? = nil) async -> (RealtimeHarness, ChatViewModel) {
         let group = group ?? self.group
         let harness = RealtimeHarness()
-        harness.groups.result = .success([group])
-        harness.cache.store(.fixture(groupID: group.id, messages: [.pollFixture(id: "m1", groupID: group.id)]), for: group.id)
-        await harness.connect()
-        return (harness, harness.makeChatViewModel(for: group))
+        let room = ChatRoomState.fixture(groupID: group.id, messages: [.pollFixture(id: "m1", groupID: group.id)])
+        return (harness, await harness.openChat(for: group, room: room, appear: false))
     }
 
     @Test func aVoteShowsAtOnceAndTheAnswerReplacesIt() async {
@@ -165,5 +163,6 @@ struct ChatViewModelPollTests {
 
         #expect(await viewModel.voters(of: poll) == voters)
         #expect(await viewModel.voters(of: poll) == nil && harness.errorCenter.current?.error == .pollAnonymous)
+        #expect(harness.chat.polls.voterRequests == ["m1", "m1"])
     }
 }

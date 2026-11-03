@@ -11,11 +11,7 @@ struct ChatViewModelOutboxTests {
 
     private func makeOpenChat() async -> (RealtimeHarness, ChatViewModel) {
         let harness = RealtimeHarness()
-        harness.groups.result = .success([group])
-        harness.cache.store(.fixture(messages: [first]), for: "g")
-        await harness.connect()
-        let viewModel = harness.makeChatViewModel(for: group)
-        await viewModel.appear()
+        let viewModel = await harness.openChat(for: group, room: .fixture(messages: [first]))
         viewModel.draft.text = "hello"
         return (harness, viewModel)
     }

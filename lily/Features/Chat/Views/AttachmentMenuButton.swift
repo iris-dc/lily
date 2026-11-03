@@ -9,8 +9,8 @@ import SwiftUI
 /// left out while the backend takes no attachments (`offersAttachments`), when the menu holds Poll alone.
 struct AttachmentMenuButton: View {
     let attachments: AttachmentComposerModel
-    var offersAttachments = true
-    var onPoll: (() -> Void)?
+    let offersAttachments: Bool
+    let onPoll: (() -> Void)?
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showsPhotoPicker = false
     @State private var showsCamera = false

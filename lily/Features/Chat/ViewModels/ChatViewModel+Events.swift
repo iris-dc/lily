@@ -29,7 +29,7 @@ extension ChatViewModel {
 
     /// The sender and the group's admins may delete; a tombstone has nothing left to delete.
     func canDelete(_ message: ChatMessage) -> Bool {
-        guard !message.isDeleted, !message.isSystem else { return false }
+        guard message.isLiveMemberMessage else { return false }
         return message.isSent(by: identity.currentUserID) || GroupAccess(group: group, userID: identity.currentUserID).canEdit
     }
 }

@@ -69,19 +69,14 @@ extension TournamentDetailViewModel {
     /// takes its place in the detail. An empty schedule clears both.
     @discardableResult
     func schedule(_ match: TournamentMatch, _ schedule: MatchSchedule) async -> Bool {
-        await perform("Schedule") { [self] in
-            do {
-                let updated = try await repository.schedule(id: destination.id, matchID: match.id, schedule)
-                guard let current = detail else { return }
-                accept(current.replacing(match: updated))
-            } catch let error as AppError where error.leavesTournamentWriteOutcomeUnknown {
-                guard let fresh = await readBack(after: error, match, asking: .schedule(schedule), action: "Schedule") else {
-                    throw error
-                }
-                accept(fresh)
-            }
-            logMatch(match.id, schedule.isEmpty ? "schedule cleared" : "scheduled")
+        let done = await writeMatch("Schedule", match, asking: .schedule(schedule)) { [self] in
+            let updated = try await repository.schedule(id: destination.id, matchID: match.id, schedule)
+            guard let current = detail else { return try await repository.tournament(id: destination.id) }
+            return current.replacing(match: updated)
         }
+        // Logged after the write, not inside it: a lost answer that landed is read back and still counts once.
+        if done { logMatch(match.id, schedule.isEmpty ? "schedule cleared" : "scheduled") }
+        return done
     }
 
     /// `write` for a match: a lost answer is read off the match fetched back, and the fresh detail stands in for it when

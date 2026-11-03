@@ -8,11 +8,6 @@ struct InteractionTests {
     private static let date = Date(timeIntervalSince1970: 1_800_000_000)
     private static let dateText = "2027-01-15T08:00:00Z"
 
-    private func json(_ value: some Encodable) throws -> [String: Any] {
-        let data = try APIJSONCoding.makeEncoder().encode(value)
-        return try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
-    }
-
     @Test func kindsUseTheBackendsSnakeCaseNames() {
         #expect(InteractionKind.eventViewed.rawValue == "event_viewed")
         #expect(InteractionKind.filterApplied.rawValue == "filter_applied")
@@ -22,7 +17,7 @@ struct InteractionTests {
     @Test func viewedCarriesTheEventIdTypeAndHostAndNothingElse() throws {
         let event = SportEvent.fixture(id: "evt_01", hostUserId: "host-1", price: Price(amount: 5, currencyCode: "EUR"))
 
-        let encoded = try json(Interaction.viewed(event, at: Self.date))
+        let encoded = try ContractSamples.jsonObject(of: Interaction.viewed(event, at: Self.date))
 
         let expected: [String: String] = ["kind": "event_viewed", "occurredAt": Self.dateText, "eventId": "evt_01",
                                           "eventType": "tennis", "hostUserId": "host-1"]
@@ -30,7 +25,7 @@ struct InteractionTests {
     }
 
     @Test func aFixtureWithoutAHostLeavesTheHostOut() throws {
-        let encoded = try json(Interaction.viewed(.fixture(id: "evt_02"), at: Self.date))
+        let encoded = try ContractSamples.jsonObject(of: Interaction.viewed(.fixture(id: "evt_02"), at: Self.date))
 
         #expect(Set(encoded.keys) == ["kind", "occurredAt", "eventId", "eventType"])
     }
@@ -50,7 +45,7 @@ struct InteractionTests {
         #expect(summary.maxDistanceMeters == AppConfig.Events.defaultFilterRadiusMeters)
         #expect(summary.hasMaxPrice && summary.hasDateWindow && summary.openSpotsOnly)
         #expect(summary.skillLevel == .advanced)
-        let encoded = try json(summary)
+        let encoded = try ContractSamples.jsonObject(of: summary)
         #expect(Set(encoded.keys)
                 == ["types", "maxDistanceMeters", "hasMaxPrice", "skillLevel", "hasDateWindow", "openSpotsOnly"])
         #expect(encoded["hasMaxPrice"] as? Bool == true)
@@ -85,13 +80,13 @@ struct InteractionTests {
 
         #expect(summary.types == Array(names.prefix(AppConfig.Statistics.maxFilterTypes)))
         #expect(summary.types.count == AppConfig.Statistics.maxFilterTypes)
-        let encoded = try json(summary)
+        let encoded = try ContractSamples.jsonObject(of: summary)
         let encodedTypes = try #require(encoded["types"] as? [String])
         #expect(encodedTypes.count == AppConfig.Statistics.maxFilterTypes)
     }
 
     @Test func absentCriteriaAreLeftOutRatherThanNull() throws {
-        let encoded = try json(Interaction.filterApplied(.everything, at: Self.date))
+        let encoded = try ContractSamples.jsonObject(of: Interaction.filterApplied(.everything, at: Self.date))
 
         #expect(Set(encoded.keys) == ["kind", "occurredAt", "filter"])
         let filter = try #require(encoded["filter"] as? [String: Any])
@@ -100,7 +95,7 @@ struct InteractionTests {
     }
 
     @Test func presentationChangedCarriesTheWireValue() throws {
-        let encoded = try json(Interaction.presentationChanged(.map, at: Self.date))
+        let encoded = try ContractSamples.jsonObject(of: Interaction.presentationChanged(.map, at: Self.date))
 
         let expected: [String: String] = ["kind": "presentation_changed", "occurredAt": Self.dateText, "presentation": "map"]
         #expect(encoded as NSDictionary == expected as NSDictionary)
@@ -116,7 +111,7 @@ struct InteractionTests {
     @Test func groupViewedCarriesTheIdAndVisibilityAndNothingElse() throws {
         let group = SportGroup.fixture(id: "grp_01", name: "Secret Club", visibility: .private, role: .owner)
 
-        let encoded = try json(Interaction.groupViewed(group, at: Self.date))
+        let encoded = try ContractSamples.jsonObject(of: Interaction.groupViewed(group, at: Self.date))
 
         let expected: [String: String] = ["kind": "group_viewed", "occurredAt": Self.dateText,
                                           "groupId": "grp_01", "groupVisibility": "private"]
@@ -127,14 +122,15 @@ struct InteractionTests {
     @Test func groupViewedCarriesTheTypeWhenTheGroupHasOne() throws {
         let group = SportGroup.fixture(id: "grp_02", visibility: .public, type: .padel)
 
-        let encoded = try json(Interaction.groupViewed(group, at: Self.date))
+        let encoded = try ContractSamples.jsonObject(of: Interaction.groupViewed(group, at: Self.date))
 
         #expect(Set(encoded.keys) == ["kind", "occurredAt", "groupId", "groupVisibility", "eventType"])
         #expect(encoded["eventType"] as? String == "padel")
     }
 
     @Test func groupSearchCarriesTheFlagAndTheCountNeverTheText() throws {
-        let encoded = try json(Interaction.groupSearchPerformed(hasQuery: true, resultCount: 3, at: Self.date))
+        let search = Interaction.groupSearchPerformed(hasQuery: true, resultCount: 3, at: Self.date)
+        let encoded = try ContractSamples.jsonObject(of: search)
 
         #expect(Set(encoded.keys) == ["kind", "occurredAt", "hasQuery", "resultCount"])
         #expect(encoded["hasQuery"] as? Bool == true)
@@ -142,7 +138,7 @@ struct InteractionTests {
     }
 
     @Test func chatOpenedCarriesTheGroupIdOnly() throws {
-        let encoded = try json(Interaction.chatOpened(groupID: "grp_01", at: Self.date))
+        let encoded = try ContractSamples.jsonObject(of: Interaction.chatOpened(groupID: "grp_01", at: Self.date))
         #expect(Set(encoded.keys) == ["kind", "occurredAt", "groupId"])
         #expect(encoded["groupId"] as? String == "grp_01")
     }
@@ -152,7 +148,7 @@ struct InteractionTests {
     @Test func tournamentViewedCarriesTheIdTheFormatAndTheTypeAndNothingElse() throws {
         let tournament = Tournament.fixture(id: "t1", name: "Padel Open", type: .padel, format: .roundRobin)
 
-        let encoded = try json(Interaction.tournamentViewed(tournament, at: Self.date))
+        let encoded = try ContractSamples.jsonObject(of: Interaction.tournamentViewed(tournament, at: Self.date))
 
         let expected: [String: String] = ["kind": "tournament_viewed", "occurredAt": Self.dateText, "tournamentId": "t1",
                                           "tournamentFormat": "round_robin", "eventType": "padel"]
@@ -160,7 +156,8 @@ struct InteractionTests {
     }
 
     @Test func theBatchWrapsInteractionsAndTheReceiptDecodes() throws {
-        let batch = try json(InteractionBatch(interactions: [.presentationChanged(.list, at: Self.date)]))
+        let batch = try ContractSamples.jsonObject(
+            of: InteractionBatch(interactions: [.presentationChanged(.list, at: Self.date)]))
         #expect(Set(batch.keys) == ["interactions"])
         #expect((batch["interactions"] as? [[String: Any]])?.count == 1)
 

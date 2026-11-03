@@ -21,7 +21,7 @@ struct ContentFreshnessTests {
         var freshness = freshness
         freshness.recordSuccess(at: Self.start, version: 1, userID: "u")
 
-        #expect(freshness.hasLoaded && freshness.lastLoadedAt == Self.start)
+        #expect(freshness.hasLoaded)
         #expect(freshness.stalenessReason(now: Self.start.addingTimeInterval(59), version: 1, userID: "u") == nil)
         #expect(freshness.stalenessReason(now: Self.start.addingTimeInterval(60), version: 1, userID: "u") == "older than TTL")
         #expect(freshness.stalenessReason(now: Self.start, version: 2, userID: "u") == "changed elsewhere")
@@ -125,6 +125,16 @@ struct ContentFreshnessTests {
         let afterTTL = afterCooldown.addingTimeInterval(60)
         #expect(freshness.decision(now: afterTTL, version: 1, userID: "u") == .stale(reason: "older than TTL"))
         #expect(freshness.decision(now: afterCooldown, version: 2, userID: "u") == .stale(reason: "changed elsewhere"))
+    }
+
+    /// The lists pass the position their request carries, so the one `switch` judges it too.
+    @Test func decisionFollowsThePosition() {
+        var freshness = freshness
+        freshness.recordSuccess(at: Self.start, version: 1, userID: "u", position: Self.berlin)
+
+        #expect(freshness.decision(now: Self.start, version: 1, userID: "u", position: Self.berlin) == .fresh)
+        #expect(freshness.decision(now: Self.start, version: 1, userID: "u", position: Self.elsewhere)
+                    == .stale(reason: "position changed"))
     }
 
     @Test func resetForgetsEverythingButTheLimits() {

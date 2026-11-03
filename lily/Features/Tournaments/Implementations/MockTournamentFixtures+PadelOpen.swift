@@ -13,7 +13,7 @@ nonisolated extension MockTournamentFixtures {
     private static let padelOpenCreatedDaysAgo = 3.0
 
     static func padelOpen(now: Date) -> TournamentDetail {
-        let createdAt = now.addingTimeInterval(-padelOpenCreatedDaysAgo * secondsPerDay)
+        let createdAt = now.addingTimeInterval(-padelOpenCreatedDaysAgo * .day)
         let entries = padelOpenPlayers.enumerated().map { index, player in
             let userID = MockGroupFixtures.memberID(for: player)
             return TournamentEntry(id: entryID(tournamentID: padelOpenID, index: index),
@@ -22,7 +22,7 @@ nonisolated extension MockTournamentFixtures {
                                    captainUserId: userID,
                                    members: [EntryMember(userId: userID, displayName: player)],
                                    seed: index + 1,
-                                   createdAt: createdAt.addingTimeInterval(Double(index + 1) * secondsPerHour))
+                                   createdAt: createdAt.addingTimeInterval(Double(index + 1) * .hour))
         }
         let tournament = Tournament(id: padelOpenID,
                                     name: padelOpenName,
@@ -32,7 +32,7 @@ nonisolated extension MockTournamentFixtures {
                                     visibility: .private,
                                     maxEntries: 8,
                                     entryCount: entries.count,
-                                    startsAt: now.addingTimeInterval(padelOpenStartsInDays * secondsPerDay),
+                                    startsAt: now.addingTimeInterval(padelOpenStartsInDays * .day),
                                     location: EventLocation(name: "Padel Court Mitte",
                                                             coordinate: coordinate(offset: (0.6, 0.4))),
                                     organizerUserId: MockGroupFixtures.memberID(for: padelOpenOrganizer),

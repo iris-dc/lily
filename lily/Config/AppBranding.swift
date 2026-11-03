@@ -22,7 +22,6 @@ nonisolated enum AppBranding {
             static var title: String { localized("Filters") }
             static var eventType: String { localized("Event type") }
             static var anyType: String { localized("Any type") }
-            /// The reference point is the user's position for now; a chosen place is the intended next step.
             static var distance: String { localized("Distance from me") }
             static var anywhere: String { localized("Any") }
             /// Shown while the user's position is unknown: still pending, timed out or denied.
@@ -50,7 +49,7 @@ nonisolated enum AppBranding {
         /// `Price.text`; cards and the detail screen check `isFree` first and never render it.
         static var free: String { localized("Free") }
         /// The dot between caption parts. `EventCard` draws it as its own view; `captionSeparator` pads it for
-        /// `joined(separator:)` ("in 3 hours · 4 spots left · €5").
+        /// `Groups.caption`, the one joiner ("in 3 hours · 4 spots left · €5").
         static let separatorGlyph = "·"
         static let captionSeparator = " \(separatorGlyph) "
         static var lookingForTitle: String { localized("Looking for") }
@@ -66,7 +65,6 @@ nonisolated enum AppBranding {
             static var menu: String { localized("Create") }
             static var title: String { localized("New event") }
             static var submit: String { localized("Create event") }
-            static var cancel: String { Forms.cancel }
             static var gameSection: String { localized("Event") }
             static var titleField: String { localized("Title") }
             static var titlePlaceholder: String { localized("Event name") }
@@ -112,10 +110,10 @@ nonisolated enum AppBranding {
                 return switch issue {
                 case .titleMissing: localized("Give the event a title")
                 case .titleTooLong: localized("Keep the title under \(limits.titleMaxLength) characters")
-                case .locationNameMissing: localized("Name the place")
-                case .locationNameTooLong: localized("Keep the place name under \(limits.locationNameMaxLength) characters")
-                case .descriptionTooLong: localized("Keep the description under \(limits.descriptionMaxLength) characters")
-                case .lookingForTooLong: localized("Keep it under \(limits.lookingForMaxLength) characters")
+                case .locationNameMissing: Forms.placeNameMissing
+                case .locationNameTooLong: Forms.placeNameTooLong(limit: limits.locationNameMaxLength)
+                case .descriptionTooLong: Forms.descriptionTooLong(limit: limits.descriptionMaxLength)
+                case .lookingForTooLong: Forms.tooLong(limit: limits.lookingForMaxLength)
                 default: nil
                 }
             }
@@ -124,7 +122,7 @@ nonisolated enum AppBranding {
             private static func valueMessage(for issue: EventDraft.Issue) -> String {
                 let limits = AppConfig.Events.Creation.self
                 return switch issue {
-                case .startsAtTooSoon: localized("Pick a start at least \(limits.minimumLeadTimeMinutes) minutes from now")
+                case .startsAtTooSoon: Forms.startTooSoon(minutes: limits.minimumLeadTimeMinutes)
                 case .coordinateMissing: pickOnMap
                 case .capacityOutOfRange:
                     localized("Between \(limits.capacityRange.lowerBound) and \(limits.capacityRange.upperBound) players")

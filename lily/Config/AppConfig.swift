@@ -181,6 +181,8 @@ nonisolated enum AppConfig {
         static let contentTooLargeStatus = 413
         /// The range of a refusal; a known backend code inside it is an expected product state, not a fault.
         static let clientErrorStatuses = 400..<500
+        /// A delivered request; everything outside it is a refusal or a fault, mapped per caller.
+        static let successStatuses = 200..<300
 
         enum Headers {
             static let localUserID = "X-Local-User-Id"

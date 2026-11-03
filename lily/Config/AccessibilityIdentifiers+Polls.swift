@@ -1,6 +1,6 @@
 import Foundation
 
-/// Identifiers of polls and pins; mirrored by hand in `lilyUITests` like the rest.
+/// Identifiers of polls and pins; a UI test that reads one mirrors the literal by hand.
 nonisolated extension AccessibilityIdentifiers {
     /// The "+" menu's Poll item, and the creation sheet's fields and Send.
     static let chatAttachPoll = "chat-attach-poll"

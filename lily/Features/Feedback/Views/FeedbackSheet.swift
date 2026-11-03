@@ -32,11 +32,7 @@ struct FeedbackSheet: View {
             .tint(Color.lilyAccent)
         }
         .presentationDetents([.large])
-        .lilyFormSheet()
-        .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(viewModel.isSubmitting)
-        // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
-        .errorPopup(errorCenter)
+        .lilyFormSheet(errorCenter: errorCenter, lockedWhile: viewModel.isSubmitting)
     }
 
     private var form: some View {
@@ -50,7 +46,6 @@ struct FeedbackSheet: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .accessibilityIdentifier(AccessibilityIdentifiers.feedbackKind)
             }
             Section {
                 TextField(viewModel.draft.kind.messagePlaceholder, text: $viewModel.draft.message, axis: .vertical)
@@ -100,7 +95,7 @@ struct FeedbackSheet: View {
             }
         } else {
             ToolbarItem(placement: .cancellationAction) {
-                Button(AppBranding.Events.Create.cancel, role: .cancel) { dismiss() }
+                Button(AppBranding.Forms.cancel, role: .cancel) { dismiss() }
                     .lilyToolbarTextButton()
                     .disabled(viewModel.isSubmitting)
             }

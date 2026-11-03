@@ -16,7 +16,8 @@ event behind an event reminder and the tournament behind a match reminder. It ho
   is being fetched), `now`; derived `rows: [InboxTimelineRow]` (`InboxTimeline.rows(store.items)`), `hasOlder`,
   `isLoadingOlder`, `loadFailed`, `isInitialLoad` (`!store.hasLoaded && !store.loadFailed`), `newestID`;
   `isBusy(_ item: InboxItem) -> Bool`.
-- Actions: `appear() async`, `refresh() async`, `loadOlder() async -> Bool`, `noteNewItems() async`,
+- Actions: `appear() async`, `refresh() async`, `loadOlder() async` (answers nothing; the store's Bool is dropped),
+  `noteNewItems() async`,
   `accept(_:) async`, `decline(_:) async`, `openEvent(for:) async`, `openTournament(for:)`.
 - Private: `answer(_:verb:wanting:_:)`, `noteLanded(_:of:)`, `inviteReadBack: LostAnswer<[InboxItem]>`,
   `restated(_:for:)`, `AppError.isInviteVerdict` (`inviteNotPending` or `inviteExpired`)

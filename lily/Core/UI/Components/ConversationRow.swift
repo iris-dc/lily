@@ -13,15 +13,7 @@ struct ConversationRow<Title: View, Trailing: View>: View {
     var body: some View {
         HStack(spacing: DesignTokens.Spacing.md) {
             avatar
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-                title()
-                    .font(.body.weight(.semibold))
-                    .lineLimit(1)
-                Text(caption)
-                    .font(LilyTheme.Fonts.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
+            CaptionedTitle(lines: [caption], title: title)
             Spacer(minLength: DesignTokens.Spacing.sm)
             trailing()
         }

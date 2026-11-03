@@ -21,8 +21,7 @@ struct EventDetailView: View {
                     EventTypeChip(type: event.type)
                     OwnerTitleBlock(title: event.title,
                                     subtitle: AppBranding.hostedByTitle(for: event.hostName),
-                                    destination: viewModel.hostProfile,
-                                    identifier: AccessibilityIdentifiers.eventHost)
+                                    destination: viewModel.hostProfile)
                     if let group = event.group {
                         HostedInLine(group: group)
                     }

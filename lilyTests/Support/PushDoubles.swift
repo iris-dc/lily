@@ -125,11 +125,6 @@ final class PushHarness {
     func logs(_ level: LogLevel? = nil) -> [String] {
         logger.messages(in: .push, at: level)
     }
-
-    /// Counts the `.push` lines at `level` containing `fragment`; a key event is logged exactly once.
-    func logged(_ fragment: String, at level: LogLevel) -> Int {
-        logs(level).filter { $0.contains(fragment) }.count
-    }
 }
 
 /// Counts how often a view model offered the reminder permission. `onOffer` runs first, so a test can read the view

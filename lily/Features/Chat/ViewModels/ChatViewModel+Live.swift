@@ -4,7 +4,6 @@ import Foundation
 /// them there); this side settles optimistic bubbles, follows epoch changes and notices when the room is gone.
 extension ChatViewModel {
     func startLive() {
-        guard !Task.isCancelled else { return }
         liveTask?.cancel()
         let stream = realtime.envelopes(for: group.id)
         liveTask = Task { [weak self] in

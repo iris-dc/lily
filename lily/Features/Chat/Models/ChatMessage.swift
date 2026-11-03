@@ -89,6 +89,10 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
 
     var isSystem: Bool { !kind.isWrittenByMember }
     var hasAttachments: Bool { !attachments.isEmpty }
+    /// A member's message still on screen: what Reply, Pin and Delete act on.
+    var isLiveMemberMessage: Bool { !isDeleted && !isSystem }
+    /// The pictures and videos in the gallery's order; files are cards.
+    var media: [Attachment] { GalleryLayout.partition(attachments.map(\.kind)).media.map { attachments[$0] } }
 
     func isSent(by userID: String?) -> Bool {
         userID != nil && senderUserId == userID

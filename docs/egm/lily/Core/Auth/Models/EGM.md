@@ -18,7 +18,7 @@ ones are `Codable`. No tokens live here: Cognito's stay in Amplify's keychain.
   `.signedIn(AuthSession)`, `.signingOut`.
 - `EmailCredentials` (`lily/Core/Auth/Models/AuthProvider.swift:EmailCredentials`): `email`, `password`.
 - `AuthProvider` (`lily/Core/Auth/Models/AuthProvider.swift:AuthProvider`): `.apple`, `.google`, `.email(EmailCredentials)`;
-  nested `Kind: String, CaseIterable, Sendable` (`apple`, `google`, `email`) with `displayName` (`"Apple"`, `"Google"`,
+  nested `Kind: String, Sendable` (`apple`, `google`, `email`) with `displayName` (`"Apple"`, `"Google"`,
   `localized("Email")`); `var kind: Kind`.
 - `SessionState` (`lily/Core/Auth/Models/SessionState.swift:SessionState`): `.signedOut`, `.guest`, `.signedIn(AuthUser)`;
   `user: AuthUser?`, `isSignedIn: Bool`, `showsShell: Bool`.

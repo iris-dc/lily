@@ -15,9 +15,15 @@ enum LilyTheme {
         static var button: Font { .system(.body, design: .default, weight: .semibold) }
         /// The glyph of the floating create button: heavier and larger than button text so it reads from across the screen.
         static var floatingAction: Font { .system(.title2, design: .default, weight: .bold) }
+        /// The name line of a row, tile or card over a caption: conversation rows, carousel tiles, the inbox cards, an entry.
+        static var itemTitle: Font { .system(.body, design: .default, weight: .semibold) }
         static var caption: Font { .system(.footnote, design: .default, weight: .medium) }
         /// A symbol as a mark in a `GlassGlyph`: the type glyph on the map's preview card.
         static var glyph: Font { .system(.title3, design: .default, weight: .medium) }
+        /// Initials inside an avatar circle of `size` points.
+        static func avatarInitials(size: CGFloat) -> Font {
+            .system(size: size * DesignTokens.Layout.avatarInitialsFraction, weight: .bold)
+        }
     }
 
     /// The one date-and-time style of the facts cards and match rows ("15 Jan 2027 at 18:30"), in the app language.

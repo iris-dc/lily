@@ -44,4 +44,7 @@ extension Animation {
         guard motion.allowsMovement else { return nil }
         return .spring(duration: DesignTokens.MessageArrival.duration, bounce: DesignTokens.MessageArrival.bounce)
     }
+
+    /// The spinner, the rows and the empty state of a room's first page cross on this one curve.
+    nonisolated static var firstPageFade: Animation { .easeOut(duration: DesignTokens.Duration.fast) }
 }

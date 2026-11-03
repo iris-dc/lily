@@ -21,10 +21,11 @@ final class LandingViewModel {
     private let repository: any EventRepository
     private let logger: any Logging
 
-    init(session: SessionController, repository: any EventRepository, logger: any Logging, now: Date = .now) {
+    init(session: SessionController, repository: any EventRepository, logger: any Logging) {
         self.session = session
         self.repository = repository
         self.logger = logger
+        let now = Date.now
         sampleEvents = IntroFixtures.events(now: now)
         sampleTournament = IntroFixtures.tournament(now: now)
     }

@@ -25,9 +25,4 @@ final class MockModerationRepository: ModerationRepository {
         blocked.insert(userID)
         return blocked
     }
-
-    func unblock(userID: String) async throws -> Set<String> {
-        blocked.remove(userID)
-        return blocked
-    }
 }

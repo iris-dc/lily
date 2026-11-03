@@ -12,7 +12,7 @@ are synchronous on purpose (a few kilobytes, read once when the list is built an
 ## Interface
 
 - `FileListSnapshotStore: ListSnapshotStore` (`lily/Core/Changes/Implementations/FileListSnapshotStore.swift:FileListSnapshotStore`):
-  `init(directory: URL = FileListSnapshotStore.defaultDirectory, logger: any Logging)`; `static var defaultDirectory: URL`
+  `init(directory: URL, logger: any Logging)`; `static var defaultDirectory: URL` (the default lives in `AppDependencies.makeListSnapshotStore`)
   (`Caches/<AppConfig.Lists.snapshotDirectoryName>`); `load(_:for:)`, `save(_:for:)`, `clear()`, `sessionDidEnd()`.
   Coding through `APIJSONCoding.makeDecoder()` and `makeEncoder()` (`lily/Core/Networking`), so a wire type comes back as
   it arrived.

@@ -64,8 +64,7 @@ struct FeedbackDraftTests {
         #expect(payload.appVersion?.count == AppConfig.Feedback.detailMaxLength)
         #expect(payload.osVersion == "iOS 26.0.1" && payload.device == "iPhone17,1" && payload.locale == "ru")
 
-        let data = try APIJSONCoding.makeEncoder().encode(payload)
-        let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: String])
+        let json = try ContractSamples.jsonObject(of: payload, as: String.self)
         #expect(json.keys.sorted() == ["appVersion", "device", "kind", "locale", "message", "osVersion"],
                 "a blank email is left out, never sent as null")
         #expect(json["kind"] == "bug")
@@ -74,8 +73,7 @@ struct FeedbackDraftTests {
     /// Key for key the body Laurel's strict-JSON test expects.
     @Test func aFullPayloadCarriesEveryKeyTheContractNames() throws {
         let draft = FeedbackDraft(kind: .contact, message: "Hi", replyEmail: "jane@example.com")
-        let data = try APIJSONCoding.makeEncoder().encode(draft.payload(in: .fixture))
-        let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: String])
+        let json = try ContractSamples.jsonObject(of: draft.payload(in: .fixture), as: String.self)
 
         #expect(json == ["kind": "contact", "message": "Hi", "replyEmail": "jane@example.com", "appVersion": "1.0 (42)",
                          "osVersion": "iOS 26.0.1", "device": "iPhone17,1", "locale": "en"])

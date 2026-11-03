@@ -8,13 +8,7 @@ struct DiscoverGroupsViewModelTests {
     private let sleep = HeldSleep()
 
     private func makeViewModel() -> DiscoverGroupsViewModel {
-        DiscoverGroupsViewModel(changes: harness.changes,
-                                repository: harness.repository,
-                                identity: harness.identity,
-                                locationService: harness.location,
-                                errorCenter: harness.errorCenter,
-                                recorder: harness.recorder,
-                                logger: harness.logger) { [sleep] in try await sleep.sleep(for: $0) }
+        harness.makeDiscoverGroupsViewModel { [sleep] in try await sleep.sleep(for: $0) }
     }
 
     /// "Joined" on a card is the server's answer for one caller, so another caller earns a new search.
@@ -42,7 +36,7 @@ struct DiscoverGroupsViewModelTests {
         #expect(harness.repository.requestedScopes == [.discover(query: nil, type: nil)])
         #expect(viewModel.groups.map(\.id) == ["p"] && viewModel.hasSearched && !viewModel.nothingMatched)
 
-        await viewModel.refresh()
+        await viewModel.search()
         #expect(harness.repository.requestedScopes.count == 2)
     }
 
@@ -62,7 +56,7 @@ struct DiscoverGroupsViewModelTests {
         #expect(!viewModel.isInitialLoad && viewModel.nothingMatched)
 
         harness.repository.holdsRequests = true
-        let refresh = Task { await viewModel.refresh() }
+        let refresh = Task { await viewModel.search() }
         await settle(until: { harness.repository.requestedScopes.count == 2 })
         #expect(viewModel.isLoading && !viewModel.isInitialLoad && !viewModel.nothingMatched)
         harness.repository.releaseRequests()
@@ -227,7 +221,7 @@ struct DiscoverGroupsViewModelTests {
 
         viewModel.cancel()
         await settle(until: { sleep.held.isEmpty })
-        for _ in 0..<10 { await Task.yield() }
+        await drain()
 
         #expect(harness.repository.requestedScopes.isEmpty && sleep.held.isEmpty)
     }

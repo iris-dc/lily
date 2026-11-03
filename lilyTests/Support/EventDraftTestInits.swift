@@ -14,4 +14,11 @@ extension EventDraft {
     init(editing event: SportEvent) {
         self.init(editing: event, currencyCode: Self.testCurrencyCode, locale: Self.testLocale)
     }
+
+    /// Fills in what a valid draft needs beyond the defaults; `nil` exercises the missing-coordinate paths.
+    mutating func fillRequired(coordinate: Coordinate? = AppConfig.Location.mockCenter) {
+        title = "Thursday five-a-side"
+        locationName = "Test Park"
+        self.coordinate = coordinate
+    }
 }

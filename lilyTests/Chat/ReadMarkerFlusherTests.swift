@@ -71,12 +71,12 @@ struct ReadMarkerFlusherTests {
         flusher.noteRead()
 
         #expect(sleep.requested == [.seconds(interval)], "the second read joins the waiting flush")
-        #expect(chat.readMarks.count == 1 && flusher.isWaiting)
+        #expect(chat.readMarks.count == 1)
 
         clock.advance(by: interval)
         sleep.release { $0 == .seconds(interval) }
         await settle(until: { chat.readMarks.count == 2 })
-        #expect(chat.readMarks.last?.messageID == "m3" && !flusher.isWaiting)
+        #expect(chat.readMarks.last?.messageID == "m3" && sleep.held.isEmpty)
     }
 
     @Test func aReadAfterTheIntervalFlushesWithoutWaiting() async {
@@ -96,9 +96,9 @@ struct ReadMarkerFlusherTests {
         await flusher.opened()
 
         flusher.noteRead()
-        await yield()
+        await drain()
 
-        #expect(sleep.requested.isEmpty && chat.readMarks.count == 1 && !flusher.isWaiting)
+        #expect(sleep.requested.isEmpty && chat.readMarks.count == 1)
     }
 
     @Test func leavingFlushesAtOnceAndDropsTheWait() async {
@@ -110,9 +110,10 @@ struct ReadMarkerFlusherTests {
 
         await flusher.flush()
 
-        #expect(chat.readMarks.map(\.messageID) == ["m1", "m2"] && !flusher.isWaiting)
+        #expect(chat.readMarks.map(\.messageID) == ["m1", "m2"])
+        await settle(until: { sleep.held.isEmpty })
         sleep.release { $0 == .seconds(interval) }
-        await yield()
+        await drain()
         #expect(chat.readMarks.count == 2, "the waiting attempt went with the flush and sends nothing more")
     }
 
@@ -172,9 +173,5 @@ struct ReadMarkerFlusherTests {
 
     private func insert(_ id: String) {
         cache.update(groupID: "g") { $0.insert(.fixture(id: id, groupID: "g")) }
-    }
-
-    private func yield() async {
-        for _ in 0..<20 { await Task.yield() }
     }
 }

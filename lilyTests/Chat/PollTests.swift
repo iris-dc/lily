@@ -26,6 +26,15 @@ struct PollTests {
         #expect(voted.share(of: voted.options[0]) == 1 && voted.share(of: voted.options[1]) == 0)
     }
 
+    @Test func votersForAnOptionAreItsListedOnesOrNil() {
+        let poll = Poll.fixture()
+        let jonas = PollVoters.Voter(userId: "u-3", name: "Jonas")
+        let voters = PollVoters(options: [.init(id: poll.options[0].id, voters: [jonas])])
+
+        #expect(voters.voters(for: poll.options[0]) == [jonas])
+        #expect(voters.voters(for: poll.options[1]) == nil, "an option the answer left out")
+    }
+
     @Test func aDraftNeedsAQuestionAndTwoDistinctOptions() {
         var draft = PollDraft()
         draft.question = "  Which court?  "

@@ -8,17 +8,18 @@ nonisolated protocol InviteAnswer {
 }
 
 nonisolated extension InviteAnswer {
-    /// Accept and Decline are offered while the invite is pending and its time has not run out.
+    /// Pending and before its deadline: the one rule for offering Accept and Decline and for the mock's expiry refusal.
     func isOpen(now: Date) -> Bool {
         status == .pending && expiresAt > now
     }
 
     /// What an answered or lapsed invite says in place of its buttons; `nil` while it is still open.
     func statusCaption(now: Date) -> String? {
-        switch status {
+        if isOpen(now: now) { return nil }
+        return switch status {
         case .accepted: AppBranding.Inbox.joined
         case .declined: AppBranding.Inbox.declined
-        case .pending: expiresAt > now ? nil : AppBranding.Inbox.expired
+        case .pending: AppBranding.Inbox.expired
         case .unknown: nil
         }
     }

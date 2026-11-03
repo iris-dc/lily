@@ -1,8 +1,7 @@
 import Foundation
 
 /// Copy of the intro pager on the landing: a headline pair per slide (the miniature says the rest), the lines of the
-/// chat miniature and the swipe hint. Plain statements of what the app does, no slogans. In its own file because
-/// `AppBranding` is at SwiftLint's type-body limit.
+/// chat miniature and the swipe hint. Plain statements of what the app does, no slogans.
 nonisolated extension AppBranding {
     enum Intro {
         /// Two short lines that read as one sentence; the slide draws the second in the accent colour.

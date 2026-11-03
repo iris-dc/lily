@@ -14,7 +14,7 @@ struct SpyLoggerTests {
     }
 
     @Test func everyPartMustAppearInOneLine() {
-        #expect(logger.lines(in: .events, mentioning: "Event", "e1") == ["Event e1 updated"])
+        #expect(logger.hasLine(in: .events, mentioning: "Event", "e1"))
         #expect(!logger.hasLine(in: .events, mentioning: "Joined", "updated"), "the parts sit in two different lines")
     }
 

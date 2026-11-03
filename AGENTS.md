@@ -122,15 +122,15 @@ undo your own edit in a dirty tree: it drops the user's uncommitted work on that
   `Currency`, `Preferences`, `Location`, `Statistics`, `Push`, `Errors` (`AppError`, `ErrorCenter`,
   `ErrorMessageMapper` + its per-area files), `Logging`, `Validation` (`CredentialsValidator`, `String.wireLength`,
   `String.codePointCount`, `Collection.first(of:)`), `System` (`Calendar.nextFullHour`,
-  `FileManager.removeItemIfPresent`), `Foundation` (`String.trimmed` and `nonBlankTrimmed`, how every typed field is
-  read), `UI` (`Components`, `Layout`, `Effects`, `Theme`, `Interfaces`).
+  `FileManager.removeItemIfPresent`, `TimeInterval.hour`/`.day`), `Foundation` (`String.trimmed` and `nonBlankTrimmed`,
+  how every typed field is read), `UI` (`Components`, `Layout`, `Effects`, `Theme`, `Interfaces`).
 - `lily/Features/`: `Landing`, `SignIn`, `Shell` (`ShellSync` in `Services` runs the per-user loads), `Events`,
   `Groups`, `Chat`, `Inbox`, `People`, `Tournaments`, `Profile`, `Feedback`, `Moderation`.
 - `lilyTests/`: Swift Testing suites by area; `Support/` holds the fakes, fixtures and harnesses (`FakeAPIClient`,
   `StubBackend`, `GroupHarness`, `RealtimeHarness`, `TournamentHarness`, `PushHarness`, `SpyLogger`, `HeldSleep`,
   `DateClock`, `RequestHold`).
-- `lilyUITests/`: `LilyUITestCase` (launch and primitives) + `LilyUITestCase+Screens` (screen helpers), and one class
-  per area; the test target mirrors the app's identifier and launch-argument literals, since it cannot import the app.
+- `lilyUITests/`: one class per area over `LilyUITestCase` (launch and primitives), `+Screens`, `+Elements` and `MockIDs`
+  (screens, elements, fixture row ids); it cannot import the app, so it mirrors its identifier and launch-argument literals.
 - `scripts/`: `ci.sh`, `l10n-check.py` (+ its unittest), `make-app-icon.swift`.
 - The full tree with one line per file group: `docs/notes/folder-layout.md`.
 
@@ -195,8 +195,7 @@ decides, never the device.
   `-system-push`, and the value-taking `-app-language <code>`, `-api-base-url <url>`, `-mock-user-id <sub>`,
   `-realtime-endpoint <url>`. UI tests launch with `-reset-session -mock-location -mock-auth -mock-events
   -freeze-aurora -app-language en` and must keep passing without a backend.
-- **Code comments** carry a short "why" only: no dates, review references or "until then" narrative. Dated history
-  belongs in `docs/notes/`.
+- **Code comments** carry a short "why" only: no dates, review references or "until then" narrative; history: `docs/notes/`.
 - **Mocks mirror the backend's rules** (`MockEventRepository`, `MockGroupRepository`, `MockChatRepository`,
   `MockTournamentRepository`, ...): the same refusals and orders as Laurel, fixtures around Berlin
   (`AppConfig.Location.mockCenter`), so the simulator shows realistic distances.
@@ -224,7 +223,8 @@ decides, never the device.
   area, with overlays as siblings in a `ZStack`.
 - A container that carries an `accessibilityIdentifier` needs `.accessibilityElement(children: .contain)` first, or
   the identifier is stamped on every child and overrides theirs.
-- Sheets that are forms use `lilyFormSheet()`, `readableColumn()` and their own `.errorPopup`.
+- Sheets that are forms use `lilyFormSheet()` and `readableColumn()`; one with a single submit uses
+  `lilyFormSheet(errorCenter:lockedWhile:)` (popup mounted, swipe locked while it runs); any other mounts `.errorPopup` itself.
 - Adaptive layout switches on `LayoutMode` from the window's size class; compact must stay pixel-identical to the
   iPhone screens. Rows never size themselves with `containerRelativeFrame` (the iPad sidebar is a safe-area inset);
   measure usable width (`UsableWidth`).

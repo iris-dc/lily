@@ -1,9 +1,8 @@
 import Foundation
 
-/// Copy for tournaments, reached through `peopleMessage(for:)`'s `default` (`ErrorMessageMapper+People.swift`): the main
-/// switch is at SwiftLint's complexity limit, and its exhaustiveness is what makes a forgotten `AppError` case a compile
-/// error. Four switches here, so none grows past that limit: the tournament itself, entering it, its matches, then its
-/// invites.
+/// Copy for tournaments; `message(for:)` routes exactly those cases here, and its exhaustiveness is what makes a
+/// forgotten `AppError` case a compile error. Four switches here, so none grows past the complexity limit: the
+/// tournament itself, entering it, its matches, then its invites.
 nonisolated extension ErrorMessageMapper {
     static func tournamentMessage(for error: AppError) -> ErrorMessage {
         switch error {

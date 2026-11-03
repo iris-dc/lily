@@ -8,6 +8,9 @@ enum TestFixtures {
     static let displayName = "Test Person"
     static let session = AuthSession(user: user)
     static let credentials = EmailCredentials(email: "jane.doe@example.com", password: "correct-horse")
+    /// 08:25:07 UTC on 2027-01-15, off the hour, so the next full hour the create forms round to
+    /// (`Calendar.nextFullHour`) is unambiguous.
+    static let offTheHour = Date(timeIntervalSince1970: 1_800_000_000 + 25 * 60 + 7)
     /// Munich: far enough from `AppConfig.Location.mockCenter` that a move there rounds differently at any precision.
     static let elsewhere = Coordinate(latitude: 48.1374, longitude: 11.5755)
     /// Laurel's `CreateEventRequest.UUID_PATTERN`, copied so the contract tests prove a `clientEventId` it accepts.
@@ -67,9 +70,7 @@ extension EventDraft {
                                currencyCode: currencyCode,
                                locale: testLocale,
                                clientId: clientId)
-        draft.title = "Thursday five-a-side"
-        draft.locationName = "Test Park"
-        draft.coordinate = coordinate
+        draft.fillRequired(coordinate: coordinate)
         return draft
     }
 }

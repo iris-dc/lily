@@ -21,7 +21,6 @@ nonisolated struct PendingMessage: Identifiable, Hashable, Sendable {
 
     var id: String { clientMessageID }
     var hasFailed: Bool { state == .failed }
-    var hasAttachments: Bool { !attachments.isEmpty }
 
     init(draft: MessageDraft, sentAt: Date) {
         clientMessageID = draft.clientMessageID

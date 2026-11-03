@@ -15,7 +15,7 @@ applies live items the realtime controller hands it, keeps the read marker, and 
 - `@Observable final class InboxStore: SessionObserver` `[lily/Features/Inbox/State/InboxStore.swift:InboxStore]`;
   `init(repository: any InboxRepository, identity: any IdentityProvider, errorCenter: ErrorCenter, logger: any Logging, now: @escaping () -> Date = { .now })`.
 - Read-only state: `items: [InboxItem]`, `hasOlder`, `isLoadingOlder`, `lastReadID: String?`; derived `loadFailed`,
-  `isLoading`, `hasLoaded` (from the loader), `newest`, `newestVisible` (the last `isVisible` item), `hasUnread`
+  `hasLoaded` (from the loader; there is no `isLoading`), `newest`, `newestVisible` (the last `isVisible` item), `hasUnread`
   `[lily/Features/Inbox/State/InboxStore.swift:InboxStore]`.
 - `func loadIfStale() async`, `func reload() async`, `@discardableResult func loadOlder() async -> Bool` (whether
   items not held before arrived), `func apply(_ item: InboxItem)` (a live `inbox_item`), `func replace(_ item: InboxItem)`

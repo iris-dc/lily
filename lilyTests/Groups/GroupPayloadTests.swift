@@ -37,15 +37,10 @@ struct GroupPayloadTests {
         #expect(coordinate["longitude"] as? Double == AppConfig.Location.mockCenter.longitude)
     }
 
-    private func encode(_ payload: some Encodable) throws -> [String: Any] {
-        let data = try APIJSONCoding.makeEncoder().encode(payload)
-        return try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
-    }
-
     @Test func createEncodesEveryFieldUnderTheContractKeys() throws {
         let draft = Self.makeFullDraft()
 
-        let json = try encode(CreateGroupPayload(draft: draft))
+        let json = try ContractSamples.jsonObject(of: CreateGroupPayload(draft: draft))
 
         #expect(Set(json.keys) == Self.createKeys.union(Self.optionalKeys))
         try expectPlace(json)
@@ -66,7 +61,7 @@ struct GroupPayloadTests {
 
         let payload = CreateGroupPayload(draft: draft)
 
-        #expect(Set(try encode(payload).keys) == Self.createKeys)
+        #expect(Set(try ContractSamples.jsonObject(of: payload).keys) == Self.createKeys)
         #expect(payload.description == nil && payload.type == nil && payload.location == nil)
         #expect(payload.name == "Kreuzberg Kickers")
     }
@@ -74,19 +69,20 @@ struct GroupPayloadTests {
     /// The backend validates `clientGroupId` against its UUID pattern and lower-cases it, like an event's.
     @Test func clientGroupIdIsAUUIDTheBackendAccepts() throws {
         for draft in [GroupDraft.fixture(), GroupDraft()] {
-            let id = try #require(try encode(CreateGroupPayload(draft: draft))["clientGroupId"] as? String)
+            let json = try ContractSamples.jsonObject(of: CreateGroupPayload(draft: draft))
+            let id = try #require(json["clientGroupId"] as? String)
             #expect(TestFixtures.isBackendEventId(id) && id == id.lowercased(), "\(id)")
         }
     }
 
     /// Visibility is immutable, so the update body never carries it; the rest is the full editable set.
     @Test func updateCarriesTheEditableSetWithoutVisibilityOrId() throws {
-        let full = try encode(UpdateGroupPayload(draft: Self.makeFullDraft()))
+        let full = try ContractSamples.jsonObject(of: UpdateGroupPayload(draft: Self.makeFullDraft()))
         #expect(Set(full.keys) == Self.updateKeys.union(Self.optionalKeys))
         #expect(full["type"] as? String == "football" && full["membersCanCreateEvents"] as? Bool == false)
         try expectPlace(full)
 
-        let minimal = try encode(UpdateGroupPayload(draft: Self.makeBareDraft()))
+        let minimal = try ContractSamples.jsonObject(of: UpdateGroupPayload(draft: Self.makeBareDraft()))
         #expect(Set(minimal.keys) == Self.updateKeys, "a body without a place clears it: the body is the whole state")
     }
 }

@@ -26,11 +26,6 @@ struct RemoteInteractionRecorderTests {
 
     private var sentBatches: [InteractionBatch] { client.requests.compactMap { $0.body as? InteractionBatch } }
 
-    /// Gives fire-and-forget work every chance to run, so "nothing more happened" can be asserted.
-    private func yield() async {
-        for _ in 0..<20 { await Task.yield() }
-    }
-
     @Test func guestsAreNeverRecorded() async {
         identity.currentUserID = nil
         let recorder = makeRecorder()
@@ -67,7 +62,7 @@ struct RemoteInteractionRecorderTests {
         await settle(until: { client.requests.count == 1 })
 
         #expect(sentBatches.first?.interactions.count == 3)
-        await yield()
+        await drain()
         #expect(client.requests.count == 1, "the timer armed by the first record must not send again")
     }
 
@@ -93,7 +88,7 @@ struct RemoteInteractionRecorderTests {
         await settle(until: { sleep.requested.count == 1 })
 
         await recorder.flush()
-        await yield()
+        await drain()
 
         #expect(client.requests.count == 1)
         #expect(sentBatches.first?.interactions == [viewed])
@@ -160,7 +155,7 @@ struct RemoteInteractionRecorderTests {
 
         #expect(released == nil)
         sleep.release()
-        await yield()
+        await drain()
         #expect(client.requests.isEmpty, "the freed recorder sends nothing when its timer wakes")
     }
 

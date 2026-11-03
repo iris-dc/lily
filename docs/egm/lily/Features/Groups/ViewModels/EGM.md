@@ -27,12 +27,13 @@ them are in [Views](../Views/EGM.md).
   `hasChanges`, `canSubmit`, `isDone`, `submit() async` (no `prepare` override); `init(group:, repository:, reporter:,
   logger:, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay, onChange: @escaping @MainActor (SportGroup) ->
   Void)`; owns a private `WriteGate` [`lily/Features/Groups/ViewModels/EditGroupViewModel.swift`:`EditGroupViewModel.init`].
-- `DiscoverGroupsViewModel`: settable `query`, `typeFilter: EventType?`, `reportsSearchFailures` (default true);
+- `DiscoverGroupsViewModel`: settable `query`, `typeFilter: EventType?`, `reportsSearchFailures` (default true; the
+  ten injected dependencies are private);
   `private(set)` `groups`, `isLoading`, `isLoadingMore`, `hasSearched`, `searchFailed`, `userLocation: Coordinate?`;
   `@ObservationIgnored` `nextCursor`, `searchedUserID`, `searchedChangesVersion`, `searchedPosition`,
   `searchedScope: GroupScope?`; computed
   `isInitialLoad`, `nothingMatched`, `canLoadMore`, `effectiveQuery: String?`, `browsePosition: Coordinate?`; methods
-  `loadIfStale()`, `loadIfStaleNearTheUser()`, `loadUserLocation()`, `search()`, `loadMore()`, `refresh()`,
+  `loadIfStale()`, `loadIfStaleNearTheUser()`, `loadUserLocation()`, `search()` (pull-to-refresh calls it too), `loadMore()`,
   `cancel()`, `clear()`, `distanceText(for:) -> String?`; `init(changes: ChangeTracker, repository:, identity:,
   locationService:, errorCenter:, recorder: any InteractionRecorder, logger:, sleep: @escaping Sleep = systemSleep,
   now:, snapshots: any ListSnapshotStore = NoOpListSnapshotStore())`

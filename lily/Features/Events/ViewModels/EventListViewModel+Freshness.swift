@@ -11,6 +11,15 @@ extension EventListViewModel {
     /// What a segment drawing this list shows now.
     var listState: ListState { ListState(isInitialLoad: isInitialLoad, isEmpty: visibleEvents.isEmpty, loadFailed: loadFailed) }
 
+    /// What Explore's screen shows now: its ladder adds the filter and position layers to `listState`'s rule.
+    var screenState: EventListScreenState {
+        .resolve(isInitialLoad: isInitialLoad,
+                 loadFailed: loadFailed,
+                 hasEvents: !events.isEmpty,
+                 isEverythingFilteredOut: isEverythingFilteredOut,
+                 awaitsAnswerForPosition: awaitsAnswerForPosition)
+    }
+
     /// True from a failed load until the next successful one, so the screen can say so instead of "nothing yet".
     var loadFailed: Bool { freshness.loadFailed }
 
@@ -22,10 +31,6 @@ extension EventListViewModel {
 
     /// Why the user's position makes Explore content stale (`ContentFreshness.positionReason`); Home sends none.
     var positionReason: String? { freshness.positionReason(for: requestPosition) }
-
-    var isWaitingToRetry: Bool {
-        freshness.isWaitingToRetry(now: now(), version: changes.version, userID: identity.currentUserID)
-    }
 
     /// Why the content must be reloaded, or `nil` while it can be reused: the shared rules first, then the position
     /// only Explore sends.

@@ -24,7 +24,7 @@ struct MeStoreTests {
         await store.loadIfNeeded()
         await store.loadIfNeeded()
         #expect(repository.meCallCount == 1)
-        #expect(store.isOperator && !store.needsTerms && store.realtimeEndpoint == nil)
+        #expect(store.account?.isOperator == true && !store.needsTerms && store.realtimeEndpoint == nil)
 
         identity.currentUserID = "someone-else"
         await store.loadIfNeeded()
@@ -76,7 +76,7 @@ struct MeStoreTests {
 
         store.sessionDidEnd()
 
-        #expect(store.account == nil && !store.needsTerms && !store.isOperator)
+        #expect(store.account == nil && !store.needsTerms)
     }
 
     @Test func aSecondLoadForTheSameUserReusesTheAccount() async {
@@ -195,7 +195,7 @@ struct MeStoreTests {
         await first.value
         await second.value
 
-        #expect(repository.meCallCount == 2 && store.isOperator && !store.isLoading)
+        #expect(repository.meCallCount == 2 && store.account?.isOperator == true && !store.isLoading)
         #expect(logger.messages(in: .cache, at: .debug).contains { $0.contains("previous caller") })
     }
 }

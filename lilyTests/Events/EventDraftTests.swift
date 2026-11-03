@@ -51,7 +51,6 @@ struct EventDraftTests {
         #expect(draft.capacity == Self.limits.defaultCapacity && draft.playerLimit == .maximum)
         #expect(draft.skillLevel == nil && draft.priceText.isEmpty && draft.price == nil && draft.isFree)
         #expect(issues(of: draft) == [.titleMissing, .locationNameMissing, .coordinateMissing])
-        #expect(!draft.isValid(now: Self.now))
     }
 
     /// The id is what lets a repeated create find its event: unique per draft, never changed after, and lower-case
@@ -127,7 +126,6 @@ struct EventDraftTests {
         let draft = Self.makeValidDraft()
 
         #expect(issues(of: draft).isEmpty)
-        #expect(draft.isValid(now: Self.now))
     }
 
     @Test(arguments: breakages)

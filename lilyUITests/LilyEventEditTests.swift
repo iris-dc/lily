@@ -44,11 +44,11 @@ final class LilyEventEditTests: LilyUITestCase {
 
         let row = app.descendants(matching: .any)["create-pick-on-map"].firstMatch
         scrollUntilHittable(row)
-        let before = spotText(of: row)
+        let before = text(of: row)
         openSpotPicker(from: row)
         leaveSpotPicker()
         XCTAssertFalse(save.isEnabled, "opening the map on the spot is no change")
-        XCTAssertEqual(spotText(of: row), before, "the spot must read as before")
+        XCTAssertEqual(text(of: row), before, "the spot must read as before")
 
         let map = openSpotPicker(from: row)
         let target = map.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4))
@@ -57,7 +57,7 @@ final class LilyEventEditTests: LilyUITestCase {
         waitUntilHittableAndStill(map)
         leaveSpotPicker()
         assertBecomesEnabled(save, "a dragged spot is something to save")
-        XCTAssertNotEqual(spotText(of: row), before, "the row must show the new spot")
+        XCTAssertNotEqual(text(of: row), before, "the row must show the new spot")
     }
 
     /// "At least" turns the stepper's count into the number needed, and the created game counts towards it instead of
@@ -117,10 +117,7 @@ final class LilyEventEditTests: LilyUITestCase {
     @MainActor
     func testANonHostSeesNoEditButton() {
         tapSignInWithApple()
-        let card = app.staticTexts["Doubles, all levels"]
-        _ = card.waitForExistence(timeout: 10)
-        scrollUntilHittable(card)
-        card.tap()
+        tapAfterScrolling(app.staticTexts["Doubles, all levels"])
 
         XCTAssertTrue(app.buttons["Join"].waitForExistence(timeout: 5), "the detail must be open")
         XCTAssertFalse(app.buttons["event-edit"].exists, "only the host edits")
@@ -151,11 +148,5 @@ final class LilyEventEditTests: LilyUITestCase {
     private func leaveSpotPicker() {
         app.buttons["create-map-done"].tap()
         XCTAssertTrue(app.navigationBars["Edit event"].waitForExistence(timeout: 5))
-    }
-
-    /// What the map row reads, label and value together, so the coordinate counts wherever the link exposes it.
-    @MainActor
-    private func spotText(of row: XCUIElement) -> String {
-        "\(row.label)|\(row.value as? String ?? "")"
     }
 }

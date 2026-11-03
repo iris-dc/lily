@@ -15,7 +15,7 @@ draws.
 ## Interface
 
 - `AppError` (`lily/Core/Errors/AppError.swift:AppError`): `nonisolated enum: Error, Equatable, Sendable`, one flat case list:
-  - auth: `authCancelled`, `authFailed(provider: AuthProvider.Kind)`, `providerUnavailable(provider: AuthProvider.Kind)`,
+  - auth: `authFailed(provider: AuthProvider.Kind)`, `providerUnavailable(provider: AuthProvider.Kind)`,
     `invalidCredentials`, `emailTaken`, `emailNotConfirmed`, `invalidConfirmationCode`, `tooManyAttempts`, `sessionExpired`;
   - transport: `rateLimited(retryAfter: TimeInterval?)`, `requestTooLarge` (a 413 `REQUEST_TOO_LARGE`: the app's own
     drift, repeating cannot help), `network`;
@@ -49,7 +49,7 @@ draws.
   (`ErrorMessageMapper+Events.swift`); `groupMessage(for:)` and `moderationMessage(for:)` (`+Groups.swift`, private
   `groupWriteMessage`, `inviteMessage`, `membershipLimitMessage`, `accountSuspendedMessage`); `chatMessage(for:)` and
   `attachmentMessage(for:)` (`+Chat.swift`, private `attachmentCapsBody(_:)`); `pollAndPinMessage(for:)` (`+Polls.swift`);
-  `peopleMessage(for:)` (`+People.swift`); `tournamentMessage(for:)` (`+Tournaments.swift`, private `entryMessage`,
+  `peopleMessage(for:)` (`+People.swift`); `tournamentMessage(for:)` (`+Tournaments.swift`, its own arm of `message(for:)`, private `entryMessage`,
   `matchMessage`, `tournamentInviteMessage`, `tournamentLimitMessage`, `tournamentMembershipLimitMessage`); private
   `transportMessage(for:)` in `ErrorMessageMapper.swift` for `.network`, `.rateLimited` and `.requestTooLarge`.
 - `PresentedError` (`lily/Core/Errors/ErrorCenter.swift:PresentedError`): `struct: Identifiable, Equatable` (main-actor);
@@ -68,7 +68,7 @@ draws.
   accepts."), every other case goes to an area function (`ErrorMessageMapper.swift:message(for:)`).
 - Every area switch ends in a `default` that chains or returns `unknownMessage`, so no path traps:
   `eventMessage -> hostMessage`, `groupMessage -> groupWriteMessage -> inviteMessage`, `chatMessage -> pollAndPinMessage`,
-  `peopleMessage -> tournamentMessage -> entryMessage -> matchMessage -> tournamentInviteMessage` (which also answers
+  `peopleMessage -> unknownMessage`, `tournamentMessage -> entryMessage -> matchMessage -> tournamentInviteMessage` (which also answers
   `.tournamentInviteLimit`: "Can't invite more people / This tournament has invited as many people as it can."); `.createIdReused`
   shares `.tryAgain`'s copy in `eventMessage` (`CreateFlow` settles it before any popup); `authMessage`,
   `attachmentMessage` and `moderationMessage` fall straight to `unknownMessage` (`ErrorMessageMapper*.swift`).
@@ -77,10 +77,14 @@ draws.
   `Tournaments.maxOrganizedOpen`, `Tournaments.maxPerUser`, `Chat.Attachments.videoMaxDurationSeconds`); the
   attachment-too-large body is computed from the `AttachmentCaps` carried in the error, bytes to MiB (1024 x 1024) by integer division
   (`ErrorMessageMapper+Chat.swift:attachmentCapsBody`).
-- `wrapping` in order: an `AppError` unchanged; a `CancellationError` to `.authCancelled`; any `URLError` to `.network`;
-  anything else to `.unknown` (`AppError.swift:wrapping`). `isCancellation` is true when the current task is cancelled,
+- `wrapping` in order: an `AppError` unchanged; any `URLError` to `.network`; anything else (a `CancellationError`
+  included) to `.unknown` (`AppError.swift:wrapping`). `isCancellation` is true when the current task is cancelled,
   the error is a `CancellationError`, or a `URLError` with code `.cancelled`; such errors are never shown
-  (`AppError.swift:isCancellation`).
+  (`AppError.swift:isCancellation`): every path into the mapper filters a cancellation first through it (the view
+  models and stores before they report; `WriteGate`, `CreateFlow`, `LostAnswer` and `StoreLoader` for what runs through
+  them; `SessionController.report(_:during:fallback:)` tests `CancellationError` itself), and the two funnels
+  `ErrorCenter.report(_: any Error)` and `GroupErrorReporter.report` wrap without a check of their own, relying on
+  their callers (`ErrorCenter.swift:report`, `lily/Features/Groups/Services/GroupErrorReporter.swift:report`).
 - `ErrorCenter.report` filters, de-duplicates and queues nothing: each call replaces `current` with a
   `PresentedError` carrying a fresh `UUID`, so an identical error re-animates; `report(_: any Error)` goes through
   `AppError.wrapping` first. `dismiss(nil)` always clears `current`; `dismiss(id)` only when it is the current one
@@ -92,7 +96,9 @@ draws.
   dismissal, nothing in this directory does (`ErrorCenter.swift:autoDismissDelay`).
 - `AppError`, `ErrorMessage` and `ErrorMessageMapper` are `nonisolated`, and all six per-area files are
   `nonisolated extension ErrorMessageMapper`, so copy can be read from any isolation; `PresentedError` and `ErrorCenter`
-  are main-actor. The split into chained files keeps each switch under SwiftLint's complexity limit.
+  are main-actor. The main switch has ten arms: nine area functions (`authMessage`, `transportMessage` and
+  `eventMessage` in the root file, the other six in the `+Area` files) plus `.unknown`; the chained files keep each
+  area switch under SwiftLint's complexity limit.
 
 ## Side Effects
 

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The tournament notes of a room (plan 2.4): their kinds on the wire, the ids they carry, and that the transcript
+/// The tournament notes of a room: their kinds on the wire, the ids they carry, and that the transcript
 /// shows them like any system row.
 struct TournamentSystemMessageTests {
     @Test func theTournamentKindsRoundTripThroughTheirWireNames() throws {

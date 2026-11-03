@@ -36,7 +36,7 @@ struct AttachmentTile: View {
 /// preparer still works on it.
 struct LocalImage: View {
     let url: URL
-    var isPreparing = false
+    let isPreparing: Bool
     @State private var image: UIImage?
     @State private var failed = false
 

@@ -14,7 +14,7 @@ extension LilyChatTests {
     func openKickersRoomWithMockPicker() {
         relaunch(appending: "-mock-attachment-picker")
         tapSignInWithApple()
-        openRoom("group-row-mock-group-kickers", titled: "Kreuzberg Kickers")
+        openRoom(MockIDs.kickersRow, titled: "Kreuzberg Kickers")
     }
 
     /// Opens the composer's attach menu and picks `item` ("Photo library", "Camera" or "File").

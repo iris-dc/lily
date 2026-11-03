@@ -1,7 +1,7 @@
 import Foundation
 
 /// Copy for the player limit: a game that allows extra players, where the capacity is the number needed rather than a
-/// cap, and one without any limit. In its own file because `AppBranding` is at SwiftLint's type-body limit.
+/// cap, and one without any limit.
 nonisolated extension AppBranding.Events {
     /// Under the capacity bar: joined and needed, whatever side of the number the game is on.
     static func joined(_ count: Int, needed capacity: Int) -> String {

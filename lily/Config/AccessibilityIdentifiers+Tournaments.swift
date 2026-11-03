@@ -1,16 +1,15 @@
 import Foundation
 
-/// Identifiers of the tournament screens; mirrored by hand in `lilyUITests` like the rest.
+/// Identifiers of the tournament screens; a UI test that reads one mirrors the literal by hand.
 nonisolated extension AccessibilityIdentifiers {
     /// The Explore carousel and its "See all".
     static let tournamentCarousel = "tournament-carousel"
     static let tournamentsSeeAll = "tournaments-see-all"
     static let tournamentsTypeFilter = "tournaments-type-filter"
-    /// The detail: its Players | Bracket | Matches picker, the organiser line, the participation control and the menu.
+    /// The detail: its Players | Bracket | Matches picker, the participation control and the menu.
     static let tournamentSection = "tournament-section"
     /// The spinner standing in for the entries and matches while a previewed detail loads.
     static let tournamentLoading = "tournament-loading"
-    static let tournamentOrganizer = "tournament-organizer"
     static let tournamentWinner = "tournament-winner"
     static let tournamentJoin = "tournament-join"
     static let tournamentCreateTeam = "tournament-create-team"

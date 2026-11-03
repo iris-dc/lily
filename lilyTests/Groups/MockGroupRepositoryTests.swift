@@ -77,7 +77,6 @@ struct MockGroupRepositoryTests {
 
         let all = try await repository.groups(in: .discover(query: nil, type: nil), cursor: nil, near: nil).items
         #expect(all.map(\.name) == ["Spree Volley", "Tempelhof Runners", "Kreuzberg Kickers", "Berlin Basketball"])
-        #expect(all.count == AppConfig.Groups.mockGroupCount - 2, "the two private groups never appear")
 
         let searched = try await repository.groups(in: .discover(query: "ber", type: nil), cursor: nil, near: nil).items
         #expect(searched.map(\.name) == ["Berlin Basketball"])

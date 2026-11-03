@@ -2,20 +2,11 @@ import XCTest
 
 /// Helpers of `LilyGroupsTests`, in their own file so the test class stays under the type-body limit.
 extension LilyGroupsTests {
-    /// Pushes Discover from the carousel's "See all" on Explore; the carousel shows once Discover has answered.
-    @MainActor
-    func showDiscover() {
-        let seeAll = app.buttons["groups-see-all"]
-        XCTAssertTrue(seeAll.waitForExistence(timeout: 10))
-        seeAll.tap()
-        XCTAssertTrue(app.navigationBars["Discover groups"].waitForExistence(timeout: 5))
-    }
-
     /// Kreuzberg Kickers (public, the caller is a member) heads the carousel's second column on Explore, which peeks in
     /// at the right edge far enough to tap.
     @MainActor
     func openKickersDetail() {
-        let kickers = app.buttons[kickersRow]
+        let kickers = app.buttons[MockIDs.kickersRow]
         XCTAssertTrue(kickers.waitForExistence(timeout: 10))
         kickers.tap()
         XCTAssertTrue(app.buttons["group-create-event"].waitForExistence(timeout: 5), "a member may create games here")
@@ -32,11 +23,5 @@ extension LilyGroupsTests {
         assertBecomesEnabled(submit, "title, place and the mock position complete the draft")
         submit.tap()
         XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
-    }
-
-    /// Label and value of a row, since a form row may expose its text as either.
-    @MainActor
-    func text(of element: XCUIElement) -> String {
-        [element.label, element.value as? String].compactMap { $0 }.joined(separator: " ")
     }
 }

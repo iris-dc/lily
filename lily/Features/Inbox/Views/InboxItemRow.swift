@@ -68,7 +68,7 @@ private struct ReminderCard: View {
                     .font(LilyTheme.Fonts.caption)
                     .foregroundStyle(.secondary)
                 Text(verbatim: reminder.title)
-                    .font(.body.weight(.semibold))
+                    .font(LilyTheme.Fonts.itemTitle)
                 Label(reminder.locationName, systemImage: DesignTokens.Symbols.location)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)

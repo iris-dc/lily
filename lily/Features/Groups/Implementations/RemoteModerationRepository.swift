@@ -20,10 +20,6 @@ final class RemoteModerationRepository: ModerationRepository {
         try await blockList(.put(AppConfig.API.Paths.block(userID: userID)))
     }
 
-    func unblock(userID: String) async throws -> Set<String> {
-        try await blockList(.delete(AppConfig.API.Paths.block(userID: userID)))
-    }
-
     private func blockList(_ request: APIRequest<BlockedUsers>) async throws -> Set<String> {
         let answer = try await client.send(request, failingWith: .unknown)
         return Set(answer.blockedUserIds)

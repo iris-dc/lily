@@ -40,7 +40,7 @@ so both hierarchies draw the same frame. The app target's default isolation is `
   `nil` where no viewer opens (a preview, an unsent bubble).
 - `[lily/Features/Chat/State/ViewerMoveDriver.swift:ViewerMoveDriver]` `@MainActor final class ViewerMoveDriver`.
   `init(clock: any FrameClock)`; `convenience init()` uses `DisplayLinkFrameClock`
-  (`lily/Features/Chat/Implementations/DisplayLinkFrameClock.swift`). `isRunning: Bool`;
+  (`lily/Features/Chat/Implementations/DisplayLinkFrameClock.swift`);
   `run(duration:curve:now: = CACurrentMediaTime(), apply: (Double) -> Void, completion: () -> Void)`; `cancel()`;
   `nonisolated static fraction(elapsed:duration:curve:) -> Double`; `step(at timestamp:)`.
 
@@ -81,7 +81,6 @@ so both hierarchies draw the same frame. The app target's default isolation is `
   `apply` is called from the next frame on. `[ViewerMoveDriver.swift:ViewerMoveDriver.fraction]` clamps the elapsed
   share to `0...1` and answers 1 for a non-positive duration. `[ViewerMoveDriver.swift:ViewerMoveDriver.step]` applies
   the fraction every frame; the frame at or past the end is exactly 1, and the completion runs once, after `cancel()`.
-  `isRunning` is `apply != nil`.
 
 ## Side Effects
 

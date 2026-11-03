@@ -14379,46 +14379,6 @@
         }
       }
     },
-    "No worries. You can try again whenever you like.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ничего страшного. Попробуйте снова, когда захотите."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No pasa nada. Puedes volver a intentarlo cuando quieras."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas de souci. Vous pourrez réessayer quand vous voudrez."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Нічого страшного. Спробуйте знову, коли захочете."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nic się nie stało. Możesz spróbować ponownie, kiedy chcesz."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sem problema. Pode tentar de novo quando quiser."
-          }
-        }
-      }
-    },
     "Nobody found": {
       "localizations": {
         "ru": {
@@ -17093,46 +17053,6 @@
         }
       }
     },
-    "Questions? Write to %@": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Есть вопросы? Напишите на %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Preguntas? Escribe a %@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Des questions ? Écrivez à %@"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Є запитання? Напишіть на %@"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Masz pytania? Napisz na %@"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dúvidas? Escreva para %@"
-          }
-        }
-      }
-    },
     "Record result": {
       "localizations": {
         "ru": {
@@ -17649,46 +17569,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "A responder a %@"
-          }
-        }
-      }
-    },
-    "Report": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Пожаловаться"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Denunciar"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Signaler"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Поскаржитися"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zgłoś"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Denunciar"
           }
         }
       }
@@ -19169,46 +19049,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Criar conta"
-          }
-        }
-      }
-    },
-    "Sign-in cancelled": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Вход отменён"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inicio de sesión cancelado"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connexion annulée"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Вхід скасовано"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Logowanie anulowane"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entrada cancelada"
           }
         }
       }

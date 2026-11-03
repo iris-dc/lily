@@ -90,8 +90,7 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case matchNotReady = "MATCH_NOT_READY"
     case drawNotAllowed = "DRAW_NOT_ALLOWED"
 
-    /// Exhaustive, so a code added above without a mapping fails to compile. One switch is fine here: SwiftLint's
-    /// `cyclomatic_complexity` and `function_body_length` judge functions, not accessors.
+    /// Exhaustive, so a code added above without a mapping fails to compile.
     var appError: AppError {
         switch self {
         case .eventNotFound: .eventNotFound

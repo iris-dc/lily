@@ -23,7 +23,7 @@ struct AttachmentDependencies {
 }
 
 extension AppDependencies {
-    var chatRepository: any ChatRepository { groups.chatRepository }
+    var chatRepository: any ChatRepository { groups.repositories.chat }
     var chatHistory: InMemoryChatHistoryCache { groups.chatHistory }
     var outbox: ChatOutbox { groups.outbox }
     var unreadCenter: UnreadCenter { groups.unreadCenter }

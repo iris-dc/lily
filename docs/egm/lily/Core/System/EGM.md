@@ -5,8 +5,8 @@ Source: `lily/Core/System/`
 ## Overview
 
 Thin wrappers over Foundation and UIKit system services: a seam over the clipboard (`Interfaces/`, `Implementations/`)
-and two `nonisolated` extensions used across features, the next full hour of a calendar and a file removal that treats
-a missing file as nothing to do.
+and three `nonisolated` extensions used across features: the next full hour of a calendar, a file removal that treats
+a missing file as nothing to do, and the hour and day a fixture or config date is built from.
 
 ## Interface
 
@@ -16,6 +16,8 @@ a missing file as nothing to do.
   [`lily/Core/System/Calendar+NextFullHour.swift:Calendar.nextFullHour(after:)`].
 - `nonisolated extension FileManager { func removeItemIfPresent(at url: URL) throws }`
   [`lily/Core/System/FileManager+RemoveIfPresent.swift:FileManager.removeItemIfPresent(at:)`].
+- `nonisolated extension TimeInterval { static let hour: TimeInterval = 3600; static let day: TimeInterval = 86_400 }`
+  [`lily/Core/System/TimeInterval+Units.swift:TimeInterval.hour`].
 
 ## Invariants
 
@@ -28,8 +30,9 @@ a missing file as nothing to do.
 ## Side Effects
 
 - `removeItemIfPresent` deletes the item at `url` from disk [`FileManager+RemoveIfPresent.swift:FileManager.removeItemIfPresent(at:)`].
-- `nextFullHour` is pure.
+- `nextFullHour` is pure; `hour` and `day` are constants.
 
 ## Verification
 
-- Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/System`)
+- Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/System`:
+  `CalendarNextFullHourTests`, `FileManagerRemoveIfPresentTests`, `TimeIntervalUnitsTests`)

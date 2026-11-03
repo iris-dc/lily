@@ -27,11 +27,7 @@ final class MockTournamentInviteRepository: InviteRepository {
 
     func candidates(groupID tournamentID: String) async throws -> [InviteCandidate] {
         let detail = try requireInviteRights(in: tournamentID)
-        var seen = peopleIn(detail)
-        // The tournament's own room (under its id) is left out, as the backend leaves the target room out.
-        let candidates = try await pool.candidates(excludingGroup: tournamentID, seen: &seen) {
-            ledger.isInvited($0, into: tournamentID)
-        }
+        let candidates = try await self.candidates(for: detail, in: tournamentID)
         logger.debug(.tournaments, "Mock invite candidates served for tournament \(tournamentID) (\(candidates.count))")
         return candidates
     }
@@ -41,12 +37,21 @@ final class MockTournamentInviteRepository: InviteRepository {
     func invite(groupID tournamentID: String, userID: String) async throws -> SentInvite {
         let detail = try requireInviteRights(in: tournamentID)
         guard !peopleIn(detail).contains(userID) else { throw AppError.inviteeAlreadyEntered }
-        let candidates = try await self.candidates(groupID: tournamentID)
+        let candidates = try await self.candidates(for: detail, in: tournamentID)
         return try ledger.send(to: userID,
                                among: candidates,
                                into: .tournament(id: tournamentID),
                                now: now(),
                                logger: logger)
+    }
+
+    /// The pool minus everyone in the tournament, for a caller whose right was checked.
+    private func candidates(for detail: TournamentDetail, in tournamentID: String) async throws -> [InviteCandidate] {
+        var seen = peopleIn(detail)
+        // The tournament's own room (under its id) is left out, as the backend leaves the target room out.
+        return try await pool.candidates(excludingGroup: tournamentID, seen: &seen) {
+            ledger.isInvited($0, into: tournamentID)
+        }
     }
 
     /// Like the backend: a signed-in entrant or the organiser, while registration is open.

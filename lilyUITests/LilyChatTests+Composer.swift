@@ -7,8 +7,7 @@ extension LilyChatTests {
     @objc @MainActor
     func testTheKeyboardStaysDownAfterComingBackToTheRoom() {
         tapSignInWithApple()
-        openChatsTab()
-        openRoom("group-row-mock-group-kickers", titled: "Kreuzberg Kickers")
+        openRoom(MockIDs.kickersRow, titled: "Kreuzberg Kickers")
         let composer = app.descendants(matching: .any)["chat-composer"]
         XCTAssertTrue(composer.waitForExistence(timeout: 10))
         composer.tap()

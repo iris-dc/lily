@@ -52,7 +52,7 @@ final class URLSessionAPIClient: APIClient {
             logger.error(.network, "\(endpoint) returned a non-HTTP response")
             throw APIError.notHTTPResponse
         }
-        guard (200..<300).contains(http.statusCode) else {
+        guard AppConfig.API.successStatuses.contains(http.statusCode) else {
             throw failure(http, data: data, endpoint: endpoint)
         }
         return try decode(Response.self, from: data, endpoint: endpoint)

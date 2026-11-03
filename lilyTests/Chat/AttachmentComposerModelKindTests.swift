@@ -31,7 +31,7 @@ struct AttachmentComposerModelKindTests {
         let request = try #require(harness.chat.uploadRequests.first?.request)
         #expect(request.kind == .video && request.contentType == "video/mp4" && request.thumbnail != nil)
         #expect(request.durationSeconds == 12)
-        #expect(model.refs.map(\.kind) == [.video])
+        #expect(model.drafts.compactMap(\.uploadedRef).map(\.kind) == [.video])
     }
 
     @Test func aFileGoesToTheFilePreparerWithItsNameOnTheSlot() async throws {
@@ -73,7 +73,7 @@ struct AttachmentComposerModelKindTests {
         model.addFileWithoutPicker()
         await settle(until: { !model.isBusy })
 
-        #expect(model.drafts.map(\.kind) == [.image, .video, .file] && model.refs.count == 3)
+        #expect(model.drafts.map(\.kind) == [.image, .video, .file] && model.drafts.compactMap(\.uploadedRef).count == 3)
         #expect(harness.preparer.preparedVideoURLs == [clip] && harness.preparer.preparedFileURLs == [document])
     }
 

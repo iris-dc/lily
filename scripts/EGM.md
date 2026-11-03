@@ -77,7 +77,7 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
 
 - Invocation `python3 -I scripts/l10n-check.py`, no arguments; `main()` prints one line per problem and returns 1 if
   any, else 0 (`scripts/l10n-check.py:main`). Inputs: `lily/Localizable.xcstrings`, `lily/InfoPlist.xcstrings`,
-  `lily.xcodeproj/project.pbxproj`, every `lily/**/*.swift` except `Localized.swift`.
+  `lily.xcodeproj/project.pbxproj`, every `lily/**/*.swift`.
 - `LANGUAGES = ["ru", "es", "fr", "uk", "pl", "pt"]`; `BRAND_KEYS = {"CFBundleDisplayName", "CFBundleName"}`
   (`scripts/l10n-check.py:LANGUAGES`).
 - Functions: `literals()` (literal to the set of files using it), `joined(block)` (a multi-line literal as Swift

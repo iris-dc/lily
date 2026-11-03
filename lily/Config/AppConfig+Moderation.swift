@@ -11,8 +11,9 @@ nonisolated extension AppConfig {
         static let supportEmail = "support@iskra.red"
         /// What the sheet's Support link opens.
         static let supportURL = URL(string: "mailto:" + supportEmail)!
-        static let termsURL = URL(string: "https://api.iskra.red/terms")!
-        static let privacyURL = URL(string: "https://api.iskra.red/privacy")!
+        /// Laurel serves the legal pages beside the API; a simulator debug build opens the deployed ones, not localhost's.
+        static let termsURL = API.productionBaseURL.appending(path: "terms")
+        static let privacyURL = API.productionBaseURL.appending(path: "privacy")
     }
 }
 
@@ -21,7 +22,7 @@ nonisolated extension AppConfig.API.Paths {
     static let reports = "/api/reports"
     static let blocks = "/api/blocks"
     static let me = "/api/me"
-    static let meTerms = "/api/me/terms"
+    static let meTerms = "\(me)/terms"
 
     static func block(userID: String) -> String {
         "\(blocks)/\(userID)"

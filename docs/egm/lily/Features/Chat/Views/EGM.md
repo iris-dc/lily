@@ -4,7 +4,7 @@ Source: `lily/Features/Chat/Views/`
 
 ## Overview
 
-The SwiftUI screens and row primitives of the Chats tab and of one open room: 45 files, no subdirectory. The tab is
+The SwiftUI screens and row primitives of the Chats tab and of one open room: 46 files, no subdirectory. The tab is
 `ChatsView` (compact widths) or `ChatsSplitView` (regular widths), both hosting one `ConversationList`, one
 destination set and one load task. A room is `ChatView`: a `ChatTranscript` (a bottom-anchored `ScrollView` whose
 scroll decisions are delegated to `TranscriptScrollPolicy` through a reference-type `ScrollTracker`) over a
@@ -31,16 +31,18 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `navigation.chatPath` showing `InboxView`, a `ChatView` or an `EmptyStateView` for `navigation.selectedConversation`.
 - `[ConversationList.swift:ConversationList]` `dependencies`, `selection: ConversationSelection?`, `onOpenInbox`,
   `onOpenRoom: (SportGroup) -> Void`; `InboxRow` over `GroupRowList`, Clear/Delete long-press item, pull-to-refresh.
-- `[ChatView.swift:ChatView]` `init(viewModel: ChatViewModel, dependencies:, onGone: (() -> Void)? = nil)`; owns the
-  view model and a `ViewerHero` as `@State`; transcript, `ViewerStage` overlay, composer inset, toolbar info link
-  and `ChatRoomMenu`, empty and failed placeholders.
+- `[ChatView.swift:ChatView]` `init(viewModel: ChatViewModel, dependencies:)` (no `onGone`: the split view's
+  watcher is the one mechanism); owns the view model and a `ViewerHero` as `@State`; transcript, `ViewerStage`
+  overlay, composer inset, toolbar info link and `ChatRoomMenu`, empty and failed placeholders through
+  `FadingPresence` (`lily/Core/UI/Components/FadingPresence.swift`) on `Animation.firstPageFade`.
 - `[ChatTranscript.swift:ChatTranscript]` `init(viewModel:dependencies:hero:)`; `static let endMarkerID`; `@State`
   `ScrollPosition`, `ScrollTracker`, `FirstPageReveal`, the presented items, `shownPinIndex`, `highlightedMessageID`,
   `revealing: Task<Void, Never>?`; `reveal(_ quote:)` (in `+Scrolling.swift`), `loadOlderPage()`. Same file: `nonisolated TranscriptScrollPolicy.Snapshot.init(_: ScrollGeometry)`; `@MainActor
-  final class ScrollTracker` (`policy`, `geometry`, `endMarkerY`, `composerLine`, `endIsOnComposer`, `watch`,
+  final class ScrollTracker` (`policy`, `geometry`, `endMarkerY`, `composerLine`, `endIsOnComposer`, `watch(_: String) -> Bool`,
   `record`, `finishWatching`, `logsEveryReport(for:)`).
 - `[ChatTranscript+Scrolling.swift:ChatTranscript]` `geometryChanged(to:laidOutRows:)`, `scrollPhaseChanged(from:to:)`,
-  `apply(_: TranscriptScrollPolicy.Action)`, `historyEnded()`, `screenArrived()`, `showFirstPage()`, `spinner`,
+  `apply(_: TranscriptScrollPolicy.Action)`, `historyEnded()`, `screenArrived()`, `showFirstPage()`, `spinner` (a
+  `ProgressView` in a `FadingPresence`),
   `summarizeArrival(of:)`, `log(_:)`; `TranscriptScrollPolicy.Phase.init(_: ScrollPhase)`.
   `[ChatTranscript+Pins.swift:ChatTranscript.pinnedBar]` the `PinnedBar` in the top safe-area bar.
 - `[ChatRowView.swift:ChatRowView]` `row: ChatRow`, `viewModel`, `dependencies`, `highlightedMessageID`, tap
@@ -72,7 +74,8 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `[SystemMessageRow.swift:SystemMessageRow]` `message`, `viewModel`, `onTap`, `onOpen: (SystemRowDestination) ->
   Void`. `[MessageContextMenu.swift:MessageContextMenu]` `items: MessageMenuItems`, `row`, `viewModel`, `onReport`,
   `onBlock`. `[QuoteBlock.swift:QuoteBlock]` `quote`, `isDeleted`, `own`; the bar in `BubbleInk.accent`, the sender's
-  name in `BubbleInk.primary`; `QuoteBar(color:)`; `QuoteStack: Layout`.
+  name in `BubbleInk.primary`; `QuoteBar(color:)`; `QuoteStack: Layout` (its spacing a private constant,
+  `DesignTokens.Spacing.xs`).
 - `[PollBubble.swift:PollBubble]` `poll`, `own`, `isEnabled`, `onVote`, `onShowVoters`; Vote and View votes are
   `lilyTextButton(font: .footnote.weight(.semibold), color: ink.primary, minHeight: DesignTokens.Layout.pollFooterHeight)`.
   `[PollOptionPill.swift:PollOptionPill]` `option`, `display: PollOptionDisplay`, `own`, `onTap`.
@@ -102,7 +105,9 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `../Services/EGM.md`, at the thumbnail's bound).
 - `[AttachmentViewerSheet.swift:AttachmentViewerSheet]` `init(selection: AttachmentSelection, loader:, hero:
   ViewerHero)`; a `TabView` pager of `ImageViewerPage` and `VideoPlayerPage`, Close, position and share controls, a
-  `ViewerDismissPan`; `@State` `ViewerMotion`, `ViewerMoveDriver`, `zoomedIDs`, `ViewerPageLayout` (not observable).
+  `ViewerDismissPan`; `@State` `ViewerMotion`, `ViewerMoveDriver`, `zoomedIDs`, `ViewerPageLayout` (`frames`, `previews`;
+  not observable) and the observable `LoadedPictures` (`byID`, the one store of the full pictures the pages loaded,
+  read by `ShareControl`'s body and by `stage()` outside any body).
   `[AttachmentViewerSheet+Motion.swift:AttachmentViewerSheet]` `open()`, `dragged(_:)`,
   `letGo(at:velocity:wasCancelled:)`, `settle()`, `close()`, `curve(fromDrag:) -> UnitCurve`; private
   `followTileThenLeave()`, `handOver()`, `leave()`.
@@ -111,8 +116,9 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `poster` (an `AVPlayer` in a `VideoPlayer`).
 - `[ViewerDismissPan.swift:ViewerDismissPan]` `UIGestureRecognizerRepresentable`: `isEnabled`, `onChanged`,
   `onEnded(translation, velocity, wasCancelled)`. `[ViewerHeroSource.swift:View.viewerHeroSource(for:radii:)]`.
-  `[ViewerMovingPicture.swift:ViewerMovingPicture]` `hero`, `layer: ViewerLayer`. `[ViewerStage.swift:ViewerStage]`
-  `hero`.
+  `[ViewerMovingPicture.swift:ViewerMovingPicture]` `hero`, `layer: ViewerLayer`. `[ViewerBackdrop.swift:ViewerBackdrop]`
+  `hero`, `layer` (the black of one layer where `ViewerLayer.backdrop` puts it, at `ViewerGeometry.backdropOpacity`).
+  `[ViewerStage.swift:ViewerStage]` `hero`.
 
 ## Invariants
 
@@ -123,8 +129,8 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - `[ConversationList.swift:ConversationList]`, `[ChatRoomMenu.swift:ChatRoomMenu]` Clear/Delete only when
   `GroupAccess(group:userID:).canChat`, and only after the alert's destructive button.
 - `[ChatView.swift:ChatView]` The placeholder shows only when `rows.isEmpty && !isAwaitingHistory`, Try again only
-  when `historyLoadFailed`; `isGone` calls `onGone` if given, else `dismiss()`; the info link is the counterpart's
-  profile, else the tournament, else the group.
+  when `historyLoadFailed`; `isGone` calls `dismiss()`; the info link is the counterpart's profile, else the
+  tournament, else the group, one `chat-title` identifier on the `Group` around the three.
 - `[ChatTranscript.swift:ChatTranscript]` The end marker is a zero-height view outside the `LazyVStack`, never lazy;
   the position and both default anchors are `.bottom`; rows are invisible until `firstPageReveal.isShown`, true from
   the start only when `room.hasHistory`. `[ChatTranscript.swift:ScrollTracker]` is a reference type so geometry
@@ -188,7 +194,7 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - `[AttachmentViewerSheet.swift:AttachmentViewerSheet]` The pan is taken only while `motion.takesDrag` and the
   picture is not zoomed; `stage()` sets `hero.moving` only when `ViewerMotion.movesPicture(hasPicture:hasTile:motion:)`
   holds (a picture, a tile and `\.motion.allowsMovement`), else the pager fades in place and a drag offsets it;
-  picture priority `hero.preloaded`, `layout.pictures`, `hero.thumbnail`, `layout.previews`; the backdrop covers the
+  picture priority `hero.preloaded`, `pictures.byID` (the observable `LoadedPictures`, read by `stage()` outside any body), `hero.thumbnail`, `layout.previews`; the backdrop covers the
   screen unless a picture moves (then `ViewerGeometry.overComposer` only); `presentationBackground(.clear)`.
 - `[AttachmentViewerSheet+Motion.swift:AttachmentViewerSheet]` Every move is gated by `ViewerMotion`; `letGo` closes
   only when not cancelled and `ViewerDismissal.closes(drag:velocity:)`; `open()` drives `hero.progress` 1 to 0 on the
@@ -201,8 +207,9 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   pager's scroll view waits for it to fail.
 - `[ViewerMovingPicture.swift:ViewerMovingPicture]`, `[ViewerStage.swift:ViewerStage]` Two hierarchies, one
   animation: each draws its half of the same picture from `hero.progress`, `hero.drag`, `hero.landing ?? tile` in a
-  `Canvas` sized to its `ViewerLayer` window; non-interactive, hidden from accessibility; the stage draws nothing
-  unless `hero.moving` is set.
+  `Canvas` sized to its `ViewerLayer` window; non-interactive, hidden from accessibility; the stage is a `ZStack` of
+  the `.underComposer` `ViewerBackdrop` and `ViewerMovingPicture`, and draws nothing unless `hero.moving` is set; the
+  sheet draws the `.overBars` backdrop the same way (`ViewerLayer.backdrop` holds the side-of-the-line rule).
 
 ## Side Effects
 

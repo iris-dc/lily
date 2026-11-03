@@ -2,7 +2,9 @@ import Foundation
 @testable import lily
 
 /// The poll and pin routes of `FakeChatRepository`: each answers its queued results in turn (a failure is an error in
-/// the queue), else a plain answer built from the call, and records the call. Votes and pins wait on the fake's hold.
+/// the queue) and records the call. Once a queue runs dry, a refresh answers no polls, a vote and a pin refuse with the
+/// real route's fallback (`voteFailed`, `pinFailed`) and a voters read refuses as an anonymous poll (`pollAnonymous`).
+/// Votes and pins wait on the fake's hold.
 @MainActor
 final class FakePollRoutes {
     var voteResults: [Result<VoteResult, any Error>] = []
@@ -12,7 +14,6 @@ final class FakePollRoutes {
     private(set) var votes: [(messageID: String, optionIDs: [String])] = []
     private(set) var refreshes: [[String]] = []
     private(set) var voterRequests: [String] = []
-    private(set) var pinned: [String] = []
     private(set) var unpinned: [String] = []
 
     func vote(_ messageID: String, _ optionIDs: [String]) throws -> VoteResult {
@@ -34,7 +35,7 @@ final class FakePollRoutes {
     }
 
     func pin(_ messageID: String, unpinning: Bool) throws -> PinList {
-        if unpinning { unpinned.append(messageID) } else { pinned.append(messageID) }
+        if unpinning { unpinned.append(messageID) }
         guard !pinLists.isEmpty else { throw AppError.pinFailed }
         return try pinLists.removeFirst().get()
     }

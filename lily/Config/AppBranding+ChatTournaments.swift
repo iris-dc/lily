@@ -1,8 +1,7 @@
 import Foundation
 
-/// The system rows of a tournament's room (tournaments plan, section 2.4): the start by format, a result and a dispute
-/// with the server-rendered names, and the winner. Each has a line for when the wire carried no text or the tournament
-/// is not known yet.
+/// The system rows of a tournament's room: the start by format, a result and a dispute with the server-rendered names,
+/// and the winner. Each has a line for when the wire carried no text or the tournament is not known yet.
 nonisolated extension AppBranding.Chat {
     static var matchResultFallback: String { localized("A result is in") }
 

@@ -21,7 +21,7 @@ struct PushCoordinatorSignOutTests {
 
         #expect(harness.devices.unregisteredTokens == [harness.registrar.token])
         #expect(harness.coordinator.registered == nil)
-        #expect(harness.logged("unregistered for push", at: .info) == 1)
+        #expect(harness.logs(.info).mentioning("unregistered for push").count == 1)
         #expect(harness.defaults.data(forKey: AppConfig.Push.lastRegistrationKey) == nil)
     }
 

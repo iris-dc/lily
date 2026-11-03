@@ -101,5 +101,6 @@ struct TournamentDetailPreviewTests {
 
         #expect(viewModel.state == .loading && viewModel.tournament == nil)
         #expect(viewModel.name == "Tuesday Table Tennis")
+        #expect(viewModel.permissions == .none)
     }
 }

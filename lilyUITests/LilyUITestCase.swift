@@ -136,7 +136,10 @@ class LilyUITestCase: XCTestCase {
     /// fails when it never is. Kept as an explicit `while`: a `for … where` guard does not reliably run its check or
     /// its swipe here.
     @MainActor
-    func scrollUntilHittable(_ element: XCUIElement, direction: ScrollDirection = .up, maxSwipes: Int = 8) {
+    func scrollUntilHittable(_ element: XCUIElement,
+                             _ message: String = "element never scrolled into a hittable position",
+                             direction: ScrollDirection = .up,
+                             maxSwipes: Int = 8) {
         var swipes = 0
         while !(element.exists && element.isHittable) && swipes < maxSwipes {
             switch direction {
@@ -145,7 +148,7 @@ class LilyUITestCase: XCTestCase {
             }
             swipes += 1
         }
-        XCTAssertTrue(element.exists && element.isHittable, "element never scrolled into a hittable position")
+        XCTAssertTrue(element.exists && element.isHittable, message)
     }
 
     /// Waits for `element` to become enabled: a CI runner can be two to three times slower than a developer Mac, so an
@@ -228,8 +231,7 @@ class LilyUITestCase: XCTestCase {
     @MainActor
     @discardableResult
     func waitForKeyboardFocus(_ field: XCUIElement, timeout: TimeInterval = 5) -> Bool {
-        let focused = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: field)
-        return XCTWaiter().wait(for: [focused], timeout: timeout) == .completed
+        waitUntil(field, holds: "hasKeyboardFocus == true", timeout: timeout)
     }
 
     /// Long-presses `row` until its context menu offers `item`, up to three times: the runner turned one press into a

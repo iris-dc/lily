@@ -18,7 +18,7 @@ nonisolated enum ReportReason: String, CaseIterable, Codable, Sendable {
 /// report sheet's item identity (`sheet(item:)`).
 nonisolated struct ReportTarget: Hashable, Identifiable, Sendable {
     enum Kind: String, Codable, Sendable {
-        case message, group, user, tournament
+        case message, group, tournament
     }
 
     let kind: Kind
@@ -38,10 +38,6 @@ nonisolated struct ReportTarget: Hashable, Identifiable, Sendable {
 
     static func tournament(id: String) -> ReportTarget {
         ReportTarget(kind: .tournament, id: id, groupID: id)
-    }
-
-    static func user(id: String) -> ReportTarget {
-        ReportTarget(kind: .user, id: id, groupID: nil)
     }
 }
 

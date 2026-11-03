@@ -172,10 +172,6 @@ nonisolated struct EventDraft: Equatable, Sendable {
         return issues
     }
 
-    func isValid(now: Date, rules: Rules = .creation) -> Bool {
-        issues(now: now, rules: rules).isEmpty
-    }
-
     /// The typed text as an amount, `nil` for an empty or unreadable text. Setting an amount types it as the field
     /// would show it (at most two decimals), in the draft's locale, so it reads back unchanged.
     var price: Decimal? {
@@ -218,9 +214,10 @@ nonisolated struct EventDraft: Equatable, Sendable {
         return min(max(limits.defaultCapacity, participantCount), limits.capacityRange.upperBound)
     }
 
-    /// Non-negative, below the backend's integer-digit limit and at most two decimals.
+    /// Below the backend's integer-digit limit and at most two decimals; a minus is unreadable text, refused by
+    /// `Price.parseAmount`.
     private static func isAcceptable(price: Decimal) -> Bool {
-        guard price >= 0, price < AppConfig.Events.Creation.priceLimitExclusive else { return false }
+        guard price < AppConfig.Events.Creation.priceLimitExclusive else { return false }
         var scaled = price * AppConfig.Events.Creation.priceMinorUnitsPerUnit
         var rounded = Decimal()
         NSDecimalRound(&rounded, &scaled, 0, .plain)

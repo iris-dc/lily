@@ -51,7 +51,7 @@ final class URLSessionAttachmentUploader: AttachmentUploader {
             logger.warning(.chat, "Attachment \(id) upload failed before a response: \(error.localizedDescription)")
             throw AppError.network
         }
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse, AppConfig.API.successStatuses.contains(http.statusCode) else {
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             logger.error(.chat, "Attachment \(id) upload refused with status \(status)")
             throw AppError.attachmentUploadFailed

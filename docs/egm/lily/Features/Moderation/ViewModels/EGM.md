@@ -4,7 +4,7 @@ Source: `lily/Features/Moderation/ViewModels/`
 
 ## Overview
 
-The terms sheet's state: whether a signed-in caller owes the current terms, the three legal URLs, and the two ways out
+The terms sheet's state: whether a signed-in caller owes the current terms and the two ways out
 (accept, which `MeStore` records with the backend, or sign out through an injected closure). The view model brackets the
 in-flight acceptance only; reporting and the success log belong to `MeStore`. Main-actor isolated by the app target's
 default; depends on `MeStore`, `any IdentityProvider` and `any Logging`.
@@ -17,8 +17,6 @@ Files: `lily/Features/Moderation/ViewModels/TermsViewModel.swift`.
   false`; `init(me: MeStore, identity: any IdentityProvider, logger: any Logging, signOut: @escaping () async -> Void)`.
 - `[TermsViewModel.swift:TermsViewModel.isPresented]`: `var isPresented: Bool` = `identity.currentUserID != nil &&
   me.needsTerms`.
-- `[TermsViewModel.swift:TermsViewModel.termsURL]`: `var termsURL: URL`, `var privacyURL: URL`, `var supportURL: URL`
-  read `AppConfig.Moderation.termsURL`, `.privacyURL`, `.supportURL`.
 - `[TermsViewModel.swift:TermsViewModel.accept]`: `func accept() async` awaits `me.acceptTerms()` while `isAccepting`.
 - `[TermsViewModel.swift:TermsViewModel.signOut]`: `func signOut() async` logs and runs the injected sign-out.
 
@@ -31,8 +29,8 @@ Files: `lily/Features/Moderation/ViewModels/TermsViewModel.swift`.
   discarded (`_ =`) because `MeStore` reports a failure to the popup and logs a success itself.
 - `[TermsViewModel.swift:TermsViewModel.signOut]`: the view model clears nothing itself; the session's observers clear
   the account and `isPresented` follows.
-- `[TermsViewModel.swift:TermsViewModel]`: `isAccepting` is `private(set)`; the URLs are read from `AppConfig`, never
-  typed inline.
+- `[TermsViewModel.swift:TermsViewModel]`: `isAccepting` is `private(set)`; it carries no URLs (the sheet's private `Links`
+  alias reads them from `AppConfig.Moderation`, never typed inline).
 
 ## Side Effects
 

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Identifiers of the regular-width (iPad) layouts; mirrored by hand in `lilyUITests` like the rest.
+/// Identifiers of the regular-width (iPad) layouts; a UI test that reads one mirrors the literal by hand.
 nonisolated extension AccessibilityIdentifiers {
     /// The persistent map beside Explore's content column on a wide layout.
     static let exploreMapPane = "explore-map-pane"

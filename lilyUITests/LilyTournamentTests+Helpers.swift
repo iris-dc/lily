@@ -5,14 +5,14 @@ extension LilyTournamentTests {
     /// Opens the Kickers Cup from Home's "Your tournaments" section; the caller organises it.
     @MainActor
     func openKickersCup() {
-        openTournament(row: kickersCupRow, titled: "Kickers Cup")
+        openTournament(row: MockIDs.kickersCupRow, titled: "Kickers Cup")
         XCTAssertTrue(app.staticTexts["You organise this tournament"].waitForExistence(timeout: 10))
     }
 
     /// Opens Tuesday Table Tennis from Home; the caller plays in it, so it is listed first (in progress).
     @MainActor
     func openTableTennis() {
-        openTournament(row: tableTennisRow, titled: "Tuesday Table Tennis")
+        openTournament(row: MockIDs.tableTennisRow, titled: "Tuesday Table Tennis")
         XCTAssertTrue(app.staticTexts["You're in"].waitForExistence(timeout: 10))
     }
 
@@ -41,7 +41,7 @@ extension LilyTournamentTests {
         assertBecomesEnabled(start, "five teams are enough to start")
         start.tap()
         XCTAssertTrue(app.staticTexts["Start Kickers Cup?"].waitForExistence(timeout: 5), "the confirmation names it")
-        app.sheets.firstMatch.buttons["Start tournament"].tap()
+        confirm("Start tournament")
         XCTAssertTrue(app.staticTexts["In progress"].waitForExistence(timeout: 10), "the status moved")
     }
 

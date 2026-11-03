@@ -10,12 +10,6 @@ struct SportEventTests {
         }
     }
 
-    @Test func distanceIsNilWithoutOrigin() {
-        let event = MockEventFixtures.make(now: .now, count: 1)[0]
-        #expect(event.distance(from: nil) == nil)
-        #expect(event.distance(from: event.location.coordinate)?.value == 0)
-    }
-
     @Test func nearlyFullFollowsConfiguredRatio() {
         #expect(!makeEvent(capacity: 4, participants: 1).isNearlyFull)
         #expect(makeEvent(capacity: 4, participants: 3).isNearlyFull)

@@ -34,7 +34,7 @@ struct MockTournamentRepositoryTests {
         #expect(tableTennis.entries.count == 6 && tableTennis.matches.count == 15)
         #expect(tableTennis.matches.filter(\.isDecided).count == 3 && tableTennis.standings.count == 6)
         let mine = try #require(tableTennis.myEntry)
-        #expect(mine.seed == MockTournamentFixtures.callerTableTennisSeed && mine.contains(userID: "mock-apple"))
+        #expect(mine.seed == 3 && mine.contains(userID: "mock-apple"), "third to register")
         #expect(tableTennis.standings.first?.points == 3, "a winner leads the table")
         let reported = try #require(tableTennis.match(id: MockTournamentFixtures.tableTennisReport.matchID))
         #expect(reported.status == .reported && reported.contains(entryID: mine.id) && reported.reportedBy == "mock-user-jonas")
@@ -96,7 +96,7 @@ struct MockTournamentRepositoryTests {
         #expect(cup.isTournamentRoom && cup.role == .owner && cup.maxMembers == 41 && !cup.isCommunity)
         let tableTennis = try #require(mine.first { $0.id == MockTournamentFixtures.tableTennisID })
         #expect(tableTennis.role == .member && tableTennis.memberCount == 6 && tableTennis.caption().hasPrefix("Tournament"))
-        #expect(mine.filter(\.isCommunity).count == AppConfig.Groups.mockGroupCount - 3, "three fixture communities are theirs")
+        #expect(mine.filter(\.isCommunity).count == 3, "three fixture communities are theirs")
         let roster = try await groups.members(id: MockTournamentFixtures.tableTennisID)
         #expect(roster.count == 6 && roster.contains { $0.displayName == "Marta" })
     }

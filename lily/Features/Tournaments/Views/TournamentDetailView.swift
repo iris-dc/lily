@@ -153,10 +153,9 @@ struct TournamentDetailView: View {
                            title: Copy.unavailable,
                            message: AppBranding.Groups.unavailableMessage)
         case .failed:
-            EmptyStateView(symbolName: DesignTokens.Symbols.error,
-                           title: Copy.loadFailedTitle,
-                           message: AppBranding.Groups.loadFailedMessage,
-                           actionTitle: AppBranding.Groups.tryAgain) {
+            EmptyStateView.loadFailed(title: Copy.loadFailedTitle,
+                                      message: AppBranding.Groups.loadFailedMessage,
+                                      actionTitle: AppBranding.Groups.tryAgain) {
                 Task { await viewModel.load() }
             }
         case .previewing, .loaded:
@@ -201,15 +200,15 @@ struct TournamentDetailView: View {
                 .inReadableColumn()
         case .results where detail.tournament.format.drawsBracket && !detail.matches.isEmpty:
             // `BracketView` undoes the margin itself and scrolls edge to edge; only its inset follows the column.
-            results(detail, bracketInset: bracketInset)
+            results(detail)
                 .padding(.horizontal, DesignTokens.Layout.detailMargin)
         case .results, .matches:
-            results(detail, bracketInset: DesignTokens.Layout.detailMargin)
+            results(detail)
                 .inReadableColumn()
         }
     }
 
-    private func results(_ detail: TournamentDetail, bracketInset: CGFloat) -> some View {
+    private func results(_ detail: TournamentDetail) -> some View {
         TournamentResultsSegment(showsMatches: section == .matches,
                                  detail: detail,
                                  onSelect: { presentedSheet = .match(id: $0.id) },

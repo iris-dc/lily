@@ -26,9 +26,7 @@ final class MockInviteRepository: InviteRepository {
 
     func candidates(groupID: String) async throws -> [InviteCandidate] {
         try await requireInviteRights(in: groupID)
-        var seen = Set(groups.roster(of: groupID).map(\.userId))
-        if let callerID = identity.currentUserID { seen.insert(callerID) }
-        let candidates = try await pool.candidates(excludingGroup: groupID, seen: &seen) { ledger.isInvited($0, into: groupID) }
+        let candidates = try await self.candidates(in: groupID)
         logger.debug(.groups, "Mock invite candidates served for group \(groupID) (\(candidates.count))")
         return candidates
     }
@@ -41,8 +39,15 @@ final class MockInviteRepository: InviteRepository {
         if let row = groups.roster(of: groupID).first(where: { $0.userId == userID }) {
             throw row.role == .banned ? AppError.cannotInvite : AppError.alreadyMember
         }
-        let candidates = try await self.candidates(groupID: groupID)
+        let candidates = try await self.candidates(in: groupID)
         return try ledger.send(to: userID, among: candidates, into: .group(id: groupID), now: now(), logger: logger)
+    }
+
+    /// The pool minus the group's roster and the caller, for a caller whose rights were checked.
+    private func candidates(in groupID: String) async throws -> [InviteCandidate] {
+        var seen = Set(groups.roster(of: groupID).map(\.userId))
+        if let callerID = identity.currentUserID { seen.insert(callerID) }
+        return try await pool.candidates(excludingGroup: groupID, seen: &seen) { ledger.isInvited($0, into: groupID) }
     }
 
     /// Like the backend: a signed-in member with invite rights, in a group they can see.

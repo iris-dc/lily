@@ -48,10 +48,10 @@ final class InboxViewModel {
     var hasOlder: Bool { store.hasOlder }
     var isLoadingOlder: Bool { store.isLoadingOlder }
     var loadFailed: Bool { store.loadFailed }
-    /// True until the first page answered or failed. Judging by `isLoading` instead shows "Nothing here yet" for one
-    /// commit before the spinner, because the body renders before the view's `.task` has entered `appear()`. Safe to
-    /// wait on: `appear()` always starts a load, a guest never reaches the screen, and every load ends in a success or
-    /// a failure record.
+    /// True until the first page answered or failed, not while the loader's `isLoading` is up: the body renders before
+    /// the view's `.task` enters `appear()`, so `isLoading` would show "Nothing here yet" for one commit. Safe to wait
+    /// on: `appear()` always starts a load, a guest never reaches the screen, and every load ends in a success or a
+    /// failure record.
     var isInitialLoad: Bool { !store.hasLoaded && !store.loadFailed }
     /// The newest item's id; the screen watches it to mark a live arrival read while open.
     var newestID: String? { store.newest?.id }
@@ -72,8 +72,7 @@ final class InboxViewModel {
         await store.markRead()
     }
 
-    @discardableResult
-    func loadOlder() async -> Bool {
+    func loadOlder() async {
         await store.loadOlder()
     }
 

@@ -44,15 +44,15 @@ final class DiscoverGroupsViewModel {
     /// repeat it.
     var reportsSearchFailures = true
 
-    let changes: ChangeTracker
-    let repository: any GroupRepository
-    let identity: any IdentityProvider
-    let locationService: any LocationService
-    let errorCenter: ErrorCenter
-    let recorder: any InteractionRecorder
-    let logger: any Logging
-    let sleep: Sleep
-    let now: () -> Date
+    private let changes: ChangeTracker
+    private let repository: any GroupRepository
+    private let identity: any IdentityProvider
+    private let locationService: any LocationService
+    private let errorCenter: ErrorCenter
+    private let recorder: any InteractionRecorder
+    private let logger: any Logging
+    private let sleep: Sleep
+    private let now: () -> Date
     /// Where a plain browse's first page is kept for the first frame of the next launch (the carousel on Explore); a
     /// no-op for Discover's own screen, which is built when it opens.
     private let snapshots: any ListSnapshotStore
@@ -167,11 +167,6 @@ final class DiscoverGroupsViewModel {
         group.distance(from: userLocation)?.roadText()
     }
 
-    /// Pull-to-refresh: always asks the backend.
-    func refresh() async {
-        await search()
-    }
-
     /// Cancels a pending or running search; the view calls it when the screen goes away.
     func cancel() {
         searchTask?.cancel()
@@ -182,6 +177,7 @@ final class DiscoverGroupsViewModel {
     /// its generation differs, so this answer is dropped. A position that arrived or moved while the request was out
     /// earns one search right away, so the page around the user replaces the answer without waiting for the next
     /// appearance; a failure or a cancellation never does, so a backend that is down is not asked in a loop.
+    /// Pull-to-refresh calls it, as the lists call `load()`.
     func search() async {
         searchGeneration += 1
         let generation = searchGeneration

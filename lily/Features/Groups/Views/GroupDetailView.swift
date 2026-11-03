@@ -130,15 +130,24 @@ struct GroupDetailView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.groupSection)
     }
 
-    /// Events for everyone who can see the group; the tournaments and the roster only for those offered them, whatever
-    /// the picker says.
+    /// Which segment is on screen: the roster and the tournaments only for those offered them, whatever the picker says
+    /// (`members` is rebuilt a frame after `sections` changes, hence the nil test). Events for everyone who can see the group.
+    private var shownSection: GroupDetailSection {
+        switch section {
+        case .members where members != nil: .members
+        case .tournaments where sections.contains(.tournaments): .tournaments
+        default: .events
+        }
+    }
+
     @ViewBuilder private var segment: some View {
-        if section == .members, let members {
-            MembersList(viewModel: members) { confirmation = $0 }
-        } else if section == .tournaments, sections.contains(.tournaments) {
-            GroupTournamentsSegment(viewModel: tournaments)
-        } else {
-            GroupEventsSegment(viewModel: events)
+        switch shownSection {
+        case .members:
+            if let members {
+                MembersList(viewModel: members) { confirmation = $0 }
+            }
+        case .tournaments: GroupTournamentsSegment(viewModel: tournaments)
+        case .events: GroupEventsSegment(viewModel: events)
         }
     }
 
@@ -179,12 +188,10 @@ struct GroupDetailView: View {
 
     /// Pull-to-refresh reloads what the open segment shows.
     private func refresh() async {
-        if section == .members, let members {
-            await members.load()
-        } else if section == .tournaments, sections.contains(.tournaments) {
-            await tournaments.load()
-        } else {
-            await events.load()
+        switch shownSection {
+        case .members: await members?.load()
+        case .tournaments: await tournaments.load()
+        case .events: await events.load()
         }
     }
 }

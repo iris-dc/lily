@@ -1,12 +1,10 @@
 import Foundation
-import Observation
 
 /// The one realtime connection of a signed-in, foregrounded app: `users/<sub>` plus the open room and the most
 /// recently active groups of Mine. Opens when the app is active with a user and an endpoint, closes on background
 /// and sign-out, renews itself with a fresh token before the token expires, and recovers over REST whatever the socket
 /// missed (`RealtimeSessionController+Connection.swift`). Envelopes are applied to the shared room cache and handed to
 /// whoever listens through `envelopes(for:)` (`RealtimeSessionController+Routing.swift`).
-@Observable
 final class RealtimeSessionController: SessionObserver {
     var state: RealtimeConnectionState = .disconnected
     /// The epoch each room is subscribed at.

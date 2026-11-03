@@ -1,6 +1,6 @@
 import Foundation
 
-/// Identifiers of the Groups and chat screens; mirrored by hand in `lilyUITests` like the rest. The terms and report
+/// Identifiers of the Groups and chat screens; a UI test that reads one mirrors the literal by hand. The terms and report
 /// sheets have theirs in `AccessibilityIdentifiers+Moderation.swift`.
 nonisolated extension AccessibilityIdentifiers {
     /// The Discover screen's type dropdown; the Explore carousel and its "See all".

@@ -50,12 +50,12 @@ struct PollVotersSheet: View {
 
     /// The voters listed once they loaded, the message's count until then, so the header never disagrees with the rows.
     private func count(for option: Poll.Option) -> Int {
-        voters?.options.first { $0.id == option.id }?.voters.count ?? option.votes
+        voters?.voters(for: option)?.count ?? option.votes
     }
 
     @ViewBuilder private func section(for option: Poll.Option) -> some View {
         if let voters {
-            let names = voters.options.first { $0.id == option.id }?.voters ?? []
+            let names = voters.voters(for: option) ?? []
             if names.isEmpty {
                 Text(Copy.nobodyYet).foregroundStyle(.secondary)
             } else {

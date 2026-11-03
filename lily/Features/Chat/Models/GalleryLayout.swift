@@ -17,10 +17,6 @@ nonisolated struct GalleryLayout: Equatable, Sendable {
 
     let count: Int
 
-    init(count: Int) {
-        self.count = count
-    }
-
     static func partition(_ kinds: [AttachmentKind]) -> Partition {
         let indexed = kinds.enumerated()
         return Partition(media: indexed.filter { $0.element.isMedia }.map(\.offset),
@@ -73,5 +69,4 @@ nonisolated struct TileCorners: OptionSet, Sendable {
     static let topTrailing = TileCorners(rawValue: 1 << 1)
     static let bottomLeading = TileCorners(rawValue: 1 << 2)
     static let bottomTrailing = TileCorners(rawValue: 1 << 3)
-    static let all: TileCorners = [.topLeading, .topTrailing, .bottomLeading, .bottomTrailing]
 }

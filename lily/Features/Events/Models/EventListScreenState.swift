@@ -5,7 +5,8 @@ import Foundation
 /// the spinner, never "nothing yet"; the failed state shows only while nothing is loaded, so a failed refresh keeps the
 /// list on screen (or the filtered-out state, which still offers "show everything"). Content that is not the answer for
 /// the user's position and that the filter hides entirely shows the spinner, not "nothing matches": the answer for the
-/// position is on its way and may hold other events, or none.
+/// position is on its way and may hold other events, or none. The no-content rule is `ListState`'s; this adds the
+/// filter layer over its content.
 nonisolated enum EventListScreenState: Equatable, Sendable {
     /// The first load is out and nothing is held: a spinner, never "nothing yet".
     case loading
@@ -23,11 +24,12 @@ nonisolated enum EventListScreenState: Equatable, Sendable {
                         hasEvents: Bool,
                         isEverythingFilteredOut: Bool,
                         awaitsAnswerForPosition: Bool = false) -> EventListScreenState {
-        guard hasEvents else {
-            if isInitialLoad { return .loading }
-            return loadFailed ? .failed : .empty
+        switch ListState(isInitialLoad: isInitialLoad, isEmpty: !hasEvents, loadFailed: loadFailed) {
+        case .loading: .loading
+        case .failed: .failed
+        case .empty: .empty
+        case .content where isEverythingFilteredOut: awaitsAnswerForPosition ? .loading : .filteredOut
+        case .content: .list
         }
-        guard isEverythingFilteredOut else { return .list }
-        return awaitsAnswerForPosition ? .loading : .filteredOut
     }
 }

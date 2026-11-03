@@ -70,17 +70,13 @@ struct HeldSleepTests {
 struct RequestHoldTests {
     private let hold = RequestHold()
 
-    private func yieldRepeatedly() async {
-        for _ in 0..<10 { await Task.yield() }
-    }
-
     @Test func aCallerCancelledWhileHeldStaysParkedUntilReleased() async {
         hold.isEnabled = true
         let task = Task { await hold.wait(); return "through" }
         await settle(until: { hold.isHolding })
 
         task.cancel()
-        await yieldRepeatedly()
+        await drain()
         #expect(hold.isHolding, "a cancelled caller is parked like any other until the hold lifts")
 
         hold.release()
@@ -95,7 +91,7 @@ struct RequestHoldTests {
         await settle(until: { hold.isHolding })
 
         task.cancel()
-        await yieldRepeatedly()
+        await drain()
         #expect(hold.isHolding, "the cancellation surfaces only when the hold lifts, like a URLSession task's")
 
         hold.release()

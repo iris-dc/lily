@@ -14,7 +14,7 @@ final class CognitoAuthService: AuthService, AuthTokenProvider, SessionExpiryRep
     /// `languageCode` is the app's language at the time of a sign-up or resend, for the pool's mail.
     init(client: any CognitoClient,
          store: any SessionStore,
-         languageCode: @escaping () -> String = { AppLanguage.systemChoice().code },
+         languageCode: @escaping () -> String,
          logger: any Logging) {
         self.client = client
         self.store = store

@@ -83,7 +83,7 @@ final class AttachmentLoader {
             current = try await refreshed(current, in: message)
             (data, status) = try await fetch(current.url(for: variant), progress: progress)
         }
-        guard (200..<300).contains(status) else {
+        guard AppConfig.API.successStatuses.contains(status) else {
             logger.error(.chat, "Attachment \(attachment.id) download refused with status \(status)")
             throw AppError.attachmentUnavailable
         }

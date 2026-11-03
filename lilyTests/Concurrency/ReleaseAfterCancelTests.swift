@@ -39,7 +39,7 @@ struct ReleaseAfterCancelTests {
             released = harness.controller
             harness.controller.sessionDidEnd()
             await settle(until: { harness.transport.disconnectCount == 1 && harness.controller.state == .disconnected })
-            for _ in 0..<10 { await Task.yield() }
+            await drain()
         }
 
         #expect(released == nil, "the controller outlived its sign-out")
@@ -52,14 +52,7 @@ struct ReleaseAfterCancelTests {
         weak var released: DiscoverGroupsViewModel?
 
         do {
-            let viewModel = DiscoverGroupsViewModel(changes: harness.changes,
-                                                    repository: harness.repository,
-                                                    identity: harness.identity,
-                                                    locationService: harness.location,
-                                                    errorCenter: harness.errorCenter,
-                                                    recorder: harness.recorder,
-                                                    logger: harness.logger,
-                                                    sleep: { [sleep] in try await sleep.sleep(for: $0) })
+            let viewModel = harness.makeDiscoverGroupsViewModel { [sleep] in try await sleep.sleep(for: $0) }
             released = viewModel
             viewModel.query = "x"
             await settle(until: { sleep.requested.count == 1 })

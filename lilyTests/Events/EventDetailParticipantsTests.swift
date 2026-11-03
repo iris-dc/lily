@@ -6,123 +6,107 @@ import Testing
 /// host line links to the host's profile when the caller may open it.
 @MainActor
 struct EventDetailParticipantsTests {
-    private let repository = FakeEventRepository()
-    private let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
-    private let logger = SpyLogger()
-    private let errorCenter: ErrorCenter
     private let host = EventParticipant.fixture(userId: "host", displayName: "Marta", isHost: true)
     private let you = EventParticipant.fixture(userId: TestFixtures.user.id, displayName: "Test Person")
 
-    init() {
-        errorCenter = ErrorCenter(logger: logger)
-    }
-
-    private func makeViewModel(event: SportEvent = .fixture(capacity: 4, participants: 1, hostUserId: "host", isJoined: false))
-        -> EventDetailViewModel {
-        repository.result = .success([event])
-        return EventDetailViewModel(event: event,
-                                    repository: repository,
-                                    identity: identity,
-                                    errorCenter: errorCenter,
-                                    recorder: SpyInteractionRecorder(),
-                                    logger: logger,
-                                    tryAgainDelay: .zero,
-                                    onChange: { _ in })
+    private func makeHarness(event: SportEvent = .fixture(capacity: 4, participants: 1, hostUserId: "host", isJoined: false))
+        -> EventDetailHarness {
+        EventDetailHarness(event: event)
     }
 
     @Test func participantsLoadOnAppearForSignedInCallers() async {
-        repository.participantsResult = .success([host])
-        let viewModel = makeViewModel()
-        #expect(viewModel.showsParticipants && viewModel.participants.isEmpty)
+        let harness = makeHarness()
+        harness.repository.participantsResult = .success([host])
+        #expect(harness.viewModel.showsParticipants && harness.viewModel.participants.isEmpty)
 
-        await viewModel.loadParticipants()
+        await harness.viewModel.loadParticipants()
 
-        #expect(viewModel.participants == [host] && !viewModel.isLoadingParticipants)
-        #expect(repository.participantsRequests == ["e"])
-        #expect(!viewModel.isSelf(host))
+        #expect(harness.viewModel.participants == [host] && !harness.viewModel.isLoadingParticipants)
+        #expect(harness.repository.participantsRequests == ["e"])
+        #expect(!harness.viewModel.isSelf(host))
     }
 
     /// Names are members-level information: a guest sees the count only and nothing is requested for them.
     @Test func guestsGetNoParticipantsAndNoRequest() async {
-        identity.currentUserID = nil
-        let viewModel = makeViewModel()
+        let harness = makeHarness()
+        harness.identity.currentUserID = nil
 
-        await viewModel.loadParticipants()
+        await harness.viewModel.loadParticipants()
 
-        #expect(!viewModel.showsParticipants && viewModel.participants.isEmpty)
-        #expect(repository.participantsRequests.isEmpty)
+        #expect(!harness.viewModel.showsParticipants && harness.viewModel.participants.isEmpty)
+        #expect(harness.repository.participantsRequests.isEmpty)
     }
 
     @Test func aJoinReloadsTheParticipantsAndTheCallersRowIsSelf() async {
-        let viewModel = makeViewModel()
-        await viewModel.loadParticipants()
-        repository.participantsResult = .success([host, you])
+        let harness = makeHarness()
+        await harness.viewModel.loadParticipants()
+        harness.repository.participantsResult = .success([host, you])
 
-        await viewModel.join()
+        await harness.viewModel.join()
 
-        #expect(repository.participantsRequests == ["e", "e"])
-        #expect(viewModel.participants == [host, you])
-        #expect(viewModel.isSelf(you) && !viewModel.isSelf(host))
+        #expect(harness.repository.participantsRequests == ["e", "e"])
+        #expect(harness.viewModel.participants == [host, you])
+        #expect(harness.viewModel.isSelf(you) && !harness.viewModel.isSelf(host))
     }
 
     @Test func aLeaveReloadsTheParticipants() async {
-        let viewModel = makeViewModel(event: .fixture(capacity: 4, participants: 2, hostUserId: "host", isJoined: true))
+        let harness = makeHarness(event: .fixture(capacity: 4, participants: 2, hostUserId: "host", isJoined: true))
 
-        await viewModel.leave()
+        await harness.viewModel.leave()
 
-        #expect(repository.participantsRequests == ["e"])
+        #expect(harness.repository.participantsRequests == ["e"])
     }
 
     /// A refusal refetches the event; whoever changed it may have changed the list too.
     @Test func theRefetchAfterARefusalReloadsTheParticipants() async {
-        let viewModel = makeViewModel()
-        repository.participationError = AppError.eventFull
+        let harness = makeHarness()
+        harness.repository.participationError = AppError.eventFull
 
-        await viewModel.join()
+        await harness.viewModel.join()
 
-        #expect(repository.fetchedEventIDs == ["e"])
-        #expect(repository.participantsRequests == ["e"])
+        #expect(harness.repository.fetchedEventIDs == ["e"])
+        #expect(harness.repository.participantsRequests == ["e"])
     }
 
     @Test func aFailedLoadReachesThePopupAndKeepsTheLastList() async {
-        repository.participantsResult = .success([host])
-        let viewModel = makeViewModel()
-        await viewModel.loadParticipants()
-        repository.participantsResult = .failure(.eventsUnavailable)
+        let harness = makeHarness()
+        harness.repository.participantsResult = .success([host])
+        await harness.viewModel.loadParticipants()
+        harness.repository.participantsResult = .failure(.eventsUnavailable)
 
-        await viewModel.loadParticipants()
+        await harness.viewModel.loadParticipants()
 
-        #expect(viewModel.participants == [host])
-        #expect(errorCenter.current?.error == .eventsUnavailable)
-        #expect(logger.messages(in: .events, at: .warning).contains { $0.contains("Loading participants of event e failed") })
+        #expect(harness.viewModel.participants == [host])
+        #expect(harness.errorCenter.current?.error == .eventsUnavailable)
+        #expect(harness.logger.hasLine(in: .events, at: .warning, mentioning: "Loading participants of event e failed"))
     }
 
     /// The view's task going away cancels the load; a cancellation is nobody's failure.
     @Test func aCancelledParticipantsLoadReportsNothingAndKeepsTheLastList() async {
-        repository.participantsResult = .success([host])
-        let viewModel = makeViewModel()
-        await viewModel.loadParticipants()
-        repository.thrownError = CancellationError()
+        let harness = makeHarness()
+        harness.repository.participantsResult = .success([host])
+        await harness.viewModel.loadParticipants()
+        harness.repository.thrownError = CancellationError()
 
-        await viewModel.loadParticipants()
+        await harness.viewModel.loadParticipants()
 
-        #expect(viewModel.participants == [host])
-        #expect(errorCenter.current == nil && !viewModel.isLoadingParticipants)
-        #expect(!logger.messages(in: .events, at: .warning).contains { $0.contains("Loading participants") })
+        #expect(harness.viewModel.participants == [host])
+        #expect(harness.errorCenter.current == nil && !harness.viewModel.isLoadingParticipants)
+        #expect(!harness.logger.hasLine(in: .events, at: .warning, mentioning: "Loading participants"))
     }
 
     /// The host's profile opens for a signed-in caller who is not the host and when the host is known at all.
     @Test func theHostLineLinksToTheHostForOtherSignedInCallersOnly() {
-        let viewModel = makeViewModel()
-        #expect(viewModel.hostProfile == UserProfileDestination(userId: "host", displayName: "h"))
+        let harness = makeHarness()
+        #expect(harness.viewModel.hostProfile == UserProfileDestination(userId: "host", displayName: "h"))
 
-        identity.currentUserID = "host"
-        #expect(viewModel.hostProfile == nil, "the host is the caller")
+        harness.identity.currentUserID = "host"
+        #expect(harness.viewModel.hostProfile == nil, "the host is the caller")
 
-        identity.currentUserID = nil
-        #expect(viewModel.hostProfile == nil, "guests open no profiles")
+        harness.identity.currentUserID = nil
+        #expect(harness.viewModel.hostProfile == nil, "guests open no profiles")
 
-        identity.currentUserID = TestFixtures.user.id
-        #expect(makeViewModel(event: .fixture(hostUserId: nil)).hostProfile == nil, "a fixture without a host id has no link")
+        #expect(makeHarness(event: .fixture(hostUserId: nil)).viewModel.hostProfile == nil,
+                "a fixture without a host id has no link")
     }
 }

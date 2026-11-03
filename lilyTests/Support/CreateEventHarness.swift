@@ -5,9 +5,9 @@ import Foundation
 /// given (the location service, `pushOptIn`) are created in the body: a main-actor default argument would be
 /// evaluated off the actor.
 @MainActor
-final class CreateEventHarness {
-    /// 08:25:07 UTC, so "the next full hour" is unambiguous. `nonisolated`: read by `@Test(arguments:)` off the actor.
-    nonisolated static let now = Date(timeIntervalSince1970: 1_800_000_000 + 25 * 60 + 7)
+final class CreateEventHarness: LoadsGroups {
+    /// `nonisolated`: read by `@Test(arguments:)` off the actor.
+    nonisolated static let now = TestFixtures.offTheHour
 
     let repository = FakeEventRepository()
     let groupRepository = FakeGroupRepository()
@@ -48,14 +48,6 @@ final class CreateEventHarness {
 
     /// Fills in what a valid draft needs beyond the defaults.
     func completeDraft() {
-        viewModel.draft.title = "Thursday five-a-side"
-        viewModel.draft.locationName = "Test Park"
-        viewModel.draft.coordinate = AppConfig.Location.mockCenter
-    }
-
-    /// Puts groups into the store the way the sign-in load does.
-    func loadGroups(_ groups: [SportGroup]) async {
-        groupRepository.result = .success(groups)
-        await self.groups.reload()
+        viewModel.draft.fillRequired()
     }
 }

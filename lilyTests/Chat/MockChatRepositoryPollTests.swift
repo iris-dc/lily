@@ -125,6 +125,26 @@ extension MockChatRepositoryTests {
         }
     }
 
+    /// Laurel's order: the pinner's rights first, then one lookup for vote, voters and pin alike (404 before 409).
+    @Test func aMissingMessageIsNotFoundForVoteVotersAndPinAndRightsAreJudgedFirst() async throws {
+        let repository = makeRepository()
+        _ = try await repository.newest(groupID: padel)
+        _ = try await repository.newest(groupID: kickers)
+
+        await #expect(throws: AppError.messageNotFound) {
+            try await repository.vote(groupID: padel, messageID: "not-a-message", optionIDs: ["0"])
+        }
+        await #expect(throws: AppError.messageNotFound) {
+            try await repository.voters(groupID: padel, messageID: "not-a-message")
+        }
+        await #expect(throws: AppError.messageNotFound) {
+            try await repository.pin(groupID: padel, messageID: "not-a-message")
+        }
+        await #expect(throws: AppError.insufficientRole, "a plain member is refused before the lookup") {
+            try await repository.pin(groupID: kickers, messageID: "not-a-message")
+        }
+    }
+
     @Test func deletingAPinnedMessageUnpinsIt() async throws {
         let repository = makeRepository()
         let pinnedID = try #require(try await repository.newest(groupID: padel).pins.first?.messageId)

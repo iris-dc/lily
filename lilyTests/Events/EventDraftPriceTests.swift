@@ -57,7 +57,6 @@ extension EventDraftTests {
         #expect(draft.price == nil)
         #expect(draft.hasUnreadablePrice)
         #expect(issues(of: draft) == [.priceUnreadable])
-        #expect(!draft.isValid(now: Self.now))
     }
 
     /// Blank is empty, not unreadable: the game is free and nothing holds it.

@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 /// knows nothing) and named after itself (`AttachmentDraft` cuts the name to the backend's limit). Over the room's
 /// `caps.fileMaxBytes` is refused before the copy; a folder or a package is refused as no file. One of the three
 /// workers behind `DeviceMediaPreparer`; the copy dies with the caller (`DetachedWork`). An empty file is refused too:
-/// the ticket needs a positive size.
+/// the ticket needs a positive size, and no retry could change the 400 it would earn.
 final class FilePreparer {
     private let directory: URL
     private let logger: any Logging
@@ -35,7 +35,6 @@ nonisolated enum FileCopying {
         let values = try readable(url)
         guard values.isRegularFile == true else { throw AppError.attachmentTypeNotAllowed }
         let sizeBytes = values.fileSize ?? 0
-        // The ticket needs a positive size; an empty file would earn a 400 that no retry could change.
         guard sizeBytes > 0 else { throw AppError.attachmentTypeNotAllowed }
         try caps.require(sizeBytes: sizeBytes, for: .file)
         let fileURL = directory.appending(path: url.pathExtension.isEmpty ? id : "\(id).\(url.pathExtension)")

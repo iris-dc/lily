@@ -60,7 +60,8 @@ nothing here performs I/O or touches shared state. Limits come from
 - `[lily/Features/Tournaments/Models/TournamentDraft.swift:TournamentDraft]`: `Equatable, Sendable`, not Codable:
   `clientId`, `name`, `description`, `type`, `format`, `teamSize`, `maxEntries`, `allowsDraws: Bool?`, `startsAt`,
   `registrationClosesAt?`, `locationName`, `coordinate?`, `group?`, `visibility`; `init(startsAt:clientId:)`,
-  `init(editing:)`; nested `Rules` and `Issue` (eleven cases); `issues(now:rules:)`, `isValid(now:rules:)`,
+  `init(editing:)`; nested `Rules` and `Issue` (eleven cases); `issues(now:rules:)` (the one validity rule: empty means
+  it can go, the view models judge `issues.isEmpty`, there is no `isValid`),
   `select(format:)`, `earliestStart(now:rules:)`, `proposedDeadline(before:now:)`, `makeTournament(...)`;
   `EventType.allowsDrawsByDefault`.
 - `[lily/Features/Tournaments/Models/TournamentPayloads.swift:CreateTournamentPayload]`: `Encodable`-only bodies

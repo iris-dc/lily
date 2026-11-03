@@ -52,6 +52,6 @@ struct EventPreviewCard: View {
         let relativeStart = event.startsAt.formatted(.relative(presentation: .named).locale(AppLocale.locale))
         var parts = [relativeStart, event.availabilityText]
         if !event.isFree { parts.append(event.priceText) }
-        return parts.joined(separator: AppBranding.Events.captionSeparator)
+        return AppBranding.Groups.caption(parts)
     }
 }

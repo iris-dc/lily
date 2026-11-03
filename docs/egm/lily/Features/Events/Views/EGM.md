@@ -7,7 +7,8 @@ Source: `lily/Features/Events/Views/`
 The SwiftUI screens and components of the Events feature: the Explore screen (`EventListView` with its `+Content`
 extension), the event detail, the shared create/edit form and its sheets, the filter button and panel, the events
 map and the location picker, and the cards and rows other features reuse (`EventCard`, `EventCardList`,
-`EventPreviewCard`, `EventFactsCard`, `ParticipantRow`, `PlaceFields`, `PlacePickerRow`, `SkillLevelPicker`). Views
+`EventPreviewCard`, `EventFactsCard`, `ParticipantRow`, `PlaceFields`, `PlacePickerRow`, `PriceAmountField`,
+`SkillLevelPicker`). Views
 draw what the [ViewModels](../ViewModels/EGM.md) decide and call back into them; copy comes from `AppBranding`,
 sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decisions from the
 [Models](../Models/EGM.md) enums.
@@ -18,7 +19,7 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `EventListView+Content.swift`): `init(listTitle: String?, viewModel: EventListViewModel,
   dependencies: AppDependencies, refreshHeader: @escaping () async -> Void, @ViewBuilder header:)`. State:
   `presentation: EventsPresentation`, `presentedSheet: ExploreSheet?`, `headerHeight`. Members: `showsMapAlone`,
-  `screenState: EventListScreenState`, `sheetContent(for:)`, `consumePendingCreate()`, `presentForUser(_:)`,
+  `sheetContent(for:)`, `consumePendingCreate()`, `presentForUser(_:)`,
   `presentationPicker`, `content`, `listContent`, `eventList`, `filteredOutState`, `loadFailedState`,
   `emptyState`, `stateSlot`, `refreshableScroll`.
 - `EventDetailView` (`lily/Features/Events/Views/EventDetailView.swift`): `init(viewModel: EventDetailViewModel,
@@ -54,8 +55,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `.sharedBackgroundVisibility(.hidden)`; `.sideBySide` draws the content column at
   `DesignTokens.Layout.exploreContentFraction` beside a permanent map pane (`accessibilityElement(children:
   .contain)` before `AccessibilityIdentifiers.exploreMapPane`) with no picker.
-- `screenState` (`EventListView+Content`) is `EventListScreenState.resolve(...)` from the view model's
-  `isInitialLoad`, `loadFailed`, `events`, `isEverythingFilteredOut` and `awaitsAnswerForPosition`: `.loading` a
+- `listContent` (`EventListView+Content`) switches on `viewModel.screenState` (the view model's own
+  `EventListScreenState`, see [ViewModels](../ViewModels/EGM.md)): `.loading` a
   `ProgressView`, `.failed` / `.empty` / `.filteredOut` an `EmptyStateView` (filtered-out offers
   `viewModel.showEverything`), `.list` the title and `EventCardList(events: viewModel.visibleEvents, distance:
   viewModel.distanceText)`. Each state has its own `refreshableScroll` under the header; `showsMapAlone` replaces it
@@ -82,7 +83,13 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `eligibleGroups` styled by `lilyMenuPicker()` (value and chevron in `.secondary`, not the form's accent tint), and
   the details section's `SkillLevelPicker` (a default-styled `Picker` that a `Form` draws as a menu) is styled by
   `lilyMenuPicker()` the same way; the title's submit moves focus to the location name; the price is typed as
-  `draft.priceText` on a `.decimalPad`.
+  `draft.priceText` through `PriceAmountField`.
+- `PriceAmountField` (`lily/Features/Events/Views/PriceAmountField.swift`): `init(text: Binding<String>, placeholder:,
+  currencyCode:, label:, identifier:, currencyIdentifier:, focus: FocusState<Bool>.Binding? = nil)`; an `HStack` of a
+  trailing `.decimalPad` `TextField` at `DesignTokens.Layout.priceFieldWidth` (focused through `focus` when given,
+  with `label` as its accessibility label and `identifier`) and `Price.symbol(for: currencyCode)` in `.secondary`,
+  `fixedSize()`, under `currencyIdentifier`. The one decimal-pad price field: the form's price row (no focus binding)
+  and the filter panel's cap (focused by the capsule's tap through `isPriceFocused`).
 - `CreateMenuButton`: a `Menu` with game, group and (when `AppConfig.FeatureFlags.tournaments`) tournament while
   `AppConfig.FeatureFlags.groups` is on; a single game button otherwise.
 - Filter (`EventFilterPanel`): every change goes through `viewModel.updateFilter`, `toggleType` or `clearFilter`;

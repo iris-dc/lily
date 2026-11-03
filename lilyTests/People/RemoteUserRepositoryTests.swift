@@ -30,8 +30,7 @@ struct RemoteUserRepositoryTests {
         let request = try #require(client.requests.first)
         #expect(request.method == .post && request.path == "/api/conversations")
         #expect(request.body as? StartConversationPayload == StartConversationPayload(userId: "seed-marta"))
-        let encoded = try APIJSONCoding.makeEncoder().encode(StartConversationPayload(userId: "seed-marta"))
-        let json = try #require(try JSONSerialization.jsonObject(with: encoded) as? [String: String])
+        let json = try ContractSamples.jsonObject(of: StartConversationPayload(userId: "seed-marta"), as: String.self)
         #expect(json == ["userId": "seed-marta"])
     }
 

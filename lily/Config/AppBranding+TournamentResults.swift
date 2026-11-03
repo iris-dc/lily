@@ -1,7 +1,7 @@
 import Foundation
 
 /// Copy of a tournament under way: the organiser's Start, the bracket and standings segments, the match cells and the
-/// match sheet. An extension file because `AppBranding.Tournaments` is at the type-body limit.
+/// match sheet.
 nonisolated extension AppBranding.Tournaments {
     /// The menu item and the confirmation's button.
     static var start: String { localized("Start tournament") }

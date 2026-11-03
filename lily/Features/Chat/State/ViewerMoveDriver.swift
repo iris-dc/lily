@@ -23,8 +23,6 @@ final class ViewerMoveDriver {
         self.init(clock: DisplayLinkFrameClock())
     }
 
-    var isRunning: Bool { apply != nil }
-
     /// Starts a move at `now` on the clock's timeline; from the next frame on, `apply` gets the way.
     func run(duration: TimeInterval,
              curve: UnitCurve,

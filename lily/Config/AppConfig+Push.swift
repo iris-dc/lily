@@ -39,7 +39,7 @@ nonisolated extension AppConfig.LaunchArguments {
 }
 
 nonisolated extension AppConfig.API.Paths {
-    static let devices = "/api/me/devices"
+    static let devices = "\(me)/devices"
 
     static func device(token: String) -> String {
         "\(devices)/\(token)"

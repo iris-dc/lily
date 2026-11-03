@@ -10,12 +10,7 @@ struct ChatViewModelHistoryTests {
 
     private func makeOpenChat(room: ChatRoomState) async -> (RealtimeHarness, ChatViewModel) {
         let harness = RealtimeHarness()
-        harness.groups.result = .success([group])
-        harness.cache.store(room, for: "g")
-        await harness.connect()
-        let viewModel = harness.makeChatViewModel(for: group)
-        await viewModel.appear()
-        return (harness, viewModel)
+        return (harness, await harness.openChat(for: group, room: room))
     }
 
     /// A room holding "m0001" up to "m\(count)" with history before them; one over the cache limit, so that a

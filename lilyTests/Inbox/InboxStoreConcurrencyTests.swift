@@ -69,7 +69,7 @@ struct InboxStoreConcurrencyTests {
         await first.value
         await second.value
 
-        #expect(repository.pageRequests.count == 2 && store.items.map(\.id) == ["theirs"] && !store.isLoading)
+        #expect(repository.pageRequests.count == 2 && store.items.map(\.id) == ["theirs"])
         #expect(logger.messages(in: .cache, at: .debug).contains { $0.contains("previous caller") })
     }
 

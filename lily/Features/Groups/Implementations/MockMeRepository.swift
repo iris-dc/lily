@@ -1,7 +1,7 @@
 import Foundation
 
-/// Answers a signed-in mock user: an operator when signed in as the Apple tester (so the operator queue can be seen),
-/// no realtime endpoint, attachments on (the mock store stands in for the bucket), and the terms accepted unless the
+/// Answers a signed-in mock user: an operator when signed in as the Apple tester, mirroring the backend's operators
+/// group, no realtime endpoint, attachments on (the mock store stands in for the bucket), and the terms accepted unless the
 /// app was started with `-mock-terms-pending`, which makes `me()` owe them until the first acceptance of the run.
 final class MockMeRepository: MeRepository {
     /// Whether `me()` answers no accepted terms version; `acceptTerms` ends it for the run.

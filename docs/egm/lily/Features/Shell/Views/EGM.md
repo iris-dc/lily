@@ -25,7 +25,7 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   dependencies.unreadCenter.count + (dependencies.inbox.hasUnread ? 1 : 0)`, exposed as
   `.accessibilityValue(Text(AppBranding.Chats.unreadChats(unreadChats)), isEnabled: unreadChats > 0)`. Labels pair
   `AppBranding.homeTitle`/`exploreTitle`/`chatsTitle`/`profileTitle` with `DesignTokens.Symbols.home`/`explore`/
-  `chat`/`profile` through `tabLabel(_:symbol:)`, a `UIImage.SymbolConfiguration(weight:
+  `chat`/`profile` through `tabLabel(for:symbol:)`, which reads the title from `AppTab.title`, a `UIImage.SymbolConfiguration(weight:
   DesignTokens.TabBar.symbolWeight)`; `.tabBarMinimizeBehavior(.onScrollDown)`.
 - `[HomeTab.swift:HomeTab]`: `NavigationStack(path: $navigation.homePath) { HomeView(dependencies:) }` with
   `.animatesTabBar(depth: navigation.homePath.count)`.
@@ -92,14 +92,14 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `tournaments.loadUserLocation()` (location permission and fix). `[ExploreTab.swift:ExploreTab.body]` runs
   `.task(id: dependencies.groupChanges.version)` → `discover.loadIfStaleNearTheUser()` and `.task(id:
   dependencies.tournamentChanges.version)` → `tournaments.loadIfStaleNearTheUser()`; `refreshCarousels` calls
-  `discover.refresh()` and `tournaments.load()`.
+  `discover.search()` and `tournaments.load()`.
 - `[HomeOverview.swift:HomeOverview.refreshableScroll]`: pull-to-refresh awaits `groups.reload()` (flag),
   `tournaments.load()` (flag) and `events.load()`.
 - Navigation writes: `[HomeOverview.swift:HomeOverview.groupsContent]` `dependencies.navigation.open(group:)`;
   `[HomeOverview.swift:HomeOverview.emptyState]` `dependencies.navigation.selectedTab = .explore`;
   `[MainTabView.swift:MainTabView.body]` binds `selectedTab` and sets `usesSplitChats`; `[HomeTab.swift:HomeTab]` and
   `[ChatTab.swift:ChatTab]` bind `homePath` and `chatPath`.
-- `[MainTabView.swift:MainTabView.tabLabel]`: builds `UIImage(systemName:withConfiguration:)` glyphs (UIKit).
+- `[MainTabView.swift:MainTabView.tabLabel(for:symbol:)]`: builds `UIImage(systemName:withConfiguration:)` glyphs (UIKit).
 - `[GuestSignInPrompt.swift:GuestSignInPrompt]`: presents `SignInSheet`, which mounts its own `.errorPopup`.
 - `[HomeView.swift:HomeView.body]`: `tournaments.replace` and `events.replace` are handed to the destinations as change
   callbacks that mutate the Home lists.

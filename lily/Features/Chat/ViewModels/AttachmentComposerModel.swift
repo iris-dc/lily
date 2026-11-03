@@ -12,14 +12,15 @@ final class AttachmentComposerModel {
     let groupID: String
     /// The room's byte caps (smaller in a conversation): what the preparers refuse against and the popup names.
     let caps: AttachmentCaps
-    /// Internal, not private, so the picking extension reaches them.
+    /// Internal, not private, so `+Picking.swift` (`preparer`, `logger`) and `+Upload.swift`'s `makeWork` can reach
+    /// them; a test reads `slots`.
     let preparer: any MediaPreparer
     let logger: any Logging
-    let maxPerMessage: Int
     let repository: any ChatRepository
     let uploader: any AttachmentUploader
     let slots: SlotGate
-    private(set) var tasks: [String: Task<Void, Never>] = [:]
+    private let maxPerMessage: Int
+    private var tasks: [String: Task<Void, Never>] = [:]
     private let cache: any AttachmentCache
     private let reporter: GroupErrorReporter
     /// Stored ids whose files went (or are going) into the cache: the answer and the live echo both settle one
@@ -62,8 +63,6 @@ final class AttachmentComposerModel {
     var remainingSlots: Int { max(maxPerMessage - drafts.count, 0) }
     /// An item is still preparing or uploading: the message cannot be sent yet.
     var isBusy: Bool { drafts.contains(where: \.isInFlight) }
-    /// What the send names.
-    var refs: [AttachmentRef] { drafts.compactMap(\.uploadedRef) }
 
     /// Takes a picked item in: a slot of its kind shows at once (a file's with its name), the preparer and the upload
     /// follow on a task of their own, which holds this model weakly. `nil` when the message is full.
@@ -93,7 +92,7 @@ final class AttachmentComposerModel {
     func retry(_ draft: AttachmentDraft) {
         guard draft.hasFailed, holds(draft.id) else { return }
         setState(of: draft.id, to: .uploading(0))
-        tasks[draft.id] = Task { [work = makeWork(for: draft.id)] in await work.upload(draft.updating(state: .uploading(0))) }
+        tasks[draft.id] = Task { [work = makeWork(for: draft.id)] in await work.upload(draft) }
     }
 
     /// The items went with a message: nothing to show here any more.

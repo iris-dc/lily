@@ -13,8 +13,6 @@ protocol AttachmentCache: AnyObject {
     /// Copies a file on the device in (a sent picture's own files) and answers where the copy is.
     @discardableResult
     func store(copying fileURL: URL, for id: String, variant: AttachmentVariant) async throws -> URL
-    /// Drops the least recently used files until the cache is within its byte budget.
-    func evict() async
     /// Drops everything the device holds of the attachments it has seen, the preview copies included; the end of a
     /// session.
     func clear() async

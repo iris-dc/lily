@@ -31,7 +31,7 @@ struct CardHeader<Chips: View>: View {
 #Preview {
     ContentScreen {
         GlassCard {
-            CardHeader(startsAt: .now.addingTimeInterval(3_600)) { _ in
+            CardHeader(startsAt: .now.addingTimeInterval(.hour)) { _ in
                 EventTypeChip(type: .football).fixedSize()
             }
         }

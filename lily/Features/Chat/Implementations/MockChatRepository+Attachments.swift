@@ -7,7 +7,7 @@ extension MockChatRepository {
         let (group, _) = try await room(groupID)
         let ticket = try attachments.issueTicket(groupID: group.id,
                                                  request,
-                                                 uploader: identity.currentUserID ?? "",
+                                                 uploader: callerID,
                                                  now: now(),
                                                  caps: .caps(for: group))
         logger.debug(.chat, "Mock upload ticket \(ticket.attachmentId) issued in group \(groupID)")

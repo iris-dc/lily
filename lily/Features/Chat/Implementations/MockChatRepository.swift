@@ -9,17 +9,17 @@ import Foundation
 /// compare ids as strings. Attachments live in `MockAttachmentStore` (`MockChatRepository+Attachments.swift`); polls
 /// and pins follow the backend's rules in `MockChatRepository+Polls.swift`.
 final class MockChatRepository: ChatRepository {
-    /// Stored state is internal, not private, so `MockChatRepository+Attachments.swift` can reach it.
+    /// Stored state is internal, not private, so `MockChatRepository+Polls.swift` can reach it.
     var rooms: [String: [ChatMessage]] = [:]
     /// The caller's history floor per room: pages show only the ids above it.
-    var floors: [String: String] = [:]
+    private var floors: [String: String] = [:]
     /// Per room: its pins, oldest first, its poll revision, and the voters of its public polls by option id.
     var pins: [String: [PinnedMessage]] = [:]
     var pollRevisions: [String: Int] = [:]
     var pollVoters: [String: [String: [PollVoters.Voter]]] = [:]
     private var replyIndex = 0
     private var sequence = 0
-    let groups: MockGroupRepository
+    private let groups: MockGroupRepository
     private let transport: MockRealtimeTransport
     let identity: any IdentityProvider
     let logger: any Logging
@@ -34,8 +34,8 @@ final class MockChatRepository: ChatRepository {
          transport: MockRealtimeTransport,
          identity: any IdentityProvider,
          logger: any Logging,
-         attachments: MockAttachmentStore = MockAttachmentStore(),
-         autoReplies: Bool = false,
+         attachments: MockAttachmentStore,
+         autoReplies: Bool,
          now: @escaping () -> Date = { .now },
          sleep: @escaping Sleep = systemSleep) {
         self.groups = groups
@@ -47,6 +47,10 @@ final class MockChatRepository: ChatRepository {
         self.now = now
         self.sleep = sleep
     }
+
+    /// The caller as the fixtures and the backend's stamps name them; computed, so the name follows a language change.
+    var callerID: String { identity.currentUserID ?? "" }
+    var callerName: String { AppBranding.Groups.Create.mockOwnerName }
 
     func newest(groupID: String) async throws -> MessagePage {
         let (group, messages) = try await visibleRoom(groupID)
@@ -84,7 +88,6 @@ final class MockChatRepository: ChatRepository {
     func send(groupID: String, _ draft: MessageDraft) async throws -> SentMessage {
         let (group, messages) = try await room(groupID)
         guard !draft.trimmedText.hasPrefix(AppConfig.Chat.mockFailingPrefix) else { throw AppError.network }
-        let callerID = identity.currentUserID ?? ""
         if let stored = messages.first(where: { $0.clientMessageId == draft.clientMessageID }) {
             guard stored.senderUserId == callerID else { throw AppError.messageSendFailed }
             logger.debug(.chat, "Mock send replayed for message \(stored.id)")
@@ -96,7 +99,7 @@ final class MockChatRepository: ChatRepository {
         let message = ChatMessage(id: nextID(in: groupID),
                                   groupId: groupID,
                                   senderUserId: callerID,
-                                  senderName: AppBranding.Groups.Create.mockOwnerName,
+                                  senderName: callerName,
                                   kind: draft.poll == nil ? .text : .poll,
                                   text: payload.text,
                                   clientMessageId: draft.clientMessageID,
@@ -150,8 +153,8 @@ final class MockChatRepository: ChatRepository {
         guard group.isMember else { throw AppError.notAMember }
         if rooms[groupID] == nil {
             rooms[groupID] = MockChatFixtures.messages(groupID: groupID,
-                                                       callerID: identity.currentUserID ?? "",
-                                                       callerName: AppBranding.Groups.Create.mockOwnerName,
+                                                       callerID: callerID,
+                                                       callerName: callerName,
                                                        now: now(),
                                                        lastMessageAt: group.lastMessageAt ?? group.createdAt,
                                                        count: autoReplies ? AppConfig.Chat.mockLongRoomMessages : nil)

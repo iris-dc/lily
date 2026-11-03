@@ -21,19 +21,20 @@ mount, and swipe-to-dismiss blocked while sending. It drives `FeedbackViewModel`
   errorCenter: ErrorCenter)`; keeps the view model in `@State` (`State(initialValue:)`), reads
   `@Environment(\.dismiss)`. Private `form`, `hint(for: FeedbackField) -> ValidationHint?`, `toolbar` (Done and Cancel
   are `lilyToolbarTextButton()`). Identifiers:
-  `feedbackKind`, `feedbackMessage`, `feedbackEmail`, `feedbackSubmit`, `feedbackDone`
-  (`lily/Config/AccessibilityIdentifiers+Feedback.swift`).
+  `feedbackMessage`, `feedbackEmail`, `feedbackSubmit`, `feedbackDone`
+  (`lily/Config/AccessibilityIdentifiers+Feedback.swift`); the kind picker carries none, its segments are found by label.
 
 ## Invariants
 
 - `FeedbackSheet.body` switches on `viewModel.isSubmitted`: `true` shows an `EmptyStateView` with
   `DesignTokens.Symbols.feedbackSent`, `Copy.thanks` and `Copy.thanksMessage`; `false` shows the form.
-- `.interactiveDismissDisabled(viewModel.isSubmitting)`; presentation `.presentationDetents([.large])`,
-  `.lilyFormSheet()`, `.presentationDragIndicator(.visible)`, `.tint(Color.lilyAccent)`, inline title `Copy.title`.
-- The sheet mounts its own `.errorPopup(errorCenter)`, since a sheet draws above the root's popup and only the last
-  mounted presenter draws.
+- Presentation `.presentationDetents([.large])` then `.lilyFormSheet(errorCenter: errorCenter, lockedWhile:
+  viewModel.isSubmitting)` (`lily/Core/UI/Layout/FormSheet.swift`: form sizing, the grabber, interactive dismiss
+  disabled while submitting and the popup mount in one modifier), `.tint(Color.lilyAccent)`, inline title `Copy.title`.
+- The sheet mounts its own `.errorPopup(errorCenter)` through that modifier, since a sheet draws above the root's
+  popup and only the last mounted presenter draws.
 - Toolbar: when `isSubmitted`, one confirmation `Button(Copy.done)` → `dismiss()`; otherwise a cancellation
-  `Button(AppBranding.Events.Create.cancel, role: .cancel)` → `dismiss()`, disabled while `isSubmitting`, and a
+  `Button(AppBranding.Forms.cancel, role: .cancel)` → `dismiss()`, disabled while `isSubmitting`, and a
   confirmation `DraftSubmitButton(title: Copy.send, isSubmitting:, isEnabled: viewModel.canSubmit)` running
   `await viewModel.submit()`; Send is disabled whenever `canSubmit` is false and shows a `ProgressView` while sending.
 - Form fields: a segmented `Picker` over `FeedbackKind.allCases` bound to `$viewModel.draft.kind`; a vertical-axis
@@ -51,7 +52,8 @@ mount, and swipe-to-dismiss blocked while sending. It drives `FeedbackViewModel`
 - `dismiss()` from Done after a successful send and from Cancel while not submitting (`FeedbackSheet.toolbar`).
 - `DraftSubmitButton` spawns `Task { await action() }` (`lily/Core/UI/Components/DraftSubmitButton.swift`), which runs
   `viewModel.submit()` and so the repository send, the `.feedback` log lines and `ErrorCenter.report` on failure.
-- `.errorPopup(errorCenter)` installs `ErrorPopupModifier` (`lily/Core/UI/Components/ErrorPopup.swift`) on the sheet,
+- `.errorPopup(errorCenter)` (inside `lilyFormSheet(errorCenter:lockedWhile:)`) installs `ErrorPopupModifier`
+  (`lily/Core/UI/Components/ErrorPopup.swift`) on the sheet,
   registering it as a presenter for the shared `ErrorCenter`.
 - `FeedbackRow` invokes its `action` on tap; nothing else. No haptics, network, logging or process reads in this
   directory.

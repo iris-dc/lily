@@ -7,9 +7,9 @@ extension EnvironmentValues {
     @Entry var transcriptWidth: CGFloat?
 }
 
-/// A frame of `fraction` of the transcript's width, aligned to `alignment`. `containerRelativeFrame` was the first
-/// cut and still serves until the width is known, but it measures the scroll view's container, which beside the
-/// Chats sidebar is not the column the rows can use: 78 % of it overflowed the visible column on both sides.
+/// A frame of `fraction` of the transcript's width, aligned to `alignment`. Falls back to `containerRelativeFrame`
+/// until the width is measured; that frame is the scroll view's container, which runs under the iPad's floating Chats
+/// sidebar, so rows sized from it overflow the visible column (see `UsableWidth`).
 private struct TranscriptFraction: ViewModifier {
     let fraction: CGFloat
     let alignment: Alignment

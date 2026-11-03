@@ -37,19 +37,12 @@ struct TournamentDetailMatchesTests {
         .fixture(id: "t", format: .singleElimination, teamSize: 5, entryCount: 1, organizerUserId: TestFixtures.user.id)
     }
 
-    @Test func startIsTheOrganisersWhileRegistrationIsOpenAndNeedsTheMinimum() async {
-        let few = await loaded(oneTeam, entries: [teams[0]])
-        #expect(few.permissions.showsStart && !few.permissions.canStart)
-        #expect(few.permissions.startBlockedReason == "Needs at least 2 teams")
-        let soloFew = await loaded(.fixture(id: "t", format: .roundRobin, entryCount: 2, organizerUserId: TestFixtures.user.id),
-                                   entries: Array(teams.prefix(2)))
-        #expect(soloFew.permissions.startBlockedReason == "Needs at least 3 players")
-
+    /// The rules themselves are `TournamentPermissionsTests`; here the value follows the loaded detail.
+    @Test func startIsTheOrganisersWhileRegistrationIsOpen() async {
         let ready = await loaded(cup, entries: teams)
+
         #expect(ready.permissions.showsStart && ready.permissions.canStart && !ready.hasMatches)
         #expect(ready.permissions.startBlockedReason == nil)
-        let player = await loaded(.fixture(id: "t", entryCount: 4, myEntryId: "e1"), entries: teams)
-        #expect(!player.permissions.showsStart && !player.permissions.canStart && player.permissions.startBlockedReason == nil)
     }
 
     @Test func aStartOnTooFewEntriesIsRefusedNotCrashed() async {

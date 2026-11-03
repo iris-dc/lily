@@ -8,9 +8,7 @@ extension LilyChatTests {
     @objc @MainActor
     func testClearingARoomFromItsRowKeepsTheRowClearsItsDotAndEmptiesTheRoom() {
         tapSignInWithApple()
-        openChatsTab()
-        let kickers = app.buttons["group-row-mock-group-kickers"]
-        XCTAssertTrue(kickers.waitForExistence(timeout: 10))
+        let kickers = chatsRow(MockIDs.kickersRow)
         let dot = kickers.descendants(matching: .any)["Unread messages"]
         XCTAssertTrue(dot.waitForExistence(timeout: 10), "the fixture room is unread before the clear")
 
@@ -18,9 +16,7 @@ extension LilyChatTests {
         let clear = app.buttons["chat-clear"]
         openContextMenu(on: kickers, until: clear)
         clear.tap()
-        let confirmation = app.alerts.firstMatch
-        XCTAssertTrue(confirmation.waitForExistence(timeout: 5), "the confirmation asks first")
-        confirmation.buttons["Clear chat"].tap()
+        confirmAlert("Clear chat")
 
         XCTAssertTrue(dot.waitForNonExistence(timeout: 5), "a clear marks the room read")
         XCTAssertTrue(kickers.exists, "a group's row stays; only a conversation's leaves")

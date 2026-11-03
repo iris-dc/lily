@@ -93,7 +93,7 @@ struct RemoteTournamentRepositoryTests {
         let encoder = APIJSONCoding.makeEncoder()
         #expect(String(bytes: try encoder.encode(MatchSchedulePayload(schedule: MatchSchedule())), encoding: .utf8) == "{}")
         let timed = MatchSchedulePayload(schedule: MatchSchedule(scheduledAt: Date(timeIntervalSince1970: 1_800_000_000)))
-        let json = try #require(try JSONSerialization.jsonObject(with: try encoder.encode(timed)) as? [String: Any])
+        let json = try ContractSamples.jsonObject(of: timed)
         #expect(Set(json.keys) == ["scheduledAt"])
     }
 

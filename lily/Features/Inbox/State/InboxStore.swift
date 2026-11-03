@@ -43,7 +43,6 @@ final class InboxStore: SessionObserver {
 
     /// True from a failed load until the next successful one.
     var loadFailed: Bool { loader.loadFailed }
-    var isLoading: Bool { loader.isLoading }
     /// A page answered since the last sign-in; the screen shows its spinner until then, whether or not its task has
     /// started the load.
     var hasLoaded: Bool { loader.hasLoaded }

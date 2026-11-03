@@ -4,26 +4,22 @@ import XCTest
 /// mock position and show each group's place and distance, and a public group is founded with a place that its detail
 /// then shows. Identifiers mirror `AccessibilityIdentifiers+Groups`; the mock ids mirror `MockGroupFixtures`.
 final class LilyDiscoverTests: LilyUITestCase {
-    private let volleyRow = "group-row-mock-group-volley"
-    private let kickersRow = "group-row-mock-group-kickers"
-
     /// The tiles carry the place and the distance from the mock position; Discover lists the nearest group first and
     /// its cards show the same place line.
     @MainActor
     func testCarouselAndDiscoverShowPlacesAndDistancesNearestFirst() {
         relaunchAsGuest()
-        let volley = app.buttons[volleyRow]
+        let volley = app.buttons[MockIDs.volleyRow]
         XCTAssertTrue(volley.waitForExistence(timeout: 10), "the carousel shows public groups to a guest")
         XCTAssertTrue(volley.label.contains("Beach Mitte"), "the tile names the place: \(volley.label)")
         XCTAssertTrue(volley.label.contains(" km") || volley.label.contains(" m"), "the tile shows the distance: \(volley.label)")
 
-        app.buttons["groups-see-all"].tap()
-        XCTAssertTrue(app.navigationBars["Discover groups"].waitForExistence(timeout: 5))
+        showDiscover()
         let firstCard = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'group-row-'")).firstMatch
         XCTAssertTrue(firstCard.waitForExistence(timeout: 10))
-        XCTAssertEqual(firstCard.identifier, volleyRow, "the nearest group comes first")
+        XCTAssertEqual(firstCard.identifier, MockIDs.volleyRow, "the nearest group comes first")
         XCTAssertTrue(firstCard.label.contains("Beach Mitte"), "the card names the place: \(firstCard.label)")
-        XCTAssertTrue(app.buttons[kickersRow].exists, "every public group is on Discover")
+        XCTAssertTrue(app.buttons[MockIDs.kickersRow].exists, "every public group is on Discover")
     }
 
     /// A public group needs a place: Create stays off until one is named (the spot comes from the mock position), and

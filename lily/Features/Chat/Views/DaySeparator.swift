@@ -18,8 +18,8 @@ struct DaySeparator: View {
     ContentScreen {
         VStack {
             DaySeparator(day: .now)
-            DaySeparator(day: .now.addingTimeInterval(-86_400))
-            DaySeparator(day: .now.addingTimeInterval(-86_400 * 9))
+            DaySeparator(day: .now.addingTimeInterval(-.day))
+            DaySeparator(day: .now.addingTimeInterval(-9 * .day))
         }
     }
 }

@@ -24,8 +24,6 @@ final class FakeChatRepository: ChatRepository, HoldsRequests {
     /// The floor the next clear answers; `nil` answers one that sorts after every fixture id, as the backend's floor
     /// (now) sorts after every stored message.
     var clearFloor: String?
-    /// Answered to the next upload requests, one each; a fixture ticket numbered by the request once they run dry.
-    var uploadTickets: [UploadTicket] = []
     var uploadError: (any Error)?
     /// Answered to the next link refreshes, one each; `.attachmentUnavailable` once they run dry.
     var refreshLinks: [AttachmentLink] = []
@@ -92,7 +90,6 @@ final class FakeChatRepository: ChatRepository, HoldsRequests {
     func requestUpload(groupID: String, _ request: UploadRequestPayload) async throws -> UploadTicket {
         uploadRequests.append((groupID, request))
         if let uploadError { throw uploadError }
-        if !uploadTickets.isEmpty { return uploadTickets.removeFirst() }
         ticketSequence += 1
         return .fixture(attachmentID: "att-\(ticketSequence)", thumbnail: request.thumbnail != nil)
     }

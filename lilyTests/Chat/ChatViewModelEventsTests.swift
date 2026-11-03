@@ -12,10 +12,7 @@ struct ChatViewModelEventsTests {
     private func makeChat(role: MemberRole = .member) async -> (RealtimeHarness, ChatViewModel) {
         let harness = RealtimeHarness()
         let group = SportGroup.fixture(id: "g", channelEpoch: 1, role: role)
-        harness.groups.result = .success([group])
-        harness.cache.store(.fixture(messages: [.fixture(id: "m1")]), for: "g")
-        await harness.connect()
-        return (harness, harness.makeChatViewModel(for: group))
+        return (harness, await harness.openChat(for: group, room: .fixture(messages: [.fixture(id: "m1")]), appear: false))
     }
 
     @Test func aSystemRowNamesTheGameOnceItIsLoadedAndFetchesItOnce() async {

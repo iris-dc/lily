@@ -18,14 +18,6 @@ struct EventListSnapshotTests {
         makeEventListViewModel(scope: scope, repository: repository, identity: identity, logger: logger, snapshots: snapshots)
     }
 
-    private func screenState(of viewModel: EventListViewModel) -> EventListScreenState {
-        .resolve(isInitialLoad: viewModel.isInitialLoad,
-                 loadFailed: viewModel.loadFailed,
-                 hasEvents: !viewModel.events.isEmpty,
-                 isEverythingFilteredOut: viewModel.isEverythingFilteredOut,
-                 awaitsAnswerForPosition: viewModel.awaitsAnswerForPosition)
-    }
-
     /// The snapshot is content on the first frame and through the first load, which still runs: it is a hint, not an answer.
     @Test func startsFromTheSnapshotAndShowsItWhileTheFirstLoadIsOut() async {
         snapshots.seed(held, for: key)
@@ -37,7 +29,7 @@ struct EventListSnapshotTests {
         let load = Task { await viewModel.loadIfStale() }
         await settle(until: { repository.requestedScopes.count == 1 })
         #expect(viewModel.isLoading && !viewModel.isInitialLoad && viewModel.listState == .content)
-        #expect(screenState(of: viewModel) == .list)
+        #expect(viewModel.screenState == .list)
         #expect(viewModel.events == held)
 
         repository.releaseRequests()
@@ -54,15 +46,15 @@ struct EventListSnapshotTests {
         repository.result = .success([])
         repository.holdsRequests = true
         let viewModel = makeViewModel()
-        #expect(!viewModel.isInitialLoad && viewModel.listState == .empty && screenState(of: viewModel) == .empty)
+        #expect(!viewModel.isInitialLoad && viewModel.listState == .empty && viewModel.screenState == .empty)
 
         let load = Task { await viewModel.loadIfStale() }
         await settle(until: { repository.requestedScopes.count == 1 })
-        #expect(viewModel.isLoading && !viewModel.isInitialLoad && screenState(of: viewModel) == .empty)
+        #expect(viewModel.isLoading && !viewModel.isInitialLoad && viewModel.screenState == .empty)
 
         repository.releaseRequests()
         await load.value
-        #expect(viewModel.hasLoaded && screenState(of: viewModel) == .empty)
+        #expect(viewModel.hasLoaded && viewModel.screenState == .empty)
 
         viewModel.clear()
         #expect(viewModel.isInitialLoad && viewModel.listState == .loading, "the next caller has no snapshot")
@@ -78,7 +70,7 @@ struct EventListSnapshotTests {
 
         let load = Task { await viewModel.loadIfStale() }
         await settle(until: { repository.requestedScopes.count == 1 })
-        #expect(viewModel.listState == .loading && screenState(of: viewModel) == .loading)
+        #expect(viewModel.listState == .loading && viewModel.screenState == .loading)
 
         repository.releaseRequests()
         await load.value

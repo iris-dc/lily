@@ -28,7 +28,8 @@ the target's default.
   `.network`, cancellation passes through.
 - `MockFeedbackRepository.send` never throws: it appends the payload to `sent` and answers
   `FeedbackReceipt(id: UUID().uuidString.lowercased(), createdAt: now())`.
-- `sent` is mutable instance state inspected by tests; the mock is main-actor isolated like the remote.
+- `sent` is mutable instance state kept so `AppDependenciesFeedbackTests` can prove the view model is wired to the
+  dependencies' own repository; the mock is main-actor isolated like the remote.
 
 ## Side Effects
 

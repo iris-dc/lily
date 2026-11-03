@@ -118,7 +118,6 @@ extension RealtimeSessionController {
 
     /// Renews at the moment `RenewalDelay` decides: the expiry-bound one for a good token, after a backoff wait otherwise.
     func scheduleRenewal(for token: String?, fresh: Bool) {
-        renewalTask?.cancel()
         let expiry = token.flatMap(JWTClaims.expiration)
         let renewal = RenewalDelay(expiry: expiry, lastExpiry: lastExpiry, now: now(), fresh: fresh)
         let delay = renewal.seconds(backingOff: &backoff, random: random)
@@ -131,12 +130,7 @@ extension RealtimeSessionController {
             logger.debug(.chat, "Chat connection renews in \(Int(delay))s")
         }
         lastExpiry = expiry ?? lastExpiry
-        // The task lets go of its slot before reconnecting, or the close inside would cancel the very task doing it.
-        renewalTask = Task { [weak self, sleep] in
-            guard (try? await sleep(.seconds(max(delay, 0)))) != nil, let self else { return }
-            renewalTask = nil
-            await reconnect(reason: "token renewal")
-        }
+        arm(\.renewalTask, after: delay) { await $0.reconnect(reason: "token renewal") }
     }
 
     /// The connection dropped: back off, then reconnect with a fresh token.
@@ -144,10 +138,19 @@ extension RealtimeSessionController {
         guard isActive, user != nil, reconnectTask == nil else { return }
         let delay = backoff.next(random: random)
         logger.info(.chat, "Chat reconnecting in \(Int(delay))s (\(reason))")
-        reconnectTask = Task { [weak self, sleep] in
-            guard (try? await sleep(.seconds(delay))) != nil, let self else { return }
-            reconnectTask = nil
-            await reconnect(reason: reason)
+        arm(\.reconnectTask, after: delay) { await $0.reconnect(reason: reason) }
+    }
+
+    /// The one timer shape: whatever occupies `slot` is cancelled, the new task waits, lets go of the slot and then acts.
+    /// The slot is cleared before the action because a `close()` inside would otherwise cancel the very task doing it.
+    func arm(_ slot: ReferenceWritableKeyPath<RealtimeSessionController, Task<Void, Never>?>,
+             after seconds: TimeInterval,
+             then action: @escaping @MainActor (RealtimeSessionController) async -> Void) {
+        self[keyPath: slot]?.cancel()
+        self[keyPath: slot] = Task { [weak self, sleep] in
+            guard (try? await sleep(.seconds(seconds))) != nil, let self else { return }
+            self[keyPath: slot] = nil
+            await action(self)
         }
     }
 

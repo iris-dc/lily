@@ -50,7 +50,7 @@ struct GalleryLayoutTests {
     /// The gallery's own corners are each tile's that lie on its edge: all four of one picture, the outer two of each of
     /// two side by side, and a spanning last tile's two bottom ones.
     @Test func eachTileRoundsOnlyTheCornersOnTheGallerysEdge() {
-        #expect(GalleryLayout(count: 1).outerCorners(of: 0) == .all)
+        #expect(GalleryLayout(count: 1).outerCorners(of: 0) == [.topLeading, .topTrailing, .bottomLeading, .bottomTrailing])
         #expect(GalleryLayout(count: 2).outerCorners(of: 0) == [.topLeading, .bottomLeading])
         #expect(GalleryLayout(count: 2).outerCorners(of: 1) == [.topTrailing, .bottomTrailing])
         let three = GalleryLayout(count: 3)
@@ -69,6 +69,6 @@ struct GalleryLayoutTests {
         let inner = DesignTokens.Layout.galleryInnerCornerRadius
         let radii = GalleryTileShape.radii(of: [.topLeading], galleryRadius: frame)
         #expect(radii == RectangleCornerRadii(topLeading: outer, bottomLeading: inner, bottomTrailing: inner, topTrailing: inner))
-        #expect(GalleryTileShape.radii(of: .all, galleryRadius: 1).topLeading == 0, "never below zero")
+        #expect(GalleryTileShape.radii(of: [.topLeading], galleryRadius: 1).topLeading == 0, "never below zero")
     }
 }

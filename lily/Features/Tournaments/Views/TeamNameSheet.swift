@@ -37,7 +37,7 @@ struct TeamNameSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(AppBranding.Events.Create.cancel, role: .cancel) { dismiss() }
+                    Button(AppBranding.Forms.cancel, role: .cancel) { dismiss() }
                         .lilyToolbarTextButton()
                         .disabled(viewModel.isBusy)
                 }
@@ -51,11 +51,7 @@ struct TeamNameSheet: View {
             .tint(Color.lilyAccent)
         }
         .presentationDetents([.medium])
-        .lilyFormSheet()
-        .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(viewModel.isBusy)
-        // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
-        .errorPopup(errorCenter)
+        .lilyFormSheet(errorCenter: errorCenter, lockedWhile: viewModel.isBusy)
         .onAppear { isFocused = true }
         .onChange(of: viewModel.tournament?.myEntryId) {
             if viewModel.tournament?.hasEntered == true { dismiss() }

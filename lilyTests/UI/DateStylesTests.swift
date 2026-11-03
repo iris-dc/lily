@@ -26,8 +26,4 @@ struct DateStylesTests {
         #expect(english.contains("2027"))
         #expect(english.contains(":"))
     }
-
-    @Test func theDefaultStyleFollowsTheAppLocale() {
-        #expect(LilyTheme.DateStyles.dateTime.locale == AppLocale.locale)
-    }
 }

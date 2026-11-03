@@ -33,30 +33,28 @@ struct EditEventViewModelTests {
                                        onChange: changed.record)
     }
 
+    /// Another sheet over the same collaborators; `init` spells the call out because `viewModel` is stored.
+    private func makeViewModel(event: SportEvent, currencyCode: String = EventDraft.testCurrencyCode) -> EditEventViewModel {
+        EditEventViewModel(event: event,
+                           repository: repository,
+                           errorCenter: errorCenter,
+                           logger: logger,
+                           tryAgainDelay: .zero,
+                           now: { Self.now },
+                           currencyCode: currencyCode,
+                           onChange: changed.record)
+    }
+
     /// A price added to a game that had none is in the user's currency; a priced game keeps the currency it was
     /// created in, whatever the user's is now, and an untouched draft still counts as unchanged.
     @Test func aNewPriceTakesTheUsersCurrencyAndAnExistingOneKeepsItsOwn() {
-        let polish = EditEventViewModel(event: event,
-                                        repository: repository,
-                                        errorCenter: errorCenter,
-                                        logger: logger,
-                                        tryAgainDelay: .zero,
-                                        now: { Self.now },
-                                        currencyCode: "PLN",
-                                        onChange: changed.record)
+        let polish = makeViewModel(event: event, currencyCode: "PLN")
         #expect(!polish.hasChanges)
         polish.draft.price = 40
         #expect(polish.hasChanges && polish.draft.eventPrice == Price(amount: 40, currencyCode: "PLN"))
 
         let priced = SportEvent.fixture(id: "p", hostUserId: "host", price: Price(amount: 5, currencyCode: "EUR"))
-        let euro = EditEventViewModel(event: priced,
-                                      repository: repository,
-                                      errorCenter: errorCenter,
-                                      logger: logger,
-                                      tryAgainDelay: .zero,
-                                      now: { Self.now },
-                                      currencyCode: "PLN",
-                                      onChange: changed.record)
+        let euro = makeViewModel(event: priced, currencyCode: "PLN")
         #expect(!euro.hasChanges && euro.draft.currencyCode == "EUR")
         euro.draft.price = 7
         #expect(euro.draft.eventPrice == Price(amount: 7, currencyCode: "EUR"))
@@ -78,13 +76,7 @@ struct EditEventViewModelTests {
         draft.group = kickers
         let grouped = draft.makeEvent(hostUserId: "host", hostName: "h", coordinate: AppConfig.Location.mockCenter)
 
-        let viewModel = EditEventViewModel(event: grouped,
-                                           repository: repository,
-                                           errorCenter: errorCenter,
-                                           logger: logger,
-                                           now: { Self.now },
-                                           currencyCode: EventDraft.testCurrencyCode,
-                                           onChange: changed.record)
+        let viewModel = makeViewModel(event: grouped)
 
         #expect(viewModel.showsGroupRow && viewModel.lockedGroup == kickers)
         #expect(viewModel.eligibleGroups.isEmpty && !viewModel.explainsNoEligibleGroups)

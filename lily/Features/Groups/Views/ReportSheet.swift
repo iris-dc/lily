@@ -30,11 +30,7 @@ struct ReportSheet: View {
             .tint(Color.lilyAccent)
         }
         .presentationDetents([.medium, .large])
-        .lilyFormSheet()
-        .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(viewModel.isSubmitting)
-        // A sheet is drawn above the root, so the shared popup mounted there would sit behind this one.
-        .errorPopup(errorCenter)
+        .lilyFormSheet(errorCenter: errorCenter, lockedWhile: viewModel.isSubmitting)
     }
 
     private var form: some View {
@@ -68,7 +64,7 @@ struct ReportSheet: View {
             }
         } else {
             ToolbarItem(placement: .cancellationAction) {
-                Button(AppBranding.Events.Create.cancel, role: .cancel) { dismiss() }
+                Button(AppBranding.Forms.cancel, role: .cancel) { dismiss() }
                     .lilyToolbarTextButton()
                     .disabled(viewModel.isSubmitting)
             }

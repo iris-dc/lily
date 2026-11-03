@@ -1,8 +1,8 @@
 import Foundation
 
-/// Accessibility identifiers the app puts on controls for the UI tests to query. `lilyUITests` mirrors these literals
-/// (as it does for `AppConfig.LaunchArguments`), so a rename here must be repeated there or the smoke tests stop
-/// finding the control.
+/// Accessibility identifiers the app puts on controls for the UI tests to query. A UI test that reads one mirrors the
+/// literal by hand (as it does for `AppConfig.LaunchArguments`), so a rename here must be repeated there or the test
+/// stops finding the control.
 nonisolated enum AccessibilityIdentifiers {
     /// Segmented list/map picker in the Explore toolbar.
     static let eventsPresentation = "events-presentation"

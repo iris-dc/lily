@@ -76,7 +76,6 @@ final class TournamentListViewModel {
     }
     /// True from a failed load until the next successful one.
     var loadFailed: Bool { freshness.loadFailed }
-    var hasLoaded: Bool { freshness.hasLoaded }
 
     /// What the screen shows: every tournament of the scope, or those of the chosen type on Discover.
     var visibleTournaments: [Tournament] {
@@ -95,16 +94,19 @@ final class TournamentListViewModel {
             freshness.recordSuccess(at: now(), version: changes.version, userID: nil)
             return
         }
-        guard !isWaitingToRetry else {
+        let decision = freshness.decision(now: now(),
+                                          version: changes.version,
+                                          userID: identity.currentUserID,
+                                          position: requestPosition)
+        switch decision {
+        case .waitAfterFailure:
             logger.debug(.cache, "Tournaments for scope \(scope) failed to load recently; not retrying yet")
-            return
-        }
-        guard let reason = stalenessReason else {
+        case .fresh:
             logger.debug(.cache, "Tournaments for scope \(scope) are fresh; skipping reload")
-            return
+        case .stale(let reason):
+            logger.debug(.cache, "Tournaments for scope \(scope) are stale (\(reason)); reloading")
+            await load()
         }
-        logger.debug(.cache, "Tournaments for scope \(scope) are stale (\(reason)); reloading")
-        await load()
     }
 
     /// Always asks the repository (pull-to-refresh); a call made while one is in flight is dropped. A change that landed
@@ -176,10 +178,6 @@ final class TournamentListViewModel {
 
     /// Why the user's position makes Explore content stale (`ContentFreshness.positionReason`); the others send none.
     private var positionReason: String? { freshness.positionReason(for: requestPosition) }
-
-    private var isWaitingToRetry: Bool {
-        freshness.isWaitingToRetry(now: now(), version: changes.version, userID: identity.currentUserID)
-    }
 
     /// Why the content must be reloaded, or `nil` while it can be reused: the shared rules first, then the position
     /// only Explore sends.

@@ -5,29 +5,21 @@ import XCTest
 /// one with Marta on the Chats tab). Identifiers mirror `AccessibilityIdentifiers(+People)`; the mock ids mirror
 /// `MockGroupFixtures`.
 final class LilyPeopleTests: LilyUITestCase {
-    let martaRow = "participant-row-mock-user-marta"
-    let jonasRow = "participant-row-mock-user-jonas"
-    let basketballRow = "group-row-mock-group-basketball"
-    let kickersRow = "group-row-mock-group-kickers"
-    let devMemberRow = "member-row-mock-user-dev"
-    let martaConversationRow = "group-row-mock-dm-mock-user-marta"
-    let jonasConversationRow = "group-row-mock-dm-mock-user-jonas"
-
     /// "Sunset 5-a-side" is hosted by Marta, who shares Kreuzberg Kickers with the caller.
     @MainActor
     func testEventDetailListsParticipantsAndOpensAProfile() {
         tapSignInWithApple()
         openSunsetParticipants()
-        let host = app.buttons[martaRow]
+        let host = app.buttons[MockIDs.martaRow]
         XCTAssertTrue(host.waitForExistence(timeout: 5), "the host leads the list")
         XCTAssertTrue(host.label.contains("Host"), "the host's row carries the chip: \(host.label)")
-        scrollUntilHittable(host)
-        host.tap()
+        tapAfterScrolling(host)
 
         XCTAssertTrue(app.navigationBars["Marta"].waitForExistence(timeout: 10), "the row opens the person's profile")
         XCTAssertTrue(app.buttons["profile-message"].waitForExistence(timeout: 5), "another person can be messaged")
         XCTAssertTrue(app.staticTexts["Groups in common"].exists)
-        XCTAssertTrue(app.buttons[kickersRow].waitForExistence(timeout: 10), "Marta and the caller share Kreuzberg Kickers")
+        XCTAssertTrue(app.buttons[MockIDs.kickersRow].waitForExistence(timeout: 10),
+                      "Marta and the caller share Kreuzberg Kickers")
     }
 
     /// Berlin Basketball is public and the caller is not in it: the Members segment is there, its rows open profiles,
@@ -38,7 +30,7 @@ final class LilyPeopleTests: LilyUITestCase {
         let carousel = app.scrollViews["group-carousel"]
         XCTAssertTrue(carousel.waitForExistence(timeout: 10), "the carousel shows once Discover answered")
         // Nearest first around the mock position: Berlin Basketball is the second tile of the first column.
-        let basketball = app.buttons[basketballRow]
+        let basketball = app.buttons[MockIDs.basketballRow]
         XCTAssertTrue(basketball.waitForExistence(timeout: 10))
         waitUntilHittableAndStill(basketball)
         basketball.tap()
@@ -48,11 +40,11 @@ final class LilyPeopleTests: LilyUITestCase {
         XCTAssertTrue(picker.waitForExistence(timeout: 5), "a public roster is offered to a signed-in outsider")
         picker.buttons["Members"].tap()
 
-        let dev = app.buttons[devMemberRow]
+        let dev = app.buttons[MockIDs.devMemberRow]
         XCTAssertTrue(dev.waitForExistence(timeout: 10), "Dev owns Berlin Basketball")
-        XCTAssertTrue(app.buttons["member-row-mock-user-marta"].exists)
+        XCTAssertTrue(app.buttons[MockIDs.martaMemberRow].exists)
         // mock-apple is the mock Apple user's id (MockAuthService); a label match on "You" would also hit the hints.
-        XCTAssertFalse(app.buttons["member-row-mock-apple"].exists, "an outsider has no row of their own")
+        XCTAssertFalse(app.buttons[MockIDs.appleMemberRow].exists, "an outsider has no row of their own")
         dev.tap()
         XCTAssertTrue(app.navigationBars["Dev"].waitForExistence(timeout: 10), "a roster row opens the person's profile")
         XCTAssertTrue(app.buttons["profile-message"].waitForExistence(timeout: 5))
@@ -65,10 +57,7 @@ final class LilyPeopleTests: LilyUITestCase {
     func testProfileMessageButtonOpensAConversation() {
         tapSignInWithApple()
         openSunsetParticipants()
-        let jonas = app.buttons[jonasRow]
-        XCTAssertTrue(jonas.waitForExistence(timeout: 5), "Jonas is in the game")
-        scrollUntilHittable(jonas)
-        jonas.tap()
+        tapAfterScrolling(app.buttons[MockIDs.jonasRow], "Jonas is in the game")
         XCTAssertTrue(app.navigationBars["Jonas"].waitForExistence(timeout: 10), "the row opens his profile")
         let message = app.buttons["profile-message"]
         XCTAssertTrue(message.waitForExistence(timeout: 5))
@@ -78,7 +67,7 @@ final class LilyPeopleTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Jonas"].exists, "the conversation is titled with the person")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 5), "the chat was pushed on the Chats stack")
-        let row = app.buttons[jonasConversationRow]
+        let row = app.buttons[MockIDs.jonasConversationRow]
         XCTAssertTrue(row.waitForExistence(timeout: 10), "the Chats tab lists the new conversation")
         XCTAssertTrue(row.label.contains("Direct message"), "a person row is captioned Direct message: \(row.label)")
     }
@@ -89,7 +78,7 @@ final class LilyPeopleTests: LilyUITestCase {
     @MainActor
     func testChatsTabListsTheConversationWithMarta() {
         tapSignInWithApple()
-        let marta = chatsRow(martaConversationRow)
+        let marta = chatsRow(MockIDs.martaConversationRow)
         XCTAssertTrue(marta.label.contains("Direct message"), "a person row is captioned Direct message: \(marta.label)")
         marta.tap()
 
@@ -106,8 +95,8 @@ final class LilyPeopleTests: LilyUITestCase {
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 5))
         openHomeTab()
-        XCTAssertTrue(app.buttons[kickersRow].waitForExistence(timeout: 10))
-        XCTAssertFalse(app.buttons[martaConversationRow].exists, "Home lists communities only")
+        XCTAssertTrue(app.buttons[MockIDs.kickersRow].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons[MockIDs.martaConversationRow].exists, "Home lists communities only")
     }
 
     /// Opens "Sunset 5-a-side" from Explore and waits for its "Who's in" list.

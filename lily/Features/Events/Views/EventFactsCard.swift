@@ -21,7 +21,7 @@ struct EventFactsCard: View {
                 if let level = event.skillLevel?.ifKnown {
                     Label(AppBranding.Events.level(level.displayName), systemImage: DesignTokens.Symbols.level)
                 }
-                CapacityBar(event: event)
+                EntriesBar(event: event)
             }
             .labelStyle(.iconColumn)
         }

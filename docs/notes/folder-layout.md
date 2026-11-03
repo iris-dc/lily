@@ -12,8 +12,8 @@ lily/
                  GroupErrorReporter, the pasteboard, the group and tournament change trackers, ChatOutbox, BlockListStore, the session observers to register; the
                  factories of every groups view model, the invite sheet's included) + AppDependencies+Chat, +Inbox and +People (the
                  chat, inbox and profile factories) + AppDependencies+Events (the event view-model factories) + AppDependencies+Push
-                 (PushDependencies: the registrar and device repository the data layer chose, EventOpener, TournamentOpener,
-                 PushCoordinator)
+                 (PushDependencies: the registrar and device repository the data layer chose, EventOpener,
+                 PushCoordinator) + AppDependencies+Repositories (Repositories, Auth and the data-layer factories; 2026-11-02)
                  + AppDependencies+Localization (the language store built from the stored choice and the launch arguments)
                  + AppDependencies+Tournaments (the tournament repository and change tracker over the group dependencies; the
                  tournament view-model factories) + AppDependencies+Moderation (the terms sheet's view model) + AppDependencies+Session
@@ -60,7 +60,8 @@ lily/
     Navigation/  AppNavigation (selected tab + the Home and Chats stack paths, for pushes made from outside a tab: open(group:) on
                  Home, open(chat:) and openInChat(_:) on Chats; startTab(for:); a SessionObserver, reset on sign-out)
     System/      Pasteboard interface + SystemPasteboard (UIPasteboard), so copying is testable; FileManager+RemoveIfPresent (remove when
-                 there, nothing when not, throw when refused); Calendar+NextFullHour (the forms' proposed start, a date on the hour kept)
+                 there, nothing when not, throw when refused); Calendar+NextFullHour (the forms' proposed start, a date on the hour kept);
+                 TimeInterval+Units (the hour and the day a fixture or config date is built from)
     Push/        Models (PushEnvironment, DeviceRegistration + payload and removal, LastDeviceRegistration, PushAuthorization,
                  PushPayload + PushTap (what a tapped notification opens: a game, or a tournament's match)), Interfaces (PushRegistrar, DeviceRepository, PushOptIn), Implementations (SystemPushRegistrar over
                  UNUserNotificationCenter and the relay, MockPushRegistrar, RemoteDeviceRepository, MockDeviceRepository,
@@ -93,12 +94,12 @@ lily/
                  String+CodePoints (codePointCount and prefix(codePoints:), the backend's measure of a display name; 2026-10-31)
     UI/          Theme (fonts, aurora role-to-color mapping), Effects (aurora geometry, roles, film grain: pure, testable math;
                  LaunchAnimations, UIKit's animations off until the shell's first frame so the tab bar's pill is placed, not slid),
-                 Components (aurora background, content-screen scaffold, glass cards, button modifiers, picker modifiers (lilyMenuPicker; 2026-11-02), provider buttons, error popup,
+                 Components (aurora background, content-screen scaffold, glass cards, button modifiers, picker modifiers (lilyMenuPicker; 2026-11-02), FadingPresence (a presence fade; 2026-11-02), provider buttons, error popup,
                  ScreenTitle + ScreenSubtitle, AvatarCircle, String+Initials (the one initials rule, beside AvatarCircle),
                  UnreadDot, GrowingTextView (the multi-line field the chat composer owns, over a UIKit text view), ConversationRow (avatar + title + caption + dot, shared by the Chats rows and the
-                 inbox row) and AvatarRowDivider (the divider that starts at their text column), EventTypeChips (the one
+                 inbox row), CaptionedTitle (the title-over-captions column the conversation rows and the carousel tiles share; 2026-11-02) and AvatarRowDivider (the divider that starts at their text column), EventTypeChips (the one
                  type-chip flow of the filter, the event form and the group form), EntriesBar (the one "how full" bar; CapacityBar
-                 draws an event through it), TypeFilterButton + TypeFilterPanel (the type dropdown of both Discover screens), GlassGlyph (a symbol as a mark in the
+                 draws an event through it (removed 2026-11-02; `EntriesBar(event:)`)), TypeFilterButton + TypeFilterPanel (the type dropdown of both Discover screens), GlassGlyph (a symbol as a mark in the
                  amber glass circle, drawn through AvatarCircle; the preview card's type glyph), BusyButton (a title with a spinner: join, leave,
                  Message, the tournament controls), TileCarousel + TileLink + TileContent (the group and tournament carousels, swapping to
                  TileGrid on a regular width), CardHeader (the chips-and-time header of the event and tournament cards), OwnerTitleBlock
@@ -138,7 +139,8 @@ lily/
                  bare card list), list screen, map, detail with the host's Edit button, ParticipantRow, preview card, filter button
                  and panel (over SkillLevelPicker, the one level picker), create button, the Create/Edit sheets (thin wrappers over
                  EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm), PlaceFields (the
-                 place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms), location picker), Services (EventOpener: fetch a game by id and push its detail, shared
+                 place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms), PriceAmountField (the
+                 one decimal-pad price field of the filter panel's cap and the form's price), location picker), Services (EventOpener: fetch a game by id and push its detail, shared
                  by the inbox's reminder card and a tapped notification)
     Profile/     Guest and signed-in profile; ProfileRepository interface (GET and PUT /api/profile), remote and mock
                  implementations, Models (Profile, ProfileUpdateRequest, DisplayNameDraft with its issues), State (ProfileStore:
@@ -205,7 +207,7 @@ lily/
                  + CameraPicker, AttachmentStrip (the picked items above the field), AttachmentGallery + DraftGallery + GalleryGrid,
                  ImageAttachmentView + AttachmentTile + LocalImage + AttachmentImageLoad (the one picture-loading state box), VideoAttachmentView +
                  PlayBadge + DurationBadge, FileAttachmentCard + FileCard, AttachmentViewerSheet (the pager over ImageViewerPage and
-                 VideoPlayerPage; + Motion for its moves), ViewerMovingPicture (the moving picture, one Canvas per layer), ViewerStage (the
+                 VideoPlayerPage; + Motion for its moves), ViewerMovingPicture (the moving picture, one Canvas per layer), ViewerBackdrop (the black of one layer; 2026-11-02), ViewerStage (the
                  chat's half under the composer), ViewerHeroSource, ViewerDismissPan, QuickLookPreview, ConversationList (the Chats list, owning the clear confirmation),
                  MessageComposer, DaySeparator, SystemMessageRow, MessageContextMenu, ChatRoomMenu (the room's menu, its clear item and
                  the shared confirmation), PollBubble + PollOptionPill + PollComposerSheet + PollVotersSheet (polls; 2026-10-24), PinnedBar +
@@ -259,9 +261,12 @@ lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCan
                  ImageFiles) and fixtures (TestFixtures,
                  GroupFixtures with the groups and invites contract JSON, InboxFixtures with the inbox's, PeopleFixtures with the profile,
                  conversation and participants contract JSON, TournamentFixtures with the tournament, entry, match, standing, room and
-                 tournament-note contract JSON, TournamentInboxFixtures with Laurel B3's inbox, accept, invite and room-event JSON;
+                 tournament-note contract JSON, TournamentInboxFixtures with Laurel B3's inbox, accept, invite and room-event JSON
+                 (an `extension ContractSamples` since 2026-11-02);
                  Fixtures/pairings holds the shared pairing fixtures TournamentScheduleTests reproduces)
-lilyUITests/     LilyUITestCase (launch + the primitives) + LilyUITestCase+Screens (the screen-reaching helpers), LilySmokeTests, LilySignInTests,
+lilyUITests/     LilyUITestCase (launch + the primitives) + LilyUITestCase+Screens (the screen-reaching helpers)
+                 + LilyUITestCase+Elements (element primitives: text, scroll-and-tap, predicate wait, confirmation taps; 2026-11-02)
+                 + MockIDs (the fixture row ids, 2026-11-02), LilySmokeTests, LilySignInTests,
                  LilyGroupsTests (+ Helpers), LilyChatTests (+ Attachments, + Composer, + Polls, + Rows, + Viewer), LilyPeopleTests, LilyEventEditTests, LilyLanguageTests,
                  LilyTournamentTests (+ Helpers), LilyDiscoverTests, LilyProfileTests, LilyRosterTests, LilyStateTests, LilyIPadTests: end-to-end
                  walks against the real app in a simulator

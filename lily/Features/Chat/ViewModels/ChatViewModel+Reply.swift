@@ -10,7 +10,7 @@ extension ChatViewModel {
 
     /// Any member's message that is neither deleted nor a system row.
     func canReply(to message: ChatMessage) -> Bool {
-        !message.isDeleted && !message.isSystem
+        message.isLiveMemberMessage
     }
 
     /// Quotes `row` in the composer, named after its sender as the roster knows them now.

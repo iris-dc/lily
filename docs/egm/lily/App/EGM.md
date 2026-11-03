@@ -7,11 +7,12 @@ Source: `lily/App/`
 The composition root of iskra (code name lily): the only place in the app that knows concrete types; everywhere else
 a caller depends on a protocol. `LilyApp`, the `@main` App, builds one `AppDependencies` through `makeDefault()`,
 installs `LilyAppDelegate` for the UIKit push callbacks, mounts `AppRootView` and attaches `ShellCommands`.
-`AppDependencies.swift` holds the stored collaborators, the memberwise `init`, `makeDefault` (which reads the launch
-arguments once) and `Repositories`, which binds every protocol to either the remote set over one `URLSessionAPIClient`
-or the in-memory mock set. The `+Area.swift` files add the store factories, argument parsing, the helper structs
-`GroupRepositories`, `GroupDependencies`, `AttachmentDependencies`, `PushDependencies`, the preview root `makeMock`
-and one `make*ViewModel` factory per screen. Every literal read here is declared in [Config](../Config/EGM.md).
+`AppDependencies.swift` holds the stored collaborators, the memberwise `init` and `makeDefault` (which reads the launch
+arguments once); `AppDependencies+Repositories.swift` holds `Repositories`, which binds every protocol to either the
+remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring` and the data-layer factories. The other
+`+Area.swift` files add the store factories, argument parsing, the helper structs `GroupRepositories`,
+`GroupDependencies`, `AttachmentDependencies`, `PushDependencies`, the preview root `makeMock` and one
+`make*ViewModel` factory per screen. Every literal read here is declared in [Config](../Config/EGM.md).
 
 ## Interface
 
@@ -31,22 +32,22 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
   new group Cmd-Shift-N (only if `AppConfig.FeatureFlags.groups`), new tournament Cmd-Shift-T (only if
   `AppConfig.FeatureFlags.tournaments`), Cmd-1 to Cmd-N select `AppTab.shown`; `private func inShell(_:)` gates every action.
 - `AppDependencies` (`lily/App/AppDependencies.swift:AppDependencies`): `final class` storing the services typed by their
-  protocols and the stores and controllers by their concrete types: the session (`sessionStore`, `authService`, `tokenProvider?`, `sessionController`, `identity`), the data
+  protocols and the stores and controllers by their concrete types: the session (`authService`, `tokenProvider?`, `sessionController`, `identity`), the data
   layer (`eventRepository`, `profileRepository`, `profile: ProfileStore`, `feedbackRepository`, `interactionRecorder`, `locationService`,
-  `eventFilterStore`, `eventChanges`), `logger`, `errorCenter`, `freezesAurora`, `language: LanguageStore`,
+  `eventFilterStore`, `eventChanges`, `listSnapshots: any ListSnapshotStore`), `logger`, `errorCenter`, `freezesAurora`, `language: LanguageStore`,
   `currency: CurrencyStore`, `groups: GroupDependencies`, `push: PushDependencies`, `navigation = AppNavigation()`,
-  `private(set) lazy var lists: ShellLists`.
+  `private(set) lazy var lists: ShellLists`. The `sessionStore` parameter feeds `SessionController` and is not stored.
 - `init(logger:sessionStore:authService:tokenProvider:sessionExpiry:identity:eventRepository:profileRepository:feedbackRepository:interactionRecorder:locationService:groupRepositories:pushRegistrar:deviceRepository:language:currency:eventFilterStore:listSnapshots:errorCenter:freezesAurora:defaults:)`
   (`lily/App/AppDependencies.swift:AppDependencies.init`): optionals default to `nil`, the stores to the `NoOp*` types;
   builds `SessionController`, sets `identity.session`, builds `ProfileStore`, `GroupDependencies` and `PushDependencies`, calls `finishWiring(recorder:expiry:)`.
 - `static func makeDefault(arguments: [String] = AppConfig.LaunchArguments.isHonored ? CommandLine.arguments : [], defaults: UserDefaults = .standard, apply: @escaping (AppLocale.Context) -> Void = AppLocale.set) -> AppDependencies`
   (`lily/App/AppDependencies.swift:AppDependencies.makeDefault`): `startsFresh(arguments:logger:)` (`+Session.swift`), then
-  the `make*` factories below, `makeAuthService`, `makeRepositories`, `makeLocationService`, `makeErrorCenter`, `freezesAurora`.
-- `static func mockAuthBehavior(from: [String]) -> MockAuthBehavior?` (`lily/App/AppDependencies.swift:AppDependencies.mockAuthBehavior`);
-  `makeAuthService` binds `MockAuthService` (`tokenProvider: nil`, `expiry: nil`) or `CognitoAuthService(client: AmplifyCognitoClient(logger:), ...)`
-  as `AuthService`, `AuthTokenProvider` and `SessionExpiryReporter` (the private `Auth` struct's three fields); `makeLocationService` binds `MockLocationService()` or
-  `CachedLocationService(upstream: CoreLocationService(logger:), logger:)`.
-- `struct Repositories` (`lily/App/AppDependencies.swift:Repositories`): `events`, `profile`, `feedback`, `interactions`,
+  the `make*` factories below, `makeAuthService`, `makeRepositories`, `makeLocationService` (`+Repositories.swift`), `makeErrorCenter`, `freezesAurora`.
+- `static func mockAuthBehavior(from: [String]) -> MockAuthBehavior?` (`lily/App/AppDependencies+Repositories.swift:AppDependencies.mockAuthBehavior`);
+  `makeAuthService(arguments:store:language:logger:) -> Auth` binds `MockAuthService` (`tokenProvider: nil`, `expiry: nil`) or `CognitoAuthService(client: AmplifyCognitoClient(logger:), ...)`
+  as `AuthService`, `AuthTokenProvider` and `SessionExpiryReporter` (`struct AuthWiring { service; tokenProvider?; expiry? }`, internal, in the same file); `makeLocationService(arguments:logger:)` binds `MockLocationService()` or
+  `CachedLocationService(upstream: CoreLocationService(logger:), logger:)`; `makeRepositories(arguments:identity:tokenProvider:logger:) -> Repositories`.
+- `struct Repositories` (`lily/App/AppDependencies+Repositories.swift:Repositories`): `events`, `profile`, `feedback`, `interactions`,
   `groups: GroupRepositories`, `devices`, `pushRegistrar`. `remote(baseURL:realtimeEndpoint:identity:tokenProvider:logger:)`
   binds the `Remote*` set over one `URLSessionAPIClient` plus `SystemPushRegistrar`;
   `mock(identity:logger:autoReplies:mockPicker:systemPush:termsPending:eventsFailFirst:)` binds the `Mock*` set,
@@ -56,17 +57,18 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
   `makeRealtimeEndpointProvider: @MainActor (MeStore) -> any RealtimeEndpointProvider`, `attachmentUploader`,
   `mediaPreparer`, `attachmentSession: URLSession`. `remote(client:realtimeEndpoint:identity:logger:)` binds the
   `Remote*Repository` set, `NoRealtimeTransport()`, `RemoteRealtimeEndpointProvider(override:me:)`, `URLSessionAttachmentUploader`,
-  `DeviceMediaPreparer`, `URLSession(configuration: .default)`; `mock(identity:logger:autoReplies:mockPicker:termsPending:)`
+  `DeviceMediaPreparer`, `URLSession(configuration: .default)`; `mock(identity:logger:autoReplies:mockPicker:termsPending:)` (no defaults)
   binds the `Mock*Repository` set, `MockRealtimeTransport`, `FixedRealtimeEndpointProvider(url: AppConfig.Realtime.mockEndpoint)`,
   `MockAttachmentUploader(store:)` and `MockAttachmentURLProtocol.makeSession()`.
 - `GroupDependencies` (`lily/App/AppDependencies+Groups.swift:GroupDependencies`): `init(repositories:identity:tokenProvider:errorCenter:logger:snapshots:)`
-  builds `MyGroupsStore`, `MeStore`, `InboxStore`, `BlockListStore`, `GroupErrorReporter`, `InMemoryChatHistoryCache`,
-  `ChatOutbox`, `UnreadCenter`, `ChatCatchUp`, `AttachmentDependencies`, `RealtimeSessionController`; `pasteboard: any Pasteboard = SystemPasteboard()`;
+  builds `MyGroupsStore` (the one reader of `snapshots`, which is not stored), `MeStore`, `InboxStore`, `BlockListStore`, `GroupErrorReporter`, `InMemoryChatHistoryCache`,
+  `ChatOutbox`, `UnreadCenter`, `ChatCatchUp`, `AttachmentDependencies`, `RealtimeSessionController`; stores `repositories: GroupRepositories`
+  (the root's repository pass-throughs read `groups.repositories.<name>`; it has no forwarders of its own); `pasteboard: any Pasteboard = SystemPasteboard()`;
   `sessionObservers` is `[myGroups, me, inbox, blocks, chatHistory, outbox, unreadCenter, attachments.loader,
   attachments.cache, realtime]` (the loader drains its downloads before the cache sweeps).
 - `AttachmentDependencies` (`lily/App/AppDependencies+Chat.swift:AttachmentDependencies`): `cache: DiskAttachmentCache`,
   `loader: AttachmentLoader`, `uploader`, `preparer`. `PushDependencies` (`lily/App/AppDependencies+Push.swift:PushDependencies`):
-  `registrar`, `devices`, `opener: EventOpener`, `tournamentOpener: TournamentOpener`, `coordinator: PushCoordinator`.
+  `registrar`, `devices`, `opener: EventOpener`, `coordinator: PushCoordinator` (the `TournamentOpener` is built in `init` for the coordinator alone).
 - Static parsing and knobs: `apiBaseURL(from:logger:) -> URL`, `url(following:in:logger:) -> URL?`
   (`lily/App/AppDependencies+LaunchArguments.swift:AppDependencies.apiBaseURL`); `realtimeEndpoint(from:logger:) -> URL?`
   (`+Chat.swift`); `makeErrorCenter(arguments:logger:)`, `freezesAurora(arguments:logger:)` (`lily/App/AppDependencies+Knobs.swift`).
@@ -85,8 +87,9 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
   `makeFeedbackViewModel`, `makeDisplayNameViewModel` (`+Inbox`, `+People`, `+Moderation`, `+Feedback`, `+Profile`). The
   `+Groups`, `+Chat`, `+Push`, `+Inbox`, `+People` and `+Tournaments` extensions expose their stores and repositories as
   pass-throughs.
-- `static func makeMock(authBehavior: MockAuthBehavior = .succeed) -> AppDependencies` (`lily/App/AppDependencies+Mock.swift:AppDependencies.makeMock`):
-  `Repositories.mock`, `MockAuthService(delay: .zero)`, `MockLocationService()`, a `UserDefaults` suite named
+- `static func makeMock() -> AppDependencies` (`lily/App/AppDependencies+Mock.swift:AppDependencies.makeMock`):
+  `Repositories.mock`, `MockAuthService(delay: .zero)` (its default `.succeed` behaviour; a failing or confirming mock is built through
+  `makeDefault(arguments:)`), `MockLocationService()`, a `UserDefaults` suite named
   `AppConfig.Storage.previewSuitePrefix + UUID().uuidString`.
 
 ### Launch arguments honoured here
@@ -125,13 +128,13 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
   `lily/App/AppDependencies+Session.swift:AppDependencies.wireSessionExpiry`).
 - The data layer is one set, all remote or all in-memory, so a mock run never posts a statistic or registers a
   device: `Repositories.mock` uses `NoOpInteractionRecorder()` and `MockPushRegistrar` unless `-system-push`
-  (`lily/App/AppDependencies.swift:Repositories.mock`); `-mock-events` forces `NoOpListSnapshotStore()`
+  (`lily/App/AppDependencies+Repositories.swift:Repositories.mock`); `-mock-events` forces `NoOpListSnapshotStore()`
   (`lily/App/AppDependencies+Shell.swift:AppDependencies.makeListSnapshotStore`); the mock group set shares one
   `MockGroupRepository`, `MockTournamentRepository`, `MockRealtimeTransport` and `MockAttachmentStore`, and production
   binds `NoRealtimeTransport()` (`lily/App/AppDependencies+Groups.swift:GroupRepositories.mock`, `GroupRepositories.remote`).
 - Mock-auth precedence is `-mock-auth-fail`, `-mock-auth-confirm`, then `-mock-auth`; `-mock-user-id` counts only with
   mock auth; Cognito doubles as `AuthTokenProvider`, the mock yields `tokenProvider: nil`
-  (`lily/App/AppDependencies.swift:AppDependencies.makeAuthService`). A URL argument is honoured only when `URL(string:)`
+  (`lily/App/AppDependencies+Repositories.swift:AppDependencies.makeAuthService`). A URL argument is honoured only when `URL(string:)`
   has a non-nil `scheme` and `host()` (`lily/App/AppDependencies+LaunchArguments.swift:AppDependencies.url(following:in:logger:)`).
 - Only `scope == .upcoming` loads the persisted `EventFilter`; other scopes start from `.everything` with
   `NoOpEventFilterStore()` (`lily/App/AppDependencies+Events.swift:AppDependencies.makeEventListViewModel`). Explore's
@@ -159,7 +162,7 @@ and one `make*ViewModel` factory per screen. Every literal read here is declared
   `sync.restore()` and, per `SyncKey`, `sync.run(active:user:)`; a change of `myGroups.groups` calls
   `realtime.syncRooms()` and a bump of `myGroups.loadVersion` (a load, never a local change) calls
   `unreadCenter.apply(groups:)` (`lily/App/AppRootView.swift:AppRootView.body`, `lily/App/AppDependencies+Chat.swift`).
-- Network clients: one `URLSessionAPIClient` (`lily/App/AppDependencies.swift:Repositories.remote`);
+- Network clients: one `URLSessionAPIClient` (`lily/App/AppDependencies+Repositories.swift:Repositories.remote`);
   `URLSession(configuration: .default)`, `URLSessionAttachmentUploader`, `DeviceMediaPreparer`
   (`lily/App/AppDependencies+Groups.swift:GroupRepositories.remote`); the mock set registers
   `MockAttachmentURLProtocol.serve(_:)` (`GroupRepositories.mock`).

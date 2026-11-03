@@ -59,7 +59,7 @@ nonisolated extension AppConfig.Chat {
         static let mockUploadDelay: Duration = .milliseconds(600)
         static let mockUploadSteps = 4
         /// How long the mock's presigned links and tickets live.
-        static let mockLinkTTL: TimeInterval = 3600
+        static let mockLinkTTL: TimeInterval = .hour
         static let mockUploadTicketTTL: TimeInterval = 900
         /// Scheme and host of the mock's presigned URLs; `MockAttachmentURLProtocol` answers them from the mock store.
         static let mockURLScheme = "mock"

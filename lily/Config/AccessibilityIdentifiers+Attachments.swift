@@ -1,6 +1,6 @@
 import Foundation
 
-/// Identifiers of the chat's attachments; mirrored by hand in `lilyUITests` like the rest.
+/// Identifiers of the chat's attachments; a UI test that reads one mirrors the literal by hand.
 nonisolated extension AccessibilityIdentifiers {
     /// The composer's attach menu (a "+" leading the field).
     static let chatAttach = "chat-attach"

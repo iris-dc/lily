@@ -29,6 +29,32 @@ struct GroupsConfigTests {
         #expect(Paths.reports == "/api/reports")
         #expect(Paths.block(userID: "u1") == "/api/blocks/u1")
         #expect(Paths.meTerms == "/api/me/terms")
+        #expect(AppConfig.Moderation.termsURL.absoluteString == "https://api.iskra.red/terms")
+        #expect(AppConfig.Moderation.privacyURL.absoluteString == "https://api.iskra.red/privacy")
+    }
+
+    /// The three forms and the contact sheet read one declaration per shared hint, so each catalog key has one home.
+    @Test func formHintsAreDeclaredOnce() {
+        let forms = AppBranding.Forms.self
+        let groupLimits = AppConfig.Groups.self
+        let eventLimits = AppConfig.Events.Creation.self
+        #expect(AppBranding.Groups.Create.message(for: .descriptionTooLong)
+                    == forms.descriptionTooLong(limit: groupLimits.descriptionMaxLength))
+        #expect(AppBranding.Groups.Create.message(for: .nameTooLong)
+                    == forms.nameTooLong(limit: groupLimits.nameLength.upperBound))
+        #expect(AppBranding.Events.Create.message(for: .locationNameMissing) == forms.placeNameMissing)
+        #expect(AppBranding.Events.Create.message(for: .locationNameTooLong)
+                    == forms.placeNameTooLong(limit: eventLimits.locationNameMaxLength))
+        #expect(AppBranding.Events.Create.message(for: .startsAtTooSoon)
+                    == forms.startTooSoon(minutes: eventLimits.minimumLeadTimeMinutes))
+        #expect(AppBranding.Tournaments.Create.message(for: .descriptionTooLong, format: .singleElimination)
+                    == forms.descriptionTooLong(limit: AppConfig.Tournaments.descriptionMaxLength))
+        #expect(AppBranding.Tournaments.Create.message(for: .locationNameMissing, format: .singleElimination)
+                    == forms.placeNameMissing)
+        #expect(AppBranding.Tournaments.Create.message(for: .startsAtTooSoon, format: .singleElimination)
+                    == forms.startTooSoon(minutes: eventLimits.minimumLeadTimeMinutes))
+        #expect(AppBranding.Feedback.tooLong(limit: 5) == forms.tooLong(limit: 5))
+        #expect(AppBranding.Feedback.kindContact == AppBranding.Chat.Polls.question)
     }
 
     @Test func groupCopyReadsInFullSentences() {
@@ -67,7 +93,6 @@ struct GroupsConfigTests {
 
     @Test func inboxIdentifiersEmbedTheirKeys() {
         #expect(AccessibilityIdentifiers.inboxRow == "inbox-row")
-        #expect(AccessibilityIdentifiers.inboxLoadEarlier == "inbox-load-earlier")
         #expect(AccessibilityIdentifiers.inboxItem("i1") == "inbox-item-i1")
         #expect(AccessibilityIdentifiers.inboxAccept("i1") == "inbox-accept-i1")
         #expect(AccessibilityIdentifiers.inboxDecline("i1") == "inbox-decline-i1")

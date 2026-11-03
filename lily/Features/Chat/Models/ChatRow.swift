@@ -13,7 +13,7 @@ nonisolated enum ChatRow: Identifiable, Hashable, Sendable {
     /// change rather than a row leave and another arrive.
     var id: String {
         switch self {
-        case .day(let date): "day-\(Int(date.timeIntervalSince1970))"
+        case .day(let date): ChatDayLabel.rowID(for: date)
         case .message(let row): row.message.clientMessageId ?? row.message.id
         case .system(let message): message.id
         case .pending(let pending): pending.id

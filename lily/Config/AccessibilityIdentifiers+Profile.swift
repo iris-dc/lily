@@ -1,6 +1,6 @@
 import Foundation
 
-/// Identifiers of the display name card and its sheet; mirrored by hand in `lilyUITests` like the rest.
+/// Identifiers of the display name card and its sheet; a UI test that reads one mirrors the literal by hand.
 nonisolated extension AccessibilityIdentifiers {
     /// The "Display name" card on Profile.
     static let profileName = "profile-name"

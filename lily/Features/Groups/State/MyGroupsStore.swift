@@ -115,7 +115,7 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
         for stored in groups {
             guard let index = next.firstIndex(where: { $0.id == stored.id }) else { continue }
             let kept = next[index].keepingLaterLastMessage(of: stored)
-            if kept != next[index] { Self.move(kept, from: index, in: &next) }
+            if kept != next[index] { Self.place(kept, in: &next) }
         }
         groups = next
         loadVersion += 1
@@ -127,8 +127,7 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
     /// shows it at once.
     func add(_ group: SportGroup) {
         var next = groups
-        next.removeAll { $0.id == group.id }
-        next.insert(group, at: next.firstIndex { SportGroup.mineOrder(group, $0) } ?? next.endIndex)
+        Self.place(group, in: &next)
         groups = next
         recordChange("Group \(group.id) added to Mine")
     }
@@ -158,18 +157,17 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
     /// A message landed in a room: a later one than the room knows moves it to where Mine's order puts it, at the top
     /// for the newest line. Nothing else learns of it, since only the order changed.
     func noteMessage(_ message: ChatMessage, in groupID: String) {
-        guard let index = groups.firstIndex(where: { $0.id == groupID }),
-              let moved = groups[index].noting(message) else { return }
+        guard let moved = groups.first(where: { $0.id == groupID })?.noting(message) else { return }
         var next = groups
-        Self.move(moved, from: index, in: &next)
+        Self.place(moved, in: &next)
         groups = next
         logger.debug(.groups, "Group \(groupID) moved by message \(message.id)")
     }
 
-    /// Puts the group at `index` back where Mine's order puts its new copy. On a local copy, so `groups` (and its
-    /// snapshot) is written once per change, a message burst included.
-    private static func move(_ group: SportGroup, from index: Int, in groups: inout [SportGroup]) {
-        groups.remove(at: index)
+    /// Puts the group where Mine's order puts it, replacing any copy under its id. On a local copy, so `groups` (and
+    /// its snapshot) is written once per change, a message burst included.
+    private static func place(_ group: SportGroup, in groups: inout [SportGroup]) {
+        groups.removeAll { $0.id == group.id }
         groups.insert(group, at: groups.firstIndex { SportGroup.mineOrder(group, $0) } ?? groups.endIndex)
     }
 

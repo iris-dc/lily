@@ -9,7 +9,7 @@ import SwiftUI
 struct PendingMessageBubble: View {
     let message: PendingMessage
     let viewModel: ChatViewModel
-    var onTapQuote: (ReplyQuote) -> Void = { _ in }
+    let onTapQuote: (ReplyQuote) -> Void
     @Environment(\.motion) private var motion
 
     private typealias Copy = AppBranding.Chat

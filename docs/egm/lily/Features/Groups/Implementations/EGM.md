@@ -27,7 +27,8 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
   now: @escaping () -> Date = { .now })`; internal state `groups: [SportGroup]`, `rosters: [String: [GroupMember]]`,
   `hiddenConversationIDs: Set<String>`; extra entry points for the other mocks: `admit(id:) throws -> SportGroup`
   (the invite-acceptance path, private groups included), `markRead(id:messageID:) throws -> String`,
-  `noteMessage(_:in:)`, `membershipOnJoin(of:)`, `find(_:)`, `roster(of:)`, `store(_:)`
+  `noteMessage(_:in:)`, `membershipOnJoin(of:)`, `find(_:)`, `roster(of:)` (`rosters[groupID] ?? []`, the one roster read,
+  banned rows included), `store(_:)`
   [`lily/Features/Groups/Implementations/MockGroupRepository.swift`:`MockGroupRepository.admit`].
 - `MockGroupRepository` extensions: `displayName(ofUser:)`, `startDirect(with:name:)`, `hideConversation(id:)`,
   `unhideConversation(id:)` [`lily/Features/Groups/Implementations/MockGroupRepository+Direct.swift`:`MockGroupRepository.startDirect`];
@@ -48,15 +49,19 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
   Basketball (public, no role), Spree Volley (public, 12 of 12, full), Climbing Buddies (private, no role); each with a
   Berlin place [`lily/Features/Groups/Implementations/MockGroupFixtures.swift`:`MockGroupFixtures.templates`].
 - `MockInviteCandidatePool { groups: MockGroupRepository, now }` with
-  `candidates(excludingGroup:seen:isInvited:) async throws -> [InviteCandidate]`; `MockInviteLedger` with
-  `isInvited(_:into:)` and `send(to:among:into:now:logger:) throws -> SentInvite`
+  `candidates(excludingGroup: String, seen:isInvited:) async throws -> [InviteCandidate]`; `MockInviteLedger` with
+  `isInvited(_:into:)` (`existing(for:into:) != nil`) and `send(to:among:into:now:logger:) throws -> SentInvite`
   [`lily/Features/Groups/Implementations/MockInviteCandidatePool.swift`:`MockInviteLedger.send`].
-- `MockInviteRepository: InviteRepository`, `init(groups: MockGroupRepository, identity:, logger:, now:)`
+- `MockInviteRepository: InviteRepository`, `init(groups: MockGroupRepository, identity:, logger:, now:)`;
+  `candidates(groupID:)` and `invite(groupID:userID:)` build the list once each through the private `candidates(in:)`
+  after one `requireInviteRights(in:)`
   [`lily/Features/Groups/Implementations/MockInviteRepository.swift`:`MockInviteRepository`];
   `MockMeRepository: MeRepository`, `init(identity:, logger:, now:, termsPending: Bool = false)`, `owesTerms`
   [`lily/Features/Groups/Implementations/MockMeRepository.swift`:`MockMeRepository`];
-  `MockModerationRepository: ModerationRepository`, `init(logger:, now:)`
+  `MockModerationRepository: ModerationRepository`, `init(logger:, now:)` (`report`, `blocks`, `block`; no unblock)
   [`lily/Features/Groups/Implementations/MockModerationRepository.swift`:`MockModerationRepository`].
+- Fixture dates are built from `TimeInterval.hour` and `.day` (`lily/Core/System/TimeInterval+Units.swift`): days ago
+  and hours ago times the unit [`lily/Features/Groups/Implementations/MockGroupFixtures.swift`:`MockGroupFixtures.makeGroup`].
 
 ## Invariants
 
@@ -105,7 +110,8 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
 - Mock candidates are the live members of the caller's other non-direct groups and rooms, then the hosts of the mock
   event feed, deduplicated through `seen` (seeded with the target roster and the caller), sorted by display name
   [`lily/Features/Groups/Implementations/MockInviteCandidatePool.swift`:`MockInviteCandidatePool.candidates`].
-- `MockMeRepository.me()` throws `.sessionExpired` without a user, marks the Apple mock user as operator, leaves
+- `MockMeRepository.me()` throws `.sessionExpired` without a user, marks the Apple mock user as operator (mirroring the
+  backend's operators group; lily has no operator UI), leaves
   `acceptedTermsVersion` nil while `owesTerms`, and `acceptTerms` clears `owesTerms` for the run;
   `MockModerationRepository.block` throws `.blockLimitReached` at `AppConfig.Moderation.maxBlocks` (500) blocked,
   except for a user already in the list, who is answered the list unchanged
@@ -136,7 +142,8 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
   `setRole`; `hiddenConversationIDs` by hide/unhide; the ledger's `sent` map and `sentCount`; `owesTerms`; `blocked`; `drafts` by
   create and update (a repeated create with other details is `.createIdReused`)
   [`lily/Features/Groups/Implementations/MockGroupRepository.swift`:`MockGroupRepository.store`].
-- Logging, ids only, under `.groups`: debug for `groups(in:)`, candidates and `me()`; info for create, join, leave,
+- Logging, ids only, under `.groups`: debug for `groups(in:)`, candidates (from `candidates(groupID:)` only, never on
+  an invite) and `me()`; info for create, join, leave,
   direct start, hide and unhide, room register/admit/leave, terms acceptance and reports; `MockInviteLedger.send` logs
   info under the target's `logCategory` [`lily/Features/Groups/Implementations/MockInviteCandidatePool.swift`:`MockInviteLedger.send`].
 - Clock reads through the injected `now()` (once in `MockGroupRepository.init`, then per create, delete, direct start,

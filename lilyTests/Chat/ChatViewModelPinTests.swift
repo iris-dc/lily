@@ -11,10 +11,8 @@ struct ChatViewModelPinTests {
     private func makeChat(role: MemberRole? = .admin, group: SportGroup? = nil) async -> (RealtimeHarness, ChatViewModel) {
         let group = group ?? SportGroup.fixture(id: "g", channelEpoch: 1, role: role)
         let harness = RealtimeHarness()
-        harness.groups.result = .success([group])
-        harness.cache.store(.fixture(groupID: group.id, messages: [.fixture(id: "m1", groupID: group.id)]), for: group.id)
-        await harness.connect()
-        return (harness, harness.makeChatViewModel(for: group))
+        let room = ChatRoomState.fixture(groupID: group.id, messages: [.fixture(id: "m1", groupID: group.id)])
+        return (harness, await harness.openChat(for: group, room: room, appear: false))
     }
 
     @Test func adminsPinInAGroupAndMembersDoNot() async {

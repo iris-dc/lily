@@ -64,7 +64,7 @@ struct ProfileStoreTests {
 
         #expect(repository.updatedNames == ["Alex Kim"])
         #expect(updated.displayName == "Alex Kim" && store.displayName == "Alex Kim" && !store.isDefaultName)
-        let lines = logger.lines(in: .auth, at: .info, mentioning: "Display name updated", TestFixtures.user.id)
+        let lines = logger.messages(in: .auth, at: .info).mentioning("Display name updated", TestFixtures.user.id)
         #expect(lines.count == 1 && !lines[0].contains("Alex"), "ids only, never the name")
     }
 

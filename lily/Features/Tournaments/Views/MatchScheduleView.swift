@@ -13,10 +13,11 @@ struct MatchScheduleView: View {
 
     private typealias Copy = AppBranding.Tournaments.Schedule
 
-    init(viewModel: TournamentDetailViewModel, match: TournamentMatch, now: Date = .now, onDone: @escaping () -> Void) {
+    init(viewModel: TournamentDetailViewModel, match: TournamentMatch, onDone: @escaping () -> Void) {
         self.viewModel = viewModel
         self.match = match
         self.onDone = onDone
+        let now = Date.now
         let proposal = viewModel.tournament.map { MatchSchedule.proposal(for: match, in: $0, now: now) } ?? MatchSchedule()
         _draft = State(initialValue: MatchScheduleDraft(proposal: proposal, now: now))
     }

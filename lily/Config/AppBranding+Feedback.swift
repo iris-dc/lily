@@ -7,7 +7,8 @@ nonisolated extension AppBranding {
         static var rowSubtitle: String { localized("Questions, ideas and bug reports") }
         static var title: String { localized("Contact us") }
         static var kindTitle: String { localized("What is it about?") }
-        static var kindContact: String { localized("Question") }
+        /// The poll sheet's word, one key.
+        static var kindContact: String { Chat.Polls.question }
         static var kindFeedback: String { localized("Feedback") }
         static var kindBug: String { localized("Bug") }
         static var messageTitle: String { localized("Your message") }
@@ -31,8 +32,6 @@ nonisolated extension AppBranding {
         }
 
         /// Under the message or the email once it is over the backend's cap.
-        static func tooLong(limit: Int) -> String {
-            localized("Keep it under \(limit) characters")
-        }
+        static func tooLong(limit: Int) -> String { Forms.tooLong(limit: limit) }
     }
 }

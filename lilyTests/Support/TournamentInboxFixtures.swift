@@ -50,10 +50,10 @@ extension InboxItem {
     }
 }
 
-/// Laurel's strict-JSON literals for the tournament inbox items, the accept answers, the invite routes and the room
-/// events, verbatim from B3's hand-over (`InboxControllerIt`, `TournamentInviteControllerIt`, the realtime publisher);
-/// Lily decodes them as they are, so a key that moves on either side fails a test.
-enum LaurelTournamentInboxJSON {
+/// Laurel's strict JSON for the tournament inbox items, the accept answers, the invite routes, the room events and the
+/// schedule request (`InboxControllerIt`, `TournamentInviteControllerIt`, `TournamentMatchControllerIt`, the realtime
+/// publisher), decoded as it is so a key that moves on either side fails a test.
+extension ContractSamples {
     static let tournamentID = "7c9e6679-7425-40de-944b-e07fc1f90ae7"
     static let inviteItemID = "01ARYZ6S41TSV4RRFFQ69G5FAX"
     static let reminderItemID = "01ARYZ6S41TSV4RRFFQ69G5FAY"
@@ -94,7 +94,7 @@ enum LaurelTournamentInboxJSON {
     "tournament":\(acceptedTournament.replacingOccurrences(of: #""myEntryId":"01K6QZ3F8X2M4N6P8R0T2V4W6Y","#, with: ""))}
     """
     /// `POST /api/tournaments/{id}/invites` -> 201.
-    static let sentInvite = """
+    static let tournamentSentInvite = """
     {"id":"\(inviteItemID)","tournamentId":"\(tournamentID)","inviteeUserId":"sub-2","inviteeName":"Noor","status":"pending",\
     "createdAt":"2026-10-04T12:00:00Z","expiresAt":"2026-10-18T12:00:00Z"}
     """
@@ -116,7 +116,7 @@ enum LaurelTournamentInboxJSON {
     "status":"scheduled","isDisputed":false,"scheduledAt":"2026-09-25T10:00:00Z","nextMatchId":"r02p001","nextSlot":"b"}}
     """
     /// `inbox_item` on `users/<sub>`, carrying a tournament invite like any kind (`RealtimeEventTest`).
-    static let inboxItemEnvelope = #"{"type":"inbox_item","item":\#(tournamentInvite)}"#
+    static let tournamentInboxItemEnvelope = #"{"type":"inbox_item","item":\#(tournamentInvite)}"#
     /// `PUT .../matches/{matchId}/schedule` as `TournamentMatchControllerIt` sends it; an absent body clears.
     static let scheduleRequest = """
     {"scheduledAt":"2026-10-18T12:00:00Z","location":{"name":"Tempelhofer Feld",\

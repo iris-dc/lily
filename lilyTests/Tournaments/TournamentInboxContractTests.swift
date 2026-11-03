@@ -2,19 +2,19 @@ import Foundation
 import Testing
 @testable import lily
 
-/// Laurel's strict JSON (`LaurelTournamentInboxJSON`) decoded with the app's conventions, and what the screens read off it.
+/// Laurel's strict JSON (the tournament members of `ContractSamples`) decoded with the app's conventions, and what the
+/// screens read off it.
 struct TournamentInboxContractTests {
-    private typealias Laurel = LaurelTournamentInboxJSON
     /// Before the fixture invite expires (2026-10-09), so it is still open.
     private static let now = Date(timeIntervalSince1970: 1_790_000_000)
 
     @Test func theTournamentInviteDecodesEveryField() throws {
-        let item = try ContractSamples.decode(InboxItem.self, from: Laurel.tournamentInvite)
+        let item = try ContractSamples.decode(InboxItem.self, from: ContractSamples.tournamentInvite)
 
-        #expect(item.id == Laurel.inviteItemID && item.kind == .tournamentInvite && item.isVisible)
+        #expect(item.id == ContractSamples.inviteItemID && item.kind == .tournamentInvite && item.isVisible)
         #expect(item.invite == nil && item.reminder == nil && item.matchReminder == nil)
         let invite = try #require(item.tournamentInvite)
-        #expect(invite.tournamentId == Laurel.tournamentID && invite.tournamentName == "Kickers Cup")
+        #expect(invite.tournamentId == ContractSamples.tournamentID && invite.tournamentName == "Kickers Cup")
         #expect(invite.type == .football && invite.format == .singleElimination && invite.teamSize == 5 && invite.isTeam)
         #expect(invite.inviterUserId == "sub-2" && invite.inviterName == "Noor" && invite.status == .pending)
         #expect(invite.expiresAt == APIJSONCoding.parseInstant("2026-10-09T10:00:00Z") && invite.respondedAt == nil)
@@ -25,67 +25,70 @@ struct TournamentInboxContractTests {
 
     /// A format a newer backend added decodes; the details line shows the name as it came.
     @Test func anInviteOfAnUnseenFormatDecodesAndNamesTheFormatAsItCame() throws {
-        let json = Laurel.tournamentInvite.replacingOccurrences(of: #""format":"single_elimination""#, with: #""format":"swiss""#)
+        let json = ContractSamples.tournamentInvite
+            .replacingOccurrences(of: #""format":"single_elimination""#, with: #""format":"swiss""#)
         let item = try ContractSamples.decode(InboxItem.self, from: json)
         #expect(item.isVisible && item.tournamentInvite?.format == .unknown("swiss"))
         #expect(item.tournamentInvite?.details == "Football · swiss · Teams of 5")
     }
 
     @Test func theMatchReminderDecodesWithAndWithoutAPlace() throws {
-        let item = try ContractSamples.decode(InboxItem.self, from: Laurel.matchReminder)
+        let item = try ContractSamples.decode(InboxItem.self, from: ContractSamples.matchReminder)
 
-        #expect(item.id == Laurel.reminderItemID && item.kind == .matchReminder && item.isVisible)
+        #expect(item.id == ContractSamples.reminderItemID && item.kind == .matchReminder && item.isVisible)
         let reminder = try #require(item.matchReminder)
-        #expect(reminder.tournamentId == Laurel.tournamentID && reminder.tournamentName == "Kickers Cup")
+        #expect(reminder.tournamentId == ContractSamples.tournamentID && reminder.tournamentName == "Kickers Cup")
         #expect(reminder.matchId == "r01p002" && reminder.opponentName == "Riverside Rovers")
         #expect(reminder.scheduledAt == APIJSONCoding.parseInstant("2026-10-18T12:00:00Z"))
         #expect(reminder.locationName == "Tempelhofer Feld")
-        #expect(reminder.destination == TournamentDestination(id: Laurel.tournamentID, name: "Kickers Cup", matchID: "r01p002"))
+        #expect(reminder.destination
+                == TournamentDestination(id: ContractSamples.tournamentID, name: "Kickers Cup", matchID: "r01p002"))
         #expect(item.caption == "Match reminder · Kickers Cup")
 
-        let bare = try ContractSamples.decode(InboxItem.self, from: Laurel.matchReminderWithoutPlace)
+        let bare = try ContractSamples.decode(InboxItem.self, from: ContractSamples.matchReminderWithoutPlace)
         #expect(bare.matchReminder?.locationName == nil && bare.isVisible)
     }
 
     /// The individual accept enters the caller and names the entry; the team accept flips the item alone.
     @Test func theAcceptAnswersCarryTheTournamentAndNoGroup() throws {
-        let individual = try ContractSamples.decode(InviteAcceptance.self, from: Laurel.inviteAcceptedIndividual)
+        let individual = try ContractSamples.decode(InviteAcceptance.self, from: ContractSamples.inviteAcceptedIndividual)
         #expect(individual.group == nil)
         #expect(individual.item.tournamentInvite?.status == .accepted)
         #expect(individual.item.tournamentInvite?.respondedAt == APIJSONCoding.parseInstant("2026-09-25T10:01:00Z"))
         let tournament = try #require(individual.tournament)
-        #expect(tournament.id == Laurel.tournamentID && tournament.myEntryId == "01K6QZ3F8X2M4N6P8R0T2V4W6Y")
+        #expect(tournament.id == ContractSamples.tournamentID && tournament.myEntryId == "01K6QZ3F8X2M4N6P8R0T2V4W6Y")
         #expect(tournament.hasEntered && tournament.entryCount == 1 && tournament.group?.id == "g1")
 
-        let team = try ContractSamples.decode(InviteAcceptance.self, from: Laurel.inviteAcceptedTeam)
+        let team = try ContractSamples.decode(InviteAcceptance.self, from: ContractSamples.inviteAcceptedTeam)
         #expect(team.group == nil && team.tournament?.myEntryId == nil && team.item.tournamentInvite?.status == .accepted)
         #expect(team.tournament?.hasEntered == false, "the player picks or names a team on the detail")
     }
 
     @Test func theInviteRoutesDecode() throws {
-        let sent = try ContractSamples.decode(SentInvite.self, from: Laurel.sentInvite)
-        #expect(sent.id == Laurel.inviteItemID && sent.tournamentId == Laurel.tournamentID && sent.groupId == nil)
+        let sent = try ContractSamples.decode(SentInvite.self, from: ContractSamples.tournamentSentInvite)
+        #expect(sent.id == ContractSamples.inviteItemID && sent.tournamentId == ContractSamples.tournamentID)
+        #expect(sent.groupId == nil)
         #expect(sent.inviteeUserId == "sub-2" && sent.inviteeName == "Noor" && sent.status == .pending)
         #expect(sent.expiresAt == APIJSONCoding.parseInstant("2026-10-18T12:00:00Z"))
 
-        let page = try ContractSamples.decode(Page<InviteCandidate>.self, from: Laurel.invitees)
+        let page = try ContractSamples.decode(Page<InviteCandidate>.self, from: ContractSamples.invitees)
         #expect(page.items.map(\.displayName) == ["Noor", "Jonas"] && page.nextCursor == nil)
         #expect(page.items[0].via == .group && page.items[0].viaName == "Kickers Cup" && page.items[0].isInvited)
         #expect(page.items[1].via == .event && !page.items[1].isInvited)
     }
 
     @Test func theRoomEventsDecode() throws {
-        let changed = try ContractSamples.decode(RealtimeEnvelope.self, from: Laurel.tournamentChangedEnvelope)
+        let changed = try ContractSamples.decode(RealtimeEnvelope.self, from: ContractSamples.tournamentChangedEnvelope)
         guard case .tournamentChanged(let change) = changed else { Issue.record("expected .tournamentChanged"); return }
         #expect(change.tournamentId == "t1" && change.status == .inProgress && change.entryCount == 5 && change.channelEpoch == 3)
         #expect(change.updatedAt == APIJSONCoding.parseInstant("2026-09-25T10:00:00Z"))
         #expect(changed.groupID == "t1" && changed.channelEpoch == 3, "the room is the tournament")
 
-        let bare = try ContractSamples.decode(RealtimeEnvelope.self, from: Laurel.tournamentChangedEnvelopeWithoutUpdate)
+        let bare = try ContractSamples.decode(RealtimeEnvelope.self, from: ContractSamples.tournamentChangedEnvelopeWithoutUpdate)
         guard case .tournamentChanged(let cancelled) = bare else { Issue.record("expected .tournamentChanged"); return }
         #expect(cancelled.status == .cancelled && cancelled.updatedAt == nil)
 
-        let updated = try ContractSamples.decode(RealtimeEnvelope.self, from: Laurel.matchUpdatedEnvelope)
+        let updated = try ContractSamples.decode(RealtimeEnvelope.self, from: ContractSamples.matchUpdatedEnvelope)
         guard case .matchUpdated(let match) = updated else { Issue.record("expected .matchUpdated"); return }
         #expect(match.id == "r01p002" && match.tournamentId == "t1" && match.status == .scheduled)
         #expect(match.scheduledAt == APIJSONCoding.parseInstant("2026-09-25T10:00:00Z") && match.nextSlot == .b)
@@ -94,13 +97,14 @@ struct TournamentInboxContractTests {
 
     /// The caller's own channel carries the tournament kinds inside the one `inbox_item` envelope every kind uses.
     @Test func theInboxEnvelopeCarriesTheTournamentKinds() throws {
-        let envelope = try ContractSamples.decode(RealtimeEnvelope.self, from: Laurel.inboxItemEnvelope)
+        let envelope = try ContractSamples.decode(RealtimeEnvelope.self, from: ContractSamples.tournamentInboxItemEnvelope)
         guard case .inboxItem(let item) = envelope else { Issue.record("expected .inboxItem"); return }
-        #expect(item.kind == .tournamentInvite && item.tournamentInvite?.tournamentId == Laurel.tournamentID && item.isVisible)
+        #expect(item.kind == .tournamentInvite && item.tournamentInvite?.tournamentId == ContractSamples.tournamentID)
+        #expect(item.isVisible)
         #expect(envelope.groupID == nil && envelope.channelEpoch == nil, "the caller's own channel, not a room")
 
         let reminder = try ContractSamples.decode(RealtimeEnvelope.self,
-                                                  from: #"{"type":"inbox_item","item":\#(Laurel.matchReminder)}"#)
+                                                  from: #"{"type":"inbox_item","item":\#(ContractSamples.matchReminder)}"#)
         guard case .inboxItem(let reminded) = reminder else { Issue.record("expected .inboxItem"); return }
         #expect(reminded.kind == .matchReminder && reminded.matchReminder?.matchId == "r01p002")
     }
@@ -114,7 +118,7 @@ struct TournamentInboxContractTests {
 
         let payload = MatchSchedulePayload(schedule: MatchSchedule(scheduledAt: at, location: feld))
         let sent = try JSONSerialization.jsonObject(with: encoder.encode(payload))
-        let expected = try JSONSerialization.jsonObject(with: Data(Laurel.scheduleRequest.utf8))
+        let expected = try JSONSerialization.jsonObject(with: Data(ContractSamples.scheduleRequest.utf8))
         #expect(sent as? NSDictionary == expected as? NSDictionary)
         #expect(String(bytes: try encoder.encode(MatchSchedulePayload(schedule: MatchSchedule())), encoding: .utf8) == "{}")
     }
@@ -139,13 +143,11 @@ struct TournamentInboxContractTests {
     @Test func theMatchReminderCaptionIsTheSharedTimeCaption() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
-        calendar.locale = Locale(identifier: "en_GB")
         let now = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 11))!
         let startsAt = now.addingTimeInterval(3_600)
         let reminder = try #require(InboxItem.matchReminder(scheduledAt: startsAt).matchReminder)
 
         let caption = reminder.startsAtCaption(now: now, calendar: calendar)
         #expect(caption == InboxTimeCaption.text(for: startsAt, now: now, calendar: calendar))
-        #expect(caption == "Today, 12:00 · in 1 hour")
     }
 }

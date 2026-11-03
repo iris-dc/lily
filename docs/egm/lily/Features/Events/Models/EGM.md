@@ -45,8 +45,8 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `capacityBelowParticipants`, `descriptionTooLong`, `lookingForTooLong`, `priceUnreadable`, `priceOutOfRange`).
   Derived: `capacityIfLimited`, `allowsExtraParticipants`, `trimmedTitle`, `place: PlaceDraft`,
   `trimmedLocationName`, `trimmedDescription?`, `trimmedLookingFor?`, `isFree`, `hasUnreadablePrice`,
-  `price: Decimal? { get set }`, `eventPrice: Price?`; `earliestStart(now:rules:)`, `issues(now:rules:)`,
-  `isValid(now:rules:)`, `makeEvent(hostUserId:hostName:coordinate:)`.
+  `price: Decimal? { get set }`, `eventPrice: Price?`; `earliestStart(now:rules:)`, `issues(now:rules:)` (the one
+  validity rule; `issues(...).isEmpty` is what the forms read), `makeEvent(hostUserId:hostName:coordinate:)`.
 - `PlaceDraft` (`PlaceDraft.swift`): `name`, `coordinate?`; `Issue` (`nameMissing`, `nameTooLong`,
   `coordinateMissing`); `issues(maxLength:)`, `location(at:)`. `PlayerLimit` (`PlayerLimit.swift`): `unlimited`,
   `maximum`, `minimum`; `init(capacity:allowsExtraParticipants:)`, `hasCapacity`, `allowsExtraParticipants`.
@@ -111,8 +111,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   window. `DateWindow.days` starts at the start of `first`, ends one second before the day after `last` (a last before
   first collapses to one day); `contains` is inclusive; `proposal` spans `AppConfig.Events.defaultFilterDateSpanDays`
   (7) from today.
-- `EventListScreenState.resolve`: no events → `loading` while `isInitialLoad`, else `failed` or `empty`; events
-  visible → `list`; all hidden → `loading` while `awaitsAnswerForPosition`, else `filteredOut`.
+- `EventListScreenState.resolve`: the no-content cases are `ListState(isInitialLoad:isEmpty: !hasEvents, loadFailed:)`'s
+  (`loading`, `failed`, `empty`, each mapped to its own case); `ListState.content` → `list` while any event is visible,
+  else `loading` while `awaitsAnswerForPosition`, else `filteredOut`.
 - `Participation.init` precedence: `userID == nil` → `hidden`; hosted by the user → `hosting`; `participates` →
   `leave`; `isFull` → `full`; else `join`.
 - `CreateIntentPolicy.decide`: no intent → not consumed; an intent while a sheet is up → consumed, nothing presented;

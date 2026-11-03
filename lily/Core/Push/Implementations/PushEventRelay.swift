@@ -18,9 +18,6 @@ final class PushEventRelay {
     private var waiters: [Waiter] = []
     private let sleep: Sleep
 
-    /// Whether a registration is waiting for the system's answer.
-    var isWaiting: Bool { !waiters.isEmpty }
-
     private struct Waiter {
         let id: UUID
         let continuation: CheckedContinuation<String, any Error>

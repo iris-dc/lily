@@ -26,8 +26,11 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
 - `EventListViewModel+Filter.swift`: `isEverythingFilteredOut`, `awaitsAnswerForPosition`, `priceCurrencyCode`,
   `toggleType(_:)`, `clearFilter()`, `showEverything()`, `distanceText(for:) -> String?`, `filterPanelOpened()`,
   `filterPanelClosed()`, `presentationChanged(to:)`.
-- `EventListViewModel+Freshness.swift`: `isInitialLoad`, `listState: ListState`, `loadFailed`, `hasLoaded`,
-  `requestPosition: Coordinate?`, `positionReason: String?`, `isWaitingToRetry`, `stalenessReason: String?`.
+- `EventListViewModel+Freshness.swift`: `isInitialLoad`, `listState: ListState`, `screenState: EventListScreenState`
+  (`EventListScreenState.resolve` over `isInitialLoad`, `loadFailed`, `events`, `isEverythingFilteredOut` and
+  `awaitsAnswerForPosition`: what Explore's screen shows, read by `EventListView+Content`), `loadFailed`, `hasLoaded`,
+  `requestPosition: Coordinate?`, `positionReason: String?`, `stalenessReason: String?`. The
+  stored `recorder` and `now` are internal for these extensions; `logger` is private (no extension reads it).
 - `EventDetailViewModel` (`lily/Features/Events/ViewModels/EventDetailViewModel.swift`):
   `init(event:repository:identity:errorCenter:recorder:logger:tryAgainDelay: = AppConfig.API.tryAgainDelay,
   now:pushOptIn: = NoPushOptIn(), onChange: @MainActor (SportEvent) -> Void)`. State: `event`, `isBusy`,
@@ -35,7 +38,7 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   `hostProfile: UserProfileDestination?`, `isSelf(_:)`. Methods: `loadParticipants()`, `recordViewed()`, `join()`,
   `leave()`, `accept(_:)`.
 - `CreateEventViewModel` (`lily/Features/Events/ViewModels/CreateEventViewModel.swift`):
-  `init(repository:identity:locationService:groups: MyGroupsStore, errorCenter:logger:now:calendar: = .current,
+  `init(repository:identity:locationService:groups: MyGroupsStore, errorCenter:logger:now:
   currencyCode:pushOptIn:lockedGroup: EventGroupRef? = nil, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
   onCreated: @MainActor (SportEvent) -> Void)`. State:
   `draft`, `isSubmitting`, `createdEvent`, `eligibleGroups`, `belongsToGroups`, `let lockedGroup`. Derived:
@@ -43,8 +46,9 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   Methods: `prepare()`, `submit()`. `extension CreateEventViewModel: EventDraftEditing {}`.
 - `EditEventViewModel` (`lily/Features/Events/ViewModels/EditEventViewModel.swift`):
   `init(event:repository:errorCenter:logger:tryAgainDelay:now:currencyCode:onChange:)`. State: `draft`,
-  `isSubmitting`, `updatedEvent`. Derived: `issues`, `hasChanges`, `canSubmit`, `isDone`, `earliestStart`,
-  `capacityRange`, `lockedGroup` (the original's group), `showsGroupRow`. Method: `submit()`.
+  `isSubmitting`, `updatedEvent`; the private `originalDraft` is `EventDraft(editing: event, currencyCode:)` built
+  once in `init`, and `draft` starts as its copy. Derived: `issues`, `hasChanges`, `canSubmit`, `isDone`,
+  `earliestStart`, `capacityRange`, `lockedGroup` (the original's group), `showsGroupRow`. Method: `submit()`.
   `extension EditEventViewModel: EventDraftEditing {}`.
 
 ## Invariants
@@ -61,9 +65,10 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
 - `load()`: dropped while `isLoading`; captures `loadGeneration` and, when `clear()` bumped it meanwhile, returns
   without touching `isLoading` or reloading; a success that left a `stalenessReason` (a change, sign-in or position
   landing mid-flight) reloads once at once.
-- `loadIfStale()`: skipped while `isWaitingToRetry` (`AppConfig.Lists.retryAfterFailure` = 10 s after a failure)
-  or when `stalenessReason` is `nil` (within `AppConfig.Lists.staleAfter` = 60 s, same `changes.version`, same
-  caller, same position).
+- `loadIfStale()`: one `switch` on `freshness.decision(now:version:userID:position: requestPosition)`:
+  `.waitAfterFailure` (`AppConfig.Lists.retryAfterFailure` = 10 s after a failure) and `.fresh` (within
+  `AppConfig.Lists.staleAfter` = 60 s, same `changes.version`, same caller, same position) log and skip, `.stale(reason)`
+  logs the reason and loads.
 - Position: `requestPosition` is `userLocation` for `.upcoming` only. `loadIfStaleNearTheUser()` runs
   `HeadStart.give(AppConfig.Location.firstFixWait (1.5 s), sleep:, to: loadUserLocation, then: loadIfStale)` so
   the first answer is the one for the position. `loadUserLocation()` keeps the last fix on a miss and reloads when
@@ -92,8 +97,11 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
 - `loadParticipants()` is a no-op for guests (`showsParticipants = identity.currentUserID != nil`);
   `recordViewed()` records once per instance; `canEdit = participation == .hosting`; `hostProfile` is `nil` for a
   guest, an unknown host or the caller themselves.
-- `canSubmit`: create `!isSubmitting && issues.isEmpty`; edit also `hasChanges`
-  (`draft != EventDraft(editing: original, currencyCode:)`). `submit()` guards on it and drops a call in flight.
+- `canSubmit`: create `!isSubmitting && issues.isEmpty`; edit also `hasChanges` (`draft != originalDraft`, so a
+  Region change while the sheet is up reads an untouched draft as unchanged). `submit()` guards on it and drops a call
+  in flight. The create's default start is `Calendar.current.nextFullHour(after: now() + defaultStartOffset)`, and its
+  `CreateFlow` judges `.network` and `.eventCreationFailed` as the outcomes left unknown (an inline closure, like the
+  group and tournament forms).
 - Create runs through `CreateFlow<SportEvent>` keyed on `draft.clientId`: one `TRY_AGAIN` is repeated; after
   `.network` or `.eventCreationFailed` it looks the event up by that id and claims it when
   `hostUserId == identity.currentUserID`; after `.createIdReused` it sends the draft as `repository.update(id:

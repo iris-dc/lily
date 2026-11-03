@@ -8,7 +8,7 @@ struct MockInviteCandidatePool {
     let now: () -> Date
 
     /// Everyone not in `seen`, by name; `seen` grows with every candidate taken, and `isInvited` answers per target.
-    func candidates(excludingGroup groupID: String?,
+    func candidates(excludingGroup groupID: String,
                     seen: inout Set<String>,
                     isInvited: (String) -> Bool) async throws -> [InviteCandidate] {
         var candidates = try await groupCandidates(excludingGroup: groupID, seen: &seen, isInvited: isInvited)
@@ -18,7 +18,7 @@ struct MockInviteCandidatePool {
 
     /// Every live member of the caller's groups and tournament rooms but the one invited into, each with the first
     /// group they share; a direct conversation is the one membership that yields nobody, as on the backend.
-    private func groupCandidates(excludingGroup groupID: String?,
+    private func groupCandidates(excludingGroup groupID: String,
                                  seen: inout Set<String>,
                                  isInvited: (String) -> Bool) async throws -> [InviteCandidate] {
         var candidates: [InviteCandidate] = []
@@ -61,7 +61,7 @@ final class MockInviteLedger {
     private static let idDigits = 16
 
     func isInvited(_ userID: String, into targetID: String) -> Bool {
-        sent[targetID]?[userID] != nil
+        existing(for: userID, into: targetID) != nil
     }
 
     /// The one send behind both invite mocks, after their own refusals: `userID` must be among `candidates` (else

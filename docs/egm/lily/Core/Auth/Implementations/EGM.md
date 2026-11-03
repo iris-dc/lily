@@ -23,7 +23,7 @@ simulator; `SessionIdentityProvider` answers who the app acts for; `JWTClaims` r
   `cognitoPluginJSON(userPoolId:appClientId:region:) throws -> Data` (defaults from `AppConfig.Cognito`; keys
   `CognitoUserPool.Default` and `Auth.Default.authenticationFlowType`, sorted).
 - `CognitoAuthService: AuthService, AuthTokenProvider, SessionExpiryReporter` (`lily/Core/Auth/Implementations/CognitoAuthService.swift:CognitoAuthService`):
-  `init(client: any CognitoClient, store: any SessionStore, languageCode: @escaping () -> String = { AppLanguage.systemChoice().code }, logger: any Logging)`;
+  `init(client: any CognitoClient, store: any SessionStore, languageCode: @escaping () -> String, logger: any Logging)` (`languageCode` is the app's language, required);
   `var onSessionExpired: () -> Void = {}`.
 - `JWTClaims` (`lily/Core/Auth/Implementations/JWTClaims.swift:JWTClaims`): `static expiration(of token: String) -> Date?`
   (second segment base64url-decoded, its `exp` claim; `nil` when the token is not a JWT with one).

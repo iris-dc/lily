@@ -171,4 +171,18 @@ enum ContractSamples {
     static func decode<T: Decodable>(_ type: T.Type, from json: String) throws -> T {
         try APIJSONCoding.makeDecoder().decode(type, from: Data(json.utf8))
     }
+
+    /// A payload encoded with the app's conventions and read back as plain JSON, so the keys are checked as the wire
+    /// shows them; `Value` narrows a body whose values share one type. A failure is reported at the caller's line.
+    static func jsonObject<Value>(of payload: some Encodable,
+                                  as _: Value.Type,
+                                  sourceLocation: SourceLocation = #_sourceLocation) throws -> [String: Value] {
+        let data = try APIJSONCoding.makeEncoder().encode(payload)
+        return try #require(try JSONSerialization.jsonObject(with: data) as? [String: Value], sourceLocation: sourceLocation)
+    }
+
+    static func jsonObject(of payload: some Encodable,
+                           sourceLocation: SourceLocation = #_sourceLocation) throws -> [String: Any] {
+        try jsonObject(of: payload, as: Any.self, sourceLocation: sourceLocation)
+    }
 }

@@ -48,7 +48,7 @@ struct EventTypeTests {
         let group = try ContractSamples.decode(SportGroup.self, from: golfed(ContractSamples.group))
         let tournament = try ContractSamples.decode(Tournament.self, from: golfed(ContractSamples.tournament))
         let profile = try ContractSamples.decode(UserProfile.self, from: golfed(ContractSamples.userProfile))
-        let item = try ContractSamples.decode(InboxItem.self, from: golfed(LaurelTournamentInboxJSON.tournamentInvite))
+        let item = try ContractSamples.decode(InboxItem.self, from: golfed(ContractSamples.tournamentInvite))
 
         #expect(group.type == Self.golf && tournament.type == Self.golf)
         #expect(profile.sharedGroups.first?.type == Self.golf)

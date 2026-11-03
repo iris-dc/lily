@@ -28,7 +28,8 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   AppDependencies)`, owns a `@State` `TournamentListViewModel` for `scope: .upcoming`; `ContentScreen` with a
   `TypeFilterButton` (`tournamentsTypeFilter`) in the toolbar, a `ProgressView` while `isInitialLoad`, else a
   refreshable `TournamentCardList` (the cards nearest first around a position, like the backend's ranked answer, and
-  by start without one) or an `EmptyStateView`.
+  by start without one) or an `EmptyStateView` (`EmptyStateView.loadFailed` after a failed load, as in
+  `GroupTournamentsSegment` and `TournamentDetailView`).
 - `[lily/Features/Tournaments/Views/GroupTournamentsSegment.swift:GroupTournamentsSegment]`: `ListSegment(state:
   viewModel.listState)` around a single-column, unpadded `TournamentCardList`.
 - `[lily/Features/Tournaments/Views/TournamentCard.swift:TournamentCard]`: `GlassCard` with `CardHeader` chips
@@ -43,7 +44,7 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `loadingSlot` (`tournamentLoading`), `bracketInset`.
 - `[lily/Features/Tournaments/Views/TournamentHeader.swift:TournamentHeader]`: `(tournament, organizerProfile:
   UserProfileDestination?, winnerName: String?)`: chips (type, format, status), `OwnerTitleBlock`
-  (`tournamentOrganizer`), the winner line (`tournamentWinner`: a `Label` whose text is in the primary ink and whose
+  (no identifier), the winner line (`tournamentWinner`: a `Label` whose text is in the primary ink and whose
   trophy `DesignTokens.Symbols.winner` is in `Color.lilyAccent`) or cancelled notice, `HostedInLine`.
   `TournamentFacts(tournament:)`: start, registration close, place, team size, `EntriesBar`.
 - `[lily/Features/Tournaments/Views/TournamentEntriesSegment.swift:TournamentEntriesSegment]`: `(viewModel, detail,
@@ -51,7 +52,7 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   a `PersonRow` for singles, a `GlassCard` team with seed chip, members, captain chip and a Join team `BusyButton`
   (`tournamentJoinTeam(id)`); identifiers `entryRow(id)`, `participantRow(userId)`.
 - `[lily/Features/Tournaments/Views/TournamentResultsSegment.swift:TournamentResultsSegment]`: `(showsMatches,
-  detail, onSelect, bracketInset)` chooses `MatchList`, `BracketView` or `StandingsTable`, or an `EmptyStateView`
+  detail, onSelect, bracketInset: CGFloat)` (no default) chooses `MatchList`, `BracketView` or `StandingsTable`, or an `EmptyStateView`
   (`AppBranding.Tournaments.notStarted`) with no matches.
 - `[lily/Features/Tournaments/Views/BracketView.swift:BracketView]`: `(detail, onSelect, contentInset)`, a horizontal
   scroll of `BracketLayout.columns(of:)` with `RoundTitle` and fixed-height `MatchButton`s (`tournamentBracket`).
@@ -74,7 +75,8 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `ValidationHint` while the draft is a disallowed draw, and the action
   buttons Record/Report, Confirm, Dispute, a walkover `Menu` (`matchWalkover`, `matchWalkoverWinner(id)`) and a
   Schedule link (`matchSchedule`) to `MatchScheduleView`.
-- `[lily/Features/Tournaments/Views/MatchScheduleView.swift:MatchScheduleView]`: `(viewModel, match, now, onDone)`
+- `[lily/Features/Tournaments/Views/MatchScheduleView.swift:MatchScheduleView]`: `(viewModel, match, onDone)` (`now`
+  is read once in `init`)
   with a `@State MatchScheduleDraft` seeded from `MatchSchedule.proposal`; a `DatePicker` (`matchScheduleTime`),
   `PlaceFields` (`matchLocationName`, `matchPickOnMap`), Clear (`matchScheduleClear`) and a `DraftSubmitButton` Save
   (`matchScheduleSave`).
@@ -103,10 +105,11 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   results only when `hasMatches`.
 - `[lily/Features/Tournaments/Views/TournamentDetailView.swift:TournamentDetailView.segment]`: the bracket escapes the
   readable column only for `.results` with `drawsBracket` and matches, using `bracketInset = max(detailMargin,
-  (contentWidth - readableWidth) / 2 + detailMargin)`; everything else is `inReadableColumn()`.
+  (contentWidth - readableWidth) / 2 + detailMargin)`; everything else is `inReadableColumn()`. `results(_:)` passes
+  the computed `bracketInset` in both cases; only the bracket case reads it.
 - `[lily/Features/Tournaments/Views/TournamentDetailView.swift:TournamentDetailView.sheet]`: every sheet receives
-  `dependencies.errorCenter` and mounts its own `.errorPopup` (`MatchSheet`, `TeamNameSheet`, the shared
-  `DraftSheet`); the detail view mounts none. The linked match opens its sheet once (`consumeLinkedMatch`), only when
+  `dependencies.errorCenter` and mounts its own popup through `lilyFormSheet(errorCenter:lockedWhile:)` (`MatchSheet`
+  and `TeamNameSheet` locked while `viewModel.isBusy`, the shared `DraftSheet` while submitting); the detail view mounts none. The linked match opens its sheet once (`consumeLinkedMatch`), only when
   no sheet is up; `isGone` dismisses the screen while a first-load `.notFound` keeps the empty state.
 - `[lily/Features/Tournaments/Views/DiscoverTournamentsView.swift:DiscoverTournamentsView.content]`: spinner while
   `isInitialLoad`; empty-state precedence is load failure, then an active `typeFilter`, then the plain empty copy.

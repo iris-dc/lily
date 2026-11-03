@@ -95,8 +95,8 @@ struct ShellListsTests {
 
         #expect(lists.exploreEvents.events.isEmpty && !lists.exploreEvents.hasLoaded)
         #expect(lists.homeEvents.events.isEmpty && !lists.homeEvents.hasLoaded)
-        #expect(lists.homeTournaments.tournaments.isEmpty && !lists.homeTournaments.hasLoaded)
-        #expect(lists.exploreTournaments.tournaments.isEmpty && !lists.exploreTournaments.hasLoaded)
+        #expect(lists.homeTournaments.tournaments.isEmpty && lists.homeTournaments.isInitialLoad)
+        #expect(lists.exploreTournaments.tournaments.isEmpty && lists.exploreTournaments.isInitialLoad)
         #expect(lists.discover.groups.isEmpty && !lists.discover.hasSearched)
     }
 }

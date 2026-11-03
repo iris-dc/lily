@@ -44,7 +44,7 @@ struct PollBubble: View {
     private var caption: String {
         let kind = poll.isAnonymous ? Copy.anonymousPoll : Copy.publicPoll
         return poll.allowsMultipleAnswers
-            ? [kind, Copy.multipleAnswers].joined(separator: AppBranding.Events.captionSeparator)
+            ? AppBranding.Groups.caption([kind, Copy.multipleAnswers])
             : kind
     }
 

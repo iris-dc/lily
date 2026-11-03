@@ -48,7 +48,8 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
 - `[lily/Features/Tournaments/Implementations/MockTournamentInviteRepository.swift:MockTournamentInviteRepository]`:
   `final class MockTournamentInviteRepository: InviteRepository`,
   `init(groups:tournaments:identity:logger:now:)`; an in-memory `MockInviteLedger` and a `MockInviteCandidatePool`;
-  `candidates(groupID:)`, `invite(groupID:userID:)`; private `requireInviteRights(in:)`, `peopleIn(_:)`.
+  `candidates(groupID:)`, `invite(groupID:userID:)`; private `requireInviteRights(in:)`, `peopleIn(_:)` and
+  `candidates(for:in:)` (the pool minus the tournament's people, built once per call by both public methods).
 - `[lily/Features/Tournaments/Implementations/MockTournamentFixtures.swift:MockTournamentFixtures]`:
   `nonisolated enum` with `kickersCupID`, `tableTennisID` (`ids` also lists `padelOpenID`, declared in `+PadelOpen`),
   `callerMarker = "mock-caller"`,
@@ -68,7 +69,8 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   the Kickers group, starts in 9 days, deadline in 7); Tuesday Table Tennis (round robin, `.inProgress`, 6 players
   including the caller, Marta organises, three results recorded, one report by Jonas, one dispute by Noor, match
   `r03p002` scheduled `AppConfig.Inbox.mockReminderLead` ahead); Padel Open (round robin, `.private`, Noor organises
-  and plays, 4 of 8, starts in 12 days, no group).
+  and plays, 4 of 8, starts in 12 days, no group). Every date is `now` offset by a day or hour count times
+  `TimeInterval.day`/`.hour` (`lily/Core/System/TimeInterval+Units.swift`).
 
 ## Invariants
 
@@ -87,8 +89,10 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   `.tournamentNotFound`. Reads stay anonymous; `requireCaller()` throws `.sessionExpired` on every write except
   `create`.
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository.swift:MockTournamentRepository.organized(_:)]`:
-  `update`, `cancel`, `removeEntry` and `start` check caller, then readability, then `organizerUserId ==
-  callerMarker` (`.notOrganizer`).
+  `update`, `cancel`, `removeEntry` and `start` check caller, then readability, then
+  `tournament.isOrganized(by: MockTournamentFixtures.callerMarker)` (`.notOrganizer`); every organiser test in the mock
+  (`openOrganizedCount`, `isInRoom`, `leave`, the match writes' `requireOrganizer(of:)` and `requireSideOrOrganizer`,
+  the rooms' `callerMembership` and `roster`) is that one model rule over the marker.
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository.swift:MockTournamentRepository.create(_:)]`:
   idempotent by `draft.clientId` (an existing id replays the stored tournament when the draft equals the stored one,
   `drafts`, and is `.createIdReused` when it differs; `update` stores the new draft); refusals in order: no coordinate or
@@ -187,7 +191,9 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   confirmed, dispute, walkover, scheduled or cleared, repeated writes, and "completed" when a result ends the
   tournament).
 - `[lily/Features/Tournaments/Implementations/MockTournamentInviteRepository.swift:MockTournamentInviteRepository.invite(groupID:userID:)]`:
-  records the invite in the in-memory `MockInviteLedger` (nothing reaches an inbox); candidates are logged at debug.
+  records the invite in the in-memory `MockInviteLedger` (nothing reaches an inbox); the "Mock invite candidates
+  served" debug line comes from `candidates(groupID:)` alone, an invite builds its list through the private helper
+  without it.
 - `[lily/Features/Tournaments/Implementations/MockTournamentFixtures.swift:MockTournamentFixtures]`: pure
   construction; `+Rooms` reads `MockChatFixtures.newestMessageID(for:)` and `MockGroupFixtures` ids. No `Task`,
   sleep, timer, UserDefaults or disk access anywhere in the directory.

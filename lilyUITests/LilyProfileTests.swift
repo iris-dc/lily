@@ -104,10 +104,7 @@ final class LilyProfileTests: LilyUITestCase {
         openProfileTab()
         XCTAssertTrue(app.staticTexts["apple@example.com"].waitForExistence(timeout: 5))
 
-        let signOut = app.buttons["Sign out"]
-        XCTAssertTrue(signOut.waitForExistence(timeout: 5))
-        scrollUntilHittable(signOut)
-        signOut.tap()
+        tapAfterScrolling(app.buttons["Sign out"])
         let enter = app.buttons["Explore events"]
         XCTAssertTrue(enter.waitForExistence(timeout: 10), "a sign-out returns to the landing")
         XCTAssertTrue(app.tabBars.firstMatch.waitForNonExistence(timeout: 5), "the shell's bar goes once the landing covers it")
@@ -116,6 +113,6 @@ final class LilyProfileTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
         openHomeTab()
         XCTAssertTrue(app.staticTexts["You're browsing as a guest"].waitForExistence(timeout: 5), "the session was forgotten")
-        XCTAssertFalse(app.buttons["group-row-mock-group-kickers"].exists)
+        XCTAssertFalse(app.buttons[MockIDs.kickersRow].exists)
     }
 }

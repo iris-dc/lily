@@ -21,9 +21,6 @@ final class TermsViewModel {
 
     /// A guest is never asked: `MeStore.termsOutdated` can be set without an account.
     var isPresented: Bool { identity.currentUserID != nil && me.needsTerms }
-    var termsURL: URL { AppConfig.Moderation.termsURL }
-    var privacyURL: URL { AppConfig.Moderation.privacyURL }
-    var supportURL: URL { AppConfig.Moderation.supportURL }
 
     /// `MeStore.acceptTerms` reports a failure to the popup and logs a success itself, so this only brackets `isAccepting`.
     func accept() async {

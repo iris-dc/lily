@@ -100,9 +100,6 @@ final class LilyStateTests: LilyUITestCase {
     /// Opens the Explore card titled `title`; the later cards sit below the fold, so the list scrolls to it first.
     @MainActor
     private func openExploreCard(_ title: String) {
-        let target = card(containing: title)
-        _ = target.waitForExistence(timeout: 10)
-        scrollUntilHittable(target)
-        target.tap()
+        tapAfterScrolling(card(containing: title))
     }
 }

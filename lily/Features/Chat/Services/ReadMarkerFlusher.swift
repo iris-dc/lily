@@ -12,8 +12,6 @@ final class ReadMarkerFlusher {
     private(set) var lastFlushAt: Date?
     /// The epoch the backend's answer carried; the room adopts a newer one (resubscribe, catch up).
     var onEpoch: ((Int) async -> Void)?
-    /// A flush is waiting out the interval.
-    var isWaiting: Bool { task != nil }
 
     private var task: Task<Void, Never>?
     private let groupID: String

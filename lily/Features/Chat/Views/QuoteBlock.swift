@@ -57,7 +57,7 @@ struct QuoteBar: View {
 /// need `maxWidth: .infinity` on the quote to make it span the bubble, and that makes every reply as wide as the list
 /// allows, a short "Yes!" under a short quote included.
 struct QuoteStack: Layout {
-    var spacing: CGFloat = DesignTokens.Spacing.xs
+    private let spacing = DesignTokens.Spacing.xs
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = contentWidth(fitting: proposal, subviews)

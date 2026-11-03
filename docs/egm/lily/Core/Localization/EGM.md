@@ -15,7 +15,7 @@ the one function every string goes through. The language and preference types ar
 - `localized(_ key: String.LocalizationValue) -> String` (`lily/Core/Localization/Localized.swift:localized`): `nonisolated`
   global function; `String(localized:bundle:locale:)` with `AppLocale.current`'s bundle and locale.
 - `AppLocale` (`lily/Core/Localization/AppLocale.swift:AppLocale`): `nonisolated enum`; `static var current: Context`,
-  `static var bundle: Bundle`, `static var locale: Locale`, `static func set(_ context: Context)`. Nested
+  `static var locale: Locale`, `static func set(_ context: Context)` (the bundle is read through `current.bundle`). Nested
   `Context: Sendable`: `init(language: AppLanguage?, mainBundle: Bundle = .main, current: @escaping @Sendable () -> Locale = { .autoupdatingCurrent })`;
   `language: AppLanguage?`, `bundle: Bundle`, `locale: Locale`; `static locale(for: AppLanguage, current: Locale) -> Locale`.
 - `LanguageStore` (`lily/Core/Localization/LanguageStore.swift:LanguageStore`): `@Observable final class` (main-actor);

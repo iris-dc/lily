@@ -28,7 +28,7 @@ struct TournamentListSnapshotTests {
         snapshots.seed(held, for: key)
         harness.repository.result = .success(fresh)
         let viewModel = makeViewModel()
-        #expect(viewModel.tournaments == held && !viewModel.hasLoaded && viewModel.listState == .content)
+        #expect(viewModel.tournaments == held && viewModel.listState == .content)
         #expect(snapshots.saveCount == 0)
 
         await viewModel.loadIfStale()
@@ -51,7 +51,7 @@ struct TournamentListSnapshotTests {
         #expect(viewModel.isLoading && viewModel.listState == .empty)
         harness.repository.releaseRequests()
         await load.value
-        #expect(viewModel.hasLoaded && viewModel.listState == .empty)
+        #expect(!viewModel.isLoading && viewModel.listState == .empty && snapshots.saveCount == 1)
 
         viewModel.clear()
         #expect(viewModel.isInitialLoad && viewModel.listState == .loading)
@@ -75,7 +75,7 @@ struct TournamentListSnapshotTests {
         harness.repository.releaseRequests()
         await signedIn.value
         await guest.value
-        #expect(viewModel.tournaments == fresh && viewModel.hasLoaded && !viewModel.isLoading)
+        #expect(viewModel.tournaments == fresh && !viewModel.isInitialLoad && !viewModel.isLoading)
     }
 
     /// The list outlives the session: an answer for a caller who signed out meanwhile is dropped, and `clear` forgets
@@ -90,13 +90,13 @@ struct TournamentListSnapshotTests {
         harness.identity.currentUserID = nil
         harness.repository.releaseRequests()
         await load.value
-        #expect(viewModel.tournaments.isEmpty && !viewModel.hasLoaded && snapshots.storedFiles.isEmpty)
+        #expect(viewModel.tournaments.isEmpty && viewModel.isInitialLoad && snapshots.storedFiles.isEmpty)
 
         harness.identity.currentUserID = TestFixtures.user.id
         await viewModel.loadIfStale()
         #expect(viewModel.tournaments == fresh)
         viewModel.clear()
-        #expect(viewModel.tournaments.isEmpty && !viewModel.hasLoaded)
+        #expect(viewModel.tournaments.isEmpty && viewModel.isInitialLoad)
     }
 
     /// Home's tournaments are the caller's: kept under them, never read for another.

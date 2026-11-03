@@ -15,7 +15,7 @@ struct PushEventRelayTests {
 
     @Test func theDeliveredTokenReachesTheWaiterAsHex() async throws {
         let waiting = Task { try await relay.token(timeout: .seconds(5)) {} }
-        await settle(until: { relay.isWaiting })
+        await settle(until: { sleep.held.count == 1 })
 
         relay.deliver(token: Data([0x01, 0xab, 0xff]))
 
@@ -24,7 +24,7 @@ struct PushEventRelayTests {
 
     @Test func aRefusalReachesTheWaiterAsAnError() async {
         let waiting = Task { try await relay.token(timeout: .seconds(5)) {} }
-        await settle(until: { relay.isWaiting })
+        await settle(until: { sleep.held.count == 1 })
 
         relay.fail(URLError(.notConnectedToInternet))
 
@@ -53,7 +53,6 @@ struct PushEventRelayTests {
         sleep.release()
 
         await #expect(throws: PushRegistrationError.timedOut) { try await later.value }
-        #expect(!relay.isWaiting)
         #expect(sleep.held.isEmpty)
     }
 

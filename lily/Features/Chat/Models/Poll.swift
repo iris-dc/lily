@@ -132,4 +132,9 @@ nonisolated struct PollVoters: Hashable, Codable, Sendable {
     }
 
     let options: [Option]
+
+    /// The voters of one option as the backend listed them; `nil` for an option the answer left out.
+    func voters(for option: Poll.Option) -> [Voter]? {
+        options.first { $0.id == option.id }?.voters
+    }
 }

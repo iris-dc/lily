@@ -22,7 +22,6 @@ struct LandingView: View {
                            showsSwipeHint: viewModel.showsSwipeHint,
                            visibleSlide: $visibleSlide)
                     .overlay(alignment: .trailing) {
-                        // At the edge, vertically centred: a row of bars under the slides read as "swipe sideways".
                         IntroPageIndicator(slides: viewModel.slides, current: viewModel.currentSlide)
                             .padding(.trailing, DesignTokens.Spacing.lg)
                     }

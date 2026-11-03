@@ -23,9 +23,8 @@ struct GroupEventsSegment: View {
     }
 
     private var loadFailedState: EmptyStateView {
-        EmptyStateView(symbolName: DesignTokens.Symbols.error,
-                       title: AppBranding.Events.loadFailedTitle,
-                       message: AppBranding.Events.loadFailedMessage)
+        EmptyStateView.loadFailed(title: AppBranding.Events.loadFailedTitle,
+                                  message: AppBranding.Events.loadFailedMessage)
     }
 }
 

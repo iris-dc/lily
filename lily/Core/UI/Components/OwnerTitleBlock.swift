@@ -7,14 +7,12 @@ struct OwnerTitleBlock<Destination: Hashable>: View {
     let title: String
     let subtitle: String
     let destination: Destination?
-    let identifier: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
             ScreenTitle(text: title)
             if let destination {
                 ChevronLink(value: destination) { subtitleLine }
-                    .accessibilityIdentifier(identifier)
             } else {
                 subtitleLine
             }
@@ -27,8 +25,8 @@ struct OwnerTitleBlock<Destination: Hashable>: View {
 #Preview {
     ContentScreen {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-            OwnerTitleBlock(title: "Sunset 5-a-side", subtitle: "Hosted by Marta", destination: "marta", identifier: "")
-            OwnerTitleBlock<String>(title: "Sunset 5-a-side", subtitle: "Hosted by Marta", destination: nil, identifier: "")
+            OwnerTitleBlock(title: "Sunset 5-a-side", subtitle: "Hosted by Marta", destination: "marta")
+            OwnerTitleBlock<String>(title: "Sunset 5-a-side", subtitle: "Hosted by Marta", destination: nil)
         }
         .padding()
     }

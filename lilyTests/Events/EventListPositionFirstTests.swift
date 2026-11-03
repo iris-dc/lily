@@ -19,14 +19,6 @@ struct EventListPositionFirstTests {
         makeEventListViewModel(repository: repository, locationService: location, sleep: sleep.sleep(for:), snapshots: snapshots)
     }
 
-    private func screenState(of viewModel: EventListViewModel) -> EventListScreenState {
-        .resolve(isInitialLoad: viewModel.isInitialLoad,
-                 loadFailed: viewModel.loadFailed,
-                 hasEvents: !viewModel.events.isEmpty,
-                 isEverythingFilteredOut: viewModel.isEverythingFilteredOut,
-                 awaitsAnswerForPosition: viewModel.awaitsAnswerForPosition)
-    }
-
     @Test func aFixWithinTheWaitGoesOutWithTheFirstRequest() async {
         location.result = user
         let viewModel = makeViewModel()
@@ -73,16 +65,16 @@ struct EventListPositionFirstTests {
         repository.result = .success([])
         repository.holdsRequests = true
         let viewModel = makeViewModel()
-        #expect(!viewModel.awaitsAnswerForPosition && screenState(of: viewModel) == .list, "no position yet")
+        #expect(!viewModel.awaitsAnswerForPosition && viewModel.screenState == .list, "no position yet")
 
         let load = Task { await viewModel.loadIfStaleNearTheUser() }
         await settle(until: { repository.requestedPositions == [user] })
         #expect(viewModel.awaitsAnswerForPosition && viewModel.isEverythingFilteredOut)
-        #expect(screenState(of: viewModel) == .loading)
+        #expect(viewModel.screenState == .loading)
 
         repository.releaseRequests()
         await load.value
-        #expect(!viewModel.awaitsAnswerForPosition && screenState(of: viewModel) == .empty)
+        #expect(!viewModel.awaitsAnswerForPosition && viewModel.screenState == .empty)
     }
 
     /// An answer loaded for no position is not the one for the position that lands later either; a failed load ends
@@ -91,18 +83,18 @@ struct EventListPositionFirstTests {
         repository.result = .success(berlin)
         let viewModel = makeViewModel()
         await viewModel.loadIfStaleNearTheUser()
-        #expect(!viewModel.awaitsAnswerForPosition && screenState(of: viewModel) == .list)
+        #expect(!viewModel.awaitsAnswerForPosition && viewModel.screenState == .list)
 
         location.result = user
         repository.holdsRequests = true
         let reload = Task { await viewModel.loadUserLocation() }
         await settle(until: { repository.requestedPositions == [nil, user] })
-        #expect(viewModel.awaitsAnswerForPosition && screenState(of: viewModel) == .loading)
+        #expect(viewModel.awaitsAnswerForPosition && viewModel.screenState == .loading)
 
         repository.thrownError = AppError.network
         repository.releaseRequests()
         await reload.value
         #expect(!viewModel.awaitsAnswerForPosition && viewModel.loadFailed)
-        #expect(screenState(of: viewModel) == .filteredOut)
+        #expect(viewModel.screenState == .filteredOut)
     }
 }

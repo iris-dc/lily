@@ -64,10 +64,9 @@ struct InvitePeopleSheet: View {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .failed:
-            EmptyStateView(symbolName: DesignTokens.Symbols.error,
-                           title: Copy.loadFailedTitle,
-                           message: AppBranding.Groups.loadFailedMessage,
-                           actionTitle: AppBranding.Groups.tryAgain) {
+            EmptyStateView.loadFailed(title: Copy.loadFailedTitle,
+                                      message: AppBranding.Groups.loadFailedMessage,
+                                      actionTitle: AppBranding.Groups.tryAgain) {
                 Task { await viewModel.load() }
             }
         case .nobody:

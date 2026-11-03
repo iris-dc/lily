@@ -16,7 +16,7 @@ extension ChatViewModel {
     }
 
     func canPin(_ message: ChatMessage) -> Bool {
-        !message.isDeleted && !message.isSystem && canChangePins
+        message.isLiveMemberMessage && canChangePins
     }
 
     /// What the long press offers: Pin, Unpin, or neither.

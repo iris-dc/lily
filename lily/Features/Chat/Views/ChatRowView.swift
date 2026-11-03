@@ -59,8 +59,6 @@ struct ChatRowView: View {
         case .message(let messageRow):
             messageBubble(for: messageRow)
         case .system(let message):
-            // Every chat is on the Chats stack, which registers the game and the tournament destinations; a pin's note
-            // leads to the pinned message, as a quote does.
             SystemMessageRow(message: message, viewModel: viewModel, onTap: pinnedMessageTap(for: message)) {
                 $0.open(through: dependencies.navigation)
             }

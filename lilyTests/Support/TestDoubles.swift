@@ -10,7 +10,8 @@ final class InMemorySessionStore: SessionStore {
     func clear() { stored = nil }
 }
 
-/// Scripted auth service with call recording.
+/// Scripted auth service with call recording; `holdsRequests` parks every call until released, and a call cancelled
+/// while parked learns of it then, as Amplify's would.
 @MainActor
 final class FakeAuthService: AuthService, HoldsRequests {
     let hold = RequestHold()
@@ -22,8 +23,6 @@ final class FakeAuthService: AuthService, HoldsRequests {
     var confirmError: AppError?
     var resendError: AppError?
     var signOutError: AppError?
-    /// Simulated latency before sign-in and sign-up answer; a suspension point, so cancellation can be observed.
-    var delay: Duration = .zero
     private(set) var signInProviders: [AuthProvider] = []
     private(set) var signUpRequests: [EmailCredentials] = []
     private(set) var confirmations: [ConfirmationRequest] = []
@@ -43,31 +42,27 @@ final class FakeAuthService: AuthService, HoldsRequests {
 
     func signIn(with provider: AuthProvider) async throws -> AuthSession {
         signInProviders.append(provider)
-        try await simulateLatency()
+        try await hold.waitOrThrow()
         return try signInResult.get()
     }
 
     func signUp(email: String, password: String) async throws -> SignUpOutcome {
         signUpRequests.append(EmailCredentials(email: email, password: password))
-        try await simulateLatency()
+        try await hold.waitOrThrow()
         if let signUpError { throw signUpError }
         return signUpOutcome
     }
 
     func confirmSignUp(email: String, code: String) async throws {
         confirmations.append(ConfirmationRequest(email: email, code: code))
-        try await simulateLatency()
+        try await hold.waitOrThrow()
         if let confirmError { throw confirmError }
     }
 
     func resendConfirmationCode(email: String) async throws {
         resendEmails.append(email)
-        try await simulateLatency()
+        try await hold.waitOrThrow()
         if let resendError { throw resendError }
-    }
-
-    private func simulateLatency() async throws {
-        if delay > .zero { try await Task.sleep(for: delay) }
     }
 
     func signOut() async throws {
@@ -192,6 +187,12 @@ private let settleYieldLimit = 1_000
 func settle(until condition: () -> Bool, sourceLocation: SourceLocation = #_sourceLocation) async {
     // A synchronous condition cannot throw, so the awaited form never does here.
     try? await settle(untilAsync: condition, sourceLocation: sourceLocation)
+}
+
+/// Gives fire-and-forget work every chance to run, so "nothing more happened" can be asserted.
+@MainActor
+func drain(yields: Int = 20) async {
+    for _ in 0..<yields { await Task.yield() }
 }
 
 /// `settle(until:)` for a condition that has to be awaited, such as a page read from a repository.

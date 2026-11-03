@@ -10,11 +10,6 @@ struct UpdateEventPayloadTests {
     ]
     private static let optionalKeys: Set<String> = ["description", "lookingFor", "skillLevel", "price"]
 
-    private func encode(_ payload: UpdateEventPayload) throws -> [String: Any] {
-        let data = try APIJSONCoding.makeEncoder().encode(payload)
-        return try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
-    }
-
     /// The id travels in the path and the group cannot change, so neither is in the body.
     @Test func encodesEveryEditableFieldAndNeitherTheIdNorTheGroup() throws {
         var draft = EventDraft.fixture(now: Self.now)
@@ -27,7 +22,7 @@ struct UpdateEventPayloadTests {
         draft.price = Decimal(string: "7.5")
         draft.group = EventGroupRef(id: "7b1c2d3e", name: "Kreuzberg Kickers", visibility: .public, isDeleted: false)
 
-        let json = try encode(try #require(UpdateEventPayload(draft: draft)))
+        let json = try ContractSamples.jsonObject(of: try #require(UpdateEventPayload(draft: draft)))
 
         #expect(Set(json.keys) == Self.requiredKeys.union(Self.optionalKeys))
         #expect(json["title"] as? String == "Thursday five-a-side")
@@ -50,7 +45,7 @@ struct UpdateEventPayloadTests {
 
         let payload = try #require(UpdateEventPayload(draft: draft))
 
-        #expect(Set(try encode(payload).keys) == Self.requiredKeys)
+        #expect(Set(try ContractSamples.jsonObject(of: payload).keys) == Self.requiredKeys)
         #expect(payload.description == nil && payload.lookingFor == nil && payload.price == nil)
     }
 
@@ -69,7 +64,7 @@ struct UpdateEventPayloadTests {
         var draft = EventDraft.fixture(now: Self.now)
         draft.playerLimit = .unlimited
 
-        let json = try encode(try #require(UpdateEventPayload(draft: draft)))
+        let json = try ContractSamples.jsonObject(of: try #require(UpdateEventPayload(draft: draft)))
 
         #expect(json["capacity"] == nil && json["allowsExtraParticipants"] as? Bool == false)
     }

@@ -13,8 +13,8 @@ nonisolated extension AppConfig {
 }
 
 nonisolated extension AppConfig.API.Paths {
-    static let inbox = "/api/me/inbox"
-    static let inboxRead = "/api/me/inbox/read"
+    static let inbox = "\(me)/inbox"
+    static let inboxRead = "\(inbox)/read"
 
     static func inboxAccept(id: String) -> String {
         "\(inbox)/\(id)/accept"

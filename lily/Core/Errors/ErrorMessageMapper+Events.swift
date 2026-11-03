@@ -1,7 +1,7 @@
 import Foundation
 
-/// Copy for what a host does to their own game: creating and editing it. In its own file because `eventMessage(for:)`
-/// is at SwiftLint's complexity limit; it falls through to here.
+/// Copy for what a host does to their own game: creating and editing it; `eventMessage(for:)` falls through to here,
+/// so it stays under the complexity limit.
 nonisolated extension ErrorMessageMapper {
     static func hostMessage(for error: AppError) -> ErrorMessage {
         switch error {

@@ -26,7 +26,7 @@ extension MockTournamentRepository {
         guard scoreA != scoreB || detail.tournament.permitsDraws else { throw AppError.drawNotAllowed }
         let caller = MockTournamentFixtures.callerMarker
         let scored: TournamentMatch
-        if isOrganizer(of: detail) {
+        if detail.tournament.isOrganized(by: caller) {
             scored = match.recording(scoreA, scoreB, by: caller, at: now())
         } else if match.status == .reported, !reportedBySide(of: caller, match, in: detail),
                   match.scoreA == scoreA, match.scoreB == scoreB {
@@ -88,18 +88,15 @@ extension MockTournamentRepository {
         return (detail, match)
     }
 
-    private func isOrganizer(of detail: TournamentDetail) -> Bool {
-        detail.tournament.organizerUserId == MockTournamentFixtures.callerMarker
-    }
-
     private func requireOrganizer(of detail: TournamentDetail) throws {
-        guard isOrganizer(of: detail) else { throw AppError.notOrganizer }
+        guard detail.tournament.isOrganized(by: MockTournamentFixtures.callerMarker) else { throw AppError.notOrganizer }
     }
 
     /// The organiser and the players of either side write a match; nobody else.
     private func requireSideOrOrganizer(_ match: TournamentMatch, in detail: TournamentDetail) throws {
-        let mine = detail.entry(containing: MockTournamentFixtures.callerMarker)?.id
-        guard isOrganizer(of: detail) || match.contains(entryID: mine) else { throw AppError.notInMatch }
+        let caller = MockTournamentFixtures.callerMarker
+        let mine = detail.entry(containing: caller)?.id
+        guard detail.tournament.isOrganized(by: caller) || match.contains(entryID: mine) else { throw AppError.notInMatch }
     }
 
     /// A match that can take a result: both sides known, nothing final.
@@ -110,7 +107,8 @@ extension MockTournamentRepository {
     /// A report is answered by the other side or the organiser; the side that made it reports again instead.
     private func requireReportedByTheOtherSide(_ match: TournamentMatch, in detail: TournamentDetail) throws {
         guard match.status == .reported else { throw AppError.matchNotReady }
-        guard isOrganizer(of: detail) || !reportedBySide(of: MockTournamentFixtures.callerMarker, match, in: detail) else {
+        let caller = MockTournamentFixtures.callerMarker
+        guard detail.tournament.isOrganized(by: caller) || !reportedBySide(of: caller, match, in: detail) else {
             throw AppError.matchNotReady
         }
     }

@@ -57,15 +57,11 @@ extension ChatTranscript {
     /// One view from the first frame until the rows show, so it never restarts or blinks between the load and the
     /// settling; it fades out on the rows' curve as they fade in, so no frame between them is blank.
     var spinner: some View {
-        let isShown = firstPageReveal.showsSpinner(hasRows: !viewModel.rows.isEmpty,
-                                                   isAwaitingHistory: viewModel.isAwaitingHistory)
-        return ZStack {
-            if isShown {
-                ProgressView()
-                    .transition(.opacity)
-            }
+        FadingPresence(isShown: firstPageReveal.showsSpinner(hasRows: !viewModel.rows.isEmpty,
+                                                             isAwaitingHistory: viewModel.isAwaitingHistory),
+                       animation: .firstPageFade) {
+            ProgressView()
         }
-        .animation(.easeOut(duration: DesignTokens.Duration.fast), value: isShown)
     }
 
     func scrollPhaseChanged(from old: ScrollPhase, to new: ScrollPhase) {

@@ -14,10 +14,8 @@ struct ChatViewModelClearTests {
         let harness = RealtimeHarness()
         harness.groups.result = .success([group])
         await harness.store.reload()
-        harness.cache.store(.fixture(groupID: group.id, messages: [.fixture(id: "m1", groupID: group.id)]), for: group.id)
-        await harness.connect()
-        let viewModel = harness.makeChatViewModel(for: group)
-        await viewModel.appear()
+        let room = ChatRoomState.fixture(groupID: group.id, messages: [.fixture(id: "m1", groupID: group.id)])
+        let viewModel = await harness.openChat(for: group, room: room)
         viewModel.pending.append(PendingMessage(draft: MessageDraft(), sentAt: harness.clock.now))
         return (harness, viewModel)
     }

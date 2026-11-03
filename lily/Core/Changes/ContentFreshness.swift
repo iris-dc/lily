@@ -22,7 +22,7 @@ nonisolated struct ContentFreshness: Equatable, Sendable {
 
     let staleAfter: TimeInterval
     let retryAfterFailure: TimeInterval
-    private(set) var lastLoadedAt: Date?
+    private var lastLoadedAt: Date?
     /// True from a failed load until the next successful one, so the screen can say so instead of "nothing yet".
     private(set) var loadFailed = false
     private var loadedVersion: Int?

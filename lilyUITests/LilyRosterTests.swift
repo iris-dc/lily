@@ -6,16 +6,12 @@ import XCTest
 /// caller is a plain member of Kreuzberg Kickers and the owner of Sunday Padel Crew (Tom admin, Ines and Luca members,
 /// Priya banned, 6 members); ids mirror `MockGroupFixtures`, identifiers `AccessibilityIdentifiers(+Groups|Moderation)`.
 final class LilyRosterTests: LilyUITestCase {
-    private let kickersRow = "group-row-mock-group-kickers"
-    private let padelRow = "group-row-mock-group-padel"
-    private let kickersCupRow = "tournament-row-mock-tournament-kickers-cup"
-
     /// A public group's detail stays after the leave, offering Join; Home and Chats drop the group at once, because
     /// the detail's write to Mine is what both draw.
     @MainActor
     func testLeavingAGroupFromTheDetailRemovesItFromHome() {
         tapSignInWithApple()
-        openFromHome(app.buttons[kickersRow])
+        openFromHome(app.buttons[MockIDs.kickersRow])
         let more = app.buttons["group-more"]
         XCTAssertTrue(more.waitForExistence(timeout: 10))
         more.tap()
@@ -27,21 +23,21 @@ final class LilyRosterTests: LilyUITestCase {
 
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons[kickersRow].waitForNonExistence(timeout: 10), "Home drops the group without a refresh")
+        XCTAssertTrue(app.buttons[MockIDs.kickersRow].waitForNonExistence(timeout: 10), "Home drops the group without a refresh")
         openChatsTab()
-        XCTAssertTrue(app.buttons[kickersRow].waitForNonExistence(timeout: 10), "its room leaves Chats with it")
+        XCTAssertTrue(app.buttons[MockIDs.kickersRow].waitForNonExistence(timeout: 10), "its room leaves Chats with it")
     }
 
     @MainActor
     func testAnOwnerPromotesAMemberFromTheRosterMenu() {
         tapSignInWithApple()
-        openFromHome(app.buttons[padelRow])
+        openFromHome(app.buttons[MockIDs.padelRow])
         openMembers()
         let makeAdmin = app.buttons["Make admin"]
-        openContextMenu(on: app.buttons["member-row-mock-user-ines"], until: makeAdmin)
+        openContextMenu(on: app.buttons[MockIDs.inesMemberRow], until: makeAdmin)
         makeAdmin.tap()
 
-        let promoted = app.buttons.matching(identifier: "member-row-mock-user-ines")
+        let promoted = app.buttons.matching(identifier: MockIDs.inesMemberRow)
             .matching(NSPredicate(format: "label CONTAINS %@", "Admin")).firstMatch
         XCTAssertTrue(promoted.waitForExistence(timeout: 10), "the row wears the Admin badge")
     }
@@ -50,10 +46,10 @@ final class LilyRosterTests: LilyUITestCase {
     @MainActor
     func testAnOwnerRemovesAMemberAfterConfirming() {
         tapSignInWithApple()
-        openFromHome(app.buttons[padelRow])
+        openFromHome(app.buttons[MockIDs.padelRow])
         XCTAssertTrue(labelled("6 members").waitForExistence(timeout: 10), "the header counts the roster before the removal")
         openMembers()
-        let luca = app.buttons["member-row-mock-user-luca"]
+        let luca = app.buttons[MockIDs.lucaMemberRow]
         let remove = app.buttons["Remove"]
         openContextMenu(on: luca, until: remove)
         remove.tap()
@@ -69,9 +65,9 @@ final class LilyRosterTests: LilyUITestCase {
     @MainActor
     func testAPlainMemberGetsNoActionsOnTheRoster() {
         tapSignInWithApple()
-        openFromHome(app.buttons[kickersRow])
+        openFromHome(app.buttons[MockIDs.kickersRow])
         openMembers()
-        let dev = app.buttons["member-row-mock-user-dev"]
+        let dev = app.buttons[MockIDs.devMemberRow]
         scrollUntilHittable(dev)
         let profile = app.navigationBars["Dev"]
         var presses = 0
@@ -91,7 +87,7 @@ final class LilyRosterTests: LilyUITestCase {
     func testAGuestSeesTheTournamentsSegmentOfAPublicGroup() {
         relaunchAsGuest()
         // Kickers heads the carousel's second column, which peeks in at the right edge far enough to tap.
-        let kickers = app.buttons[kickersRow]
+        let kickers = app.buttons[MockIDs.kickersRow]
         XCTAssertTrue(kickers.waitForExistence(timeout: 10))
         kickers.tap()
 
@@ -99,14 +95,14 @@ final class LilyRosterTests: LilyUITestCase {
         XCTAssertTrue(picker.waitForExistence(timeout: 10), "a public group offers a guest Events | Tournaments")
         XCTAssertFalse(picker.buttons["Members"].exists, "the roster is for signed-in callers")
         picker.buttons["Tournaments"].tap()
-        XCTAssertTrue(app.buttons[kickersCupRow].waitForExistence(timeout: 10), "the segment lists the Kickers Cup")
+        XCTAssertTrue(app.buttons[MockIDs.kickersCupRow].waitForExistence(timeout: 10), "the segment lists the Kickers Cup")
     }
 
     /// A member's menu offers Report group; Send waits for a reason, the sheet thanks the caller and Done returns to the detail.
     @MainActor
     func testReportingAGroupThanksTheUser() {
         tapSignInWithApple()
-        openFromHome(app.buttons[kickersRow])
+        openFromHome(app.buttons[MockIDs.kickersRow])
         let more = app.buttons["group-more"]
         XCTAssertTrue(more.waitForExistence(timeout: 10))
         more.tap()
@@ -134,13 +130,5 @@ final class LilyRosterTests: LilyUITestCase {
         let picker = app.segmentedControls["group-section"]
         XCTAssertTrue(picker.waitForExistence(timeout: 10))
         picker.buttons["Members"].tap()
-    }
-
-    /// Taps `title` in the confirmation a destructive action raised; a popover on iPhone, still a sheet to XCUITest.
-    @MainActor
-    private func confirm(_ title: String) {
-        let button = app.sheets.firstMatch.buttons[title]
-        XCTAssertTrue(button.waitForExistence(timeout: 5), "the confirmation must offer \(title)")
-        button.tap()
     }
 }

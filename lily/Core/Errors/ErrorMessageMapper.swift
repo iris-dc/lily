@@ -9,7 +9,7 @@ nonisolated struct ErrorMessage: Equatable, Sendable {
 nonisolated enum ErrorMessageMapper {
     static func message(for error: AppError) -> ErrorMessage {
         switch error {
-        case .authCancelled, .authFailed, .providerUnavailable, .invalidCredentials, .emailTaken, .emailNotConfirmed,
+        case .authFailed, .providerUnavailable, .invalidCredentials, .emailTaken, .emailNotConfirmed,
              .invalidConfirmationCode, .tooManyAttempts, .sessionExpired:
             authMessage(for: error)
         case .network, .rateLimited, .requestTooLarge:
@@ -31,13 +31,14 @@ nonisolated enum ErrorMessageMapper {
             attachmentMessage(for: error)
         case .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired, .feedbackFailed:
             moderationMessage(for: error)
-        case .profileUnavailable, .profileUpdateFailed, .conversationFailed, .conversationLimit, .tournamentsUnavailable,
-             .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed, .tournamentActionFailed,
-             .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer,
-             .tournamentLocked, .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound, .drawNotAllowed,
-             .tournamentLimit, .tournamentMembershipLimit, .inviteeAlreadyEntered, .cannotInviteToTournament,
-             .tournamentInviteLimit:
+        case .profileUnavailable, .profileUpdateFailed, .conversationFailed, .conversationLimit:
             peopleMessage(for: error)
+        case .tournamentsUnavailable, .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed,
+             .tournamentActionFailed, .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound,
+             .notOrganizer, .tournamentLocked, .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound,
+             .drawNotAllowed, .tournamentLimit, .tournamentMembershipLimit, .inviteeAlreadyEntered,
+             .cannotInviteToTournament, .tournamentInviteLimit:
+            tournamentMessage(for: error)
         case .unknown:
             unknownMessage
         }
@@ -67,9 +68,6 @@ nonisolated enum ErrorMessageMapper {
     /// Copy for signing in, signing up and the session; `message(for:)` routes exactly those cases here.
     private static func authMessage(for error: AppError) -> ErrorMessage {
         switch error {
-        case .authCancelled:
-            ErrorMessage(title: localized("Sign-in cancelled"),
-                         body: localized("No worries. You can try again whenever you like."))
         case .authFailed(let provider):
             ErrorMessage(title: localized("Couldn't sign in"),
                          body: localized("\(provider.displayName) sign-in didn't go through. Please try again."))

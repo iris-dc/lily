@@ -13,8 +13,7 @@ nonisolated struct AttachmentSelection: Identifiable, Equatable, Sendable {
 
     /// nil when the message has no picture or video, or `tile` names no tile drawn.
     init?(message: ChatMessage, tappedTile tile: Int) {
-        let attachments = message.attachments
-        let media = GalleryLayout.partition(attachments.map(\.kind)).media.map { attachments[$0] }
+        let media = message.media
         let layout = GalleryLayout(count: media.count)
         guard !media.isEmpty, (0..<layout.shownCount).contains(tile) else { return nil }
         self.message = message

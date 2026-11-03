@@ -29,10 +29,9 @@ struct GroupLoaderView: View {
                 }
             case .failed:
                 ContentScreen {
-                    EmptyStateView(symbolName: DesignTokens.Symbols.error,
-                                   title: Copy.loadFailedTitle,
-                                   message: Copy.loadFailedMessage,
-                                   actionTitle: Copy.tryAgain) {
+                    EmptyStateView.loadFailed(title: Copy.loadFailedTitle,
+                                              message: Copy.loadFailedMessage,
+                                              actionTitle: Copy.tryAgain) {
                         Task { await viewModel.load() }
                     }
                 }
