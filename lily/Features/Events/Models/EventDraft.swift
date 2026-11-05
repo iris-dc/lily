@@ -99,9 +99,9 @@ nonisolated struct EventDraft: Equatable, Sendable {
         case titleMissing
         case titleTooLong
         case startsAtTooSoon
-        case locationNameMissing
+        /// Neither a place name nor a spot; either is enough, the geocoder fills the other on submit.
+        case placeMissing
         case locationNameTooLong
-        case coordinateMissing
         case capacityOutOfRange
         /// An edit asked for fewer spots than people already in the game.
         case capacityBelowParticipants
@@ -146,7 +146,7 @@ nonisolated struct EventDraft: Equatable, Sendable {
         if trimmedTitle.isEmpty { issues.append(.titleMissing) }
         if trimmedTitle.wireLength > limits.titleMaxLength { issues.append(.titleTooLong) }
         if startsAt < Self.earliestStart(now: now, rules: rules) { issues.append(.startsAtTooSoon) }
-        issues += place.issues(maxLength: limits.locationNameMaxLength).map(Issue.init)
+        issues += place.issues(maxLength: limits.locationNameMaxLength, requiring: .nameOrSpot).map(Issue.init)
         return issues
     }
 
@@ -226,12 +226,12 @@ nonisolated struct EventDraft: Equatable, Sendable {
 }
 
 nonisolated extension EventDraft.Issue {
-    /// The shared place issue under the name this form's Where section reports it by.
+    /// The shared place issue under the name this form's Where section reports it by. The `.nameOrSpot` rule never
+    /// raises the two both-halves issues; they fold into `.placeMissing` for exhaustiveness alone.
     fileprivate init(_ place: PlaceDraft.Issue) {
         switch place {
-        case .nameMissing: self = .locationNameMissing
+        case .nameMissing, .coordinateMissing, .placeMissing: self = .placeMissing
         case .nameTooLong: self = .locationNameTooLong
-        case .coordinateMissing: self = .coordinateMissing
         }
     }
 }

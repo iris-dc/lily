@@ -88,8 +88,7 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
         } header: {
             Text(Copy.whereSection)
         } footer: {
-            viewModel.issue(for: .locationNameMissing, .locationNameTooLong, .coordinateMissing)
-                .map { Text(Copy.message(for: $0)) }
+            Text(viewModel.issue(for: .placeMissing, .locationNameTooLong).map(Copy.message(for:)) ?? Copy.whereHint)
         }
     }
 

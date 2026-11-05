@@ -51,6 +51,8 @@ nonisolated enum DesignTokens {
         /// Growth of a map pin when selected.
         static let mapPinSelectedScale: CGFloat = 1.15
         static let mapSelectedCardWidth: CGFloat = 340
+        /// The event detail's map: enough to place the spot in its neighbourhood without crowding the facts.
+        static let detailMapHeight: CGFloat = 200
         /// The map opens this much wider than the filter's diameter, so a pin at the radius sits inside the edge and
         /// clear of the floating controls.
         static let mapRegionPadding: Double = 1.3

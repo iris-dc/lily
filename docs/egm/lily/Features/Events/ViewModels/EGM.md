@@ -43,12 +43,18 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   onCreated: @MainActor (SportEvent) -> Void)`. State:
   `draft`, `isSubmitting`, `createdEvent`, `eligibleGroups`, `belongsToGroups`, `let lockedGroup`. Derived:
   `issues`, `canSubmit`, `isDone`, `earliestStart`, `capacityRange`, `showsGroupRow`, `explainsNoEligibleGroups`.
-  Methods: `prepare()`, `submit()`. `extension CreateEventViewModel: EventDraftEditing {}`.
+  Methods: `prepare()`, `submit()`. `extension CreateEventViewModel: EventDraftEditing {}`. Takes a
+  `geocoder: any GeocodingService = MockGeocodingService()` behind a `PlaceResolver`: `submit()` first fills whichever
+  half of the place is missing (a typed name is geocoded into the spot, so a "Gdansk" game lands near Gdansk; a bare
+  pin is named after the spot, falling back to the coordinates as text, never blank); `AppError.placeNotFound` (a name
+  the geocoder cannot place) is reported to the `ErrorCenter` before anything is sent and the draft stays.
 - `EditEventViewModel` (`lily/Features/Events/ViewModels/EditEventViewModel.swift`):
   `init(event:repository:errorCenter:logger:tryAgainDelay:now:currencyCode:onChange:)`. State: `draft`,
   `isSubmitting`, `updatedEvent`; the private `originalDraft` is `EventDraft(editing: event, currencyCode:)` built
   once in `init`, and `draft` starts as its copy. Derived: `issues`, `hasChanges`, `canSubmit`, `isDone`,
-  `earliestStart`, `capacityRange`, `lockedGroup` (the original's group), `showsGroupRow`. Method: `submit()`.
+  `earliestStart`, `capacityRange`, `lockedGroup` (the original's group), `showsGroupRow`. Method: `submit()`, which
+  resolves the place through the same `PlaceResolver` inside its gate (an edit can clear the name), so a failed
+  geocode reaches the popup through the gate's report.
   `extension EditEventViewModel: EventDraftEditing {}`.
 
 ## Invariants

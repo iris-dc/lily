@@ -71,6 +71,8 @@ nonisolated enum AppBranding {
             static var eventType: String { Filter.eventType }
             static var startsAt: String { localized("When") }
             static var whereSection: String { localized("Where") }
+            /// The Where footer while nothing is wrong: either half is enough, the other is filled from it.
+            static var whereHint: String { localized("A place name or a spot on the map is enough.") }
             static var locationNamePlaceholder: String { localized("Place name") }
             static var pickOnMap: String { localized("Set the spot on the map") }
             /// Value of the map row while the draft has no coordinate yet.
@@ -110,7 +112,6 @@ nonisolated enum AppBranding {
                 return switch issue {
                 case .titleMissing: localized("Give the event a title")
                 case .titleTooLong: localized("Keep the title under \(limits.titleMaxLength) characters")
-                case .locationNameMissing: Forms.placeNameMissing
                 case .locationNameTooLong: Forms.placeNameTooLong(limit: limits.locationNameMaxLength)
                 case .descriptionTooLong: Forms.descriptionTooLong(limit: limits.descriptionMaxLength)
                 case .lookingForTooLong: Forms.tooLong(limit: limits.lookingForMaxLength)
@@ -123,7 +124,7 @@ nonisolated enum AppBranding {
                 let limits = AppConfig.Events.Creation.self
                 return switch issue {
                 case .startsAtTooSoon: Forms.startTooSoon(minutes: limits.minimumLeadTimeMinutes)
-                case .coordinateMissing: pickOnMap
+                case .placeMissing: localized("Name the place or set the spot on the map")
                 case .capacityOutOfRange:
                     localized("Between \(limits.capacityRange.lowerBound) and \(limits.capacityRange.upperBound) players")
                 case .capacityBelowParticipants: localized("Keep at least as many spots as players who joined")

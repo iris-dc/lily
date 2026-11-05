@@ -16,7 +16,7 @@ nonisolated enum ErrorMessageMapper {
             transportMessage(for: error)
         case .eventsUnavailable, .eventNotFound, .eventFull, .alreadyJoined, .notAParticipant, .hostCannotLeave,
              .tryAgain, .participationFailed, .eventCreationFailed, .createIdReused, .notHost, .capacityTooLow,
-             .eventUpdateFailed:
+             .eventUpdateFailed, .placeNotFound:
             eventMessage(for: error)
         case .groupsUnavailable, .groupNotFound, .groupFull, .notAMember, .bannedFromGroup, .memberBanned,
              .ownerCannotLeave, .insufficientRole, .membershipLimitReached, .groupCreationFailed, .groupActionFailed,

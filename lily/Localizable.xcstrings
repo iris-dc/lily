@@ -29382,6 +29382,166 @@
           }
         }
       }
+    },
+    "Name the place or set the spot on the map": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Укажите название места или отметьте точку на карте"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pon el nombre del lugar o marca el punto en el mapa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nommez le lieu ou placez le point sur la carte"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вкажіть назву місця або позначте точку на карті"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podaj nazwę miejsca albo zaznacz punkt na mapie"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dê o nome do lugar ou marque o ponto no mapa"
+          }
+        }
+      }
+    },
+    "A place name or a spot on the map is enough.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Достаточно названия места или точки на карте."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basta con el nombre del lugar o un punto en el mapa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le nom du lieu ou un point sur la carte suffit."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Достатньо назви місця або точки на карті."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wystarczy nazwa miejsca albo punkt na mapie."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basta o nome do lugar ou um ponto no mapa."
+          }
+        }
+      }
+    },
+    "Couldn't find this place": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось найти это место"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo encontrar este lugar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de trouver ce lieu"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося знайти це місце"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie udało się znaleźć tego miejsca"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível encontrar este lugar"
+          }
+        }
+      }
+    },
+    "Check the place name, or set the spot on the map.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверьте название места или отметьте точку на карте."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revisa el nombre del lugar o marca el punto en el mapa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifiez le nom du lieu ou placez le point sur la carte."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевірте назву місця або позначте точку на карті."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprawdź nazwę miejsca albo zaznacz punkt na mapie."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confira o nome do lugar ou marque o ponto no mapa."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

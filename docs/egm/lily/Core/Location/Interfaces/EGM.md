@@ -32,3 +32,11 @@ logic can be tested against a scripted source.
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (from the repository root; the suites live under `lilyTests/Location`).
+
+### `GeocodingService` (2026-11-05)
+
+- `protocol GeocodingService` `[lily/Core/Location/Interfaces/GeocodingService.swift:GeocodingService]`:
+  `func coordinate(for name: String) async -> Coordinate?` (the spot a typed place names) and
+  `func placeName(for coordinate: Coordinate) async -> String?` (what the place around the spot is called). Failures
+  answer `nil`, never throw: the caller (`PlaceResolver` in `Features/Events/Services`) decides what a missing half
+  means.

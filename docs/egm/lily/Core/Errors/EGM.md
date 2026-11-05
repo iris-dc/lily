@@ -20,7 +20,8 @@ draws.
   - transport: `rateLimited(retryAfter: TimeInterval?)`, `requestTooLarge` (a 413 `REQUEST_TOO_LARGE`: the app's own
     drift, repeating cannot help), `network`;
   - events: `eventsUnavailable`, `eventNotFound`, `eventFull`, `alreadyJoined`, `notAParticipant`, `hostCannotLeave`,
-    `tryAgain`, `participationFailed`, `eventCreationFailed`, `createIdReused` (a `*_ID_REUSED` on any create: the
+    `tryAgain`, `participationFailed`, `eventCreationFailed`, `placeNotFound` (client-side, 2026-11-05: the typed place
+    could not be geocoded into a spot; raised before the create goes out), `createIdReused` (a `*_ID_REUSED` on any create: the
     earlier create landed and `CreateFlow` updates it), `notHost`, `capacityTooLow`, `eventUpdateFailed`;
   - groups and invites: `groupsUnavailable`, `groupNotFound`, `groupFull`, `notAMember`, `bannedFromGroup`, `memberBanned`,
     `ownerCannotLeave`, `insufficientRole`, `membershipLimitReached`, `groupCreationFailed`, `groupActionFailed`,

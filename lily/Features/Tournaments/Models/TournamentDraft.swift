@@ -193,7 +193,9 @@ nonisolated extension TournamentDraft.Issue {
     /// The shared place issue under the name this form's Where section reports it by.
     fileprivate init(_ place: PlaceDraft.Issue) {
         switch place {
-        case .nameMissing: self = .locationNameMissing
+        // The tournament form requires both halves (`.nameAndSpot`), which never raises `.placeMissing`; the case is
+        // mapped for exhaustiveness alone.
+        case .nameMissing, .placeMissing: self = .locationNameMissing
         case .nameTooLong: self = .locationNameTooLong
         case .coordinateMissing: self = .coordinateMissing
         }

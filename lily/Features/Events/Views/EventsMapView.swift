@@ -5,16 +5,17 @@ import SwiftUI
 /// show, so an empty search still shows where the user is. Selecting a pin shows a card that opens the detail.
 struct EventsMapView: View {
     let viewModel: EventListViewModel
-    /// Extra room under the selected card, for a screen that floats a button over the map's bottom corner.
-    let bottomInset: CGFloat
+    /// Room kept free to the right of the selected card, for a screen that floats a button over the map's bottom
+    /// corner: the card sits beside the "+", never above it.
+    let trailingInset: CGFloat
     @State private var position: MapCameraPosition
     /// Set once the camera has been put on the user, at init or when the position arrived, so later drift never moves it.
     @State private var hasCenteredOnUser: Bool
     @State private var selectedEventID: SportEvent.ID?
 
-    init(viewModel: EventListViewModel, bottomInset: CGFloat = 0) {
+    init(viewModel: EventListViewModel, trailingInset: CGFloat = 0) {
         self.viewModel = viewModel
-        self.bottomInset = bottomInset
+        self.trailingInset = trailingInset
         let userRegion = Self.userRegion(for: viewModel)
         _position = State(initialValue: userRegion.map { .region($0) } ?? .userLocation(fallback: .automatic))
         _hasCenteredOnUser = State(initialValue: userRegion != nil)
@@ -25,8 +26,8 @@ struct EventsMapView: View {
     }
 
     var body: some View {
-        // The map bleeds under the floating tab bar; the card stays inside the safe area, above it.
-        ZStack(alignment: .bottom) {
+        // The map bleeds under the floating tab bar; the card stays inside the safe area, beside the floating "+".
+        ZStack(alignment: .bottomLeading) {
             map
             selectedEventCard
         }
@@ -73,13 +74,22 @@ struct EventsMapView: View {
                 EventPreviewCard(event: selectedEvent, detail: viewModel.distanceText(for: selectedEvent))
                     .frame(maxWidth: DesignTokens.Layout.mapSelectedCardWidth)
             }
-            .buttonStyle(.plain)
+            // Not `.plain`: a plain NavigationLink keeps its pressed dim after the push, so the card came back from
+            // the detail still looking held down. This style's press state is the gesture's and always lets go.
+            .buttonStyle(MapCardButtonStyle())
             .lilyHoverable()
             .padding(DesignTokens.Spacing.lg)
-            .padding(.bottom, bottomInset)
+            .padding(.trailing, trailingInset)
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .accessibilityIdentifier(AccessibilityIdentifiers.mapSelectedCard)
         }
+    }
+}
+
+/// The selected card's press feedback: dimmed exactly while the finger holds it.
+private struct MapCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? DesignTokens.Opacity.pressedCard : 1)
     }
 }
 

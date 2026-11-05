@@ -11,6 +11,9 @@ nonisolated extension ErrorMessageMapper {
         case .eventUpdateFailed:
             ErrorMessage(title: localized("Couldn't save your changes"),
                          body: localized("Check the details and try again in a moment."))
+        case .placeNotFound:
+            ErrorMessage(title: localized("Couldn't find this place"),
+                         body: localized("Check the place name, or set the spot on the map."))
         case .notHost:
             ErrorMessage(title: localized("Not your event"), body: localized("Only the host can change an event."))
         case .capacityTooLow:

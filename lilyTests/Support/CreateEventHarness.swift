@@ -11,6 +11,7 @@ final class CreateEventHarness: LoadsGroups {
 
     let repository = FakeEventRepository()
     let groupRepository = FakeGroupRepository()
+    let geocoder = FakeGeocodingService()
     /// The caller is the user the fake makes host of every created game.
     let identity = FakeIdentityProvider()
     let logger = SpyLogger()
@@ -35,6 +36,7 @@ final class CreateEventHarness: LoadsGroups {
         viewModel = CreateEventViewModel(repository: repository,
                                          identity: identity,
                                          locationService: locationService ?? MockLocationService(),
+                                         geocoder: geocoder,
                                          groups: groups,
                                          errorCenter: errorCenter,
                                          logger: logger,

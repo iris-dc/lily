@@ -15,6 +15,8 @@ final class EditEventViewModel {
     private let originalDraft: EventDraft
     private let rules: EventDraft.Rules
     private let repository: any EventRepository
+    /// Fills the half of the place the host left out (an edit can clear the name), on save.
+    private let places: PlaceResolver
     private let logger: any Logging
     private let now: () -> Date
     private let onChange: @MainActor (SportEvent) -> Void
@@ -22,6 +24,7 @@ final class EditEventViewModel {
 
     init(event: SportEvent,
          repository: any EventRepository,
+         geocoder: any GeocodingService = MockGeocodingService(),
          errorCenter: ErrorCenter,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
@@ -33,6 +36,7 @@ final class EditEventViewModel {
         draft = originalDraft
         self.rules = .editing(participantCount: event.participantCount)
         self.repository = repository
+        places = PlaceResolver(geocoder: geocoder, logger: logger)
         self.logger = logger
         self.now = now
         self.onChange = onChange
@@ -64,6 +68,7 @@ final class EditEventViewModel {
         isSubmitting = true
         defer { isSubmitting = false }
         await gate.run("Update of event \(original.id)") {
+            draft = try await places.resolve(draft)
             let event = try await repository.update(id: original.id, draft)
             updatedEvent = event
             onChange(event)

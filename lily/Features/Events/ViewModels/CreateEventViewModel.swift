@@ -19,6 +19,9 @@ final class CreateEventViewModel {
 
     private let repository: any EventRepository
     private let locationService: any LocationService
+    /// Fills the half of the place the host left out, on submit.
+    private let places: PlaceResolver
+    private let errorCenter: ErrorCenter
     private let groups: MyGroupsStore
     private let logger: any Logging
     /// A `.network` or `.eventCreationFailed` leaves the outcome unknown; the game is ours when the caller hosts what
@@ -33,6 +36,7 @@ final class CreateEventViewModel {
     init(repository: any EventRepository,
          identity: any IdentityProvider,
          locationService: any LocationService,
+         geocoder: any GeocodingService = MockGeocodingService(),
          groups: MyGroupsStore,
          errorCenter: ErrorCenter,
          logger: any Logging,
@@ -44,6 +48,8 @@ final class CreateEventViewModel {
          onCreated: @escaping @MainActor (SportEvent) -> Void) {
         self.repository = repository
         self.locationService = locationService
+        places = PlaceResolver(geocoder: geocoder, logger: logger)
+        self.errorCenter = errorCenter
         self.groups = groups
         self.logger = logger
         self.now = now
@@ -102,6 +108,12 @@ final class CreateEventViewModel {
         guard canSubmit else { return }
         isSubmitting = true
         defer { isSubmitting = false }
+        do {
+            draft = try await places.resolve(draft)
+        } catch {
+            errorCenter.report(error)
+            return
+        }
         let created = await flow.submit(clientID: draft.clientId,
                                         describing: { "(\($0.spotsDescription))\(Self.groupSuffix(for: $0))" },
                                         send: { try await repository.create(draft) },

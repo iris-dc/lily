@@ -7,7 +7,7 @@ Source: `lily/Features/Events/Views/`
 The SwiftUI screens and components of the Events feature: the Explore screen (`EventListView` with its `+Content`
 extension), the event detail, the shared create/edit form and its sheets, the filter button and panel, the events
 map and the location picker, and the cards and rows other features reuse (`EventCard`, `EventCardList`,
-`EventPreviewCard`, `EventFactsCard`, `ParticipantRow`, `PlaceFields`, `PlacePickerRow`, `PriceAmountField`,
+`EventPreviewCard`, `EventFactsCard`, `EventLocationMap`, `ParticipantRow`, `PlaceFields`, `PlacePickerRow`, `PriceAmountField`,
 `SkillLevelPicker`). Views
 draw what the [ViewModels](../ViewModels/EGM.md) decide and call back into them; copy comes from `AppBranding`,
 sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decisions from the
@@ -37,7 +37,13 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   (full screen on the iPhone, like the create forms; a dropdown popover before 2026-11-05), the filled/outline glyph and
   the VoiceOver value on the button, one `filterPanelOpened`/`filterPanelClosed` pair per sheet session.
 - `EventsMapView` (`lily/Features/Events/Views/EventsMapView.swift`): `init(viewModel: EventListViewModel,
-  bottomInset: CGFloat = 0)`; `EventMapPin(type: EventType, isSelected: Bool)`.
+  trailingInset: CGFloat = 0)` (room kept free to the right of the selected card for a floating button);
+  `EventMapPin(type: EventType, isSelected: Bool)`; private `MapCardButtonStyle` (dim exactly while pressed).
+- `EventLocationMap(event: SportEvent)` (`lily/Features/Events/Views/EventLocationMap.swift`): the event's spot pinned
+  (`EventMapPin`, selected look) at `AppConfig.Location.pickerRegionMeters` scale, `interactionModes: []`, height
+  `DesignTokens.Layout.detailMapHeight`, clipped to `Radius.md`, identifier
+  `AccessibilityIdentifiers.eventDetailMap`; drawn on the detail after the facts card (2026-11-05, on the user's "I
+  should be able to see the map too when opening an event").
 - `LocationPickerView` (`lily/Features/Events/Views/LocationPickerView.swift`):
   `init(coordinate: Binding<Coordinate?>)`; a map under a fixed pin.
 - `PlaceFields<Field: Hashable>` (`lily/Features/Events/Views/PlaceFields.swift`): `init(name:coordinate:
@@ -107,7 +113,9 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
 - Map (`EventsMapView`): opens on `MapFraming.initialRegion(userLocation:radiusMeters: filter.maxDistanceMeters)`
   or `.userLocation(fallback: .automatic)`; a later position recentres once unless the user panned
   (`hasCenteredOnUser`, `position.positionedByUser`); pins are `viewModel.visibleEvents`; a selection the filter
-  hides is dropped; the selected card is a `NavigationLink(value:)` above `bottomInset`; only the map
+  hides is dropped; the selected card is a `NavigationLink(value:)` at the bottom leading edge with `trailingInset`
+  kept free on its right, beside the floating "+" rather than above it, in `MapCardButtonStyle` (opacity
+  `DesignTokens.Opacity.pressedCard` exactly while pressed: `.plain` kept its dim after the pop, 2026-11-05); only the map
   `ignoresSafeArea(edges: .bottom)`.
 - Picker (`LocationPickerView`): converts the map frame's centre through `MapProxy.convert` on
   `.onMapCameraChange(frequency: .onEnd)` and writes `coordinate` only when

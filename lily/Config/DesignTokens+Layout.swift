@@ -27,6 +27,9 @@ nonisolated extension DesignTokens.Layout {
 }
 
 nonisolated extension DesignTokens.Opacity {
+    /// A card dimmed under the finger (the map's selected card).
+    static let pressedCard = 0.7
+
     /// The accent wash behind the conversation row a split view's detail shows.
     static let selectedRow: Double = 0.18
     /// A text-only button's label while pressed (`lilyTextButton`), in place of the system style's dim.

@@ -87,7 +87,9 @@ lily/
                  TRY_AGAIN repeat, the unknown-outcome lookup and ownership check, the update after a reused id)
     Statistics/  Models (Interaction, InteractionKind, FilterSummary, InteractionBatch, InteractionReceipt), the
                  InteractionRecorder interface, RemoteInteractionRecorder (batching) and NoOpInteractionRecorder (mock runs)
-    Location/    Coordinate model (+ CoreLocation bridge), LocationFix, interfaces (LocationService, LocationUpdateSource),
+    Location/    Coordinate model (+ CoreLocation bridge), LocationFix, interfaces (LocationService, LocationUpdateSource,
+                 GeocodingService (a typed place to a spot and back, 2026-11-05: CoreLocationGeocoder over MapKit's requests,
+                 MockGeocodingService deterministic around the fixtures)),
                  implementations (CoreLocation update source and service, caching decorator, mock)
     Validation/  CredentialsValidator (mirroring the backend's @Email: no inner whitespace, one @, a 64-unit local part), String+WireLength
                  (UTF-16 length, as the backend counts text), Collection+FirstOf (the one first-present-issue rule of the forms),
@@ -140,8 +142,10 @@ lily/
                  and panel (over SkillLevelPicker, the one level picker), create button, the Create/Edit sheets (thin wrappers over
                  EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm), PlaceFields (the
                  place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms), PriceAmountField (the
-                 one decimal-pad price field of the filter sheet's cap and the form's price), location picker), Services (EventOpener: fetch a game by id and push its detail, shared
-                 by the inbox's reminder card and a tapped notification)
+                 one decimal-pad price field of the filter sheet's cap and the form's price), location picker, EventLocationMap (the detail's pinned
+                 spot, 2026-11-05)), Services (EventOpener: fetch a game by id and push its detail, shared
+                 by the inbox's reminder card and a tapped notification; PlaceResolver: fills the missing half of a draft's
+                 place through the geocoder on submit, 2026-11-05)
     Profile/     Guest and signed-in profile; Interfaces (ProfileRepository: GET and PUT /api/profile, the name or the bio;
                  ProfileFieldDraft, what the two editors' drafts share), remote and mock implementations, Models (Profile with
                  its bio, ProfileUpdateRequest with one field per request, DisplayNameDraft and AboutDraft with their issues),

@@ -21,9 +21,8 @@ struct EventDraftTests {
         Breakage(issue: .titleMissing) { $0.title = " \n" },
         Breakage(issue: .titleTooLong) { $0.title = text(limits.titleMaxLength + 1) },
         Breakage(issue: .startsAtTooSoon) { $0.startsAt = EventDraft.earliestStart(now: now).addingTimeInterval(-1) },
-        Breakage(issue: .locationNameMissing) { $0.locationName = "" },
+        Breakage(issue: .placeMissing) { $0.locationName = ""; $0.coordinate = nil },
         Breakage(issue: .locationNameTooLong) { $0.locationName = text(limits.locationNameMaxLength + 1) },
-        Breakage(issue: .coordinateMissing) { $0.coordinate = nil },
         Breakage(issue: .capacityOutOfRange) { $0.capacity = limits.capacityRange.upperBound + 1 },
         Breakage(issue: .descriptionTooLong) { $0.description = text(limits.descriptionMaxLength + 1) },
         Breakage(issue: .lookingForTooLong) { $0.lookingFor = text(limits.lookingForMaxLength + 1) },
@@ -50,7 +49,7 @@ struct EventDraftTests {
         #expect(draft.type == .football)
         #expect(draft.capacity == Self.limits.defaultCapacity && draft.playerLimit == .maximum)
         #expect(draft.skillLevel == nil && draft.priceText.isEmpty && draft.price == nil && draft.isFree)
-        #expect(issues(of: draft) == [.titleMissing, .locationNameMissing, .coordinateMissing])
+        #expect(issues(of: draft) == [.titleMissing, .placeMissing])
     }
 
     /// The id is what lets a repeated create find its event: unique per draft, never changed after, and lower-case
@@ -197,7 +196,7 @@ struct EventDraftTests {
         draft.priceText = "10000000"
 
         #expect(issues(of: draft) == [
-            .titleMissing, .startsAtTooSoon, .locationNameMissing, .coordinateMissing,
+            .titleMissing, .startsAtTooSoon, .placeMissing,
             .capacityOutOfRange, .descriptionTooLong, .lookingForTooLong, .priceOutOfRange,
         ])
     }

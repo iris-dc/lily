@@ -41,14 +41,16 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `let currencyCode`, `group: EventGroupRef?`. Inits `init(startsAt:currencyCode:locale:clientId:)` and
   `init(editing: SportEvent, currencyCode:locale:)`. Nested `Rules` (`minimumLeadTime`, `minimumCapacity`;
   `.creation`, `.editing(participantCount:)`, `capacityRange(for:)`) and `Issue` (`titleMissing`, `titleTooLong`,
-  `startsAtTooSoon`, `locationNameMissing`, `locationNameTooLong`, `coordinateMissing`, `capacityOutOfRange`,
+  `startsAtTooSoon`, `placeMissing` (neither a name nor a spot; either is enough, the geocoder fills the other on
+  submit), `locationNameTooLong`, `capacityOutOfRange`,
   `capacityBelowParticipants`, `descriptionTooLong`, `lookingForTooLong`, `priceUnreadable`, `priceOutOfRange`).
   Derived: `capacityIfLimited`, `allowsExtraParticipants`, `trimmedTitle`, `place: PlaceDraft`,
   `trimmedLocationName`, `trimmedDescription?`, `trimmedLookingFor?`, `isFree`, `hasUnreadablePrice`,
   `price: Decimal? { get set }`, `eventPrice: Price?`; `earliestStart(now:rules:)`, `issues(now:rules:)` (the one
   validity rule; `issues(...).isEmpty` is what the forms read), `makeEvent(hostUserId:hostName:coordinate:)`.
-- `PlaceDraft` (`PlaceDraft.swift`): `name`, `coordinate?`; `Issue` (`nameMissing`, `nameTooLong`,
-  `coordinateMissing`); `issues(maxLength:)`, `location(at:)`. `PlayerLimit` (`PlayerLimit.swift`): `unlimited`,
+- `PlaceDraft` (`PlaceDraft.swift`): `name`, `coordinate?`; `Requirement` (`nameAndSpot` for the tournament form,
+  `nameOrSpot` for the event form, whose missing half the geocoder fills on submit); `Issue` (`nameMissing`,
+  `nameTooLong`, `coordinateMissing`, `placeMissing`); `issues(maxLength:requiring: = .nameAndSpot)`, `location(at:)`. `PlayerLimit` (`PlayerLimit.swift`): `unlimited`,
   `maximum`, `minimum`; `init(capacity:allowsExtraParticipants:)`, `hasCapacity`, `allowsExtraParticipants`.
 - `CreateEventPayload` (`CreateEventPayload.swift`): `Encodable`; `clientEventId`, `title`, `type`, `startsAt`,
   `location: Location` (`name`, `coordinate`), `capacity?`, `allowsExtraParticipants`, `description?`,
@@ -88,7 +90,8 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - Draft validation (`EventDraft.issues`), in form order: `.titleMissing` / `.titleTooLong`
   (`trimmedTitle.wireLength > AppConfig.Events.Creation.titleMaxLength` = 80); `.startsAtTooSoon` when
   `startsAt < now + rules.minimumLeadTime` (creation 15 min, editing `AppConfig.Events.Editing.startMargin` = 60 s);
-  place issues via `PlaceDraft.issues(maxLength: AppConfig.Events.Creation.locationNameMaxLength)` (120); no capacity issue for
+  place issues via `PlaceDraft.issues(maxLength: AppConfig.Events.Creation.locationNameMaxLength (120), requiring:
+  .nameOrSpot)`, so one half of the place is enough; no capacity issue for
   `.unlimited`, `.capacityOutOfRange` outside `capacityRange` (2...200), `.capacityBelowParticipants` only for
   `.maximum` below `rules.minimumCapacity` (editing: `max(2, participantCount)`); `.descriptionTooLong` (> 1000),
   `.lookingForTooLong` (> 300); `.priceUnreadable` when the text is non-blank but unparseable, `.priceOutOfRange`

@@ -52,3 +52,22 @@ final class FakeLocationService: LocationService, HoldsRequests {
         return result
     }
 }
+
+/// Scriptable `GeocodingService`: forward answers `coordinateResult`, reverse `nameResult`; every request is recorded.
+@MainActor
+final class FakeGeocodingService: GeocodingService {
+    var coordinateResult: Coordinate?
+    var nameResult: String?
+    private(set) var geocodedNames: [String] = []
+    private(set) var reversedCoordinates: [Coordinate] = []
+
+    func coordinate(for name: String) async -> Coordinate? {
+        geocodedNames.append(name)
+        return coordinateResult
+    }
+
+    func placeName(for coordinate: Coordinate) async -> String? {
+        reversedCoordinates.append(coordinate)
+        return nameResult
+    }
+}

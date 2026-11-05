@@ -19,6 +19,8 @@ final class AppDependencies {
     /// Where the event screens report their taps; the root view flushes it when the app goes to the background.
     let interactionRecorder: any InteractionRecorder
     let locationService: any LocationService
+    /// Turns a typed place into a spot (and back) for the event forms; see `AppDependencies+Events.swift`.
+    let geocoder: any GeocodingService
     /// Explore's filter between launches; see `AppDependencies+Events.swift`.
     let eventFilterStore: any EventFilterStore
     /// `-freeze-aurora`: every aurora stays on its first frame; see `AppDependencies+Knobs.swift`.
@@ -52,6 +54,7 @@ final class AppDependencies {
          feedbackRepository: any FeedbackRepository,
          interactionRecorder: any InteractionRecorder & SessionObserver,
          locationService: any LocationService,
+         geocoder: any GeocodingService = MockGeocodingService(),
          groupRepositories: GroupRepositories,
          pushRegistrar: any PushRegistrar,
          deviceRepository: any DeviceRepository,
@@ -79,7 +82,7 @@ final class AppDependencies {
         self.profileRepository = profileRepository
         self.feedbackRepository = feedbackRepository
         self.interactionRecorder = interactionRecorder
-        self.locationService = locationService
+        (self.locationService, self.geocoder) = (locationService, geocoder)
         self.sessionController = SessionController(authService: authService,
                                                    sessionStore: sessionStore,
                                                    errorCenter: errorCenter,
@@ -154,6 +157,7 @@ final class AppDependencies {
                                feedbackRepository: repositories.feedback,
                                interactionRecorder: repositories.interactions,
                                locationService: makeLocationService(arguments: arguments, logger: logger),
+                               geocoder: makeGeocoder(arguments: arguments, logger: logger),
                                groupRepositories: repositories.groups,
                                pushRegistrar: repositories.pushRegistrar,
                                deviceRepository: repositories.devices,

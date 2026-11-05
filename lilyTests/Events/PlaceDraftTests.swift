@@ -40,6 +40,18 @@ struct PlaceDraftTests {
         #expect(PlaceDraft(name: "Park", coordinate: nil).issues(maxLength: limit) == [.coordinateMissing])
     }
 
+    /// The events' rule: either half is enough, and only both missing is an issue; the cap still counts on a name that
+    /// is there.
+    @Test func underNameOrSpotEitherHalfIsEnough() {
+        #expect(PlaceDraft(name: "", coordinate: nil).issues(maxLength: limit, requiring: .nameOrSpot) == [.placeMissing])
+        #expect(PlaceDraft(name: " \n", coordinate: nil).issues(maxLength: limit, requiring: .nameOrSpot) == [.placeMissing])
+        #expect(PlaceDraft(name: "Gdansk", coordinate: nil).issues(maxLength: limit, requiring: .nameOrSpot).isEmpty)
+        #expect(PlaceDraft(name: "", coordinate: spot).issues(maxLength: limit, requiring: .nameOrSpot).isEmpty)
+        #expect(PlaceDraft(name: "Park", coordinate: spot).issues(maxLength: limit, requiring: .nameOrSpot).isEmpty)
+        let long = String(repeating: "x", count: limit + 1)
+        #expect(PlaceDraft(name: long, coordinate: nil).issues(maxLength: limit, requiring: .nameOrSpot) == [.nameTooLong])
+    }
+
     @Test func aCompletePlaceHasNoIssues() {
         #expect(PlaceDraft(name: "Park", coordinate: spot).issues(maxLength: limit).isEmpty)
     }

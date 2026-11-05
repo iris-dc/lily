@@ -31,6 +31,9 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case participationFailed
     /// Creating an event failed for a reason without copy of its own (a 500, a validation the form did not catch).
     case eventCreationFailed
+    /// The typed place name could not be turned into a spot (judged on the device, before the create goes out); the
+    /// draft stays for a correction or a pin on the map.
+    case placeNotFound
     /// The same client id was sent again with other details (`*_ID_REUSED`, on an event, group or tournament create):
     /// our earlier create landed and its answer was lost; `CreateFlow` updates the stored item with the latest details.
     case createIdReused

@@ -98,6 +98,13 @@ extension AppDependencies {
         return arguments.contains(flags.mockAuth) ? .succeed : nil
     }
 
+    /// The geocoder follows the location service: deterministic under `-mock-location`, Apple's otherwise.
+    static func makeGeocoder(arguments: [String], logger: any Logging) -> any GeocodingService {
+        arguments.contains(AppConfig.LaunchArguments.mockLocation)
+            ? MockGeocodingService()
+            : CoreLocationGeocoder(logger: logger)
+    }
+
     static func makeLocationService(arguments: [String], logger: any Logging) -> any LocationService {
         arguments.contains(AppConfig.LaunchArguments.mockLocation)
             ? MockLocationService()

@@ -17,7 +17,7 @@ struct CreateEventViewModelTests {
         #expect(startsAt < earliest.addingTimeInterval(Self.secondsPerHour))
         let components = Calendar.current.dateComponents([.minute, .second], from: startsAt)
         #expect(components.minute == 0 && components.second == 0)
-        #expect(harness.viewModel.issues == [.titleMissing, .locationNameMissing, .coordinateMissing])
+        #expect(harness.viewModel.issues == [.titleMissing, .placeMissing])
         #expect(!harness.viewModel.canSubmit)
     }
 
@@ -39,7 +39,7 @@ struct CreateEventViewModelTests {
         await harness.viewModel.prepare()
 
         #expect(harness.viewModel.draft.coordinate == AppConfig.Location.mockCenter)
-        #expect(!harness.viewModel.issues.contains(.coordinateMissing))
+        #expect(!harness.viewModel.issues.contains(.placeMissing))
         #expect(harness.logger.messages(in: .location, at: .debug).count == 1)
     }
 
@@ -63,8 +63,70 @@ struct CreateEventViewModelTests {
         await harness.viewModel.prepare()
 
         #expect(harness.viewModel.draft.coordinate == nil)
-        #expect(harness.viewModel.issues.contains(.coordinateMissing))
+        #expect(harness.viewModel.issues.contains(.placeMissing))
         #expect(harness.logger.messages(in: .location, at: .debug).count == 1)
+    }
+
+    /// Only a name typed: the spot is geocoded from it on submit, so the game lands where the name says ("Gdansk" shows
+    /// to people around Gdansk) and the sent draft carries it.
+    @Test func aNameAloneIsGeocodedIntoTheSpotOnSubmit() async throws {
+        let harness = CreateEventHarness(locationService: MockLocationService(coordinate: nil))
+        harness.completeDraft()
+        harness.viewModel.draft.coordinate = nil
+        let gdansk = Coordinate(latitude: 54.352, longitude: 18.6466)
+        harness.geocoder.coordinateResult = gdansk
+
+        await harness.viewModel.submit()
+
+        #expect(harness.geocoder.geocodedNames == [harness.viewModel.draft.trimmedLocationName])
+        #expect(harness.viewModel.draft.coordinate == gdansk, "the resolved spot stays on the draft")
+        let sent = try #require(harness.repository.createdDrafts.first)
+        #expect(sent.coordinate == gdansk)
+        #expect(harness.created.count == 1 && harness.errorCenter.current == nil)
+    }
+
+    /// A name the geocoder cannot place: the popup says so, nothing is sent, the draft stays for a correction.
+    @Test func aNameTheGeocoderCannotPlaceIsRefusedBeforeTheSend() async {
+        let harness = CreateEventHarness(locationService: MockLocationService(coordinate: nil))
+        harness.completeDraft()
+        harness.viewModel.draft.coordinate = nil
+        harness.geocoder.coordinateResult = nil
+
+        await harness.viewModel.submit()
+
+        #expect(harness.errorCenter.current?.error == .placeNotFound)
+        #expect(harness.repository.createdDrafts.isEmpty && harness.created.isEmpty)
+        #expect(harness.viewModel.createdEvent == nil && !harness.viewModel.isSubmitting)
+        #expect(harness.viewModel.canSubmit, "the draft stays for a correction")
+    }
+
+    /// Only a spot picked: the place is named after it on submit; a name the geocoder does not know falls back to the
+    /// coordinates as the map row shows them, so the payload never goes out blank.
+    @Test func aSpotAloneGetsItsNameFromTheGeocoderOnSubmit() async throws {
+        let harness = CreateEventHarness()
+        harness.completeDraft()
+        harness.viewModel.draft.locationName = ""
+        let spot = AppConfig.Location.mockCenter
+        harness.viewModel.draft.coordinate = spot
+        harness.geocoder.nameResult = "Mauerpark"
+
+        await harness.viewModel.submit()
+
+        #expect(harness.geocoder.reversedCoordinates == [spot])
+        let sent = try #require(harness.repository.createdDrafts.first)
+        #expect(sent.trimmedLocationName == "Mauerpark")
+
+        let bare = CreateEventHarness()
+        bare.completeDraft()
+        bare.viewModel.draft.locationName = " "
+        bare.viewModel.draft.coordinate = spot
+        bare.geocoder.nameResult = nil
+
+        await bare.viewModel.submit()
+
+        let fallback = try #require(bare.repository.createdDrafts.first)
+        #expect(fallback.trimmedLocationName == AppBranding.Events.Create.coordinateText(spot), "never blank on the wire")
+        #expect(bare.errorCenter.current == nil)
     }
 
     @Test func canSubmitFollowsTheIssues() {

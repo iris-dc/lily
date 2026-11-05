@@ -73,7 +73,7 @@ extension EventListView {
     @ViewBuilder
     var content: some View {
         if showsMapAlone {
-            EventsMapView(viewModel: viewModel, bottomInset: DesignTokens.Layout.floatingButtonFootprint)
+            EventsMapView(viewModel: viewModel, trailingInset: DesignTokens.Layout.floatingButtonFootprint)
         } else {
             listContent
         }

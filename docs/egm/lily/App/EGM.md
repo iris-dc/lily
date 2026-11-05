@@ -33,16 +33,16 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `AppConfig.FeatureFlags.tournaments`), Cmd-1 to Cmd-N select `AppTab.shown`; `private func inShell(_:)` gates every action.
 - `AppDependencies` (`lily/App/AppDependencies.swift:AppDependencies`): `final class` storing the services typed by their
   protocols and the stores and controllers by their concrete types: the session (`authService`, `tokenProvider?`, `sessionController`, `identity`), the data
-  layer (`eventRepository`, `profileRepository`, `profile: ProfileStore`, `feedbackRepository`, `interactionRecorder`, `locationService`,
+  layer (`eventRepository`, `profileRepository`, `profile: ProfileStore`, `feedbackRepository`, `interactionRecorder`, `locationService`, `geocoder` (`GeocodingService`, default `MockGeocodingService()` so tests need no wiring),
   `eventFilterStore`, `eventChanges`, `listSnapshots: any ListSnapshotStore`), `logger`, `errorCenter`, `freezesAurora`, `language: LanguageStore`,
   `currency: CurrencyStore`, `groups: GroupDependencies`, `push: PushDependencies`, `navigation = AppNavigation()`,
   `private(set) lazy var lists: ShellLists`. The `sessionStore` parameter feeds `SessionController` and is not stored.
-- `init(logger:sessionStore:authService:tokenProvider:sessionExpiry:identity:eventRepository:profileRepository:feedbackRepository:interactionRecorder:locationService:groupRepositories:pushRegistrar:deviceRepository:language:currency:eventFilterStore:listSnapshots:errorCenter:freezesAurora:defaults:)`
+- `init(logger:sessionStore:authService:tokenProvider:sessionExpiry:identity:eventRepository:profileRepository:feedbackRepository:interactionRecorder:locationService:geocoder:groupRepositories:pushRegistrar:deviceRepository:language:currency:eventFilterStore:listSnapshots:errorCenter:freezesAurora:defaults:)`
   (`lily/App/AppDependencies.swift:AppDependencies.init`): optionals default to `nil`, the stores to the `NoOp*` types;
   builds `SessionController`, sets `identity.session`, builds `ProfileStore`, `GroupDependencies` and `PushDependencies`, calls `finishWiring(recorder:expiry:)`.
 - `static func makeDefault(arguments: [String] = AppConfig.LaunchArguments.isHonored ? CommandLine.arguments : [], defaults: UserDefaults = .standard, apply: @escaping (AppLocale.Context) -> Void = AppLocale.set) -> AppDependencies`
   (`lily/App/AppDependencies.swift:AppDependencies.makeDefault`): `startsFresh(arguments:logger:)` (`+Session.swift`), then
-  the `make*` factories below, `makeAuthService`, `makeRepositories`, `makeLocationService` (`+Repositories.swift`), `makeErrorCenter`, `freezesAurora`.
+  the `make*` factories below, `makeAuthService`, `makeRepositories`, `makeLocationService`, `makeGeocoder` (`+Repositories.swift`), `makeErrorCenter`, `freezesAurora`.
 - `static func mockAuthBehavior(from: [String]) -> MockAuthBehavior?` (`lily/App/AppDependencies+Repositories.swift:AppDependencies.mockAuthBehavior`);
   `makeAuthService(arguments:store:language:logger:) -> Auth` binds `MockAuthService` (`tokenProvider: nil`, `expiry: nil`) or `CognitoAuthService(client: AmplifyCognitoClient(logger:), ...)`
   as `AuthService`, `AuthTokenProvider` and `SessionExpiryReporter` (`struct AuthWiring { service; tokenProvider?; expiry? }`, internal, in the same file); `makeLocationService(arguments:logger:)` binds `MockLocationService()` or
@@ -101,7 +101,7 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
 | `-app-language <code>` | `LanguageStore(launchChoice:)` | `makeLanguageStore` |
 | `-mock-auth`, `-mock-auth-confirm`, `-mock-auth-fail` | `MockAuthService` with `.succeed`, `.requireConfirmation(code: AppConfig.Auth.mockConfirmationCode)`, `.fail(.network)` | `mockAuthBehavior(from:)` |
 | `-mock-user-id <sub>` | the mock sign-in's user id (mock auth only) | `makeAuthService` |
-| `-mock-location` | `MockLocationService` | `makeLocationService` |
+| `-mock-location` | `MockLocationService` and `MockGeocodingService` (deterministic geocoding) | `makeLocationService`, `makeGeocoder` |
 | `-mock-events` | `Repositories.mock` and `NoOpListSnapshotStore` | `makeRepositories`, `makeListSnapshotStore` |
 | `-mock-events-fail`, `-mock-chat-replies`, `-mock-attachment-picker`, `-mock-terms-pending`, `-system-push` | knobs of `Repositories.mock` | `makeRepositories` |
 | `-api-base-url <url>` | replaces `AppConfig.API.baseURL` | `apiBaseURL(from:logger:)` |

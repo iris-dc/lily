@@ -54,6 +54,7 @@ extension AppDependencies {
                                 onChange: @escaping @MainActor (SportEvent) -> Void) -> EditEventViewModel {
         EditEventViewModel(event: event,
                            repository: eventRepository,
+                           geocoder: geocoder,
                            errorCenter: errorCenter,
                            logger: logger,
                            currencyCode: currency.currencyCode,
@@ -67,6 +68,7 @@ extension AppDependencies {
         CreateEventViewModel(repository: eventRepository,
                              identity: identity,
                              locationService: locationService,
+                             geocoder: geocoder,
                              groups: myGroups,
                              errorCenter: errorCenter,
                              logger: logger,

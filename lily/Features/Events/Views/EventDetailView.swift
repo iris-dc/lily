@@ -29,6 +29,7 @@ struct EventDetailView: View {
                         Text(description).font(.body)
                     }
                     EventFactsCard(event: event)
+                    EventLocationMap(event: event)
                     if viewModel.showsParticipants {
                         participantsSection
                     }

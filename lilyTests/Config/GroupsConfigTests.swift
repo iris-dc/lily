@@ -42,7 +42,6 @@ struct GroupsConfigTests {
                     == forms.descriptionTooLong(limit: groupLimits.descriptionMaxLength))
         #expect(AppBranding.Groups.Create.message(for: .nameTooLong)
                     == forms.nameTooLong(limit: groupLimits.nameLength.upperBound))
-        #expect(AppBranding.Events.Create.message(for: .locationNameMissing) == forms.placeNameMissing)
         #expect(AppBranding.Events.Create.message(for: .locationNameTooLong)
                     == forms.placeNameTooLong(limit: eventLimits.locationNameMaxLength))
         #expect(AppBranding.Events.Create.message(for: .startsAtTooSoon)

@@ -120,6 +120,7 @@ final class LilyEventEditTests: LilyUITestCase {
         tapAfterScrolling(app.staticTexts["Doubles, all levels"])
 
         XCTAssertTrue(app.buttons["Join"].waitForExistence(timeout: 5), "the detail must be open")
+        XCTAssertTrue(app.maps.firstMatch.waitForExistence(timeout: 5), "the detail shows the spot on a map")
         XCTAssertFalse(app.buttons["event-edit"].exists, "only the host edits")
     }
 
