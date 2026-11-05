@@ -63,9 +63,9 @@ final class LilyPeopleTests: LilyUITestCase {
         XCTAssertTrue(app.buttons["profile-message"].waitForExistence(timeout: 5))
     }
 
-    /// "Message" on a profile opens the direct conversation, a chat titled with the person, on the Chats stack; the
-    /// Chats tab then lists it as a person row captioned "Direct message". Jonas has no conversation in the fixtures,
-    /// so this one is started here.
+    /// "Message" on a profile opens the direct conversation in place, a chat titled with the person on the same stack,
+    /// so Back returns to the profile; the Chats tab still lists it as a person row captioned "Direct message". Jonas
+    /// has no conversation in the fixtures, so this one is started here.
     @MainActor
     func testProfileMessageButtonOpensAConversation() {
         tapSignInWithApple()
@@ -79,9 +79,10 @@ final class LilyPeopleTests: LilyUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)["chat-composer"].waitForExistence(timeout: 10), "a chat opens")
         XCTAssertTrue(app.navigationBars["Jonas"].exists, "the conversation is titled with the person")
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 5), "the chat was pushed on the Chats stack")
-        let row = app.buttons[MockIDs.jonasConversationRow]
-        XCTAssertTrue(row.waitForExistence(timeout: 10), "the Chats tab lists the new conversation")
+        XCTAssertTrue(message.waitForExistence(timeout: 5), "Back returns to the profile, not to the Chats list")
+        XCTAssertTrue(app.staticTexts["Groups in common"].exists)
+        openChatsTab()
+        let row = chatsRow(MockIDs.jonasConversationRow)
         XCTAssertTrue(row.label.contains("Direct message"), "a person row is captioned Direct message: \(row.label)")
     }
 

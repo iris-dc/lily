@@ -40,7 +40,7 @@ use the generated `Color.lily*` asset symbols.
   `.tint(Color.lilyInk)` for a plain text item in an iOS 26 toolbar (Cancel, Done, Send, Edit).
 - Pickers [`lily/Core/UI/Components/PickerModifiers.swift:View.lilyMenuPicker`]: `lilyMenuPicker()` is
   `.pickerStyle(.menu).tint(.secondary)`, the one recipe for a menu picker in a form (the Group and Level rows of the
-  event form, the tournament form's Group row, the filter panel's Level row; a default-styled `Picker` in a `Form` is a
+  event form, the tournament form's Group row, the filter sheet's Level row; a default-styled `Picker` in a `Form` is a
   menu picker too): the control colours its value and chevron from the tint, which is the accent in every form sheet
   and reads at about 3:1 as small text, so the recipe puts them in `.secondary` while the row's title stays primary and
   the menu's items keep the system look.
@@ -205,7 +205,9 @@ use the generated `Color.lily*` asset symbols.
   `.accessibilityHidden(true)`, and `systemImage` wins over `initials` [`lily/Core/UI/Components/AvatarCircle.swift:AvatarCircle`].
   `String.initials` takes the first character of the first two space-separated words, uppercased
   [`lily/Core/UI/Components/String+Initials.swift:String.initials`].
-- `FilterDropdownButton` stays a popover on compact widths (`presentationCompactAdaptation(.popover)`); `DropdownPanel`
+- `FilterDropdownButton` stays a popover on compact widths (`presentationCompactAdaptation(.popover)`); since
+  2026-11-05 only the Discover type filters use it (Explore's events filter is a form sheet, `EventFilterSheet`);
+  `DropdownPanel`
   is fixed at `DesignTokens.Layout.filterPanelWidth` and scrolls only `if scrolls`
   [`lily/Core/UI/Components/FilterDropdown.swift:FilterDropdownButton`, `DropdownPanel`]. `EmptyStateView` shows its
   button only when both `actionTitle` and `action` are set [`lily/Core/UI/Components/EmptyStateView.swift:EmptyStateView`];
@@ -236,7 +238,8 @@ use the generated `Color.lily*` asset symbols.
   `becomeFirstResponder()` [`lily/Core/UI/Components/GrowingTextView.swift:GrowingTextView.Coordinator`, `PlaceholderTextView`].
 - Navigation and bindings: `TileCarousel`, `TileLink`, `ChevronLink` and (through it) `OwnerTitleBlock` push through
   `NavigationLink(value:)`;
-  `FilterDropdownButton` reports `onPresentedChange?(isPresented)` on every change; `TypeFilterPanel` writes the
+  `FilterDropdownButton` reports `onPresentedChange?(isPresented)` on every change (the events filter button reports
+  its sheet sessions itself); `TypeFilterPanel` writes the
   `EventType?` binding [`lily/Core/UI/Components/TileCarousel.swift:TileLink`,
   `lily/Core/UI/Components/FilterDropdown.swift:FilterDropdownButton`, `lily/Core/UI/Components/TypeFilterButton.swift:TypeFilterPanel`].
 - Randomness: the per-mount `UUID()` presenter token of `ErrorPopupModifier`. No logging, no I/O, no network, no haptics.

@@ -25,8 +25,12 @@ link), `SharedTournamentRow` (a "Tournaments together" row linking to the tourna
 - `SharedTournamentRow(tournament: TournamentSummary)` `[lily/Features/People/Views/SharedHistoryRows.swift:SharedTournamentRow]`:
   the same content with `DesignTokens.Symbols.tournament` in the mark, in a `NavigationLink(value: tournament.destination)`;
   identifier `AccessibilityIdentifiers.tournamentRow(tournament.id)` (`tournament-row-<id>`).
-- `UserProfileView(viewModel: UserProfileViewModel)` `[lily/Features/People/Views/UserProfileView.swift:UserProfileView]`:
-  `ContentScreen` with a `ScrollView` in a `readableColumn()`, inline title `viewModel.displayName`; private `header`,
+- `UserProfileView(viewModel: UserProfileViewModel, dependencies: AppDependencies)`
+  `[lily/Features/People/Views/UserProfileView.swift:UserProfileView]`:
+  `ContentScreen` with a `ScrollView` in a `readableColumn()`, inline title `viewModel.displayName`; a
+  `navigationDestination(item: $viewModel.openedConversation)` building `ChatView` on this stack, so Back from the chat
+  Message opened returns to the profile (before 2026-11-05 it was pushed on the Chats tab and Back landed on the Chats
+  list); private `header`,
   `messageButton` (a `BusyButton` with `lilyProminentButton()`, identifier `AccessibilityIdentifiers.profileMessage`,
   `profile-message`), `content` (the state switch), `loaded(_:)` (the bio `Text`, identifier
   `AccessibilityIdentifiers.profileBio`, then the three sections), `section(_:orElse:_:row:)` (a `SectionTitle` over a
@@ -59,7 +63,8 @@ link), `SharedTournamentRow` (a "Tournaments together" row linking to the tourna
 ## Side Effects
 
 - `.task { await viewModel.load() }` `[lily/Features/People/Views/UserProfileView.swift:body]`; the Message
-  `BusyButton` awaits `viewModel.message()` `[lily/Features/People/Views/UserProfileView.swift:messageButton]`;
+  `BusyButton` awaits `viewModel.message()`, whose success pushes the chat through the `navigationDestination(item:)`
+  `[lily/Features/People/Views/UserProfileView.swift:messageButton]`;
   Try again spawns `Task { await viewModel.load() }` `[lily/Features/People/Views/UserProfileView.swift:loadFailed]`.
 - Navigation values: `UserProfileDestination` from `PersonRow`, `EventGroupRef` from `SharedGroupRow`,
   `TournamentDestination` from `SharedTournamentRow` (every stack root registers all three through `.groupDestinations`)

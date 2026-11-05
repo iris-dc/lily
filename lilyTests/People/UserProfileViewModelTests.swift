@@ -13,7 +13,6 @@ struct UserProfileViewModelTests {
                              repository: users,
                              identity: harness.identity,
                              myGroups: harness.store,
-                             navigation: harness.navigation,
                              reporter: harness.reporter,
                              logger: harness.logger,
                              tryAgainDelay: .zero)
@@ -84,7 +83,7 @@ struct UserProfileViewModelTests {
         await viewModel.message()
 
         #expect(users.conversationRequests.isEmpty)
-        #expect(harness.navigation.chatPath.isEmpty)
+        #expect(viewModel.openedConversation == nil)
     }
 
     @Test func guestsCannotMessage() async {
@@ -105,7 +104,7 @@ struct UserProfileViewModelTests {
         #expect(!viewModel.canMessage && !viewModel.isSelf)
         await viewModel.message()
 
-        #expect(users.conversationRequests.isEmpty && harness.navigation.chatPath.isEmpty)
+        #expect(users.conversationRequests.isEmpty && viewModel.openedConversation == nil)
     }
 
     /// The view's task restarts on the way back from a pushed group: the profile on screen stays while the reload runs
@@ -125,8 +124,9 @@ struct UserProfileViewModelTests {
         #expect(viewModel.state == .loaded(.fixture()) && harness.presentedError == .profileUnavailable)
     }
 
-    /// The conversation lands in Mine before its chat opens, so the Chats tab lists it on the way back.
-    @Test func messageAddsTheConversationToMineAndOpensItsChat() async {
+    /// The conversation lands in Mine before its chat opens (the Chats tab lists it), and the chat is pushed on the
+    /// profile's own stack, so Back returns to the profile rather than to the Chats list.
+    @Test func messageAddsTheConversationToMineAndOpensItsChatInPlace() async {
         let conversation = SportGroup.conversationFixture()
         let viewModel = makeViewModel()
 
@@ -134,7 +134,8 @@ struct UserProfileViewModelTests {
 
         #expect(users.conversationRequests == ["u-2"])
         #expect(harness.store.groups == [conversation] && harness.store.communities.isEmpty, "a room, not one of Home's groups")
-        #expect(harness.navigation.selectedTab == .chat && harness.navigation.chatPath.count == 1)
+        #expect(viewModel.openedConversation == conversation, "the view pushes this chat on its own stack")
+        #expect(harness.navigation.selectedTab != .chat && harness.navigation.chatPath.isEmpty, "no tab switch")
         #expect(harness.logs(.info).mentioning("Conversation", conversation.id, "u-2").count == 1)
         #expect(!viewModel.isStartingConversation && harness.presentedError == nil)
     }
@@ -146,7 +147,7 @@ struct UserProfileViewModelTests {
         await viewModel.message()
 
         #expect(users.conversationRequests == ["u-2", "u-2"])
-        #expect(harness.navigation.chatPath.count == 1 && harness.presentedError == nil)
+        #expect(viewModel.openedConversation != nil && harness.presentedError == nil)
         #expect(harness.logs(.info).contains { $0.contains("retrying once") })
     }
 
@@ -157,7 +158,7 @@ struct UserProfileViewModelTests {
         await viewModel.message()
 
         #expect(harness.presentedError == .conversationLimit)
-        #expect(harness.store.groups.isEmpty && harness.navigation.chatPath.isEmpty)
+        #expect(harness.store.groups.isEmpty && viewModel.openedConversation == nil)
         #expect(!harness.logs(.error).mentioning("conversation", "u-2", "\(AppError.conversationLimit)").isEmpty)
     }
 
@@ -181,7 +182,7 @@ struct UserProfileViewModelTests {
 
         users.releaseRequests()
         await first.value
-        #expect(!viewModel.isStartingConversation && harness.navigation.chatPath.count == 1)
+        #expect(!viewModel.isStartingConversation && viewModel.openedConversation != nil)
     }
 
     @Test func cancellationIsQuiet() async {

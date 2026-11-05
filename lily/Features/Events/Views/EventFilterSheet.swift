@@ -1,7 +1,9 @@
 import SwiftUI
 
-/// Every filter criterion in one panel: type chips, distance, a price input, level, dates and open spots.
-struct EventFilterPanel: View {
+/// Every filter criterion as a full-screen form, like the create forms: type chips, distance, a price input, level,
+/// dates and open spots, with Reset in the bar while anything is active and Done closing the sheet. Every change
+/// applies at once; Done only closes.
+struct EventFilterSheet: View {
     let viewModel: EventListViewModel
     let onDone: () -> Void
     /// The field edits text and parses on every change, so Reset, "Free only" and Done never race a pending commit.
@@ -11,30 +13,41 @@ struct EventFilterPanel: View {
     private typealias Copy = AppBranding.Events.Filter
 
     var body: some View {
-        DropdownPanel(title: Copy.title,
-                      scrolls: true,
-                      accessory: {
-                          if viewModel.filter.isActive {
-                              resetButton
-                          }
-                      },
-                      onDone: onDone,
-                      content: {
-                          CaptionedControl(Copy.eventType) { typeChips }
-                          CaptionedControl(Copy.distance) { distanceChoice }
-                          CaptionedControl(Copy.maxPrice) { priceRow }
-                          levelRow
-                          datesSection
-                          Toggle(Copy.openSpotsOnly, isOn: binding(\.openSpotsOnly))
-                      })
+        NavigationStack {
+            ContentScreen {
+                form
+            }
+            .navigationTitle(Copy.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if viewModel.filter.isActive {
+                        Button(Copy.reset) { viewModel.clearFilter() }
+                            .lilyToolbarTextButton()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(Copy.done, action: onDone)
+                        .lilyToolbarTextButton()
+                }
+            }
+            .tint(Color.lilyAccent)
+        }
     }
 
-    /// Shown in the title row while any criterion is active.
-    private var resetButton: some View {
-        Button(Copy.reset) {
-            viewModel.clearFilter()
+    private var form: some View {
+        Form {
+            Section(Copy.eventType) { typeChips }
+            Section(Copy.distance) { distanceChoice }
+            Section(Copy.maxPrice) { priceRow }
+            Section {
+                levelRow
+                datesSection
+                Toggle(Copy.openSpotsOnly, isOn: binding(\.openSpotsOnly))
+            }
         }
-        .lilyTextButton(font: LilyTheme.Fonts.caption)
+        .scrollContentBackground(.hidden)
+        .readableColumn()
     }
 
     /// Multi-select; "Any type" is on while nothing is chosen.
@@ -172,5 +185,5 @@ struct EventFilterPanel: View {
 
 #Preview {
     let dependencies = AppDependencies.makeMock()
-    EventFilterPanel(viewModel: dependencies.makeEventListViewModel(scope: .upcoming)) {}
+    EventFilterSheet(viewModel: dependencies.makeEventListViewModel(scope: .upcoming)) {}
 }

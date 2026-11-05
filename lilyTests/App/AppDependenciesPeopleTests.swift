@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import lily
 
@@ -34,7 +35,8 @@ struct AppDependenciesPeopleTests {
 
         await viewModel.message()
         let conversation = try #require(dependencies.myGroups.groups.first { $0.isDirect })
-        #expect(conversation.name == "Marta" && dependencies.navigation.selectedTab == .chat)
+        #expect(conversation.name == "Marta" && viewModel.openedConversation == conversation)
+        #expect(dependencies.navigation.chatPath.isEmpty, "the chat is pushed in place, not on the Chats tab")
         await dependencies.myGroups.reload()
         #expect(dependencies.myGroups.groups.contains(conversation), "the group mock remembers the conversation")
         #expect(!dependencies.myGroups.communities.contains(conversation), "Home never lists a conversation")

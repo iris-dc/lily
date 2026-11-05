@@ -107,7 +107,7 @@ lily/
                  / content over ListState), VisibilityChip, DraftSheet (the one sheet around every create and edit form: Cancel, submit,
                  form sizing, own popup) + DraftSubmitButton + CaptionedControl (a caption over a control), SettingsLinkRow
                  (a glass link card: icon, title, subtitle, chevron; Profile's display name and contact rows share it; 2026-10-31),
-                 FilterDropdown (FilterDropdownButton + DropdownPanel, the dropdown scaffold of the event and type filters), ...), Interfaces
+                 FilterDropdown (FilterDropdownButton + DropdownPanel, the dropdown scaffold of the Discover type filters; Explore's events filter is a form sheet since 2026-11-05), ...), Interfaces
                  (DraftSubmitting: what DraftSheet reads from a form's view model), Layout (LayoutMode, MotionPreference (full or reduced, resolved once from Reduce Motion and read as `\.motion`; 2026-11-01), ReadableColumn, AdaptiveCardGrid,
                  TileGrid, FormSheet, UsableWidth, FlowArrangement (the pure wrapping arithmetic behind FlowLayout), Binding+IsPresent
                  (confirmationDialog(item:)), HidesTabBarOnCompact + TabBarHiding (the stack root's animated tab-bar
@@ -140,7 +140,7 @@ lily/
                  and panel (over SkillLevelPicker, the one level picker), create button, the Create/Edit sheets (thin wrappers over
                  EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm), PlaceFields (the
                  place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms), PriceAmountField (the
-                 one decimal-pad price field of the filter panel's cap and the form's price), location picker), Services (EventOpener: fetch a game by id and push its detail, shared
+                 one decimal-pad price field of the filter sheet's cap and the form's price), location picker), Services (EventOpener: fetch a game by id and push its detail, shared
                  by the inbox's reminder card and a tapped notification)
     Profile/     Guest and signed-in profile; Interfaces (ProfileRepository: GET and PUT /api/profile, the name or the bio;
                  ProfileFieldDraft, what the two editors' drafts share), remote and mock implementations, Models (Profile with

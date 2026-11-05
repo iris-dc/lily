@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 /// Another person's profile and the one action on it: opening the direct conversation, which lands in Mine at once and
-/// pushes its chat on the Chats tab. The caller's own profile shows no button.
+/// whose chat is pushed on the stack the profile is on, so Back returns here. The caller's own profile shows no button.
 @Observable
 final class UserProfileViewModel {
     enum State: Equatable {
@@ -15,11 +15,12 @@ final class UserProfileViewModel {
     let destination: UserProfileDestination
     private(set) var state: State = .loading
     private(set) var isStartingConversation = false
+    /// The conversation whose chat the view pushes; SwiftUI clears it when the reader comes back.
+    var openedConversation: SportGroup?
 
     private let repository: any UserRepository
     private let identity: any IdentityProvider
     private let myGroups: MyGroupsStore
-    private let navigation: AppNavigation
     private let reporter: GroupErrorReporter
     private let logger: any Logging
     private let gate: WriteGate
@@ -29,7 +30,6 @@ final class UserProfileViewModel {
          repository: any UserRepository,
          identity: any IdentityProvider,
          myGroups: MyGroupsStore,
-         navigation: AppNavigation,
          reporter: GroupErrorReporter,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay) {
@@ -37,7 +37,6 @@ final class UserProfileViewModel {
         self.repository = repository
         self.identity = identity
         self.myGroups = myGroups
-        self.navigation = navigation
         self.reporter = reporter
         self.logger = logger
         gate = WriteGate(category: .groups,
@@ -60,7 +59,10 @@ final class UserProfileViewModel {
 
     /// Anyone signed in may write to anyone but themselves, except from the conversation with them: that chat is one
     /// Back away and "Message" would only push it again (the group detail hides "Open chat" from its chat the same way).
-    var canMessage: Bool { identity.currentUserID != nil && !isSelf && destination.context == .standalone }
+    /// Without the chat feature there is no conversation to open, so the button is not offered.
+    var canMessage: Bool {
+        AppConfig.FeatureFlags.chat && identity.currentUserID != nil && !isSelf && destination.context == .standalone
+    }
 
     /// Loads the profile, or reloads it when the view's task restarts on the way back from a pushed group; a profile
     /// already on screen stays while the request runs and when it fails, as the event detail keeps its participants.
@@ -78,7 +80,8 @@ final class UserProfileViewModel {
     }
 
     /// A `TRY_AGAIN` is safe to repeat: the backend keeps one conversation per pair, so a repeat answers the same room.
-    /// The conversation goes into Mine before its chat opens, so the Chats tab lists it on the way back.
+    /// The conversation goes into Mine before its chat opens (so the Chats tab lists it too), and the chat is pushed on
+    /// this stack, so Back returns to the profile rather than to the Chats list.
     func message() async {
         guard canMessage, !isStartingConversation else { return }
         isStartingConversation = true
@@ -87,7 +90,7 @@ final class UserProfileViewModel {
             let conversation = try await repository.startConversation(with: userID)
             myGroups.add(conversation)
             logger.info(.groups, "Conversation \(conversation.id) started with \(userID)")
-            navigation.open(chat: conversation)
+            openedConversation = conversation
         }
     }
 

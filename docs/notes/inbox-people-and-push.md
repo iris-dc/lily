@@ -4,7 +4,7 @@
 
 ## Reference (from the README)
 
-- People: every person named in the app opens a profile (their initials, their name, a "Message" button and the groups you have in common, each row opening the group); the event detail lists who is in under "Who's in" (the host first, with a "Host" chip; your own row says "You"), its "Hosted by" line links to the host, a public group's Members segment is readable by any signed-in user, and a sender's name or avatar in a chat opens them. "Message" opens a direct conversation, which is a two-member private group named after the person, listed on the Chats tab as a person row ("Direct message") and never among your groups on Home; see [People](#people).
+- People: every person named in the app opens a profile (their initials, their name, a "Message" button whose chat opens on the same stack, and the groups you have in common, each row opening the group); the event detail lists who is in under "Who's in" (the host first, with a "Host" chip; your own row says "You"), its "Hosted by" line links to the host, a public group's Members segment is readable by any signed-in user, and a sender's name or avatar in a chat opens them. "Message" opens a direct conversation, which is a two-member private group named after the person, listed on the Chats tab as a person row ("Direct message") and never among your groups on Home; see [People](#people).
 - Push notifications for game reminders are built end to end (app, backend, infrastructure) and verified on the simulator, but **cannot deliver until the Apple Developer Program account exists**; see [Pending: Apple Developer account](#pending-apple-developer-account) for the exact steps that remain.
 
 ### Pending: Apple Developer account
@@ -84,3 +84,15 @@ Every person the app names can be opened (2026-09-29): roster rows, event partic
   screenshots under `reviews/2026-11-05-about-and-history/`, see `profile-and-feedback.md` the same day for the one
   finding). Owed: a native read of the six translations, and Laurel's deploy before the app on a phone shows any of it
   (until then the history arrays decode as empty and the bio as none).
+- **Back from a chat opened on a profile returns to the profile (2026-11-05, on the user's "when I open user's profile
+  from the tournament/group view and then open chat with the user and after that return back then it moves me to all
+  chat windows instead of the previous page").** `UserProfileViewModel.message()` used `navigation.open(chat:)`, which
+  switches to the Chats tab and pushes there, so Back landed on the Chats list. Now the view model sets
+  `openedConversation` and `UserProfileView` (which gained `dependencies`) pushes the `ChatView` through
+  `navigationDestination(item:)` on the stack the profile is on; the conversation still lands in Mine first, so the
+  Chats tab lists it. `canMessage` also requires `AppConfig.FeatureFlags.chat` now: with chat off the old fallback
+  pushed the direct group, which rendered the same profile again. The view model no longer takes `AppNavigation`.
+  Tests: `UserProfileViewModelTests.messageAddsTheConversationToMineAndOpensItsChatInPlace` (and the chatPath
+  assertions replaced across the suite), `AppDependenciesPeopleTests`;
+  UI: `LilyPeopleTests.testProfileMessageButtonOpensAConversation` now checks Back lands on the profile and finds the
+  conversation on the Chats tab after. Screenshots 09/10 under `reviews/2026-11-05-about-and-history/`.

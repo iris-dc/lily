@@ -33,7 +33,9 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
 - `CreateMenuButton` (`lily/Features/Events/Views/CreateMenuButton.swift`): `onCreateGame`, `onCreateGroup`,
   `onCreateTournament: () -> Void = {}`; the floating "+".
 - `EventFilterButton` (`lily/Features/Events/Views/EventFilterButton.swift`): `viewModel: EventListViewModel`; a
-  `FilterDropdownButton` presenting `EventFilterPanel` (`EventFilterPanel.swift`: `viewModel`, `onDone`).
+  toolbar button presenting `EventFilterSheet` (`EventFilterSheet.swift`: `viewModel`, `onDone`) as a `lilyFormSheet()`
+  (full screen on the iPhone, like the create forms; a dropdown popover before 2026-11-05), the filled/outline glyph and
+  the VoiceOver value on the button, one `filterPanelOpened`/`filterPanelClosed` pair per sheet session.
 - `EventsMapView` (`lily/Features/Events/Views/EventsMapView.swift`): `init(viewModel: EventListViewModel,
   bottomInset: CGFloat = 0)`; `EventMapPin(type: EventType, isSelected: Bool)`.
 - `LocationPickerView` (`lily/Features/Events/Views/LocationPickerView.swift`):
@@ -92,8 +94,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   and the filter panel's cap (focused by the capsule's tap through `isPriceFocused`).
 - `CreateMenuButton`: a `Menu` with game, group and (when `AppConfig.FeatureFlags.tournaments`) tournament while
   `AppConfig.FeatureFlags.groups` is on; a single game button otherwise.
-- Filter (`EventFilterPanel`): every change goes through `viewModel.updateFilter`, `toggleType` or `clearFilter`;
-  Reset (`lilyTextButton(font: LilyTheme.Fonts.caption)`) shows only while `filter.isActive`; distance offers
+- Filter (`EventFilterSheet`): a `NavigationStack` over a `Form` (sections: type, distance, price; level, dates and
+  open spots), title "Filters" inline, Done in `confirmationAction` (closes only; every change applies at once); every
+  change goes through `viewModel.updateFilter`, `toggleType` or `clearFilter`;
+  Reset (`lilyToolbarTextButton()`, top bar leading) shows only while `filter.isActive`; distance offers
   `AppConfig.Events.filterRadiiMeters` (2, 5, 10, 25 km)
   plus "anywhere" (`nil`), replaced by a note while `userLocation == nil`; "Free only" toggles `maxPrice` between
   `0` and `nil`; typed text clears the cap when empty, sets it when parseable and leaves it when not
@@ -114,7 +118,7 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   a group; `EventPreviewCard` turns from a row into a column at accessibility type sizes and draws its `detail` (the
   distance) in `.secondary` like every other distance; `SkillLevelPicker` offers
   "Any level" over `SkillLevel.known`, never an unknown level; `EventDraftForm.detailsSection` styles it by
-  `lilyMenuPicker()` and `EventFilterPanel.levelRow` the same with its labels hidden, the title drawn on the left like
+  `lilyMenuPicker()` and `EventFilterSheet.levelRow` the same with its labels hidden, the title drawn on the left like
   the price row's; `ParticipantRow` adds the host chip for
   `participant.isHost`.
 

@@ -216,8 +216,9 @@ decides, never the device.
   `lilyTextButton(font:color:minHeight:)` (ink, the 44 pt hit area built in), toolbar text actions through
   `lilyToolbarTextButton()`, chips through `lilyChip(_:)`; nothing puts a `frame` on a capsule label. The accent never
   colours text below the headline size (it reads at about 3:1 over the aurora): it goes on a mark (glyph, stripe,
-  chevron, fill) beside ink or `.secondary` text (`ValidationHint`, `ChevronLink`). Filter criteria live in dropdown
-  panels, never as a chip row on a screen.
+  chevron, fill) beside ink or `.secondary` text (`ValidationHint`, `ChevronLink`). Explore's events filter is a
+  full-screen form sheet like the create forms; Discover's type filters stay dropdown panels; filter criteria are never
+  a chip row on a screen.
 - iOS 26 layering: a toolbar item draws its own glass capsule, so a segmented `Picker` in one needs
   `.sharedBackgroundVisibility(.hidden)`; the tab bar floats, so only a full-bleed `Map` ignores the bottom safe
   area, with overlays as siblings in a `ZStack`.

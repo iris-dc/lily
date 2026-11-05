@@ -4,15 +4,18 @@ import SwiftUI
 /// the two share: groups, games and tournaments. The view model decides what the caller may do; this draws it.
 struct UserProfileView: View {
     @State private var viewModel: UserProfileViewModel
+    let dependencies: AppDependencies
 
     private typealias Copy = AppBranding.People
 
-    init(viewModel: UserProfileViewModel) {
+    init(viewModel: UserProfileViewModel, dependencies: AppDependencies) {
         _viewModel = State(initialValue: viewModel)
+        self.dependencies = dependencies
     }
 
     var body: some View {
-        ContentScreen {
+        @Bindable var viewModel = viewModel
+        return ContentScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     header
@@ -27,6 +30,11 @@ struct UserProfileView: View {
         }
         .navigationTitle(viewModel.displayName)
         .navigationBarTitleDisplayMode(.inline)
+        // "Message" pushes the chat here, on the stack the profile is on, so Back returns to the profile; opening it
+        // on the Chats tab instead had Back land on the Chats list.
+        .navigationDestination(item: $viewModel.openedConversation) { conversation in
+            ChatView(viewModel: dependencies.makeChatViewModel(for: conversation), dependencies: dependencies)
+        }
         .task { await viewModel.load() }
     }
 
@@ -123,6 +131,6 @@ struct UserProfileView: View {
     let dependencies = AppDependencies.makeMock()
     let marta = UserProfileDestination(userId: MockGroupFixtures.memberID(for: "Marta"), displayName: "Marta")
     NavigationStack {
-        UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: marta))
+        UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: marta), dependencies: dependencies)
     }
 }

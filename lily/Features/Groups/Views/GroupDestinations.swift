@@ -23,7 +23,8 @@ private struct GroupDestinations: ViewModifier {
                 DiscoverGroupsView(dependencies: dependencies)
             }
             .navigationDestination(for: UserProfileDestination.self) { destination in
-                UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: destination))
+                UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: destination),
+                                dependencies: dependencies)
             }
             .navigationDestination(for: TournamentDestination.self) { destination in
                 tournamentDetail(for: destination)
@@ -41,7 +42,8 @@ private struct GroupDestinations: ViewModifier {
 
     @ViewBuilder private func detail(for group: SportGroup, context: GroupDetailContext) -> some View {
         if let counterpart = group.counterpart {
-            UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: counterpart.profile()))
+            UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: counterpart.profile()),
+                            dependencies: dependencies)
         } else if group.isTournamentRoom {
             tournamentDetail(for: TournamentDestination(id: group.id, name: group.name))
         } else {

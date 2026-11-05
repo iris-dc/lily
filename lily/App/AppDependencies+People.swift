@@ -9,7 +9,6 @@ extension AppDependencies {
                              repository: userRepository,
                              identity: identity,
                              myGroups: myGroups,
-                             navigation: navigation,
                              reporter: groups.errorReporter,
                              logger: logger)
     }
