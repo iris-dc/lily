@@ -24,23 +24,23 @@ struct DisplayNameViewModelTests {
     @Test func saveIsOffUntilTheNameChangesAndIsValid() async {
         await store.loadIfNeeded()
         let viewModel = makeViewModel()
-        #expect(viewModel.draft.name == AppConfig.DisplayName.backendDefault, "the field starts from the store's name")
+        #expect(viewModel.draft.text == AppConfig.DisplayName.backendDefault, "the field starts from the store's name")
         #expect(!viewModel.canSubmit, "nothing to save until something changed")
 
-        viewModel.draft.name = "   "
+        viewModel.draft.text = "   "
         #expect(!viewModel.canSubmit && viewModel.issues == [.nameMissing])
-        viewModel.draft.name = String(repeating: "x", count: AppConfig.DisplayName.length.upperBound + 1)
+        viewModel.draft.text = String(repeating: "x", count: AppConfig.DisplayName.length.upperBound + 1)
         #expect(!viewModel.canSubmit && viewModel.issues == [.nameTooLong])
-        viewModel.draft.name = " Alex Kim "
+        viewModel.draft.text = " Alex Kim "
         #expect(viewModel.canSubmit && viewModel.issues.isEmpty)
-        viewModel.draft.name = " \(AppConfig.DisplayName.backendDefault) "
+        viewModel.draft.text = " \(AppConfig.DisplayName.backendDefault) "
         #expect(!viewModel.canSubmit, "the same name with spaces around it is no change")
     }
 
     @Test func aSaveRenamesThroughTheStoreAndIsDone() async {
         await store.loadIfNeeded()
         let viewModel = makeViewModel()
-        viewModel.draft.name = " Alex Kim "
+        viewModel.draft.text = " Alex Kim "
 
         await viewModel.submit()
 
@@ -53,11 +53,11 @@ struct DisplayNameViewModelTests {
     @Test func prepareFillsTheFieldOnceTheNameIsKnown() async {
         repository.profileResult = .success(.fixture(displayName: "Alex Kim"))
         let viewModel = makeViewModel()
-        #expect(viewModel.draft.name.isEmpty)
+        #expect(viewModel.draft.text.isEmpty)
 
         await viewModel.prepare()
 
-        #expect(viewModel.draft.name == "Alex Kim" && !viewModel.canSubmit, "the loaded name is the one to change")
+        #expect(viewModel.draft.text == "Alex Kim" && !viewModel.canSubmit, "the loaded name is the one to change")
     }
 
     @Test func prepareKeepsWhatTheUserTypedMeanwhile() async {
@@ -67,11 +67,11 @@ struct DisplayNameViewModelTests {
 
         let preparing = Task { await viewModel.prepare() }
         await settle(until: { store.isLoading })
-        viewModel.draft.name = "Sam"
+        viewModel.draft.text = "Sam"
         repository.releaseRequests()
         await preparing.value
 
-        #expect(viewModel.draft.name == "Sam" && store.displayName == "Alex Kim" && viewModel.canSubmit)
+        #expect(viewModel.draft.text == "Sam" && store.displayName == "Alex Kim" && viewModel.canSubmit)
     }
 
     /// The user typed the very name the slow load then answered: nothing changed, so there is nothing to save.
@@ -82,19 +82,19 @@ struct DisplayNameViewModelTests {
 
         let preparing = Task { await viewModel.prepare() }
         await settle(until: { store.isLoading })
-        viewModel.draft.name = "Alex Kim"
+        viewModel.draft.text = "Alex Kim"
         #expect(viewModel.canSubmit, "a name the store does not know yet is a change")
         repository.releaseRequests()
         await preparing.value
 
-        #expect(viewModel.draft.name == "Alex Kim" && !viewModel.canSubmit, "the draft equals the loaded name")
+        #expect(viewModel.draft.text == "Alex Kim" && !viewModel.canSubmit, "the draft equals the loaded name")
     }
 
     /// A lost answer after the backend stored the name: the store reads it back, the sheet closes, no popup.
     @Test func aLostAnswerWhoseNameLandedClosesTheSheetWithoutAPopup() async {
         await store.loadIfNeeded()
         let viewModel = makeViewModel()
-        viewModel.draft.name = "Alex Kim"
+        viewModel.draft.text = "Alex Kim"
         repository.updateResult = .failure(AppError.network)
         repository.profileResult = .success(.fixture(displayName: "Alex Kim"))
 
@@ -106,13 +106,13 @@ struct DisplayNameViewModelTests {
     @Test func aRefusalReachesThePopupAndKeepsTheDraft() async {
         await store.loadIfNeeded()
         let viewModel = makeViewModel()
-        viewModel.draft.name = "Something rude"
+        viewModel.draft.text = "Something rude"
         repository.updateResult = .failure(AppError.contentRejected)
 
         await viewModel.submit()
 
         #expect(errorCenter.current?.error == .contentRejected && !viewModel.isDone)
-        #expect(viewModel.draft.name == "Something rude" && viewModel.canSubmit, "Save stays available for a repeat")
+        #expect(viewModel.draft.text == "Something rude" && viewModel.canSubmit, "Save stays available for a repeat")
         #expect(store.displayName == AppConfig.DisplayName.backendDefault)
         #expect(logger.count(in: .auth, at: .error, mentioning: "Display name update failed") == 1)
     }
@@ -120,7 +120,7 @@ struct DisplayNameViewModelTests {
     @Test func aCancelledSaveStaysQuiet() async {
         await store.loadIfNeeded()
         let viewModel = makeViewModel()
-        viewModel.draft.name = "Alex Kim"
+        viewModel.draft.text = "Alex Kim"
         repository.updateResult = .failure(CancellationError())
 
         await viewModel.submit()
@@ -132,7 +132,7 @@ struct DisplayNameViewModelTests {
     @Test func aSecondSubmitWhileOneIsInFlightIsDropped() async {
         await store.loadIfNeeded()
         let viewModel = makeViewModel()
-        viewModel.draft.name = "Alex Kim"
+        viewModel.draft.text = "Alex Kim"
         repository.holdsRequests = true
 
         let first = Task { await viewModel.submit() }

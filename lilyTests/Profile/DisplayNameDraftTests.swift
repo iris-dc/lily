@@ -6,16 +6,16 @@ import Testing
 struct DisplayNameDraftTests {
     @Test(arguments: ["", "   "])
     func aBlankNameIsMissingAndHasNoHint(name: String) {
-        let draft = DisplayNameDraft(name: name)
+        let draft = DisplayNameDraft(text: name)
         #expect(draft.issues == [.nameMissing] && !draft.isValid && draft.hint == nil)
     }
 
     @Test func theNameIsMeasuredInCodePointsLikeTheBackend() {
         let limit = AppConfig.DisplayName.length.upperBound
-        var draft = DisplayNameDraft(name: String(repeating: "🏓", count: limit))
+        var draft = DisplayNameDraft(text: String(repeating: "🏓", count: limit))
         #expect(draft.isValid, "an emoji is one code point, as Java's codePointCount says, though two UTF-16 units")
 
-        draft.name += "x"
+        draft.text += "x"
 
         #expect(draft.issues == [.nameTooLong] && !draft.isValid)
         #expect(draft.hint == AppBranding.DisplayName.tooLong(limit: limit))
@@ -23,7 +23,7 @@ struct DisplayNameDraftTests {
     }
 
     @Test func aTrimmedNameIsWhatIsSent() {
-        let draft = DisplayNameDraft(name: "  Alex Kim  ")
-        #expect(draft.trimmedName == "Alex Kim" && draft.isValid && draft.hint == nil)
+        let draft = DisplayNameDraft(text: "  Alex Kim  ")
+        #expect(draft.trimmedText == "Alex Kim" && draft.isValid && draft.hint == nil)
     }
 }

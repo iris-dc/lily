@@ -15,4 +15,9 @@ final class RemoteProfileRepository: ProfileRepository {
         let request = APIRequest<Profile>.put(AppConfig.API.Paths.profile, body: ProfileUpdateRequest(displayName: name))
         return try await client.send(request, failingWith: .profileUpdateFailed)
     }
+
+    func updateBio(_ bio: String) async throws -> Profile {
+        let request = APIRequest<Profile>.put(AppConfig.API.Paths.profile, body: ProfileUpdateRequest(bio: bio))
+        return try await client.send(request, failingWith: .aboutUpdateFailed)
+    }
 }

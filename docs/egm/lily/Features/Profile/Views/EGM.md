@@ -4,8 +4,8 @@ Source: `lily/Features/Profile/Views/`
 
 ## Overview
 
-The Profile tab: the caller's name as the backend holds it (with the card and sheet that change it) or the guest prompt
-with Sign in, the language and currency settings as dropdown cards, the contact (feedback) card and Sign out.
+The Profile tab: the caller's name and bio as the backend holds them (each with the card and sheet that change it) or
+the guest prompt with Sign in, the language and currency settings as dropdown cards, the contact (feedback) card and Sign out.
 `ProfileView` re-renders in place when the language changes
 rather than being rebuilt like the other tabs, whose rebuild would crossfade over the pick made here.
 `SettingsChoiceRow` is the shared dropdown card the language and currency rows are built from.
@@ -15,10 +15,11 @@ rather than being rebuilt like the other tabs, whose rebuild would crossfade ove
 - `ProfileView(dependencies: AppDependencies, language: AppLanguage)` `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`:
   a `NavigationStack` with `ContentScreen`, title `AppBranding.profileTitle`; signed in: an `AvatarCircle` of the
   profile name's initials (a glyph while the name is unknown), the name from `dependencies.profile` (a small spinner
-  while the first load runs), the email and a Sign out glass button, then `DisplayNameRow(store:action:)`; guest:
-  `AppBranding.guestProfileTitle`, `guestProfileMessage` and a prominent Sign in; then `LanguageRow`, `CurrencyRow` and
-  `FeedbackRow(action:)`; sheets `SignInSheet(session:errorCenter:)`, `DisplayNameSheet(viewModel:errorCenter:)` over
-  `dependencies.makeDisplayNameViewModel()` and `FeedbackSheet(viewModel:errorCenter:)`.
+  while the first load runs), the email and a Sign out glass button, then `DisplayNameRow(store:action:)` and
+  `AboutRow(store:action:)`; guest: `AppBranding.guestProfileTitle`, `guestProfileMessage` and a prominent Sign in; then
+  `LanguageRow`, `CurrencyRow` and `FeedbackRow(action:)`; sheets `SignInSheet(session:errorCenter:)`,
+  `DisplayNameSheet(viewModel:errorCenter:)` over `dependencies.makeDisplayNameViewModel()`,
+  `AboutSheet(viewModel:errorCenter:)` over `dependencies.makeAboutViewModel()` and `FeedbackSheet(viewModel:errorCenter:)`.
 - `DisplayNameRow(store: ProfileStore, action: () -> Void)` `[lily/Features/Profile/Views/DisplayNameRow.swift:DisplayNameRow]`:
   a `SettingsLinkRow` (`lily/Core/UI/Components`) titled `AppBranding.DisplayName.title` with
   `DesignTokens.Symbols.profile`, identifier `AccessibilityIdentifiers.profileName`; the subtitle is
@@ -29,6 +30,15 @@ rather than being rebuilt like the other tabs, whose rebuild would crossfade ove
   `AppBranding.DisplayName.title` with Save (`AccessibilityIdentifiers.profileNameSave`) and Cancel (`profileNameCancel`)
   around one `Form` `TextField` (`profileNameField`; words capitalised, `.name` content type, no autocorrection) whose
   footer is the draft's `hint` as a `ValidationHint` (`lily/Core/UI/Components`), else `AppBranding.DisplayName.footer`.
+- `AboutRow(store: ProfileStore, action: () -> Void)` `[lily/Features/Profile/Views/AboutRow.swift:AboutRow]`: a
+  `SettingsLinkRow` titled `AppBranding.About.title` ("About you") with `DesignTokens.Symbols.about`, identifier
+  `AccessibilityIdentifiers.profileAbout`; the subtitle is `store.bio` when written (cut to the row's two lines), else
+  `AppBranding.About.emptySubtitle` ("Tell other players about yourself").
+- `AboutSheet(viewModel: AboutViewModel, errorCenter: ErrorCenter)` `[lily/Features/Profile/Views/AboutSheet.swift:AboutSheet]`:
+  a `DraftSheet` titled `AppBranding.About.title` with Save (`AccessibilityIdentifiers.profileAboutSave`) and Cancel
+  (`profileAboutCancel`) around one `Form` `TextField(axis: .vertical)` (`profileAboutField`; sentences capitalised,
+  `DesignTokens.Layout.aboutFieldLines` 3...8 lines) whose footer is the draft's `hint` as a `ValidationHint`, else
+  `AppBranding.About.footer`.
 - `LanguageRow(language: LanguageStore)` `[lily/Features/Profile/Views/LanguageRow.swift:LanguageRow]`: choices "System"
   (`AppBranding.Settings.systemLanguage`) plus every `AppLanguage.allCases` by its `nativeName`; identifier
   `AccessibilityIdentifiers.profileLanguage`.
@@ -46,11 +56,11 @@ rather than being rebuilt like the other tabs, whose rebuild would crossfade ove
 
 - Feedback needs an account: a guest tapping the contact card gets the sign-in sheet instead, logged at info under
   `.auth` `[lily/Features/Profile/Views/ProfileView.swift:openFeedback]`.
-- `FeedbackRow` and `DisplayNameRow` (which also takes the store object) are given `.id(language)` because a closure
-  input is not a change SwiftUI counts, so they would keep the old copy `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`.
+- `FeedbackRow`, `DisplayNameRow` and `AboutRow` (the last two also take the store object) are given `.id(language)`
+  because a closure input is not a change SwiftUI counts, so they would keep the old copy `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`.
 - The profile loads lazily, once per session, from the `.task(id: session.state.user?.id) { await
   profile.loadIfNeeded() }` on `ProfileView`'s `NavigationStack`, so a user who never opens Profile costs no request; the header shows the backend's name,
-  a spinner only while the first load runs and nothing when it failed (the card below still renames)
+  a spinner only while the first load runs and nothing when it failed (the cards below still write)
   `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`, `[lily/Features/Profile/Views/ProfileView.swift:signedIn]`.
 - A pick applies at once through the store's `select(_:)`, with no animation
   `[lily/Features/Profile/Views/LanguageRow.swift:selection]`, `[lily/Features/Profile/Views/CurrencyRow.swift:selection]`,
@@ -74,7 +84,8 @@ rather than being rebuilt like the other tabs, whose rebuild would crossfade ove
 
 - `session.signOut()` in a `Task` from the Sign out button `[lily/Features/Profile/Views/ProfileView.swift:signedIn]`.
 - Sheets: `SignInSheet` (a guest's Sign in, or feedback asked for as a guest), `DisplayNameSheet` from
-  `dependencies.makeDisplayNameViewModel()` and `FeedbackSheet` from `dependencies.makeFeedbackViewModel()`
+  `dependencies.makeDisplayNameViewModel()`, `AboutSheet` from `dependencies.makeAboutViewModel()` and `FeedbackSheet`
+  from `dependencies.makeFeedbackViewModel()`
   `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`.
 - `ProfileStore.loadIfNeeded()` (`GET /api/profile` once per session) from the `.task(id: session.state.user?.id) {
   await profile.loadIfNeeded() }` on `ProfileView`'s `NavigationStack`
@@ -87,4 +98,5 @@ rather than being rebuilt like the other tabs, whose rebuild would crossfade ove
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (`lilyTests/Preferences` covers the choice stores behind these rows, `lilyTests/Profile`
-  the store and the editor's model); `./scripts/ci.sh ui` (`LilyProfileTests` walks the display name card and sheet).
+  the store and the editors' model); `./scripts/ci.sh ui` (`LilyProfileTests` walks the display name and the "About you"
+  cards and sheets).

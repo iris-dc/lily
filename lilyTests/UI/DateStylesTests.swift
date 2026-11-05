@@ -26,4 +26,10 @@ struct DateStylesTests {
         #expect(english.contains("2027"))
         #expect(english.contains(":"))
     }
+
+    /// The day style of a profile's shared history: the same abbreviated day, no time.
+    @Test func theDayStyleOmitsTheTime() {
+        let day = Self.date.formatted(LilyTheme.DateStyles.date)
+        #expect(day.contains("2027") && !day.contains(":"))
+    }
 }

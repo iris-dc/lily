@@ -4,15 +4,27 @@ Source: `lily/Features/People/Models/`
 
 ## Overview
 
-The wire and navigation values of the People feature: `UserProfile` (another person with the groups the caller shares
-with them), `GroupSummary` (a group as a profile's "Groups in common" row shows it), `StartConversationPayload` (the
-body that opens a direct conversation) and `UserProfileDestination` (the value pushed from wherever a person is named).
+The wire and navigation values of the People feature: `UserProfile` (another person with their bio and what the caller
+shares with them), `GroupSummary` (a group as a profile's "Groups in common" row shows it), `EventSummary` (a game as a
+"Games together" row shows it), `TournamentSummary` (a tournament as a "Tournaments together" row shows it),
+`StartConversationPayload` (the body that opens a direct conversation) and `UserProfileDestination` (the value pushed
+from wherever a person is named).
 All are `nonisolated`, `Sendable` values that keep the backend's key names.
 
 ## Interface
 
 - `UserProfile: Hashable, Codable, Sendable` `[lily/Features/People/Models/UserProfile.swift:UserProfile]`: `userId`,
-  `displayName`, `sharedGroups: [GroupSummary]`.
+  `displayName`, `bio: String?`, `sharedGroups: [GroupSummary]`, `sharedEvents: [EventSummary]`,
+  `sharedTournaments: [TournamentSummary]`; `init(userId:displayName:bio: = nil, sharedGroups:sharedEvents: = [],
+  sharedTournaments: = [])` and a hand-written `init(from:)`.
+- `EventSummary: Identifiable, Hashable, Codable, Sendable` `[lily/Features/People/Models/EventSummary.swift:EventSummary]`:
+  `id`, `title`, `type: EventType`, `startsAt: Date`, `locationName`; `init(_ event: SportEvent)`; `caption`
+  ("Football · 2 Oct 2026 · Tempelhofer Feld": the type, the day in `LilyTheme.DateStyles.date`, the place, joined by
+  `AppBranding.Groups.caption`).
+- `TournamentSummary: Identifiable, Hashable, Codable, Sendable`
+  `[lily/Features/People/Models/TournamentSummary.swift:TournamentSummary]`: `id`, `name`, `type: EventType`,
+  `status: TournamentStatus`, `startsAt: Date`; `init(_ tournament: Tournament)`; `caption` ("Football · Completed ·
+  4 Oct 2026"); `destination: TournamentDestination` (`id` and `name` alone, no preview: the detail fetches it).
 - `GroupSummary: Identifiable, Hashable, Codable, Sendable` `[lily/Features/People/Models/GroupSummary.swift:GroupSummary]`:
   `id`, `name`, `visibility: GroupVisibility`, `type: EventType?` (absent means any sport), `memberCount`;
   `init(id:name:visibility:type: = nil, memberCount:)` and `init(_ group: SportGroup)`; `caption`
@@ -28,8 +40,12 @@ All are `nonisolated`, `Sendable` values that keep the backend's key names.
 
 ## Invariants
 
-- `UserProfile.sharedGroups` never holds a group the caller is not in, and the caller's own id answers their own
-  groups (doc comment; the repositories enforce it) `[lily/Features/People/Models/UserProfile.swift:UserProfile]`.
+- `UserProfile.sharedGroups`, `sharedEvents` and `sharedTournaments` never hold a group, game or tournament the caller is
+  not in, and the caller's own id answers their own (doc comment; the repositories enforce it); the two history lists
+  come latest first from the backend and are shown as received `[lily/Features/People/Models/UserProfile.swift:UserProfile]`.
+- `UserProfile.init(from:)` exists for one reason: `sharedEvents` and `sharedTournaments` default to `[]` when the key
+  is missing, so a backend before the shared history still decodes; `bio` is `decodeIfPresent`
+  `[lily/Features/People/Models/UserProfile.swift:UserProfile.init(from:)]`.
 - `GroupSummary.ref` always answers `isDeleted: false` `[lily/Features/People/Models/GroupSummary.swift:GroupSummary.ref]`.
 - Every type is `nonisolated`, `Sendable` and `let`-only; `StartConversationPayload` is encode-only
   `[lily/Features/People/Models/StartConversationPayload.swift:StartConversationPayload]`.
@@ -40,4 +56,5 @@ All are `nonisolated`, `Sendable` values that keep the backend's key names.
 
 ## Verification
 
-- Run: `./scripts/ci.sh unit` (`lilyTests/People`).
+- Run: `./scripts/ci.sh unit` (`lilyTests/People`; `RemoteUserRepositoryTests.theContractProfileDecodes` and
+  `theHistoryRowsCaptionAndLinkFromTheSummaries` pin the shapes and captions).

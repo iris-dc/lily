@@ -5,6 +5,11 @@ nonisolated extension AppBranding {
     enum People {
         static var sharedGroupsTitle: String { localized("Groups in common") }
         static var noSharedGroups: String { localized("No groups in common yet") }
+        /// The games both joined and the tournaments whose room both are in, the latest first.
+        static var sharedEventsTitle: String { localized("Games together") }
+        static var noSharedEvents: String { localized("No games together yet") }
+        static var sharedTournamentsTitle: String { localized("Tournaments together") }
+        static var noSharedTournaments: String { localized("No tournaments together yet") }
         static var loadFailedTitle: String { localized("Couldn't load this profile") }
         /// The profile's button: a verb, where the composer's placeholder `Chat.placeholder` (key "Message") is the noun.
         static var message: String { localized("Message (verb)") }

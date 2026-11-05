@@ -110,6 +110,7 @@ struct ErrorMessageMapperTests {
 
     @Test func profileFailuresHaveTheirOwnTitles() {
         #expect(ErrorMessageMapper.message(for: .profileUpdateFailed).title == "Couldn't save your name")
+        #expect(ErrorMessageMapper.message(for: .aboutUpdateFailed).title == "Couldn't save your description")
         #expect(ErrorMessageMapper.message(for: .profileUnavailable).title == "Couldn't load this profile")
     }
 

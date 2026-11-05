@@ -42,15 +42,16 @@ feature runs without a backend behind its mocks, and every feature has a unit-te
   `ChatViewModel` both write.
 - Inbox: [`./Inbox/EGM.md`](./Inbox/EGM.md) - the iskra conversation pinned on the Chats tab with group and tournament
   invites and game and match reminders, from `/api/me/inbox` into `InboxStore`, the one source, cleared on sign-out.
-- People: [`./People/EGM.md`](./People/EGM.md) - every person named in the app opens a profile with a Message button
-  and the groups in common; Message opens a direct conversation, a two-member group of kind `direct` derived once per
-  pair.
+- People: [`./People/EGM.md`](./People/EGM.md) - every person named in the app opens a profile with a Message button,
+  their bio, and the groups, games and tournaments in common; Message opens a direct conversation, a two-member group of
+  kind `direct` derived once per pair.
 - Tournaments: [`./Tournaments/EGM.md`](./Tournaments/EGM.md) - organiser-run single-elimination or round-robin
   competitions with entries and teams, a room of their own, brackets or standings, player-reported results and
   organiser-run disputes, walkovers and scheduling; the repositories send exactly once, the `TRY_AGAIN` repeat lives in
   the view models' `WriteGate` and `CreateFlow`.
 - Profile: [`./Profile/EGM.md`](./Profile/EGM.md) - the Profile tab and the caller's backend profile: the name other
-  players see (chosen on a card and sheet; the backend's "Player" until the user picks one) or the guest prompt,
+  players see (chosen on a card and sheet; the backend's "Player" until the user picks one) and the "About you" bio
+  (a card and sheet of its own) or the guest prompt,
   language and currency settings, the contact card and Sign out; `ProfileStore` is the one source of that profile over
   `ProfileRepository` (`GET` and `PUT /api/profile`).
 - Feedback: [`./Feedback/EGM.md`](./Feedback/EGM.md) - the contact form on Profile: a question, feedback or bug report

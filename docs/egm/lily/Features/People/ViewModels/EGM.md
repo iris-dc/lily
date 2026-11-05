@@ -41,7 +41,8 @@ shared `GroupErrorReporter` under the `.groups` log category. The screen is in [
   repeats one `TRY_AGAIN` through `LostRace.attemptTwice`, answers `false` silently on cancellation, and the Bool is
   discarded `[lily/Features/People/ViewModels/UserProfileViewModel.swift:init]`,
   `[lily/Core/Networking/WriteGate.swift:WriteGate.run]`, `[lily/Config/AppConfig.swift:AppConfig.API.tryAgainDelay]`.
-- `UserProfile.sharedGroups` passes through untouched: no filtering or sorting here
+- `UserProfile.bio`, `sharedGroups`, `sharedEvents` and `sharedTournaments` pass through untouched: no filtering or
+  sorting here
   `[lily/Features/People/ViewModels/UserProfileViewModel.swift:UserProfileViewModel]`.
 - Main-actor isolated by the target's default.
 

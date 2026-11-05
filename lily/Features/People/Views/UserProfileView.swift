@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Another person: their mark and name, "Message" for anyone but the caller, and the groups the two share. The view
-/// model decides what the caller may do; this draws it.
+/// Another person: their mark and name, "Message" for anyone but the caller, what they wrote about themselves, and what
+/// the two share: groups, games and tournaments. The view model decides what the caller may do; this draws it.
 struct UserProfileView: View {
     @State private var viewModel: UserProfileViewModel
 
@@ -19,7 +19,7 @@ struct UserProfileView: View {
                     if viewModel.canMessage {
                         messageButton
                     }
-                    sharedGroups
+                    content
                 }
                 .padding(.vertical, DesignTokens.Spacing.xl)
                 .readableColumn()
@@ -50,14 +50,8 @@ struct UserProfileView: View {
         .padding(.horizontal, DesignTokens.Layout.screenMargin)
     }
 
-    private var sharedGroups: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-            SectionTitle(text: Copy.sharedGroupsTitle)
-            sharedGroupsContent
-        }
-    }
-
-    @ViewBuilder private var sharedGroupsContent: some View {
+    /// The bio and what the two share, once the profile answered: one spinner, or one retry, for all of it.
+    @ViewBuilder private var content: some View {
         switch viewModel.state {
         case .loading:
             ProgressView()
@@ -65,24 +59,49 @@ struct UserProfileView: View {
                 .padding(.vertical, DesignTokens.Spacing.lg)
         case .failed:
             loadFailed
-        case .loaded(let profile) where profile.sharedGroups.isEmpty:
-            note(Copy.noSharedGroups)
         case .loaded(let profile):
-            rows(profile.sharedGroups)
+            loaded(profile)
         }
     }
 
-    private func rows(_ groups: [GroupSummary]) -> some View {
-        LazyVStack(spacing: 0) {
-            ForEach(groups) { group in
-                SharedGroupRow(group: group)
-                AvatarRowDivider()
+    @ViewBuilder private func loaded(_ profile: UserProfile) -> some View {
+        if let bio = profile.bio {
+            Text(bio)
+                .font(.body)
+                .padding(.horizontal, DesignTokens.Layout.screenMargin)
+                .accessibilityIdentifier(AccessibilityIdentifiers.profileBio)
+        }
+        section(Copy.sharedGroupsTitle, orElse: Copy.noSharedGroups, profile.sharedGroups) { SharedGroupRow(group: $0) }
+        section(Copy.sharedEventsTitle, orElse: Copy.noSharedEvents, profile.sharedEvents) { SharedEventRow(event: $0) }
+        section(Copy.sharedTournamentsTitle, orElse: Copy.noSharedTournaments, profile.sharedTournaments) {
+            SharedTournamentRow(tournament: $0)
+        }
+    }
+
+    /// A title over the rows, or over a line saying there are none yet.
+    private func section<Item: Identifiable, Row: View>(
+        _ title: String,
+        orElse empty: String,
+        _ items: [Item],
+        @ViewBuilder row: @escaping (Item) -> Row
+    ) -> some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+            SectionTitle(text: title)
+            if items.isEmpty {
+                note(empty)
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(items) { item in
+                        row(item)
+                        AvatarRowDivider()
+                    }
+                }
+                .padding(.horizontal, DesignTokens.Layout.screenMargin)
             }
         }
-        .padding(.horizontal, DesignTokens.Layout.screenMargin)
     }
 
-    /// The popup said what went wrong; the section offers the retry.
+    /// The popup said what went wrong; the screen offers the retry.
     private var loadFailed: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
             note(Copy.loadFailedTitle)

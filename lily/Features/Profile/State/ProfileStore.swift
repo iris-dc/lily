@@ -1,11 +1,11 @@
 import Foundation
 import Observation
 
-/// The caller's `GET /api/profile`: the name other players see, loaded once per signed-in session when Profile opens
-/// and replaced by the answer of a rename; a read that answers after a rename is dropped, the rename being the newer
-/// name. A failed load is logged, never shown: the header draws a placeholder and the editor still works, since the
-/// write does not need the read. The last profile shown is kept on the device (`ListSnapshotStore`, swept with the
-/// session) and is the first frame of the next launch, so the header does not turn from a glyph into the name once
+/// The caller's `GET /api/profile`: the name other players see and the bio, loaded once per signed-in session when
+/// Profile opens and replaced by the answer of a write; a read that answers after a write is dropped, the write being
+/// the newer state. A failed load is logged, never shown: the header draws a placeholder and the editors still work,
+/// since a write does not need the read. The last profile shown is kept on the device (`ListSnapshotStore`, swept with
+/// the session) and is the first frame of the next launch, so the header does not turn from a glyph into the name once
 /// per launch; a hint only, the load still runs once.
 @Observable
 final class ProfileStore: SessionObserver {
@@ -39,6 +39,8 @@ final class ProfileStore: SessionObserver {
     }
 
     var displayName: String? { profile?.displayName }
+    /// What the user wrote about themselves; `nil` until they did, or while the profile is unknown.
+    var bio: String? { profile?.bio }
     /// Whether the name is still the one the backend gave the account; the card nudges to pick one while it is.
     var isDefaultName: Bool { profile?.displayName == AppConfig.DisplayName.backendDefault }
     var isLoading: Bool { load.isRunning }
@@ -62,7 +64,7 @@ final class ProfileStore: SessionObserver {
         do {
             let loaded = try await repository.profile()
             guard identity.isStillCaller(userID, orDrop: "Profile answer", logger: logger) else { return }
-            // A rename that landed while this read was out holds the newer name; the read's answer is the older one.
+            // A write that landed while this read was out holds the newer state; the read's answer is the older one.
             guard loadedUserID != userID else {
                 logger.debug(.cache, "Profile answer superseded by a rename; dropped")
                 return
@@ -78,22 +80,44 @@ final class ProfileStore: SessionObserver {
         }
     }
 
-    /// The one write of the name. The answer is the profile as the backend stored it and becomes the header's; an
-    /// answer for a caller who signed out meanwhile is dropped. A failure that leaves the outcome unknown (a lost
-    /// connection, a 5xx; Laurel commits before it answers) is settled by reading the profile back, so a rename that
-    /// landed is never reported as failed. Every other failure goes to the caller, which shows it.
+    /// The one write of the name; the backend stores it trimmed, which is how a lost answer is recognised as landed.
     func rename(to name: String) async throws -> Profile {
+        try await write(Write(verb: "Rename", done: "Display name updated"),
+                        landed: { $0.displayName == name.trimmed },
+                        send: { try await repository.updateDisplayName(name) })
+    }
+
+    /// The one write of the bio; a blank clears it, and a cleared bio reads back as none.
+    func updateBio(to text: String) async throws -> Profile {
+        try await write(Write(verb: "Bio update", done: "Bio updated"),
+                        landed: { $0.bio == text.nonBlankTrimmed },
+                        send: { try await repository.updateBio(text) })
+    }
+
+    /// How a write names itself in the log: the verb of its settling lines and the line of its success.
+    private struct Write {
+        let verb: String
+        let done: String
+    }
+
+    /// Every write of the profile. The answer is the profile as the backend stored it and becomes the header's; an
+    /// answer for a caller who signed out meanwhile is dropped. A failure that leaves the outcome unknown (a lost
+    /// connection, a 5xx; Laurel commits before it answers) is settled by reading the profile back, so a write that
+    /// landed is never reported as failed. Every other failure goes to the caller, which shows it.
+    private func write(_ what: Write,
+                       landed: (Profile) -> Bool,
+                       send: () async throws -> Profile) async throws -> Profile {
         guard let userID = identity.currentUserID else { throw AppError.sessionExpired }
         let updated: Profile
         do {
-            updated = try await repository.updateDisplayName(name)
+            updated = try await send()
         } catch {
-            guard let landed = await renamed(to: name, despite: error) else { throw error }
-            updated = landed
+            guard let settled = await settled(what, despite: error, landed: landed) else { throw error }
+            updated = settled
         }
-        if identity.isStillCaller(userID, orDrop: "Rename answer", logger: logger) {
+        if identity.isStillCaller(userID, orDrop: "\(what.verb) answer", logger: logger) {
             keep(updated, for: userID)
-            logger.info(.auth, "Display name updated for user \(userID)")
+            logger.info(.auth, "\(what.done) for user \(userID)")
         }
         return updated
     }
@@ -105,22 +129,21 @@ final class ProfileStore: SessionObserver {
         snapshots.save(loaded, for: snapshotKey(for: userID))
     }
 
-    /// The profile read back after a failure that leaves the outcome unknown, when it shows the rename landed (the
-    /// backend stores the name trimmed); `nil` for a refusal, which is never read back, a read that fails, or one that
-    /// shows another name.
-    private func renamed(to name: String, despite error: any Error) async -> Profile? {
-        guard let appError = error as? AppError, appError.leavesRenameOutcomeUnknown else { return nil }
+    /// The profile read back after a failure that leaves the outcome unknown, when it shows the write landed; `nil`
+    /// for a refusal, which is never read back, a read that fails, or one that shows another value.
+    private func settled(_ what: Write, despite error: any Error, landed: (Profile) -> Bool) async -> Profile? {
+        guard let appError = error as? AppError, appError.leavesWriteOutcomeUnknown else { return nil }
         do {
             let fresh = try await repository.profile()
-            guard fresh.displayName == name.trimmed else {
-                logger.debug(.auth, "Rename did not land despite \(appError); the profile reads another name")
+            guard landed(fresh) else {
+                logger.debug(.auth, "\(what.verb) did not land despite \(appError); the profile reads another value")
                 return nil
             }
-            logger.info(.auth, "Rename landed despite \(appError); nothing to report")
+            logger.info(.auth, "\(what.verb) landed despite \(appError); nothing to report")
             return fresh
         } catch {
             if !AppError.isCancellation(error) {
-                logger.warning(.auth, "Could not check whether the rename landed after \(appError): \(error)")
+                logger.warning(.auth, "Could not check whether the \(what.verb.lowercased()) landed after \(appError): \(error)")
             }
             return nil
         }
@@ -138,6 +161,6 @@ final class ProfileStore: SessionObserver {
 }
 
 private extension AppError {
-    /// A lost connection, or the route's fallback (what a 5xx without a code maps to): the PUT may have landed.
-    var leavesRenameOutcomeUnknown: Bool { self == .network || self == .profileUpdateFailed }
+    /// A lost connection, or a route's fallback (what a 5xx without a code maps to): the PUT may have landed.
+    var leavesWriteOutcomeUnknown: Bool { self == .network || self == .profileUpdateFailed || self == .aboutUpdateFailed }
 }

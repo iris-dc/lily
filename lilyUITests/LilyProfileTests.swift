@@ -3,7 +3,8 @@ import XCTest
 /// The contact form on Profile: a guest is sent to sign in first, a user picks what the message is about, writes it
 /// and is thanked; the mock accepts the send, so no backend is needed. The currency row: a pick changes the
 /// currency the create form's price and the filter's cap are typed in. The display name: a new account starts as the
-/// backend's "Player" and chooses a name on the card. And Sign out: it returns to the landing and forgets the session.
+/// backend's "Player" and chooses a name on the card; the "About you" card writes the bio. And Sign out: it returns to
+/// the landing and forgets the session.
 final class LilyProfileTests: LilyUITestCase {
     /// The symbol the en_US simulator shows for złoty is the code itself; a Polish device shows "zł".
     private static let zlotySymbols: Set<String> = ["PLN", "zł"]
@@ -94,6 +95,31 @@ final class LilyProfileTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Alex Kim"].waitForExistence(timeout: 5), "the header shows the backend's answer")
         XCTAssertTrue(app.staticTexts["What other players see"].waitForExistence(timeout: 5), "the nudge is over")
         XCTAssertFalse(app.staticTexts["Player"].exists)
+    }
+
+    /// A new account has nothing written about itself: the card nudges, the sheet saves a changed text only, and the
+    /// card then shows what was written.
+    @MainActor
+    func testWritingAboutYouOnProfileShowsIt() {
+        tapSignInWithApple()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+        openProfileTab()
+        let card = app.buttons["profile-about"]
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertTrue(card.label.contains("Tell other players about yourself"), "the card nudges while nothing is written")
+
+        card.tap()
+        XCTAssertTrue(app.navigationBars["About you"].waitForExistence(timeout: 5))
+        let save = app.buttons["profile-about-save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5))
+        XCTAssertFalse(save.isEnabled, "nothing to save until something was written")
+        enter("Padel on Sundays, football when it rains.", into: app.descendants(matching: .any)["profile-about-field"])
+        assertBecomesEnabled(save, "a written text enables Save")
+        save.tap()
+
+        XCTAssertTrue(app.navigationBars["About you"].waitForNonExistence(timeout: 10), "the sheet closes on the answer")
+        XCTAssertTrue(waitUntil(card, holds: "label CONTAINS %@", "Padel on Sundays, football when it rains."),
+                      "the card shows what was written: \(card.label)")
     }
 
     /// Sign out on Profile returns to the landing and forgets the session: the next way in is a guest's.

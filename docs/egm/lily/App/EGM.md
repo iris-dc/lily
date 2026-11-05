@@ -84,7 +84,7 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `makeAttachmentComposer`, `makeChatHistoryClearer`, `myGroupsDidChange()`, `myGroupsDidLoad()` (`+Chat.swift`);
   `makeTournamentListViewModel(scope:snapshots:)`, `makeTournamentDetailViewModel`, `makeCreateTournamentViewModel`,
   `makeEditTournamentViewModel` (`+Tournaments.swift`); `makeInboxViewModel`, `makeUserProfileViewModel`, `makeTermsViewModel`,
-  `makeFeedbackViewModel`, `makeDisplayNameViewModel` (`+Inbox`, `+People`, `+Moderation`, `+Feedback`, `+Profile`). The
+  `makeFeedbackViewModel`, `makeDisplayNameViewModel`, `makeAboutViewModel` (`+Inbox`, `+People`, `+Moderation`, `+Feedback`, `+Profile`). The
   `+Groups`, `+Chat`, `+Push`, `+Inbox`, `+People` and `+Tournaments` extensions expose their stores and repositories as
   pass-throughs.
 - `static func makeMock() -> AppDependencies` (`lily/App/AppDependencies+Mock.swift:AppDependencies.makeMock`):
@@ -131,7 +131,9 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   (`lily/App/AppDependencies+Repositories.swift:Repositories.mock`); `-mock-events` forces `NoOpListSnapshotStore()`
   (`lily/App/AppDependencies+Shell.swift:AppDependencies.makeListSnapshotStore`); the mock group set shares one
   `MockGroupRepository`, `MockTournamentRepository`, `MockRealtimeTransport` and `MockAttachmentStore`, and production
-  binds `NoRealtimeTransport()` (`lily/App/AppDependencies+Groups.swift:GroupRepositories.mock`, `GroupRepositories.remote`).
+  binds `NoRealtimeTransport()` (`lily/App/AppDependencies+Groups.swift:GroupRepositories.mock`, `GroupRepositories.remote`);
+  `Repositories.mock` builds the event and profile mocks first and hands them to `GroupRepositories.mock(identity:logger:events:profiles:...)`,
+  whose `MockUserRepository` reads them for a profile's shared games and the caller's own bio.
 - Mock-auth precedence is `-mock-auth-fail`, `-mock-auth-confirm`, then `-mock-auth`; `-mock-user-id` counts only with
   mock auth; Cognito doubles as `AuthTokenProvider`, the mock yields `tokenProvider: nil`
   (`lily/App/AppDependencies+Repositories.swift:AppDependencies.makeAuthService`). A URL argument is honoured only when `URL(string:)`

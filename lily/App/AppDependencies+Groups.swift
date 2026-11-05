@@ -49,17 +49,20 @@ struct GroupRepositories {
     }
 
     /// The invite mock reads the group mock's rosters, the inbox mock admits into its groups and enters the tournament
-    /// mock's tournaments, the chat mock reads the rosters and the user mock builds profiles from them, so they share
-    /// one group instance (and the two tournament mocks one tournament instance); the chat mock echoes over the one
+    /// mock's tournaments, the chat mock reads the rosters and the user mock builds profiles from them (and the shared
+    /// history from the event and tournament mocks, the caller's own bio from the profile mock), so they share one
+    /// group instance (and the two tournament mocks one tournament instance); the chat mock echoes over the one
     /// in-memory bus the controller subscribes to, and the chat mock, the uploader and the loader's session share one
     /// attachment store. `mockPicker` swaps the system pickers for the bundled photo, clip and document
     /// (`-mock-attachment-picker`); `termsPending` makes the me mock owe the terms until the first acceptance of the
     /// run (`-mock-terms-pending`).
     static func mock(identity: any IdentityProvider,
                      logger: any Logging,
-                     autoReplies: Bool,
-                     mockPicker: Bool,
-                     termsPending: Bool) -> GroupRepositories {
+                     events: MockEventRepository,
+                     profiles: MockProfileRepository,
+                     autoReplies: Bool = false,
+                     mockPicker: Bool = false,
+                     termsPending: Bool = false) -> GroupRepositories {
         let groups = MockGroupRepository(identity: identity, logger: logger)
         let tournaments = MockTournamentRepository(groups: groups, identity: identity, logger: logger)
         let transport = MockRealtimeTransport(logger: logger)
@@ -79,7 +82,12 @@ struct GroupRepositories {
                                                           logger: logger,
                                                           attachments: attachments,
                                                           autoReplies: autoReplies),
-                                 users: MockUserRepository(groups: groups, identity: identity, logger: logger),
+                                 users: MockUserRepository(groups: groups,
+                                                           events: events,
+                                                           tournaments: tournaments,
+                                                           profiles: profiles,
+                                                           identity: identity,
+                                                           logger: logger),
                                  tournaments: tournaments,
                                  tournamentInvites: MockTournamentInviteRepository(groups: groups,
                                                                                    tournaments: tournaments,

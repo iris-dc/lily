@@ -46,17 +46,22 @@ struct Repositories {
                      systemPush: Bool = false,
                      termsPending: Bool = false,
                      eventsFailFirst: Bool = false) -> Repositories {
-        Repositories(events: MockEventRepository(identity: identity, logger: logger, failsFirstLoad: eventsFailFirst),
-                     profile: MockProfileRepository(identity: identity, logger: logger),
-                     feedback: MockFeedbackRepository(logger: logger),
-                     interactions: NoOpInteractionRecorder(),
-                     groups: .mock(identity: identity,
-                                   logger: logger,
-                                   autoReplies: autoReplies,
-                                   mockPicker: mockPicker,
-                                   termsPending: termsPending),
-                     devices: MockDeviceRepository(identity: identity, logger: logger),
-                     pushRegistrar: systemPush ? SystemPushRegistrar(logger: logger) : MockPushRegistrar(logger: logger))
+        let events = MockEventRepository(identity: identity, logger: logger, failsFirstLoad: eventsFailFirst)
+        let profiles = MockProfileRepository(identity: identity, logger: logger)
+        let groups = GroupRepositories.mock(identity: identity,
+                                            logger: logger,
+                                            events: events,
+                                            profiles: profiles,
+                                            autoReplies: autoReplies,
+                                            mockPicker: mockPicker,
+                                            termsPending: termsPending)
+        return Repositories(events: events,
+                            profile: profiles,
+                            feedback: MockFeedbackRepository(logger: logger),
+                            interactions: NoOpInteractionRecorder(),
+                            groups: groups,
+                            devices: MockDeviceRepository(identity: identity, logger: logger),
+                            pushRegistrar: systemPush ? SystemPushRegistrar(logger: logger) : MockPushRegistrar(logger: logger))
     }
 }
 

@@ -31,7 +31,7 @@ draws.
     `attachmentUploadFailed`, `attachmentUnavailable`, `pollsNotAllowed`, `notAPoll`, `pollAnonymous`, `voteFailed`,
     `notPinnable`, `tooManyPins`, `pinFailed`;
   - moderation and people: `reportFailed`, `blockLimitReached`, `userNotFound`, `accountSuspended`, `termsRequired`,
-    `feedbackFailed`, `profileUnavailable`, `profileUpdateFailed`, `conversationFailed`, `conversationLimit`;
+    `feedbackFailed`, `profileUnavailable`, `profileUpdateFailed`, `aboutUpdateFailed`, `conversationFailed`, `conversationLimit`;
   - tournaments: `tournamentsUnavailable`, `tournamentNotFound`, `tournamentCreationFailed`, `tournamentUpdateFailed`,
     `tournamentActionFailed`, `registrationClosed`, `tournamentFull`, `alreadyEntered`, `teamFull`, `entryNotFound`,
     `notOrganizer`, `tournamentLocked`, `notEnoughEntries`, `notInMatch`, `matchNotReady`, `matchNotFound`,

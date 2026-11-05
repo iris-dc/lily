@@ -34,6 +34,9 @@ enum LilyTheme {
         static func dateTime(locale: Locale) -> Date.FormatStyle {
             Date.FormatStyle(date: .abbreviated, time: .shortened, locale: locale)
         }
+
+        /// The day alone, for what is past or far (a profile's shared history).
+        static var date: Date.FormatStyle { Date.FormatStyle(date: .abbreviated, time: .omitted, locale: AppLocale.locale) }
     }
 
     /// The one selected look for toggling controls (map pins, `ChoiceChip`): accent glass with a white label when on,

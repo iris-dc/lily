@@ -1,26 +1,25 @@
 import Foundation
 
-/// The display name as typed and its validation against `AppConfig.DisplayName`, measured in code points as Laurel
-/// measures it, so a name that passes here is stored as typed, never cut.
-nonisolated struct DisplayNameDraft: Equatable, Sendable {
-    var name: String
+/// The display name as typed and its validation against `AppConfig.DisplayName`.
+nonisolated struct DisplayNameDraft: ProfileFieldDraft {
+    var text: String
 
-    init(name: String = "") {
-        self.name = name
+    init(text: String = "") {
+        self.text = text
     }
 
-    var trimmedName: String { name.trimmed }
+    var trimmedText: String { text.trimmed }
 
     /// Empty when the draft may go out; a blank name is missing before it is anything else.
     var issues: [Issue] {
-        if trimmedName.isEmpty { return [.nameMissing] }
-        if trimmedName.codePointCount > AppConfig.DisplayName.length.upperBound { return [.nameTooLong] }
+        if trimmedText.isEmpty { return [.nameMissing] }
+        if trimmedText.codePointCount > AppConfig.DisplayName.length.upperBound { return [.nameTooLong] }
         return []
     }
 
     var isValid: Bool { issues.isEmpty }
 
-    /// The line under the field, if any; a missing name only keeps Save disabled, since the empty field explains itself.
+    /// A missing name only keeps Save disabled, since the empty field explains itself.
     var hint: String? {
         issues.contains(.nameTooLong) ? AppBranding.DisplayName.tooLong(limit: AppConfig.DisplayName.length.upperBound) : nil
     }

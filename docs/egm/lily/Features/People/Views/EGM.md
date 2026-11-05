@@ -4,9 +4,10 @@ Source: `lily/Features/People/Views/`
 
 ## Overview
 
-Three views: `PersonRow` (a roster or participant row that links to a person's profile unless it is the caller),
-`SharedGroupRow` (a "Groups in common" row linking to the group's detail) and `UserProfileView` (the profile screen:
-avatar, name, Message when allowed, the shared groups). Loading and writes belong to
+Five views: `PersonRow` (a roster or participant row that links to a person's profile unless it is the caller),
+`SharedGroupRow` (a "Groups in common" row linking to the group's detail), `SharedEventRow` (a "Games together" row, no
+link), `SharedTournamentRow` (a "Tournaments together" row linking to the tournament's detail) and `UserProfileView`
+(the profile screen: avatar, name, Message when allowed, the bio, the three shared sections). Loading and writes belong to
 [ViewModels](../ViewModels/EGM.md); the views log nothing, report nothing and mutate no store.
 
 ## Interface
@@ -17,13 +18,23 @@ avatar, name, Message when allowed, the shared groups). Loading and writes belon
 - `SharedGroupRow(group: GroupSummary)` `[lily/Features/People/Views/SharedGroupRow.swift:SharedGroupRow]`:
   `GroupRowContent(name:visibility:caption:hasUnread: false)` in a `NavigationLink(value: group.ref)`; identifier
   `AccessibilityIdentifiers.groupRow(group.id)` (`group-row-<id>`).
+- `SharedEventRow(event: EventSummary)` `[lily/Features/People/Views/SharedHistoryRows.swift:SharedEventRow]`:
+  `GroupRowContent(name: title, visibility: nil, caption: event.caption, hasUnread: false, avatarSymbol:
+  event.type.symbolName)`, one accessibility element (`children: .combine`) with identifier
+  `AccessibilityIdentifiers.sharedEventRow(event.id)` (`shared-event-row-<id>`); no link.
+- `SharedTournamentRow(tournament: TournamentSummary)` `[lily/Features/People/Views/SharedHistoryRows.swift:SharedTournamentRow]`:
+  the same content with `DesignTokens.Symbols.tournament` in the mark, in a `NavigationLink(value: tournament.destination)`;
+  identifier `AccessibilityIdentifiers.tournamentRow(tournament.id)` (`tournament-row-<id>`).
 - `UserProfileView(viewModel: UserProfileViewModel)` `[lily/Features/People/Views/UserProfileView.swift:UserProfileView]`:
   `ContentScreen` with a `ScrollView` in a `readableColumn()`, inline title `viewModel.displayName`; private `header`,
   `messageButton` (a `BusyButton` with `lilyProminentButton()`, identifier `AccessibilityIdentifiers.profileMessage`,
-  `profile-message`), `sharedGroups`, `sharedGroupsContent`, `rows(_:)` (a `LazyVStack` of `SharedGroupRow`s, no container identifier),
+  `profile-message`), `content` (the state switch), `loaded(_:)` (the bio `Text`, identifier
+  `AccessibilityIdentifiers.profileBio`, then the three sections), `section(_:orElse:_:row:)` (a `SectionTitle` over a
+  `LazyVStack` of rows each followed by `AvatarRowDivider()`, or over the empty note; no container identifier),
   `loadFailed`, `note(_:)`.
-- Copy: `AppBranding.People.message`, `sharedGroupsTitle`, `noSharedGroups`, `loadFailedTitle`,
-  `AppBranding.Groups.tryAgain` `[lily/Features/People/Views/UserProfileView.swift:UserProfileView]`.
+- Copy: `AppBranding.People.message`, `sharedGroupsTitle`, `noSharedGroups`, `sharedEventsTitle`, `noSharedEvents`,
+  `sharedTournamentsTitle`, `noSharedTournaments`, `loadFailedTitle`, `AppBranding.Groups.tryAgain`
+  `[lily/Features/People/Views/UserProfileView.swift:UserProfileView]`.
 
 ## Invariants
 
@@ -36,24 +47,28 @@ avatar, name, Message when allowed, the shared groups). Loading and writes belon
   `[lily/Features/People/Views/SharedGroupRow.swift:body]`, `[lily/Features/People/Models/GroupSummary.swift:ref]`.
 - The Message button renders only `if viewModel.canMessage`; its spinner follows `viewModel.isStartingConversation`
   `[lily/Features/People/Views/UserProfileView.swift:body]`, `[lily/Features/People/Views/UserProfileView.swift:messageButton]`.
-- State to content: `.loading` a spinner; `.failed` the failed state with Try again; `.loaded` with empty
-  `sharedGroups` the "no shared groups" note; otherwise the rows in the order received (no filtering or sorting), each
-  followed by `AvatarRowDivider()` `[lily/Features/People/Views/UserProfileView.swift:sharedGroupsContent]`,
-  `[lily/Features/People/Views/UserProfileView.swift:rows]`.
+- State to content: `.loading` one spinner under the header (no section titles yet); `.failed` the failed state with
+  Try again; `.loaded` the bio when there is one, then the three sections in the order groups, games, tournaments, each
+  with its rows in the order received (no filtering or sorting), each row followed by `AvatarRowDivider()`, or the
+  section's "none yet" note `[lily/Features/People/Views/UserProfileView.swift:content]`,
+  `[lily/Features/People/Views/UserProfileView.swift:loaded]`, `[lily/Features/People/Views/UserProfileView.swift:section]`.
 - The rows container carries no accessibility element or identifier of its own, so each row keeps
-  its `group-row-<id>` `[lily/Features/People/Views/UserProfileView.swift:rows]`.
-- No `LayoutMode` references in the three files.
+  its `group-row-<id>`, `shared-event-row-<id>` or `tournament-row-<id>` `[lily/Features/People/Views/UserProfileView.swift:section]`.
+- No `LayoutMode` references in the four files.
 
 ## Side Effects
 
 - `.task { await viewModel.load() }` `[lily/Features/People/Views/UserProfileView.swift:body]`; the Message
   `BusyButton` awaits `viewModel.message()` `[lily/Features/People/Views/UserProfileView.swift:messageButton]`;
   Try again spawns `Task { await viewModel.load() }` `[lily/Features/People/Views/UserProfileView.swift:loadFailed]`.
-- Navigation values: `UserProfileDestination` from `PersonRow`, `EventGroupRef` from `SharedGroupRow`
-  `[lily/Features/People/Views/PersonRow.swift:body]`, `[lily/Features/People/Views/SharedGroupRow.swift:body]`.
+- Navigation values: `UserProfileDestination` from `PersonRow`, `EventGroupRef` from `SharedGroupRow`,
+  `TournamentDestination` from `SharedTournamentRow` (every stack root registers all three through `.groupDestinations`)
+  `[lily/Features/People/Views/PersonRow.swift:body]`, `[lily/Features/People/Views/SharedGroupRow.swift:body]`,
+  `[lily/Features/People/Views/SharedHistoryRows.swift:SharedTournamentRow]`.
 - No `ErrorCenter`, `.errorPopup`, logging, `.refreshable` or store mutation; the `#Preview` builds
   `AppDependencies.makeMock()` and `makeUserProfileViewModel(for:)`.
 
 ## Verification
 
-- Run: `./scripts/ci.sh unit` (`lilyTests/People`).
+- Run: `./scripts/ci.sh unit` (`lilyTests/People`); `./scripts/ci.sh ui` (`LilyPeopleTests.testEventDetailListsParticipantsAndOpensAProfile`
+  reads the bio, a game together and opens a tournament together).

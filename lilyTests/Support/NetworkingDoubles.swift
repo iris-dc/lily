@@ -164,8 +164,9 @@ enum ContractSamples {
     "location":{"name":"Park","coordinate":{"latitude":52.5,"longitude":13.4}},"capacity":2,"participantCount":1,"hostName":"Dev"}
     """
 
-    static func profile(createdAt: String = "2026-09-11T10:00:00Z") -> String {
-        #"{"userId":"u-1","displayName":"Apple Tester","createdAt":"\#(createdAt)"}"#
+    static func profile(createdAt: String = "2026-09-11T10:00:00Z", bio: String? = nil) -> String {
+        let written = bio.map { #","bio":"\#($0)""# } ?? ""
+        return #"{"userId":"u-1","displayName":"Apple Tester","createdAt":"\#(createdAt)"\#(written)}"#
     }
 
     static func decode<T: Decodable>(_ type: T.Type, from json: String) throws -> T {

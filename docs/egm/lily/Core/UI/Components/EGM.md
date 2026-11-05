@@ -95,7 +95,8 @@ use the generated `Color.lily*` asset symbols.
   (the title in `LilyTheme.Fonts.itemTitle` over one caption line per entry, the text column `ConversationRow` and `TileContent` share)
   [`lily/Core/UI/Components/CaptionedTitle.swift:CaptionedTitle`];
   `SettingsLinkRow(title:, subtitle:, systemImage:, identifier:, action:)` (a whole-card `GlassCard` button with icon,
-  title, subtitle and chevron, `.buttonStyle(.plain)`, `.lilyHoverable()`; Profile's display name and contact rows)
+  title, subtitle cut to `DesignTokens.Layout.settingsSubtitleLines` (2) and chevron, `.buttonStyle(.plain)`,
+  `.lilyHoverable()`; Profile's display name, "About you" and contact rows)
   [`lily/Core/UI/Components/SettingsLinkRow.swift:SettingsLinkRow`];
   `EntriesBar(fillRatio: Double, text: String, isFull: = false, isNearlyFull: = false, showsTrack: = true)` with
   `init(event: SportEvent)` (the track only while `event.playerLimit.hasCapacity`) and `init(tournament: Tournament)`

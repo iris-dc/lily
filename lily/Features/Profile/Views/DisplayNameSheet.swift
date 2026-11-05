@@ -18,7 +18,7 @@ struct DisplayNameSheet: View {
             @Bindable var model = model
             Form {
                 Section {
-                    TextField(Copy.placeholder, text: $model.draft.name)
+                    TextField(Copy.placeholder, text: $model.draft.text)
                         .textInputAutocapitalization(.words)
                         .textContentType(.name)
                         .autocorrectionDisabled()

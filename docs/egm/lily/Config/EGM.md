@@ -20,7 +20,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Location`, `ErrorPopup`, `Launch`, `API` (+ `Headers`, `Paths`, `Query`), `Statistics`, `LaunchArguments`,
   `Logging`, `Version`. Added by `+Area` files: `Chat` (+ `Attachments`, `Polls`, `Pins`), `Currency`, `DisplayName`
   (`lily/Config/AppConfig+Profile.swift`: `length = 1...32` code points, `backendDefault = "Player"`, both Laurel's
-  `profile.*` settings), `Build`, `FeatureFlags`, `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push`
+  `profile.*` settings) and `About` (same file: `maxLength = 300` code points, Laurel's `profile.max-bio-length`), `Build`, `FeatureFlags`, `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push`
   (+ `Payload`), `Realtime`, `Tournaments`.
 - `API` (`lily/Config/AppConfig.swift:AppConfig.API`): `localBaseURL = http://localhost:8080`,
   `productionBaseURL = https://api.iskra.red`; `baseURL` is `localBaseURL` under `#if DEBUG && targetEnvironment(simulator)`,
@@ -83,7 +83,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `maxEntries(for:)`, `minEntries(for:)`, `entriesRange(for: TournamentFormat) -> ClosedRange<Int>` (an unknown
   format takes single elimination's bounds; Laurel validates the real ones).
 - Smaller areas: `Inbox.pageSize = 50`; `Moderation` (`commentMaxLength = 500`, `maxBlocks = 500`,
-  `supportEmail = "support@iskra.red"`, `termsURL` and `privacyURL` = `API.productionBaseURL.appending(path:)` `terms` / `privacy`); `People.maxConversations = 200`; `Feedback`
+  `supportEmail = "support@iskra.red"`, `termsURL` and `privacyURL` = `API.productionBaseURL.appending(path:)` `terms` / `privacy`); `People.maxConversations = 200`, `People.maxSharedHistory = 20` (Laurel's `profile.max-shared-history`); `Feedback`
   (`messageMaxLength = 2000`, `replyEmailMaxLength = 254`, `detailMaxLength = 80`); `Currency` (`defaultCode = "EUR"`,
   `offered`, 14 codes); `Push` (`reregisterInterval = 24 * 60 * 60`, `tokenTimeout = .seconds(10)`, `platform = "ios"`,
   `redactedToken = "<token>"`, `Payload` keys `kind`, `eventId`, `event_reminder`, `match_reminder`, `tournamentId`,
@@ -97,7 +97,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   ...); `signInButtonTitle(for:)`, `passwordHint(minimumLength:)`, `confirmEmailSubtitle(email:)`, `hostedByTitle(for:)`;
   `chatsTitle` lives in `AppBranding+Inbox.swift`.
 - Nested namespaces: `Home`, `Events` (+ `Filter`, `Create`, `Edit`), `Chat` (+ `Attachments`, `Pins`, `Polls`),
-  `Groups` (+ `Create`, `Invite`), `Chats`, `Inbox`, `Intro` (+ `Chat`), `Feedback`, `DisplayName`
+  `Groups` (+ `Create`, `Invite`), `Chats`, `Inbox`, `Intro` (+ `Chat`), `Feedback`, `DisplayName`, `About`
   (`lily/Config/AppBranding+Profile.swift`: `title`, `subtitle`, `defaultSubtitle`, `placeholder`, `footer`, `save`,
   `tooLong(limit:)`), `Moderation`, `Forms` (`close`,
   `back`, `cancel`), `People`, `Settings`, `Tournaments` (+ `Create`, `Schedule`, `Match`, `Standings`).
@@ -127,15 +127,16 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - Non-scalar members: `Symbols.fileGlyphs: [(type: UTType, symbol: String)]` (8 entries),
   `Duration.viewerFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)`,
   `Duration.viewerTransitionCurve` and `viewerThrowCurve: UnitCurve` (`lily/Config/DesignTokens+Attachments.swift`),
-  `Layout.introScreenTypeSize: DynamicTypeSize = .xSmall`, `Layout.multilineFieldLines = 1...5`,
+  `Layout.introScreenTypeSize: DynamicTypeSize = .xSmall`, `Layout.multilineFieldLines = 1...5`, `Layout.aboutFieldLines = 3...8`, `Layout.settingsSubtitleLines = 2`,
   `Layout.feedbackMessageLines = 4...10`. No `Color`, `Font`, `Image` or generated asset symbol in the family.
 
 ### `AccessibilityIdentifiers` (`lily/Config/AccessibilityIdentifiers.swift:AccessibilityIdentifiers`)
 
 - Kebab-case, area-prefixed `static let` literals: root (`events-filter`, `create-submit`, `auth-email`, ...),
   +Groups (`chat-list`, `chat-composer`, `create-group`, ...), +Tournaments (45 literals and 6 builders, e.g. `match-score-a`), +Polls,
-  +Attachments, +Inbox, +Feedback, +Moderation, +People, +Profile (`profile-name`, `profile-name-field`,
-  `profile-name-save`, `profile-name-cancel`), +Currency, +Layout, +Landing (`intro-pager`), +Localization.
+  +Attachments, +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
+  +Profile (`profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
+  `profile-about-field`, `profile-about-save`, `profile-about-cancel`), +Currency, +Layout, +Landing (`intro-pager`), +Localization.
 - Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
   `message(clientID:)` (`message-client-<id>`), `message(id:)`, `messageQuote(id:)`, `memberRow(_:)`, `inviteCandidate(_:)`,
   `inviteSend(_:)`, `inboxItem(_:)`, `inboxAccept(_:)`, `inboxDecline(_:)`, `participantRow(_:)`, `pollOptionField(_: Int)`,

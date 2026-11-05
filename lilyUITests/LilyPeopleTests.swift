@@ -1,6 +1,7 @@
 import XCTest
 
-/// People against the mock repositories: who is in a game and the profile a participant row opens, a public group's
+/// People against the mock repositories: who is in a game and the profile a participant row opens (the bio, the groups,
+/// games and tournaments in common), a public group's
 /// roster read by someone who is not in the group, and direct conversations (started from a profile, or the fixture
 /// one with Marta on the Chats tab). Identifiers mirror `AccessibilityIdentifiers(+People)`; the mock ids mirror
 /// `MockGroupFixtures`.
@@ -17,9 +18,21 @@ final class LilyPeopleTests: LilyUITestCase {
 
         XCTAssertTrue(app.navigationBars["Marta"].waitForExistence(timeout: 10), "the row opens the person's profile")
         XCTAssertTrue(app.buttons["profile-message"].waitForExistence(timeout: 5), "another person can be messaged")
+        XCTAssertTrue(app.staticTexts["Padel on Sundays, football when it rains."].waitForExistence(timeout: 10),
+                      "her bio shows under her name")
         XCTAssertTrue(app.staticTexts["Groups in common"].exists)
         XCTAssertTrue(app.buttons[MockIDs.kickersRow].waitForExistence(timeout: 10),
                       "Marta and the caller share Kreuzberg Kickers")
+        let game = app.descendants(matching: .any)[MockIDs.sunsetSharedEventRow]
+        dragUpUntilExists(game)
+        XCTAssertTrue(game.exists, "the game she hosts and the caller joined is a game together")
+        XCTAssertTrue(app.staticTexts["Games together"].exists)
+        let tableTennis = app.buttons[MockIDs.tableTennisRow]
+        dragUpUntilExists(tableTennis)
+        XCTAssertTrue(tableTennis.exists, "the table tennis she organises and the caller plays is a tournament together")
+        tableTennis.tap()
+        XCTAssertTrue(app.navigationBars["Tuesday Table Tennis"].waitForExistence(timeout: 10),
+                      "the row opens the tournament")
     }
 
     /// Berlin Basketball is public and the caller is not in it: the Members segment is there, its rows open profiles,

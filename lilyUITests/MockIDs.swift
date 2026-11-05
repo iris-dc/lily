@@ -15,6 +15,7 @@ enum MockIDs {
     static let kickersCupRow = "tournament-row-mock-tournament-kickers-cup"
     static let tableTennisRow = "tournament-row-mock-tournament-table-tennis"
     static let padelOpenRow = "tournament-row-mock-tournament-padel-open"
+    static let sunsetSharedEventRow = "shared-event-row-mock-event-0"
     static let martaRow = "participant-row-mock-user-marta"
     static let jonasRow = "participant-row-mock-user-jonas"
     static let inesMemberRow = "member-row-mock-user-ines"

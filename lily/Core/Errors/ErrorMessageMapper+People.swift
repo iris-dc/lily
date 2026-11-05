@@ -1,6 +1,6 @@
 import Foundation
 
-/// Copy for profiles (a person's, and the caller's own name) and direct conversations; `message(for:)` routes exactly
+/// Copy for profiles (a person's, and the caller's own name and bio) and direct conversations; `message(for:)` routes exactly
 /// those cases here.
 nonisolated extension ErrorMessageMapper {
     static func peopleMessage(for error: AppError) -> ErrorMessage {
@@ -9,6 +9,8 @@ nonisolated extension ErrorMessageMapper {
             ErrorMessage(title: localized("Couldn't load this profile"), body: localized("Please try again in a moment."))
         case .profileUpdateFailed:
             ErrorMessage(title: localized("Couldn't save your name"), body: localized("Please try again in a moment."))
+        case .aboutUpdateFailed:
+            ErrorMessage(title: localized("Couldn't save your description"), body: localized("Please try again in a moment."))
         case .conversationFailed:
             ErrorMessage(title: localized("Couldn't start the conversation"), body: localized("Please try again in a moment."))
         case .conversationLimit:

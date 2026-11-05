@@ -30,7 +30,9 @@ the aurora's cell roles and per-cell intensities (see [Effects](../Effects/EGM.m
   `static var dateTime: Date.FormatStyle` = `dateTime(locale: AppLocale.locale)`;
   `static func dateTime(locale: Locale) -> Date.FormatStyle` =
   `Date.FormatStyle(date: .abbreviated, time: .shortened, locale: locale)` ("15 Jan 2027 at 18:30"), the one style of
-  the facts cards and match rows.
+  the facts cards and match rows; `static var date: Date.FormatStyle` = `Date.FormatStyle(date: .abbreviated, time:
+  .omitted, locale: AppLocale.locale)` ("15 Jan 2027"), the day alone for what is past or far (a profile's shared
+  history captions).
 - `static func selectionGlass(isSelected: Bool) -> Glass` [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.selectionGlass(isSelected:)`]:
   `.regular.tint(Color.lilyAccent)` when selected, `.regular` otherwise (map pins, `ChoiceChip`).
 - `static func selectionLabelColor(isSelected: Bool) -> Color` [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.selectionLabelColor(isSelected:)`]:

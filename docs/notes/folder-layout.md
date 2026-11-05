@@ -142,11 +142,13 @@ lily/
                  place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms), PriceAmountField (the
                  one decimal-pad price field of the filter panel's cap and the form's price), location picker), Services (EventOpener: fetch a game by id and push its detail, shared
                  by the inbox's reminder card and a tapped notification)
-    Profile/     Guest and signed-in profile; ProfileRepository interface (GET and PUT /api/profile), remote and mock
-                 implementations, Models (Profile, ProfileUpdateRequest, DisplayNameDraft with its issues), State (ProfileStore:
-                 the caller's name, loaded once per session, cleared with it), ViewModels (DisplayNameViewModel), Views
-                 (ProfileView, DisplayNameRow and DisplayNameSheet, the Language and Currency rows, SettingsChoiceRow (the
-                 popover card the Language and Currency rows share)) (updated 2026-11-01)
+    Profile/     Guest and signed-in profile; Interfaces (ProfileRepository: GET and PUT /api/profile, the name or the bio;
+                 ProfileFieldDraft, what the two editors' drafts share), remote and mock implementations, Models (Profile with
+                 its bio, ProfileUpdateRequest with one field per request, DisplayNameDraft and AboutDraft with their issues),
+                 State (ProfileStore: the caller's name and bio, loaded once per session, cleared with it), ViewModels
+                 (ProfileFieldViewModel<Draft>, as DisplayNameViewModel and AboutViewModel), Views (ProfileView, DisplayNameRow
+                 and DisplayNameSheet, AboutRow and AboutSheet, the Language and Currency rows, SettingsChoiceRow (the popover
+                 card the Language and Currency rows share)) (updated 2026-11-04)
     Feedback/    The contact form: Models (FeedbackKind, FeedbackDraft with its issues and the one payload builder,
                  FeedbackEnvironment: app version, OS version, device model, language), FeedbackRepository interface, remote
                  (POST /api/feedback) and mock implementations, FeedbackViewModel, Views (FeedbackRow on Profile, FeedbackSheet)
@@ -213,10 +215,12 @@ lily/
                  confirmation; the room's own menu was removed 2026-11-03), PollBubble + PollOptionPill + PollComposerSheet + PollVotersSheet (polls; 2026-10-24), PinnedBar +
                  ChatTranscript+Pins (the pinned bar over the transcript), ChatTranscript+Scrolling, BubbleInk (the ink colour a bubble's small
                  text reads in; 2026-10-27, reworked 2026-11-01), RowReveal, TranscriptWidth, ChatsSplitView (the Chats tab on a regular width; 2026-10-08))
-    People/      Profiles and direct conversations: Models (UserProfile, GroupSummary, UserProfileDestination,
-                 StartConversationPayload), Interfaces (UserRepository), Implementations (RemoteUserRepository, MockUserRepository
-                 over the group mock's rosters), ViewModels (UserProfileViewModel), Views (UserProfileView, SharedGroupRow,
-                 PersonRow (the avatar + name + badge row that opens a profile; MemberRow and ParticipantRow are built on it))
+    People/      Profiles and direct conversations: Models (UserProfile with its bio and shared lists, GroupSummary, EventSummary,
+                 TournamentSummary, UserProfileDestination, StartConversationPayload), Interfaces (UserRepository), Implementations
+                 (RemoteUserRepository, MockUserRepository over the group, event, tournament and profile mocks, MockUserFixtures
+                 (the fixture bios)), ViewModels (UserProfileViewModel), Views (UserProfileView, SharedGroupRow, SharedHistoryRows
+                 (SharedEventRow and SharedTournamentRow), PersonRow (the avatar + name + badge row that opens a profile; MemberRow
+                 and ParticipantRow are built on it)) (updated 2026-11-04)
     Tournaments/ Models (Tournament with TournamentFormat and TournamentStatus, TournamentScope, TournamentDestination and
                  DiscoverTournamentsDestination; TournamentEntry + EntryMember + EntryStatus; TournamentMatch + MatchStatus + MatchSlot
                  + MatchSchedule (with the schedule form's proposal) + MatchScheduleDraft (the form's state and what it sends),
@@ -250,8 +254,8 @@ lily/
                  row on Chats))
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ and Moderation/ included;
-                 Profile/ holds ProfileStoreTests, DisplayNameViewModelTests, DisplayNameDraftTests and both repositories' tests
-                 (2026-10-31); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01); Support/ holds fakes
+                 Profile/ holds ProfileStoreTests and ProfileStoreBioTests, DisplayNameViewModelTests, AboutViewModelTests,
+                 DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01); Support/ holds fakes
                  (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, ShellDoubles,
                  StatisticsDoubles, GroupDoubles (with FakeInviteRepository), GroupViewModelDoubles with the shared GroupHarness and the
                  TermsCountingReporter every harness uses, InboxDoubles, PeopleDoubles, LocationDoubles, PushDoubles, FeedbackDoubles,

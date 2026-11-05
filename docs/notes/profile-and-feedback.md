@@ -4,6 +4,10 @@
 
 ## Reference (from the README)
 
+- About you (2026-11-04): an "About you" card under the display name opens a sheet with one growing field (up to 300
+  characters, counted as the backend counts them; a blank clears) and Save; the card then shows the text (two lines at
+  most), "Tell other players about yourself" while nothing is written. The bio is public: it shows on your profile as
+  others see it, and nowhere else. `-mock-events` keeps it in memory.
 - Display name (2026-10-31): a "Display name" card under the account on Profile opens a sheet with one field (1-32 characters, counted as the backend counts them) and Save; the header shows the backend's name, "Player" for a new account until the user picks one, and the card says so ("Choose a name other players will see"). The name is public: on the events you host, in groups and in chats. `-mock-events` keeps the rename in memory.
 - Contact form (2026-10-08): a "Contact & feedback" row on Profile opens a sheet with what the message is about (Question, Feedback, Bug), the message, a reply-to email prefilled from the account, and a footer naming what is attached (app version, iOS version, device model). It posts to `POST /api/feedback`; the backend keeps the item for operators and mails the owner. A guest is sent to sign in first; a suspended account may still write (an appeal has to reach us). `-mock-events` accepts the send in memory.
 
@@ -16,3 +20,35 @@
 - **Field hints are `ValidationHint`s (2026-11-01, deep-review finding L552).** Supersedes "the field hints in the accent in the section footers" above: the feedback form's and the display-name sheet's hints are `ValidationHint` (`Core/UI/Components`: the accent on an `exclamationmark.circle.fill` glyph hidden from accessibility, the words in `Color.secondary`); the accent words read 3.03:1 over the aurora, 6.54:1 after (`#99959D` on `#170B10`; the glyph, 3.8 % of the hint's frame, 3.07:1; re-measured 2026-11-02 from a fresh capture with the same figures, `reviews/2026-11-01-wave2/a11y-review/feedback-hint.png` under `~/.claude/projects/-Users-makshr-lily/`). The hierarchical `.secondary` was the first cut and measured 2.64:1: a form footer is already drawn at the secondary level, and a hierarchical style inside it steps down to tertiary, so the component uses the fixed colour. The feedback sheet's Done and Cancel go through `lilyToolbarTextButton()` (Cancel 13.65:1 in its capsule, 2.47:1 before); the Terms sheet's Sign out and links through `lilyTextButton` (Sign out 16.97:1, the links 16.51:1); the Profile "Sign out" glass button keeps the accent by the user's decision.
 - **Simplify pass (2026-11-02, wave 4 of the 2026-10-31 review: L211, L212, L213, L214, L251).** `FeedbackEnvironment.current(appVersion:languageCode:)` reads `ProcessInfo.processInfo` itself (the `processInfo:` seam was never varied) and `DeviceModel.identifier(environment:)` has no default (every caller passes one); `summary` joins through `AppBranding.Groups.caption` (`FeedbackDraftTests.theSummaryJoinsTheThreeDetails` pins "1.0 (42) · iOS 26.0.1 · iPhone17,1"); the sheet reads `AppBranding.Forms.cancel` directly (the `Events.Create.cancel` alias, which no events view read, is gone) and its chrome is `lilyFormSheet(errorCenter:lockedWhile:)`; `MockFeedbackRepository` keeps `sent` so `AppDependenciesFeedbackTests` can prove the wiring, which its comment now says instead of claiming the other mocks keep their writes. The feedback sheet was checked on the simulator by the independent reviewer, by eye: grabber, Cancel and Send in place (`feedback-sheet.png` under the owner's `reviews/2026-11-02-wave4/L-tourn/shots/`).
 - **The header starts from the last profile shown (2026-11-03, on the user's "when I open Profile for the first time after opening the app, the user's logo blinks and changes its appearance").** The avatar drew the person glyph and the spinner until `GET /api/profile` answered, then swapped to the initials and the name in one frame, once per launch. `ProfileStore` now keeps the last profile it showed in the `ListSnapshotStore` (`AppConfig.Lists.profileSnapshot`, under the user, swept with the session like the lists') and starts from it at launch or, for a user who signed in later, when Profile first asks; the load still runs once and its answer replaces the snapshot (`keep(_:for:)`, shared with a rename). The one swap left, a first launch's, crossfades (`.animation(.easeInOut(fast), value: displayName)` on the header). Tests: `ProfileStoreTests.startsFromTheSnapshotAndStillLoadsOnce`, `aSignInAfterLaunchFindsItsSnapshotOnOpen`.
+- **About you (2026-11-04, on the user's "add description to the user's profile, so that user can add info about
+  themselves optionally").** `Profile` gains `bio?`; `PUT /api/profile` takes `{displayName?, bio?}` (one field per
+  request from the app; `ProfileUpdateRequest` has `init(displayName:)` and `init(bio:)`, the absent field left out of
+  the JSON, pinned by `RemoteProfileRepositoryTests`); `ProfileRepository.updateBio(_:)` is the third call, falling back to
+  the new `AppError.aboutUpdateFailed` ("Couldn't save your description"). `ProfileStore.updateBio(to:)` shares one
+  write path with `rename(to:)` (`write(_:landed:send:)`, `settled(_:despite:landed:)`): a lost answer is settled by
+  reading the profile back and judging it with the write's own `landed` closure (the trimmed name; the bio as
+  `nonBlankTrimmed`, so a clear reads back as none), the log words per write ("Bio updated for user", "Bio update
+  landed despite"). The two editors became one generic model, `ProfileFieldViewModel<Draft: ProfileFieldDraft>`
+  (`DisplayNameViewModel` and `AboutViewModel` are typealiases with convenience inits, so the tests kept their names;
+  `DisplayNameDraft.name` became `text`); `ProfileField` names the field and routes to the store. `AboutDraft` has one
+  issue, `tooLong` over `AppConfig.About.maxLength` (300, Laurel's `profile.max-bio-length`); a blank is valid, since an
+  emptied field clears the bio, and `canSubmit` reads an empty field over no bio as no change. `AboutRow` is a
+  `SettingsLinkRow` (its subtitle now cut to `DesignTokens.Layout.settingsSubtitleLines`, 2, so a long bio does not grow
+  the card) with `DesignTokens.Symbols.about` ("text.quote"); `AboutSheet` is a `DraftSheet` around a
+  `TextField(axis: .vertical)` of `DesignTokens.Layout.aboutFieldLines` (3...8). Copy in `AppBranding.About` (the cap
+  hint reuses the shared "Keep it under %lld characters" key); identifiers `profile-about`, `profile-about-field`,
+  `profile-about-save`, `profile-about-cancel`. The mock profile repository stores the bio as Laurel does (trimmed, cut,
+  cleared by a blank; a rename keeps it). Tests: `AboutDraftTests`, `AboutViewModelTests`, `ProfileStoreBioTests`
+  (the store suite was at its type-body limit), additions in `MockProfileRepositoryTests` and
+  `RemoteProfileRepositoryTests`; UI: `LilyProfileTests.testWritingAboutYouOnProfileShowsIt`. The six translations of
+  the new keys were written in this session, not by the per-language translator and native-reviewer workflow the rest
+  of the catalog went through; a native read is owed. Laurel's side (the `bio` attribute, `updateBio`, the gate on the
+  capped text) is in its `chat-and-groups.md` under the same date; the contract is `groups-plan/people-plan.md` §7.
+  Verified 2026-11-05 after a reboot (the simulator service was down on 2026-11-04: CoreSimulatorService refused
+  connections, every device "unavailable, liblaunch_sim.dylib could not be opened", and even a device build failed at
+  the asset catalog, which asks the service for runtimes): lint, 2,599 unit tests in 361 suites, the nine
+  `LilyProfileTests` and the four `LilyPeopleTests` on the iPhone 17 Pro simulator. Screenshots (the empty card, the
+  sheet empty and typed, the written card, Marta's profile top and bottom) under
+  `~/.claude/projects/-Users-makshr-lily/reviews/2026-11-05-about-and-history/`. One finding from them: inside the
+  `SettingsLinkRow` label a long subtitle was cut on one line despite `lineLimit(2)` until the `Text` got
+  `.fixedSize(horizontal: false, vertical: true)`; with it the bio wraps to two lines and then cuts.

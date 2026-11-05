@@ -2,16 +2,40 @@ import Foundation
 @testable import lily
 
 extension UserProfile {
-    /// Marta, sharing Kreuzberg Kickers with the caller unless told otherwise.
+    /// Marta, sharing Kreuzberg Kickers with the caller unless told otherwise; no bio, no games, no tournaments.
     static func fixture(userId: String = "u-2",
                         displayName: String = "Marta",
-                        sharedGroups: [GroupSummary] = [.fixture]) -> UserProfile {
-        UserProfile(userId: userId, displayName: displayName, sharedGroups: sharedGroups)
+                        bio: String? = nil,
+                        sharedGroups: [GroupSummary] = [.fixture],
+                        sharedEvents: [EventSummary] = [],
+                        sharedTournaments: [TournamentSummary] = []) -> UserProfile {
+        UserProfile(userId: userId,
+                    displayName: displayName,
+                    bio: bio,
+                    sharedGroups: sharedGroups,
+                    sharedEvents: sharedEvents,
+                    sharedTournaments: sharedTournaments)
     }
 }
 
 extension GroupSummary {
     static let fixture = GroupSummary(id: "g", name: "Kreuzberg Kickers", visibility: .public, type: .football, memberCount: 34)
+}
+
+extension EventSummary {
+    static let fixture = EventSummary(id: "e1",
+                                      title: "Sunset 5-a-side",
+                                      type: .football,
+                                      startsAt: Date(timeIntervalSince1970: 1_790_960_400),
+                                      locationName: "Tempelhofer Feld")
+}
+
+extension TournamentSummary {
+    static let fixture = TournamentSummary(id: "t1",
+                                           name: "Kickers Cup",
+                                           type: .football,
+                                           status: .registration,
+                                           startsAt: Date(timeIntervalSince1970: 1_791_108_000))
 }
 
 extension UserProfileDestination {
@@ -56,13 +80,19 @@ extension EventParticipant {
 
 /// The people JSON exactly as the contract shows it (people plan, section 2).
 extension ContractSamples {
-    /// `GET /api/users/{userId}`: the display name and the groups the caller shares with the person, sorted by name.
+    /// `GET /api/users/{userId}`: the display name, the bio, the groups the caller shares with the person sorted by
+    /// name, and the games and tournaments together, latest first; byte for byte Laurel's
+    /// `UserControllerIt.profile_answersTheAgreedShape`.
     static let userProfile = """
-    {"userId":"seed-marta","displayName":"Marta","sharedGroups":[\
-    {"id":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","name":"Kreuzberg Kickers","visibility":"public","type":"football",\
-    "memberCount":34},\
-    {"id":"9d8c7b6a-5f4e-4d3c-2b1a-0f9e8d7c6b5a","name":"Sunday Padel Crew","visibility":"private","memberCount":6}]}
+    {"userId":"sub-2","displayName":"Noor","bio":"Padel on Sundays, football when it rains.",\
+    "sharedGroups":[{"id":"g1","name":"Kreuzberg Kickers","visibility":"public","type":"football","memberCount":34},\
+    {"id":"g2","name":"Sunday Padel Crew","visibility":"private","memberCount":6}],\
+    "sharedEvents":[{"id":"e1","title":"Sunset 5-a-side","type":"football","startsAt":"2026-10-02T17:00:00Z",\
+    "locationName":"Tempelhofer Feld"}],\
+    "sharedTournaments":[{"id":"t1","name":"Kickers Cup","type":"football","status":"registration",\
+    "startsAt":"2026-10-04T10:00:00Z"}]}
     """
+    /// The caller's own profile from a backend before the bio and the history: no bio and no history arrays.
     static let ownProfileWithoutGroups = #"{"userId":"u-1","displayName":"Apple Tester","sharedGroups":[]}"#
     /// `200` of `POST /api/conversations`: a `Group` of kind `direct` with the counterpart as the caller sees them.
     static let conversation = """

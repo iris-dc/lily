@@ -9,4 +9,10 @@ nonisolated extension AppConfig {
         /// `default-display-name`: the name every profile starts with until the user picks one.
         static let backendDefault = "Player"
     }
+
+    /// What the user writes about themselves, shown on their profile to other players.
+    enum About {
+        /// Laurel's `profile.max-bio-length`, counted in code points like `DynamoProfileService.normalizeBio`.
+        static let maxLength = 300
+    }
 }

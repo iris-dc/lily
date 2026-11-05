@@ -61,6 +61,10 @@ nonisolated enum DesignTokens {
         static let locationPickerPinSize: CGFloat = 44
         /// How far a growing text field (the create form's description) stretches before it scrolls inside.
         static let multilineFieldLines = 1...5
+        /// The "About you" field: room for a few sentences before it scrolls.
+        static let aboutFieldLines = 3...8
+        /// A settings card's subtitle (the bio on the "About you" card) is cut after this many lines.
+        static let settingsSubtitleLines = 2
     }
 
     enum Opacity {
@@ -166,5 +170,7 @@ nonisolated enum DesignTokens {
         static let create = "plus"
         static let pickedLocation = "mappin"
         static let profile = "person"
+        /// The "About you" card and its sheet.
+        static let about = "text.quote"
     }
 }

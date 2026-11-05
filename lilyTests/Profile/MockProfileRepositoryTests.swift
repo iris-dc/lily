@@ -50,12 +50,28 @@ struct MockProfileRepositoryTests {
         #expect(updated.displayName == AppConfig.DisplayName.backendDefault)
     }
 
+    /// Laurel's `normalizeBio`: stripped, cut in code points, cleared by a blank; the name is untouched either way.
+    @Test func aBioIsTrimmedCappedAndClearedByABlank() async throws {
+        let repository = makeRepository()
+        _ = try await repository.updateDisplayName("Alex Kim")
+        let limit = AppConfig.About.maxLength
+
+        let written = try await repository.updateBio("  \(String(repeating: "🏓", count: limit + 1))  ")
+        let read = try await repository.profile()
+        let cleared = try await repository.updateBio(" \n ")
+
+        #expect(written.bio == String(repeating: "🏓", count: limit) && written.displayName == "Alex Kim")
+        #expect(read == written)
+        #expect(cleared.bio == nil && cleared.displayName == "Alex Kim" && cleared.createdAt == now)
+    }
+
     @Test func aGuestIsRefusedWithSessionExpired() async {
         identity.currentUserID = nil
         let repository = makeRepository()
 
         await #expect(throws: AppError.sessionExpired) { try await repository.profile() }
         await #expect(throws: AppError.sessionExpired) { try await repository.updateDisplayName("Alex") }
+        await #expect(throws: AppError.sessionExpired) { try await repository.updateBio("Padel") }
     }
 
     /// Two mock users (`-mock-user-id` on two simulators) keep their own names.

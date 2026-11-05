@@ -31,7 +31,7 @@ nonisolated enum ErrorMessageMapper {
             attachmentMessage(for: error)
         case .reportFailed, .blockLimitReached, .userNotFound, .accountSuspended, .termsRequired, .feedbackFailed:
             moderationMessage(for: error)
-        case .profileUnavailable, .profileUpdateFailed, .conversationFailed, .conversationLimit:
+        case .profileUnavailable, .profileUpdateFailed, .aboutUpdateFailed, .conversationFailed, .conversationLimit:
             peopleMessage(for: error)
         case .tournamentsUnavailable, .tournamentNotFound, .tournamentCreationFailed, .tournamentUpdateFailed,
              .tournamentActionFailed, .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound,

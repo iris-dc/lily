@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A settings link as one glass card: an icon, the title, a line on what it is for and a chevron, the whole card the
-/// button. Profile's display name and contact rows share it.
+/// button. Profile's display name, "About you" and contact rows share it; a subtitle longer than its lines (the bio) is cut.
 struct SettingsLinkRow: View {
     let title: String
     let subtitle: String
@@ -19,6 +19,9 @@ struct SettingsLinkRow: View {
                             Text(subtitle)
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
+                                .lineLimit(DesignTokens.Layout.settingsSubtitleLines)
+                                // Inside the label a long subtitle is cut on one line unless told it may grow downwards.
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     } icon: {
                         Image(systemName: systemImage)

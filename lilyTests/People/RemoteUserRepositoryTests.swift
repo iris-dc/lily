@@ -34,17 +34,38 @@ struct RemoteUserRepositoryTests {
         #expect(json == ["userId": "seed-marta"])
     }
 
-    /// The contract's profile: the shared groups sorted by name, a type only where the group has one.
+    /// The contract's profile: the bio, the shared groups sorted by name with a type only where the group has one, the
+    /// games and tournaments together; a backend without the bio and the history answers none and empty lists.
     @Test func theContractProfileDecodes() throws {
         let profile = try ContractSamples.decode(UserProfile.self, from: ContractSamples.userProfile)
 
-        #expect(profile.userId == "seed-marta" && profile.displayName == "Marta")
+        #expect(profile.userId == "sub-2" && profile.displayName == "Noor")
+        #expect(profile.bio == "Padel on Sundays, football when it rains.")
         #expect(profile.sharedGroups.map(\.name) == ["Kreuzberg Kickers", "Sunday Padel Crew"])
         #expect(profile.sharedGroups.map(\.type) == [.football, nil])
         #expect(profile.sharedGroups.map(\.visibility) == [.public, .private])
         #expect(profile.sharedGroups.map(\.memberCount) == [34, 6])
+        let game = try #require(profile.sharedEvents.first)
+        #expect(profile.sharedEvents.count == 1 && game.id == "e1" && game.title == "Sunset 5-a-side")
+        #expect(game.type == .football && game.locationName == "Tempelhofer Feld")
+        #expect(game.startsAt == Date(timeIntervalSince1970: 1_790_960_400))
+        let cup = try #require(profile.sharedTournaments.first)
+        #expect(profile.sharedTournaments.count == 1 && cup.id == "t1" && cup.name == "Kickers Cup")
+        #expect(cup.type == .football && cup.status == .registration)
+        #expect(cup.startsAt == Date(timeIntervalSince1970: 1_791_108_000))
         let own = try ContractSamples.decode(UserProfile.self, from: ContractSamples.ownProfileWithoutGroups)
-        #expect(own.sharedGroups.isEmpty)
+        #expect(own.bio == nil && own.sharedGroups.isEmpty && own.sharedEvents.isEmpty && own.sharedTournaments.isEmpty)
+    }
+
+    /// A game's row captions the sport, the day and the place; a tournament's the sport, the status and the day, and
+    /// links to the tournament by id and name alone, the detail fetching the rest.
+    @Test func theHistoryRowsCaptionAndLinkFromTheSummaries() {
+        let day = EventSummary.fixture.startsAt.formatted(LilyTheme.DateStyles.date)
+        #expect(EventSummary.fixture.caption == "Football · \(day) · Tempelhofer Feld")
+        let cupDay = TournamentSummary.fixture.startsAt.formatted(LilyTheme.DateStyles.date)
+        #expect(TournamentSummary.fixture.caption == "Football · \(TournamentStatus.registration.displayName) · \(cupDay)")
+        #expect(TournamentSummary.fixture.destination == TournamentDestination(id: "t1", name: "Kickers Cup"))
+        #expect(TournamentSummary.fixture.destination.preview == nil)
     }
 
     /// A summary's row links through the shared `EventGroupRef` destination and captions like a group's own row.

@@ -116,6 +116,8 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case profileUnavailable
     /// Saving the caller's display name failed for a reason without a code of its own; the draft stays for a repeat.
     case profileUpdateFailed
+    /// Saving the caller's bio failed for a reason without a code of its own; the draft stays for a repeat.
+    case aboutUpdateFailed
     /// Starting a direct conversation failed for a reason without a code of its own; repeating is safe (one id per pair).
     case conversationFailed
     /// The caller holds `AppConfig.People.maxConversations` conversations already (`CONVERSATION_LIMIT`).

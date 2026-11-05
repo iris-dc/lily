@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The caller's profile (the name other players see, with the card that edits it) or the guest prompt, the language,
+/// The caller's profile (the name other players see and the bio, with the cards that edit them) or the guest prompt, the language,
 /// the currency and the contact card. The screen re-renders in place when the language changes (`language` is an
 /// input for that alone; every row reads its copy afresh, or is given the language as its identity when nothing else
 /// about it changes), rather than being rebuilt like the other tabs, whose rebuild would crossfade over the pick made
@@ -11,6 +11,7 @@ struct ProfileView: View {
     let language: AppLanguage
     @State private var isSignInPresented = false
     @State private var isNamePresented = false
+    @State private var isAboutPresented = false
     @State private var isFeedbackPresented = false
 
     private var session: SessionController { dependencies.sessionController }
@@ -23,6 +24,8 @@ struct ProfileView: View {
                     if let user = session.state.user {
                         signedIn(user)
                         DisplayNameRow(store: profile) { isNamePresented = true }
+                            .id(language)
+                        AboutRow(store: profile) { isAboutPresented = true }
                             .id(language)
                     } else {
                         guest
@@ -46,6 +49,9 @@ struct ProfileView: View {
         .sheet(isPresented: $isNamePresented) {
             DisplayNameSheet(viewModel: dependencies.makeDisplayNameViewModel(), errorCenter: dependencies.errorCenter)
         }
+        .sheet(isPresented: $isAboutPresented) {
+            AboutSheet(viewModel: dependencies.makeAboutViewModel(), errorCenter: dependencies.errorCenter)
+        }
         .sheet(isPresented: $isFeedbackPresented) {
             FeedbackSheet(viewModel: dependencies.makeFeedbackViewModel(), errorCenter: dependencies.errorCenter)
         }
@@ -64,7 +70,7 @@ struct ProfileView: View {
     }
 
     /// The name is the backend's, or the last one shown while the load runs: a glyph and a spinner stand in only for a
-    /// first load, nothing when it failed (the card below still renames); the glyph crossfades into the initials.
+    /// first load, nothing when it failed (the cards below still write); the glyph crossfades into the initials.
     private func signedIn(_ user: AuthUser) -> some View {
         VStack(spacing: DesignTokens.Spacing.lg) {
             AvatarCircle(initials: profile.displayName?.initials ?? "",
