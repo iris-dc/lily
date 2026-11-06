@@ -58,8 +58,15 @@ final class FakeLocationService: LocationService, HoldsRequests {
 final class FakeGeocodingService: GeocodingService {
     var coordinateResult: Coordinate?
     var nameResult: String?
+    var suggestionsResult: [PlaceSuggestion] = []
     private(set) var geocodedNames: [String] = []
     private(set) var reversedCoordinates: [Coordinate] = []
+    private(set) var suggestionQueries: [String] = []
+
+    func suggestions(for query: String) async -> [PlaceSuggestion] {
+        suggestionQueries.append(query)
+        return suggestionsResult
+    }
 
     func coordinate(for name: String) async -> Coordinate? {
         geocodedNames.append(name)

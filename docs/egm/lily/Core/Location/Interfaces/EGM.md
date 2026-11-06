@@ -37,6 +37,8 @@ logic can be tested against a scripted source.
 
 - `protocol GeocodingService` `[lily/Core/Location/Interfaces/GeocodingService.swift:GeocodingService]`:
   `func coordinate(for name: String) async -> Coordinate?` (the spot a typed place names) and
-  `func placeName(for coordinate: Coordinate) async -> String?` (what the place around the spot is called). Failures
-  answer `nil`, never throw: the caller (`PlaceResolver` in `Features/Events/Services`) decides what a missing half
-  means.
+  `func placeName(for coordinate: Coordinate) async -> String?` (what the place around the spot is called) and
+  `func suggestions(for query: String) async -> [PlaceSuggestion]` (places answering to a partial query, best first,
+  at most `AppConfig.Events.placeSuggestionCount`; 2026-11-06). Failures answer `nil` or empty, never throw: the
+  callers (`PlaceResolver` and the form's suggestion rows) decide what that means. `PlaceSuggestion` (Models): `title`,
+  `subtitle?`, `coordinate`; `id` is title plus subtitle.

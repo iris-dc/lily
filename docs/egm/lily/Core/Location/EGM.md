@@ -13,7 +13,8 @@ directly in this directory.
 
 - Interfaces: [./Interfaces/EGM.md](./Interfaces/EGM.md) - `LocationService` (one `currentLocation() async -> Coordinate?`
   that never throws, plus `forgetMissingFix()`), `LocationUpdateSource` (the stream seam over CoreLocation) and
-  `GeocodingService` (`coordinate(for name:)` and `placeName(for coordinate:)`, both answering `nil` on failure).
+  `GeocodingService` (`coordinate(for name:)`, `placeName(for coordinate:)` and `suggestions(for query:)`, failures
+  answering `nil` or empty).
 - Models: [./Models/EGM.md](./Models/EGM.md) - `Coordinate` (haversine distance, the backend's `coarse` rounding),
   `LocationFix`, the CoreLocation bridge, the mock-fixture offset and road-style distance text.
 - Implementations: [./Implementations/EGM.md](./Implementations/EGM.md) - `CoreLocationService` (first fix or timeout in

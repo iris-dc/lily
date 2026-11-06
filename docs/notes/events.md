@@ -5,7 +5,7 @@
 ## Reference (from the README)
 
 - Event detail with join and leave for signed-in users: the button follows the caller's relation to the event (Join, Leave, "Event is full", "You host this game" (renamed "You host this event" 2026-10-18); nothing for guests; a game that allows extra players or sets no limit is never full), the count and capacity bar update from the server's answer, and the list behind it reflects the change on the way back. The host also gets Edit in the toolbar (since 2026-09-30): the game's form, prefilled, titled "Edit game" with Save, where every field but the group can change (the group a game is hosted in stays, shown read-only); the spots cannot drop below the people already in (and a game past 200 players still opens, the stepper clamped at the maximum), the start only has to lie a minute ahead (`AppConfig.Events.Editing.startMargin`, 60 s for the request's round trip; no 15-minute margin, so a host can fix the place of a game about to start), Save is enabled once something differs, and the saved game replaces the detail and the list behind it at once.
-- Creating a game from Explore: the floating "+" over the list and the map is a menu, New game or New group; New game opens a form sheet with a title, the event type, when, a place name or the spot on a map, either is enough (the spot starts from your position; a typed name alone is geocoded into the spot on Create, so a "Gdansk" game lands near Gdansk, and a bare pin is named after its spot), the number of players, and the optional description, "looking for", level and price per person (the price is read strictly as one number in the user's locale, no grouping; text that is no number holds Create with "Enter the price as a number" rather than making the game free). The draft is checked on the device against the same limits the backend enforces (text lengths counted in UTF-16 units, as the backend counts them, so an emoji counts two), so the Create button is enabled exactly when the backend would accept it; the new game appears in the Explore list when the active filter matches it, and always on Home, which lists hosted games alongside joined ones, and its detail says "You host this game". When the answer to a create is lost, the app asks the backend whether the game exists before showing a failure, so a game that did land is never reported as missing. A guest picking either item of the "+" menu gets the sign-in sheet instead.
+- Creating a game from Explore: the floating "+" over the list and the map is a menu, New game or New group; New game opens a form sheet with a title, the event type, when, a place name or the spot on a map, either is enough (the spot starts from your position; typing a place offers real places to pick (autocomplete, suggestions under the field), and a typed name alone is geocoded into the spot on Create, so a "Gdansk" game lands near Gdansk, and a bare pin is named after its spot), the number of players, and the optional description, "looking for", level and price per person (the price is read strictly as one number in the user's locale, no grouping; text that is no number holds Create with "Enter the price as a number" rather than making the game free). The draft is checked on the device against the same limits the backend enforces (text lengths counted in UTF-16 units, as the backend counts them, so an emoji counts two), so the Create button is enabled exactly when the backend would accept it; the new game appears in the Explore list when the active filter matches it, and always on Home, which lists hosted games alongside joined ones, and its detail says "You host this game". When the answer to a create is lost, the app asks the backend whether the game exists before showing a failure, so a game that did land is never reported as missing. A guest picking either item of the "+" menu gets the sign-in sheet instead.
 - Currency (2026-10-09): prices are typed in the user's currency, the device region's (złoty in Poland, euro in Spain, dollars in the US) or one fixed in a Currency row on Profile; every game keeps and shows the currency it was created in, and the filter's price cap is judged in the user's, leaving games priced in another currency out while it is set. See [Currency](#currency).
 
 ### Currency
@@ -76,3 +76,30 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   fallback), the updated issue lists; UI: `LilyEventEditTests.testANonHostSeesNoEditButton` asserts the detail's map,
   the create and filter flows pass unchanged. Screenshots 11 to 14 under `reviews/2026-11-05-about-and-history/`
   (the card beside the "+", the undimmed card after Back, the detail map, the Where hint).
+- **Stacked pins, the detail map opens Apple Maps, and the typed place wins over the proposal (2026-11-06, on the
+  user's "when I create two events in the exact same location I'm not able to select the one I need", "I can't open and
+  expand the map while being in the event menu — maybe it should redirect to the map app?" and "still when user writes
+  a location it's not reflected in the real event location; we should prefill locations in the world and autocomplete
+  them").** (1) `EventMapStack` groups `visibleEvents` by coordinate rounded to `AppConfig.Events.mapStackDecimals`
+  (4, about 11 m; one typed name geocoded twice lands identically): one pin per spot, labelled with the shared place
+  and wearing the count on an accent badge once there are several, and the selected stack shows a card per member,
+  each opening its own detail (before, the pin behind could never be selected). (2) The detail's map card is a Button
+  handing the spot to Apple Maps (`MKMapItem(location:address:)` named after the place) with an "Open in Maps" chip,
+  since the inline map stays non-interactive on purpose. (3) The create form's Where section offers the geocoder's
+  places while the name is typed (`GeocodingService.suggestions(for:)`: MKLocalSearch live, the demo cities in the
+  mock; debounced 300 ms, two code points up, only while the field is focused), and picking one fills the name and the spot at once; the draft knows whether its spot was picked on the map
+  (`spotPickedOnMap`, set by the map row's binding; an edit starts picked so a reworded name never moves a game under
+  its players) and which name produced it (`suggestedName`), and `PlaceResolver` now also overrides a never-picked
+  proposal with a typed name the geocoder knows, keeping the proposal when it does not (a backyard game stays at the
+  GPS spot), so "Warsaw" lands in Warsaw even though `prepare()` proposed the user's position. Tests:
+  `EventMapStackTests`, `PlaceResolverTests` (the override, the suggested-name skip, the kept proposal),
+  `CreateEventViewModelTests.aTypedNameMovesTheProposedSpotButNeverAPickedOne`; UI: the scratch run created two games
+  through the "Gdansk" suggestion, found one pin labelled Gdansk with a 2-badge and both cards behind it (screenshots
+  15 to 17 under `reviews/2026-11-05-about-and-history/`). The map smoke flows and `LilyEventEditTests` pass
+  unchanged. A lesson from the rows: a generated asset colour (`Color.lilyAccent`, `.lilyInk`) stored inside this
+  ForEach's row label crashed the app as the rows appeared (EXC_BAD_ACCESS copying the row under
+  `ForEachState.item(at:offset:)`; two `.ips` reports, 2026-11-06 13:38 and 13:41, and once as an
+  `AccessibilityAttachment` recursion), while the same label without them passed every run. The rows therefore use
+  semantic styles only: the title takes `Color.primary` (the hierarchical `.primary` only re-derives from the button's
+  accent tint and still drew red), the glyph keeps the accent from the tint, the subtitle `.secondary`
+  (`EventDraftForm+Place.swift`).

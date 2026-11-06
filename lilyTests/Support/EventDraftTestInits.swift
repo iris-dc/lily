@@ -15,10 +15,12 @@ extension EventDraft {
         self.init(editing: event, currencyCode: Self.testCurrencyCode, locale: Self.testLocale)
     }
 
-    /// Fills in what a valid draft needs beyond the defaults; `nil` exercises the missing-coordinate paths.
+    /// Fills in what a valid draft needs beyond the defaults; `nil` exercises the missing-coordinate paths. The spot
+    /// counts as picked on the map, so the resolver leaves it alone like a user's own choice.
     mutating func fillRequired(coordinate: Coordinate? = AppConfig.Location.mockCenter) {
         title = "Thursday five-a-side"
         locationName = "Test Park"
         self.coordinate = coordinate
+        spotPickedOnMap = coordinate != nil
     }
 }

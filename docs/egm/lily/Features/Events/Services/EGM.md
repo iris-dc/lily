@@ -14,11 +14,13 @@ class carries no `nonisolated` marker and so runs on the main actor by the targe
 
 - `EventOpener` (`lily/Features/Events/Services/EventOpener.swift`): `final class`, not `Sendable`.
 - `PlaceResolver` (`lily/Features/Events/Services/PlaceResolver.swift`): `struct` over `geocoder: any GeocodingService`
-  and `logger`; `resolve(_ draft: EventDraft) async throws -> EventDraft` fills whichever half of the place is missing
-  before the send: a missing spot is geocoded from the trimmed name (`AppError.placeNotFound` when nothing answers, the
-  draft kept for a correction), a missing name comes from the geocoder when it fits the backend's cap and falls back to
-  `AppBranding.Events.Create.coordinateText` otherwise, so the payload never goes out blank; a complete place passes
-  untouched and asks nothing. Logs outcomes under `.location`, never the text.
+  and `logger`; `resolve(_ draft: EventDraft) async throws -> EventDraft` settles the place before the send: a missing
+  spot is geocoded from the trimmed name (`AppError.placeNotFound` when nothing answers, the draft kept for a
+  correction); a missing name comes from the geocoder when it fits the backend's cap and falls back to
+  `AppBranding.Events.Create.coordinateText` otherwise, so the payload never goes out blank; a spot the user never
+  picked (`!spotPickedOnMap`, the GPS proposal) is overridden by a typed name the geocoder knows, unless the name is
+  the one already resolved (`suggestedName`), and a failed override keeps the proposal rather than blocking a venue
+  the geocoder has never heard of; a picked spot passes untouched. Logs outcomes under `.location`, never the text.
   - `init(events: any EventRepository, navigation: AppNavigation, reporter: GroupErrorReporter, logger: any Logging)`:
     stores the four dependencies and does nothing else.
   - `@discardableResult func open(eventID: String, from source: String) async -> Bool`: `true` once the event was

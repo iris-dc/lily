@@ -1,22 +1,32 @@
 import MapKit
 import SwiftUI
 
-/// Where the event is, on the detail: the spot pinned at neighbourhood scale, framed like a card. Not interactive;
-/// the pin says where, the facts card above says what it is called.
+/// Where the event is, on the detail: the spot pinned at neighbourhood scale, framed like a card. The map itself is
+/// not interactive; tapping it hands the spot to Apple Maps, named after the place, for directions and a look around.
 struct EventLocationMap: View {
     let event: SportEvent
 
     var body: some View {
-        Map(initialPosition: .region(region), interactionModes: []) {
-            Annotation(event.locationName, coordinate: event.location.coordinate.clCoordinate, anchor: .bottom) {
-                EventMapPin(type: event.type, isSelected: true)
+        Button(action: openInMaps) {
+            Map(initialPosition: .region(region), interactionModes: []) {
+                Annotation(event.locationName, coordinate: event.location.coordinate.clCoordinate, anchor: .bottom) {
+                    EventMapPin(type: event.type, isSelected: true)
+                }
             }
+            .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
+            .frame(height: DesignTokens.Layout.detailMapHeight)
+            .overlay(alignment: .bottomTrailing) {
+                Label(AppBranding.Events.openInMaps, systemImage: DesignTokens.Symbols.distance)
+                    .lilyChip(.regular)
+                    .padding(DesignTokens.Spacing.sm)
+            }
+            .clipShape(.rect(cornerRadius: DesignTokens.Radius.md))
         }
-        .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
-        .frame(height: DesignTokens.Layout.detailMapHeight)
-        .clipShape(.rect(cornerRadius: DesignTokens.Radius.md))
+        .buttonStyle(.plain)
+        .lilyHoverable()
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AccessibilityIdentifiers.eventDetailMap)
+        .accessibilityLabel(Text(AppBranding.Events.openInMaps))
     }
 
     private var region: MKCoordinateRegion {
@@ -24,6 +34,14 @@ struct EventLocationMap: View {
         return MKCoordinateRegion(center: event.location.coordinate.clCoordinate,
                                   latitudinalMeters: span,
                                   longitudinalMeters: span)
+    }
+
+    private func openInMaps() {
+        let coordinate = event.location.coordinate
+        let item = MKMapItem(location: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude),
+                             address: nil)
+        item.name = event.locationName
+        item.openInMaps()
     }
 }
 

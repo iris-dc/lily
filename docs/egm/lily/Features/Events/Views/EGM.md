@@ -32,18 +32,30 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `EditEventViewModel`, `ErrorCenter`) are its two titled uses.
 - `CreateMenuButton` (`lily/Features/Events/Views/CreateMenuButton.swift`): `onCreateGame`, `onCreateGroup`,
   `onCreateTournament: () -> Void = {}`; the floating "+".
+- `EventDraftForm+Place.swift` (2026-11-06): the Where section, split out for the form's file limit; the stored state
+  (`suggestions`, `focusedField`) stays in `EventDraftForm.swift`. `pickedCoordinate` is the map row's binding, marking
+  a non-nil spot as the user's (`spotPickedOnMap`, `suggestedName = nil`); `suggestionRows` are the geocoder's places
+  for the typed name (titles in `Color.primary`, the glyph on the button's accent tint; the rows hold semantic styles
+  only, since a generated asset colour stored in them crashed the list diff, see `docs/notes/events.md` 2026-11-06;
+  identifiers `AccessibilityIdentifiers.createPlaceSuggestion(index)`), picking one filling name, spot and `suggestedName` at once;
+  the form's debounced `.task(id: locationName)` (`AppConfig.Events.placeSuggestionDebounce`, 300 ms, at least
+  `placeSuggestionMinimumQuery` code points, only while the name field is focused, quiet for the name a suggestion just
+  set) fills them through `viewModel.placeSuggestions(for:)`.
 - `EventFilterButton` (`lily/Features/Events/Views/EventFilterButton.swift`): `viewModel: EventListViewModel`; a
   toolbar button presenting `EventFilterSheet` (`EventFilterSheet.swift`: `viewModel`, `onDone`) as a `lilyFormSheet()`
   (full screen on the iPhone, like the create forms; a dropdown popover before 2026-11-05), the filled/outline glyph and
   the VoiceOver value on the button, one `filterPanelOpened`/`filterPanelClosed` pair per sheet session.
 - `EventsMapView` (`lily/Features/Events/Views/EventsMapView.swift`): `init(viewModel: EventListViewModel,
-  trailingInset: CGFloat = 0)` (room kept free to the right of the selected card for a floating button);
-  `EventMapPin(type: EventType, isSelected: Bool)`; private `MapCardButtonStyle` (dim exactly while pressed).
+  trailingInset: CGFloat = 0)` (room kept free to the right of the selected cards for a floating button);
+  `EventMapPin(type: EventType, isSelected: Bool, count: Int = 1)` (over 1 it wears the count on an accent badge,
+  `DesignTokens.Layout.mapPinBadgeInset`); private `MapCardButtonStyle` (dim exactly while pressed).
 - `EventLocationMap(event: SportEvent)` (`lily/Features/Events/Views/EventLocationMap.swift`): the event's spot pinned
   (`EventMapPin`, selected look) at `AppConfig.Location.pickerRegionMeters` scale, `interactionModes: []`, height
   `DesignTokens.Layout.detailMapHeight`, clipped to `Radius.md`, identifier
   `AccessibilityIdentifiers.eventDetailMap`; drawn on the detail after the facts card (2026-11-05, on the user's "I
-  should be able to see the map too when opening an event").
+  should be able to see the map too when opening an event"). Since 2026-11-06 the whole card is a `Button` handing the
+  spot to Apple Maps (`MKMapItem(location:address:)`, named after the place, `openInMaps()`), wearing an
+  "Open in Maps" chip at its bottom trailing corner, since the map itself does not pan.
 - `LocationPickerView` (`lily/Features/Events/Views/LocationPickerView.swift`):
   `init(coordinate: Binding<Coordinate?>)`; a map under a fixed pin.
 - `PlaceFields<Field: Hashable>` (`lily/Features/Events/Views/PlaceFields.swift`): `init(name:coordinate:
@@ -113,9 +125,12 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
 - Map (`EventsMapView`): opens on `MapFraming.initialRegion(userLocation:radiusMeters: filter.maxDistanceMeters)`
   or `.userLocation(fallback: .automatic)`; a later position recentres once unless the user panned
   (`hasCenteredOnUser`, `position.positionedByUser`); pins are `viewModel.visibleEvents`; a selection the filter
-  hides is dropped; the selected card is a `NavigationLink(value:)` at the bottom leading edge with `trailingInset`
-  kept free on its right, beside the floating "+" rather than above it, in `MapCardButtonStyle` (opacity
-  `DesignTokens.Opacity.pressedCard` exactly while pressed: `.plain` kept its dim after the pop, 2026-11-05); only the map
+  hides is dropped. The pins are `EventMapStack.stacks(of: visibleEvents)` (2026-11-06): events on one spot (two
+  overlapping pins left the one behind unselectable) share a pin labelled with the place and wearing the count, the
+  selection is the stack's id, and selecting one shows a card per member at the bottom leading edge with
+  `trailingInset` kept free on its right, beside the floating "+" rather than above it, each a
+  `NavigationLink(value:)` in `MapCardButtonStyle` (opacity `DesignTokens.Opacity.pressedCard` exactly while pressed:
+  `.plain` kept its dim after the pop, 2026-11-05); only the map
   `ignoresSafeArea(edges: .bottom)`.
 - Picker (`LocationPickerView`): converts the map frame's centre through `MapProxy.convert` on
   `.onMapCameraChange(frequency: .onEnd)` and writes `coordinate` only when

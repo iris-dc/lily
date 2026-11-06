@@ -4,9 +4,11 @@ import SwiftUI
 /// details. Under each group the first thing still wrong with it, so a disabled Create or Save button is never a mystery.
 struct EventDraftForm<Model: EventDraftEditing>: View {
     @Bindable var viewModel: Model
-    @FocusState private var focusedField: Field?
+    @FocusState var focusedField: Field?
+    /// Places offered for what is typed into the name field, refreshed by the debounced task below.
+    @State var suggestions: [PlaceSuggestion] = []
 
-    private enum Field { case title, locationName }
+    enum Field { case title, locationName }
 
     private typealias Copy = AppBranding.Events.Create
 
@@ -20,6 +22,23 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
         .scrollContentBackground(.hidden)
         .readableColumn()
         .tint(Color.lilyAccent)
+        // One short breath after the last keystroke, then the geocoder's places for the typed name; a name a tapped
+        // suggestion just set asks for nothing, and leaving the field clears the rows.
+        .task(id: viewModel.draft.locationName) {
+            try? await Task.sleep(for: AppConfig.Events.placeSuggestionDebounce)
+            guard !Task.isCancelled else { return }
+            let query = viewModel.draft.locationName.trimmed
+            guard focusedField == .locationName,
+                  query.codePointCount >= AppConfig.Events.placeSuggestionMinimumQuery,
+                  query != viewModel.draft.suggestedName else {
+                suggestions = []
+                return
+            }
+            suggestions = await viewModel.placeSuggestions(for: query)
+        }
+        .onChange(of: focusedField) {
+            if focusedField != .locationName { suggestions = [] }
+        }
     }
 
     private var gameSection: some View {
@@ -74,21 +93,6 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
             }
             .lilyMenuPicker()
             .accessibilityIdentifier(AccessibilityIdentifiers.createGroup)
-        }
-    }
-
-    private var whereSection: some View {
-        Section {
-            PlaceFields(name: $viewModel.draft.locationName,
-                        coordinate: $viewModel.draft.coordinate,
-                        nameIdentifier: AccessibilityIdentifiers.createLocationName,
-                        pickerIdentifier: AccessibilityIdentifiers.createPickOnMap,
-                        focus: $focusedField,
-                        equals: .locationName)
-        } header: {
-            Text(Copy.whereSection)
-        } footer: {
-            Text(viewModel.issue(for: .placeMissing, .locationNameTooLong).map(Copy.message(for:)) ?? Copy.whereHint)
         }
     }
 

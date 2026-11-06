@@ -2,7 +2,8 @@ import MapKit
 import SwiftUI
 
 /// Map of the loaded events around the user's position. It opens on the user at the filter's radius whatever the pins
-/// show, so an empty search still shows where the user is. Selecting a pin shows a card that opens the detail.
+/// show, so an empty search still shows where the user is. Events on one spot stack into one pin with a count
+/// (`EventMapStack`); selecting a pin shows a card per event, each opening its detail.
 struct EventsMapView: View {
     let viewModel: EventListViewModel
     /// Room kept free to the right of the selected card, for a screen that floats a button over the map's bottom
@@ -11,7 +12,7 @@ struct EventsMapView: View {
     @State private var position: MapCameraPosition
     /// Set once the camera has been put on the user, at init or when the position arrived, so later drift never moves it.
     @State private var hasCenteredOnUser: Bool
-    @State private var selectedEventID: SportEvent.ID?
+    @State private var selectedStackID: EventMapStack.ID?
 
     init(viewModel: EventListViewModel, trailingInset: CGFloat = 0) {
         self.viewModel = viewModel
@@ -21,21 +22,23 @@ struct EventsMapView: View {
         _hasCenteredOnUser = State(initialValue: userRegion != nil)
     }
 
-    private var selectedEvent: SportEvent? {
-        viewModel.visibleEvents.first { $0.id == selectedEventID }
+    private var stacks: [EventMapStack] { EventMapStack.stacks(of: viewModel.visibleEvents) }
+
+    private var selectedStack: EventMapStack? {
+        stacks.first { $0.id == selectedStackID }
     }
 
     var body: some View {
         // The map bleeds under the floating tab bar; the card stays inside the safe area, beside the floating "+".
         ZStack(alignment: .bottomLeading) {
             map
-            selectedEventCard
+            selectedStackCards
         }
-        .animation(.spring(duration: DesignTokens.Duration.normal), value: selectedEventID)
+        .animation(.spring(duration: DesignTokens.Duration.normal), value: selectedStackID)
         // A pin the filter hides must drop its selection too, or its card would pop out unanimated and pop back
         // already selected when the type returns.
         .onChange(of: viewModel.filter) {
-            if selectedEvent == nil { selectedEventID = nil }
+            if selectedStack == nil { selectedStackID = nil }
         }
         // A position that arrives after the map opened moves the camera to the user once, unless they already panned.
         .onChange(of: viewModel.userLocation) {
@@ -52,13 +55,15 @@ struct EventsMapView: View {
     }
 
     private var map: some View {
-        Map(position: $position, selection: $selectedEventID) {
+        Map(position: $position, selection: $selectedStackID) {
             UserAnnotation()
-            ForEach(viewModel.visibleEvents) { event in
-                Annotation(event.title, coordinate: event.location.coordinate.clCoordinate, anchor: .bottom) {
-                    EventMapPin(type: event.type, isSelected: event.id == selectedEventID)
+            ForEach(stacks) { stack in
+                Annotation(stack.title, coordinate: stack.coordinate.clCoordinate, anchor: .bottom) {
+                    EventMapPin(type: stack.events[0].type,
+                                isSelected: stack.id == selectedStackID,
+                                count: stack.events.count)
                 }
-                .tag(event.id)
+                .tag(stack.id)
             }
         }
         .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
@@ -67,17 +72,22 @@ struct EventsMapView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.eventsMap)
     }
 
+    /// One card per event on the selected spot, each its own link, so both games at a venue can be opened.
     @ViewBuilder
-    private var selectedEventCard: some View {
-        if let selectedEvent {
-            NavigationLink(value: selectedEvent) {
-                EventPreviewCard(event: selectedEvent, detail: viewModel.distanceText(for: selectedEvent))
-                    .frame(maxWidth: DesignTokens.Layout.mapSelectedCardWidth)
+    private var selectedStackCards: some View {
+        if let selectedStack {
+            VStack(spacing: DesignTokens.Spacing.sm) {
+                ForEach(selectedStack.events) { event in
+                    NavigationLink(value: event) {
+                        EventPreviewCard(event: event, detail: viewModel.distanceText(for: event))
+                    }
+                    // Not `.plain`: a plain NavigationLink keeps its pressed dim after the push, so the card came
+                    // back from the detail still looking held down. This style's press state always lets go.
+                    .buttonStyle(MapCardButtonStyle())
+                    .lilyHoverable()
+                }
             }
-            // Not `.plain`: a plain NavigationLink keeps its pressed dim after the push, so the card came back from
-            // the detail still looking held down. This style's press state is the gesture's and always lets go.
-            .buttonStyle(MapCardButtonStyle())
-            .lilyHoverable()
+            .frame(maxWidth: DesignTokens.Layout.mapSelectedCardWidth)
             .padding(DesignTokens.Spacing.lg)
             .padding(.trailing, trailingInset)
             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -93,10 +103,12 @@ private struct MapCardButtonStyle: ButtonStyle {
     }
 }
 
-/// Glass pin carrying the event type glyph; grows and turns red when selected.
+/// Glass pin carrying the event type glyph; grows and turns red when selected, and wears the count of the events
+/// stacked on its spot once there are several.
 struct EventMapPin: View {
     let type: EventType
     let isSelected: Bool
+    var count: Int = 1
 
     var body: some View {
         Image(systemName: type.symbolName)
@@ -104,6 +116,16 @@ struct EventMapPin: View {
             .foregroundStyle(LilyTheme.selectionLabelColor(isSelected: isSelected))
             .frame(width: DesignTokens.Layout.mapPinSize, height: DesignTokens.Layout.mapPinSize)
             .glassEffect(LilyTheme.selectionGlass(isSelected: isSelected), in: .circle)
+            .overlay(alignment: .topTrailing) {
+                if count > 1 {
+                    Text("\(count)")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(LilyTheme.selectionLabelColor(isSelected: true))
+                        .padding(DesignTokens.Spacing.xs)
+                        .background(Color.lilyAccent, in: .circle)
+                        .offset(x: DesignTokens.Layout.mapPinBadgeInset, y: -DesignTokens.Layout.mapPinBadgeInset)
+                }
+            }
             .scaleEffect(isSelected ? DesignTokens.Layout.mapPinSelectedScale : 1)
             .lilyHoverable()
     }

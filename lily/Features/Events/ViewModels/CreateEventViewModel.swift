@@ -21,6 +21,7 @@ final class CreateEventViewModel {
     private let locationService: any LocationService
     /// Fills the half of the place the host left out, on submit.
     private let places: PlaceResolver
+    private let geocoder: any GeocodingService
     private let errorCenter: ErrorCenter
     private let groups: MyGroupsStore
     private let logger: any Logging
@@ -49,6 +50,7 @@ final class CreateEventViewModel {
         self.repository = repository
         self.locationService = locationService
         places = PlaceResolver(geocoder: geocoder, logger: logger)
+        self.geocoder = geocoder
         self.errorCenter = errorCenter
         self.groups = groups
         self.logger = logger
@@ -71,6 +73,10 @@ final class CreateEventViewModel {
 
     /// Everything still wrong with the draft, in field order.
     var issues: [EventDraft.Issue] { draft.issues(now: now()) }
+
+    func placeSuggestions(for query: String) async -> [PlaceSuggestion] {
+        await geocoder.suggestions(for: query)
+    }
 
     var canSubmit: Bool { !isSubmitting && issues.isEmpty }
 

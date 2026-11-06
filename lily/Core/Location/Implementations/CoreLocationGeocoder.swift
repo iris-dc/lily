@@ -20,6 +20,25 @@ final class CoreLocationGeocoder: GeocodingService {
         return Coordinate(item.location.coordinate)
     }
 
+    func suggestions(for query: String) async -> [PlaceSuggestion] {
+        guard let trimmed = query.nonBlankTrimmed else { return [] }
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = trimmed
+        request.resultTypes = [.address, .pointOfInterest]
+        guard let items = try? await MKLocalSearch(request: request).start().mapItems else {
+            logger.debug(.location, "The place query suggested nothing")
+            return []
+        }
+        let suggestions = items.prefix(AppConfig.Events.placeSuggestionCount).compactMap { item -> PlaceSuggestion? in
+            guard let name = item.name?.nonBlankTrimmed else { return nil }
+            return PlaceSuggestion(title: name,
+                                   subtitle: item.address?.shortAddress.nonBlankTrimmed,
+                                   coordinate: Coordinate(item.location.coordinate))
+        }
+        logger.debug(.location, "The place query suggested \(suggestions.count) places")
+        return suggestions
+    }
+
     func placeName(for coordinate: Coordinate) async -> String? {
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         guard let request = MKReverseGeocodingRequest(location: location),

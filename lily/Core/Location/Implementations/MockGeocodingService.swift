@@ -12,4 +12,19 @@ final class MockGeocodingService: GeocodingService {
     func placeName(for coordinate: Coordinate) async -> String? {
         "Berlin"
     }
+
+    /// The demo cities whose names start with the query, else the query itself as a place of its own, so any typed
+    /// name can be picked and always lands on its deterministic spot.
+    func suggestions(for query: String) async -> [PlaceSuggestion] {
+        guard let trimmed = query.nonBlankTrimmed else { return [] }
+        let cities = ["Warsaw", "Gdansk", "Berlin", "Hamburg", "Munich", "Prague", "Paris", "Madrid"]
+        let matches = cities.filter { $0.lowercased().hasPrefix(trimmed.lowercased()) }
+        let titles = matches.isEmpty ? [trimmed] : matches
+        var suggestions: [PlaceSuggestion] = []
+        for title in titles.prefix(AppConfig.Events.placeSuggestionCount) {
+            guard let coordinate = await coordinate(for: title) else { continue }
+            suggestions.append(PlaceSuggestion(title: title, subtitle: nil, coordinate: coordinate))
+        }
+        return suggestions
+    }
 }

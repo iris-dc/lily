@@ -46,8 +46,11 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   Methods: `prepare()`, `submit()`. `extension CreateEventViewModel: EventDraftEditing {}`. Takes a
   `geocoder: any GeocodingService = MockGeocodingService()` behind a `PlaceResolver`: `submit()` first fills whichever
   half of the place is missing (a typed name is geocoded into the spot, so a "Gdansk" game lands near Gdansk; a bare
-  pin is named after the spot, falling back to the coordinates as text, never blank); `AppError.placeNotFound` (a name
-  the geocoder cannot place) is reported to the `ErrorCenter` before anything is sent and the draft stays.
+  pin is named after the spot, falling back to the coordinates as text, never blank; a typed name also overrides a
+  spot the user never picked, the GPS proposal, so "Warsaw" lands in Warsaw, while a failed override keeps the
+  proposal); `AppError.placeNotFound` (a name the geocoder cannot place while the draft has no spot at all) is
+  reported to the `ErrorCenter` before anything is sent and the draft stays. `placeSuggestions(for:)` hands the form
+  the geocoder's `suggestions(for:)` (both view models; `EventDraftEditing` requires it).
 - `EditEventViewModel` (`lily/Features/Events/ViewModels/EditEventViewModel.swift`):
   `init(event:repository:errorCenter:logger:tryAgainDelay:now:currencyCode:onChange:)`. State: `draft`,
   `isSubmitting`, `updatedEvent`; the private `originalDraft` is `EventDraft(editing: event, currencyCode:)` built

@@ -12,8 +12,15 @@ nonisolated struct EventDraft: Equatable, Sendable {
     var type: EventType = .football
     var startsAt: Date
     var locationName = ""
-    /// Starts from the user's position and is moved on the map; required.
+    /// Starts from the user's position, is moved on the map, or is geocoded from the typed name; one half of the
+    /// place is required (`PlaceDraft.Requirement.nameOrSpot`).
     var coordinate: Coordinate?
+    /// Whether the user chose `coordinate` on the map (or edits a stored event): a chosen spot is never overridden by
+    /// the typed name, while a proposed one is, so "Warsaw" lands in Warsaw even with the GPS proposal in place.
+    var spotPickedOnMap = false
+    /// The name whose geocoding produced `coordinate` (a tapped suggestion, or the resolver on submit), so the same
+    /// name is not geocoded twice and a changed name is.
+    var suggestedName: String?
     /// The stepper's value, kept while the limit is `.unlimited` so switching back finds it again.
     var capacity = AppConfig.Events.Creation.defaultCapacity
     /// Whether `capacity` caps the game, is the number needed, or is not sent at all.
@@ -57,6 +64,8 @@ nonisolated struct EventDraft: Equatable, Sendable {
         startsAt = event.startsAt
         locationName = event.locationName
         coordinate = event.location.coordinate
+        // The stored spot is the host's choice: an edited name alone must not move the game under its players.
+        spotPickedOnMap = true
         capacity = event.capacity ?? Self.proposedCapacity(for: event.participantCount)
         playerLimit = event.playerLimit
         description = event.description ?? ""

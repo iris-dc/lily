@@ -100,6 +100,30 @@ struct CreateEventViewModelTests {
         #expect(harness.viewModel.canSubmit, "the draft stays for a correction")
     }
 
+    /// The GPS proposal is not the host's word: a typed name moves it on submit, so the game lands where the name
+    /// says; a spot picked on the map stays whatever is typed.
+    @Test func aTypedNameMovesTheProposedSpotButNeverAPickedOne() async throws {
+        let harness = CreateEventHarness()
+        harness.completeDraft()
+        harness.viewModel.draft.spotPickedOnMap = false
+        let gdansk = Coordinate(latitude: 54.352, longitude: 18.6466)
+        harness.geocoder.coordinateResult = gdansk
+
+        await harness.viewModel.submit()
+
+        let sent = try #require(harness.repository.createdDrafts.first)
+        #expect(sent.coordinate == gdansk && harness.geocoder.geocodedNames == ["Test Park"])
+
+        let picked = CreateEventHarness()
+        picked.completeDraft()
+        picked.geocoder.coordinateResult = gdansk
+
+        await picked.viewModel.submit()
+
+        let kept = try #require(picked.repository.createdDrafts.first)
+        #expect(kept.coordinate == AppConfig.Location.mockCenter && picked.geocoder.geocodedNames.isEmpty)
+    }
+
     /// Only a spot picked: the place is named after it on submit; a name the geocoder does not know falls back to the
     /// coordinates as the map row shows them, so the payload never goes out blank.
     @Test func aSpotAloneGetsItsNameFromTheGeocoderOnSubmit() async throws {

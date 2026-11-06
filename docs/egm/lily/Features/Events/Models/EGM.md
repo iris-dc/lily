@@ -36,7 +36,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - `Price` (`Price.swift`): `amount: Decimal`, `currencyCode`; `isFree`, `text`, `text(in:)`, `symbol(for:locale:)`,
   `name(for:locale:)`, `inputFormat`, `inputText(_:locale:)`, `parseAmount(_:locale:) -> Decimal?`.
 - `EventDraft` (`EventDraft.swift`): `let clientId`, `title`, `type` (default `.football`), `startsAt`,
-  `locationName`, `coordinate: Coordinate?`, `capacity` (default `AppConfig.Events.Creation.defaultCapacity` = 10),
+  `locationName`, `coordinate: Coordinate?`, `spotPickedOnMap` (whether the user chose the spot; a chosen one is never
+  overridden by the typed name, a proposed one is), `suggestedName` (the name whose geocoding produced `coordinate`, so
+  it is not geocoded twice), `capacity` (default `AppConfig.Events.Creation.defaultCapacity` = 10),
   `playerLimit` (default `.maximum`), `description`, `lookingFor`, `skillLevel?`, `priceText`, `let locale`,
   `let currencyCode`, `group: EventGroupRef?`. Inits `init(startsAt:currencyCode:locale:clientId:)` and
   `init(editing: SportEvent, currencyCode:locale:)`. Nested `Rules` (`minimumLeadTime`, `minimumCapacity`;
@@ -48,6 +50,10 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `trimmedLocationName`, `trimmedDescription?`, `trimmedLookingFor?`, `isFree`, `hasUnreadablePrice`,
   `price: Decimal? { get set }`, `eventPrice: Price?`; `earliestStart(now:rules:)`, `issues(now:rules:)` (the one
   validity rule; `issues(...).isEmpty` is what the forms read), `makeEvent(hostUserId:hostName:coordinate:)`.
+- `EventMapStack` (`EventMapStack.swift`, 2026-11-06): the events standing on one spot of the map, drawn as one pin
+  (`id` the coordinate rounded to `AppConfig.Events.mapStackDecimals` (4, about 11 m), `coordinate`, `events` in feed
+  order); `title` is the event's title alone or the shared `locationName` once there are several;
+  `stacks(of:)` groups keeping the feed's order. Two overlapping pins left the one behind unselectable.
 - `PlaceDraft` (`PlaceDraft.swift`): `name`, `coordinate?`; `Requirement` (`nameAndSpot` for the tournament form,
   `nameOrSpot` for the event form, whose missing half the geocoder fills on submit); `Issue` (`nameMissing`,
   `nameTooLong`, `coordinateMissing`, `placeMissing`); `issues(maxLength:requiring: = .nameAndSpot)`, `location(at:)`. `PlayerLimit` (`PlayerLimit.swift`): `unlimited`,

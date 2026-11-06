@@ -53,6 +53,8 @@ nonisolated enum AppBranding {
         static let separatorGlyph = "·"
         static let captionSeparator = " \(separatorGlyph) "
         static var lookingForTitle: String { localized("Looking for") }
+        /// The chip on the detail's map; tapping it hands the spot to Apple Maps.
+        static var openInMaps: String { localized("Open in Maps") }
 
         static var loadFailedTitle: String { localized("Couldn't load events") }
         /// Heading over the Explore cards while the groups carousel sits above them.

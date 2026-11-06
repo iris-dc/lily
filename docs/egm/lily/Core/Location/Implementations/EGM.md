@@ -58,10 +58,13 @@ upstream request and a recent result is reused; `CoreLocationUpdateSource` reduc
 - `CoreLocationGeocoder` `[lily/Core/Location/Implementations/CoreLocationGeocoder.swift:CoreLocationGeocoder]`:
   `init(logger:)`; forward through `MKGeocodingRequest(addressString:)`, reverse through
   `MKReverseGeocodingRequest(location:)`, the first map item's `location.coordinate` / non-blank `name`; the
-  `CLGeocoder` routes are deprecated on iOS 26. One request object per call. Logs under `.location` by outcome only,
+  `CLGeocoder` routes are deprecated on iOS 26; `suggestions(for:)` through `MKLocalSearch` (addresses and points of
+  interest, the first `AppConfig.Events.placeSuggestionCount` items as `PlaceSuggestion`s, subtitles from
+  `MKAddress.shortAddress`; 2026-11-06). One request object per call. Logs under `.location` by outcome only,
   never the text: a place name is the user's content.
 - `MockGeocodingService` `[lily/Core/Location/Implementations/MockGeocodingService.swift:MockGeocodingService]`: a
   non-blank name lands deterministically in the fixtures' neighbourhood (`Coordinate.aroundMockCenter` seeded by the
   name's scalar sum, so the same name is always the same spot); every spot is named "Berlin"; a blank name answers
-  `nil`. Also the default `geocoder` of `AppDependencies.init` and the two event form view models, so tests and
+  `nil`; `suggestions(for:)` offers the demo cities whose names start with the query (Warsaw, Gdansk, Berlin, ...),
+  else the query itself, each on its deterministic spot (2026-11-06). Also the default `geocoder` of `AppDependencies.init` and the two event form view models, so tests and
   previews need no wiring.

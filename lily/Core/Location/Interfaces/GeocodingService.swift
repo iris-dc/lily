@@ -7,4 +7,7 @@ protocol GeocodingService {
     func coordinate(for name: String) async -> Coordinate?
     /// What the place around the spot is called, or `nil` when nothing is known there.
     func placeName(for coordinate: Coordinate) async -> String?
+    /// Places answering to a partial query, best first, at most `AppConfig.Events.placeSuggestionCount`; empty when
+    /// nothing does.
+    func suggestions(for query: String) async -> [PlaceSuggestion]
 }

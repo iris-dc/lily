@@ -48,6 +48,8 @@ nonisolated enum DesignTokens {
         /// Width of a typed price field: the filter panel's cap and the form's price.
         static let priceFieldWidth: CGFloat = 96
         static let mapPinSize: CGFloat = 40
+        /// How far a stacked pin's count badge pokes out of the pin's circle.
+        static let mapPinBadgeInset: CGFloat = 6
         /// Growth of a map pin when selected.
         static let mapPinSelectedScale: CGFloat = 1.15
         static let mapSelectedCardWidth: CGFloat = 340

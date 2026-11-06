@@ -29,7 +29,8 @@ lily/
                  AccessibilityIdentifiers (the identifiers UI tests query); the groups, chat, realtime, moderation, people, shell
                  and language constants, copy, tokens and identifiers live in +Groups / +Chat / +Realtime / +Moderation / +People /
                  +Shell / +Localization / +Settings / +FeatureFlags / +Build (the kind of build: debug, staging, release; 2026-11-01) / +Tournaments / +TournamentResults / +TournamentInvites /
-                 +ChatTournaments / +Profile (the display name's limits, copy and identifiers; 2026-10-31) / +Polls, +ChatPolls and +ChatPins
+                 +ChatTournaments / +Profile (the display name's limits, copy and identifiers; 2026-10-31) / +Events (map stacking and the place
+                 suggestions, 2026-11-06) / +Polls, +ChatPolls and +ChatPins
                  (the polls' and pins' constants, copy, tokens and identifiers; 2026-10-24) and one `+Area` file per feature beyond these
                  (`ls lily/Config` is the list; 2026-11-02) extension files so SwiftLint's type_body_length never trips on the four main types
   Core/
@@ -87,7 +88,8 @@ lily/
                  TRY_AGAIN repeat, the unknown-outcome lookup and ownership check, the update after a reused id)
     Statistics/  Models (Interaction, InteractionKind, FilterSummary, InteractionBatch, InteractionReceipt), the
                  InteractionRecorder interface, RemoteInteractionRecorder (batching) and NoOpInteractionRecorder (mock runs)
-    Location/    Coordinate model (+ CoreLocation bridge), LocationFix, interfaces (LocationService, LocationUpdateSource,
+    Location/    Coordinate model (+ CoreLocation bridge), LocationFix, PlaceSuggestion (a geocoder offer, 2026-11-06),
+                 interfaces (LocationService, LocationUpdateSource,
                  GeocodingService (a typed place to a spot and back, 2026-11-05: CoreLocationGeocoder over MapKit's requests,
                  MockGeocodingService deterministic around the fixtures)),
                  implementations (CoreLocation update source and service, caching decorator, mock)
@@ -140,7 +142,8 @@ lily/
                  ViewModels (list with its filter and freshness extensions, detail with who is in, create, edit), Views (cards, EventCardList (the
                  bare card list), list screen, map, detail with the host's Edit button, ParticipantRow, preview card, filter button
                  and panel (over SkillLevelPicker, the one level picker), create button, the Create/Edit sheets (thin wrappers over
-                 EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm), PlaceFields (the
+                 EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm, whose +Place file holds the Where
+                 section with the geocoder's suggestions), PlaceFields (the
                  place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms), PriceAmountField (the
                  one decimal-pad price field of the filter sheet's cap and the form's price), location picker, EventLocationMap (the detail's pinned
                  spot, 2026-11-05)), Services (EventOpener: fetch a game by id and push its detail, shared

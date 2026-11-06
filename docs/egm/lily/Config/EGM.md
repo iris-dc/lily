@@ -20,7 +20,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Location`, `ErrorPopup`, `Launch`, `API` (+ `Headers`, `Paths`, `Query`), `Statistics`, `LaunchArguments`,
   `Logging`, `Version`. Added by `+Area` files: `Chat` (+ `Attachments`, `Polls`, `Pins`), `Currency`, `DisplayName`
   (`lily/Config/AppConfig+Profile.swift`: `length = 1...32` code points, `backendDefault = "Player"`, both Laurel's
-  `profile.*` settings) and `About` (same file: `maxLength = 300` code points, Laurel's `profile.max-bio-length`), `Build`, `FeatureFlags`, `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push`
+  `profile.*` settings) and `About` (same file: `maxLength = 300` code points, Laurel's `profile.max-bio-length`),
+  `Events` extras in `lily/Config/AppConfig+Events.swift` (`mapStackDecimals` 4, `placeSuggestionCount` 3,
+  `placeSuggestionDebounce` 300 ms, `placeSuggestionMinimumQuery` 2; 2026-11-06), `Build`, `FeatureFlags`, `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push`
   (+ `Payload`), `Realtime`, `Tournaments`.
 - `API` (`lily/Config/AppConfig.swift:AppConfig.API`): `localBaseURL = http://localhost:8080`,
   `productionBaseURL = https://api.iskra.red`; `baseURL` is `localBaseURL` under `#if DEBUG && targetEnvironment(simulator)`,
@@ -137,7 +139,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   +Attachments, +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
   +Profile (`profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
   `profile-about-field`, `profile-about-save`, `profile-about-cancel`), +Currency, +Layout, +Landing (`intro-pager`), +Localization.
-- Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
+- Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `createPlaceSuggestion(_ index: Int)`
+  (`create-place-suggestion-<index>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
   `message(clientID:)` (`message-client-<id>`), `message(id:)`, `messageQuote(id:)`, `memberRow(_:)`, `inviteCandidate(_:)`,
   `inviteSend(_:)`, `inboxItem(_:)`, `inboxAccept(_:)`, `inboxDecline(_:)`, `participantRow(_:)`, `pollOptionField(_: Int)`,
   `pollOption(_: Int)`, `chatAttachment(clientID:)`, `chatAttachmentRemove(clientID:)`, `messageAttachmentImage(id:)`,

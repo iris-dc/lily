@@ -17,6 +17,7 @@ final class EditEventViewModel {
     private let repository: any EventRepository
     /// Fills the half of the place the host left out (an edit can clear the name), on save.
     private let places: PlaceResolver
+    private let geocoder: any GeocodingService
     private let logger: any Logging
     private let now: () -> Date
     private let onChange: @MainActor (SportEvent) -> Void
@@ -37,6 +38,7 @@ final class EditEventViewModel {
         self.rules = .editing(participantCount: event.participantCount)
         self.repository = repository
         places = PlaceResolver(geocoder: geocoder, logger: logger)
+        self.geocoder = geocoder
         self.logger = logger
         self.now = now
         self.onChange = onChange
@@ -59,6 +61,10 @@ final class EditEventViewModel {
     var lockedGroup: EventGroupRef? { original.group }
 
     var showsGroupRow: Bool { lockedGroup != nil }
+
+    func placeSuggestions(for query: String) async -> [PlaceSuggestion] {
+        await geocoder.suggestions(for: query)
+    }
 
     /// Saves the draft; a call while one is in flight is dropped. The gate repeats a `TRY_AGAIN` once (the backend
     /// pins the start it read, so another edit landing meanwhile refuses this one), keeps a dismissed sheet quiet and

@@ -13,6 +13,8 @@ protocol EventDraftEditing: DraftSubmitting where Issue == EventDraft.Issue {
     var showsGroupRow: Bool { get }
     var eligibleGroups: [EventGroupRef] { get }
     var explainsNoEligibleGroups: Bool { get }
+    /// Places answering to what is typed into the name field; picking one fills the name and the spot at once.
+    func placeSuggestions(for query: String) async -> [PlaceSuggestion]
 }
 
 extension EventDraftEditing {

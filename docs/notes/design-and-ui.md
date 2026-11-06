@@ -66,3 +66,7 @@ the asset catalog.
   dim after the pop; the event detail shows `EventLocationMap` (200 pt, picker-scale region, non-interactive, the
   selected-pin look) between the facts card and "Looking for". Screenshots 11 to 14 in
   `reviews/2026-11-05-about-and-history/`.
+- **Stacked pin badge, suggestion rows, the Open in Maps chip (2026-11-06).** A stacked pin wears its count on a small
+  accent circle poking out top-trailing (`mapPinBadgeInset`); the create form's place suggestions are rows in ink with
+  the accent on the location glyph (the accent never colours text this size); the detail map's affordance is a regular
+  chip "Open in Maps" at its bottom trailing corner. Screenshots 15 to 17 in `reviews/2026-11-05-about-and-history/`.
