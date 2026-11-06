@@ -70,3 +70,14 @@ the asset catalog.
   accent circle poking out top-trailing (`mapPinBadgeInset`); the create form's place suggestions are rows in ink with
   the accent on the location glyph (the accent never colours text this size); the detail map's affordance is a regular
   chip "Open in Maps" at its bottom trailing corner. Screenshots 15 to 17 in `reviews/2026-11-05-about-and-history/`.
+- **The map's selected cards: symmetric gaps, honest press, one motion (2026-11-06, the user's five corrections).**
+  The floating "+" glass circle is 52 pt drawn 22 pt from the screen edge inside its 64 pt extra-large control, so
+  `floatingButtonFootprint` is 74 (measured on the iPhone 17 Pro simulator): the card's gap to the circle equals its
+  16 pt gap to the left edge. A held card dims and shrinks to `pressedCardScale` 0.97, animated `easeOut(fast)` both
+  ways, so a tap visibly lets go instead of looking stuck through the push. Selecting and deselecting a pin share one
+  `.snappy(fast)` animation; the cards carry `.zIndex(1)`, without which they slid out behind the opaque map and read
+  as a cut (30 fps frames), and a pin's own tap selects at once instead of MapKit's half-second double-tap wait. Under
+  Reduce Motion the cards cut in place and the press keeps only its dim. The event list keeps its own bottom clearance
+  token (`floatingButtonClearance`, 80) now that the footprint stops at the circle's edge. A spot with many events
+  shows at most `mapCardListMaxHeight` (352, about five cards) and scrolls the rest, starting at the top for every
+  pin. Screenshots 18-23 under `reviews/2026-11-06-map-fixes/`.

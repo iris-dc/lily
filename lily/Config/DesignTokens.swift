@@ -53,14 +53,22 @@ nonisolated enum DesignTokens {
         /// Growth of a map pin when selected.
         static let mapPinSelectedScale: CGFloat = 1.15
         static let mapSelectedCardWidth: CGFloat = 340
+        /// The selected stack's card list stops growing here, about five compact cards, and scrolls the rest.
+        static let mapCardListMaxHeight: CGFloat = 352
+        /// How far the selected card shrinks while held.
+        static let pressedCardScale: CGFloat = 0.97
         /// The event detail's map: enough to place the spot in its neighbourhood without crowding the facts.
         static let detailMapHeight: CGFloat = 200
         /// The map opens this much wider than the filter's diameter, so a pin at the radius sits inside the edge and
         /// clear of the floating controls.
         static let mapRegionPadding: Double = 1.3
-        /// Room the floating create button takes at the bottom-trailing corner (its glass circle plus its margin),
-        /// so the map's selected card is lifted above it instead of sliding under it.
-        static let floatingButtonFootprint: CGFloat = 80
+        /// Room the floating create button's glass circle takes at the bottom-trailing corner: its 52 pt circle sits
+        /// inset in a 64 pt control padded by `Spacing.lg`, so its visible edge is 74 pt in. The map's selected card
+        /// ends here, leaving the same `lg` gap to the circle as to the screen edge.
+        static let floatingButtonFootprint: CGFloat = 74
+        /// Bottom clearance of the event list: the whole floating "+" control (64 pt) plus its `Spacing.lg` margin,
+        /// so the last card scrolls clear of it. Not `floatingButtonFootprint`, which stops at the circle's edge.
+        static let floatingButtonClearance: CGFloat = 80
         /// Crosshair pin drawn over the centre of the location picker's map.
         static let locationPickerPinSize: CGFloat = 44
         /// How far a growing text field (the create form's description) stretches before it scrolls inside.

@@ -48,7 +48,9 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
 - `EventsMapView` (`lily/Features/Events/Views/EventsMapView.swift`): `init(viewModel: EventListViewModel,
   trailingInset: CGFloat = 0)` (room kept free to the right of the selected cards for a floating button);
   `EventMapPin(type: EventType, isSelected: Bool, count: Int = 1)` (over 1 it wears the count on an accent badge,
-  `DesignTokens.Layout.mapPinBadgeInset`); private `MapCardButtonStyle` (dim exactly while pressed).
+  `DesignTokens.Layout.mapPinBadgeInset`); private `MapCardButtonStyle(motion:)` (dim `Opacity.pressedCard` plus, when
+  `motion.allowsMovement`, shrink `Layout.pressedCardScale` exactly while pressed, animated `.easeOut(Duration.fast)`
+  both ways so the release visibly lets go, 2026-11-06).
 - `EventLocationMap(event: SportEvent)` (`lily/Features/Events/Views/EventLocationMap.swift`): the event's spot pinned
   (`EventMapPin`, selected look) at `AppConfig.Location.pickerRegionMeters` scale, `interactionModes: []`, height
   `DesignTokens.Layout.detailMapHeight`, clipped to `Radius.md`, identifier
@@ -122,16 +124,21 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   (`applyTypedCap`); dates on proposes `DateWindow.proposal()`, each end edited as whole days through
   `DateWindow.days(from:to:)`. `EventFilterButton` reports the panel's presentation as `filterPanelOpened()` /
   `filterPanelClosed()`.
-- Map (`EventsMapView`): opens on `MapFraming.initialRegion(userLocation:radiusMeters: filter.maxDistanceMeters)`
-  or `.userLocation(fallback: .automatic)`; a later position recentres once unless the user panned
-  (`hasCenteredOnUser`, `position.positionedByUser`); pins are `viewModel.visibleEvents`; a selection the filter
-  hides is dropped. The pins are `EventMapStack.stacks(of: visibleEvents)` (2026-11-06): events on one spot (two
-  overlapping pins left the one behind unselectable) share a pin labelled with the place and wearing the count, the
-  selection is the stack's id, and selecting one shows a card per member at the bottom leading edge with
-  `trailingInset` kept free on its right, beside the floating "+" rather than above it, each a
-  `NavigationLink(value:)` in `MapCardButtonStyle` (opacity `DesignTokens.Opacity.pressedCard` exactly while pressed:
-  `.plain` kept its dim after the pop, 2026-11-05); only the map
-  `ignoresSafeArea(edges: .bottom)`.
+- Map (`EventsMapView`): opens on `MapFraming.initialRegion(userLocation:radiusMeters: filter.maxDistanceMeters)` or
+  `.userLocation(fallback: .automatic)`; a later position recentres once unless the user panned (`hasCenteredOnUser`,
+  `position.positionedByUser`); pins are `viewModel.visibleEvents`; a selection the filter hides is dropped. The pins
+  are `EventMapStack.stacks(of: visibleEvents)`: events on one spot (two overlapping pins left the one behind
+  unselectable) share a pin labelled with the place and wearing the count, and the selection is the stack's id.
+  Selecting one shows a card per member at the bottom leading edge with `trailingInset` kept free on its right, beside
+  the floating "+" rather than above it, each a `NavigationLink(value:)` in `MapCardButtonStyle` (`.plain` kept its
+  dim after the pop). The selection animates under one implicit `.snappy(Duration.fast)` on `selectedStackID` (nil
+  under Reduce Motion, read from `\.motion`); the cards sit at `.zIndex(1)`, so they leave above the map instead of
+  sliding out under it; each pin's `onTapGesture` selects at once instead of after MapKit's double-tap wait. The cards
+  sit in a `ScrollView` as tall as its content up to `Layout.mapCardListMaxHeight` (about five cards; more scroll)
+  through `onGeometryChange` into `cardListHeight` (a `fixedSize` ignored the cap and overflowed under the "+"),
+  scrolled back to the top whenever the selection changes (`cardScroll`), so a pin tapped straight after another never
+  opens part-way down; the `mapSelectedCard` identifier is on the inner stack, where it stamps the card links
+  (`app.buttons`); set on the scroll view it reached no element. Only the map `ignoresSafeArea(edges: .bottom)`.
 - Picker (`LocationPickerView`): converts the map frame's centre through `MapProxy.convert` on
   `.onMapCameraChange(frequency: .onEnd)` and writes `coordinate` only when
   `PickerSettlePolicy.isAChoice(spot, current:, isFirstSettle:)`; a chosen spot opens at

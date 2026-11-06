@@ -99,7 +99,7 @@ extension EventListView {
             EventCardList(events: viewModel.visibleEvents, distance: viewModel.distanceText)
         }
         // With the create button floating over the corner, the last card scrolls clear of it.
-        .padding(.bottom, DesignTokens.Layout.floatingButtonFootprint)
+        .padding(.bottom, DesignTokens.Layout.floatingButtonClearance)
     }
 
     /// The defaults alone (10 km) can hide every event while nothing is "active", so the way out widens to everything.

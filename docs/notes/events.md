@@ -103,3 +103,24 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   semantic styles only: the title takes `Color.primary` (the hierarchical `.primary` only re-derives from the button's
   accent tint and still drew red), the glyph keeps the accent from the tint, the subtitle `.secondary`
   (`EventDraftForm+Place.swift`).
+- **Map corrections (2026-11-06, on the user's five reports: the card's press dim "never goes back", the card's gap to
+  the "+" wider than to the edge, deselecting without animation, a stack taller than the screen, a delay before the
+  card appears).** `MapCardButtonStyle` adds `pressedCardScale` and animates `easeOut(Duration.fast)` on `isPressed`
+  both ways, so the release reads. `floatingButtonFootprint` drops 80 to 74: the glass circle measured 52 pt, 22 pt in
+  from the edge, so the card now ends the same `lg` short of the circle as it stays from the left edge. The deselect
+  cut was z-order, not the transaction: a log probe showed the map's deselect arriving with `.snappy` attached and
+  nothing disabling it, yet 30 fps frames showed the cards gone in one frame, because a view leaving a ZStack can drop
+  behind its sibling and the cards slid out hidden under the opaque map. `.zIndex(1)` on the cards fixed it, so the
+  selection stays a plain binding under one implicit `.snappy(Duration.fast)` gated on `\.motion` (the cards cut and
+  the press keeps only its dim under Reduce Motion). The "delay" was MapKit's, which delivered a pin tap's selection
+  0.5 to 0.6 s after the touch while ruling out a double-tap zoom, so the pin's own `onTapGesture` now selects at once
+  (about 50 ms after touch-up in the probe; an empty-map deselect is still MapKit's, about 0.7 s). The card list is a
+  `ScrollView` capped at `mapCardListMaxHeight` via `onGeometryChange` (a `fixedSize` ignored the cap and overflowed
+  under the "+"), scrolled back to the top on every selection change, since a pin tapped straight after another kept
+  the same scroll view and its offset; the `mapSelectedCard` identifier stays on the inner stack, where it stamps the
+  links. The review workflow caught the retuned footprint shrinking the event list's bottom clearance (its second
+  consumer) from 80 to 74, so the list keeps its own `floatingButtonClearance` (80), each token true for its one use.
+  Evidence: a scratch UI run (deleted before the gate) measured the frames, created six games on one spot, saw five
+  capped and the sixth after a scroll (shots 18-23 under `reviews/2026-11-06-map-fixes/`: 21 the list's last card
+  clear of the "+", 22 and 23 a scrolled Gdansk list, then Warsaw opening at its first card), and `simctl` recordings
+  cut to 8 and 30 fps frames were judged for the press, the deselect and the tap-to-card latency.
