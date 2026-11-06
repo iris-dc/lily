@@ -79,6 +79,41 @@ struct AboutViewModelTests {
         #expect(viewModel.draft.text == "Padel on Sundays." && !viewModel.canSubmit)
     }
 
+    /// The sheet opened on the snapshot's bio and the user cleared it before `GET /api/profile` answered: the clear
+    /// is an edit, so the answer never puts the bio back.
+    @Test func prepareKeepsABioClearedBeforeTheLoadAnswered() async {
+        let snapshots = InMemoryListSnapshotStore()
+        let snapshotKey = ListSnapshotKey(list: AppConfig.Lists.profileSnapshot, userID: TestFixtures.user.id)
+        snapshots.seed(Profile.fixture(bio: "Padel on Sundays."), for: snapshotKey)
+        let store = ProfileStore(repository: repository, identity: identity, snapshots: snapshots, logger: logger)
+        repository.profileResult = .success(.fixture(bio: "Padel on Sundays."))
+        repository.holdsRequests = true
+        let viewModel = AboutViewModel(store: store, errorCenter: errorCenter, logger: logger)
+        #expect(viewModel.draft.text == "Padel on Sundays.", "the field opens on the snapshot's bio")
+
+        let prepare = Task { await viewModel.prepare() }
+        await settle(until: { repository.isHolding })
+        viewModel.draft.text = ""
+        repository.releaseRequests()
+        await prepare.value
+
+        #expect(viewModel.draft.text.isEmpty && viewModel.canSubmit, "the clear survives the answer")
+    }
+
+    /// An untouched field opened on the snapshot takes the backend's newer bio once it answers.
+    @Test func prepareRefreshesAnUntouchedFieldOpenedOnTheSnapshot() async {
+        let snapshots = InMemoryListSnapshotStore()
+        let snapshotKey = ListSnapshotKey(list: AppConfig.Lists.profileSnapshot, userID: TestFixtures.user.id)
+        snapshots.seed(Profile.fixture(bio: "Padel on Sundays."), for: snapshotKey)
+        let store = ProfileStore(repository: repository, identity: identity, snapshots: snapshots, logger: logger)
+        repository.profileResult = .success(.fixture(bio: "Football, mostly."))
+        let viewModel = AboutViewModel(store: store, errorCenter: errorCenter, logger: logger)
+
+        await viewModel.prepare()
+
+        #expect(viewModel.draft.text == "Football, mostly." && !viewModel.canSubmit)
+    }
+
     @Test func aRefusalReachesThePopupAndKeepsTheDraft() async {
         await store.loadIfNeeded()
         let viewModel = makeViewModel()

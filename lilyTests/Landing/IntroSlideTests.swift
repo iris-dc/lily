@@ -55,10 +55,6 @@ struct IntroSlideTests {
         #expect(IntroContent(events: [], tournament: tournament).tournament == tournament)
     }
 
-    @Test func theMiniatureShowsAsManyCardsAsTheLivePreview() {
-        #expect(IntroFixtures.events(now: .now).count == AppConfig.Events.introSampleEventCount)
-    }
-
     /// The bracket miniature shows a knockout under way, organised by a person rather than the mock's caller (whose
     /// seat reads "Organised by You"), with both semi-finals in so the finalists stand in the final.
     @Test func theTournamentIsUnderWayWithTheFinalistsKnown() throws {

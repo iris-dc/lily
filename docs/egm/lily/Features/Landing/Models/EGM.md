@@ -5,8 +5,8 @@ Source: `lily/Features/Landing/Models/`
 ## Overview
 
 Plain data behind the landing's intro pager: which slides a build shows and in what order, the content the slides'
-miniature screens draw, the arithmetic of the ring that pulses over the join slide's button, and the fixtures shown while
-no live preview has arrived. Every type is `nonisolated` and `Sendable`; nothing here performs I/O.
+miniature screens draw, the arithmetic of the ring that pulses over the join slide's button, and the fixtures the
+miniatures always draw (never a live answer). Every type is `nonisolated` and `Sendable`; nothing here performs I/O.
 
 Files: `lily/Features/Landing/Models/IntroSlide.swift`, `lily/Features/Landing/Models/TapPulseCurve.swift`,
 `lily/Features/Landing/Models/IntroFixtures.swift`.

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The events slide's screen: the top of Explore, drawn with the real cards over the events the view model holds (the
-/// live preview, or the fixtures while none arrived).
+/// The events slide's screen: the top of Explore, drawn with the real cards over the fixture events the view model
+/// holds.
 struct IntroExploreScreen: View {
     let events: [SportEvent]
 
@@ -16,9 +16,9 @@ struct IntroExploreScreen: View {
 }
 
 /// The join slide's screen: an event's detail down to its Join button, with a ring pulsing where the finger goes. The
-/// Join sits at the bottom of the frame as on the real detail: the facts card takes whatever height is left (a live
-/// event without a price or a level is shorter than the fixture), through a flexible frame rather than a `Spacer`, which
-/// would add a stack gap of its own; a frame too short for the screen crops the top instead.
+/// Join sits at the bottom of the frame as on the real detail: the facts card takes whatever height is left, through a
+/// flexible frame rather than a `Spacer`, which would add a stack gap of its own; a frame too short for the screen crops
+/// the top instead.
 struct IntroDetailScreen: View {
     let event: SportEvent
 

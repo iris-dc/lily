@@ -7,5 +7,7 @@ nonisolated struct PlaceSuggestion: Identifiable, Equatable, Sendable {
     let subtitle: String?
     let coordinate: Coordinate
 
-    var id: String { "\(title)|\(subtitle ?? "")" }
+    /// The coordinate is part of it: two branches of one chain can share a name and a short address, and the form's
+    /// rows need distinct ids.
+    var id: String { "\(title)|\(subtitle ?? "")|\(coordinate.latitude),\(coordinate.longitude)" }
 }

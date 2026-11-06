@@ -1,8 +1,7 @@
 import Foundation
 
-/// What the intro's miniature screens show when nothing live is there to show: the mock feed's first events, the same
-/// for everyone like a screenshot, the room the groups slide draws and the tournament whose bracket the last slide
-/// shows. Proper nouns, so not localized.
+/// What the intro's miniature screens show: the mock feed's first events, the same for everyone like a screenshot, the
+/// room the groups slide draws and the tournament whose bracket the last slide shows. Proper nouns, so not localized.
 nonisolated enum IntroFixtures {
     static let groupName = "Kreuzberg Kickers"
     static let memberCount = 12
@@ -16,7 +15,7 @@ nonisolated enum IntroFixtures {
         MockTournamentFixtures.Result(matchID: TournamentSchedule.matchID(round: 1, position: 2), scoreA: 2, scoreB: 0),
     ]
 
-    /// The live preview's count, so samples and live data fill the cropped frame to the same length.
+    /// The Explore miniature's cards: the mock feed's first `introSampleEventCount`, enough to fill the cropped frame.
     static func events(now: Date) -> [SportEvent] {
         MockEventFixtures.make(now: now, count: AppConfig.Events.introSampleEventCount)
     }

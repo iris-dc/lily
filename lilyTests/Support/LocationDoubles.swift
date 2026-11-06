@@ -53,23 +53,30 @@ final class FakeLocationService: LocationService, HoldsRequests {
     }
 }
 
-/// Scriptable `GeocodingService`: forward answers `coordinateResult`, reverse `nameResult`; every request is recorded.
+/// Scriptable `GeocodingService`: forward answers `coordinateResult` (or throws `coordinateError`), reverse
+/// `nameResult`, suggestions `suggestionsResult`; every request and the bias it carried is recorded.
 @MainActor
 final class FakeGeocodingService: GeocodingService {
     var coordinateResult: Coordinate?
+    var coordinateError: (any Error)?
     var nameResult: String?
     var suggestionsResult: [PlaceSuggestion] = []
     private(set) var geocodedNames: [String] = []
+    private(set) var geocodedBiases: [Coordinate?] = []
     private(set) var reversedCoordinates: [Coordinate] = []
     private(set) var suggestionQueries: [String] = []
+    private(set) var suggestionBiases: [Coordinate?] = []
 
-    func suggestions(for query: String) async -> [PlaceSuggestion] {
+    func suggestions(for query: String, near bias: Coordinate?) async -> [PlaceSuggestion] {
         suggestionQueries.append(query)
+        suggestionBiases.append(bias)
         return suggestionsResult
     }
 
-    func coordinate(for name: String) async -> Coordinate? {
+    func coordinate(for name: String, near bias: Coordinate?) async throws -> Coordinate? {
         geocodedNames.append(name)
+        geocodedBiases.append(bias)
+        if let coordinateError { throw coordinateError }
         return coordinateResult
     }
 

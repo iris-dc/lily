@@ -110,6 +110,31 @@ struct ChatTimelineTests {
         #expect(after.map(\.id) == before.map(\.id), "the confirmation keeps every row")
     }
 
+    /// The device's clock behind the server's just after midnight stamps an unsent message on the day before the last
+    /// stored one: it stays under today's divider, never repeating yesterday's row id below it.
+    @Test func anUnsentMessageStampedOnAnEarlierDayOpensNoDivider() {
+        let midnight = -12 * TimeInterval.hour
+        let unsent = PendingMessage(draft: MessageDraft(clientMessageID: "c-1"),
+                                    sentAt: Self.noon.addingTimeInterval(midnight - 120))
+        let rows = rows([message("m1", after: -TimeInterval.day), message("m2", after: midnight + 60)], pending: [unsent])
+        #expect(rows.map(\.id) == ["day-1799884800", "m1", "day-1799971200", "m2", "c-1"])
+        #expect(Set(rows.map(\.id)).count == rows.count)
+    }
+
+    /// A second send after the device's midnight follows one stamped before it: today's divider, already shown above
+    /// the last stored message, is not opened again.
+    @Test func aSendAfterAnEarlierStampedOneDoesNotReopenTheDay() {
+        let midnight = -12 * TimeInterval.hour
+        let early = PendingMessage(draft: MessageDraft(clientMessageID: "c-1"),
+                                   sentAt: Self.noon.addingTimeInterval(midnight - 120))
+        let late = PendingMessage(draft: MessageDraft(clientMessageID: "c-2"),
+                                  sentAt: Self.noon.addingTimeInterval(midnight + 30))
+        let rows = rows([message("m1", after: -TimeInterval.day), message("m2", after: midnight + 60)],
+                        pending: [early, late])
+        #expect(rows.map(\.id) == ["day-1799884800", "m1", "day-1799971200", "m2", "c-1", "c-2"])
+        #expect(Set(rows.map(\.id)).count == rows.count)
+    }
+
     @Test func theFirstUnsentMessageOfAnEmptyRoomOpensItsDay() {
         let unsent = PendingMessage(draft: MessageDraft(clientMessageID: "c-1"), sentAt: Self.noon)
         #expect(rows([], pending: [unsent]).map(\.id) == ["day-1799971200", "c-1"])

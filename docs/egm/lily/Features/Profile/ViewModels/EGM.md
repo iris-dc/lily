@@ -29,7 +29,8 @@ and routes to the store.
 ## Invariants
 
 - The draft starts from the store's value of the field, or empty while it is unknown; `prepare()` loads the store and
-  fills an empty field once the value is known, never overwriting what the user typed
+  refills the field once the value is known only while the draft still equals the text it opened with, so an edit
+  (an emptied bio included, which clears it) is never overwritten
   `[lily/Features/Profile/ViewModels/ProfileFieldViewModel.swift:prepare]`.
 - `canSubmit` is `!isSubmitting && draft.isValid && draft.trimmedText != (field.current(in: store) ?? "")`: the
   comparison reads the store when judged, so a text typed before a slow load answered counts as unchanged once the load

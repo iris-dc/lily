@@ -22,19 +22,21 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
         .scrollContentBackground(.hidden)
         .readableColumn()
         .tint(Color.lilyAccent)
-        // One short breath after the last keystroke, then the geocoder's places for the typed name; a name a tapped
-        // suggestion just set asks for nothing, and leaving the field clears the rows.
+        // One short breath after the last keystroke, then the geocoder's places for the typed name
+        // (`EventDraft.placeSuggestionQuery` says when to ask); an answer that comes back after the field was left,
+        // the name changed or a suggestion was picked is dropped, since the search does not stop when cancelled.
         .task(id: viewModel.draft.locationName) {
             try? await Task.sleep(for: AppConfig.Events.placeSuggestionDebounce)
             guard !Task.isCancelled else { return }
-            let query = viewModel.draft.locationName.trimmed
-            guard focusedField == .locationName,
-                  query.codePointCount >= AppConfig.Events.placeSuggestionMinimumQuery,
-                  query != viewModel.draft.suggestedName else {
+            guard focusedField == .locationName, let query = viewModel.draft.placeSuggestionQuery else {
                 suggestions = []
                 return
             }
-            suggestions = await viewModel.placeSuggestions(for: query)
+            let found = await viewModel.placeSuggestions(for: query)
+            guard !Task.isCancelled, focusedField == .locationName, viewModel.draft.placeSuggestionQuery == query else {
+                return
+            }
+            suggestions = found
         }
         .onChange(of: focusedField) {
             if focusedField != .locationName { suggestions = [] }
@@ -66,7 +68,7 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
         }
     }
 
-    /// Single choice in the filter panel's chip look; one type is always selected.
+    /// Single choice in the filter sheet's chip look; one type is always selected.
     private var typeChips: some View {
         CaptionedControl(Copy.eventType) {
             EventTypeChips(isSelected: { $0 == viewModel.draft.type }, onSelect: { type in

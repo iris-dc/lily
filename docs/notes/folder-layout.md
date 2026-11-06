@@ -90,6 +90,7 @@ lily/
     Statistics/  Models (Interaction, InteractionKind, FilterSummary, InteractionBatch, InteractionReceipt), the
                  InteractionRecorder interface, RemoteInteractionRecorder (batching) and NoOpInteractionRecorder (mock runs)
     Location/    Coordinate model (+ CoreLocation bridge), LocationFix, PlaceSuggestion (a geocoder offer, 2026-11-06),
+                 PlaceMatchPolicy (which geocoded match may stand for a typed place; 2026-11-06),
                  interfaces (LocationService, LocationUpdateSource,
                  GeocodingService (a typed place to a spot and back, 2026-11-05: CoreLocationGeocoder over MapKit's requests,
                  MockGeocodingService deterministic around the fixtures)),
@@ -147,7 +148,7 @@ lily/
                  ViewModels (list with its filter and freshness extensions, detail with who is in, create, edit), Views (cards, EventCardList (the
                  bare card list), list screen, map, detail with the host's Edit button, ParticipantRow, preview card, EventMapCardList (the
                  selected map stack's scrolling cards, in one glass panel with its header for several, and the "+N more" pill;
-                 2026-11-06), filter button and panel (over SkillLevelPicker, the one level picker), create button, the Create/Edit sheets (thin wrappers over
+                 2026-11-06), filter button and sheet (EventFilterSheet, the full-screen form, 2026-11-05; over SkillLevelPicker, the one level picker), create button, the Create/Edit sheets (thin wrappers over
                  EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm, whose +Place file holds the Where
                  section with the geocoder's suggestions), PlaceFields (the
                  place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms), PriceAmountField (the
@@ -268,7 +269,7 @@ lily/
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ and Moderation/ included;
                  Profile/ holds ProfileStoreTests and ProfileStoreBioTests, DisplayNameViewModelTests, AboutViewModelTests,
-                 DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01, and MapCardListEdgesTests since 2026-11-06); Support/ holds fakes
+                 DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01, and MapCardListEdgesTests since 2026-11-06, with CreateEventPlaceTests, EditEventPlaceTests and EventDraftPlaceTests from the 2026-11-06 pre-merge review; Location/ holds PlaceSuggestionTests since then); Support/ holds fakes
                  (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, ShellDoubles,
                  StatisticsDoubles, GroupDoubles (with FakeInviteRepository), GroupViewModelDoubles with the shared GroupHarness and the
                  TermsCountingReporter every harness uses, InboxDoubles, PeopleDoubles, LocationDoubles, PushDoubles, FeedbackDoubles,
@@ -297,3 +298,7 @@ The Xcode project uses synchronized folder groups: any file added under `lily/`,
 Rules: interfaces and implementations live in separate folders, constants live under `Config/`, every user-facing error goes through `ErrorCenter`, every log line goes through `Logging`.
 
 Pass of 2026-11-02 (deep-review finding L008): the poll and pin files of 2026-10-24 (Chat Models, Views, ViewModels and Implementations, the Config and ErrorMessageMapper `+Polls` and `+ChatPins` files, the test doubles PollFixtures and ChatPollDoubles under `lilyTests/Support`, the LilyChatTests+Polls, +Composer and +Viewer UI test files) and the Chat Views that had gone unlisted (BubbleInk, RowReveal, TranscriptWidth, ChatsSplitView, ChatTranscript+Scrolling) were added above, each checked against `ls`; the Config enumeration ends in a rule, one `+Area` file per feature, rather than a list completed file by file.
+
+Pre-merge review of 2026-11-06: the Events Views entry now names EventFilterSheet instead of "filter button and panel", and
+the place tests added by the review fixes (CreateEventPlaceTests, EditEventPlaceTests, EventDraftPlaceTests,
+PlaceSuggestionTests, PlaceMatchPolicyTests) are listed under lilyTests.

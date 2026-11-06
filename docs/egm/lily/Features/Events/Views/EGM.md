@@ -5,7 +5,7 @@ Source: `lily/Features/Events/Views/`
 ## Overview
 
 The SwiftUI screens and components of the Events feature: the Explore screen (`EventListView` with its `+Content`
-extension), the event detail, the shared create/edit form and its sheets, the filter button and panel, the events
+extension), the event detail, the shared create/edit form and its sheets, the filter button and sheet, the events
 map and the location picker, and the cards and rows other features reuse (`EventCard`, `EventCardList`,
 `EventPreviewCard`, `EventMapCardList`,
 `EventFactsCard`, `EventLocationMap`, `ParticipantRow`, `PlaceFields`, `PlacePickerRow`, `PriceAmountField`,
@@ -34,14 +34,18 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
 - `CreateMenuButton` (`lily/Features/Events/Views/CreateMenuButton.swift`): `onCreateGame`, `onCreateGroup`,
   `onCreateTournament: () -> Void = {}`; the floating "+".
 - `EventDraftForm+Place.swift` (2026-11-06): the Where section, split out for the form's file limit; the stored state
-  (`suggestions`, `focusedField`) stays in `EventDraftForm.swift`. `pickedCoordinate` is the map row's binding, marking
-  a non-nil spot as the user's (`spotPickedOnMap`, `suggestedName = nil`); `suggestionRows` are the geocoder's places
-  for the typed name (titles in `Color.primary`, the glyph on the button's accent tint; the rows hold semantic styles
-  only, since a generated asset colour stored in them crashed the list diff, see `docs/notes/events.md` 2026-11-06;
-  identifiers `AccessibilityIdentifiers.createPlaceSuggestion(index)`), picking one filling name, spot and `suggestedName` at once;
-  the form's debounced `.task(id: locationName)` (`AppConfig.Events.placeSuggestionDebounce`, 300 ms, at least
-  `placeSuggestionMinimumQuery` code points, only while the name field is focused, quiet for the name a suggestion just
-  set) fills them through `viewModel.placeSuggestions(for:)`.
+  (`suggestions`, `focusedField`) stays in `EventDraftForm.swift`. `pickedCoordinate` is the map row's binding, its
+  setter `viewModel.draft.pickSpot($0)` (a non-nil spot becomes the user's: `spotPickedOnMap`, `suggestedName = nil`);
+  `suggestionRows` are the geocoder's places for the typed name (titles in `Color.primary`, the glyph on the button's
+  accent tint; the rows hold semantic styles only, since a generated asset colour stored in them crashed the list
+  diff, see `docs/notes/events.md` 2026-11-06; identifiers `AccessibilityIdentifiers.createPlaceSuggestion(index)`;
+  the `ForEach` keys by `PlaceSuggestion.id`, which includes the coordinate), a row's action
+  `viewModel.draft.apply(suggestion)` (name, spot and `suggestedName` at once) then clearing the rows and the focus.
+  The form's debounced `.task(id: locationName)` (`AppConfig.Events.placeSuggestionDebounce`, 300 ms) asks only while
+  `focusedField == .locationName` and `draft.placeSuggestionQuery` is non-nil, through
+  `viewModel.placeSuggestions(for:)`; after the await it drops the answer unless the task is live, the field is still
+  focused and `draft.placeSuggestionQuery` still equals the query asked (`MKLocalSearch` ignores cancellation, so a
+  late answer would otherwise put rows back under a left field or right after a pick).
 - `EventFilterButton` (`lily/Features/Events/Views/EventFilterButton.swift`): `viewModel: EventListViewModel`; a
   toolbar button presenting `EventFilterSheet` (`EventFilterSheet.swift`: `viewModel`, `onDone`) as a `lilyFormSheet()`
   (full screen on the iPhone, like the create forms; a dropdown popover before 2026-11-05), the filled/outline glyph and
@@ -65,7 +69,12 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `AccessibilityIdentifiers.eventDetailMap`; drawn on the detail after the facts card (2026-11-05, on the user's "I
   should be able to see the map too when opening an event"). Since 2026-11-06 the whole card is a `Button` handing the
   spot to Apple Maps (`MKMapItem(location:address:)`, named after the place, `openInMaps()`), wearing an
-  "Open in Maps" chip at its bottom trailing corner, since the map itself does not pan.
+  "Open in Maps" chip at its bottom trailing corner, since the map itself does not pan. The `Map` is keyed by
+  `.id(event.location.coordinate)`, because `Map(initialPosition:)` is read once per identity and the detail stays on
+  screen through an edit (`EventDetailViewModel.accept`): a saved edit that moves the spot rebuilds the camera on the
+  new spot. For VoiceOver the card is one `Button` element (no `.accessibilityElement(children: .contain)`, which made
+  it a container), labelled `AppBranding.Events.openInMaps` (a Button, so one element with the button trait), the identifier
+  `eventDetailMap` on that button.
 - `LocationPickerView` (`lily/Features/Events/Views/LocationPickerView.swift`):
   `init(coordinate: Binding<Coordinate?>)`; a map under a fixed pin.
 - `PlaceFields<Field: Hashable>` (`lily/Features/Events/Views/PlaceFields.swift`): `init(name:coordinate:
@@ -130,7 +139,7 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   trailing `.decimalPad` `TextField` at `DesignTokens.Layout.priceFieldWidth` (focused through `focus` when given,
   with `label` as its accessibility label and `identifier`) and `Price.symbol(for: currencyCode)` in `.secondary`,
   `fixedSize()`, under `currencyIdentifier`. The one decimal-pad price field: the form's price row (no focus binding)
-  and the filter panel's cap (focused by the capsule's tap through `isPriceFocused`).
+  and the filter sheet's cap (focused by the capsule's tap through `isPriceFocused`).
 - `CreateMenuButton`: a `Menu` with game, group and (when `AppConfig.FeatureFlags.tournaments`) tournament while
   `AppConfig.FeatureFlags.groups` is on; a single game button otherwise.
 - Filter (`EventFilterSheet`): a `NavigationStack` over a `Form` (sections: type, distance, price; level, dates and
@@ -141,11 +150,11 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   plus "anywhere" (`nil`), replaced by a note while `userLocation == nil`; "Free only" toggles `maxPrice` between
   `0` and `nil`; typed text clears the cap when empty, sets it when parseable and leaves it when not
   (`applyTypedCap`); dates on proposes `DateWindow.proposal()`, each end edited as whole days through
-  `DateWindow.days(from:to:)`. `EventFilterButton` reports the panel's presentation as `filterPanelOpened()` /
+  `DateWindow.days(from:to:)`. `EventFilterButton` reports the sheet's presentation as `filterPanelOpened()` /
   `filterPanelClosed()`.
 - Map (`EventsMapView`): opens on `MapFraming.initialRegion(userLocation:radiusMeters: filter.maxDistanceMeters)` or
   `.userLocation(fallback: .automatic)`; a later position recentres once unless the user panned (`hasCenteredOnUser`,
-  `position.positionedByUser`); pins are `viewModel.visibleEvents`; a selection the filter hides is dropped. The pins
+  `position.positionedByUser`); pins are `viewModel.visibleEvents`; a selection whose stack is gone (the filter hid it, or a reload regrouped the pins) is dropped, through `onChange(of: stacks.map(\.id))`. The pins
   are `EventMapStack.stacks(of: visibleEvents)`: events on one spot (two overlapping pins left the one behind
   unselectable) share a pin labelled with the place and wearing the count, and the selection is the stack's id.
   Selecting one shows a card per member at the bottom leading edge with `trailingInset` kept free on its right, beside
@@ -164,7 +173,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   the cut card says there is more; 352 before 2026-11-06) through `onGeometryChange` into `cardListHeight` (a
   `fixedSize` ignored the cap and overflowed under the "+"), `scrollBounceBehavior(.basedOnSize)`, and scrolled back
   to the top whenever `stack.id` changes (`cardScroll`), so a pin tapped straight after another never opens part-way
-  down. The edges come from the scroll geometry, not from which cards are visible: `onScrollGeometryChange` builds
+  down. That reset (`onChange(of: stack.id)` -> `cardScroll.scrollTo(edge: .top)`) sits on a `ZStack` wrapping both
+  the lone-card and the panel branch, so it fires on every selection change, a switch between the two included; on a
+  branch's own scroll view it was rebuilt unseen while `cardScroll` kept the old position. Before the first
+  measurement the list is `Layout.mapCardListUnmeasuredHeight` (1 pt) tall. The edges come from the scroll geometry, not from which cards are visible: `onScrollGeometryChange` builds
   `MapCardListEdges(offset:contentHeight:containerHeight:)` (see [Models](../Models/EGM.md)), so they hold at
   accessibility type sizes, where one card can be taller than the list. A mask dissolves the top
   `Layout.mapCardListFade` points to clear while `edges.hasMoreAbove` and the bottom ones while `edges.hasMoreBelow`,
@@ -173,7 +185,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `.titleThenIcon`, caption semibold) sits over the bottom as `lilyProminentButton(sizing: .fitted, controlSize:
   .regular)`, white on the accent prominent glass with a full-size target, and scrolls to the end; it enters from
   `Layout.mapMorePillEntryScale` with a fade. The visible cards for its count come from
-  `onScrollTargetVisibilityChange` at `Layout.mapCardVisibleShare` (0.5). Both fades and the pill animate under one
+  `onScrollTargetVisibilityChange` at `Layout.mapCardVisibleShare` (0.01: any part of a card in view counts, so a
+  card taller than the list still counts; 0.5 before 2026-11-06). Both fades and the pill animate under one
   `.animation(_, value: edges)`, `.snappy(Duration.fast)`, nil under Reduce Motion. The `mapSelectedCard` identifier
   is on the inner stack, where it stamps the card links (`app.buttons`); set on the scroll view it reached no element.
 - Picker (`LocationPickerView`): converts the map frame's centre through `MapProxy.convert` on

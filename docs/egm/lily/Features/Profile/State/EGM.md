@@ -56,7 +56,7 @@ read. The store is built by the composition root (`lily/App/AppDependencies.swif
   an updated bio ("Bio updated for user") and a write that landed despite a failure ("Rename landed despite", "Bio
   update landed despite"); `.auth` warning for a failed load and a read-back that failed; `.auth` debug for a cancelled
   load and a write that did not land; `.cache` debug for a reused profile, a dropped answer (two lines: `isStillCaller`'s
-  "Profile answer for a previous caller dropped" and "Profile answer superseded by a rename; dropped") and the clear on
+  "Profile answer for a previous caller dropped" and "Profile answer superseded by a write; dropped") and the clear on
   sign-out `[lily/Features/Profile/State/ProfileStore.swift:ProfileStore]`.
 
 ## Verification

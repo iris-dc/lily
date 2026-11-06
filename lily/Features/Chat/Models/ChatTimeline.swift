@@ -52,11 +52,13 @@ nonisolated enum ChatTimeline {
         var rows: [ChatRow] = []
         var previous = lastSentAt
         for pending in unsent {
-            if startsDay(after: previous, pending.sentAt, input) {
+            if startsLaterDay(after: previous, pending.sentAt, input) {
                 rows.append(.day(input.calendar.startOfDay(for: pending.sentAt)))
             }
             rows.append(.pending(pending))
-            previous = pending.sentAt
+            // Never back in time: a send stamped earlier than the row before it leaves the last day opened in place,
+            // so a later send cannot open that day a second time.
+            previous = max(previous ?? pending.sentAt, pending.sentAt)
         }
         return rows
     }
@@ -80,6 +82,13 @@ nonisolated enum ChatTimeline {
     private static func startsDay(after previous: Date?, _ sentAt: Date, _ input: Input) -> Bool {
         guard let previous else { return true }
         return !input.calendar.isDate(previous, inSameDayAs: sentAt)
+    }
+
+    /// An unsent message is stamped by the device's clock, which may run behind the server's: one on an earlier day than
+    /// the message before it stays under that day, so no divider repeats a day already shown or goes back in time.
+    private static func startsLaterDay(after previous: Date?, _ sentAt: Date, _ input: Input) -> Bool {
+        guard let previous else { return true }
+        return input.calendar.startOfDay(for: sentAt) > input.calendar.startOfDay(for: previous)
     }
 
     /// Two consecutive text messages of one sender, close in time and on the same day, form one run.

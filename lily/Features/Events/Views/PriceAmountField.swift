@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The typed price of the filter panel's cap and the form's price: a trailing decimal-pad field at `priceFieldWidth`
+/// The typed price of the filter sheet's cap and the form's price: a trailing decimal-pad field at `priceFieldWidth`
 /// with the currency's symbol beside it, both findable by their identifiers.
 struct PriceAmountField: View {
     @Binding var text: String

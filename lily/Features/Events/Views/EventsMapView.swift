@@ -40,9 +40,9 @@ struct EventsMapView: View {
         }
         // Selecting and deselecting share one motion; under Reduce Motion the cards cut in place.
         .animation(motion.allowsMovement ? .snappy(duration: DesignTokens.Duration.fast) : nil, value: selectedStackID)
-        // A pin the filter hides must drop its selection too, or its card would pop out unanimated and pop back
-        // already selected when the type returns.
-        .onChange(of: viewModel.filter) {
+        // A pin the filter hides, or a stack a reload regrouped, must drop its selection too, or its card would pop out
+        // unanimated and pop back already selected when the type returns.
+        .onChange(of: stacks.map(\.id)) {
             if selectedStack == nil { selectedStackID = nil }
         }
         // A position that arrives after the map opened moves the camera to the user once, unless they already panned.

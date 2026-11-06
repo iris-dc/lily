@@ -21,9 +21,9 @@ nonisolated struct MapCardListEdges: Equatable, Sendable {
         hasMoreBelow = contentHeight - containerHeight - offset > slack
     }
 
-    /// The whole cards after the last one in view, so the pill names only cards still to come: none once the last
-    /// card is in view, even while its bottom is cut, and none for a lone card. Before the scroll view first reports,
-    /// the first card is the one in view.
+    /// The whole cards after the last one with any part in view, so the pill names only cards still to come: none
+    /// once the last card shows, even cut, and none for a lone card. A card taller than the list counts while any of
+    /// it shows. Before the scroll view first reports, the first card is the one in view.
     static func cardsBelow<ID: Equatable>(in ids: [ID], visible: [ID]) -> Int {
         let last = ids.lastIndex { visible.contains($0) } ?? 0
         return max(0, ids.count - 1 - last)

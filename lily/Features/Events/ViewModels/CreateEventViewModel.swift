@@ -16,6 +16,8 @@ final class CreateEventViewModel {
     /// Set when the sheet opened from a group's Events segment: the draft is stamped with it and the form shows it
     /// read-only instead of the picker.
     let lockedGroup: EventGroupRef?
+    /// The user's position as `prepare()` read it: the place lookups' bias once the draft has no spot of its own.
+    private var position: Coordinate?
 
     private let repository: any EventRepository
     private let locationService: any LocationService
@@ -74,8 +76,9 @@ final class CreateEventViewModel {
     /// Everything still wrong with the draft, in field order.
     var issues: [EventDraft.Issue] { draft.issues(now: now()) }
 
+    /// Biased to the draft's spot, else the user's position, so a venue name finds the one nearby.
     func placeSuggestions(for query: String) async -> [PlaceSuggestion] {
-        await geocoder.suggestions(for: query)
+        await geocoder.suggestions(for: query, near: draft.coordinate ?? position)
     }
 
     var canSubmit: Bool { !isSubmitting && issues.isEmpty }
@@ -101,6 +104,7 @@ final class CreateEventViewModel {
         belongsToGroups = !groups.communities.isEmpty
         guard draft.coordinate == nil else { return }
         let position = await locationService.currentLocation()
+        self.position = position
         if draft.coordinate == nil { draft.coordinate = position }
         logger.debug(.location, position == nil ? "No position for the new game; the spot is set on the map"
                                                 : "New game proposed at the user's position")
@@ -115,9 +119,9 @@ final class CreateEventViewModel {
         isSubmitting = true
         defer { isSubmitting = false }
         do {
-            draft = try await places.resolve(draft)
+            draft = try await places.resolve(draft, near: position)
         } catch {
-            errorCenter.report(error)
+            if !AppError.isCancellation(error) { errorCenter.report(error) }
             return
         }
         let created = await flow.submit(clientID: draft.clientId,

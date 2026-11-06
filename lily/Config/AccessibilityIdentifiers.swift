@@ -6,9 +6,9 @@ import Foundation
 nonisolated enum AccessibilityIdentifiers {
     /// Segmented list/map picker in the Explore toolbar.
     static let eventsPresentation = "events-presentation"
-    /// Toolbar button that drops the filter panel down.
+    /// Toolbar button that opens the filter sheet.
     static let eventsFilter = "events-filter"
-    /// The "Any type" chip in the filter panel; the per-type chips come from `filterType(_:)`.
+    /// The "Any type" chip in the filter sheet; the per-type chips come from `filterType(_:)`.
     static let filterTypeAny = "filter-type-any"
     static let filterFreeOnly = "filter-free-only"
     static let filterMaxPrice = "filter-max-price"
@@ -48,7 +48,7 @@ nonisolated enum AccessibilityIdentifiers {
     static let signInClose = "sign-in-close"
     static let authBack = "auth-back"
 
-    /// One chip per event type in the filter panel, e.g. `filter-type-football`.
+    /// One chip per event type in the filter sheet, e.g. `filter-type-football`.
     static func filterType(_ type: EventType) -> String {
         "filter-type-\(type.wireName)"
     }

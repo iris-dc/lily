@@ -13,11 +13,11 @@ nonisolated enum AppBranding {
     /// Copy shared by every event surface, so a preview card and a capacity bar can never disagree.
     enum Events {
         static var full: String { localized("Full") }
-        /// The level row of the form and the filter panel, and what an unknown level reads as.
+        /// The level row of the form and the filter sheet, and what an unknown level reads as.
         static var levelLabel: String { localized("Level") }
         static var anyLevel: String { localized("Any level") }
 
-        /// Filter panel on Explore, dropped down from the toolbar button.
+        /// The filter sheet on Explore, opened from the toolbar button.
         enum Filter {
             static var title: String { localized("Filters") }
             static var eventType: String { localized("Event type") }

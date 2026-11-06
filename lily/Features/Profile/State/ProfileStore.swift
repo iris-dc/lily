@@ -66,7 +66,7 @@ final class ProfileStore: SessionObserver {
             guard identity.isStillCaller(userID, orDrop: "Profile answer", logger: logger) else { return }
             // A write that landed while this read was out holds the newer state; the read's answer is the older one.
             guard loadedUserID != userID else {
-                logger.debug(.cache, "Profile answer superseded by a rename; dropped")
+                logger.debug(.cache, "Profile answer superseded by a write; dropped")
                 return
             }
             keep(loaded, for: userID)

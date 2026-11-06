@@ -52,3 +52,11 @@
   `~/.claude/projects/-Users-makshr-lily/reviews/2026-11-05-about-and-history/`. One finding from them: inside the
   `SettingsLinkRow` label a long subtitle was cut on one line despite `lineLimit(2)` until the `Text` got
   `.fixedSize(horizontal: false, vertical: true)`; with it the bio wraps to two lines and then cuts.
+- **A cleared bio survives the load (2026-11-06, staging review).** `ProfileFieldViewModel.prepare()` refilled the field
+  whenever the draft was empty, so a bio the user cleared on the snapshot's text before `GET /api/profile` answered came
+  back and Save turned off. The model now keeps the text the field opened with (`openingText`) and refills only while
+  the draft still equals it; an untouched field opened on the snapshot also takes a newer answer. Tests:
+  `AboutViewModelTests.prepareKeepsABioClearedBeforeTheLoadAnswered` and
+  `prepareRefreshesAnUntouchedFieldOpenedOnTheSnapshot`. The store's line for a read dropped behind a write now reads
+  "Profile answer superseded by a write; dropped" (a bio save takes the same path as a rename), pinned in
+  `ProfileStoreTests.aRenameLandingWhileTheLoadIsOutWins`.

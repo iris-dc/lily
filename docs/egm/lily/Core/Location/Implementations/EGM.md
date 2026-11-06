@@ -58,13 +58,20 @@ upstream request and a recent result is reused; `CoreLocationUpdateSource` reduc
 - `CoreLocationGeocoder` `[lily/Core/Location/Implementations/CoreLocationGeocoder.swift:CoreLocationGeocoder]`:
   `init(logger:)`; forward through `MKGeocodingRequest(addressString:)`, reverse through
   `MKReverseGeocodingRequest(location:)`, the first map item's `location.coordinate` / non-blank `name`; the
-  `CLGeocoder` routes are deprecated on iOS 26; `suggestions(for:)` through `MKLocalSearch` (addresses and points of
-  interest, the first `AppConfig.Events.placeSuggestionCount` items as `PlaceSuggestion`s, subtitles from
-  `MKAddress.shortAddress`; 2026-11-06). One request object per call. Logs under `.location` by outcome only,
-  never the text: a place name is the user's content.
+  `CLGeocoder` routes are deprecated on iOS 26; `suggestions(for:near:)` through `MKLocalSearch` (addresses and points
+  of interest, duplicates by `PlaceSuggestion.id` dropped, then the first `AppConfig.Events.placeSuggestionCount`,
+  subtitles from `MKAddress.shortAddress`). A bias sets the request's `region` to an `MKCoordinateRegion`
+  `AppConfig.Events.placeSearchRegionMeters` on a side around it (`region(around:)`); since the region is only a hint,
+  the forward lookup takes the first match `PlaceMatchPolicy.isUsable` accepts (a point of interest far from the bias
+  is skipped, a city or an address never is; `isUsable(_:near:)`). The forward lookup tells "no
+  match" from a failure (`rethrowFailure`, `isFailure`): an `MKError` other than `.placemarkNotFound`, a
+  `CLError.network` or a `URLError` logs a `.location` warning with the error's domain and code and throws
+  `AppError.network`; a cancelled caller gets `CancellationError`; anything else is "no match", `nil`. One request
+  object per call. Logs under `.location` by outcome only, never the text: a place name is the user's content.
 - `MockGeocodingService` `[lily/Core/Location/Implementations/MockGeocodingService.swift:MockGeocodingService]`: a
   non-blank name lands deterministically in the fixtures' neighbourhood (`Coordinate.aroundMockCenter` seeded by the
   name's scalar sum, so the same name is always the same spot); every spot is named "Berlin"; a blank name answers
-  `nil`; `suggestions(for:)` offers the demo cities whose names start with the query (Warsaw, Gdansk, Berlin, ...),
-  else the query itself, each on its deterministic spot (2026-11-06). Also the default `geocoder` of `AppDependencies.init` and the two event form view models, so tests and
-  previews need no wiring.
+  `nil`; `suggestions(for:near:)` offers the demo cities whose names start with the query (Warsaw, Gdansk, Berlin,
+  ...), else the query itself, each on its deterministic spot. It ignores the bias and never throws, so
+  `-mock-location` runs work offline. Also the default `geocoder` of `AppDependencies.init` and the two event form
+  view models, so tests and previews need no wiring. Tests: `lilyTests/Location/PlaceSuggestionTests.swift`.

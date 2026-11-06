@@ -49,7 +49,7 @@ struct TournamentDraftForm<Model: TournamentDraftEditing>: View {
         }
     }
 
-    /// Single choice in the filter panel's chip look; one type is always selected.
+    /// Single choice in the filter sheet's chip look; one type is always selected.
     private var typeChips: some View {
         CaptionedControl(Copy.eventType) {
             EventTypeChips(isSelected: { $0 == viewModel.draft.type }, onSelect: { type in

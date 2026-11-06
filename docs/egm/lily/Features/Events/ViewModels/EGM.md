@@ -48,16 +48,20 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   half of the place is missing (a typed name is geocoded into the spot, so a "Gdansk" game lands near Gdansk; a bare
   pin is named after the spot, falling back to the coordinates as text, never blank; a typed name also overrides a
   spot the user never picked, the GPS proposal, so "Warsaw" lands in Warsaw, while a failed override keeps the
-  proposal); `AppError.placeNotFound` (a name the geocoder cannot place while the draft has no spot at all) is
-  reported to the `ErrorCenter` before anything is sent and the draft stays. `placeSuggestions(for:)` hands the form
-  the geocoder's `suggestions(for:)` (both view models; `EventDraftEditing` requires it).
+  proposal); `AppError.placeNotFound` (a name the geocoder cannot place while the draft has no spot at all), or
+  `AppError.network` (the geocoder could not be asked), is reported to the `ErrorCenter` before anything is sent and
+  the draft stays; a cancelled lookup reports nothing. `prepare()` keeps the position it read in the private
+  `position`, the lookups' bias once the draft has no spot (`places.resolve(draft, near: position)`).
+  `placeSuggestions(for:)` hands the form the geocoder's `suggestions(for:near:)`, biased to `draft.coordinate ??
+  position` (both view models; `EventDraftEditing` requires it).
 - `EditEventViewModel` (`lily/Features/Events/ViewModels/EditEventViewModel.swift`):
-  `init(event:repository:errorCenter:logger:tryAgainDelay:now:currencyCode:onChange:)`. State: `draft`,
+  `init(event:repository:geocoder:errorCenter:logger:tryAgainDelay:now:currencyCode:onChange:)`. State: `draft`,
   `isSubmitting`, `updatedEvent`; the private `originalDraft` is `EventDraft(editing: event, currencyCode:)` built
   once in `init`, and `draft` starts as its copy. Derived: `issues`, `hasChanges`, `canSubmit`, `isDone`,
   `earliestStart`, `capacityRange`, `lockedGroup` (the original's group), `showsGroupRow`. Method: `submit()`, which
-  resolves the place through the same `PlaceResolver` inside its gate (an edit can clear the name), so a failed
-  geocode reaches the popup through the gate's report.
+  resolves the place through the same `PlaceResolver` inside its gate (an edit can clear the name), biased to the
+  game's stored spot, so a failed geocode reaches the popup through the gate's report; `placeSuggestions(for:)` is
+  biased to `draft.coordinate ?? original.location.coordinate`.
   `extension EditEventViewModel: EventDraftEditing {}`.
 
 ## Invariants
@@ -106,7 +110,9 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
 - `loadParticipants()` is a no-op for guests (`showsParticipants = identity.currentUserID != nil`);
   `recordViewed()` records once per instance; `canEdit = participation == .hosting`; `hostProfile` is `nil` for a
   guest, an unknown host or the caller themselves.
-- `canSubmit`: create `!isSubmitting && issues.isEmpty`; edit also `hasChanges` (`draft != originalDraft`, so a
+- `canSubmit`: create `!isSubmitting && issues.isEmpty`; edit also `hasChanges`
+  (`!draft.hasSameContent(as: originalDraft)`: equality but for the place bookkeeping `spotPickedOnMap` and
+  `suggestedName`, which never reach the wire, so a suggestion picked and undone by hand leaves nothing to save; a
   Region change while the sheet is up reads an untouched draft as unchanged). `submit()` guards on it and drops a call
   in flight. The create's default start is `Calendar.current.nextFullHour(after: now() + defaultStartOffset)`, and its
   `CreateFlow` judges `.network` and `.eventCreationFailed` as the outcomes left unknown (an inline closure, like the
@@ -137,7 +143,7 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
 - `InteractionRecorder.record`: `.filterApplied`, `.presentationChanged`, `.viewed`.
 - Logging: `.events` (loads, join and leave outcomes, "Capacity reached", create, update, "stays in group" after a
   reused id), `.cache` (fresh, stale,
-  retry and dropped-answer decisions, sibling invalidation), `.location` (fix available, changed, none).
+  retry and dropped-answer decisions, sibling invalidation), `.location` (fix available, changed, none; the place resolver's outcomes).
 - Callbacks: `onChange(SportEvent)` (detail, edit), `onCreated(SportEvent)` (create);
   `pushOptIn.offerReminders()` after a join or a create.
 - Sleep: `HeadStart` on the injected `Sleep` for at most `firstFixWait`; `LostRace` and `WriteGate` wait

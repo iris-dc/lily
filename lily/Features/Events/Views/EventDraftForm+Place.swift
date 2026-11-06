@@ -22,17 +22,9 @@ extension EventDraftForm {
         }
     }
 
-    /// A spot from the map picker is the user's choice: the typed name never overrides it (`PlaceResolver`), and a
-    /// suggestion the name produced earlier no longer describes it.
+    /// A spot from the map picker is the user's choice (`EventDraft.pickSpot`).
     var pickedCoordinate: Binding<Coordinate?> {
-        Binding(get: { viewModel.draft.coordinate },
-                set: { spot in
-                    viewModel.draft.coordinate = spot
-                    if spot != nil {
-                        viewModel.draft.spotPickedOnMap = true
-                        viewModel.draft.suggestedName = nil
-                    }
-                })
+        Binding(get: { viewModel.draft.coordinate }, set: { viewModel.draft.pickSpot($0) })
     }
 
     /// The geocoder's places for the typed name; picking one fills the name and the spot at once, so the map row and
@@ -40,10 +32,7 @@ extension EventDraftForm {
     var suggestionRows: some View {
         ForEach(Array(suggestions.enumerated()), id: \.element.id) { index, suggestion in
             Button {
-                viewModel.draft.locationName = suggestion.title
-                viewModel.draft.coordinate = suggestion.coordinate
-                viewModel.draft.suggestedName = suggestion.title
-                viewModel.draft.spotPickedOnMap = false
+                viewModel.draft.apply(suggestion)
                 suggestions = []
                 focusedField = nil
             } label: {

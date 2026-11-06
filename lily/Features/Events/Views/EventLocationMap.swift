@@ -14,6 +14,8 @@ struct EventLocationMap: View {
                 }
             }
             .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
+            // initialPosition is read once per identity: an edit that moves the spot must rebuild the camera.
+            .id(event.location.coordinate)
             .frame(height: DesignTokens.Layout.detailMapHeight)
             .overlay(alignment: .bottomTrailing) {
                 Label(AppBranding.Events.openInMaps, systemImage: DesignTokens.Symbols.distance)
@@ -24,7 +26,6 @@ struct EventLocationMap: View {
         }
         .buttonStyle(.plain)
         .lilyHoverable()
-        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AccessibilityIdentifiers.eventDetailMap)
         .accessibilityLabel(Text(AppBranding.Events.openInMaps))
     }

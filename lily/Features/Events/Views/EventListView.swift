@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The Explore screen: the upcoming games as a list, switchable to a map, narrowed through the filter panel dropped
-/// down from the toolbar, with the "+" menu floating over the content (a signed-in user gets the game, group or
+/// The Explore screen: the upcoming games as a list, switchable to a map, narrowed through the filter sheet the
+/// toolbar opens, with the "+" menu floating over the content (a signed-in user gets the game, group or
 /// tournament form, a guest the sign-in sheet) and a header (the carousels) above the list. On a wide window
 /// (`LayoutMode.wide`) the map is not a mode but a pane: the content column on the left, the map always on the right,
 /// and the picker gone (`EventListLayout`).

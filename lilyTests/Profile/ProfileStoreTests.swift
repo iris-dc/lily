@@ -214,7 +214,7 @@ struct ProfileStoreTests {
         await load.value
 
         #expect(store.displayName == "Alex Kim" && !store.isDefaultName && repository.profileCallCount == 1)
-        #expect(logger.hasLine(in: .cache, at: .debug, mentioning: "Profile answer superseded by a rename"))
+        #expect(logger.hasLine(in: .cache, at: .debug, mentioning: "Profile answer superseded by a write"))
     }
 
     @Test func signOutClearsTheProfile() async {

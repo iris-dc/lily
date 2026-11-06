@@ -88,8 +88,8 @@ use the generated `Color.lily*` asset symbols.
   `Text(startsAt, format: .relative(presentation: .named))`); `CaptionedControl<Content>(_ title:, content:)`
   [`lily/Core/UI/Components/CaptionedControl.swift:CaptionedControl`];
   `PlaceLine(name:, distance: String? = nil, font: Font = .subheadline)` [`lily/Core/UI/Components/PlaceLine.swift:PlaceLine`].
-- Marks and rows: `AvatarCircle(initials:, systemImage: String? = nil, size: CGFloat = DesignTokens.Layout.avatarSize, tint: Tint = .accent, glyphFont: Font? = nil, glyphColor: Color? = nil)`,
-  a glyph-only `init(systemImage:, size:, tint:, glyphFont:, glyphColor:)`, `enum Tint { case accent, secondary,
+- Marks and rows: `AvatarCircle(initials:, systemImage: String? = nil, size: CGFloat = DesignTokens.Layout.avatarSize, tint: Tint = .accent)`,
+  a glyph-only `init(systemImage:, size:, tint:)`, `enum Tint { case accent, secondary,
   sport }` [`lily/Core/UI/Components/AvatarCircle.swift:AvatarCircle`] (accent for a person, secondary for a group's
   mark, the inbox's cards and another sender in a room, sport for a game's or a tournament's type); `GlassGlyph` was
   removed 2026-11-06 (the map card draws `AvatarCircle` with `.sport`);
@@ -220,7 +220,8 @@ use the generated `Color.lily*` asset symbols.
   beside it carry the count) [`lily/Core/UI/Components/CapacityMeter.swift:CapacityMeter`]. `AvatarCircle` is always
   `size` by `size`, `.accessibilityHidden(true)`, and `systemImage` wins over `initials`; its surface is tinted glass
   for `.accent` (`Opacity.glassTint`) and `.secondary` (`Opacity.secondaryGlassTint`) and `sportFill(in: .circle)` for
-  `.sport`, where an unset glyph colour is `.white` and an unset glyph font is `LilyTheme.Fonts.sportGlyph(size:)`
+  `.sport`; a glyph is `.white` in `LilyTheme.Fonts.sportGlyph(size:)` on `.sport`, `.primary` in
+  `LilyTheme.Fonts.avatarInitials(size:)` otherwise
   [`lily/Core/UI/Components/AvatarCircle.swift:AvatarCircle`, `AvatarSurface`].
   `String.initials` takes the first character of the first two space-separated words, uppercased
   [`lily/Core/UI/Components/String+Initials.swift:String.initials`].

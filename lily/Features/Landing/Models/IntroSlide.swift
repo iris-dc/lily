@@ -38,8 +38,7 @@ nonisolated enum IntroSlide: String, CaseIterable, Identifiable, Sendable {
 
 /// What the slides' miniature screens show: the events of the first slide, the one the second slide's detail opens
 /// (its title is also the game the group room announces), and the tournament whose bracket the last slide draws. The
-/// landing view model fills the events from the live preview when one arrived; the tournament is always the fixture,
-/// since a live one may be in any state and the slide is about the bracket.
+/// landing view model fills it from `IntroFixtures`, so the first screen never changes under the reader.
 nonisolated struct IntroContent: Equatable, Sendable {
     /// The cards of the Explore miniature.
     let events: [SportEvent]

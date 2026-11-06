@@ -48,7 +48,9 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - `[ChatRowView.swift:ChatRowView]` `row: ChatRow`, `viewModel`, `dependencies`, `highlightedMessageID`, tap
   callbacks, `arrivedAt: Date?`; one row with its clock-driven arrival and `MessageContextMenu`. `Equatable` on `row`,
   `highlightedMessageID`, `arrivedAt` and the identity of `viewModel` and `dependencies`; `ChatTranscript` wraps it in
-  `equatable()`, so the body run a pin causes leaves unchanged rows as drawn.
+  `equatable()`, so the body run a pin causes leaves unchanged rows as drawn. Accepted limit: a `.day` row reads
+  `viewModel.now()` only when its body runs, so a divider on screen across midnight keeps "Today" until the row is
+  rebuilt (the room reopened, the row scrolled out of the lazy stack and back); there is no midnight trigger.
 - `[MessageComposer.swift:MessageComposer]` `@Bindable viewModel`; `ReplyPreviewBar`, `AttachmentStrip`,
   `AttachmentMenuButton`, a `GrowingTextView` on `draft.text`, send, caption, `PollComposerSheet`.
 - `[ReplyPreviewBar.swift:ReplyPreviewBar]` `quote: ReplyQuote`, `onCancel`; an accent `QuoteBar` with a "Replying to"
@@ -221,7 +223,7 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `navigation.selectedTab = .explore`. Navigation: `openInbox()`, `open(chat:)`, `selectedConversation`, the
   `chatPath` binding, `NavigationLink` values (profiles, tournament, group info, inbox, event).
 - `[ChatView.swift:ChatView]` `viewModel.appear()` on task, `cancel()` on disappear, `sceneDidEnterBackground()` on
-  `.background`, `clearHistory()`, `loadHistory()`; builds `ViewerHero(logger:)`; `hidesTabBarOnCompact()`.
+  `.background`, `loadHistory()`; builds `ViewerHero(logger:)`; `hidesTabBarOnCompact()`.
 - `[ChatTranscript.swift:ChatTranscript]` Presents the viewer cover, QuickLook, `PollVotersSheet`, `ReportSheet`
   (`makeReportViewModel(for:title:)`) and the block dialog (`viewModel.block(senderOf:)`); `openViewer` runs
   `KeyboardDismissal.dismissAndWait(atMost: AppConfig.Chat.viewerKeyboardWait)` alongside `hero.preload`; `reveal`

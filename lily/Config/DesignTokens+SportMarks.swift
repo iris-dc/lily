@@ -19,9 +19,12 @@ nonisolated extension DesignTokens.Layout {
     static let mapCardTitleLines = 2
     /// The fade over each edge of the card list while more waits beyond it.
     static let mapCardListFade: CGFloat = 56
-    /// The share of a card that must be in view for the "+2 more" pill to count it as seen: half, so the cut card
-    /// under the fade is the last one counted out.
-    static let mapCardVisibleShare: Double = 0.5
+    /// The share of a card that must be in view for the "+2 more" pill to count it as seen: a sliver, so a card
+    /// taller than the list (accessibility sizes) still counts and the pill names only the whole cards after it.
+    static let mapCardVisibleShare: Double = 0.01
+    /// The card list's height before it is first measured: a zero-height scroll view never lays out its cards, so
+    /// they would never report a height.
+    static let mapCardListUnmeasuredHeight: CGFloat = 1
     /// Rounding the card list's scroll geometry may leave over without meaning there is more beyond an edge.
     static let mapCardEdgeSlack: CGFloat = 1
     /// The size the "+2 more" pill grows in from.

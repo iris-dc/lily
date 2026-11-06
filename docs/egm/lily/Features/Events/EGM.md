@@ -33,5 +33,5 @@ by every layer. Contracts live out of tree under `docs/egm/` because `lily/` may
   `EventDetailViewModel` (join/leave through `LostRace.attemptTwice`, refetch on an unknown outcome),
   `CreateEventViewModel` (`CreateFlow` keyed on `clientId`) and `EditEventViewModel` (`WriteGate`).
 - Views: [./Views/EGM.md](./Views/EGM.md) - the Explore screen and its states, the detail with its participation
-  control, the generic `EventDraftForm` and sheets, the filter panel, the events map and location picker, and the
+  control, the generic `EventDraftForm` and sheets, the filter sheet, the events map and location picker, and the
   cards and rows reused by Groups and Tournaments.

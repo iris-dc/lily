@@ -36,9 +36,15 @@ logic can be tested against a scripted source.
 ### `GeocodingService` (2026-11-05)
 
 - `protocol GeocodingService` `[lily/Core/Location/Interfaces/GeocodingService.swift:GeocodingService]`:
-  `func coordinate(for name: String) async -> Coordinate?` (the spot a typed place names) and
-  `func placeName(for coordinate: Coordinate) async -> String?` (what the place around the spot is called) and
-  `func suggestions(for query: String) async -> [PlaceSuggestion]` (places answering to a partial query, best first,
-  at most `AppConfig.Events.placeSuggestionCount`; 2026-11-06). Failures answer `nil` or empty, never throw: the
-  callers (`PlaceResolver` and the form's suggestion rows) decide what that means. `PlaceSuggestion` (Models): `title`,
-  `subtitle?`, `coordinate`; `id` is title plus subtitle.
+  `func coordinate(for name: String, near bias: Coordinate?) async throws -> Coordinate?` (the spot a typed place
+  names), `func placeName(for coordinate: Coordinate) async -> String?` (what the place around the spot is called) and
+  `func suggestions(for query: String, near bias: Coordinate?) async -> [PlaceSuggestion]` (places answering to a
+  partial query, best first, distinct by `id`, at most `AppConfig.Events.placeSuggestionCount`).
+- `bias` (the draft's spot, else the user's position or an edited game's stored spot) favours places around it in a
+  region `AppConfig.Events.placeSearchRegionMeters` on a side; it is only a hint, so a typed city name still lands on
+  the city.
+- "Nothing answers" is `nil` or empty. The forward lookup throws `AppError.network` when the geocoder could not be
+  asked (offline, throttled, a server failure) and `CancellationError` for a cancelled caller, so a name never looked
+  up is never reported as unknown; `placeName` and `suggestions` answer `nil` or empty on any failure. The callers
+  (`PlaceResolver` and the form's suggestion rows) decide what each means. `PlaceSuggestion` is in
+  [Models](../Models/EGM.md).

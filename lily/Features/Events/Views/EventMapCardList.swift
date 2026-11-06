@@ -14,7 +14,7 @@ struct EventMapCardList: View {
     @State private var cardScroll = ScrollPosition(edge: .top)
     /// Whether content runs past either edge, read off the scroll geometry, so it holds at any type size.
     @State private var edges = MapCardListEdges.none
-    /// The cards at least half in view, as the scroll view reports them; what the pill counts past.
+    /// The cards with any part in view, as the scroll view reports them; what the pill counts past.
     @State private var visibleCardIDs: [SportEvent.ID] = []
     @Environment(\.motion) private var motion
 
@@ -25,6 +25,15 @@ struct EventMapCardList: View {
     }
 
     var body: some View {
+        // One container over both branches, so the reset sees every selection, a switch between a lone card and the
+        // panel included; on a branch's own scroll view it was rebuilt unseen while the scroll position lived on.
+        ZStack {
+            content
+        }
+        .onChange(of: stack.id) { cardScroll.scrollTo(edge: .top) }
+    }
+
+    @ViewBuilder private var content: some View {
         if isPanel {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
                 header
@@ -81,7 +90,8 @@ struct EventMapCardList: View {
         }
         // A `fixedSize` would ignore the cap and overflow under the "+"; the measured height keeps the hit area exactly
         // the visible cards'.
-        .frame(height: min(max(cardListHeight, 1), DesignTokens.Layout.mapCardListMaxHeight))
+        .frame(height: min(max(cardListHeight, DesignTokens.Layout.mapCardListUnmeasuredHeight),
+                           DesignTokens.Layout.mapCardListMaxHeight))
         .scrollPosition($cardScroll)
         .scrollBounceBehavior(.basedOnSize)
         .onScrollGeometryChange(for: MapCardListEdges.self, of: Self.edges(of:), action: { edges = $1 })
@@ -90,7 +100,6 @@ struct EventMapCardList: View {
         .mask { fadeMask }
         .overlay(alignment: .bottom) { morePill }
         .animation(animation, value: edges)
-        .onChange(of: stack.id) { cardScroll.scrollTo(edge: .top) }
     }
 
     nonisolated private static func edges(of geometry: ScrollGeometry) -> MapCardListEdges {

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Initials (or a glyph) in a tinted circle: the profile's avatar, a group's mark in its row, a member's in the roster,
 /// a game's or a tournament's sport. The diameter comes from `DesignTokens.Layout.avatarSmall` / `avatarMedium` /
-/// `avatarSize`. A glyph brings its own font and colour when given; the tint's metrics otherwise.
+/// `avatarSize`; a glyph takes the tint's font and colour.
 ///
 /// The tint is a meaning: accent for a person (profiles, rosters, invitees), secondary for a mark (groups, the inbox's
 /// cards) and for another sender's avatar in a room, sport for an event's or a tournament's type. Every amber mark sits
@@ -21,15 +21,13 @@ struct AvatarCircle: View {
     var systemImage: String?
     var size: CGFloat = DesignTokens.Layout.avatarSize
     var tint: Tint = .accent
-    var glyphFont: Font?
-    var glyphColor: Color?
 
     var body: some View {
         Group {
             if let systemImage {
                 Image(systemName: systemImage)
-                    .font(glyphFont ?? defaultGlyphFont)
-                    .foregroundStyle(glyphColor ?? (tint == .sport ? .white : .primary))
+                    .font(glyphFont)
+                    .foregroundStyle(tint == .sport ? Color.white : Color.primary)
             } else {
                 Text(initials)
                     .font(LilyTheme.Fonts.avatarInitials(size: size))
@@ -40,7 +38,7 @@ struct AvatarCircle: View {
         .accessibilityHidden(true)
     }
 
-    private var defaultGlyphFont: Font {
+    private var glyphFont: Font {
         tint == .sport ? LilyTheme.Fonts.sportGlyph(size: size) : LilyTheme.Fonts.avatarInitials(size: size)
     }
 }
@@ -67,15 +65,8 @@ extension AvatarCircle {
     /// survives.
     init(systemImage: String,
          size: CGFloat = DesignTokens.Layout.avatarSize,
-         tint: Tint = .accent,
-         glyphFont: Font? = nil,
-         glyphColor: Color? = nil) {
-        self.init(initials: "",
-                  systemImage: systemImage,
-                  size: size,
-                  tint: tint,
-                  glyphFont: glyphFont,
-                  glyphColor: glyphColor)
+         tint: Tint = .accent) {
+        self.init(initials: "", systemImage: systemImage, size: size, tint: tint)
     }
 }
 

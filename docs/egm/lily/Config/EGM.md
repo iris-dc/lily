@@ -21,9 +21,12 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Logging`, `Version`. Added by `+Area` files: `Chat` (+ `Attachments`, `Polls`, `Pins`), `Currency`, `DisplayName`
   (`lily/Config/AppConfig+Profile.swift`: `length = 1...32` code points, `backendDefault = "Player"`, both Laurel's
   `profile.*` settings) and `About` (same file: `maxLength = 300` code points, Laurel's `profile.max-bio-length`),
-  `Events` extras in `lily/Config/AppConfig+Events.swift` (`mapStackDecimals` 4, `placeSuggestionCount` 3,
-  `placeSuggestionDebounce` 300 ms, `placeSuggestionMinimumQuery` 2; 2026-11-06), `Build`, `FeatureFlags`, `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push`
-  (+ `Payload`), `Realtime`, `Tournaments`.
+  `Events` extras in `lily/Config/AppConfig+Events.swift` (`mapStackRadiusMeters` 11 (an event joins the first stack
+  whose first spot lies within it), `mapStackDecimals` 4 (only names a stack: its first spot rounded),
+  `placeSuggestionCount` 3, `placeSuggestionDebounce` 300 ms, `placeSuggestionMinimumQuery` 2,
+  `placeSearchRegionMeters` 100,000 (the side of the region the geocoder and the suggestions favour around the draft's
+  spot or the user; a hint only, so a city name still lands on the city); 2026-11-06), `Build`, `FeatureFlags`,
+  `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push` (+ `Payload`), `Realtime`, `Tournaments`.
 - `API` (`lily/Config/AppConfig.swift:AppConfig.API`): `localBaseURL = http://localhost:8080`,
   `productionBaseURL = https://api.iskra.red`; `baseURL` is `localBaseURL` under `#if DEBUG && targetEnvironment(simulator)`,
   else `productionBaseURL`; `sendsLocalUserHeader` is `true` under `#if DEBUG`; `requestTimeout = 15`,
@@ -133,8 +136,10 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   (`lily/Config/DesignTokens+Shell.swift`).
 - Sport marks and the map's cards (`lily/Config/DesignTokens+SportMarks.swift`, 2026-11-06): `Layout.sportGlyphFraction
   0.46`, `sportMarkGlowRadius 4`, `sportMarkRimWidth 0.5`, `chipMarkSize 16`, `mapCardMarkSize 44`,
-  `mapCardMeterWidth 28`, `mapCardTitleLines 2`, `mapCardListFade 56`, `mapCardVisibleShare 0.5` (half a card in view counts it as seen, so
-  the cut card under the fade is the last one counted out), `mapCardEdgeSlack 1` (scroll-geometry rounding that does
+  `mapCardMeterWidth 28`, `mapCardTitleLines 2`, `mapCardListFade 56`, `mapCardVisibleShare 0.01` (any sliver of a
+  card in view counts it as seen, so a card taller than the list at accessibility sizes still counts and the pill names
+  only the whole cards after the last one showing), `mapCardListUnmeasuredHeight 1` (the card list's height before its
+  first measurement; a zero-height scroll view never lays out its cards to report one), `mapCardEdgeSlack 1` (scroll-geometry rounding that does
   not mean more beyond an edge), `mapMorePillEntryScale 0.8`; `Opacity.sportMarkGlow 0.45`, `sportMarkRim 0.18`,
   `sportGlassTint 0.55`, `mapCardCapsuleFill 0.1`, `mapPanelCardWash 0.07` (the ink wash of a card inside the
   many-events panel, instead of a second glass); `Symbols.moreBelow = "chevron.down"`

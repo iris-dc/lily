@@ -11,7 +11,7 @@ final class EditEventViewModel {
     private(set) var updatedEvent: SportEvent?
 
     private let original: SportEvent
-    /// The game as it is, as a draft: nothing to save until `draft` differs from it.
+    /// The game as it is, as a draft: nothing to save until `draft` differs from it in what reaches the wire.
     private let originalDraft: EventDraft
     private let rules: EventDraft.Rules
     private let repository: any EventRepository
@@ -47,7 +47,7 @@ final class EditEventViewModel {
 
     var issues: [EventDraft.Issue] { draft.issues(now: now(), rules: rules) }
 
-    var hasChanges: Bool { draft != originalDraft }
+    var hasChanges: Bool { !draft.hasSameContent(as: originalDraft) }
 
     var canSubmit: Bool { !isSubmitting && hasChanges && issues.isEmpty }
 
@@ -62,8 +62,9 @@ final class EditEventViewModel {
 
     var showsGroupRow: Bool { lockedGroup != nil }
 
+    /// Biased to the draft's spot, else the game's stored one, so a venue name finds the one nearby.
     func placeSuggestions(for query: String) async -> [PlaceSuggestion] {
-        await geocoder.suggestions(for: query)
+        await geocoder.suggestions(for: query, near: draft.coordinate ?? original.location.coordinate)
     }
 
     /// Saves the draft; a call while one is in flight is dropped. The gate repeats a `TRY_AGAIN` once (the backend
@@ -74,7 +75,7 @@ final class EditEventViewModel {
         isSubmitting = true
         defer { isSubmitting = false }
         await gate.run("Update of event \(original.id)") {
-            draft = try await places.resolve(draft)
+            draft = try await places.resolve(draft, near: original.location.coordinate)
             let event = try await repository.update(id: original.id, draft)
             updatedEvent = event
             onChange(event)

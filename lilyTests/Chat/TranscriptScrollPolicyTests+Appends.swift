@@ -100,6 +100,35 @@ extension TranscriptScrollPolicyTests {
         #expect(reader.reappeared() == .none, "a reader of older messages is left where they are")
     }
 
+    /// A pin that moved nothing (the reader came back already at the bottom) sends no landing report: the next report is
+    /// judged as any other, so a status-bar scroll whose first frame measures rows still ends following and is not pinned.
+    @Test func aScrollUpAfterAPinThatNeverLandedEndsFollowing() {
+        var policy = settled()
+        #expect(policy.reappeared() == .scrollToBottom)
+        let atBottom = snapshot(offsetY: 1_200)
+        let firstFrame = snapshot(offsetY: 1_180, contentHeight: 2_030, isAtBottom: false)
+        #expect(policy.geometryChanged(from: atBottom, to: firstFrame, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        #expect(!policy.isFollowing)
+        let nextFrame = snapshot(offsetY: 900, contentHeight: 2_080, isAtBottom: false)
+        #expect(policy.geometryChanged(from: firstFrame, to: nextFrame, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none, "nothing fights the scroll to the top")
+    }
+
+    /// A pin can land while the arriving row is still growing in: the offset is lower and the content taller, but the
+    /// landing ends on the bottom, so the reader keeps following and the growth is pinned.
+    @Test func aPinLandingWhileTheRowStillGrowsKeepsFollowing() {
+        var policy = settled()
+        let atBottom = snapshot(offsetY: 660, contentHeight: 1_174)
+        let shrunk = snapshot(offsetY: 660, contentHeight: 1_105)
+        #expect(policy.geometryChanged(from: atBottom, to: shrunk, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
+        let landedGrowing = snapshot(offsetY: 648, contentHeight: 1_116)
+        #expect(policy.geometryChanged(from: shrunk, to: landedGrowing, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
+        #expect(policy.isFollowing, "the landing is ours even while the row grows")
+    }
+
     /// A pin after a shrink lowers the offset too (a tombstone, the lazy stack's correction), and so does the keyboard
     /// going with its inset: the reader keeps following and is pinned.
     @Test func aLowerOffsetWithAShrinkOrAnInsetChangeIsNotAScroll() {

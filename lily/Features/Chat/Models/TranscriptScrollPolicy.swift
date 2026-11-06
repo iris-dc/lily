@@ -87,8 +87,9 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     /// A restore asked for and not yet seen to move the offset: until it has, a report near the top is the old place,
     /// not the reader's, and asks for no page.
     private var isRestoreLanding = false
-    /// The last action was a pin: the report after it shows the pin landing, whose offset is ours, lower when the content
-    /// had shrunk (the previous bubble's time line going with an append), never a scroll of the reader's or UIKit's.
+    /// The last action was a pin: the report after it, when only the offset moved, shows the pin landing, whose offset
+    /// is ours, lower when the content had shrunk (the previous bubble's time line going with an append), never a scroll
+    /// of the reader's or UIKit's.
     private var lastActionWasPin = false
 
     /// Called before an older page is requested, with the geometry the reader currently sees and the oldest message held.
@@ -182,8 +183,12 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
             return .animateToBottom
         }
         // Ends from the first frame, so no pin fights the scroll; the state has no rest to wait for. The report after a
-        // pin of ours is the pin landing, not a scroll.
-        if isFollowing, !lastActionWasPin, current.wasScrolledUp(from: previous) {
+        // pin of ours is its landing when it moved only the offset or ended on the bottom (a row still growing in as it
+        // lands); a pin that moved nothing sends no report, so the next one may be a scroll whose first frame measures
+        // rows and has already left the bottom.
+        let isPinLanding = lastActionWasPin
+            && (current.contentHeight == previous.contentHeight || current.isAtBottom)
+        if isFollowing, !isPinLanding, current.wasScrolledUp(from: previous) {
             isFollowing = false
         }
         if isFollowing, current.movesTheBottom(from: previous) {

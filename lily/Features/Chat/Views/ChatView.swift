@@ -1,9 +1,8 @@
 import SwiftUI
 
 /// A group's chat room: the transcript over the aurora, the composer pinned to the bottom, the group's name and
-/// member count in the bar, an info button that leads to the group and a "more" menu whose one item clears the chat
-/// for the caller after a confirmation. A direct conversation is titled with the other person, has no member count,
-/// its info button leads to their profile and its menu reads "Delete chat". On a compact width the tab bar hides
+/// member count in the bar and an info button that leads to the group. A direct conversation is titled with the other
+/// person, has no member count and its info button leads to their profile. On a compact width the tab bar hides
 /// while it is open; on a regular width the room sits in a split view's detail beside the tabs' top bar. While a
 /// picture opens out of its tile or closes back into it, the chat draws the picture's part under the composer itself
 /// (`ViewerStage`) and the composer fades, so the whole picture moves and the composer's glass comes back over it.
@@ -11,7 +10,6 @@ struct ChatView: View {
     @State private var viewModel: ChatViewModel
     /// What the transcript's tiles and the viewer share for the viewer's coming and going.
     @State private var hero: ViewerHero
-    /// The room awaiting the caller's word on a clear; `nil` while nothing is asked.
     private let dependencies: AppDependencies
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss

@@ -136,6 +136,37 @@ nonisolated struct EventDraft: Equatable, Sendable {
     /// Something typed that the parser cannot read in the draft's locale; blank is empty, not unreadable.
     var hasUnreadablePrice: Bool { price == nil && !priceText.trimmed.isEmpty }
 
+    /// The typed name worth asking for suggestions: trimmed, at least `AppConfig.Events.placeSuggestionMinimumQuery`
+    /// code points, and not the name a tapped suggestion just set; `nil` asks for nothing.
+    var placeSuggestionQuery: String? {
+        let query = locationName.trimmed
+        guard query.codePointCount >= AppConfig.Events.placeSuggestionMinimumQuery, query != suggestedName else { return nil }
+        return query
+    }
+
+    /// A tapped suggestion fills the name and the spot at once. The spot stays a proposal, so a later reworded name
+    /// moves it again, and the name it set is not geocoded twice.
+    mutating func apply(_ suggestion: PlaceSuggestion) {
+        (locationName, coordinate) = (suggestion.title, suggestion.coordinate)
+        (suggestedName, spotPickedOnMap) = (suggestion.title, false)
+    }
+
+    /// A spot from the map picker is the user's choice: the typed name never overrides it (`PlaceResolver`), and a
+    /// suggestion the name produced earlier no longer describes it. Clearing the spot changes nothing else.
+    mutating func pickSpot(_ spot: Coordinate?) {
+        coordinate = spot
+        guard spot != nil else { return }
+        (spotPickedOnMap, suggestedName) = (true, nil)
+    }
+
+    /// Equal but for the place bookkeeping (`spotPickedOnMap`, `suggestedName`), which never reaches the wire: an edit
+    /// brought back to the stored game has nothing to save.
+    func hasSameContent(as other: EventDraft) -> Bool {
+        var mine = self
+        (mine.spotPickedOnMap, mine.suggestedName) = (other.spotPickedOnMap, other.suggestedName)
+        return mine == other
+    }
+
     /// The earliest start the form accepts, relative to `now`.
     static func earliestStart(now: Date, rules: Rules = .creation) -> Date {
         now.addingTimeInterval(rules.minimumLeadTime)

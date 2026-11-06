@@ -51,10 +51,23 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `trimmedLocationName`, `trimmedDescription?`, `trimmedLookingFor?`, `isFree`, `hasUnreadablePrice`,
   `price: Decimal? { get set }`, `eventPrice: Price?`; `earliestStart(now:rules:)`, `issues(now:rules:)` (the one
   validity rule; `issues(...).isEmpty` is what the forms read), `makeEvent(hostUserId:hostName:coordinate:)`.
+  Place bookkeeping (2026-11-06, moved out of the form): `placeSuggestionQuery: String?` (the trimmed name when it has
+  at least `AppConfig.Events.placeSuggestionMinimumQuery` code points and is not `suggestedName`, else `nil`: when the
+  form asks for suggestions); `mutating func apply(_ suggestion: PlaceSuggestion)` (sets `locationName` and
+  `suggestedName` to the title, `coordinate` to its spot and `spotPickedOnMap = false`, so the spot stays a proposal);
+  `mutating func pickSpot(_ spot: Coordinate?)` (sets `coordinate`; a non-nil spot also sets `spotPickedOnMap = true`
+  and `suggestedName = nil`, `nil` changes nothing else); `func hasSameContent(as other: EventDraft) -> Bool`
+  (equality ignoring `spotPickedOnMap` and `suggestedName`, bookkeeping that never reaches the wire;
+  `EditEventViewModel.hasChanges` uses it).
 - `EventMapStack` (`EventMapStack.swift`, 2026-11-06): the events standing on one spot of the map, drawn as one pin
-  (`id` the coordinate rounded to `AppConfig.Events.mapStackDecimals` (4, about 11 m), `coordinate`, `events` in feed
-  order); `title` is the event's title alone or the shared `locationName` once there are several;
-  `stacks(of:)` groups keeping the feed's order. Two overlapping pins left the one behind unselectable.
+  (`id` the first member's coordinate rounded to `AppConfig.Events.mapStackDecimals` (4), with `:<first event id>`
+  appended when an earlier stack already took that key, so ids stay unique; `coordinate` the first member's spot;
+  `events` in feed order); `title` is the event's title alone or the shared `locationName` once there are several;
+  `stacks(of:)` puts each event in the first stack whose first spot lies within
+  `AppConfig.Events.mapStackRadiusMeters` (11 m, `Coordinate.distance(to:)`), else opens a new stack, keeping the
+  feed's order between and within stacks; a distance, not a rounded grid, so two spots either side of a rounding
+  boundary share one pin (changed 2026-11-06: it grouped by the rounded coordinate). Two overlapping pins left the one
+  behind unselectable.
 - `MapCardListEdges` (`lily/Features/Events/Models/MapCardListEdges.swift:MapCardListEdges`, 2026-11-06):
   `Equatable, Sendable`; `hasMoreAbove`, `hasMoreBelow`; `none`; `init(hasMoreAbove:hasMoreBelow:)` and
   `init(offset:contentHeight:containerHeight:)` (`offset` how far the content's top has scrolled past the list's top);
@@ -142,7 +155,11 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   same slack, so rounding at either end never counts as more. It reads geometry only, never card visibility, so one
   card taller than the list still has more below. `cardsBelow(in:visible:)` is the whole cards after the last id in
   `visible` (the first card when `visible` is empty, before the scroll view reports): none once the last card is in
-  view, even while its bottom is cut, and none for a lone card, so the pill never names a card that is not there.
+  view, even while its bottom is cut, and none for a lone card, so the pill never names a card that is not there. The
+  view puts a card in `visible` while any part of it shows (`DesignTokens.Layout.mapCardVisibleShare` 0.01), so a card
+  taller than the list counts while any of it shows.
+- `EventDraft(editing:)` starts with `spotPickedOnMap = true` and `suggestedName = nil`, so a reworded name never moves
+  a game under its players (`EventDraft.swift:init(editing:currencyCode:locale:)`).
 
 ## Side Effects
 
@@ -160,9 +177,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `EventDraftTests.swift`, `EventDraftPriceTests.swift`, `EventFilterTests.swift`, `EventTypeTests.swift`,
   `SkillLevelTests.swift`, `EventListScreenStateTests.swift`, `CreateIntentPolicyTests.swift`,
   `PickerSettlePolicyTests.swift`, `MapFramingTests.swift`, `PlaceDraftTests.swift`, `CreateEventPayloadTests.swift`,
-  `EventMapStackTests.swift`, `MapCardListEdgesTests.swift`).
+  `EventMapStackTests.swift`, `MapCardListEdgesTests.swift`, `EventDraftPlaceTests.swift`).
 - `MapCardListEdgesTests` (`lilyTests/Events/MapCardListEdgesTests.swift`): `aListThatFitsHasNothingBeyondEitherEdge`,
   `aTallListAtItsTopHasMoreBelowOnly`, `midwayThereIsMoreOnBothSides`,
   `atTheEndOnlyAboveRemainsAndRoundingDoesNotCount`, `oneCardTallerThanTheListStillHasMoreBelow`,
   `theCountIsTheCardsAfterTheLastOneInView`, `noCardIsLeftOnceTheLastIsInViewOrThereIsOnlyOne`,
-  `beforeAnyReportTheFirstCardCountsAsInView`.
+  `beforeAnyReportTheFirstCardCountsAsInView`, `aCardTallerThanTheListCountsWhileAnyOfItShows`.

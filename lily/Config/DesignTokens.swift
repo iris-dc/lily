@@ -43,9 +43,9 @@ nonisolated enum DesignTokens {
         /// The one how-full bar (`EntriesBar`): an event's capacity and a tournament's entries.
         static let capacityBarHeight: CGFloat = 6
         static let popupMaxWidth: CGFloat = 520
-        /// Width of the filter panel dropped down from the Explore toolbar.
+        /// Width of Discover's type-filter dropdown panels.
         static let filterPanelWidth: CGFloat = 340
-        /// Width of a typed price field: the filter panel's cap and the form's price.
+        /// Width of a typed price field: the filter sheet's cap and the form's price.
         static let priceFieldWidth: CGFloat = 96
         static let mapPinSize: CGFloat = 40
         /// How far a stacked pin's count badge pokes out of the pin's circle.

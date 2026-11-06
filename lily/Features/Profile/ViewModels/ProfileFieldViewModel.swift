@@ -41,13 +41,17 @@ final class ProfileFieldViewModel<Draft: ProfileFieldDraft>: DraftSubmitting {
     private let store: ProfileStore
     private let errorCenter: ErrorCenter
     private let logger: any Logging
+    /// The text the field opened with; a draft still equal to it is untouched, so a later answer may refill it.
+    private var openingText: String
 
     init(field: ProfileField, store: ProfileStore, errorCenter: ErrorCenter, logger: any Logging) {
         self.field = field
         self.store = store
         self.errorCenter = errorCenter
         self.logger = logger
-        draft = Draft(text: field.current(in: store) ?? "")
+        let opening = field.current(in: store) ?? ""
+        openingText = opening
+        draft = Draft(text: opening)
     }
 
     var issues: [Draft.Issue] { draft.issues }
@@ -58,11 +62,12 @@ final class ProfileFieldViewModel<Draft: ProfileFieldDraft>: DraftSubmitting {
     var canSubmit: Bool { !isSubmitting && draft.isValid && draft.trimmedText != (field.current(in: store) ?? "") }
 
     /// The sheet may open before the profile answered, or after a failed load: the field is filled once the value is
-    /// known, unless the user typed meanwhile.
+    /// known, unless the user edited it meanwhile (an emptied bio is a choice: it clears).
     func prepare() async {
         await store.loadIfNeeded()
-        guard let current = field.current(in: store), draft.text.isEmpty else { return }
+        guard let current = field.current(in: store), draft.text == openingText else { return }
         draft.text = current
+        openingText = current
     }
 
     func submit() async {

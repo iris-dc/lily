@@ -30,8 +30,8 @@ extension AppDependencies {
         return store
     }
 
-    /// The landing's intro and its two ways in (enter as a guest, sign in) over the event preview; the intro's sample
-    /// cards are dated from launch.
+    /// The landing's intro and its two ways in (enter as a guest, sign in); the intro's sample cards are dated from
+    /// launch.
     func makeLandingViewModel() -> LandingViewModel {
         LandingViewModel(session: sessionController, logger: logger)
     }

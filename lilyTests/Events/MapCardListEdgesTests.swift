@@ -49,4 +49,18 @@ struct MapCardListEdgesTests {
     @Test func beforeAnyReportTheFirstCardCountsAsInView() {
         #expect(MapCardListEdges.cardsBelow(in: ["a", "b", "c", "d"], visible: []) == 3)
     }
+
+    /// At accessibility sizes one card can be taller than the list; the sliver threshold reports it alone in view
+    /// midway through the scroll, and the count is the whole cards after it, not a fall back to the top.
+    @Test func aCardTallerThanTheListCountsWhileAnyOfItShows() {
+        let ids = ["a", "b", "c", "d", "e"]
+        #expect(MapCardListEdges.cardsBelow(in: ids, visible: ["c"]) == 2)
+        #expect(MapCardListEdges.cardsBelow(in: ids, visible: ["b", "c"]) == 2)
+    }
+
+    /// Any part in view counts, so a sliver of a card the pill would otherwise name is enough to count it out.
+    @Test func theSliverThresholdIsAnyPartOfACard() {
+        #expect(DesignTokens.Layout.mapCardVisibleShare > 0)
+        #expect(DesignTokens.Layout.mapCardVisibleShare < 0.1)
+    }
 }

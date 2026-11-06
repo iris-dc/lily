@@ -29,8 +29,11 @@ target's default `@MainActor` isolation.
   `protocol EventDraftEditing: DraftSubmitting where Issue == EventDraft.Issue`. Requirements:
   `draft: EventDraft { get set }`, `earliestStart: Date`, `capacityRange: ClosedRange<Int>`,
   `lockedGroup: EventGroupRef?`, `showsGroupRow: Bool`, `eligibleGroups: [EventGroupRef]`,
-  `explainsNoEligibleGroups: Bool`. The extension in the same file defaults `eligibleGroups` to `[]` and
-  `explainsNoEligibleGroups` to `false`, so an edit flow offers no group choice unless a conformer overrides them.
+  `explainsNoEligibleGroups: Bool`, `func placeSuggestions(for query: String) async -> [PlaceSuggestion]`. The
+  extension in the same file defaults `eligibleGroups` to `[]` and `explainsNoEligibleGroups` to `false`, so an edit
+  flow offers no group choice unless a conformer overrides them; `placeSuggestions(for:)` has no default. The create
+  and edit view models forward it to `GeocodingService.suggestions(for:near:)`, biased to the draft's spot, else the
+  user's position (create) or the game's stored spot (edit).
 
 ## Invariants
 
