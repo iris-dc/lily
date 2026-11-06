@@ -13,11 +13,6 @@ struct EventsMapView: View {
     /// Set once the camera has been put on the user, at init or when the position arrived, so later drift never moves it.
     @State private var hasCenteredOnUser: Bool
     @State private var selectedStackID: EventMapStack.ID?
-    /// The selected stack's measured card-list height, clamping the scroll view to its content up to the cap.
-    @State private var cardListHeight: CGFloat = 0
-    /// Where the card list is scrolled; back at the top for every selection, since a pin tapped straight after
-    /// another keeps the same scroll view and would open part-way down.
-    @State private var cardScroll = ScrollPosition(edge: .top)
     @Environment(\.motion) private var motion
 
     init(viewModel: EventListViewModel, trailingInset: CGFloat = 0) {
@@ -47,7 +42,6 @@ struct EventsMapView: View {
         .animation(motion.allowsMovement ? .snappy(duration: DesignTokens.Duration.fast) : nil, value: selectedStackID)
         // A pin the filter hides must drop its selection too, or its card would pop out unanimated and pop back
         // already selected when the type returns.
-        .onChange(of: selectedStackID) { cardScroll.scrollTo(edge: .top) }
         .onChange(of: viewModel.filter) {
             if selectedStack == nil { selectedStackID = nil }
         }
@@ -90,46 +84,11 @@ struct EventsMapView: View {
     @ViewBuilder
     private var selectedStackCards: some View {
         if let selectedStack {
-            ScrollView {
-                // The identifier stays on the plain stack: there it stamps the card links (`app.buttons`), as it did
-                // before the scroll view, which swallows an identifier set on itself.
-                VStack(spacing: DesignTokens.Spacing.sm) {
-                    ForEach(selectedStack.events) { event in
-                        NavigationLink(value: event) {
-                            EventPreviewCard(event: event, detail: viewModel.distanceText(for: event))
-                        }
-                        // Not `.plain`: a plain NavigationLink keeps its pressed dim after the push, so the card
-                        // came back from the detail still looking held down. This style's press state always lets go.
-                        .buttonStyle(MapCardButtonStyle(motion: motion))
-                        .lilyHoverable()
-                    }
-                }
-                .accessibilityIdentifier(AccessibilityIdentifiers.mapSelectedCard)
-                .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: { cardListHeight = $0 })
-            }
-            // As tall as its cards up to the cap, about five, and scrolls the rest. A `fixedSize` would ignore the
-            // cap and overflow under the "+"; the measured height keeps the hit area exactly the visible cards'.
-            .frame(maxWidth: DesignTokens.Layout.mapSelectedCardWidth)
-            .frame(height: min(max(cardListHeight, 1), DesignTokens.Layout.mapCardListMaxHeight))
-            .scrollPosition($cardScroll)
-            .scrollBounceBehavior(.basedOnSize)
-            .padding(DesignTokens.Spacing.lg)
-            .padding(.trailing, trailingInset)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            EventMapCardList(stack: selectedStack, distanceText: viewModel.distanceText(for:))
+                .padding(DesignTokens.Spacing.lg)
+                .padding(.trailing, trailingInset)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
         }
-    }
-}
-
-/// The selected card's press feedback: dimmed and slightly shrunk exactly while the finger holds it, animated fast
-/// both ways so the release visibly lets go. Under Reduce Motion the dim stays (a fade in place) and the shrink goes.
-private struct MapCardButtonStyle: ButtonStyle {
-    let motion: MotionPreference
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .opacity(configuration.isPressed ? DesignTokens.Opacity.pressedCard : 1)
-            .scaleEffect(configuration.isPressed && motion.allowsMovement ? DesignTokens.Layout.pressedCardScale : 1)
-            .animation(.easeOut(duration: DesignTokens.Duration.fast), value: configuration.isPressed)
     }
 }
 

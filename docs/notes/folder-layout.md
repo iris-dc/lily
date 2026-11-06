@@ -30,7 +30,8 @@ lily/
                  and language constants, copy, tokens and identifiers live in +Groups / +Chat / +Realtime / +Moderation / +People /
                  +Shell / +Localization / +Settings / +FeatureFlags / +Build (the kind of build: debug, staging, release; 2026-11-01) / +Tournaments / +TournamentResults / +TournamentInvites /
                  +ChatTournaments / +Profile (the display name's limits, copy and identifiers; 2026-10-31) / +Events (map stacking and the place
-                 suggestions, 2026-11-06) / +Polls, +ChatPolls and +ChatPins
+                 suggestions, 2026-11-06) / +SportMarks (the sport marks' and the map cards' tokens; 2026-11-06) / +EventsMap
+                 (the map list's "N events here" header and "+N more" pill; 2026-11-06) / +Polls, +ChatPolls and +ChatPins
                  (the polls' and pins' constants, copy, tokens and identifiers; 2026-10-24) and one `+Area` file per feature beyond these
                  (`ls lily/Config` is the list; 2026-11-02) extension files so SwiftLint's type_body_length never trips on the four main types
   Core/
@@ -99,12 +100,14 @@ lily/
     UI/          Theme (fonts, aurora role-to-color mapping), Effects (aurora geometry, roles, film grain: pure, testable math;
                  LaunchAnimations, UIKit's animations off until the shell's first frame so the tab bar's pill is placed, not slid),
                  Components (aurora background, content-screen scaffold, glass cards, button modifiers, picker modifiers (lilyMenuPicker; 2026-11-02), FadingPresence (a presence fade; 2026-11-02), provider buttons, error popup,
-                 ScreenTitle + ScreenSubtitle, AvatarCircle, String+Initials (the one initials rule, beside AvatarCircle),
+                 ScreenTitle + ScreenSubtitle, AvatarCircle, SportFill (the sport marks' maroon-to-accent fill and
+                 LilyTheme.sportGradient; 2026-11-06), String+Initials (the one initials rule, beside AvatarCircle),
                  UnreadDot, GrowingTextView (the multi-line field the chat composer owns, over a UIKit text view), ConversationRow (avatar + title + caption + dot, shared by the Chats rows and the
                  inbox row), CaptionedTitle (the title-over-captions column the conversation rows and the carousel tiles share; 2026-11-02) and AvatarRowDivider (the divider that starts at their text column), EventTypeChips (the one
                  type-chip flow of the filter, the event form and the group form), EntriesBar (the one "how full" bar; CapacityBar
-                 draws an event through it (removed 2026-11-02; `EntriesBar(event:)`)), TypeFilterButton + TypeFilterPanel (the type dropdown of both Discover screens), GlassGlyph (a symbol as a mark in the
-                 amber glass circle, drawn through AvatarCircle; the preview card's type glyph), BusyButton (a title with a spinner: join, leave,
+                 draws an event through it (removed 2026-11-02; `EntriesBar(event:)`)), CapacityMeter (the bar's capsule alone,
+                 drawn by EntriesBar and the map card; 2026-11-06), TypeFilterButton + TypeFilterPanel (the type dropdown of both Discover screens), GlassGlyph (a symbol as a mark in the
+                 amber glass circle, drawn through AvatarCircle; the preview card's type glyph; removed 2026-11-06), BusyButton (a title with a spinner: join, leave,
                  Message, the tournament controls), TileCarousel + TileLink + TileContent (the group and tournament carousels, swapping to
                  TileGrid on a regular width), CardHeader (the chips-and-time header of the event and tournament cards), OwnerTitleBlock
                  (title, host or organiser line and group line of the two details), ChevronLink (secondary label + .caption2 chevron, the linked line OwnerTitleBlock and HostedInLine draw; 2026-11-01), ValidationHint (accent glyph hidden from accessibility + secondary words, the form footers' hints; 2026-11-01), ListSegment (a list segment's loading / empty / failed
@@ -131,7 +134,9 @@ lily/
                  lifetime, each seeded from its snapshot)
     Events/      Models (SportEvent with optional Price and SkillLevel, EventType and SkillLevel (both keeping a wire value this build does
                  not know as unknown), EventFilter + PersistedEventFilter, DateWindow, Participation, MapFraming + PickerSettlePolicy (the
-                 map's opening region; when a settle is the user's choice),
+                 map's opening region; when a settle is the user's choice), EventMapStack (the events on one map spot,
+                 one pin; 2026-11-06), MapCardListEdges (whether the map's card list runs past either edge and how
+                 many cards wait below; 2026-11-06),
                  EventsPresentation, EventDraft (with its editing init and Rules; the price field's text lives on it) and the
                  Create/UpdateEventPayloads, EventScope with its group case (and the scopes' wire names), EventParticipant, EventLocation
                  (the one distance rule of events, groups and tournaments), PlaceDraft (the shared place validation of the event and
@@ -140,8 +145,9 @@ lily/
                  EventDraft carry an optional EventGroupRef), Interfaces (EventRepository, EventFilterStore, EventDraftEditing),
                  Implementations (remote and mock repositories, MockEventFixtures with the mock's participant names in MockEventFixtures+Participants),
                  ViewModels (list with its filter and freshness extensions, detail with who is in, create, edit), Views (cards, EventCardList (the
-                 bare card list), list screen, map, detail with the host's Edit button, ParticipantRow, preview card, filter button
-                 and panel (over SkillLevelPicker, the one level picker), create button, the Create/Edit sheets (thin wrappers over
+                 bare card list), list screen, map, detail with the host's Edit button, ParticipantRow, preview card, EventMapCardList (the
+                 selected map stack's scrolling cards, in one glass panel with its header for several, and the "+N more" pill;
+                 2026-11-06), filter button and panel (over SkillLevelPicker, the one level picker), create button, the Create/Edit sheets (thin wrappers over
                  EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm, whose +Place file holds the Where
                  section with the geocoder's suggestions), PlaceFields (the
                  place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms), PriceAmountField (the
@@ -262,7 +268,7 @@ lily/
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ and Moderation/ included;
                  Profile/ holds ProfileStoreTests and ProfileStoreBioTests, DisplayNameViewModelTests, AboutViewModelTests,
-                 DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01); Support/ holds fakes
+                 DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01, and MapCardListEdgesTests since 2026-11-06); Support/ holds fakes
                  (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, ShellDoubles,
                  StatisticsDoubles, GroupDoubles (with FakeInviteRepository), GroupViewModelDoubles with the shared GroupHarness and the
                  TermsCountingReporter every harness uses, InboxDoubles, PeopleDoubles, LocationDoubles, PushDoubles, FeedbackDoubles,

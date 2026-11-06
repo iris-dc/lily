@@ -21,9 +21,11 @@ main-actor isolated, so the arithmetic that must run anywhere (`Effects`, `Layou
   `AuroraBackground` (a wall-clock `TimelineView` over a `MeshGradient`, frozen under `\.motion == .reduced` or
   `-freeze-aurora`), `FilmGrainOverlay`, `lilyProminentButton` / `lilyGlassButton` / `lilyIconButton` /
   `lilyTextButton` / `lilyToolbarTextButton` (text actions in ink, never the accent), `lilyChip`,
-  `ChoiceChip`, `lilyField`, `GlassCard`, `FlowLayout`, titles, `ChevronLink`, `ValidationHint`, `AvatarCircle`,
+  `ChoiceChip`, `lilyField`, `GlassCard`, `FlowLayout`, titles, `ChevronLink`, `ValidationHint`, `AvatarCircle`
+  (accent, secondary or sport tint; the sport mark a maroon-to-accent `sportFill` with a white glyph),
   `ConversationRow`, `TileCarousel`,
-  `EntriesBar`, `EmptyStateView`, `ListSegment`, `FilterDropdownButton`, `ErrorPopupView` and `errorPopup(_:)`
+  `EntriesBar` over `CapacityMeter`,
+  `EmptyStateView`, `ListSegment`, `FilterDropdownButton`, `ErrorPopupView` and `errorPopup(_:)`
   (the topmost mount draws, auto- and swipe-dismiss), `DraftSheet`, `GrowingTextView` with `PlaceholderTextView`.
 - Layout: [./Layout/EGM.md](./Layout/EGM.md) - `LayoutMode` (compact, regular, wide) resolved from the size class and
   width and published with `windowWidth` / `windowHeight` by `layoutModeProvider()`; `MotionPreference` (full, reduced)

@@ -23,7 +23,9 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
 - `[lily/Features/Tournaments/Views/TournamentCarousel.swift:TournamentCarousel]`: `TileCarousel` of
   `viewModel.visibleTournaments`, title `AppBranding.Tournaments.title`, "See all" to
   `DiscoverTournamentsDestination()`, identifiers `tournamentCarousel`, `tournamentsSeeAll`, `tournamentRow(id)`;
-  `TournamentTile(tournament:fillsWidth:)` draws a `glassTile` with the type avatar, name and entries caption.
+  `TournamentTile(tournament:fillsWidth:)` draws a `glassTile` with the type avatar (an `AvatarCircle` with the
+  `.sport` tint, the maroon-to-accent fill and white glyph, since 2026-11-06; amber glass before), name and entries
+  caption [`lily/Features/Tournaments/Views/TournamentCarousel.swift:TournamentTile`].
 - `[lily/Features/Tournaments/Views/DiscoverTournamentsView.swift:DiscoverTournamentsView]`: `init(dependencies:
   AppDependencies)`, owns a `@State` `TournamentListViewModel` for `scope: .upcoming`; `ContentScreen` with a
   `TypeFilterButton` (`tournamentsTypeFilter`) in the toolbar, a `ProgressView` while `isInitialLoad`, else a

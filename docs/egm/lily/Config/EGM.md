@@ -110,6 +110,11 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Inbox.invitedYou(inviter:group:)`, `Intro.headline(for: IntroSlide) -> [String]`, `People.name(_:isSelf:)`,
   `Tournaments.entries(_:of:teamSize:)`, `Tournaments.Create.message(for:format:)`, `Tournaments.Match.score(_:_:)`,
   `Tournaments.Match.status(_: MatchStatus)`, `Feedback.tooLong(limit:)`, `Moderation.blockConfirmationTitle(name:)`.
+- The map's selected-stack list (2026-11-06), both in `lily/Config/AppBranding+EventsMap.swift`:
+  `Events.eventsHere(_:)` ("%lld events here", plural in the catalog, the panel's header beside the place's name;
+  `lily/Config/AppBranding+EventsMap.swift:AppBranding.Events.eventsHere(_:)`) and `Events.moreBelow(_:)` ("+%lld
+  more", the pill under the cards while some wait below;
+  `lily/Config/AppBranding+EventsMap.swift:AppBranding.Events.moreBelow(_:)`).
 - The one helper every string goes through: `nonisolated func localized(_ key: String.LocalizationValue) -> String`
   (`lily/Core/Localization/Localized.swift:localized`); a `\(count)` interpolation becomes the catalog's `%lld` or `%@`.
 
@@ -126,6 +131,16 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `home = "house"`, `explore = "binoculars"`, `game = "calendar"`, `profile = "person"`, `groups = "person.3"`,
   `tournament = "trophy"`, ...), `MessageArrival` (`+Groups.swift`), `TabBar.symbolWeight: UIImage.SymbolWeight = .light`
   (`lily/Config/DesignTokens+Shell.swift`).
+- Sport marks and the map's cards (`lily/Config/DesignTokens+SportMarks.swift`, 2026-11-06): `Layout.sportGlyphFraction
+  0.46`, `sportMarkGlowRadius 4`, `sportMarkRimWidth 0.5`, `chipMarkSize 16`, `mapCardMarkSize 44`,
+  `mapCardMeterWidth 28`, `mapCardTitleLines 2`, `mapCardListFade 56`, `mapCardVisibleShare 0.5` (half a card in view counts it as seen, so
+  the cut card under the fade is the last one counted out), `mapCardEdgeSlack 1` (scroll-geometry rounding that does
+  not mean more beyond an edge), `mapMorePillEntryScale 0.8`; `Opacity.sportMarkGlow 0.45`, `sportMarkRim 0.18`,
+  `sportGlassTint 0.55`, `mapCardCapsuleFill 0.1`, `mapPanelCardWash 0.07` (the ink wash of a card inside the
+  many-events panel, instead of a second glass); `Symbols.moreBelow = "chevron.down"`
+  (`lily/Config/DesignTokens+SportMarks.swift:DesignTokens.Layout`). In `DesignTokens.swift`,
+  `Layout.mapCardListMaxHeight` is 400 (about three and a half of the two-row cards; 352, about five one-row cards,
+  until 2026-11-06) beside `mapSelectedCardWidth 340` and `pressedCardScale 0.97`.
 - Non-scalar members: `Symbols.fileGlyphs: [(type: UTType, symbol: String)]` (8 entries),
   `Duration.viewerFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)`,
   `Duration.viewerTransitionCurve` and `viewerThrowCurve: UnitCurve` (`lily/Config/DesignTokens+Attachments.swift`),
@@ -185,8 +200,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   are declared once at the root and aliased by the feature namespaces, so each is one catalog key. Caption parts are
   joined with `Events.captionSeparator` through `Groups.caption(_:)` (`lily/Config/AppBranding+Groups.swift`), the
   token's only `joined(separator:)` consumer (`PollBubble`, `FeedbackEnvironment` and `EventPreviewCard` call the
-  joiner since 2026-11-02; `PlaceLine` draws the bare `separatorGlyph`). `Events.Create` has no `cancel` alias: every
-  sheet reads `Forms.cancel`.
+  joiner since 2026-11-02; `EventPreviewCard` no longer since 2026-11-06,
+  its facts are separate views; `PlaceLine` draws the bare `separatorGlyph`).
+  `Events.Create` has no `cancel` alias: every sheet reads `Forms.cancel`.
 - Validation copy never hard-codes a limit: `Events.Create.message(for:)`, `Groups.Create.message(for:)`,
   `Tournaments.teamNameMessage(for:)` and `Tournaments.Create.message(for:format:)` interpolate `AppConfig` values; the
   `valueMessage` helpers end in `default: ""`. The hints shared by the three forms and the contact sheet are declared once in

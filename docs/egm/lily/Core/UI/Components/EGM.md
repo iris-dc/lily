@@ -4,9 +4,10 @@ Source: `lily/Core/UI/Components/`
 
 ## Overview
 
-The reusable SwiftUI pieces every feature screen is built from, 42 files with no subfolders: the screen scaffold and
+The reusable SwiftUI pieces every feature screen is built from, 43 files with no subfolders: the screen scaffold and
 its aurora (`ContentScreen`, `AuroraBackground`, `FilmGrainOverlay`), the button, chip, picker and field modifiers that give
-the app its one look, the cards, titles, rows, avatars and tiles, the list and empty states, the filter dropdowns, the
+the app its one look, the cards, titles, rows, avatars, sport marks (`sportFill`)
+and tiles, the list and empty states, the filter dropdowns, the
 shared error popup (`errorPopup`), the create-or-edit sheet (`DraftSheet`) and the UIKit-backed growing text field
 (`GrowingTextView`). The arithmetic behind the aurora is in [Effects](../Effects/EGM.md), fonts and colors in
 [Theme](../Theme/EGM.md), row packing and the layout mode in [Layout](../Layout/EGM.md), and `DraftSheet`'s model
@@ -57,7 +58,10 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/ChipModifiers.swift:View.lilyChip`, `View.tappableLabel`];
   `ChoiceChip(title:, systemImage: String? = nil, isSelected:, action:)` [`lily/Core/UI/Components/ChoiceChip.swift:ChoiceChip`]
   (`LilyTheme.selectionGlass(isSelected:).interactive()`, `selectionLabelColor`); `EventTypeChip(type: EventType)`
-  [`lily/Core/UI/Components/EventTypeChip.swift:EventTypeChip`]; `VisibilityChip(visibility: GroupVisibility)`
+  [`lily/Core/UI/Components/EventTypeChip.swift:EventTypeChip`] (a `@ScaledMetric` `DesignTokens.Layout.chipMarkSize`
+  (16) mark, the white glyph in `LilyTheme.Fonts.sportGlyph(size:)` over `sportFill(in: .circle)`, the name in
+  `Color.lilyInk`, on `lilyChip` glass tinted `Color.lilyAccentDeep` at `DesignTokens.Opacity.sportGlassTint`; amber
+  before 2026-11-06); `VisibilityChip(visibility: GroupVisibility)`
   [`lily/Core/UI/Components/VisibilityChip.swift:VisibilityChip`];
   `EventTypeChips(anyTitle: String? = nil, anyIdentifier: String? = nil, isSelected: (EventType?) -> Bool, onSelect: (EventType?) -> Void, identifier: ((EventType) -> String)? = nil)`
   over `EventType.known` in a `FlowLayout` [`lily/Core/UI/Components/EventTypeChips.swift:EventTypeChips`].
@@ -85,9 +89,16 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/CaptionedControl.swift:CaptionedControl`];
   `PlaceLine(name:, distance: String? = nil, font: Font = .subheadline)` [`lily/Core/UI/Components/PlaceLine.swift:PlaceLine`].
 - Marks and rows: `AvatarCircle(initials:, systemImage: String? = nil, size: CGFloat = DesignTokens.Layout.avatarSize, tint: Tint = .accent, glyphFont: Font? = nil, glyphColor: Color? = nil)`,
-  a glyph-only `init(systemImage:, size:, tint:, glyphFont:, glyphColor:)`, `enum Tint { case accent, secondary }`
-  [`lily/Core/UI/Components/AvatarCircle.swift:AvatarCircle`]; `GlassGlyph(systemName:)`
-  [`lily/Core/UI/Components/GlassGlyph.swift:GlassGlyph`]; `UnreadDot()` [`lily/Core/UI/Components/UnreadDot.swift:UnreadDot`];
+  a glyph-only `init(systemImage:, size:, tint:, glyphFont:, glyphColor:)`, `enum Tint { case accent, secondary,
+  sport }` [`lily/Core/UI/Components/AvatarCircle.swift:AvatarCircle`] (accent for a person, secondary for a group's
+  mark, the inbox's cards and another sender in a room, sport for a game's or a tournament's type); `GlassGlyph` was
+  removed 2026-11-06 (the map card draws `AvatarCircle` with `.sport`);
+  `View.sportFill<S: InsettableShape>(in: S)` and `LilyTheme.sportGradient`
+  [`lily/Core/UI/Components/SportFill.swift:View.sportFill(in:)`, `LilyTheme.sportGradient`]: a `background` of the
+  shape filled with the gradient (`.lilyAccentDeep` bottom-leading to `.lilyAccent` top-trailing), a white
+  `strokeBorder` at `DesignTokens.Opacity.sportMarkRim` and `Layout.sportMarkRimWidth`, and a `.lilyAccent` shadow at
+  `Opacity.sportMarkGlow`, radius `Layout.sportMarkGlowRadius`; a plain fill, not glass;
+  `UnreadDot()` [`lily/Core/UI/Components/UnreadDot.swift:UnreadDot`];
   `nonisolated extension String { var initials: String }` [`lily/Core/UI/Components/String+Initials.swift:String.initials`];
   `ConversationRow<Title, Trailing>(caption:, avatar: AvatarCircle, title:, trailing:)` with
   `init(caption:, hasUnread: Bool, avatar:, title:)` where `Trailing == UnreadDot?`, and `AvatarRowDivider()`
@@ -100,7 +111,11 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/SettingsLinkRow.swift:SettingsLinkRow`];
   `EntriesBar(fillRatio: Double, text: String, isFull: = false, isNearlyFull: = false, showsTrack: = true)` with
   `init(event: SportEvent)` (the track only while `event.playerLimit.hasCapacity`) and `init(tournament: Tournament)`
-  [`lily/Core/UI/Components/EntriesBar.swift:EntriesBar`]; its height is `DesignTokens.Layout.capacityBarHeight`.
+  [`lily/Core/UI/Components/EntriesBar.swift:EntriesBar`], whose track is a `CapacityMeter`;
+  `CapacityMeter(fillRatio: Double, isFull: = false, isNearlyFull: = false)` with `init(event: SportEvent)`
+  [`lily/Core/UI/Components/CapacityMeter.swift:CapacityMeter`], the how-full capsule alone (full width in
+  `EntriesBar`, `DesignTokens.Layout.mapCardMeterWidth` on the map's `EventPreviewCard`); its height is
+  `DesignTokens.Layout.capacityBarHeight`.
 - Carousel: `TileCarousel<Item: Identifiable, SeeAll: Hashable, Tile>(items:, title:, seeAll:, seeAllIdentifier:, identifier:, rows: Int = 1, tileHeight: CGFloat, tile: (Item, _ fillsWidth: Bool) -> Tile)`,
   `TileLink<Value: Hashable, Tile>(value:, identifier:, tile:)`, `TileContent(avatar: AvatarCircle, title:, lines: [String])` (an `HStack` of the avatar, a `CaptionedTitle` and a spacer)
   [`lily/Core/UI/Components/TileCarousel.swift:TileCarousel`, `TileLink`, `TileContent`].
@@ -199,10 +214,14 @@ use the generated `Color.lily*` asset symbols.
   `lilyTextButton()`; it is a `TileGrid` when `sizeClass == .regular`, else a
   view-aligned horizontal `LazyHGrid`; the grid applies `.accessibilityElement(children: .contain)` before
   `.accessibilityIdentifier(identifier)` [`lily/Core/UI/Components/TileCarousel.swift:TileCarousel.body`, `TileCarousel.grid`, `TileCarousel.scroll`].
-- `EntriesBar` draws the track only `if showsTrack`, fills `proxy.size.width * fillRatio` with no clamp here, and picks
-  `isFull` → `.secondary`, `isNearlyFull` → `Color.lilySecondary`, else `Color.lilyAccent`
-  [`lily/Core/UI/Components/EntriesBar.swift:EntriesBar`]. `AvatarCircle` is always `size` by `size`, a glass circle,
-  `.accessibilityHidden(true)`, and `systemImage` wins over `initials` [`lily/Core/UI/Components/AvatarCircle.swift:AvatarCircle`].
+- `EntriesBar` draws the track only `if showsTrack` [`lily/Core/UI/Components/EntriesBar.swift:EntriesBar`];
+  `CapacityMeter` fills `proxy.size.width * fillRatio` with no clamp here, picks `isFull` → `.secondary`,
+  `isNearlyFull` → `Color.lilySecondary`, else `Color.lilyAccent`, and is `.accessibilityHidden(true)` (the words
+  beside it carry the count) [`lily/Core/UI/Components/CapacityMeter.swift:CapacityMeter`]. `AvatarCircle` is always
+  `size` by `size`, `.accessibilityHidden(true)`, and `systemImage` wins over `initials`; its surface is tinted glass
+  for `.accent` (`Opacity.glassTint`) and `.secondary` (`Opacity.secondaryGlassTint`) and `sportFill(in: .circle)` for
+  `.sport`, where an unset glyph colour is `.white` and an unset glyph font is `LilyTheme.Fonts.sportGlyph(size:)`
+  [`lily/Core/UI/Components/AvatarCircle.swift:AvatarCircle`, `AvatarSurface`].
   `String.initials` takes the first character of the first two space-separated words, uppercased
   [`lily/Core/UI/Components/String+Initials.swift:String.initials`].
 - `FilterDropdownButton` stays a popover on compact widths (`presentationCompactAdaptation(.popover)`); since

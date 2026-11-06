@@ -57,7 +57,9 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
 - `ReportSheet(viewModel: ReportViewModel, errorCenter:)` (identifiers `reportComment`, `reportDone`, `reportSubmit`;
   Done and Cancel are `lilyToolbarTextButton()`) [`lily/Features/Groups/Views/ReportSheet.swift`:`ReportSheet`].
 - `GroupRow(group:, hasUnread:)`, `GroupRowContent(name:, visibility:, caption:, hasUnread:, isPerson:,
-  avatarSymbol:)` [`lily/Features/Groups/Views/GroupRow.swift`:`GroupRow`]; `GroupRowList<RowMenu: View>(groups:,
+  avatarSymbol:, markTint: AvatarCircle.Tint = .secondary)` [`lily/Features/Groups/Views/GroupRow.swift`:`GroupRow`,
+  `GroupRowContent`] (`markTint` is the non-person mark's tint: `.sport` for a game's type, 2026-11-06);
+  `GroupRowList<RowMenu: View>(groups:,
   unread: UnreadCenter?, selectedID:, rowMenu:, onOpen:)` (identifier `groupRow(id)` per row) and its `RowMenu ==
   EmptyView` convenience `init(groups:, unread:, onOpen:)` [`lily/Features/Groups/Views/GroupRowList.swift`:`GroupRowList`].
 - `View.groupDestinations(dependencies:, onTournamentChange: (@MainActor (Tournament) -> Void)? = nil)`, applying
@@ -117,7 +119,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   shows only Done once submitted
   [`lily/Features/Groups/Views/ReportSheet.swift`:`ReportSheet`].
 - Rows: `GroupRow` draws a person row for a `counterpart`, else a group row with the visibility glyph and
-  `avatarSymbol`, adding "Active today" only when `isActive(on: .now)`; `GroupRowList` attaches a context menu only when
+  `avatarSymbol` (in a `markTint` mark; a person's avatar keeps the accent),
+  adding "Active today" only when `isActive(on: .now)`; `GroupRowList` attaches a context menu only when
   a `rowMenu` is given; `MemberRow` shows a role chip for owner and admin only; `GroupCard`/`GroupTile` add the joined
   caption only for members; `HostedInLine` links only when `ref.isLinkable`, and the chevron, never a colour, is the
   link's cue

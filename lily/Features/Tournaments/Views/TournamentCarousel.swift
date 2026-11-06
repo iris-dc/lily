@@ -10,7 +10,7 @@ struct TournamentTile: View {
     var body: some View {
         TileContent(avatar: AvatarCircle(systemImage: tournament.type.symbolName,
                                          size: DesignTokens.Layout.avatarMedium,
-                                         tint: .secondary),
+                                         tint: .sport),
                     title: tournament.name,
                     lines: [AppBranding.Groups.caption([tournament.entriesText, tournament.status.displayName])])
             .glassTile(fixedWidth: DesignTokens.Layout.tournamentTileWidth,

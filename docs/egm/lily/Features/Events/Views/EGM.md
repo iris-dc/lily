@@ -7,7 +7,8 @@ Source: `lily/Features/Events/Views/`
 The SwiftUI screens and components of the Events feature: the Explore screen (`EventListView` with its `+Content`
 extension), the event detail, the shared create/edit form and its sheets, the filter button and panel, the events
 map and the location picker, and the cards and rows other features reuse (`EventCard`, `EventCardList`,
-`EventPreviewCard`, `EventFactsCard`, `EventLocationMap`, `ParticipantRow`, `PlaceFields`, `PlacePickerRow`, `PriceAmountField`,
+`EventPreviewCard`, `EventMapCardList`,
+`EventFactsCard`, `EventLocationMap`, `ParticipantRow`, `PlaceFields`, `PlacePickerRow`, `PriceAmountField`,
 `SkillLevelPicker`). Views
 draw what the [ViewModels](../ViewModels/EGM.md) decide and call back into them; copy comes from `AppBranding`,
 sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decisions from the
@@ -48,9 +49,16 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
 - `EventsMapView` (`lily/Features/Events/Views/EventsMapView.swift`): `init(viewModel: EventListViewModel,
   trailingInset: CGFloat = 0)` (room kept free to the right of the selected cards for a floating button);
   `EventMapPin(type: EventType, isSelected: Bool, count: Int = 1)` (over 1 it wears the count on an accent badge,
-  `DesignTokens.Layout.mapPinBadgeInset`); private `MapCardButtonStyle(motion:)` (dim `Opacity.pressedCard` plus, when
-  `motion.allowsMovement`, shrink `Layout.pressedCardScale` exactly while pressed, animated `.easeOut(Duration.fast)`
-  both ways so the release visibly lets go, 2026-11-06).
+  `DesignTokens.Layout.mapPinBadgeInset`); its private `selectedStackCards` draws
+  `EventMapCardList(stack:distanceText: viewModel.distanceText(for:))` padded `Spacing.lg` plus `trailingInset`,
+  moving in from the bottom with a fade (`lily/Features/Events/Views/EventsMapView.swift:EventsMapView`).
+- `EventMapCardList(stack: EventMapStack, distanceText: (SportEvent) -> String?)`
+  (`lily/Features/Events/Views/EventMapCardList.swift:EventMapCardList`, split out of `EventsMapView` 2026-11-06): the
+  selected stack's cards, one `NavigationLink(value:)` per event: a single event is its card alone on the card's own
+  glass, several sit in one glass panel (`Radius.card`) headed by the place and the count, each card drawn
+  `EventPreviewCard(surface: .inset)`; private `MapCardButtonStyle(motion:)`
+  (moved here with it; dim `Opacity.pressedCard` plus, when `motion.allowsMovement`, shrink `Layout.pressedCardScale`
+  exactly while pressed, animated `.easeOut(Duration.fast)` both ways so the release visibly lets go).
 - `EventLocationMap(event: SportEvent)` (`lily/Features/Events/Views/EventLocationMap.swift`): the event's spot pinned
   (`EventMapPin`, selected look) at `AppConfig.Location.pickerRegionMeters` scale, `interactionModes: []`, height
   `DesignTokens.Layout.detailMapHeight`, clipped to `Radius.md`, identifier
@@ -66,7 +74,18 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `PlacePickerRow(coordinate:)` (`PlacePickerRow.swift`) is the `NavigationLink` to the picker.
 - Cards and rows: `EventCard(event:distance:)` (`EventCard.swift`), `EventCardList(events:distance:
   horizontalPadding: = DesignTokens.Layout.screenMargin, singleColumn: = false)` (`EventCardList.swift`),
-  `EventPreviewCard(event:detail:)` (`EventPreviewCard.swift`), `EventFactsCard(event:)` (`EventFactsCard.swift`),
+  `EventPreviewCard(event:detail:surface: = .glass)`
+  (`lily/Features/Events/Views/EventPreviewCard.swift:EventPreviewCard`; `Surface` is `.glass`, the card's own
+  `Radius.md` glass when it stands alone over the map, or `.inset`, an ink wash at `Opacity.mapPanelCardWash` (0.07) on
+  the same radius inside the many-events panel, so glass never sits on glass (2026-11-06); since
+  2026-11-06 two rows on that `Radius.md` surface: the sport mark (`AvatarCircle`, `.sport`, `Layout.mapCardMarkSize`), the
+  title in `Fonts.itemTitle` and ink, wrapping to `Layout.mapCardTitleLines` (2) rather than cut (its column takes the
+  width the mark and the trailing facts leave, and `fixedSize(horizontal: false, vertical: true)` lets it take the
+  second line), over the group's name (`Symbols.groups`) or else the place (`Symbols.location`),
+  the `detail` (distance) in `.secondary` and the price in ink semibold when not free, trailing; then a footer with the
+  abbreviated relative start in an ink capsule (`Opacity.mapCardCapsuleFill`, the `Symbols.time` clock in the accent)
+  and the spots beside a `CapacityMeter` `Layout.mapCardMeterWidth` wide when the game has a capacity),
+  `EventFactsCard(event:)` (`EventFactsCard.swift`),
   `ParticipantRow(participant:isSelf:)` (`ParticipantRow.swift`), `SkillLevelPicker(selection: Binding<SkillLevel?>)`
   (`SkillLevelPicker.swift`).
 
@@ -134,19 +153,38 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   dim after the pop). The selection animates under one implicit `.snappy(Duration.fast)` on `selectedStackID` (nil
   under Reduce Motion, read from `\.motion`); the cards sit at `.zIndex(1)`, so they leave above the map instead of
   sliding out under it; each pin's `onTapGesture` selects at once instead of after MapKit's double-tap wait. The cards
-  sit in a `ScrollView` as tall as its content up to `Layout.mapCardListMaxHeight` (about five cards; more scroll)
-  through `onGeometryChange` into `cardListHeight` (a `fixedSize` ignored the cap and overflowed under the "+"),
-  scrolled back to the top whenever the selection changes (`cardScroll`), so a pin tapped straight after another never
-  opens part-way down; the `mapSelectedCard` identifier is on the inner stack, where it stamps the card links
-  (`app.buttons`); set on the scroll view it reached no element. Only the map `ignoresSafeArea(edges: .bottom)`.
+  are drawn by `EventMapCardList` (2026-11-06; the scroll state moved there from `EventsMapView`). Only the map
+  `ignoresSafeArea(edges: .bottom)`.
+- Card list (`EventMapCardList`): one event is its card alone (`surface: .glass`). A stack of more than one is one
+  glass panel (`glassEffect(.regular, in: .rect(cornerRadius: Radius.card))`, padded `Spacing.sm`, at most
+  `Layout.mapSelectedCardWidth`) holding a header row, the accent `Symbols.pickedLocation` glyph, the first event's
+  `locationName` in ink semibold and `AppBranding.Events.eventsHere(count)` in `.secondary`, combined for
+  accessibility, over the cards drawn `surface: .inset` (an ink wash, never glass on the panel's glass). The cards sit
+  in a `ScrollView` as tall as its content up to `Layout.mapCardListMaxHeight` (400, about three and a half cards, so
+  the cut card says there is more; 352 before 2026-11-06) through `onGeometryChange` into `cardListHeight` (a
+  `fixedSize` ignored the cap and overflowed under the "+"), `scrollBounceBehavior(.basedOnSize)`, and scrolled back
+  to the top whenever `stack.id` changes (`cardScroll`), so a pin tapped straight after another never opens part-way
+  down. The edges come from the scroll geometry, not from which cards are visible: `onScrollGeometryChange` builds
+  `MapCardListEdges(offset:contentHeight:containerHeight:)` (see [Models](../Models/EGM.md)), so they hold at
+  accessibility type sizes, where one card can be taller than the list. A mask dissolves the top
+  `Layout.mapCardListFade` points to clear while `edges.hasMoreAbove` and the bottom ones while `edges.hasMoreBelow`,
+  so the cut card fades into the panel (`lily/Features/Events/Views/EventMapCardList.swift:EventMapCardList`). In the panel, while whole
+  cards are left below (`MapCardListEdges.cardsBelow(in:visible:)` above zero, so never for a lone card), a "+N more" pill (`Events.moreBelow(MapCardListEdges.cardsBelow(in:visible:))`, `Symbols.moreBelow`,
+  `.titleThenIcon`, caption semibold) sits over the bottom as `lilyProminentButton(sizing: .fitted, controlSize:
+  .regular)`, white on the accent prominent glass with a full-size target, and scrolls to the end; it enters from
+  `Layout.mapMorePillEntryScale` with a fade. The visible cards for its count come from
+  `onScrollTargetVisibilityChange` at `Layout.mapCardVisibleShare` (0.5). Both fades and the pill animate under one
+  `.animation(_, value: edges)`, `.snappy(Duration.fast)`, nil under Reduce Motion. The `mapSelectedCard` identifier
+  is on the inner stack, where it stamps the card links (`app.buttons`); set on the scroll view it reached no element.
 - Picker (`LocationPickerView`): converts the map frame's centre through `MapProxy.convert` on
   `.onMapCameraChange(frequency: .onEnd)` and writes `coordinate` only when
   `PickerSettlePolicy.isAChoice(spot, current:, isFirstSettle:)`; a chosen spot opens at
   `AppConfig.Location.pickerRegionMeters` (1,500 m), none follows the user.
 - Components: `EventFactsCard` shows the price only when `!event.isFree` and the level only when
   `event.skillLevel?.ifKnown` is set; `EventCard` adds a price chip when not free and a `GroupBadge` when hosted in
-  a group; `EventPreviewCard` turns from a row into a column at accessibility type sizes and draws its `detail` (the
-  distance) in `.secondary` like every other distance; `SkillLevelPicker` offers
+  a group; `EventPreviewCard` turns each of its two rows into a column at accessibility type sizes (lines up to
+  `Layout.accessibilityPreviewLines`, one otherwise) and draws its `detail` (the distance) in `.secondary` like every
+  other distance; `SkillLevelPicker` offers
   "Any level" over `SkillLevel.known`, never an unknown level; `EventDraftForm.detailsSection` styles it by
   `lilyMenuPicker()` and `EventFilterSheet.levelRow` the same with its labels hidden, the title drawn on the left like
   the price row's; `ParticipantRow` adds the host chip for

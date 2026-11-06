@@ -13,32 +13,13 @@ struct EntriesBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
             if showsTrack {
-                track
+                CapacityMeter(fillRatio: fillRatio, isFull: isFull, isNearlyFull: isNearlyFull)
             }
             Text(text)
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
-    }
-
-    private var track: some View {
-        Capsule()
-            .fill(Color.lilyInk.opacity(DesignTokens.Opacity.capacityTrack))
-            .overlay(alignment: .leading) {
-                GeometryReader { proxy in
-                    Capsule()
-                        .fill(fillStyle)
-                        .frame(width: proxy.size.width * fillRatio)
-                }
-            }
-            .frame(height: DesignTokens.Layout.capacityBarHeight)
-    }
-
-    private var fillStyle: AnyShapeStyle {
-        if isFull { return AnyShapeStyle(.secondary) }
-        if isNearlyFull { return AnyShapeStyle(Color.lilySecondary) }
-        return AnyShapeStyle(Color.lilyAccent)
     }
 }
 

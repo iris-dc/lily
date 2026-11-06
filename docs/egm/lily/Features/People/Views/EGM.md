@@ -20,7 +20,8 @@ link), `SharedTournamentRow` (a "Tournaments together" row linking to the tourna
   `AccessibilityIdentifiers.groupRow(group.id)` (`group-row-<id>`).
 - `SharedEventRow(event: EventSummary)` `[lily/Features/People/Views/SharedHistoryRows.swift:SharedEventRow]`:
   `GroupRowContent(name: title, visibility: nil, caption: event.caption, hasUnread: false, avatarSymbol:
-  event.type.symbolName)`, one accessibility element (`children: .combine`) with identifier
+  event.type.symbolName, markTint: .sport)` (the game's sport as a filled mark since
+  2026-11-06), one accessibility element (`children: .combine`) with identifier
   `AccessibilityIdentifiers.sharedEventRow(event.id)` (`shared-event-row-<id>`); no link.
 - `SharedTournamentRow(tournament: TournamentSummary)` `[lily/Features/People/Views/SharedHistoryRows.swift:SharedTournamentRow]`:
   the same content with `DesignTokens.Symbols.tournament` in the mark, in a `NavigationLink(value: tournament.destination)`;

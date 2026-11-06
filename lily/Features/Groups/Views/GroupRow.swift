@@ -42,6 +42,8 @@ struct GroupRowContent: View {
     var isPerson = false
     /// Drawn in the mark instead of the initials (a tournament's trophy).
     var avatarSymbol: String?
+    /// The mark's tint when it is not a person's: `.sport` for a game's type, the secondary otherwise.
+    var markTint: AvatarCircle.Tint = .secondary
 
     var body: some View {
         ConversationRow(caption: caption, hasUnread: hasUnread, avatar: avatar) {
@@ -56,7 +58,7 @@ struct GroupRowContent: View {
             AvatarCircle(initials: name.initials,
                          systemImage: avatarSymbol,
                          size: DesignTokens.Layout.avatarMedium,
-                         tint: .secondary)
+                         tint: markTint)
         }
     }
 

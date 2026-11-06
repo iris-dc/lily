@@ -10,7 +10,8 @@ struct SharedEventRow: View {
                         visibility: nil,
                         caption: event.caption,
                         hasUnread: false,
-                        avatarSymbol: event.type.symbolName)
+                        avatarSymbol: event.type.symbolName,
+                        markTint: .sport)
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier(AccessibilityIdentifiers.sharedEventRow(event.id))
     }

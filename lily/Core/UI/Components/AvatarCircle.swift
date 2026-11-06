@@ -1,17 +1,19 @@
 import SwiftUI
 
-/// Initials (or a glyph) in a tinted glass circle: the profile's avatar, a group's mark in its row, a member's in the
-/// roster. The diameter comes from `DesignTokens.Layout.avatarSmall` / `avatarMedium` / `avatarSize`. A glyph that is
-/// a mark rather than an avatar (`GlassGlyph`) brings its own font and colour; the initials' metrics in ink otherwise.
+/// Initials (or a glyph) in a tinted circle: the profile's avatar, a group's mark in its row, a member's in the roster,
+/// a game's or a tournament's sport. The diameter comes from `DesignTokens.Layout.avatarSmall` / `avatarMedium` /
+/// `avatarSize`. A glyph brings its own font and colour when given; the tint's metrics otherwise.
 ///
-/// The tint is a meaning: accent for a person (profiles, rosters, invitees), secondary for a mark (groups, event types,
-/// tournaments, the inbox's cards) and for another sender's avatar in a room. Every amber mark sits at
-/// `DesignTokens.Opacity.secondaryGlassTint`, the strength of the `EventTypeChip` drawn on the same cards.
+/// The tint is a meaning: accent for a person (profiles, rosters, invitees), secondary for a mark (groups, the inbox's
+/// cards) and for another sender's avatar in a room, sport for an event's or a tournament's type. Every amber mark sits
+/// at `DesignTokens.Opacity.secondaryGlassTint`. A sport mark is the plain maroon-to-accent fill with a white glyph
+/// (`sportFill(in:)`), not glass: a fill is a mark the accent may colour, and amber read as foreign beside the red.
 struct AvatarCircle: View {
-    /// What the circle stands for; the glass colour and its strength follow.
+    /// What the circle stands for; the surface and its strength follow.
     enum Tint {
         case accent
         case secondary
+        case sport
     }
 
     let initials: String
@@ -26,22 +28,36 @@ struct AvatarCircle: View {
         Group {
             if let systemImage {
                 Image(systemName: systemImage)
-                    .font(glyphFont ?? LilyTheme.Fonts.avatarInitials(size: size))
-                    .foregroundStyle(glyphColor ?? .primary)
+                    .font(glyphFont ?? defaultGlyphFont)
+                    .foregroundStyle(glyphColor ?? (tint == .sport ? .white : .primary))
             } else {
                 Text(initials)
                     .font(LilyTheme.Fonts.avatarInitials(size: size))
             }
         }
         .frame(width: size, height: size)
-        .glassEffect(.regular.tint(glassColor), in: .circle)
+        .modifier(AvatarSurface(tint: tint))
         .accessibilityHidden(true)
     }
 
-    private var glassColor: Color {
+    private var defaultGlyphFont: Font {
+        tint == .sport ? LilyTheme.Fonts.sportGlyph(size: size) : LilyTheme.Fonts.avatarInitials(size: size)
+    }
+}
+
+/// The circle under the glyph or the initials: tinted glass, or the sport fill.
+private struct AvatarSurface: ViewModifier {
+    let tint: AvatarCircle.Tint
+
+    func body(content: Content) -> some View {
         switch tint {
-        case .accent: Color.lilyAccent.opacity(DesignTokens.Opacity.glassTint)
-        case .secondary: Color.lilySecondary.opacity(DesignTokens.Opacity.secondaryGlassTint)
+        case .accent:
+            content.glassEffect(.regular.tint(Color.lilyAccent.opacity(DesignTokens.Opacity.glassTint)), in: .circle)
+        case .secondary:
+            content.glassEffect(.regular.tint(Color.lilySecondary.opacity(DesignTokens.Opacity.secondaryGlassTint)),
+                                in: .circle)
+        case .sport:
+            content.sportFill(in: .circle)
         }
     }
 }
@@ -68,7 +84,7 @@ extension AvatarCircle {
         VStack(spacing: DesignTokens.Spacing.lg) {
             AvatarCircle(initials: "AT")
             AvatarCircle(initials: "KK", size: DesignTokens.Layout.avatarMedium, tint: .secondary)
-            AvatarCircle(systemImage: EventType.running.symbolName, size: DesignTokens.Layout.avatarSmall, tint: .secondary)
+            AvatarCircle(systemImage: EventType.running.symbolName, size: DesignTokens.Layout.avatarMedium, tint: .sport)
         }
     }
 }

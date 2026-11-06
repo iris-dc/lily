@@ -11,7 +11,8 @@ are `WireNamedKind` enums that tolerate unknown values. `EventDraft` is the crea
 list and `Rules`; `EventFilter`, `PersistedEventFilter` and `DateWindow` are the on-device filter; the rest are small
 decision types the view models and views switch on (`EventScope`, `EventListScreenState`, `Participation`,
 `PlayerLimit`, `CreateIntentPolicy`, `PickerSettlePolicy`, `MapFraming`, `EventListLayout`, `EventsPresentation`,
-`ExploreSheet`, `PlaceDraft`). Limits come from `AppConfig.Events`, copy from `AppBranding.Events`.
+`ExploreSheet`, `PlaceDraft`, `EventMapStack`, `MapCardListEdges`). Limits come from `AppConfig.Events`, copy from
+`AppBranding.Events`.
 
 ## Interface
 
@@ -54,6 +55,11 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   (`id` the coordinate rounded to `AppConfig.Events.mapStackDecimals` (4, about 11 m), `coordinate`, `events` in feed
   order); `title` is the event's title alone or the shared `locationName` once there are several;
   `stacks(of:)` groups keeping the feed's order. Two overlapping pins left the one behind unselectable.
+- `MapCardListEdges` (`lily/Features/Events/Models/MapCardListEdges.swift:MapCardListEdges`, 2026-11-06):
+  `Equatable, Sendable`; `hasMoreAbove`, `hasMoreBelow`; `none`; `init(hasMoreAbove:hasMoreBelow:)` and
+  `init(offset:contentHeight:containerHeight:)` (`offset` how far the content's top has scrolled past the list's top);
+  `static func cardsBelow<ID: Equatable>(in ids: [ID], visible: [ID]) -> Int`. What the map's card list fades and its
+  "+N more" pill show (see [Views](../Views/EGM.md)).
 - `PlaceDraft` (`PlaceDraft.swift`): `name`, `coordinate?`; `Requirement` (`nameAndSpot` for the tournament form,
   `nameOrSpot` for the event form, whose missing half the geocoder fills on submit); `Issue` (`nameMissing`,
   `nameTooLong`, `coordinateMissing`, `placeMissing`); `issues(maxLength:requiring: = .nameAndSpot)`, `location(at:)`. `PlayerLimit` (`PlayerLimit.swift`): `unlimited`,
@@ -131,6 +137,12 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   must be `>= AppConfig.Location.pickerMinimumMoveMeters` (1 m). `MapFraming.initialRegion` is `nil` without a user
   position, else a square of `2 * radius * DesignTokens.Layout.mapRegionPadding` (1.3) metres.
 - `EventListLayout.resolve` is `.sideBySide` only for `LayoutMode.wide`.
+- `MapCardListEdges.init(offset:contentHeight:containerHeight:)`: `hasMoreAbove` iff `offset >
+  DesignTokens.Layout.mapCardEdgeSlack` (1 pt), `hasMoreBelow` iff `contentHeight - containerHeight - offset >` the
+  same slack, so rounding at either end never counts as more. It reads geometry only, never card visibility, so one
+  card taller than the list still has more below. `cardsBelow(in:visible:)` is the whole cards after the last id in
+  `visible` (the first card when `visible` is empty, before the scroll view reports): none once the last card is in
+  view, even while its bottom is cut, and none for a lone card, so the pill never names a card that is not there.
 
 ## Side Effects
 
@@ -147,4 +159,10 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - Run: `./scripts/ci.sh unit` from the repository root (`lilyTests/Events/SportEventTests.swift`,
   `EventDraftTests.swift`, `EventDraftPriceTests.swift`, `EventFilterTests.swift`, `EventTypeTests.swift`,
   `SkillLevelTests.swift`, `EventListScreenStateTests.swift`, `CreateIntentPolicyTests.swift`,
-  `PickerSettlePolicyTests.swift`, `MapFramingTests.swift`, `PlaceDraftTests.swift`, `CreateEventPayloadTests.swift`).
+  `PickerSettlePolicyTests.swift`, `MapFramingTests.swift`, `PlaceDraftTests.swift`, `CreateEventPayloadTests.swift`,
+  `EventMapStackTests.swift`, `MapCardListEdgesTests.swift`).
+- `MapCardListEdgesTests` (`lilyTests/Events/MapCardListEdgesTests.swift`): `aListThatFitsHasNothingBeyondEitherEdge`,
+  `aTallListAtItsTopHasMoreBelowOnly`, `midwayThereIsMoreOnBothSides`,
+  `atTheEndOnlyAboveRemainsAndRoundingDoesNotCount`, `oneCardTallerThanTheListStillHasMoreBelow`,
+  `theCountIsTheCardsAfterTheLastOneInView`, `noCardIsLeftOnceTheLastIsInViewOrThereIsOnlyOne`,
+  `beforeAnyReportTheFirstCardCountsAsInView`.

@@ -18,8 +18,10 @@ enum LilyTheme {
         /// The name line of a row, tile or card over a caption: conversation rows, carousel tiles, the inbox cards, an entry.
         static var itemTitle: Font { .system(.body, design: .default, weight: .semibold) }
         static var caption: Font { .system(.footnote, design: .default, weight: .medium) }
-        /// A symbol as a mark in a `GlassGlyph`: the type glyph on the map's preview card.
-        static var glyph: Font { .system(.title3, design: .default, weight: .medium) }
+        /// A sport's glyph inside its filled mark of `size` points (`AvatarCircle` with the sport tint).
+        static func sportGlyph(size: CGFloat) -> Font {
+            .system(size: size * DesignTokens.Layout.sportGlyphFraction, weight: .semibold)
+        }
         /// Initials inside an avatar circle of `size` points.
         static func avatarInitials(size: CGFloat) -> Font {
             .system(size: size * DesignTokens.Layout.avatarInitialsFraction, weight: .bold)

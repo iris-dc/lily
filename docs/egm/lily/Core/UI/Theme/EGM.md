@@ -22,7 +22,10 @@ the aurora's cell roles and per-cell intensities (see [Effects](../Effects/EGM.m
   - `screenTitle` (`.largeTitle`, bold), `cardTitle` (`.title3`, semibold), `sectionTitle` (`.title2`, bold),
     `button` (`.body`, semibold), `floatingAction` (`.title2`, bold; the floating create button's glyph), `itemTitle`
     (`.body`, semibold; the name line of a row, tile or card over a caption), `caption`
-    (`.footnote`, medium), `glyph` (`.title3`, medium; the symbol mark in a `GlassGlyph`).
+    (`.footnote`, medium). (`glyph`, the `.title3` symbol in a `GlassGlyph`, removed 2026-11-06 with that view.)
+  - `sportGlyph(size: CGFloat)` [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.Fonts.sportGlyph(size:)`] =
+    `.system(size: size * DesignTokens.Layout.sportGlyphFraction, weight: .semibold)`, a sport's glyph inside its
+    filled mark of `size` points (`AvatarCircle` with the `.sport` tint, `EventTypeChip`).
   - `avatarInitials(size: CGFloat)` [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.Fonts.avatarInitials(size:)`] =
     `.system(size: size * DesignTokens.Layout.avatarInitialsFraction, weight: .bold)`, the initials inside an avatar
     circle of `size` points.
@@ -33,6 +36,9 @@ the aurora's cell roles and per-cell intensities (see [Effects](../Effects/EGM.m
   the facts cards and match rows; `static var date: Date.FormatStyle` = `Date.FormatStyle(date: .abbreviated, time:
   .omitted, locale: AppLocale.locale)` ("15 Jan 2027"), the day alone for what is past or far (a profile's shared
   history captions).
+- `static var sportGradient: LinearGradient` [`lily/Core/UI/Components/SportFill.swift:LilyTheme.sportGradient`]:
+  `.lilyAccentDeep` at the bottom-leading corner to `.lilyAccent` at the top-trailing one, the fill of every sport mark
+  (`View.sportFill(in:)`, see [Components](../Components/EGM.md)); declared beside its one consumer, in `Components`.
 - `static func selectionGlass(isSelected: Bool) -> Glass` [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.selectionGlass(isSelected:)`]:
   `.regular.tint(Color.lilyAccent)` when selected, `.regular` otherwise (map pins, `ChoiceChip`).
 - `static func selectionLabelColor(isSelected: Bool) -> Color` [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.selectionLabelColor(isSelected:)`]:

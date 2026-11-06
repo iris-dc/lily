@@ -53,8 +53,9 @@ nonisolated enum DesignTokens {
         /// Growth of a map pin when selected.
         static let mapPinSelectedScale: CGFloat = 1.15
         static let mapSelectedCardWidth: CGFloat = 340
-        /// The selected stack's card list stops growing here, about five compact cards, and scrolls the rest.
-        static let mapCardListMaxHeight: CGFloat = 352
+        /// The selected stack's card list stops growing here and scrolls the rest: about three and a half cards, so the
+        /// half card under the fade says there is more.
+        static let mapCardListMaxHeight: CGFloat = 400
         /// How far the selected card shrinks while held.
         static let pressedCardScale: CGFloat = 0.97
         /// The event detail's map: enough to place the spot in its neighbourhood without crowding the facts.
