@@ -22,7 +22,8 @@ nothing here performs I/O or touches shared state. Limits come from
 
 - `[lily/Features/Tournaments/Models/Tournament.swift:Tournament]`: `Identifiable, Hashable, Codable, Sendable`.
   Immutable `id`, `type: EventType`, `format`, `visibility: GroupVisibility`, `teamSize`, `organizerName`,
-  `group: EventGroupRef?`, `createdAt`; `private(set)` `name`, `description?`, `status`, `maxEntries`, `entryCount`,
+  `deleted: Bool?` (the organizer's account was deleted — the deletion contract's tombstone, mapped by `Tombstone`;
+  absent unless true), `group: EventGroupRef?`, `createdAt`; `private(set)` `name`, `description?`, `status`, `maxEntries`, `entryCount`,
   `allowsDraws`, `startsAt`, `registrationClosesAt?`, `location: EventLocation`, `organizerUserId`, `channelEpoch`,
   `myEntryId?`, `winnerEntryId?`, `startedAt?`, `completedAt?`, `updatedAt?`. Computed `isTeam`, `isPublic`,
   `hasEntered`, `isFull`, `isListed`, `fillRatio`, `isNearlyFull`, `canStart`, `permitsDraws`, `entriesText`,
@@ -41,7 +42,8 @@ nothing here performs I/O or touches shared state. Limits come from
   `[lily/Features/Tournaments/Models/TournamentChange.swift:TournamentChange]`: `(tournamentId, status, entryCount,
   channelEpoch, updatedAt?)`, the room channel's `tournament_changed` payload.
 - `[lily/Features/Tournaments/Models/TournamentEntry.swift:TournamentEntry]`: `(id, tournamentId, name,
-  captainUserId, members: [EntryMember(userId, displayName)], seed, status: EntryStatus, createdAt)`; `memberCount`,
+  captainUserId, members: [EntryMember(userId, displayName, deleted: Bool?)] (the per-member deletion tombstone,
+  absent unless true), seed, status: EntryStatus, createdAt)`; `memberCount`,
   `isRegistered`, `isFull(teamSize:)`, `contains(userID:)`, `isCaptain(_:)`; copy-returning `adding(_:)`,
   `removing(userID:)`, `replacingUser(_:with:)`.
 - `[lily/Features/Tournaments/Models/TournamentFormat.swift:TournamentFormat]`: five `WireNamedKind` enums, each
@@ -97,7 +99,9 @@ nothing here performs I/O or touches shared state. Limits come from
 - `[lily/Features/Tournaments/Models/Tournament.swift:Tournament]`: Codable is synthesized for every wire type
   (`Tournament`, `TournamentDetail`, `TournamentChange`, `TournamentEntry`, `TournamentMatch`, `MatchSchedule`,
   `TournamentStanding`, `TournamentSchedule.Pairing`): no `CodingKeys`, no hand-written `init(from:)`, so property
-  names are the wire keys, non-optional keys must be present and nil optionals are omitted.
+  names are the wire keys, non-optional keys must be present and nil optionals are omitted. The deletion contract's
+  additive `deleted` flags (`Tournament`, `EntryMember`) ride this as optionals: absent unless true, never re-encoded
+  when absent.
 - `[lily/Features/Tournaments/Models/TournamentFormat.swift:TournamentFormat]`: a value this build does not know
   decodes as `.unknown(name)` and re-encodes as it came; for it `drawsBracket`, `isOver`, `isDecided`, `isOpen` and
   `TournamentEntry.isRegistered` are false, `displayName` is the raw name, `entriesRange` is the widest
@@ -149,7 +153,8 @@ nothing here performs I/O or touches shared state. Limits come from
   organiser && !isOver`; `canRemoveEntries = organiser && .registration`; `canOpenChat = chatEnabled && involved`;
   `canInvite = involved && registration open`; `canReport = signed in && !organiser`; `canStart = showsStart &&
   tournament.canStart`, else `startBlockedReason` from `AppBranding.Tournaments.startNeeds`; `organizerProfile` only
-  for a signed-in non-organiser; `showsMenu` ignores `showsStart`, `canRemoveEntries`, `canJoinTeams`.
+  for a signed-in non-organiser and never for a tombstoned organiser (`tournament.deleted == true`: a deleted
+  account's name opens no profile); `showsMenu` ignores `showsStart`, `canRemoveEntries`, `canJoinTeams`.
 - `[lily/Features/Tournaments/Models/MatchActions.swift:MatchActions.init]`: `.none` unless the tournament is
   `.inProgress` and the user is known; an entrant acts only on a match containing their entry; the organiser may
   confirm a reported match, record or give a walkover while `isReadyForResult`, and schedule while undecided; a side

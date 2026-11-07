@@ -10,6 +10,9 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
     let senderUserId: String
     /// The sender's name when the message was sent; the timeline prefers the current one from the roster.
     let senderName: String
+    /// The sender's account was deleted (the deletion contract's tombstone, mapped by `Tombstone`); distinct from
+    /// `isDeleted`, this message's own deletion. Absent unless true.
+    let deleted: Bool?
     let kind: MessageKind
     /// Absent on system rows, on deleted messages and on a message that is its pictures alone.
     let text: String?
@@ -30,14 +33,15 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
     let poll: Poll?
 
     private enum CodingKeys: String, CodingKey {
-        case id, groupId, senderUserId, senderName, kind, text, eventId, tournamentId, matchId, clientMessageId, sentAt
-        case isDeleted, replyTo, attachments, poll
+        case id, groupId, senderUserId, senderName, deleted, kind, text, eventId, tournamentId, matchId, clientMessageId
+        case sentAt, isDeleted, replyTo, attachments, poll
     }
 
     init(id: String,
          groupId: String,
          senderUserId: String,
          senderName: String,
+         deleted: Bool? = nil,
          kind: MessageKind = .text,
          text: String? = nil,
          eventId: String? = nil,
@@ -53,6 +57,7 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
         self.groupId = groupId
         self.senderUserId = senderUserId
         self.senderName = senderName
+        self.deleted = deleted
         self.kind = kind
         self.text = text
         self.eventId = eventId
@@ -74,6 +79,7 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
                   groupId: try container.decode(String.self, forKey: .groupId),
                   senderUserId: try container.decode(String.self, forKey: .senderUserId),
                   senderName: try container.decode(String.self, forKey: .senderName),
+                  deleted: try container.decodeIfPresent(Bool.self, forKey: .deleted),
                   kind: try container.decode(MessageKind.self, forKey: .kind),
                   text: try container.decodeIfPresent(String.self, forKey: .text),
                   eventId: try container.decodeIfPresent(String.self, forKey: .eventId),
@@ -104,6 +110,7 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
                     groupId: groupId,
                     senderUserId: senderUserId,
                     senderName: senderName,
+                    deleted: deleted,
                     kind: kind,
                     text: text,
                     eventId: eventId,
@@ -124,6 +131,7 @@ nonisolated struct ChatMessage: Identifiable, Hashable, Codable, Sendable {
                     groupId: groupId,
                     senderUserId: senderUserId,
                     senderName: senderName,
+                    deleted: deleted,
                     kind: kind,
                     eventId: eventId,
                     tournamentId: tournamentId,

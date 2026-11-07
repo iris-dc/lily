@@ -5,7 +5,10 @@ import SwiftUI
 /// "Sign out", never by a swipe.
 struct TermsSheet: View {
     let viewModel: TermsViewModel
-    let errorCenter: ErrorCenter
+    let dependencies: AppDependencies
+    @State private var isDeletePresented = false
+
+    private var errorCenter: ErrorCenter { dependencies.errorCenter }
 
     private typealias Copy = AppBranding.Moderation
     private typealias Links = AppConfig.Moderation
@@ -27,6 +30,7 @@ struct TermsSheet: View {
                 .scrollBounceBehavior(.basedOnSize)
                 acceptButton
                 signOutButton
+                deleteAccountButton
             }
             .padding(DesignTokens.Spacing.xl)
             .readableColumn()
@@ -35,6 +39,9 @@ struct TermsSheet: View {
         // Agreeing or signing out are the only ways out; on iPad a tap beside a form sheet must not dismiss it either.
         .interactiveDismissDisabled()
         .errorPopup(errorCenter)
+        .sheet(isPresented: $isDeletePresented) {
+            DeleteAccountSheet(viewModel: dependencies.makeDeleteAccountViewModel(), errorCenter: errorCenter)
+        }
     }
 
     /// The three legal links in a row that wraps at accessibility sizes; the 44pt labels keep the lines apart.
@@ -81,9 +88,23 @@ struct TermsSheet: View {
         .disabled(viewModel.isAccepting)
         .accessibilityIdentifier(AccessibilityIdentifiers.termsSignOut)
     }
+
+    /// The terms-pending way into deletion (the relocation contract): the non-dismissable terms sheet covers the
+    /// shell, so the flow must be reachable from here; red, so it never reads as a third way to agree.
+    private var deleteAccountButton: some View {
+        Button {
+            isDeletePresented = true
+        } label: {
+            Text(AppBranding.DeleteAccount.title)
+                .frame(maxWidth: .infinity)
+        }
+        .lilyTextButton(color: .red)
+        .disabled(viewModel.isAccepting)
+        .accessibilityIdentifier(AccessibilityIdentifiers.termsDeleteAccount)
+    }
 }
 
 #Preview {
     let dependencies = AppDependencies.makeMock()
-    TermsSheet(viewModel: dependencies.makeTermsViewModel(), errorCenter: dependencies.errorCenter)
+    TermsSheet(viewModel: dependencies.makeTermsViewModel(), dependencies: dependencies)
 }

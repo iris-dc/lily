@@ -105,6 +105,22 @@ nonisolated enum MockChatFixtures {
         messageID(groupID: groupID, index: rowCount(for: groupID) - 1 - unreadCount)
     }
 
+    /// The sender id of the `-mock-deleted-user` fixtures; in no roster, so the stored snapshot is all a screen has.
+    static let deletedUserID = "mock-user-deleted"
+
+    /// The `-mock-deleted-user` row: a line whose sender deleted their account, stored as the backend's by-sender
+    /// scrub leaves it — the placeholder name and the per-message flag — one message interval after the room's last
+    /// fixture row, so it reorders nothing.
+    static func deletedSenderMessage(groupID: String, after lastMessageAt: Date) -> ChatMessage {
+        ChatMessage(id: messageID(groupID: groupID, index: rowCount(for: groupID)),
+                    groupId: groupID,
+                    senderUserId: deletedUserID,
+                    senderName: AppConfig.DisplayName.backendDefault,
+                    deleted: true,
+                    text: "I might drop by on Thursday.",
+                    sentAt: lastMessageAt.addingTimeInterval(secondsBetweenMessages))
+    }
+
     /// The room as it stands when first opened; the caller wrote every fourth message. `count` deepens a room past
     /// its fixture size (a demo of paging and scrolling); the system row keeps its place. A room's last row is at
     /// `lastMessageAt`, the moment its group says, so opening it never moves it in Mine; a silent group's rows end at its

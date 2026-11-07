@@ -15,4 +15,17 @@ nonisolated extension AppConfig {
         /// Laurel's `profile.max-bio-length`, counted in code points like `DynamoProfileService.normalizeBio`.
         static let maxLength = 300
     }
+
+    /// The delete-account flow (the deletion contract).
+    enum AccountDeletion {
+        /// How often the locked sheet re-reads `GET /api/me` until a 401 or `USER_NOT_FOUND` settles the deletion.
+        static let pollInterval: Duration = .seconds(2)
+    }
+}
+
+nonisolated extension AppConfig.LaunchArguments {
+    /// Makes the mock repositories serve deleted-flagged fixtures (a chat message whose sender is deleted, a past
+    /// game hosted by a deleted user, a tournament entry of one), so tombstone rendering and the deleted-user glyph
+    /// are walkable without a backend.
+    static let mockDeletedUser = "-mock-deleted-user"
 }

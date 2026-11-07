@@ -18,14 +18,16 @@ live under `lilyTests/Groups` (`./scripts/ci.sh unit`).
 ## Subdirectories & Boundaries
 
 - Interfaces: [`./Interfaces/EGM.md`](./Interfaces/EGM.md) - the six protocols: `GroupRepository` (reads, membership
-  and role writes, idempotent `create` on `GroupDraft.clientId`), `InviteRepository`, `MeRepository`,
+  and role writes, idempotent `create` on `GroupDraft.clientId`), `InviteRepository`, `MeRepository` (the account,
+  the terms, and account deletion: the advisory plan preview plus the asynchronous-accepted delete),
   `ModerationRepository`, the class-bound `RoomActivityRecorder` the chat layer calls, and `GroupDraftEditing`
   (refining `DraftSubmitting`) so create and edit share one form.
-- Models: [`./Models/EGM.md`](./Models/EGM.md) - twenty-six `nonisolated` value types: `SportGroup` and its
+- Models: [`./Models/EGM.md`](./Models/EGM.md) - twenty-seven `nonisolated` value types: `SportGroup` and its
   copy builders (`mineOrder`, `noting`, `dropping`), `GroupKind: WireNamedKind` with `unknown`, roster and membership
   types, the request bodies that omit optionals, `GroupDraft` validated against `AppConfig.Groups` (name 3...60,
   description 500), `GroupAccess` (who may join, leave, edit, delete, invite, remove, ban, report), `GroupDetailSection`,
-  `GroupConfirmation`, navigation and report values.
+  `GroupConfirmation`, navigation and report values, and the account-deletion wire pair (`DeletionPlan`,
+  `DeletionSettle`).
 - Implementations: [`./Implementations/EGM.md`](./Implementations/EGM.md) - `Remote*` repositories over
   `/api/groups`, `/api/groups/{id}/...`, `/api/me`, `/api/reports` and `/api/blocks` with per-route fallback errors
   and no retry of their own; `Mock*` repositories and `MockGroupFixtures` (six Berlin communities, Marta's

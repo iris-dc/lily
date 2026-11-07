@@ -125,6 +125,10 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case conversationFailed
     /// The caller holds `AppConfig.People.maxConversations` conversations already (`CONVERSATION_LIMIT`).
     case conversationLimit
+    /// The deletion-plan preview failed for a reason without a code of its own (a 500, an unreadable body).
+    case deletionPlanUnavailable
+    /// `DELETE /api/me` failed before the backend claimed the job; a 401 instead means it landed (`DeletionSettle`).
+    case accountDeletionFailed
     case tournamentsUnavailable
     /// Also what a private tournament answers to an outsider, and what a deleted one answers.
     case tournamentNotFound

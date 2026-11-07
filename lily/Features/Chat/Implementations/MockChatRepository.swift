@@ -27,6 +27,8 @@ final class MockChatRepository: ChatRepository {
     let attachments: MockAttachmentStore
     /// Whether a fixture member answers every send (`-mock-chat-replies`).
     let autoReplies: Bool
+    /// Whether the Kickers room carries a line whose sender deleted their account (`-mock-deleted-user`).
+    let deletedSender: Bool
     let now: () -> Date
     private let sleep: Sleep
 
@@ -36,6 +38,7 @@ final class MockChatRepository: ChatRepository {
          logger: any Logging,
          attachments: MockAttachmentStore,
          autoReplies: Bool,
+         deletedSender: Bool = false,
          now: @escaping () -> Date = { .now },
          sleep: @escaping Sleep = systemSleep) {
         self.groups = groups
@@ -44,6 +47,7 @@ final class MockChatRepository: ChatRepository {
         self.logger = logger
         self.attachments = attachments
         self.autoReplies = autoReplies
+        self.deletedSender = deletedSender
         self.now = now
         self.sleep = sleep
     }
@@ -158,6 +162,10 @@ final class MockChatRepository: ChatRepository {
                                                        now: now(),
                                                        lastMessageAt: group.lastMessageAt ?? group.createdAt,
                                                        count: autoReplies ? AppConfig.Chat.mockLongRoomMessages : nil)
+            if deletedSender, groupID == MockGroupFixtures.kickersID {
+                let after = group.lastMessageAt ?? group.createdAt
+                rooms[groupID]?.append(MockChatFixtures.deletedSenderMessage(groupID: groupID, after: after))
+            }
             pins[groupID] = MockChatFixtures.pins(in: rooms[groupID] ?? [])
             pollVoters = pollVoters.merging(MockChatFixtures.pollVoters(in: rooms[groupID] ?? [])) { $1 }
         }

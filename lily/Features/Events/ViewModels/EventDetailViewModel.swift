@@ -54,9 +54,11 @@ final class EventDetailViewModel {
     /// Names are members-level information, like a roster: shown to signed-in callers only.
     var showsParticipants: Bool { identity.currentUserID != nil }
 
-    /// The host's profile, when the caller may open it: signed in, the host known, and not the caller themselves.
+    /// The host's profile, when the caller may open it: signed in, the host known, not the caller themselves, and the
+    /// host's account not deleted (a tombstone opens no profile).
     var hostProfile: UserProfileDestination? {
-        guard let hostUserId = event.hostUserId, let caller = identity.currentUserID, hostUserId != caller else { return nil }
+        guard let hostUserId = event.hostUserId, let caller = identity.currentUserID, hostUserId != caller,
+              event.deleted != true else { return nil }
         return UserProfileDestination(userId: hostUserId, displayName: event.hostName)
     }
 

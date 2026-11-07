@@ -1,6 +1,37 @@
 import Foundation
 
 nonisolated extension AppBranding {
+    /// The tombstone of a deleted account, wherever their messages, games and results remain (`Tombstone`).
+    enum DeletedUser {
+        static var name: String { localized("Deleted user") }
+    }
+
+    /// Copy of the delete-account flow: the Settings row and the sheet it presents — the summary (one plural line per
+    /// non-zero count, composed by `DeleteAccountViewModel.lines(for:)`, with the always-true messages sentence), the
+    /// destructive confirmation, the locked wait and the one-time acknowledgment.
+    enum DeleteAccount {
+        static var title: String { localized("Delete account") }
+        static var approximate: String { localized("These counts are approximate.") }
+        static var messagesSentence: String { localized("Your messages will show as Deleted user.") }
+        static var irreversible: String { localized("Deleting your account cannot be undone.") }
+        static var dialogTitle: String { localized("Delete your account?") }
+        static var confirmAction: String { localized("Delete my account") }
+        static var deleting: String { localized("Deleting your account…") }
+        static var deletedTitle: String { localized("Your account was deleted") }
+        static var deletedMessage: String { localized("Your sign-in and profile were removed.") }
+        static var acknowledgeAction: String { localized("Done") }
+
+        static func groupsTransferring(_ count: Int) -> String { localized("\(count) groups will pass to another member") }
+        static func groupsDeleted(_ count: Int) -> String { localized("\(count) groups will be deleted") }
+        static func eventsCancelled(_ count: Int) -> String {
+            localized("\(count) upcoming games you host will be cancelled")
+        }
+        static func entriesWithdrawn(_ count: Int) -> String { localized("\(count) tournament entries will be withdrawn") }
+        static func tournamentsCancelled(_ count: Int) -> String {
+            localized("\(count) tournaments you organize will be cancelled")
+        }
+    }
+
     /// Copy of the display name: the card on Profile and the sheet that edits it.
     enum DisplayName {
         static var title: String { localized("Display name") }

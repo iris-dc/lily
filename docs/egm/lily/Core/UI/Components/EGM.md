@@ -75,8 +75,10 @@ use the generated `Color.lily*` asset symbols.
 - Titles and text: `ScreenTitle(text:, subtitle: String? = nil)` and `ScreenSubtitle(text:)`
   [`lily/Core/UI/Components/ScreenTitle.swift:ScreenTitle`, `ScreenSubtitle`]; `SectionTitle<Trailing>(text:, trailing:)`
   with `init(text:)` for `EmptyView` [`lily/Core/UI/Components/SectionTitle.swift:SectionTitle`];
-  `OwnerTitleBlock<Destination: Hashable>(title:, subtitle:, destination: Destination?)`
-  [`lily/Core/UI/Components/OwnerTitleBlock.swift:OwnerTitleBlock`] (its link is a `ChevronLink`);
+  `OwnerTitleBlock<Destination: Hashable>(title:, subtitle:, destination: Destination?, subtitleMark: String? = nil)`
+  [`lily/Core/UI/Components/OwnerTitleBlock.swift:OwnerTitleBlock`] (its link is a `ChevronLink`; `subtitleMark`, an
+  optional SF Symbol drawn before the subtitle in its secondary style, carries the deleted account's tombstone mark,
+  2026-11-07);
   `ChevronLink<Value: Hashable, Label>(value:, label:)` [`lily/Core/UI/Components/ChevronLink.swift:ChevronLink`], a
   `.plain` `NavigationLink(value:)` whose label and `.caption2` `DesignTokens.Symbols.chevron` read `.secondary`;
   `ValidationHint(_ message: String)` [`lily/Core/UI/Components/ValidationHint.swift:ValidationHint`], a `Label` of the

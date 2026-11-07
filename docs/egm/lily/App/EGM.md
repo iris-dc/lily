@@ -50,7 +50,7 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
 - `struct Repositories` (`lily/App/AppDependencies+Repositories.swift:Repositories`): `events`, `profile`, `feedback`, `interactions`,
   `groups: GroupRepositories`, `devices`, `pushRegistrar`. `remote(baseURL:realtimeEndpoint:identity:tokenProvider:logger:)`
   binds the `Remote*` set over one `URLSessionAPIClient` plus `SystemPushRegistrar`;
-  `mock(identity:logger:autoReplies:mockPicker:systemPush:termsPending:eventsFailFirst:)` binds the `Mock*` set,
+  `mock(identity:logger:autoReplies:mockPicker:systemPush:termsPending:eventsFailFirst:deletedUser:)` binds the `Mock*` set,
   `NoOpInteractionRecorder()` and `SystemPushRegistrar` only when `systemPush`, else `MockPushRegistrar`.
 - `GroupRepositories` (`lily/App/AppDependencies+Groups.swift:GroupRepositories`): `groups`, `invites`, `inbox`, `me`,
   `moderation`, `chat`, `users`, `tournaments`, `tournamentInvites`, `realtimeTransport`,
@@ -84,7 +84,9 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `makeAttachmentComposer`, `makeChatHistoryClearer`, `myGroupsDidChange()`, `myGroupsDidLoad()` (`+Chat.swift`);
   `makeTournamentListViewModel(scope:snapshots:)`, `makeTournamentDetailViewModel`, `makeCreateTournamentViewModel`,
   `makeEditTournamentViewModel` (`+Tournaments.swift`); `makeInboxViewModel`, `makeUserProfileViewModel`, `makeTermsViewModel`,
-  `makeFeedbackViewModel`, `makeDisplayNameViewModel`, `makeAboutViewModel` (`+Inbox`, `+People`, `+Moderation`, `+Feedback`, `+Profile`). The
+  `makeFeedbackViewModel`, `makeDisplayNameViewModel`, `makeAboutViewModel`, `makeDeleteAccountViewModel`
+  (`+Inbox`, `+People`, `+Moderation`, `+Feedback`, `+Profile`; the last builds `DeleteAccountViewModel` over
+  `meRepository` and `sessionController` as its `AccountDeletionSession`, 2026-11-07). The
   `+Groups`, `+Chat`, `+Push`, `+Inbox`, `+People` and `+Tournaments` extensions expose their stores and repositories as
   pass-throughs.
 - `static func makeMock() -> AppDependencies` (`lily/App/AppDependencies+Mock.swift:AppDependencies.makeMock`):

@@ -70,7 +70,9 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 
 - `[MessageBubble.swift:MessageBubble]` `row: MessageRow`, `profile: UserProfileDestination`, `loader`,
   `isQuoteDeleted`, `onTapQuote`, `onTapAttachment: (AttachmentSelection) -> Void`, `onOpenFile`, `onVote:
-  ([String]) -> Void`, `onShowVoters`; avatar and name are `NavigationLink(value: profile)`.
+  ([String]) -> Void`, `onShowVoters`; avatar and name are `NavigationLink(value: profile)` — unless the sender's
+  account was deleted (`message.deleted == true`, 2026-11-07): then the avatar is `Tombstone.symbol`, the name is
+  `Tombstone.displayName` (the localized "Deleted user") and neither links.
 - `[BubbleContent.swift:BubbleContent<Media>]` `text`, `quote`, `isQuoteDeleted`, `own`, `attachmentKinds`,
   `onTapQuote`, `media`; `View.bubbleFill(own:)`, `View.bubbleRow(side:)`, `MessageTimestamp`.
   `[BubbleInk.swift:BubbleInk]` `own` to `primary`, `accent`, `secondary`, `background`.
@@ -170,6 +172,8 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `BubbleInk(own:).secondary` (white at `DesignTokens.Opacity.secondaryOnAccent` on the caller's bubble, never
   `.secondary`, which turns grey on the accent); avatar column only for others,
   avatar and name only on the first bubble of a run, timestamp on the last; the identifier prefers `clientMessageId`.
+  A deleted sender (the account tombstone, distinct from `isDeleted`) draws the glyph avatar, the localized name and
+  no profile link (2026-11-07).
 - `[BubbleContent.swift:View.bubbleFill]` A plain `BubbleInk.background` colour in a rounded rect; a media-only
   bubble (`BubbleFill.standsAlone`) has no fill and no padding. `[QuoteBlock.swift:QuoteStack]` width is the widest
   subview measured as `min(unconstrained, at the offered width)`; subviews stack top to bottom.

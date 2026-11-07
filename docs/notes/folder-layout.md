@@ -40,6 +40,7 @@ lily/
                  IdentityProvider, CognitoClient, AuthTokenProvider, SessionExpiryReporter, SessionObserver),
                  Implementations (CognitoAuthService over AmplifyCognitoClient, the only file importing Amplify, configured
                  from AmplifyConfigurationBuilder; JWTClaims; Mock*, UserDefaults*, SessionIdentityProvider), SessionController
+                 (+AccountDeletion: the account-deleted end and its stand-down, as the Interfaces' AccountDeletionSession)
     Changes/     ChangeTracker (observable change counter; one per kind of data, so lists that missed a change reload),
                  ContentFreshness (the shared staleness rules: TTL, change version, caller, coarse position, retry cooldown; .standard
                  over AppConfig.Lists), StoreLoader (the app-lifetime stores' load skeleton: SingleFlight keyed by user +
@@ -68,8 +69,9 @@ lily/
                  PushPayload + PushTap (what a tapped notification opens: a game, or a tournament's match)), Interfaces (PushRegistrar, DeviceRepository, PushOptIn), Implementations (SystemPushRegistrar over
                  UNUserNotificationCenter and the relay, MockPushRegistrar, RemoteDeviceRepository, MockDeviceRepository,
                  PushEventRelay, NoPushOptIn), PushCoordinator (registration sync, the permission ask, the tapped reminder)
-    Errors/      AppError, ErrorMessageMapper (single copy source; the groups, chat, moderation, people, tournament and poll copy in
-                 ErrorMessageMapper+Groups / +Chat / +Events / +People / +Tournaments / +Polls), ErrorCenter (drives the popup)
+    Errors/      AppError, ErrorMessageMapper (single copy source; the groups, chat, moderation, people, tournament, poll and
+                 account-deletion copy in ErrorMessageMapper+Groups / +Chat / +Events / +People / +Tournaments / +Polls /
+                 +Profile), ErrorCenter (drives the popup)
     Localization/ AppLanguage (the seven languages, the system's pick), LanguagePreference (system or fixed, a StoredChoice), AppLocale
                  (the process-wide language for lookups and formats; the region read per call), localized(_:) (the one lookup every
                  line of copy goes through), LanguageStore (the user's choice, persisted and published)
@@ -160,22 +162,26 @@ lily/
                  ProfileFieldDraft, what the two editors' drafts share), remote and mock implementations, Models (Profile with
                  its bio, ProfileUpdateRequest with one field per request, DisplayNameDraft and AboutDraft with their issues),
                  State (ProfileStore: the caller's name and bio, loaded once per session, cleared with it), ViewModels
-                 (ProfileFieldViewModel<Draft>, as DisplayNameViewModel and AboutViewModel), Views (ProfileView, SettingsScreen (the pushed
-                 settings: language, currency, contact, the legal links, Sign out; 2026-11-07), DisplayNameRow
+                 (ProfileFieldViewModel<Draft>, as DisplayNameViewModel and AboutViewModel; DeleteAccountViewModel, the delete
+                 flow's state machine), Views (ProfileView, SettingsScreen (the pushed
+                 settings: language, currency, contact, the legal links, Sign out, Delete account; 2026-11-07), DeleteAccountSheet
+                 (the delete flow: summary, destructive confirm, locked wait, one-time acknowledgment), DisplayNameRow
                  and DisplayNameSheet, AboutRow and AboutSheet, the Language and Currency rows, SettingsChoiceRow (the popover
                  card the Language and Currency rows share)) (updated 2026-11-07)
     Feedback/    The contact form: Models (FeedbackKind, FeedbackDraft with its issues and the one payload builder,
                  FeedbackEnvironment: app version, OS version, device model, language), FeedbackRepository interface, remote
                  (POST /api/feedback) and mock implementations, FeedbackViewModel, Views (FeedbackRow on Settings and the guest profile, FeedbackSheet)
     Moderation/  The terms sheet: ViewModels (TermsViewModel: shown while a signed-in caller owes the terms, accept, sign out), Views
-                 (TermsSheet, presented by AppRootView); the report sheet and the moderation repository stay under Groups
+                 (TermsSheet, presented by AppRootView; since 2026-11-07 also the terms-pending way into DeleteAccountSheet);
+                 the report sheet and the moderation repository stay under Groups
     Groups/      Groups, invites, the account and moderation: Models (SportGroup with GroupKind and Counterpart (a direct
                  conversation is a group of kind direct), GroupMember,
                  GroupMembership, GroupVisibility, MemberRole, GroupAccess, GroupDraft and the create/update payloads, GroupScope (with
                  the Discover query's searchPrefix), GroupDetailSection, GroupConfirmation (the detail's leave / delete / remove / ban
                  dialogs), InviteCandidate (with its source and caption), SentInvite (with the
                  send payload; into a group or a tournament), InviteTarget (what the invite sheet invites into), EventGroupRef, MembershipChange, RoomSubscription, GroupDetailContext,
-                 Account, Report models), Interfaces (GroupRepository, InviteRepository, MeRepository, ModerationRepository, GroupDraftEditing),
+                 Account, DeletionPlan (+ DeletionSettle, the delete flow's landed check),
+                 Report models), Interfaces (GroupRepository, InviteRepository, MeRepository, ModerationRepository, GroupDraftEditing),
                  Implementations (Remote* over APIClient, Mock* with the six fixture groups; MockGroupRepository+Direct holds the
                  mock's direct conversations and who a user id names, +Tournaments the rooms the tournament mock registers,
                  admits into and leaves, +Discover the mock's Discover filter and its three orders over GroupScope.searchPrefix;
@@ -231,7 +237,8 @@ lily/
                  ChatTranscript+Pins (the pinned bar over the transcript), ChatTranscript+Scrolling, BubbleInk (the ink colour a bubble's small
                  text reads in; 2026-10-27, reworked 2026-11-01), RowReveal, TranscriptWidth, ChatsSplitView (the Chats tab on a regular width; 2026-10-08))
     People/      Profiles and direct conversations: Models (UserProfile with its bio and shared lists, GroupSummary, EventSummary,
-                 TournamentSummary, UserProfileDestination, StartConversationPayload), Interfaces (UserRepository), Implementations
+                 TournamentSummary, UserProfileDestination, StartConversationPayload, Tombstone (the deleted-account name and
+                 mark, 2026-11-07)), Interfaces (UserRepository), Implementations
                  (RemoteUserRepository, MockUserRepository over the group, event, tournament and profile mocks, MockUserFixtures
                  (the fixture bios)), ViewModels (UserProfileViewModel), Views (UserProfileView, SharedGroupRow, SharedHistoryRows
                  (SharedEventRow and SharedTournamentRow), PersonRow (the avatar + name + badge row that opens a profile; MemberRow

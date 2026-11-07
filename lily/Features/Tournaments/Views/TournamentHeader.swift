@@ -19,8 +19,10 @@ struct TournamentHeader: View {
                 TournamentStatusChip(status: tournament.status)
             }
             OwnerTitleBlock(title: tournament.name,
-                            subtitle: Copy.organizedBy(name: tournament.organizerName),
-                            destination: organizerProfile)
+                            subtitle: Copy.organizedBy(name: Tombstone.displayName(tournament.organizerName,
+                                                                                   deleted: tournament.deleted)),
+                            destination: organizerProfile,
+                            subtitleMark: tournament.deleted == true ? Tombstone.symbol : nil)
             outcome
             if let group = tournament.group {
                 HostedInLine(group: group)

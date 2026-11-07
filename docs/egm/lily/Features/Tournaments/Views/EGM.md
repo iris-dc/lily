@@ -45,12 +45,17 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `emptyState` by `viewModel.state`; toolbar `TournamentMenu`; `sectionPicker` (`tournamentSection`),
   `loadingSlot` (`tournamentLoading`), `bracketInset`.
 - `[lily/Features/Tournaments/Views/TournamentHeader.swift:TournamentHeader]`: `(tournament, organizerProfile:
-  UserProfileDestination?, winnerName: String?)`: chips (type, format, status), `OwnerTitleBlock`
+  UserProfileDestination?, winnerName: String?)`: chips (type, format, status), `OwnerTitleBlock` — the organizer
+  line maps the stored name through `Tombstone.displayName(tournament.organizerName, deleted: tournament.deleted)`
+  with `Tombstone.symbol` as the mark for a deleted organizer (2026-11-07; `organizerProfile` is already nil then,
+  `TournamentPermissions`) —
   (no identifier), the winner line (`tournamentWinner`: a `Label` whose text is in the primary ink and whose
   trophy `DesignTokens.Symbols.winner` is in `Color.lilyAccent`) or cancelled notice, `HostedInLine`.
   `TournamentFacts(tournament:)`: start, registration close, place, team size, `EntriesBar`.
 - `[lily/Features/Tournaments/Views/TournamentEntriesSegment.swift:TournamentEntriesSegment]`: `(viewModel, detail,
-  onRemove: (TournamentEntry) -> Void)` lists `detail.registeredEntries` as `EntryRow(entry:viewModel:teamSize:)`:
+  onRemove: (TournamentEntry) -> Void)` lists `detail.registeredEntries` as `EntryRow(entry:viewModel:teamSize:)`
+  (each member's `PersonRow` takes the per-member `deleted` flag, so a deleted player shows the tombstone and opens
+  no profile, 2026-11-07):
   a `PersonRow` for singles, a `GlassCard` team with seed chip, members, captain chip and a Join team `BusyButton`
   (`tournamentJoinTeam(id)`); identifiers `entryRow(id)`, `participantRow(userId)`.
 - `[lily/Features/Tournaments/Views/TournamentResultsSegment.swift:TournamentResultsSegment]`: `(showsMatches,

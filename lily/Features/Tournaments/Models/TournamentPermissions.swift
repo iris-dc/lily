@@ -20,7 +20,8 @@ nonisolated struct TournamentPermissions: Equatable, Sendable {
     let canStart: Bool
     /// Why Start is disabled, for the menu item's subtitle; `nil` while it is enabled or not offered.
     let startBlockedReason: String?
-    /// The organiser's profile, when the caller may open it: signed in, and not the organiser themselves.
+    /// The organiser's profile, when the caller may open it: signed in, not the organiser themselves, and the
+    /// organiser's account not deleted (a tombstone opens no profile).
     let organizerProfile: UserProfileDestination?
     let canJoinTeams: Bool
 
@@ -53,7 +54,7 @@ nonisolated extension TournamentPermissions {
         let startBlockedReason: String? = showsStart && !tournament.canStart
             ? AppBranding.Tournaments.startNeeds(tournament.format.minimumEntriesToStart, teamSize: tournament.teamSize)
             : nil
-        let organizerProfile: UserProfileDestination? = signedIn && !role.isOrganizer
+        let organizerProfile: UserProfileDestination? = signedIn && !role.isOrganizer && tournament.deleted != true
             ? UserProfileDestination(userId: tournament.organizerUserId, displayName: tournament.organizerName)
             : nil
         self.init(canEdit: canEdit,

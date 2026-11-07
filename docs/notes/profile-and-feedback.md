@@ -82,3 +82,31 @@
   against a clean main build, where it is worse (the Sign out glass button overlapped the title) — shots
   `06-profile-xxxl.png` and `main-profile-xxxl-preexisting-evidence.png` under
   `reviews/2026-11-07-profile-lifecycle-brainstorm/slice2-shots/`.
+- **Delete account, stage 2: the UI (2026-11-07; wire contract `groups-plan/account-deletion-plan.md`, UI contract
+  `groups-plan/profile-relocation-plan.md`, over stage 1's machinery).** Settings ends in a red full-width Delete
+  account (`settings-delete-account`, `lilyTextButton(color: .red)` under Sign out) presenting `DeleteAccountSheet`;
+  the non-dismissable terms sheet gains the same entry beside its Sign out (`terms-delete-account`), since it covers
+  the shell for a terms-pending account — `TermsSheet` now takes `dependencies` instead of `errorCenter` to build the
+  flow. The sheet (`DeleteAccountViewModel`): the advisory plan loads on `.task` (a failure reports the popup and
+  blocks nothing — except a landed or locked load, which reports nothing: the pre-merge review's simulator run showed
+  the account-deleted teardown re-instantiating the sheet's content, whose fresh `.task` re-ran `prepare()` against
+  the dead session and raised "Session expired" over the signed-out landing, which the design's client end path pins
+  as suppressed; `prepare()` now stays silent when `isLocked` or `DeletionSettle.isLanded(error)` holds, fixed
+  2026-11-07); the summary renders one plural line per non-zero count and drops the zero lines, the counts framed
+  as approximate, with the always-true "Your messages will show as Deleted user." sentence (the UI contract's pinned
+  rendering rule); the prominent confirm (`delete-account-confirm`) opens a destructive `confirmationDialog`
+  ("Delete my account"); the confirm locks the sheet (`lilyFormSheet(errorCenter:lockedWhile:)`, Cancel gone), sends
+  `DELETE /api/me` and polls `GET /api/me` every `AppConfig.AccountDeletion.pollInterval` (2 s) until
+  `DeletionSettle.isLanded`; the one-time acknowledgment ("Your account was deleted", `delete-account-acknowledge`)
+  is hosted by the sheet itself, and only its tap runs `endDeletedSession()` — the pinned teardown order, asserted by
+  `DeleteAccountViewModelTests` over a spy `AccountDeletionSession` (the protocol is new in `Core/Auth/Interfaces`,
+  conformed by `SessionController+AccountDeletion`). Tombstone rendering: `MessageBubble` (glyph avatar + localized
+  name, no link), `OwnerTitleBlock` gained `subtitleMark` for the event detail's host line and the tournament
+  header's organizer line, `PersonRow` gained `deleted` for the tournament entries; `EventDetailViewModel.hostProfile`
+  is nil for a deleted host. `-mock-deleted-user` (`AppConfig.LaunchArguments.mockDeletedUser`, wired through
+  `Repositories.mock`): a deleted sender's line in the Kickers room, a past game hosted by a deleted user
+  (`mock-event-deleted-host`), Noor's table-tennis entry stamped — `MockDeletedFixturesTests`. Fourteen new catalog
+  keys in the seven languages (the five `%lld` plural lines with en singulars; "Done" reused for the acknowledgment);
+  the native read stays owed with the other recent keys. UI: `LilySettingsTests.testDeletingTheAccountWalksToTheSignedOutLanding`
+  (which also asserts the "Session expired" popup's absence over the landing) and
+  `testADeletedSendersMessageShowsTheTombstone` (shard 4 unchanged).

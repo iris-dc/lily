@@ -7,8 +7,9 @@ Source: `lily/Features/People/Models/`
 The wire and navigation values of the People feature: `UserProfile` (another person with their bio and what the caller
 shares with them), `GroupSummary` (a group as a profile's "Groups in common" row shows it), `EventSummary` (a game as a
 "Games together" row shows it), `TournamentSummary` (a tournament as a "Tournaments together" row shows it),
-`StartConversationPayload` (the body that opens a direct conversation) and `UserProfileDestination` (the value pushed
-from wherever a person is named).
+`StartConversationPayload` (the body that opens a direct conversation), `UserProfileDestination` (the value pushed
+from wherever a person is named) and `Tombstone` (the deletion contract's one mapping from the wire's `deleted` flag
+to the localized "Deleted user" name and the fixed mark).
 All are `nonisolated`, `Sendable` values that keep the backend's key names.
 
 ## Interface
@@ -37,6 +38,11 @@ All are `nonisolated`, `Sendable` values that keep the backend's key names.
   `userId`, `displayName` (what the screen shows until the profile answers), `context: GroupDetailContext` (default
   `.standalone`; `.fromChat` when the conversation with the person is one Back away, where "Message" would only push
   that chat again).
+- `Tombstone` `[lily/Features/People/Models/Tombstone.swift:Tombstone]`: `displayName(_ snapshot: String,
+  deleted: Bool?) -> String` (the localized `AppBranding.DeletedUser.name` exactly when `deleted == true`, else the
+  snapshot — an absent flag, an old backend, reads as not deleted) and `symbol` (`DesignTokens.Symbols.deletedUser`,
+  `person.slash`): the one mapping for the deletion contract's flag on its four representations (message sender,
+  event host, tournament organizer, entry member), so features never word the tombstone themselves.
 
 ## Invariants
 
@@ -57,4 +63,5 @@ All are `nonisolated`, `Sendable` values that keep the backend's key names.
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (`lilyTests/People`; `RemoteUserRepositoryTests.theContractProfileDecodes` and
-  `theHistoryRowsCaptionAndLinkFromTheSummaries` pin the shapes and captions).
+  `theHistoryRowsCaptionAndLinkFromTheSummaries` pin the shapes and captions; `TombstoneTests` pins the flag's four
+  decode sites and the helper's mapping).

@@ -23,6 +23,9 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
     private(set) var location: EventLocation
     private(set) var organizerUserId: String
     let organizerName: String
+    /// The organizer's account was deleted (the deletion contract's tombstone, mapped by `Tombstone`): the stored
+    /// `organizerName` is the placeholder, and no profile opens behind it. Absent unless true.
+    let deleted: Bool?
     let group: EventGroupRef?
     /// The room's epoch; the chat channel is `rooms/<id>/<channelEpoch>`.
     private(set) var channelEpoch: Int
@@ -50,6 +53,7 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
          location: EventLocation,
          organizerUserId: String,
          organizerName: String,
+         deleted: Bool? = nil,
          group: EventGroupRef? = nil,
          channelEpoch: Int = 1,
          myEntryId: String? = nil,
@@ -74,6 +78,7 @@ nonisolated struct Tournament: Identifiable, Hashable, Codable, Sendable {
         self.location = location
         self.organizerUserId = organizerUserId
         self.organizerName = organizerName
+        self.deleted = deleted
         self.group = group
         self.channelEpoch = channelEpoch
         self.myEntryId = myEntryId

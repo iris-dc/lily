@@ -21,4 +21,21 @@ struct SettingsConfigTests {
             #expect(!text.isEmpty)
         }
     }
+
+    @Test func theDeleteFlowCopyKeysResolve() {
+        typealias Copy = AppBranding.DeleteAccount
+        let copy = [Copy.title, Copy.approximate, Copy.messagesSentence, Copy.irreversible, Copy.dialogTitle,
+                    Copy.confirmAction, Copy.deleting, Copy.deletedTitle, Copy.deletedMessage,
+                    Copy.groupsTransferring(2), Copy.groupsDeleted(2), Copy.eventsCancelled(2),
+                    Copy.entriesWithdrawn(2), Copy.tournamentsCancelled(2)]
+        #expect(Set(copy).count == copy.count, "every key reads its own text")
+        for text in copy {
+            #expect(!text.isEmpty)
+        }
+    }
+
+    /// The pinned literal the UI tests mirror by hand, like every launch argument.
+    @Test func theDeletedUserLaunchArgumentKeepsItsLiteral() {
+        #expect(AppConfig.LaunchArguments.mockDeletedUser == "-mock-deleted-user")
+    }
 }

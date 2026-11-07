@@ -13,7 +13,7 @@ app target's default isolation.
 
 - `final class RemoteInteractionRecorder: InteractionRecorder, SessionObserver`:
   `init(client: any APIClient, identity: any IdentityProvider, logger: any Logging, batchSize: Int = AppConfig.Statistics.batchSize, flushDelay: Duration = AppConfig.Statistics.flushDelay, maxBuffered: Int = AppConfig.Statistics.maxBuffered, signOutTimeout: Duration = AppConfig.Statistics.signOutFlushTimeout, sleep: @escaping Sleep = systemSleep)`;
-  `record(_:)`, `flush() async`, `sessionWillEnd() async`, `sessionDidEnd()`
+  `record(_:)`, `flush() async`, `sessionWillEnd() async`, `sessionWillEndWithoutNetwork() async`, `sessionDidEnd()`
   [`lily/Core/Statistics/Implementations/RemoteInteractionRecorder.swift:RemoteInteractionRecorder`].
 - `final class NoOpInteractionRecorder: InteractionRecorder, SessionObserver`: every method is a no-op
   [`lily/Core/Statistics/Implementations/NoOpInteractionRecorder.swift:NoOpInteractionRecorder`].
@@ -31,7 +31,9 @@ app target's default isolation.
   before flushing so the flush does not cancel itself. The timer holds `self` weakly
   [`RemoteInteractionRecorder.swift:RemoteInteractionRecorder.record(_:)`, `RemoteInteractionRecorder.swift:RemoteInteractionRecorder.armTimer()`].
 - `sessionWillEnd()` flushes within `Deadline.within(signOutTimeout, sleep:)` while the Bearer still goes out; giving
-  up is a warning. `sessionDidEnd()` cancels the timer and drops what is still buffered
+  up is a warning. `sessionWillEndWithoutNetwork()` (the account-deleted end) sends nothing: the backend already
+  refuses the account's writes and its trail is being erased, so the buffer falls to the drop below.
+  `sessionDidEnd()` cancels the timer and drops what is still buffered
   [`RemoteInteractionRecorder.swift:RemoteInteractionRecorder.sessionWillEnd()`, `RemoteInteractionRecorder.swift:RemoteInteractionRecorder.sessionDidEnd()`].
 - A failed send is a warning and is never retried [`RemoteInteractionRecorder.swift:RemoteInteractionRecorder.send(_:)`].
 

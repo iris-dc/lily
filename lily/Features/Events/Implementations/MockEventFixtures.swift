@@ -162,4 +162,22 @@ nonisolated enum MockEventFixtures {
     private static func coordinate(for template: Template) -> Coordinate {
         .aroundMockCenter(lat: template.offset.lat, lon: template.offset.lon)
     }
+
+    /// The `-mock-deleted-user` fixture: a past game whose host deleted their account, stored as the stamp pass leaves
+    /// it — the placeholder name and the flag; joined, so the caller's lists may carry it.
+    static func deletedHostEvent(now: Date) -> SportEvent {
+        SportEvent(id: "mock-event-deleted-host",
+                   title: "Last week's kickabout",
+                   type: .football,
+                   startsAt: now.addingTimeInterval(-deletedHostEventDaysAgo * .day),
+                   location: EventLocation(name: "Riverside Pitch 2", coordinate: .aroundMockCenter(lat: 0.3, lon: -0.6)),
+                   capacity: 10,
+                   participantCount: 8,
+                   hostName: AppConfig.DisplayName.backendDefault,
+                   deleted: true,
+                   hostUserId: MockChatFixtures.deletedUserID,
+                   isJoined: true)
+    }
+
+    private static let deletedHostEventDaysAgo = 3.0
 }

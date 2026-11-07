@@ -18,7 +18,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 
 - `SportEvent` (`lily/Features/Events/Models/SportEvent.swift`): `Identifiable, Hashable, Codable`. Stored: `id`,
   `title`, `type: EventType`, `startsAt: Date`, `location: EventLocation`, `capacity: Int?`,
-  `allowsExtraParticipants: Bool`, `participantCount: Int`, `hostName`, `hostUserId: String?`, `isJoined: Bool?`,
+  `allowsExtraParticipants: Bool`, `participantCount: Int`, `hostName`, `deleted: Bool?` (the host's account was
+  deleted — the deletion contract's tombstone, mapped by `Tombstone`; absent unless true), `hostUserId: String?`,
+  `isJoined: Bool?`,
   `description?`, `lookingFor?`, `skillLevel: SkillLevel?`, `price: Price?`, `group: EventGroupRef?`. Explicit
   `CodingKeys` and a hand-written `init(from:)`; synthesized `encode(to:)`. Derived: `locationName`, `playerLimit`,
   `spotsLeft`, `isFull`, `isNearlyFull`, `hasPlayersNeeded`, `fillRatio`, `participates`, `isFree`, `isListed`,
@@ -99,7 +101,7 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 
 ## Invariants
 
-- Decoding (`SportEvent.init(from:)`): `capacity`, `hostUserId`, `isJoined`, `description`, `lookingFor`,
+- Decoding (`SportEvent.init(from:)`): `capacity`, `deleted`, `hostUserId`, `isJoined`, `description`, `lookingFor`,
   `skillLevel`, `price`, `group` may be absent; a missing `allowsExtraParticipants` reads as `false`; the other keys
   are required. Encoding omits `nil` optionals (synthesized), never writes `null`.
 - Unknown wire values survive: `WireNamedKind`'s default `init(wireName:)` yields `.unknown(name)` for `EventType` and `SkillLevel`
@@ -110,7 +112,7 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   participantCount, 0)`; `isFull` only for `.maximum` with no spots; `isNearlyFull` for `.maximum`, not full, and
   `fillRatio >= AppConfig.Events.nearlyFullRatio` (0.75); `hasPlayersNeeded` iff `participantCount >= capacity`.
 - `isHosted(by:)` is true only when `hostUserId != nil && hostUserId == userId`; `participates = isJoined ?? false`;
-  `isListed = !(group?.isPrivate ?? false)`; `updating(with:)` keeps `id`, `participantCount`, `hostName`,
+  `isListed = !(group?.isPrivate ?? false)`; `updating(with:)` keeps `id`, `participantCount`, `hostName`, `deleted`,
   `hostUserId`, `isJoined`, `group` and the old coordinate when the draft has none.
 - Draft validation (`EventDraft.issues`), in form order: `.titleMissing` / `.titleTooLong`
   (`trimmedTitle.wireLength > AppConfig.Events.Creation.titleMaxLength` = 80); `.startsAtTooSoon` when

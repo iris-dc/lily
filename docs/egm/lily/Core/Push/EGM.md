@@ -24,7 +24,8 @@ the `-mock-events` run never meets the permission alert.
   [`lily/Core/Push/PushCoordinator.swift:PushCoordinator`].
 - `func sync() async` (every shell sync for a signed-in user), `func offerReminders() async`,
   `func handleTap(_ tap: PushTap)`, `func openPendingTap() async`, `func sessionWillEnd() async`,
-  `func sessionDidEnd()` [`lily/Core/Push/PushCoordinator.swift:PushCoordinator.sync()`].
+  `func sessionWillEndWithoutNetwork() async`, `func sessionDidEnd()`
+  [`lily/Core/Push/PushCoordinator.swift:PushCoordinator.sync()`].
 
 ## Invariants
 
@@ -52,6 +53,9 @@ the `-mock-events` run never meets the permission alert.
   token stored meanwhile; the whole is bounded by `Deadline.within(AppConfig.Push.unregisterTimeout, sleep:, orThrow: .timedOut)`;
   any failure is a warning; the stored registration is cleared regardless
   [`PushCoordinator.swift:PushCoordinator.sessionWillEnd()`, `PushCoordinator.swift:PushCoordinator.unregister(tokens:)`].
+- `sessionWillEndWithoutNetwork()` (the account-deleted end, the deletion contract) drops the stored registration with
+  no network DELETE: the deletion job removed this device's rows with the account, and no live token could carry the
+  request [`PushCoordinator.swift:PushCoordinator.sessionWillEndWithoutNetwork()`].
 - `sessionDidEnd()` clears the stored registration and the pending tap [`PushCoordinator.swift:PushCoordinator.sessionDidEnd()`].
 
 ## Side Effects

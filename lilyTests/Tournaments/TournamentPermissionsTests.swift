@@ -68,6 +68,14 @@ struct TournamentPermissionsTests {
         #expect(permissions(for: .fixture(organizerUserId: me), as: me).organizerProfile == nil)
     }
 
+    /// CUJ 3 of the deletion design: a deleted organiser's tournament remains, but the name opens no profile.
+    @Test func aDeletedOrganisersProfileOpensForNobody() {
+        let tombstoned = Tournament.fixture(organizerName: "Player", deleted: true)
+        #expect(permissions(for: tombstoned, as: me).organizerProfile == nil)
+        #expect(permissions(for: .fixture(deleted: false), as: me).organizerProfile != nil,
+                "an explicit false keeps the link")
+    }
+
     private func knockout(entryCount: Int, organizerUserId: String = "seed-marta", myEntryId: String? = nil) -> Tournament {
         .fixture(format: .singleElimination,
                  teamSize: 5,

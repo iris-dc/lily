@@ -18,8 +18,14 @@ final class MockTournamentRepository: TournamentRepository {
     let logger: any Logging
     let now: () -> Date
 
-    init(groups: MockGroupRepository, identity: any IdentityProvider, logger: any Logging, now: @escaping () -> Date = { .now }) {
-        details = Dictionary(uniqueKeysWithValues: MockTournamentFixtures.make(now: now()).map { ($0.id, $0) })
+    init(groups: MockGroupRepository,
+         identity: any IdentityProvider,
+         logger: any Logging,
+         deletedFixtures: Bool = false,
+         now: @escaping () -> Date = { .now }) {
+        let fixtures = MockTournamentFixtures.make(now: now())
+            .map { deletedFixtures ? MockTournamentFixtures.stampingDeletedPlayer($0) : $0 }
+        details = Dictionary(uniqueKeysWithValues: fixtures.map { ($0.id, $0) })
         self.groups = groups
         self.identity = identity
         self.logger = logger

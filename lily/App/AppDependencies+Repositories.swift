@@ -38,15 +38,20 @@ struct Repositories {
     }
 
     /// `systemPush` keeps the real permission prompt and token (`-system-push`); the registry stays in memory.
-    /// `eventsFailFirst` makes the events mock refuse its first list load (`-mock-events-fail`).
+    /// `eventsFailFirst` makes the events mock refuse its first list load (`-mock-events-fail`); `deletedUser` makes
+    /// the chat, event and tournament mocks serve the deleted-flagged fixtures (`-mock-deleted-user`).
     static func mock(identity: any IdentityProvider,
                      logger: any Logging,
                      autoReplies: Bool = false,
                      mockPicker: Bool = false,
                      systemPush: Bool = false,
                      termsPending: Bool = false,
-                     eventsFailFirst: Bool = false) -> Repositories {
-        let events = MockEventRepository(identity: identity, logger: logger, failsFirstLoad: eventsFailFirst)
+                     eventsFailFirst: Bool = false,
+                     deletedUser: Bool = false) -> Repositories {
+        let events = MockEventRepository(identity: identity,
+                                         logger: logger,
+                                         failsFirstLoad: eventsFailFirst,
+                                         deletedHost: deletedUser)
         let profiles = MockProfileRepository(identity: identity, logger: logger)
         let groups = GroupRepositories.mock(identity: identity,
                                             logger: logger,
@@ -54,7 +59,8 @@ struct Repositories {
                                             profiles: profiles,
                                             autoReplies: autoReplies,
                                             mockPicker: mockPicker,
-                                            termsPending: termsPending)
+                                            termsPending: termsPending,
+                                            deletedFixtures: deletedUser)
         return Repositories(events: events,
                             profile: profiles,
                             feedback: MockFeedbackRepository(logger: logger),
@@ -133,12 +139,15 @@ extension AppDependencies {
         if termsPending { logger.info(.groups, "Launch argument made the mock owe the terms") }
         let eventsFailFirst = arguments.contains(AppConfig.LaunchArguments.mockEventsFail)
         if eventsFailFirst { logger.info(.events, "Launch argument made the first mock events load fail") }
+        let deletedUser = arguments.contains(AppConfig.LaunchArguments.mockDeletedUser)
+        if deletedUser { logger.info(.groups, "Launch argument requested the deleted-user fixtures") }
         return .mock(identity: identity,
                      logger: logger,
                      autoReplies: autoReplies,
                      mockPicker: mockPicker,
                      systemPush: systemPush,
                      termsPending: termsPending,
-                     eventsFailFirst: eventsFailFirst)
+                     eventsFailFirst: eventsFailFirst,
+                     deletedUser: deletedUser)
     }
 }

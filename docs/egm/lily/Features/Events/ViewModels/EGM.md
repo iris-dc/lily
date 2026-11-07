@@ -109,7 +109,8 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   `participates == wantsToParticipate` reports nothing.
 - `loadParticipants()` is a no-op for guests (`showsParticipants = identity.currentUserID != nil`);
   `recordViewed()` records once per instance; `canEdit = participation == .hosting`; `hostProfile` is `nil` for a
-  guest, an unknown host or the caller themselves.
+  guest, an unknown host, the caller themselves or a deleted host (`event.deleted == true` — a tombstone opens no
+  profile, 2026-11-07).
 - `canSubmit`: create `!isSubmitting && issues.isEmpty`; edit also `hasChanges`
   (`!draft.hasSameContent(as: originalDraft)`: equality but for the place bookkeeping `spotPickedOnMap` and
   `suggestedName`, which never reach the wire, so a suggestion picked and undone by hand leaves nothing to save; a

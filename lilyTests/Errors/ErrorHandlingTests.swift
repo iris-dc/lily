@@ -114,6 +114,12 @@ struct ErrorMessageMapperTests {
         #expect(ErrorMessageMapper.message(for: .profileUnavailable).title == "Couldn't load this profile")
     }
 
+    /// The delete flow's two failures say so; its settled outcomes (401, `USER_NOT_FOUND`) never reach the popup.
+    @Test func accountDeletionFailuresHaveTheirOwnTitles() {
+        #expect(ErrorMessageMapper.message(for: .deletionPlanUnavailable).title == "Couldn't check your account")
+        #expect(ErrorMessageMapper.message(for: .accountDeletionFailed).title == "Couldn't delete your account")
+    }
+
     @Test func peopleErrorsHaveTheirOwnTitles() {
         #expect(ErrorMessageMapper.message(for: .profileUnavailable).title == "Couldn't load this profile")
         #expect(ErrorMessageMapper.message(for: .conversationFailed).title == "Couldn't start the conversation")

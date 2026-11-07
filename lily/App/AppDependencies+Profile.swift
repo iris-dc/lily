@@ -10,4 +10,9 @@ extension AppDependencies {
     func makeAboutViewModel() -> AboutViewModel {
         AboutViewModel(store: profile, errorCenter: errorCenter, logger: logger)
     }
+
+    /// The delete-account flow over the me repository and the session's dedicated account-deleted end.
+    func makeDeleteAccountViewModel() -> DeleteAccountViewModel {
+        DeleteAccountViewModel(repository: meRepository, session: sessionController, errorCenter: errorCenter, logger: logger)
+    }
 }

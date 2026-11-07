@@ -51,7 +51,7 @@ struct AppRootView: View {
         .onChange(of: dependencies.myGroups.loadVersion) { dependencies.myGroupsDidLoad() }
         .errorPopup(dependencies.errorCenter)
         .sheet(isPresented: termsPresented) {
-            TermsSheet(viewModel: terms, errorCenter: dependencies.errorCenter)
+            TermsSheet(viewModel: terms, dependencies: dependencies)
         }
         // Outside the sheet: a presentation reads the environment above its modifier, and the terms sheet's aurora
         // judges the preference too.

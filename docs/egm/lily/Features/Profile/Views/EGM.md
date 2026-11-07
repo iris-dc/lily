@@ -31,8 +31,22 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   links — `AppBranding.Moderation.privacyLink` / `AppBranding.Settings.privacySubtitle` / `DesignTokens.Symbols.privacy`
   / `AccessibilityIdentifiers.settingsPrivacy` opening `AppConfig.Moderation.privacyURL`, and `Moderation.termsLink` /
   `Settings.termsSubtitle` / `Symbols.terms` / `settingsTerms` opening `termsURL`, both through
-  `@Environment(\.openURL)` — and Sign out, a full-width `lilyTextButton()` text action (identifier
-  `AccessibilityIdentifiers.settingsSignOut`) moved off the profile header.
+  `@Environment(\.openURL)` — Sign out, a full-width `lilyTextButton()` text action (identifier
+  `AccessibilityIdentifiers.settingsSignOut`) moved off the profile header, and Delete account (2026-11-07), a
+  full-width destructive `lilyTextButton(color: .red)` (identifier `settingsDeleteAccount`) presenting
+  `DeleteAccountSheet(viewModel: dependencies.makeDeleteAccountViewModel(), errorCenter:)` in a sheet.
+- `DeleteAccountSheet(viewModel: DeleteAccountViewModel, errorCenter: ErrorCenter)`
+  `[lily/Features/Profile/Views/DeleteAccountSheet.swift:DeleteAccountSheet]` (2026-11-07, the deletion contract):
+  a `NavigationStack` titled `AppBranding.DeleteAccount.title` under
+  `.lilyFormSheet(errorCenter:lockedWhile: viewModel.isLocked)` and `.presentationDetents([.large])`, presented from
+  Settings and from `TermsSheet`. Three states: `summary` (the view model's plural lines — zero counts dropped — then
+  `DeleteAccount.approximate` only when lines show, the always-true `DeleteAccount.messagesSentence`, the
+  `irreversible` note, and the prominent confirm button `deleteAccountConfirm` opening a `confirmationDialog`
+  (`dialogTitle` / destructive `confirmAction` / `irreversible` as the message) whose destructive action runs
+  `viewModel.confirmDeletion()`); `deleting` (a spinner with `DeleteAccount.deleting`); `acknowledgment` (an
+  `EmptyStateView` with `Tombstone.symbol`, `deletedTitle`, `deletedMessage` and the prominent `acknowledgeAction`
+  button `deleteAccountAcknowledge` running `viewModel.acknowledge()`). The toolbar's Cancel (`deleteAccountCancel`)
+  exists only while `!viewModel.isLocked`; `.task` runs `viewModel.prepare()`.
 - `DisplayNameRow(store: ProfileStore, action: () -> Void)` `[lily/Features/Profile/Views/DisplayNameRow.swift:DisplayNameRow]`:
   a `SettingsLinkRow` (`lily/Core/UI/Components`) titled `AppBranding.DisplayName.title` with
   `DesignTokens.Symbols.profile`, identifier `AccessibilityIdentifiers.profileName`; the subtitle is
@@ -71,7 +85,10 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   `.auth` `[lily/Features/Profile/Views/ProfileView.swift:openFeedback]`; a signed-in caller reaches the form from
   Settings, whose row presents the sheet directly `[lily/Features/Profile/Views/SettingsScreen.swift:SettingsScreen]`.
 - The signed-in root holds exactly the header, the name and bio cards and the Settings link; language, currency, the
-  contact card and Sign out moved into `SettingsScreen` (2026-11-07, the relocation contract's session-state matrix),
+  contact card and Sign out moved into `SettingsScreen`, whose list ends in Sign out then Delete account (2026-11-07,
+  the relocation contract's session-state matrix and its pinned summary-rendering and teardown rules: zero-count
+  summary lines are dropped, the messages sentence always renders, the sheet stays locked from the confirm on, the
+  acknowledgment is hosted by `DeleteAccountSheet` itself and only its tap triggers the account-deleted session end),
   and the guest root keeps the three rows inline — guests get no Settings screen. The rows keep their identifiers
   (`profile-language`, `profile-currency`, `profile-feedback`) wherever they sit, so UI tests change navigation only.
 - `FeedbackRow` (on the guest root and on Settings), `DisplayNameRow` and `AboutRow` (the last two also take the store
@@ -103,6 +120,9 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
 ## Side Effects
 
 - `session.signOut()` in a `Task` from Settings' Sign out `[lily/Features/Profile/Views/SettingsScreen.swift:signOutButton]`.
+- The delete flow's network and session effects run through `DeleteAccountViewModel` (`../ViewModels/EGM.md`): the
+  plan load on the sheet's `.task`, the `DELETE` and the poll from the dialog's destructive action, the
+  account-deleted session end from the acknowledge tap `[lily/Features/Profile/Views/DeleteAccountSheet.swift:DeleteAccountSheet]`.
 - Sheets: `SignInSheet` (a guest's Sign in, or feedback asked for as a guest), `DisplayNameSheet` from
   `dependencies.makeDisplayNameViewModel()` and `AboutSheet` from `dependencies.makeAboutViewModel()`
   `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`; `FeedbackSheet` from
@@ -120,6 +140,8 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (`lilyTests/Preferences` covers the choice stores behind these rows, `lilyTests/Profile`
-  the store, the editors' model and `SettingsConfigTests`, the Settings glyphs and copy keys); `./scripts/ci.sh ui`
+  the store, the editors' model, `SettingsConfigTests` — the Settings glyphs and copy keys, the delete copy and the
+  launch-argument literal — and `DeleteAccountViewModelTests`); `./scripts/ci.sh ui`
   (`LilyProfileTests` walks the display name and the "About you" cards and sheets; `LilySettingsTests` the Settings
-  push, the guest root, a language pick inside Settings and Sign out).
+  push, the guest root, a language pick inside Settings, Sign out, the delete flow end to end on the mock backend and
+  the deleted sender's tombstone under `-mock-deleted-user`).

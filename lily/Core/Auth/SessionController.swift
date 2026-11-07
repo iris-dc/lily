@@ -11,6 +11,11 @@ final class SessionController {
     /// Provider currently mid sign-in, so buttons can show a spinner without a second source of truth.
     private(set) var authenticatingProvider: AuthProvider.Kind?
     private var isSigningOut = false
+    /// Set while the delete-account flow runs (`beginAccountDeletion()`): the deletion job's global sign-out makes
+    /// racing 401s expected, so an expired-session report must not end the session under the locked sheet or raise
+    /// the popup; the flow ends the session itself through `endDeletedSession()`. Stored here, set only by the
+    /// `+AccountDeletion` extension, which holds the methods.
+    var isDeletingAccount = false
     /// The one check of the cached session against the pool; a second `restore()` joins it instead of asking again.
     private var restoreCheck: Task<Void, Never>?
     /// Held weakly: an observer lives as long as its owner, never because it registered here.
@@ -117,6 +122,10 @@ final class SessionController {
     /// The pool refused to refresh the token mid-session (expired or revoked): the session ends like a sign-out and the
     /// shared popup says why, once, unless a 401 already put it up. With nobody signed in there is nothing to end.
     func endExpiredSession() async {
+        guard !isDeletingAccount else {
+            logger.debug(.auth, "Expired session reported during account deletion; the delete flow ends the session")
+            return
+        }
         guard let user = state.user else {
             logger.debug(.auth, "Expired token reported with nobody signed in")
             return
@@ -129,8 +138,8 @@ final class SessionController {
         }
     }
 
-    /// The local session is already cleared, so the pool's refusal is only logged.
-    private func signOutOfPool() async {
+    /// The local session is already cleared, so the pool's refusal is only logged. Internal for `+AccountDeletion`.
+    func signOutOfPool() async {
         do {
             try await authService.signOut()
         } catch {
@@ -138,8 +147,9 @@ final class SessionController {
         }
     }
 
-    /// Runs `body` as the one sign-out in flight; a second caller is turned away and does nothing.
-    private func holdingSignOutSlot(_ body: () async -> Void) async {
+    /// Runs `body` as the one sign-out in flight; a second caller is turned away and does nothing. Internal for
+    /// `+AccountDeletion`.
+    func holdingSignOutSlot(_ body: () async -> Void) async {
         guard !isSigningOut else {
             logger.debug(.auth, "Ignored sign-out: another sign-out is in progress")
             return
@@ -156,13 +166,20 @@ final class SessionController {
     private func endLocalSession() async -> Bool {
         let ending = state
         await notifySessionWillEnd()
+        return settleEndedSession(from: ending, saying: ending.user.map { "Signed out user \($0.id)" } ?? "Signed out")
+    }
+
+    /// The end's common tail after the observers' last word: the store clears, the state flips, `message` is logged
+    /// and observers are told it ended, in that order; `false` when the session changed hands during the last word
+    /// (a sign-in landed meanwhile), which stands. Internal for `+AccountDeletion`.
+    func settleEndedSession(from ending: SessionState, saying message: String) -> Bool {
         guard state == ending else {
             logger.debug(.auth, "Session changed while it was ending; the sign-out stands down")
             return false
         }
         sessionStore.clear()
         state = .signedOut
-        logger.info(.auth, ending.user.map { "Signed out user \($0.id)" } ?? "Signed out")
+        logger.info(.auth, message)
         notifySessionEnded()
         return true
     }
@@ -170,6 +187,13 @@ final class SessionController {
     private func notifySessionWillEnd() async {
         for observer in observers {
             await observer.observer?.sessionWillEnd()
+        }
+    }
+
+    /// The deleted end's last word; internal for `+AccountDeletion`.
+    func notifySessionWillEndWithoutNetwork() async {
+        for observer in observers {
+            await observer.observer?.sessionWillEndWithoutNetwork()
         }
     }
 

@@ -9,7 +9,8 @@ place that mutates it: it starts from the cached choice in `SessionStore`, so th
 no network answer awaited; verifies that cache against the pool once per process in `restore()`; holds the single
 in-flight authentication slot; runs the sign-out protocol (observers' last word, then store and state, then the pool);
 and reports failures through `ErrorCenter`. The email sign-up and confirmation steps live in the `+EmailConfirmation`
-extension. Children: the protocols in `Interfaces/`, the value types in `Models/`, the Cognito, mock and store
+extension; the account-deleted end and its stand-down in `+AccountDeletion`. Children: the protocols in `Interfaces/`,
+the value types in `Models/`, the Cognito, mock and store
 implementations in `Implementations/`.
 
 ## Interface
@@ -20,7 +21,9 @@ implementations in `Implementations/`.
   dependencies: `authService`, `logger`.
 - Methods (`SessionController.swift`): `restore() async`; `@discardableResult signIn(with: AuthProvider) async -> Bool`;
   `signIn(withEmail: EmailCredentials) async -> EmailAuthResult`; `continueAsGuest()`;
-  `addObserver(_: any SessionObserver)`; `signOut() async`; `endExpiredSession() async`;
+  `addObserver(_: any SessionObserver)`; `signOut() async`; `endExpiredSession() async`; `beginAccountDeletion()`,
+  `cancelAccountDeletion()` and `endDeletedSession() async` (`SessionController+AccountDeletion.swift`, which also
+  declares the `AccountDeletionSession` conformance the delete flow's view model holds — [Interfaces](./Interfaces/EGM.md));
   `authenticating<Outcome>(_ kind: AuthProvider.Kind, busy: Outcome, _ attempt: () async -> Outcome) async -> Outcome`;
   `performSignIn(with: AuthProvider) async -> EmailAuthResult`;
   `@discardableResult report(_ error: any Error, during step: String, fallback: AppError = .unknown) -> EmailAuthResult`.
@@ -51,6 +54,15 @@ implementations in `Implementations/`.
   otherwise, inside `holdingSignOutSlot`, `endLocalSession()`, then `AppError.sessionExpired` is reported unless it is
   already the current popup, then `authService.signOut()` through the shared `signOutOfPool()`, whose failure is only
   logged. A report while a sign-out runs is turned away; one whose session changed hands during the last word stands down.
+- Account deletion (the deletion contract; `SessionController+AccountDeletion.swift:endDeletedSession`): `beginAccountDeletion()` sets
+  a stand-down under which `endExpiredSession()` ends nothing and shows no popup (the job's global sign-out makes
+  racing 401s expected while the locked sheet is up; the flow owns the end); `cancelAccountDeletion()` lifts it.
+  `endDeletedSession()` — the dedicated account-deleted end, run only by the flow's acknowledge tap — gives observers
+  `sessionWillEndWithoutNetwork()` instead of the authenticated last word (no device DELETE, no stats flush), then
+  clears the store, sets `.signedOut`, tells `sessionDidEnd()` and runs the pool sign-out (clearing local tokens;
+  refusal only logged); it reports nothing to `ErrorCenter` and always lifts the stand-down, with-nobody-signed-in
+  included (a debug line). The changed-hands guard stands down like `endLocalSession`'s. The three methods
+  are the `AccountDeletionSession` protocol (2026-11-07), so `DeleteAccountViewModel` never names the concrete controller.
 - `performSignIn`: success sets `state = .signedIn` and nothing else (the name other players see is the backend
   profile's, `lily/Features/Profile/State`, chosen by the user; nothing is derived or synced here);
   `AppError.emailNotConfirmed` returns `.confirmationRequired` with no popup; anything else goes through `report`.
@@ -68,13 +80,16 @@ implementations in `Implementations/`.
   `endLocalSession` (`SessionController.swift`).
 - `ErrorCenter.report(_:)` from `report(_:during:fallback:)`; `ErrorCenter.report(.sessionExpired)` from `endExpiredSession()`.
 - Spawned tasks: `restoreCheck` (in `restore()`).
-- Observer callbacks: `sessionWillEnd()` (awaited), `sessionDidEnd()`, `sessionDidRestore()`.
+- Observer callbacks: `sessionWillEnd()` (awaited), `sessionWillEndWithoutNetwork()` (awaited, the account-deleted end
+  only), `sessionDidEnd()`, `sessionDidRestore()`.
 - Network through `authService` (`restoreSession`, `signIn`, `signUp`, `confirmSignUp`, `resendConfirmationCode`,
   `signOut`) only.
 - Logging under `.auth`: sign-in started, succeeded (with user id) or needing confirmation, signed out, session
   restored, guest mode, sign-up and confirmation steps (info); session verified (debug); a cached session the pool
   has no session for dropped (warning); `Session expired for user <id>` (warning); busy slots, dropped answers and an
-  expiry with nobody signed in (debug); a failed remote sign-out, a refused provider (warning); failed steps (error).
+  expiry with nobody signed in (debug); a failed remote sign-out, a refused provider (warning); failed steps (error);
+  the deletion stand-down beginning and ending (info), an expiry suppressed during it and a deleted end with nobody
+  signed in (debug), `Account deleted for user <id>: the session ended` (info).
   Ids only, never credentials.
 
 ## Verification

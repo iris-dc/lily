@@ -24,7 +24,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `presentationPicker`, `content`, `listContent`, `eventList`, `filteredOutState`, `loadFailedState`,
   `emptyState`, `stateSlot`, `refreshableScroll`.
 - `EventDetailView` (`lily/Features/Events/Views/EventDetailView.swift`): `init(viewModel: EventDetailViewModel,
-  dependencies: AppDependencies)`; hosts `EditEventSheet` in `.sheet(isPresented:)`.
+  dependencies: AppDependencies)`; hosts `EditEventSheet` in `.sheet(isPresented:)`. The host line (2026-11-07) maps
+  the stored name through `Tombstone.displayName(event.hostName, deleted: event.deleted)` and passes
+  `Tombstone.symbol` as `OwnerTitleBlock`'s `subtitleMark` for a deleted host; the view model's `hostProfile` is nil
+  then, so the line is plain, never a link.
 - `EventDraftForm<Model: EventDraftEditing>` (`lily/Features/Events/Views/EventDraftForm.swift`):
   `@Bindable var viewModel: Model`; a `Form` with game, where, players and details sections.
 - `EventDraftSheet<Model: EventDraftEditing>` (`lily/Features/Events/Views/EventDraftSheet.swift`): `viewModel`,

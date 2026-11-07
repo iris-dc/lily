@@ -61,6 +61,20 @@ struct PushCoordinatorSignOutTests {
         #expect(coordinator.registered?.token == harness.registrar.token)
     }
 
+    /// The account-deleted end (the deletion contract): the job removed the device rows with the account, so the
+    /// stored registration is dropped without a DELETE going out.
+    @Test func theAccountDeletedEndDropsTheRegistrationWithoutANetworkDelete() async {
+        await harness.coordinator.sync()
+        #expect(harness.coordinator.registered != nil)
+
+        await harness.coordinator.sessionWillEndWithoutNetwork()
+        harness.coordinator.sessionDidEnd()
+
+        #expect(harness.devices.unregisteredTokens.isEmpty)
+        #expect(harness.coordinator.registered == nil)
+        #expect(harness.defaults.data(forKey: AppConfig.Push.lastRegistrationKey) == nil)
+    }
+
     /// A tap kept for a session that never came back is not opened for the next account.
     @Test func aTapKeptWhileSignedOutIsDroppedByALaterSignOut() async {
         harness.identity.currentUserID = nil

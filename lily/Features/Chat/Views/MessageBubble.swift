@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// One member's message as a bubble: the caller's in the accent, trailing; everyone else's on the surface, leading,
-/// with the sender's avatar and name on the first bubble of a run (both open `profile`) and the time under the last.
+/// with the sender's avatar and name on the first bubble of a run (both open `profile`; a deleted sender shows the
+/// tombstone's glyph and localized name and opens nothing) and the time under the last.
 /// A quote sits above the words, pictures and videos as a gallery (the bubble itself when there is nothing else), files
 /// as cards; taps go up through `onTapQuote`, `onTapAttachment` and `onOpenFile`. Plain fills, never glass: a chat
 /// scrolls dozens of these at once. An accessibility container, so what is inside keeps its own identifier.
@@ -34,28 +35,45 @@ struct MessageBubble: View {
 
     private var side: Alignment { row.isOwn ? .trailing : .leading }
 
+    /// The sender's account was deleted: the fixed glyph stands in the avatar's circle, the localized name replaces
+    /// the stored placeholder, and neither opens a profile (`Tombstone`).
+    private var senderDeleted: Bool { row.message.deleted == true }
+
     /// Only the first bubble of a run shows the avatar; the rest keep its column so the run lines up. The name link
     /// speaks for both, so the avatar's stays out of the accessibility tree.
     @ViewBuilder private var avatarColumn: some View {
         if row.isFirstInRun {
-            profileLink {
-                AvatarCircle(initials: row.senderName.initials,
-                             size: DesignTokens.Layout.avatarSmall,
-                             tint: .secondary)
-            }
-            .accessibilityHidden(true)
+            avatar.accessibilityHidden(true)
         } else {
             Color.clear.frame(width: DesignTokens.Layout.avatarSmall, height: 0)
         }
     }
 
-    private var senderName: some View {
-        profileLink {
-            Text(row.senderName)
-                .font(LilyTheme.Fonts.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+    @ViewBuilder private var avatar: some View {
+        if senderDeleted {
+            AvatarCircle(systemImage: Tombstone.symbol, size: DesignTokens.Layout.avatarSmall, tint: .secondary)
+        } else {
+            profileLink {
+                AvatarCircle(initials: row.senderName.initials,
+                             size: DesignTokens.Layout.avatarSmall,
+                             tint: .secondary)
+            }
         }
+    }
+
+    @ViewBuilder private var senderName: some View {
+        if senderDeleted {
+            senderNameText
+        } else {
+            profileLink { senderNameText }
+        }
+    }
+
+    private var senderNameText: some View {
+        Text(Tombstone.displayName(row.senderName, deleted: row.message.deleted))
+            .font(LilyTheme.Fonts.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
     }
 
     private func profileLink(@ViewBuilder _ label: () -> some View) -> some View {

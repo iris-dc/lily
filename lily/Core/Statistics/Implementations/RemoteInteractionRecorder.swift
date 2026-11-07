@@ -78,6 +78,10 @@ final class RemoteInteractionRecorder: InteractionRecorder, SessionObserver {
         }
     }
 
+    /// The account-deleted end sends nothing: the backend already refuses the account's writes, and its trail is
+    /// being erased anyway; what is buffered is dropped by `sessionDidEnd()`.
+    func sessionWillEndWithoutNetwork() async {}
+
     func sessionDidEnd() {
         timer?.cancel()
         timer = nil

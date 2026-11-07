@@ -62,6 +62,54 @@ final class LilySettingsTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
     }
 
+    /// The delete flow end to end on the mock backend: the Settings row opens the sheet, the summary shows the mock
+    /// counts with the zero-count line dropped and the unconditional messages sentence, the destructive dialog's
+    /// confirm runs the locked wait, the one-time acknowledgment shows, and acknowledging lands signed out on the
+    /// landing (the pinned teardown order: nothing ends before that tap).
+    @MainActor
+    func testDeletingTheAccountWalksToTheSignedOutLanding() {
+        tapSignInWithApple()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+        openProfileTab()
+        openSettings()
+        tapAfterScrolling(app.buttons["settings-delete-account"])
+
+        XCTAssertTrue(labelled("2 groups will pass to another member").waitForExistence(timeout: 5),
+                      "the mock plan's counts compose the plural lines")
+        XCTAssertTrue(labelled("1 group will be deleted").exists, "one is singular")
+        XCTAssertTrue(labelled("Your messages will show as Deleted user.").exists, "the always-true sentence renders")
+        XCTAssertFalse(labelled("organize will be cancelled").exists, "a zero count's line is dropped")
+
+        app.buttons["delete-account-confirm"].tap()
+        let dialogConfirm = app.buttons["Delete my account"]
+        XCTAssertTrue(dialogConfirm.waitForExistence(timeout: 5), "the destructive dialog asks once more")
+        dialogConfirm.tap()
+
+        let acknowledge = app.buttons["delete-account-acknowledge"]
+        XCTAssertTrue(acknowledge.waitForExistence(timeout: 15), "the poll settles on the mock's tombstone 401")
+        XCTAssertTrue(labelled("Your account was deleted").exists)
+        acknowledge.tap()
+        XCTAssertTrue(app.buttons["Explore events"].waitForExistence(timeout: 10),
+                      "only the acknowledge tap ends the session, over the landing")
+        XCTAssertTrue(app.tabBars.firstMatch.waitForNonExistence(timeout: 5))
+        XCTAssertFalse(labelled("Session expired").waitForExistence(timeout: 2),
+                       "the account-deleted end suppresses the expired-session popup over the landing")
+    }
+
+    /// `-mock-deleted-user`: the Kickers room carries a line whose sender deleted their account, rendered under the
+    /// localized tombstone name instead of the stored placeholder.
+    @MainActor
+    func testADeletedSendersMessageShowsTheTombstone() {
+        relaunch(appending: "-mock-deleted-user")
+        tapSignInWithApple()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+        openRoom(MockIDs.kickersRow, titled: "Kreuzberg Kickers")
+
+        XCTAssertTrue(app.staticTexts["Deleted user"].waitForExistence(timeout: 10),
+                      "the deleted sender's bubble carries the localized name, not the stored placeholder")
+        XCTAssertFalse(app.staticTexts["Player"].exists, "the stored placeholder never shows on a flagged row")
+    }
+
     @MainActor
     func testSigningOutFromSettingsReturnsToTheLanding() {
         tapSignInWithApple()

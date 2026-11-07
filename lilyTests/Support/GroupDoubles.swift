@@ -198,9 +198,16 @@ final class FakeMeRepository: MeRepository, HoldsRequests {
     /// Thrown by `me()` instead of `meResult` when set, for errors that are not `AppError` (such as `CancellationError`).
     var thrownError: (any Error)?
     var acceptError: AppError?
+    var deletionPlanResult: Result<DeletionPlan, AppError> = .success(DeletionPlan(groupsTransferring: 0,
+                                                                                   groupsDeleted: 0,
+                                                                                   eventsCancelled: 0,
+                                                                                   entriesWithdrawn: 0,
+                                                                                   tournamentsCancelled: 0))
+    var deleteError: AppError?
     let hold = RequestHold()
     private(set) var meCallCount = 0
     private(set) var acceptedVersions: [Int] = []
+    private(set) var deleteCallCount = 0
 
     func me() async throws -> Account {
         meCallCount += 1
@@ -214,6 +221,17 @@ final class FakeMeRepository: MeRepository, HoldsRequests {
         try await hold.waitOrThrow()
         if let acceptError { throw acceptError }
         return TermsAcceptance(acceptedTermsVersion: version, acceptedTermsAt: .now)
+    }
+
+    func deletionPlan() async throws -> DeletionPlan {
+        try await hold.waitOrThrow()
+        return try deletionPlanResult.get()
+    }
+
+    func deleteAccount() async throws {
+        deleteCallCount += 1
+        try await hold.waitOrThrow()
+        if let deleteError { throw deleteError }
     }
 }
 

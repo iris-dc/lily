@@ -70,6 +70,36 @@ nonisolated enum MockTournamentFixtures {
         [kickersCup(now: now), tableTennis(now: now), padelOpen(now: now)]
     }
 
+    /// Whose table-tennis entry the `-mock-deleted-user` stamp rewrites: a solo entry, so its name is the player's own.
+    static let deletedPlayer = "Noor"
+
+    /// The `-mock-deleted-user` fixture: Noor's solo entry in Tuesday Table Tennis as the deletion job's stamps pass
+    /// leaves a kept entry — the member's snapshot and the solo entry's name rewritten to the placeholder, the
+    /// per-member flag set. Everything else is untouched.
+    static func stampingDeletedPlayer(_ detail: TournamentDetail) -> TournamentDetail {
+        guard detail.id == tableTennisID else { return detail }
+        let deletedID = MockGroupFixtures.memberID(for: deletedPlayer)
+        let entries = detail.entries.map { entry -> TournamentEntry in
+            guard entry.contains(userID: deletedID) else { return entry }
+            let members = entry.members.map { member -> EntryMember in
+                guard member.userId == deletedID else { return member }
+                return EntryMember(userId: member.userId, displayName: AppConfig.DisplayName.backendDefault, deleted: true)
+            }
+            return TournamentEntry(id: entry.id,
+                                   tournamentId: entry.tournamentId,
+                                   name: entry.memberCount == 1 ? AppConfig.DisplayName.backendDefault : entry.name,
+                                   captainUserId: entry.captainUserId,
+                                   members: members,
+                                   seed: entry.seed,
+                                   status: entry.status,
+                                   createdAt: entry.createdAt)
+        }
+        return TournamentDetail(tournament: detail.tournament,
+                                entries: entries,
+                                matches: detail.matches,
+                                standings: detail.standings)
+    }
+
     /// Sortable like a ULID, in registration order within a tournament.
     static func entryID(tournamentID: String, index: Int) -> String {
         let code = switch tournamentID {

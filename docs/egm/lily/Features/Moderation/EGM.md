@@ -19,8 +19,9 @@ detail and the tournament detail; they are not part of this directory.)
   `identity.currentUserID != nil && me.needsTerms`, the three URLs from `AppConfig.Moderation`, `accept()` (guarded by
   `isAccepting`, awaits `me.acceptTerms()` and discards the result), `signOut()` (logs `.groups` info "Terms declined:
   signing out" and runs the injected sign-out).
-- Views: [./Views/EGM.md](./Views/EGM.md) - `TermsSheet` (`viewModel`, `errorCenter`): scrolling title and message
-  from `AppBranding.Moderation`, a `FlowLayout` of three `Link`s, the prominent accept button
-  (`AccessibilityIdentifiers.termsAccept`, spinner while accepting) and the text sign-out button
-  (`AccessibilityIdentifiers.termsSignOut`), both disabled while accepting; `.lilyFormSheet()`,
+- Views: [./Views/EGM.md](./Views/EGM.md) - `TermsSheet` (`viewModel`, `dependencies: AppDependencies` since
+  2026-11-07): scrolling title and message from `AppBranding.Moderation`, a `FlowLayout` of three `Link`s, the
+  prominent accept button (`AccessibilityIdentifiers.termsAccept`, spinner while accepting), the text sign-out button
+  (`AccessibilityIdentifiers.termsSignOut`) and the red delete-account entry (`termsDeleteAccount`, presenting
+  `DeleteAccountSheet` — the terms-pending way into deletion), all disabled while accepting; `.lilyFormSheet()`,
   `.interactiveDismissDisabled()`, its own `.errorPopup`.

@@ -20,9 +20,13 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   `static listRequest(for: EventScope, near: Coordinate?) -> APIRequest<[SportEvent]>` and `scopeItems(for:)`.
 - `MockEventRepository` (`lily/Features/Events/Implementations/MockEventRepository.swift`): `final class`,
   `init(now: Date = .now, count: Int = AppConfig.Events.mockFeedSize, identity: any IdentityProvider,
-  logger: any Logging, failsFirstLoad: Bool = false)`; the same seven methods over an in-memory `[SportEvent]`.
+  logger: any Logging, failsFirstLoad: Bool = false, deletedHost: Bool = false)`; the same seven methods over an
+  in-memory `[SportEvent]`.
 - `MockEventFixtures` (`lily/Features/Events/Implementations/MockEventFixtures.swift`,
   `MockEventFixtures+Participants.swift`): `static func make(now: Date, count: Int) -> [SportEvent]`;
+  `static func deletedHostEvent(now:) -> SportEvent` (2026-11-07, `-mock-deleted-user`: id `mock-event-deleted-host`,
+  started three days ago, the placeholder host name with `deleted: true` — the stamp pass's shape, past because the
+  job cancels upcoming hosted games — joined, appended by `MockEventRepository.init` under `deletedHost`);
   `static let participantNames` (11 names), `hostJoinLead: TimeInterval` (7 days), `joinSpacing` (1 hour); the
   fixtures start `firstStartHours` (3) plus `hoursBetweenEvents` (7) per index after `now`, in `TimeInterval.hour`;
   `static func participantNames(for: SportEvent, count: Int) -> [String]`.

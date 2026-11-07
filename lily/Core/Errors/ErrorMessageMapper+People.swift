@@ -1,7 +1,7 @@
 import Foundation
 
 /// Copy for profiles (a person's, and the caller's own name and bio) and direct conversations; `message(for:)` routes exactly
-/// those cases here.
+/// those cases here, and the delete-account cases fall through to `accountMessage(for:)`.
 nonisolated extension ErrorMessageMapper {
     static func peopleMessage(for error: AppError) -> ErrorMessage {
         switch error {
@@ -17,7 +17,7 @@ nonisolated extension ErrorMessageMapper {
             ErrorMessage(title: localized("You have too many conversations"),
                          body: localized("You can have at most \(AppConfig.People.maxConversations) conversations."))
         default:
-            unknownMessage
+            accountMessage(for: error)
         }
     }
 }

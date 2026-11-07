@@ -18,4 +18,10 @@ nonisolated extension AccessibilityIdentifiers {
     static let settingsSignOut = "settings-sign-out"
     static let settingsPrivacy = "settings-privacy"
     static let settingsTerms = "settings-terms"
+    /// The delete-account flow: the Settings row, the terms sheet's entry and the sheet's three actions.
+    static let settingsDeleteAccount = "settings-delete-account"
+    static let termsDeleteAccount = "terms-delete-account"
+    static let deleteAccountConfirm = "delete-account-confirm"
+    static let deleteAccountCancel = "delete-account-cancel"
+    static let deleteAccountAcknowledge = "delete-account-acknowledge"
 }

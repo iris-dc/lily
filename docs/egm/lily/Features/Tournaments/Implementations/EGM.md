@@ -32,7 +32,8 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
 - `[lily/Features/Tournaments/Implementations/MockTournamentRepository.swift:MockTournamentRepository]`:
   `final class MockTournamentRepository: TournamentRepository`,
   `init(groups: MockGroupRepository, identity: any IdentityProvider, logger: any Logging,
-  now: @escaping () -> Date = { .now })`.
+  deletedFixtures: Bool = false, now: @escaping () -> Date = { .now })` (the flag maps every seeded detail through
+  `MockTournamentFixtures.stampingDeletedPlayer`, 2026-11-07).
   State: `details: [String: TournamentDetail]` (seeded from `MockTournamentFixtures.make(now:)`), `entrySequence`,
   `invitedTournamentIDs`, `drafts: [String: TournamentDraft]`. Internal helpers shared with the extensions: `readable(_:)`, `requireCaller()`,
   `organized(_:)`, `store(_:)`, `resolved(_:)` (detail and tournament overloads), `isInRoom(_:)`, `static isOpen(_:)`
@@ -54,6 +55,9 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   `nonisolated enum` with `kickersCupID`, `tableTennisID` (`ids` also lists `padelOpenID`, declared in `+PadelOpen`),
   `callerMarker = "mock-caller"`,
   `make(now:) -> [TournamentDetail]`, `kickersCup(now:organizerUserID:organizerName:)`,
+  `deletedPlayer` ("Noor") and `stampingDeletedPlayer(_:)` (2026-11-07, `-mock-deleted-user`: in Tuesday Table Tennis
+  the deleted player's member snapshot and their solo entry's name become the placeholder with the per-member
+  `deleted: true` — the deletion job's stamps-pass shape; everything else untouched),
   `entryID(tournamentID:index:)`, `playerCount(of:)`, `coordinate(offset:)` (through `Coordinate.aroundMockCenter`,
   `lily/Core/Location/Models/Coordinate+MockOffset.swift`), the roster constants (`kickersTeams`,
   `tableTennisPlayers`) and the table-tennis script (`tableTennisResults`, `tableTennisReport`,

@@ -159,6 +159,11 @@ extension ContractSamples {
     """
     static let minimalMe = #"{"userId":"u-1","isOperator":false,"termsVersion":1}"#
     static let termsAcceptance = #"{"acceptedTermsVersion":2,"acceptedTermsAt":"2026-09-25T09:00:00Z"}"#
+    /// `GET /api/me/deletion-plan` (the account-deletion contract, §2): exactly five integers, advisory counts.
+    static let deletionPlan = """
+    {"groupsTransferring": 2, "groupsDeleted": 1, "eventsCancelled": 1,\
+     "entriesWithdrawn": 3, "tournamentsCancelled": 0}
+    """
     static let reportReceipt = #"{"id":"3f1a9c2b7d8e4f6a0b1c2d3e4f5a6b7c","createdAt":"2026-09-25T09:00:00Z"}"#
     static let blockedUsers = #"{"blockedUserIds":["u-7","u-9"]}"#
     static let unbanReceipt = #"{"unbanned":true}"#

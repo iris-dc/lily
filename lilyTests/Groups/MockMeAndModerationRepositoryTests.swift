@@ -48,6 +48,27 @@ struct MockMeAndModerationRepositoryTests {
         #expect(fresh.termsAccepted && !settled.owesTerms, "without the flag the terms are accepted from the start")
     }
 
+    /// The mock delete rehearses the contract: a replay while the job runs answers success again, the poll's first
+    /// read still answers, then the account is deleted and every route is the tombstone's 401.
+    @Test func theMockDeletionRunsTheContractsStateMachine() async throws {
+        let repository = MockMeRepository(identity: identity, logger: logger)
+        let plan = try await repository.deletionPlan()
+        #expect(plan == DeletionPlan(groupsTransferring: 2,
+                                     groupsDeleted: 1,
+                                     eventsCancelled: 1,
+                                     entriesWithdrawn: 3,
+                                     tournamentsCancelled: 0),
+                "the contract's sample counts")
+
+        try await repository.deleteAccount()
+        try await repository.deleteAccount()
+        _ = try await repository.me()
+
+        await #expect(throws: AppError.sessionExpired) { try await repository.me() }
+        await #expect(throws: AppError.sessionExpired) { try await repository.deleteAccount() }
+        await #expect(throws: AppError.sessionExpired) { try await repository.deletionPlan() }
+    }
+
     @Test func blocksAreKeptAndCapped() async throws {
         let repository = MockModerationRepository(logger: logger)
 

@@ -5,7 +5,7 @@ Source: `lily/Core/Errors/`
 ## Overview
 
 The app's single typed failure and the one funnel that shows it. `AppError` is the `nonisolated`, `Equatable`, `Sendable`
-enum every repository and service throws (94 cases), with `wrapping(_:)` to normalise any thrown error and
+enum every repository and service throws (96 cases), with `wrapping(_:)` to normalise any thrown error and
 `isCancellation(_:)` to tell a caller leaving mid-request from a fault. `ErrorMessageMapper` turns every case into a
 localized `ErrorMessage` through one exhaustive switch that routes to per-area `nonisolated extension` files, each
 chaining to the next and ending in `unknownMessage`. `ErrorCenter`, an `@Observable` main-actor class mounted once on
@@ -32,7 +32,10 @@ draws.
     `attachmentUploadFailed`, `attachmentUnavailable`, `pollsNotAllowed`, `notAPoll`, `pollAnonymous`, `voteFailed`,
     `notPinnable`, `tooManyPins`, `pinFailed`;
   - moderation and people: `reportFailed`, `blockLimitReached`, `userNotFound`, `accountSuspended`, `termsRequired`,
-    `feedbackFailed`, `profileUnavailable`, `profileUpdateFailed`, `aboutUpdateFailed`, `conversationFailed`, `conversationLimit`;
+    `feedbackFailed`, `profileUnavailable`, `profileUpdateFailed`, `aboutUpdateFailed`, `conversationFailed`,
+    `conversationLimit`, `deletionPlanUnavailable` (the deletion-plan preview failed without a code of its own) and
+    `accountDeletionFailed` (`DELETE /api/me` failed before the job was claimed; a 401 instead means it landed,
+    `DeletionSettle`);
   - tournaments: `tournamentsUnavailable`, `tournamentNotFound`, `tournamentCreationFailed`, `tournamentUpdateFailed`,
     `tournamentActionFailed`, `registrationClosed`, `tournamentFull`, `alreadyEntered`, `teamFull`, `entryNotFound`,
     `notOrganizer`, `tournamentLocked`, `notEnoughEntries`, `notInMatch`, `matchNotReady`, `matchNotFound`,
@@ -50,7 +53,8 @@ draws.
   (`ErrorMessageMapper+Events.swift`); `groupMessage(for:)` and `moderationMessage(for:)` (`+Groups.swift`, private
   `groupWriteMessage`, `inviteMessage`, `membershipLimitMessage`, `accountSuspendedMessage`); `chatMessage(for:)` and
   `attachmentMessage(for:)` (`+Chat.swift`, private `attachmentCapsBody(_:)`); `pollAndPinMessage(for:)` (`+Polls.swift`);
-  `peopleMessage(for:)` (`+People.swift`); `tournamentMessage(for:)` (`+Tournaments.swift`, its own arm of `message(for:)`, private `entryMessage`,
+  `peopleMessage(for:)` (`+People.swift`, chaining to `accountMessage(for:)` in `+Profile.swift` for the
+  delete-account cases); `tournamentMessage(for:)` (`+Tournaments.swift`, its own arm of `message(for:)`, private `entryMessage`,
   `matchMessage`, `tournamentInviteMessage`, `tournamentLimitMessage`, `tournamentMembershipLimitMessage`); private
   `transportMessage(for:)` in `ErrorMessageMapper.swift` for `.network`, `.rateLimited` and `.requestTooLarge`.
 - `PresentedError` (`lily/Core/Errors/ErrorCenter.swift:PresentedError`): `struct: Identifiable, Equatable` (main-actor);
@@ -69,7 +73,9 @@ draws.
   accepts."), every other case goes to an area function (`ErrorMessageMapper.swift:message(for:)`).
 - Every area switch ends in a `default` that chains or returns `unknownMessage`, so no path traps:
   `eventMessage -> hostMessage`, `groupMessage -> groupWriteMessage -> inviteMessage`, `chatMessage -> pollAndPinMessage`,
-  `peopleMessage -> unknownMessage`, `tournamentMessage -> entryMessage -> matchMessage -> tournamentInviteMessage` (which also answers
+  `peopleMessage -> accountMessage` ("Couldn't check your account" / "Couldn't delete your account", both over
+  "Please try again in a moment."; the flow's settled outcomes — 401, `USER_NOT_FOUND` — never reach copy,
+  `DeletionSettle` lands them), `tournamentMessage -> entryMessage -> matchMessage -> tournamentInviteMessage` (which also answers
   `.tournamentInviteLimit`: "Can't invite more people / This tournament has invited as many people as it can."); `.createIdReused`
   shares `.tryAgain`'s copy in `eventMessage` (`CreateFlow` settles it before any popup); `authMessage`,
   `attachmentMessage` and `moderationMessage` fall straight to `unknownMessage` (`ErrorMessageMapper*.swift`).
@@ -95,10 +101,11 @@ draws.
   (`ErrorCenter.swift:beginPresenting`, `isTopPresenter`).
 - `autoDismissDelay` is only stored: `nil` keeps the popup up until dismissed (`-hold-popups`); the view schedules the
   dismissal, nothing in this directory does (`ErrorCenter.swift:autoDismissDelay`).
-- `AppError`, `ErrorMessage` and `ErrorMessageMapper` are `nonisolated`, and all six per-area files are
+- `AppError`, `ErrorMessage` and `ErrorMessageMapper` are `nonisolated`, and all seven per-area files are
   `nonisolated extension ErrorMessageMapper`, so copy can be read from any isolation; `PresentedError` and `ErrorCenter`
   are main-actor. The main switch has ten arms: nine area functions (`authMessage`, `transportMessage` and
-  `eventMessage` in the root file, the other six in the `+Area` files) plus `.unknown`; the chained files keep each
+  `eventMessage` in the root file, the other six in the `+Area` files; `accountMessage` in `+Profile.swift` is chained
+  from `peopleMessage`, not an arm) plus `.unknown`; the chained files keep each
   area switch under SwiftLint's complexity limit.
 
 ## Side Effects

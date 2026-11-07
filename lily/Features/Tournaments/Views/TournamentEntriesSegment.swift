@@ -46,7 +46,8 @@ struct EntryRow: View {
             PersonRow(userID: player.userId,
                       displayName: player.displayName,
                       isSelf: viewModel.isSelf(player.userId),
-                      identifier: AccessibilityIdentifiers.entryRow(entry.id)) {
+                      identifier: AccessibilityIdentifiers.entryRow(entry.id),
+                      deleted: player.deleted) {
                 seedChip
             }
         }
@@ -67,7 +68,8 @@ struct EntryRow: View {
                     PersonRow(userID: member.userId,
                               displayName: member.displayName,
                               isSelf: viewModel.isSelf(member.userId),
-                              identifier: AccessibilityIdentifiers.participantRow(member.userId)) {
+                              identifier: AccessibilityIdentifiers.participantRow(member.userId),
+                              deleted: member.deleted) {
                         if entry.isCaptain(member.userId) {
                             Label(Copy.captain, systemImage: DesignTokens.Symbols.captain).lilyChip(.regular)
                         }

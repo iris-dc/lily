@@ -15,6 +15,9 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     let allowsExtraParticipants: Bool
     let participantCount: Int
     let hostName: String
+    /// The host's account was deleted (the deletion contract's tombstone, mapped by `Tombstone`): the stored
+    /// `hostName` is the placeholder. Absent unless true.
+    let deleted: Bool?
     /// Set by the backend; `nil` for fixtures, which predate hosts having ids.
     let hostUserId: String?
     /// Whether the caller participates, as the backend saw it; `nil` when nobody has said (fixtures).
@@ -38,6 +41,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
          allowsExtraParticipants: Bool = false,
          participantCount: Int,
          hostName: String,
+         deleted: Bool? = nil,
          hostUserId: String? = nil,
          isJoined: Bool? = nil,
          description: String? = nil,
@@ -54,6 +58,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
         self.allowsExtraParticipants = allowsExtraParticipants
         self.participantCount = participantCount
         self.hostName = hostName
+        self.deleted = deleted
         self.hostUserId = hostUserId
         self.isJoined = isJoined
         self.description = description
@@ -64,8 +69,8 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, title, type, startsAt, location, capacity, allowsExtraParticipants, participantCount, hostName, hostUserId
-        case isJoined, description, lookingFor, skillLevel, price, group
+        case id, title, type, startsAt, location, capacity, allowsExtraParticipants, participantCount, hostName, deleted
+        case hostUserId, isJoined, description, lookingFor, skillLevel, price, group
     }
 
     init(from decoder: any Decoder) throws {
@@ -79,6 +84,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
         allowsExtraParticipants = try container.decodeIfPresent(Bool.self, forKey: .allowsExtraParticipants) ?? false
         participantCount = try container.decode(Int.self, forKey: .participantCount)
         hostName = try container.decode(String.self, forKey: .hostName)
+        deleted = try container.decodeIfPresent(Bool.self, forKey: .deleted)
         hostUserId = try container.decodeIfPresent(String.self, forKey: .hostUserId)
         isJoined = try container.decodeIfPresent(Bool.self, forKey: .isJoined)
         description = try container.decodeIfPresent(String.self, forKey: .description)
@@ -141,6 +147,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
                    allowsExtraParticipants: draft.allowsExtraParticipants,
                    participantCount: participantCount,
                    hostName: hostName,
+                   deleted: deleted,
                    hostUserId: hostUserId,
                    isJoined: isJoined,
                    description: draft.trimmedDescription,
@@ -161,6 +168,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
                    allowsExtraParticipants: allowsExtraParticipants,
                    participantCount: count,
                    hostName: hostName,
+                   deleted: deleted,
                    hostUserId: hostUserId,
                    isJoined: isJoined,
                    description: description,

@@ -5,7 +5,7 @@ Source: `lily/Config/`
 ## Overview
 
 Four `nonisolated enum` namespaces, each a root file plus `+Area.swift` files that are `nonisolated extension`s of the
-root or of one of its nested enums (64 files, about 3,200 lines). `AppConfig` is the non-visual configuration: API
+root or of one of its nested enums (65 files, about 3,200 lines). `AppConfig` is the non-visual configuration: API
 paths and base URLs, limits mirrored from the Laurel backend, launch-argument literals, feature flags, Cognito ids.
 `AppBranding` holds every user-facing string as a computed `static var` or `static func` whose body is
 `localized("English text")`, so the English text is the catalog key. `DesignTokens` holds the visual constants and
@@ -20,7 +20,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Location`, `ErrorPopup`, `Launch`, `API` (+ `Headers`, `Paths`, `Query`), `Statistics`, `LaunchArguments`,
   `Logging`, `Version`. Added by `+Area` files: `Chat` (+ `Attachments`, `Polls`, `Pins`), `Currency`, `DisplayName`
   (`lily/Config/AppConfig+Profile.swift`: `length = 1...32` code points, `backendDefault = "Player"`, both Laurel's
-  `profile.*` settings) and `About` (same file: `maxLength = 300` code points, Laurel's `profile.max-bio-length`),
+  `profile.*` settings) and `About` (same file: `maxLength = 300` code points, Laurel's `profile.max-bio-length`) and `AccountDeletion`
+  (same file, 2026-11-07: `pollInterval` = 2 s, how often the locked delete sheet re-reads `GET /api/me`),
   `Events` extras in `lily/Config/AppConfig+Events.swift` (`mapStackRadiusMeters` 11 (an event joins the first stack
   whose first spot lies within it), `mapStackDecimals` 4 (only names a stack: its first spot rounded),
   `placeSuggestionCount` 3, `placeSuggestionDebounce` 300 ms, `placeSuggestionMinimumQuery` 2,
@@ -37,7 +38,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `json = "application/json"`, `Retry-After` (the last added in `AppConfig+Chat.swift`).
   `Query`: `scope`, `lat`, `lon`, `before`, `after`, `q`, `type`, `cursor`, `limit`, `ids`.
 - `API.Paths`: roots `/api/events`, `/api/profile`, `/api/interactions`, `/api/groups`, `/api/me/inbox`,
-  `/api/me/inbox/read`, `/api/reports`, `/api/blocks`, `/api/me`, `/api/me/terms`, `/api/conversations`,
+  `/api/me/inbox/read`, `/api/reports`, `/api/blocks`, `/api/me`, `/api/me/terms`, `/api/me/deletion-plan`
+  (`meDeletionPlan`, the deletion contract's counts preview; `DELETE` on `me` executes), `/api/conversations`,
   `/api/feedback`, `/api/me/devices`, `/api/tournaments`; one `static func` per sub-resource, e.g. `event(id:)`,
   `participants(eventId:)`, `group(id:)`, `groupMembers(id:)`, `messages(id:)`, `message(id:messageID:)`, `read(id:)`,
   `uploads(id:)`, `attachment(id:messageID:attachmentID:)`, `pin(id:messageID:)`, `inboxAccept(id:)`, `block(userID:)`,
@@ -45,7 +47,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - `LaunchArguments` (`lily/Config/AppConfig.swift:AppConfig.LaunchArguments`): `isHonored` is `true` under `#if DEBUG`;
   `flagPrefix = "-"`. Flags: `-reset-session`, `-mock-location`, `-start-as-guest`, `-mock-auth`, `-mock-auth-confirm`,
   `-mock-auth-fail`, `-mock-events`, `-mock-events-fail`, `-hold-popups`, `-freeze-aurora`, `-mock-attachment-picker`,
-  `-mock-chat-replies`, `-mock-terms-pending`, `-system-push`. Value-taking: `-api-base-url`, `-mock-user-id`,
+  `-mock-chat-replies`, `-mock-terms-pending`, `-system-push`, `-mock-deleted-user` (2026-11-07, the deleted-flagged mock fixtures). Value-taking: `-api-base-url`, `-mock-user-id`,
   `-app-language`, `-realtime-endpoint`. `static func value(following: String, in: [String]) -> String?`;
   `static func appLanguage(from: [String]) -> AppLanguage?` (`lily/Config/AppConfig+Localization.swift`).
 - `FeatureFlags` (`lily/Config/AppConfig+FeatureFlags.swift:AppConfig.FeatureFlags`): `groups`, `chat`, and
@@ -104,7 +106,13 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - Nested namespaces: `Home`, `Events` (+ `Filter`, `Create`, `Edit`), `Chat` (+ `Attachments`, `Pins`, `Polls`),
   `Groups` (+ `Create`, `Invite`), `Chats`, `Inbox`, `Intro` (+ `Chat`), `Feedback`, `DisplayName`, `About`
   (`lily/Config/AppBranding+Profile.swift`: `title`, `subtitle`, `defaultSubtitle`, `placeholder`, `footer`, `save`,
-  `tooLong(limit:)`), `Moderation`, `Forms` (`close`,
+  `tooLong(limit:)`), `DeletedUser` (same file, 2026-11-07: `name`, the localized "Deleted user" the `Tombstone`
+  helper shows over a deleted account's snapshots), `DeleteAccount` (same file, 2026-11-07: the delete flow's copy —
+  `title`, `approximate`, `messagesSentence` (the always-true "Your messages will show as Deleted user."),
+  `irreversible`, `dialogTitle`, `confirmAction`, `deleting`, `deletedTitle`, `deletedMessage`, `acknowledgeAction`
+  (reuses the "Done" key) and the five `%lld` plural lines `groupsTransferring(_:)`, `groupsDeleted(_:)`,
+  `eventsCancelled(_:)`, `entriesWithdrawn(_:)`, `tournamentsCancelled(_:)`, one per non-zero count of the deletion
+  plan), `Moderation`, `Forms` (`close`,
   `back`, `cancel`), `People`, `Settings`, `Tournaments` (+ `Create`, `Schedule`, `Match`, `Standings`).
 - Representative functions: `Events.spotsLeft(_:)`, `Events.joined(_:of:)`, `Events.Create.capacity(_:needed:)`,
   `Events.Create.name(for: PlayerLimit)`, `Events.Create.message(for: EventDraft.Issue)`, `Events.Create.coordinateText(_:)`,
@@ -150,7 +158,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   many-events panel, instead of a second glass); `Symbols.moreBelow = "chevron.down"`
   (`lily/Config/DesignTokens+SportMarks.swift:DesignTokens.Layout`). The Settings screen's glyphs (2026-11-07,
   `lily/Config/DesignTokens+Settings.swift`): `Symbols.settings = "gearshape"` (the profile root's link row),
-  `Symbols.privacy = "lock.shield"` and `Symbols.terms = "doc.text"` (the legal rows), beside that file's dropdown tokens. In `DesignTokens.swift`,
+  `Symbols.privacy = "lock.shield"` and `Symbols.terms = "doc.text"` (the legal rows), beside that file's dropdown tokens.
+  The deleted-account mark (2026-11-07, `lily/Config/DesignTokens+Profile.swift`): `Symbols.deletedUser = "person.slash"`,
+  drawn by `Tombstone` beside the localized "Deleted user" name. In `DesignTokens.swift`,
   `Layout.mapCardListMaxHeight` is 400 (about three and a half of the two-row cards; 352, about five one-row cards,
   until 2026-11-06) beside `mapSelectedCardWidth 340` and `pressedCardScale 0.97`.
 - Non-scalar members: `Symbols.fileGlyphs: [(type: UTType, symbol: String)]` (8 entries),
@@ -166,7 +176,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   +Attachments, +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
   +Profile (`profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
   `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-settings`, `settings-sign-out`,
-  `settings-privacy`, `settings-terms`), +Currency, +Layout, +Landing (`intro-pager`), +Localization.
+  `settings-privacy`, `settings-terms`, and the delete flow's `settings-delete-account`, `terms-delete-account`,
+  `delete-account-confirm`, `delete-account-cancel`, `delete-account-acknowledge`; 2026-11-07), +Currency, +Layout, +Landing (`intro-pager`), +Localization.
 - Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `createPlaceSuggestion(_ index: Int)`
   (`create-place-suggestion-<index>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
   `message(clientID:)` (`message-client-<id>`), `message(id:)`, `messageQuote(id:)`, `memberRow(_:)`, `inviteCandidate(_:)`,
@@ -177,8 +188,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 ## Invariants
 
-- Every top-level declaration in all 64 files is `nonisolated`: the four root enums and every `extension`
-  (`grep -c nonisolated` is 33 across the 12 `DesignTokens*` files and 1 in each `AccessibilityIdentifiers*` file;
+- Every top-level declaration in all 65 files is `nonisolated`: the four root enums and every `extension`
+  (`grep -c nonisolated` is 34 across the 13 `DesignTokens*` files and 1 in each `AccessibilityIdentifiers*` file;
   `grep "^extension\|^enum\|^struct" lily/Config/AppBranding*.swift` returns nothing). No `Sendable`, `@MainActor` or
   other isolation annotation appears in the directory.
 - `AppConfig` is only `static let` constants and pure `static func` builders (`lily/Config/AppConfig.swift:AppConfig`).
@@ -200,7 +211,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `-realtime-endpoint` argument decides. `Push.redactedToken` stands in for the device token in log lines.
   `URL(string:)!` is force-unwrapped on literals only (`API.localBaseURL`, `API.productionBaseURL`, `Moderation.supportURL`,
   `Realtime.mockEndpoint`); `termsURL` and `privacyURL` are appended to `API.productionBaseURL`. The `/api/me` routes derive from
-  `Paths.me` (`inbox`, `inboxRead`, `devices`, `meTerms`), as every nested path derives from its parent.
+  `Paths.me` (`inbox`, `inboxRead`, `devices`, `meTerms`, `meDeletionPlan`), as every nested path derives from its parent.
 - `AppBranding`: every localized member is a computed `static var` or a `static func`, never `static let`; the eight
   `static let`s are non-localized constants (`name`, `Events.separatorGlyph = "·"`, `Events.captionSeparator`,
   `Events.Create.coordinateFormat = "%.4f, %.4f"`, `Inbox.title`, `Tournaments.Match.scoreSeparator = "–"`,

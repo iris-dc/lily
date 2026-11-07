@@ -69,8 +69,10 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
   `Template` extension are `nonisolated` [`lily/Features/Groups/Implementations/MockGroupFixtures.swift`:`MockGroupFixtures`].
 - Remote fallbacks: group reads fail with `.groupsUnavailable`, `create` with `.groupCreationFailed`, the other group
   writes with `.groupActionFailed`; invite routes with `.inviteUnavailable`; `report` with `.reportFailed`; `me`,
-  `acceptTerms` and the block routes with `.unknown`
-  [`lily/Features/Groups/Implementations/RemoteGroupRepository.swift`:`RemoteGroupRepository.create`].
+  `acceptTerms` and the block routes with `.unknown`; `deletionPlan` with `.deletionPlanUnavailable` and
+  `deleteAccount` with `.accountDeletionFailed` (its post-completion 401 maps to `.sessionExpired`, which callers treat
+  as landed) [`lily/Features/Groups/Implementations/RemoteGroupRepository.swift`:`RemoteGroupRepository.create`]
+  [`lily/Features/Groups/Implementations/RemoteMeRepository.swift`:`RemoteMeRepository.deleteAccount`].
 - Remote decoding: `members`/`bans` decode `Page<GroupMember>` and answer `.items`, `unban` decodes `UnbanReceipt` and
   discards it, `setRole` decodes `GroupMember`, the block routes decode `BlockedUsers` into a `Set`
   [`lily/Features/Groups/Implementations/RemoteGroupRepository.swift`:`RemoteGroupRepository.roster`].
@@ -112,7 +114,12 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
   [`lily/Features/Groups/Implementations/MockInviteCandidatePool.swift`:`MockInviteCandidatePool.candidates`].
 - `MockMeRepository.me()` throws `.sessionExpired` without a user, marks the Apple mock user as operator (mirroring the
   backend's operators group; lily has no operator UI), leaves
-  `acceptedTermsVersion` nil while `owesTerms`, and `acceptTerms` clears `owesTerms` for the run;
+  `acceptedTermsVersion` nil while `owesTerms`, and `acceptTerms` clears `owesTerms` for the run.
+  `MockMeRepository` rehearses the deletion contract in memory: `deletionPlan()` answers the contract's sample counts
+  (2/1/1/3/0); `deleteAccount()` claims a job and a replay while it runs answers success again; the poll's first `me()`
+  still answers while the job "runs", then the account is deleted and `me()`, `deletionPlan()` and `deleteAccount()`
+  all throw the tombstone's 401 as `.sessionExpired`, so the delete flow settles without a backend
+  [`lily/Features/Groups/Implementations/MockMeRepository.swift`:`MockMeRepository.deleteAccount`];
   `MockModerationRepository.block` throws `.blockLimitReached` at `AppConfig.Moderation.maxBlocks` (500) blocked,
   except for a user already in the list, who is answered the list unchanged
   [`lily/Features/Groups/Implementations/MockMeRepository.swift`:`MockMeRepository.me`]
@@ -132,7 +139,8 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
 - Invite routes: `GET /api/groups/{id}/invitees`, `POST /api/groups/{id}/invites` (`SendInvitePayload`)
   [`lily/Features/Groups/Implementations/RemoteInviteRepository.swift`:`RemoteInviteRepository.invite`]
   [`lily/Config/AppConfig+Groups.swift`:`AppConfig.API.Paths.groupInvites`].
-- Account and moderation routes: `GET /api/me`, `PUT /api/me/terms` (`TermsAcceptancePayload`), `POST /api/reports`
+- Account and moderation routes: `GET /api/me`, `PUT /api/me/terms` (`TermsAcceptancePayload`),
+  `GET /api/me/deletion-plan`, `DELETE /api/me` (asynchronous-accepted 202, empty body), `POST /api/reports`
   (`ReportPayload`), `GET /api/blocks`, `PUT /api/blocks/{userID}`, `DELETE /api/blocks/{userID}`
   [`lily/Features/Groups/Implementations/RemoteMeRepository.swift`:`RemoteMeRepository.acceptTerms`]
   [`lily/Features/Groups/Implementations/RemoteModerationRepository.swift`:`RemoteModerationRepository.blocks`]
@@ -143,7 +151,8 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
   create and update (a repeated create with other details is `.createIdReused`)
   [`lily/Features/Groups/Implementations/MockGroupRepository.swift`:`MockGroupRepository.store`].
 - Logging, ids only, under `.groups`: debug for `groups(in:)`, candidates (from `candidates(groupID:)` only, never on
-  an invite) and `me()`; info for create, join, leave,
+  an invite), `me()` and the mock deletion plan; info for the mock deletion (claimed, replayed, already deleted),
+  create, join, leave,
   direct start, hide and unhide, room register/admit/leave, terms acceptance and reports; `MockInviteLedger.send` logs
   info under the target's `logCategory` [`lily/Features/Groups/Implementations/MockInviteCandidatePool.swift`:`MockInviteLedger.send`].
 - Clock reads through the injected `now()` (once in `MockGroupRepository.init`, then per create, delete, direct start,

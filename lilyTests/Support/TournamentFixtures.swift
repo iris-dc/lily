@@ -18,6 +18,7 @@ extension Tournament {
                         registrationClosesAt: Date? = nil,
                         organizerUserId: String = "seed-marta",
                         organizerName: String = "Marta",
+                        deleted: Bool? = nil,
                         group: EventGroupRef? = nil,
                         myEntryId: String? = nil,
                         createdAt: Date = Date(timeIntervalSince1970: 1_700_000_000)) -> Tournament {
@@ -36,6 +37,7 @@ extension Tournament {
                    location: EventLocation(name: "Sports Hall", coordinate: AppConfig.Location.mockCenter),
                    organizerUserId: organizerUserId,
                    organizerName: organizerName,
+                   deleted: deleted,
                    group: group,
                    myEntryId: myEntryId,
                    createdAt: createdAt)

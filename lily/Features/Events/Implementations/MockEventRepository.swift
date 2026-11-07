@@ -20,10 +20,13 @@ final class MockEventRepository: EventRepository {
          count: Int = AppConfig.Events.mockFeedSize,
          identity: any IdentityProvider,
          logger: any Logging,
-         failsFirstLoad: Bool = false) {
-        self.events = MockEventFixtures.make(now: now, count: count).enumerated().map { index, event in
+         failsFirstLoad: Bool = false,
+         deletedHost: Bool = false) {
+        var events = MockEventFixtures.make(now: now, count: count).enumerated().map { index, event in
             event.updatingParticipation(count: event.participantCount, isJoined: index.isMultiple(of: Self.joinedStride))
         }
+        if deletedHost { events.append(MockEventFixtures.deletedHostEvent(now: now)) }
+        self.events = events
         self.identity = identity
         self.logger = logger
         self.failsNextLoad = failsFirstLoad

@@ -205,6 +205,19 @@ struct RemoteInteractionRecorderTests {
         #expect(client.requests.count == 1, "the cancelled send is not retried")
     }
 
+    /// The account-deleted end (the deletion contract): nothing goes out on the dead account's behalf; what is
+    /// buffered falls to `sessionDidEnd()`'s drop.
+    @Test func theAccountDeletedEndSendsNothing() async {
+        let recorder = makeRecorder()
+        recorder.record(viewed)
+
+        await recorder.sessionWillEndWithoutNetwork()
+
+        #expect(client.requests.isEmpty)
+        recorder.sessionDidEnd()
+        await settle(until: { sleep.held.isEmpty })
+    }
+
     /// Once the session has ended the Bearer is gone, so what is still buffered is dropped and its timer stopped.
     @Test func signOutDropsWhatIsStillBufferedAndStopsTheTimer() async {
         let recorder = makeRecorder()

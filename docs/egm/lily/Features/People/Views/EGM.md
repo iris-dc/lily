@@ -12,9 +12,11 @@ link), `SharedTournamentRow` (a "Tournaments together" row linking to the tourna
 
 ## Interface
 
-- `PersonRow<Badge: View>(userID: String, displayName: String, isSelf: Bool, identifier: String, badge: () -> Badge)`
+- `PersonRow<Badge: View>(userID: String, displayName: String, isSelf: Bool, identifier: String, deleted: Bool? =
+  nil, badge: () -> Badge)`
   `[lily/Features/People/Views/PersonRow.swift:PersonRow]`: pushes `UserProfileDestination(userId:displayName:)`
-  (context `.standalone`); the identifier is caller-supplied; the name comes from `AppBranding.People.name(_:isSelf:)`.
+  (context `.standalone`); the identifier is caller-supplied; the name comes from `AppBranding.People.name(_:isSelf:)`
+  over `Tombstone.displayName(_:deleted:)` (2026-11-07).
 - `SharedGroupRow(group: GroupSummary)` `[lily/Features/People/Views/SharedGroupRow.swift:SharedGroupRow]`:
   `GroupRowContent(name:visibility:caption:hasUnread: false)` in a `NavigationLink(value: group.ref)`; identifier
   `AccessibilityIdentifiers.groupRow(group.id)` (`group-row-<id>`).
@@ -43,7 +45,8 @@ link), `SharedTournamentRow` (a "Tournaments together" row linking to the tourna
 
 ## Invariants
 
-- `PersonRow` for the caller (`isSelf`) renders plain content with no link; otherwise the content sits in a
+- `PersonRow` for the caller (`isSelf`) or a deleted account (`deleted == true`: the `Tombstone.symbol` avatar and
+  the localized name, 2026-11-07) renders plain content with no link; otherwise the content sits in a
   `NavigationLink` with `.buttonStyle(.plain)`, `.lilyHoverable()` and the identifier on the link itself (a
   `.contextMenu` around the row would swallow one applied outside) `[lily/Features/People/Views/PersonRow.swift:body]`;
   the content is `.accessibilityElement(children: .combine)` with a one-line name and `badge().fixedSize()`

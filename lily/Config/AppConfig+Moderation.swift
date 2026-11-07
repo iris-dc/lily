@@ -23,6 +23,8 @@ nonisolated extension AppConfig.API.Paths {
     static let blocks = "/api/blocks"
     static let me = "/api/me"
     static let meTerms = "\(me)/terms"
+    /// The advisory counts preview of account deletion; `DELETE` on `me` itself executes it.
+    static let meDeletionPlan = "\(me)/deletion-plan"
 
     static func block(userID: String) -> String {
         "\(blocks)/\(userID)"

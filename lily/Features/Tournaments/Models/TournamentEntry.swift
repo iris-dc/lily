@@ -4,6 +4,15 @@ import Foundation
 nonisolated struct EntryMember: Hashable, Codable, Sendable {
     let userId: String
     let displayName: String
+    /// The player's account was deleted (the deletion contract's tombstone, mapped by `Tombstone`): the stored
+    /// `displayName` is the placeholder. Absent unless true.
+    let deleted: Bool?
+
+    init(userId: String, displayName: String, deleted: Bool? = nil) {
+        self.userId = userId
+        self.displayName = displayName
+        self.deleted = deleted
+    }
 }
 
 /// One entry of a tournament: a player entered alone (named after themselves, their own captain) or a team its captain
@@ -74,7 +83,9 @@ nonisolated struct TournamentEntry: Identifiable, Hashable, Codable, Sendable {
         guard let userID else { return self }
         var copy = self
         if captainUserId == marker { copy.captainUserId = userID }
-        copy.members = members.map { $0.userId == marker ? EntryMember(userId: userID, displayName: $0.displayName) : $0 }
+        copy.members = members.map {
+            $0.userId == marker ? EntryMember(userId: userID, displayName: $0.displayName, deleted: $0.deleted) : $0
+        }
         return copy
     }
 }

@@ -4,9 +4,9 @@ Source: `lily/Features/Groups/Models/`
 
 ## Overview
 
-Twenty-six files of `nonisolated` value types, no logic that reaches outside the process. Three families: the wire
+Twenty-seven files of `nonisolated` value types, no logic that reaches outside the process. Three families: the wire
 types decoded from Laurel's group, member, account, invite and moderation answers (`SportGroup`, `GroupMember`,
-`GroupMembership`, `MembershipChange`, `Account`, `TermsAcceptance`, `SentInvite`, `InviteCandidate`,
+`GroupMembership`, `MembershipChange`, `Account`, `TermsAcceptance`, `DeletionPlan`, `SentInvite`, `InviteCandidate`,
 `ReportReceipt`, `BlockedUsers`, `UnbanReceipt`) and the request bodies that mirror the backend's DTOs key for key
 (`CreateGroupPayload`, `UpdateGroupPayload`, `RoleChangePayload`, `SendInvitePayload`, `TermsAcceptancePayload`,
 `ReportPayload`); the on-device rules the screens and their tests share (`GroupDraft` validation, `GroupAccess`,
@@ -63,6 +63,12 @@ types decoded from Laurel's group, member, account, invite and moderation answer
 - `Account` (the answer of `GET /api/me`): `userId`, `isOperator`, `termsVersion`, `acceptedTermsVersion?`,
   `realtimeEndpoint: URL?`, `attachmentsEnabled`; `termsAccepted`, `acceptingTerms(_:)`; `TermsAcceptance
   { acceptedTermsVersion, acceptedTermsAt }` [`lily/Features/Groups/Models/Account.swift`:`Account`].
+- `DeletionPlan` (the answer of `GET /api/me/deletion-plan`, the account-deletion contract §2): exactly five advisory
+  `Int` counts — `groupsTransferring`, `groupsDeleted`, `eventsCancelled`, `entriesWithdrawn`, `tournamentsCancelled` —
+  for the delete flow's summary copy; the execute path re-derives everything, so the preview may be stale. Same file:
+  `DeletionSettle.isLanded(_: AppError) -> Bool`, the flow's inverted success check — true exactly for
+  `.sessionExpired` (any 401; lily maps the status before reading a body) and `.userNotFound`, which mean the deletion
+  landed [`lily/Features/Groups/Models/DeletionPlan.swift`:`DeletionPlan`].
 - `GroupAccess: Equatable, Sendable`: `guest`, `canJoin`, `inviteOnly`, `member(MemberRole)`, `full`, `conversation`,
   `room`; `init(group:userID:)`; `isMember`, `canChat`, `canLeave`, `canEdit`, `canDelete`, `canChangeRoles`,
   `canSeeMembers(in:)`, `canReport(in:)`, `canCreateEvents(in:)`, `canInvite(in:)`, `canRemove(_:)`, `canBan(_:)`,
@@ -179,4 +185,5 @@ types decoded from Laurel's group, member, account, invite and moderation answer
 
 - Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/Groups`, for
   example `GroupModelsTests`, `GroupDraftTests`, `GroupAccessTests`, `GroupPayloadTests`, `GroupScopeTests`,
-  `GroupDetailSectionTests`, `GroupConfirmationTests`, `AccountCodingTests`, `SportGroupCaptionTests`).
+  `GroupDetailSectionTests`, `GroupConfirmationTests`, `AccountCodingTests`, `DeletionPlanTests` (with
+  `DeletionSettleTests`), `SportGroupCaptionTests`).

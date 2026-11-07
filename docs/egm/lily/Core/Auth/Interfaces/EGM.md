@@ -36,8 +36,17 @@ small roles other layers read the session through. The protocols are main-actor 
 - `SessionExpiryReporter` (`lily/Core/Auth/Interfaces/SessionExpiryReporter.swift:SessionExpiryReporter`): `AnyObject`
   protocol with `var onSessionExpired: () -> Void { get set }`.
 - `SessionObserver` (`lily/Core/Auth/Interfaces/SessionObserver.swift:SessionObserver`): `AnyObject` protocol with
-  `sessionWillEnd() async`, `sessionDidEnd()`, `sessionDidRestore()`; the extension gives `sessionWillEnd` and
-  `sessionDidRestore` empty defaults, so `sessionDidEnd` is the one member a conformer must write.
+  `sessionWillEnd() async`, `sessionWillEndWithoutNetwork() async` (the account-deleted end: the backend's deletion
+  job erased everything server-side and the tokens are dead, so an observer does only the local part of its last
+  word), `sessionDidEnd()`, `sessionDidRestore()`; the extension gives `sessionWillEnd` and `sessionDidRestore` empty
+  defaults and forwards `sessionWillEndWithoutNetwork` to `sessionWillEnd` (right for an observer whose last word
+  never touches the network; the network observers, `PushCoordinator` and `RemoteInteractionRecorder`, override it),
+  so `sessionDidEnd` is the one member a conformer must write.
+- `AccountDeletionSession` (`lily/Core/Auth/Interfaces/AccountDeletionSession.swift:AccountDeletionSession`):
+  `AnyObject` protocol with `beginAccountDeletion()`, `cancelAccountDeletion()`, `endDeletedSession() async` — the
+  session side of the delete-account flow (2026-11-07), implemented by `SessionController` in `+AccountDeletion`;
+  `DeleteAccountViewModel` depends on it, never on the concrete controller. `endDeletedSession()` is called only by
+  the acknowledgment's tap (the relocation contract's teardown order); `begin`/`cancel` bracket the flow.
 - `SessionStore` (`lily/Core/Auth/Interfaces/SessionStore.swift:SessionStore`): `load() -> StoredSession?`,
   `save(_ session: StoredSession)`, `clear()`.
 - The model types in these signatures (`AuthSession`, `StoredSession`, `AuthProvider`, `SignUpOutcome`) are described in
@@ -55,8 +64,9 @@ small roles other layers read the session through. The protocols are main-actor 
 - `IdentityProvider.isStillCaller` returns `false` once `currentUserID` differs from the id an answer was requested for:
   after a sign-out or a switch the answer belongs to whoever asked (`IdentityProvider.swift:isStillCaller`).
 - `SessionObserver.sessionWillEnd()` runs while the user is still signed in, for a last request on their behalf;
-  `sessionDidEnd()` after the state ended; `sessionDidRestore()` in the same turn as the state change, so nothing
-  renders the state without it (`SessionObserver.swift:SessionObserver`).
+  `sessionWillEndWithoutNetwork()` likewise, but on the account-deleted end, where nothing may go out on the dead
+  account's behalf; `sessionDidEnd()` after the state ended; `sessionDidRestore()` in the same turn as the state
+  change, so nothing renders the state without it (`SessionObserver.swift:SessionObserver`).
 - `SessionStore` is a hint, never the source of truth (`SessionStore.swift:SessionStore`); `CognitoClientError` carries
   none of Amplify's types, so the service and its tests never import them (`CognitoClient.swift:CognitoClientError`).
 

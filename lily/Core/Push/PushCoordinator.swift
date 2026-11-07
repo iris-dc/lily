@@ -124,6 +124,12 @@ final class PushCoordinator: SessionObserver, PushOptIn {
         if !tokens.isEmpty { logger.info(.push, "Device unregistered for push") }
     }
 
+    /// The account-deleted end (the deletion contract): the job removed this device's rows with the account, so there
+    /// is nothing to DELETE and no live token to send it with; the stored registration is dropped without the network.
+    func sessionWillEndWithoutNetwork() async {
+        store(nil)
+    }
+
     func sessionDidEnd() {
         store(nil)
         pendingTap = nil

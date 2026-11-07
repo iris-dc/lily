@@ -20,8 +20,10 @@ struct EventDetailView: View {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     EventTypeChip(type: event.type)
                     OwnerTitleBlock(title: event.title,
-                                    subtitle: AppBranding.hostedByTitle(for: event.hostName),
-                                    destination: viewModel.hostProfile)
+                                    subtitle: AppBranding.hostedByTitle(for: Tombstone.displayName(event.hostName,
+                                                                                                   deleted: event.deleted)),
+                                    destination: viewModel.hostProfile,
+                                    subtitleMark: event.deleted == true ? Tombstone.symbol : nil)
                     if let group = event.group {
                         HostedInLine(group: group)
                     }

@@ -17,7 +17,8 @@ on the stack the profile is on, so Back returns to the profile. No source files 
   `AppError.userNotFound`) and `startConversation(with:)` (idempotent per pair).
 - Models: [./Models/EGM.md](./Models/EGM.md) - `UserProfile` (name, `bio?`, the three shared lists), `GroupSummary`
   (with `caption` and `ref: EventGroupRef`), `EventSummary` (with `caption`), `TournamentSummary` (with `caption` and
-  `destination: TournamentDestination`), `StartConversationPayload`, `UserProfileDestination` (with `GroupDetailContext`).
+  `destination: TournamentDestination`), `StartConversationPayload`, `UserProfileDestination` (with `GroupDetailContext`),
+  and `Tombstone` (the deletion contract's flag mapped once to the localized "Deleted user" and its fixed mark).
 - Implementations: [./Implementations/EGM.md](./Implementations/EGM.md) - `RemoteUserRepository` (`GET /api/users/{id}`,
   `POST /api/conversations`) and `MockUserRepository` serving profiles from the group mock's rosters (the shared
   history from the event and tournament mocks, the bios from `MockUserFixtures`) and conversations as its direct groups.
