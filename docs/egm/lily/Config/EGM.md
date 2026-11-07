@@ -118,6 +118,11 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `lily/Config/AppBranding+EventsMap.swift:AppBranding.Events.eventsHere(_:)`) and `Events.moreBelow(_:)` ("+%lld
   more", the pill under the cards while some wait below;
   `lily/Config/AppBranding+EventsMap.swift:AppBranding.Events.moreBelow(_:)`).
+- The Settings screen (2026-11-07, `lily/Config/AppBranding+Settings.swift`): `Settings.title` ("Settings", the
+  screen's title and its link row on the profile root), `Settings.rowSubtitle` ("Language, currency and your account"),
+  `Settings.privacySubtitle` ("How your data is handled") and `Settings.termsSubtitle` ("What you agree to"); the legal
+  rows' titles stay `Moderation.termsLink` / `privacyLink` and their destinations `AppConfig.Moderation.termsURL` /
+  `privacyURL`.
 - The one helper every string goes through: `nonisolated func localized(_ key: String.LocalizationValue) -> String`
   (`lily/Core/Localization/Localized.swift:localized`); a `\(count)` interpolation becomes the catalog's `%lld` or `%@`.
 
@@ -143,7 +148,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   not mean more beyond an edge), `mapMorePillEntryScale 0.8`; `Opacity.sportMarkGlow 0.45`, `sportMarkRim 0.18`,
   `sportGlassTint 0.55`, `mapCardCapsuleFill 0.1`, `mapPanelCardWash 0.07` (the ink wash of a card inside the
   many-events panel, instead of a second glass); `Symbols.moreBelow = "chevron.down"`
-  (`lily/Config/DesignTokens+SportMarks.swift:DesignTokens.Layout`). In `DesignTokens.swift`,
+  (`lily/Config/DesignTokens+SportMarks.swift:DesignTokens.Layout`). The Settings screen's glyphs (2026-11-07,
+  `lily/Config/DesignTokens+Settings.swift`): `Symbols.settings = "gearshape"` (the profile root's link row),
+  `Symbols.privacy = "lock.shield"` and `Symbols.terms = "doc.text"` (the legal rows), beside that file's dropdown tokens. In `DesignTokens.swift`,
   `Layout.mapCardListMaxHeight` is 400 (about three and a half of the two-row cards; 352, about five one-row cards,
   until 2026-11-06) beside `mapSelectedCardWidth 340` and `pressedCardScale 0.97`.
 - Non-scalar members: `Symbols.fileGlyphs: [(type: UTType, symbol: String)]` (8 entries),
@@ -158,7 +165,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   +Groups (`chat-list`, `chat-composer`, `create-group`, ...), +Tournaments (45 literals and 6 builders, e.g. `match-score-a`), +Polls,
   +Attachments, +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
   +Profile (`profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
-  `profile-about-field`, `profile-about-save`, `profile-about-cancel`), +Currency, +Layout, +Landing (`intro-pager`), +Localization.
+  `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-settings`, `settings-sign-out`,
+  `settings-privacy`, `settings-terms`), +Currency, +Layout, +Landing (`intro-pager`), +Localization.
 - Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `createPlaceSuggestion(_ index: Int)`
   (`create-place-suggestion-<index>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
   `message(clientID:)` (`message-client-<id>`), `message(id:)`, `messageQuote(id:)`, `memberRow(_:)`, `inviteCandidate(_:)`,

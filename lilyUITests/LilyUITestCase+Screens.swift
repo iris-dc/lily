@@ -66,6 +66,15 @@ extension LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Discover groups"].waitForExistence(timeout: 5))
     }
 
+    /// Pushes Settings from the signed-in profile root's link row and waits for its title.
+    @MainActor
+    func openSettings() {
+        let row = app.buttons["profile-settings"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "the signed-in profile root offers Settings")
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+    }
+
     /// Opens the sign-in sheet from whatever screen shows "Sign in": the landing, Home's guest prompt or Profile.
     @MainActor
     func openSignInSheet() {

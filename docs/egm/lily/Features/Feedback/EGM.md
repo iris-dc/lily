@@ -24,5 +24,5 @@ because `lily/` may hold only Swift sources, catalogs and the privacy manifest.
   fabricated receipt).
 - ViewModels: [./ViewModels/EGM.md](./ViewModels/EGM.md) - `FeedbackViewModel`: `canSubmit` gating, one-shot
   `isSubmitted`, silent cancellation, error log plus `ErrorCenter.report` on failure.
-- Views: [./Views/EGM.md](./Views/EGM.md) - `FeedbackRow` on Profile and `FeedbackSheet` with its own
-  `.errorPopup`, `DraftSubmitButton` and dismissal rules.
+- Views: [./Views/EGM.md](./Views/EGM.md) - `FeedbackRow` (on Settings when signed in, inline on a guest's profile
+  root since 2026-11-07) and `FeedbackSheet` with its own `.errorPopup`, `DraftSubmitButton` and dismissal rules.

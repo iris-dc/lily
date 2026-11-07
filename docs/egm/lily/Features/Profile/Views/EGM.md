@@ -4,10 +4,11 @@ Source: `lily/Features/Profile/Views/`
 
 ## Overview
 
-The Profile tab: the caller's name and bio as the backend holds them (each with the card and sheet that change it) or
-the guest prompt with Sign in, the language and currency settings as dropdown cards, the contact (feedback) card and Sign out.
-`ProfileView` re-renders in place when the language changes
-rather than being rebuilt like the other tabs, whose rebuild would crossfade over the pick made here.
+The Profile tab: the caller's name and bio as the backend holds them (each with the card and sheet that change it) with
+a link row into `SettingsScreen` (the language and currency dropdown cards, the contact (feedback) card, the privacy and
+terms links and Sign out), or the guest prompt with Sign in and the language, currency and contact rows inline — a guest
+gets no Settings screen (2026-11-07). `ProfileView` and the pushed `SettingsScreen` re-render in place when the language
+changes rather than being rebuilt like the other tabs, whose rebuild would crossfade over the pick made here.
 `SettingsChoiceRow` is the shared dropdown card the language and currency rows are built from.
 
 ## Interface
@@ -15,11 +16,23 @@ rather than being rebuilt like the other tabs, whose rebuild would crossfade ove
 - `ProfileView(dependencies: AppDependencies, language: AppLanguage)` `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`:
   a `NavigationStack` with `ContentScreen`, title `AppBranding.profileTitle`; signed in: an `AvatarCircle` of the
   profile name's initials (a glyph while the name is unknown), the name from `dependencies.profile` (a small spinner
-  while the first load runs), the email and a Sign out glass button, then `DisplayNameRow(store:action:)` and
-  `AboutRow(store:action:)`; guest: `AppBranding.guestProfileTitle`, `guestProfileMessage` and a prominent Sign in; then
-  `LanguageRow`, `CurrencyRow` and `FeedbackRow(action:)`; sheets `SignInSheet(session:errorCenter:)`,
-  `DisplayNameSheet(viewModel:errorCenter:)` over `dependencies.makeDisplayNameViewModel()`,
-  `AboutSheet(viewModel:errorCenter:)` over `dependencies.makeAboutViewModel()` and `FeedbackSheet(viewModel:errorCenter:)`.
+  while the first load runs) and the email, then `DisplayNameRow(store:action:)`, `AboutRow(store:action:)` and the
+  Settings link row (a `SettingsLinkRow` titled `AppBranding.Settings.title` with `AppBranding.Settings.rowSubtitle`,
+  `DesignTokens.Symbols.settings` and identifier `AccessibilityIdentifiers.profileSettings`) pushing `SettingsScreen`
+  through `navigationDestination(isPresented:)`; guest: `AppBranding.guestProfileTitle`, `guestProfileMessage` and a
+  prominent Sign in, then `LanguageRow`, `CurrencyRow` and `FeedbackRow(action:)` inline; sheets
+  `SignInSheet(session:errorCenter:)`, `DisplayNameSheet(viewModel:errorCenter:)` over
+  `dependencies.makeDisplayNameViewModel()` and `AboutSheet(viewModel:errorCenter:)` over `dependencies.makeAboutViewModel()`.
+- `SettingsScreen(dependencies: AppDependencies, language: AppLanguage)`
+  `[lily/Features/Profile/Views/SettingsScreen.swift:SettingsScreen]`: the signed-in settings pushed from the profile
+  root (2026-11-07), title `AppBranding.Settings.title`, a `ScrollView` that scrolls only past the screen
+  (`.scrollBounceBehavior(.basedOnSize)`): `LanguageRow`, `CurrencyRow`, `FeedbackRow` presenting
+  `FeedbackSheet(viewModel:errorCenter:)` over `dependencies.makeFeedbackViewModel()`, two `SettingsLinkRow` legal
+  links — `AppBranding.Moderation.privacyLink` / `AppBranding.Settings.privacySubtitle` / `DesignTokens.Symbols.privacy`
+  / `AccessibilityIdentifiers.settingsPrivacy` opening `AppConfig.Moderation.privacyURL`, and `Moderation.termsLink` /
+  `Settings.termsSubtitle` / `Symbols.terms` / `settingsTerms` opening `termsURL`, both through
+  `@Environment(\.openURL)` — and Sign out, a full-width `lilyTextButton()` text action (identifier
+  `AccessibilityIdentifiers.settingsSignOut`) moved off the profile header.
 - `DisplayNameRow(store: ProfileStore, action: () -> Void)` `[lily/Features/Profile/Views/DisplayNameRow.swift:DisplayNameRow]`:
   a `SettingsLinkRow` (`lily/Core/UI/Components`) titled `AppBranding.DisplayName.title` with
   `DesignTokens.Symbols.profile`, identifier `AccessibilityIdentifiers.profileName`; the subtitle is
@@ -55,9 +68,16 @@ rather than being rebuilt like the other tabs, whose rebuild would crossfade ove
 ## Invariants
 
 - Feedback needs an account: a guest tapping the contact card gets the sign-in sheet instead, logged at info under
-  `.auth` `[lily/Features/Profile/Views/ProfileView.swift:openFeedback]`.
-- `FeedbackRow`, `DisplayNameRow` and `AboutRow` (the last two also take the store object) are given `.id(language)`
-  because a closure input is not a change SwiftUI counts, so they would keep the old copy `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`.
+  `.auth` `[lily/Features/Profile/Views/ProfileView.swift:openFeedback]`; a signed-in caller reaches the form from
+  Settings, whose row presents the sheet directly `[lily/Features/Profile/Views/SettingsScreen.swift:SettingsScreen]`.
+- The signed-in root holds exactly the header, the name and bio cards and the Settings link; language, currency, the
+  contact card and Sign out moved into `SettingsScreen` (2026-11-07, the relocation contract's session-state matrix),
+  and the guest root keeps the three rows inline — guests get no Settings screen. The rows keep their identifiers
+  (`profile-language`, `profile-currency`, `profile-feedback`) wherever they sit, so UI tests change navigation only.
+- `FeedbackRow` (on the guest root and on Settings), `DisplayNameRow` and `AboutRow` (the last two also take the store
+  object) are given `.id(language)` because a closure input is not a change SwiftUI counts, so they would keep the old
+  copy `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`; the Settings link row and the legal rows take
+  their copy as plain inputs, which the language re-render recomputes.
 - The profile loads lazily, once per session, from the `.task(id: session.state.user?.id) { await
   profile.loadIfNeeded() }` on `ProfileView`'s `NavigationStack`, so a user who never opens Profile costs no request; the header shows the backend's name,
   a spinner only while the first load runs and nothing when it failed (the cards below still write)
@@ -82,11 +102,13 @@ rather than being rebuilt like the other tabs, whose rebuild would crossfade ove
 
 ## Side Effects
 
-- `session.signOut()` in a `Task` from the Sign out button `[lily/Features/Profile/Views/ProfileView.swift:signedIn]`.
+- `session.signOut()` in a `Task` from Settings' Sign out `[lily/Features/Profile/Views/SettingsScreen.swift:signOutButton]`.
 - Sheets: `SignInSheet` (a guest's Sign in, or feedback asked for as a guest), `DisplayNameSheet` from
-  `dependencies.makeDisplayNameViewModel()`, `AboutSheet` from `dependencies.makeAboutViewModel()` and `FeedbackSheet`
-  from `dependencies.makeFeedbackViewModel()`
-  `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`.
+  `dependencies.makeDisplayNameViewModel()` and `AboutSheet` from `dependencies.makeAboutViewModel()`
+  `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`; `FeedbackSheet` from
+  `dependencies.makeFeedbackViewModel()` on Settings `[lily/Features/Profile/Views/SettingsScreen.swift:SettingsScreen]`.
+- `openURL` into the browser from the legal rows (`AppConfig.Moderation.privacyURL`, `termsURL`)
+  `[lily/Features/Profile/Views/SettingsScreen.swift:legalRow]`.
 - `ProfileStore.loadIfNeeded()` (`GET /api/profile` once per session) from the `.task(id: session.state.user?.id) {
   await profile.loadIfNeeded() }` on `ProfileView`'s `NavigationStack`
   `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`.
@@ -98,5 +120,6 @@ rather than being rebuilt like the other tabs, whose rebuild would crossfade ove
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (`lilyTests/Preferences` covers the choice stores behind these rows, `lilyTests/Profile`
-  the store and the editors' model); `./scripts/ci.sh ui` (`LilyProfileTests` walks the display name and the "About you"
-  cards and sheets).
+  the store, the editors' model and `SettingsConfigTests`, the Settings glyphs and copy keys); `./scripts/ci.sh ui`
+  (`LilyProfileTests` walks the display name and the "About you" cards and sheets; `LilySettingsTests` the Settings
+  push, the guest root, a language pick inside Settings and Sign out).

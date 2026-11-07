@@ -1,6 +1,7 @@
 import Foundation
 
-/// The settings cards on Profile (the language and the currency) and the dropdown of choices they open.
+/// The settings cards on Profile (the language and the currency), the dropdown of choices they open, and the glyphs of
+/// the Settings screen's rows.
 nonisolated extension DesignTokens.Symbols {
     /// The currency card: the price glyph.
     static let currency = DesignTokens.Symbols.price
@@ -8,6 +9,12 @@ nonisolated extension DesignTokens.Symbols {
     static let menuChevron = "chevron.up.chevron.down"
     /// The current choice in a settings dropdown.
     static let chosen = "checkmark"
+    /// The Settings link row on the profile root.
+    static let settings = "gearshape"
+    /// The privacy policy link on the Settings screen.
+    static let privacy = "lock.shield"
+    /// The terms link on the Settings screen.
+    static let terms = "doc.text"
 }
 
 nonisolated extension DesignTokens.Layout {

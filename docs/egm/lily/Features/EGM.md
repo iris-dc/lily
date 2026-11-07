@@ -51,11 +51,11 @@ feature runs without a backend behind its mocks, and every feature has a unit-te
   the view models' `WriteGate` and `CreateFlow`.
 - Profile: [`./Profile/EGM.md`](./Profile/EGM.md) - the Profile tab and the caller's backend profile: the name other
   players see (chosen on a card and sheet; the backend's "Player" until the user picks one) and the "About you" bio
-  (a card and sheet of its own) or the guest prompt,
-  language and currency settings, the contact card and Sign out; `ProfileStore` is the one source of that profile over
-  `ProfileRepository` (`GET` and `PUT /api/profile`).
-- Feedback: [`./Feedback/EGM.md`](./Feedback/EGM.md) - the contact form on Profile: a question, feedback or bug report
-  posted once to `POST /api/feedback`.
+  (a card and sheet of its own) with a link into `SettingsScreen` (language, currency, the contact card, the legal
+  links and Sign out; 2026-11-07), or the guest prompt with the language, currency and contact rows inline;
+  `ProfileStore` is the one source of that profile over `ProfileRepository` (`GET` and `PUT /api/profile`).
+- Feedback: [`./Feedback/EGM.md`](./Feedback/EGM.md) - the contact form (reached from Settings when signed in, from
+  the guest profile root otherwise): a question, feedback or bug report posted once to `POST /api/feedback`.
 - Moderation: [`./Moderation/EGM.md`](./Moderation/EGM.md) - the terms-acceptance gate: a sheet presented while a
   signed-in caller owes the current terms, closed only by a recorded acceptance or by signing out; the acceptance
   write lives in `MeStore` (Groups `State`), the legal URLs in `AppConfig.Moderation`.

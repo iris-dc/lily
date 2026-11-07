@@ -5,8 +5,9 @@ Source: `lily/Features/Profile/`
 ## Overview
 
 The Profile tab and the caller's backend profile. The tab shows the signed-in user (the name other players see and the
-bio under it, each with the card that edits it, and the account's email) or the guest prompt with Sign in, the language
-and currency settings as dropdown cards, the contact card and Sign out. The display name and the bio are what the
+bio under it, each with the card that edits it, and the account's email) with a link row into Settings (the language
+and currency dropdown cards, the contact card, the privacy and terms links and Sign out), or the guest prompt with
+Sign in and the language, currency and contact rows inline (a guest has no Settings screen; 2026-11-07). The display name and the bio are what the
 backend shows to others and the user writes them here: every profile starts as the backend's default name ("Player",
 `AppConfig.DisplayName.backendDefault`) with no bio until a write through `PUT /api/profile` (the name or the bio, one
 field per request); nothing is derived from the email, since identity stays with Cognito. No source files live at this
@@ -27,6 +28,7 @@ level; the six subdirectories below hold them.
   signed-in session when Profile opens, replaced by a rename or a bio write, cleared with the session.
 - ViewModels: [./ViewModels/EGM.md](./ViewModels/EGM.md) - `ProfileFieldViewModel<Draft>`, the editors' shared
   `DraftSubmitting` model over the store, as `DisplayNameViewModel` and `AboutViewModel`.
-- Views: [./Views/EGM.md](./Views/EGM.md) - `ProfileView` (the profile's name or the guest prompt, Sign in and Sign
-  out, feedback gated behind an account), `DisplayNameRow` and `DisplayNameSheet`, `AboutRow` and `AboutSheet`,
-  `LanguageRow` and `CurrencyRow` over the shared `SettingsChoiceRow` popover card.
+- Views: [./Views/EGM.md](./Views/EGM.md) - `ProfileView` (the profile's name or the guest prompt, Sign in, a guest's
+  feedback gated behind an account), `SettingsScreen` (pushed from the signed-in root: language, currency, contact,
+  the legal links, Sign out), `DisplayNameRow` and `DisplayNameSheet`, `AboutRow` and `AboutSheet`, `LanguageRow` and
+  `CurrencyRow` over the shared `SettingsChoiceRow` popover card.

@@ -37,7 +37,7 @@ use the generated `Color.lily*` asset symbols.
   (glass circles); `lilyFloatingActionButton()` = `lilyIconButton(controlSize: .extraLarge)`;
   `lilyTextButton(font: Font = LilyTheme.Fonts.button, color: Color = .lilyInk, minHeight: CGFloat = DesignTokens.Layout.controlHeight)`
   applies `LilyTextButtonStyle(font:color:minHeight:)`, a `ButtonStyle` for text-only actions ("See all", Reset, the
-  sign-in form's text actions, the terms' links and Sign out, a poll's footer); `lilyToolbarTextButton()` is
+  sign-in form's text actions, the terms' links and Sign out, Settings' Sign out, a poll's footer); `lilyToolbarTextButton()` is
   `.tint(Color.lilyInk)` for a plain text item in an iOS 26 toolbar (Cancel, Done, Send, Edit).
 - Pickers [`lily/Core/UI/Components/PickerModifiers.swift:View.lilyMenuPicker`]: `lilyMenuPicker()` is
   `.pickerStyle(.menu).tint(.secondary)`, the one recipe for a menu picker in a form (the Group and Level rows of the
@@ -107,7 +107,7 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/CaptionedTitle.swift:CaptionedTitle`];
   `SettingsLinkRow(title:, subtitle:, systemImage:, identifier:, action:)` (a whole-card `GlassCard` button with icon,
   title, subtitle cut to `DesignTokens.Layout.settingsSubtitleLines` (2) and chevron, `.buttonStyle(.plain)`,
-  `.lilyHoverable()`; Profile's display name, "About you" and contact rows)
+  `.lilyHoverable()`; Profile's display name, "About you", Settings-link and contact rows and Settings' legal rows)
   [`lily/Core/UI/Components/SettingsLinkRow.swift:SettingsLinkRow`];
   `EntriesBar(fillRatio: Double, text: String, isFull: = false, isNearlyFull: = false, showsTrack: = true)` with
   `init(event: SportEvent)` (the track only while `event.playerLimit.hasCapacity`) and `init(tournament: Tournament)`

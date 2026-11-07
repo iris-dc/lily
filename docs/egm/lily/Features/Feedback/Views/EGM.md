@@ -4,7 +4,8 @@ Source: `lily/Features/Feedback/Views/`
 
 ## Overview
 
-Two views. `FeedbackRow` is the tappable card on Profile that opens the form: a `SettingsLinkRow`
+Two views. `FeedbackRow` is the tappable card that opens the form (on Settings when signed in, inline on a guest's
+profile root since 2026-11-07): a `SettingsLinkRow`
 (`lily/Core/UI/Components`) given its copy and symbol, deferring everything to an injected closure. `FeedbackSheet` is the contact form: a `NavigationStack` with a segmented
 `FeedbackKind` picker, a multi-line message field, a reply-email field with validation hints and the environment
 summary in its footers, a Cancel/Send toolbar that becomes Done once the message was sent, its own error popup

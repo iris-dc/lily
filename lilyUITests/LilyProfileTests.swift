@@ -1,10 +1,11 @@
 import XCTest
 
-/// The contact form on Profile: a guest is sent to sign in first, a user picks what the message is about, writes it
-/// and is thanked; the mock accepts the send, so no backend is needed. The currency row: a pick changes the
-/// currency the create form's price and the filter's cap are typed in. The display name: a new account starts as the
-/// backend's "Player" and chooses a name on the card; the "About you" card writes the bio. And Sign out: it returns to
-/// the landing and forgets the session.
+/// The rows behind the profile root. The contact form (on Settings once signed in; a guest's inline row signs them in
+/// first): a user picks what the message is about, writes it and is thanked; the mock accepts the send, so no backend
+/// is needed. The currency row on Settings: a pick changes the currency the create form's price and the filter's cap
+/// are typed in. The display name: a new account starts as the backend's "Player" and chooses a name on the card; the
+/// "About you" card writes the bio. And Sign out, at the end of Settings: it returns to the landing and forgets the
+/// session.
 final class LilyProfileTests: LilyUITestCase {
     /// The symbol the en_US simulator shows for złoty is the code itself; a Polish device shows "zł".
     private static let zlotySymbols: Set<String> = ["PLN", "zł"]
@@ -14,6 +15,7 @@ final class LilyProfileTests: LilyUITestCase {
         tapSignInWithApple()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
         openProfileTab()
+        openSettings()
 
         let picker = app.buttons["profile-currency"]
         XCTAssertTrue(picker.waitForExistence(timeout: 5))
@@ -51,8 +53,10 @@ final class LilyProfileTests: LilyUITestCase {
         let apple = app.buttons["Continue with Apple"]
         XCTAssertTrue(apple.waitForExistence(timeout: 5), "a guest is offered to sign in first")
         apple.tap()
-        XCTAssertTrue(app.buttons["Sign out"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["profile-settings"].waitForExistence(timeout: 10), "the signed-in root offers Settings")
 
+        openSettings()
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "the contact row lives on Settings now")
         row.tap()
         XCTAssertTrue(app.navigationBars["Contact us"].waitForExistence(timeout: 5))
         let send = app.buttons["feedback-submit"]
@@ -68,7 +72,7 @@ final class LilyProfileTests: LilyUITestCase {
 
         XCTAssertTrue(app.staticTexts["Thanks for writing"].waitForExistence(timeout: 5))
         app.buttons["feedback-done"].tap()
-        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
     }
 
     /// A new account's public name is the backend's default until the user picks one: the card says so, the sheet saves
@@ -122,15 +126,16 @@ final class LilyProfileTests: LilyUITestCase {
                       "the card shows what was written: \(card.label)")
     }
 
-    /// Sign out on Profile returns to the landing and forgets the session: the next way in is a guest's.
+    /// Sign out at the end of Settings returns to the landing and forgets the session: the next way in is a guest's.
     @MainActor
     func testSigningOutReturnsToTheLanding() {
         tapSignInWithApple()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
         openProfileTab()
         XCTAssertTrue(app.staticTexts["apple@example.com"].waitForExistence(timeout: 5))
+        openSettings()
 
-        tapAfterScrolling(app.buttons["Sign out"])
+        tapAfterScrolling(app.buttons["settings-sign-out"])
         let enter = app.buttons["Explore events"]
         XCTAssertTrue(enter.waitForExistence(timeout: 10), "a sign-out returns to the landing")
         XCTAssertTrue(app.tabBars.firstMatch.waitForNonExistence(timeout: 5), "the shell's bar goes once the landing covers it")

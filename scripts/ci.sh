@@ -23,7 +23,7 @@ UI_SHARDS=(
   "LilyChatTests LilyProfileTests LilyDiscoverTests"
   "LilyTournamentTests LilySignInTests LilyStateTests"
   "LilyEventEditTests LilyRosterTests LilyLanguageTests"
-  "LilySmokeTests LilyGroupsTests LilyPeopleTests"
+  "LilySmokeTests LilyGroupsTests LilyPeopleTests LilySettingsTests"
 )
 RESULTS_DIR="${RESULTS_DIR:-build/results}"
 DERIVED_DATA="${DERIVED_DATA:-build/DerivedData}"

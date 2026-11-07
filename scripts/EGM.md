@@ -50,7 +50,7 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
   `error:|/lily/.*: warning:|Test Suite .* (passed|failed)|Test Case .* (passed|failed)|Executed|Test case .* (passed|failed)|\*\* .* (SUCCEEDED|FAILED) \*\*`).
 - `UI_SHARDS` (`scripts/ci.sh:UI_SHARDS`), four entries: 1 `LilyChatTests LilyProfileTests LilyDiscoverTests`;
   2 `LilyTournamentTests LilySignInTests LilyStateTests`; 3 `LilyEventEditTests LilyRosterTests LilyLanguageTests`;
-  4 `LilySmokeTests LilyGroupsTests LilyPeopleTests`.
+  4 `LilySmokeTests LilyGroupsTests LilyPeopleTests LilySettingsTests`.
 - Functions: `pick_device <family> <preferred>` (last available device matching `preferred`, else the family's last),
   `device_name <udid>`, `destination_udid <destination>`, `show_xcode_version`, `resolve_iphone_destination`
   (prefers `iPhone 17 Pro (`), `resolve_ipad_destination` (prefers `iPad Pro 13-inch`), `warm_up_simulator <udid>`,

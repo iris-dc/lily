@@ -160,12 +160,13 @@ lily/
                  ProfileFieldDraft, what the two editors' drafts share), remote and mock implementations, Models (Profile with
                  its bio, ProfileUpdateRequest with one field per request, DisplayNameDraft and AboutDraft with their issues),
                  State (ProfileStore: the caller's name and bio, loaded once per session, cleared with it), ViewModels
-                 (ProfileFieldViewModel<Draft>, as DisplayNameViewModel and AboutViewModel), Views (ProfileView, DisplayNameRow
+                 (ProfileFieldViewModel<Draft>, as DisplayNameViewModel and AboutViewModel), Views (ProfileView, SettingsScreen (the pushed
+                 settings: language, currency, contact, the legal links, Sign out; 2026-11-07), DisplayNameRow
                  and DisplayNameSheet, AboutRow and AboutSheet, the Language and Currency rows, SettingsChoiceRow (the popover
-                 card the Language and Currency rows share)) (updated 2026-11-04)
+                 card the Language and Currency rows share)) (updated 2026-11-07)
     Feedback/    The contact form: Models (FeedbackKind, FeedbackDraft with its issues and the one payload builder,
                  FeedbackEnvironment: app version, OS version, device model, language), FeedbackRepository interface, remote
-                 (POST /api/feedback) and mock implementations, FeedbackViewModel, Views (FeedbackRow on Profile, FeedbackSheet)
+                 (POST /api/feedback) and mock implementations, FeedbackViewModel, Views (FeedbackRow on Settings and the guest profile, FeedbackSheet)
     Moderation/  The terms sheet: ViewModels (TermsViewModel: shown while a signed-in caller owes the terms, accept, sign out), Views
                  (TermsSheet, presented by AppRootView); the report sheet and the moderation repository stay under Groups
     Groups/      Groups, invites, the account and moderation: Models (SportGroup with GroupKind and Counterpart (a direct
@@ -286,7 +287,7 @@ lilyUITests/     LilyUITestCase (launch + the primitives) + LilyUITestCase+Scree
                  + LilyUITestCase+Elements (element primitives: text, scroll-and-tap, predicate wait, confirmation taps; 2026-11-02)
                  + MockIDs (the fixture row ids, 2026-11-02), LilySmokeTests, LilySignInTests,
                  LilyGroupsTests (+ Helpers), LilyChatTests (+ Attachments, + Composer, + Polls, + Rows, + Viewer), LilyPeopleTests, LilyEventEditTests, LilyLanguageTests,
-                 LilyTournamentTests (+ Helpers), LilyDiscoverTests, LilyProfileTests, LilyRosterTests, LilyStateTests, LilyIPadTests: end-to-end
+                 LilyTournamentTests (+ Helpers), LilyDiscoverTests, LilyProfileTests, LilySettingsTests, LilyRosterTests, LilyStateTests, LilyIPadTests: end-to-end
                  walks against the real app in a simulator
 scripts/         ci.sh, the single entry point for lint, build and tests; l10n-check.py, the catalog-against-code and InfoPlist check it runs,
                  and test_l10n_check.py, that checker's unittest suite, run first; make-app-icon.swift, the icon renderer
