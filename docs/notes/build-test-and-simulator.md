@@ -75,3 +75,16 @@ To run on the mock auth service, launch with `-mock-auth`; add `-mock-auth-fail`
   14 to 20 pt apart, so a pin's hit area overlaps its neighbours' and a tap on one stacked pin lands on the pin drawn
   above it. A test that must select a particular stack pinches in on the map and pans the spot clear first, then taps
   (found by the 2026-11-06 design round's scratch flow over a seven-event stack).
+- **Production holds a realistic Gdańsk dataset (2026-11-07, on the user's "clean up test groups, chats, events and
+  create real-looking ones").** The Berlin groups, events, chats and tournaments the earlier seed scripts made, and the
+  test events typed on the phone, were deleted from production (1,312 DynamoDB rows and 30 chat objects in S3; a
+  read-only scan afterwards found none left). Nine groups, 48 upcoming events (some full, some with only the host), chats
+  with photos, polls and pins, four direct conversations and two tournaments replaced them, all around Gdańsk. The seed
+  scripts live outside every repository (`~/lily-seed/gdansk`, with a README). They create everything through the API,
+  then rewrite only timestamps in DynamoDB (messages, joins, accepted invites, the tournaments and their rooms) so the
+  history spans weeks; ids, and so the order, never change. The owner's test accounts now carry real-looking names. To see the data on the simulator, run the Debug
+  build with `-api-base-url https://api.iskra.red` and the device at Gdańsk (`xcrun simctl location <udid> set
+  54.3520,18.6466`); at the default location Explore is empty because of the distance filter. A scratch UI flow that
+  signs in to the real pool reads the account file inside the test, never in a command line, and signs in only when
+  the landing shows: `-reset-session` clears the cached choice, but `restore()` finds the pool's session in the keychain
+  and signs the user back in. The events age out as they start, the last in early December.
