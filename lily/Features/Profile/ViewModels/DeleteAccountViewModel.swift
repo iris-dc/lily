@@ -1,6 +1,19 @@
 import Foundation
 import Observation
 
+/// One row of the pre-deletion summary: the kind names the consequence (and picks the view's mark), the text is the
+/// localized plural line. The always-true messages sentence is the view's own row of the same kind-driven list.
+nonisolated struct DeletionConsequence: Equatable, Identifiable {
+    /// What the row touches; `messages` is the unconditional sentence the view appends itself.
+    enum Kind: Hashable {
+        case groupsTransferring, groupsDeleted, eventsCancelled, entriesWithdrawn, tournamentsCancelled, messages
+    }
+
+    let kind: Kind
+    let text: String
+    var id: Kind { kind }
+}
+
 /// The delete-account flow behind `DeleteAccountSheet` (the deletion contract): the advisory counts summary, the
 /// destructive confirmation's outcome, the locked wait that polls the account read until the deletion landed, and the
 /// one-time acknowledgment whose tap alone ends the session (the relocation contract's teardown order). Anywhere past
@@ -37,19 +50,26 @@ final class DeleteAccountViewModel {
     /// Locked while the deletion runs and on the acknowledgment: past the confirm, the acknowledge tap is the only way out.
     var isLocked: Bool { isDeleting || isDeleted }
 
-    /// One localized plural line per non-zero count, the zero-count lines dropped (the relocation contract's rendering
+    /// One consequence row per non-zero count, the zero-count rows dropped (the relocation contract's rendering
     /// rule); the always-true messages sentence is the view's and renders whatever this answers.
-    var summaryLines: [String] { Self.lines(for: plan) }
+    var summaryRows: [DeletionConsequence] { Self.rows(for: plan) }
 
-    nonisolated static func lines(for plan: DeletionPlan?) -> [String] {
+    nonisolated static func rows(for plan: DeletionPlan?) -> [DeletionConsequence] {
         guard let plan else { return [] }
         typealias Copy = AppBranding.DeleteAccount
-        let counts: [(Int, (Int) -> String)] = [(plan.groupsTransferring, Copy.groupsTransferring),
-                                                (plan.groupsDeleted, Copy.groupsDeleted),
-                                                (plan.eventsCancelled, Copy.eventsCancelled),
-                                                (plan.entriesWithdrawn, Copy.entriesWithdrawn),
-                                                (plan.tournamentsCancelled, Copy.tournamentsCancelled)]
-        return counts.filter { $0.0 > 0 }.map { $0.1($0.0) }
+        return [row(.groupsTransferring, count: plan.groupsTransferring, line: Copy.groupsTransferring),
+                row(.groupsDeleted, count: plan.groupsDeleted, line: Copy.groupsDeleted),
+                row(.eventsCancelled, count: plan.eventsCancelled, line: Copy.eventsCancelled),
+                row(.entriesWithdrawn, count: plan.entriesWithdrawn, line: Copy.entriesWithdrawn),
+                row(.tournamentsCancelled, count: plan.tournamentsCancelled, line: Copy.tournamentsCancelled)]
+            .compactMap { $0 }
+    }
+
+    /// The row of one count, or nothing for zero (the dropped line).
+    nonisolated private static func row(_ kind: DeletionConsequence.Kind,
+                                        count: Int,
+                                        line: (Int) -> String) -> DeletionConsequence? {
+        count > 0 ? DeletionConsequence(kind: kind, text: line(count)) : nil
     }
 
     /// Loads the preview once per presentation; a failure reports the popup and leaves the counts out. Locked or

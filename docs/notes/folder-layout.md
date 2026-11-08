@@ -167,7 +167,8 @@ lily/
                  State (ProfileStore: the caller's name and bio, loaded once per session, cleared with it), ViewModels
                  (ProfileFieldViewModel<Draft>, as DisplayNameViewModel and AboutViewModel; DeleteAccountViewModel, the delete
                  flow's state machine), Views (ProfileView, SettingsScreen (the pushed
-                 settings: language, currency, contact, the legal links, Sign out, Delete account; 2026-11-07), DeleteAccountSheet
+                 settings: language, currency, contact, the legal rows, Sign out, Delete account; 2026-11-07),
+                 PrivacyPolicyScreen (the policy read in place, 2026-11-08), DeleteAccountSheet
                  (the delete flow: summary, destructive confirm, locked wait, one-time acknowledgment), DisplayNameRow
                  and DisplayNameSheet, AboutRow and AboutSheet, the Language and Currency rows, SettingsChoiceRow (the popover
                  card the Language and Currency rows share)) (updated 2026-11-07)

@@ -113,7 +113,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   (reuses the "Done" key) and the five `%lld` plural lines `groupsTransferring(_:)`, `groupsDeleted(_:)`,
   `eventsCancelled(_:)`, `entriesWithdrawn(_:)`, `tournamentsCancelled(_:)`, one per non-zero count of the deletion
   plan), `Moderation`, `Forms` (`close`,
-  `back`, `cancel`), `People`, `Settings`, `Tournaments` (+ `Create`, `Schedule`, `Match`, `Standings`).
+  `back`, `cancel`), `People`, `Privacy` (+ its `Section` and `Paragraph` structs, the data-driven policy;
+  2026-11-08), `Settings`, `Tournaments` (+ `Create`, `Schedule`, `Match`, `Standings`).
 - Representative functions: `Events.spotsLeft(_:)`, `Events.joined(_:of:)`, `Events.Create.capacity(_:needed:)`,
   `Events.Create.name(for: PlayerLimit)`, `Events.Create.message(for: EventDraft.Issue)`, `Events.Create.coordinateText(_:)`,
   `Groups.members(_:)`, `Groups.caption(_:)`, `Groups.Create.message(for: GroupDraft.Issue)`, `Chat.replyingTo(_:)`,
@@ -130,8 +131,17 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - The Settings screen (2026-11-07, `lily/Config/AppBranding+Settings.swift`): `Settings.title` ("Settings", the
   screen's title and its link row on the profile root), `Settings.rowSubtitle` ("Language, currency and your account"),
   `Settings.privacySubtitle` ("How your data is handled") and `Settings.termsSubtitle` ("What you agree to"); the legal
-  rows' titles stay `Moderation.termsLink` / `privacyLink` and their destinations `AppConfig.Moderation.termsURL` /
-  `privacyURL`.
+  rows' titles stay `Moderation.termsLink` / `privacyLink`; the terms row's destination stays
+  `AppConfig.Moderation.termsURL`, and since 2026-11-08 (owner correction) the privacy row pushes the in-app policy
+  below instead of opening `privacyURL`.
+- The in-app privacy policy (2026-11-08, owner correction; `lily/Config/AppBranding+Privacy.swift` and
+  `AppBranding+PrivacyDetails.swift`): `Privacy.updated` (the date line), `Privacy.alsoAt` (the footer naming
+  `AppConfig.Moderation.privacyURL`, which stays the canonical address), and `Privacy.sections` — seven
+  `Privacy.Section`s (`whoWeAre`, `storage`, `residency`, `sharing`, `deletion`, `rights`, `changes`) of
+  `Privacy.Paragraph`s (an optional bold `lead`, a `body`), 33 keys mirroring Laurel's
+  `src/main/resources/pages/privacy.html` section for section and fact for fact — the in-app copy and the served page
+  change together, in the same change. `PrivacyConfigTests` pins the shape and that every key resolves in all seven
+  languages.
 - The one helper every string goes through: `nonisolated func localized(_ key: String.LocalizationValue) -> String`
   (`lily/Core/Localization/Localized.swift:localized`); a `\(count)` interpolation becomes the catalog's `%lld` or `%@`.
 
@@ -147,8 +157,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Typography` (`headlineSize 44`, `headlineTracking -1.8`, `titleTracking -0.5`), `Symbols` (SF Symbol names:
   `home = "house"`, `explore = "binoculars"`, `game = "calendar"`, `profile = "person"`, `groups = "person.3"`,
   `tournament = "trophy"`, ...), `MessageArrival` (`+Groups.swift`), `TabBar.symbolWeight: UIImage.SymbolWeight = .light`
-  and `Layout.profileCornerSize` 36 (the corner profile button's circle, 2026-11-07), both in
-  `lily/Config/DesignTokens+Shell.swift`.
+  and `Layout.profileCornerSize` 36 (the corner profile button's circle, 2026-11-07) with
+  `Layout.profileCornerCapsuleInset` 10 (the hidden capsule's content inset the circle backs out of, owner
+  correction 2026-11-08), all in `lily/Config/DesignTokens+Shell.swift`.
 - Sport marks and the map's cards (`lily/Config/DesignTokens+SportMarks.swift`, 2026-11-06): `Layout.sportGlyphFraction
   0.46`, `sportMarkGlowRadius 4`, `sportMarkRimWidth 0.5`, `chipMarkSize 16`, `mapCardMarkSize 44`,
   `mapCardMeterWidth 28`, `mapCardTitleLines 2`, `mapCardListFade 56`, `mapCardVisibleShare 0.01` (any sliver of a
@@ -160,9 +171,16 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   many-events panel, instead of a second glass); `Symbols.moreBelow = "chevron.down"`
   (`lily/Config/DesignTokens+SportMarks.swift:DesignTokens.Layout`). The Settings screen's glyphs (2026-11-07,
   `lily/Config/DesignTokens+Settings.swift`): `Symbols.settings = "gearshape"` (the profile root's link row),
-  `Symbols.privacy = "lock.shield"` and `Symbols.terms = "doc.text"` (the legal rows), beside that file's dropdown tokens.
+  `Symbols.privacy = "lock.shield"` and `Symbols.terms = "doc.text"` (the legal rows), beside that file's dropdown tokens;
+  `Spacing.accountActions` 0 joined it 2026-11-08 (owner correction): Sign out and Delete account stack flush
+  at the settings list's end, with `Spacing.accountActionsFoldClearance` 16 padding the group's top on regular
+  layouts alone, so the iPad form sheet's fold lands on blank slack, never mid-glyph (the same day's follow-up).
   The deleted-account mark (2026-11-07, `lily/Config/DesignTokens+Profile.swift`): `Symbols.deletedUser = "person.slash"`,
-  drawn by `Tombstone` beside the localized "Deleted user" name. The cancellation notice's mark (2026-11-08,
+  drawn by `Tombstone` beside the localized "Deleted user" name; the delete summary's consequence marks joined that
+  file 2026-11-08 (owner correction, the styled consequences list): `Symbols.deletionGroupsTransferring = "person.2"`,
+  `deletionGroupsDeleted = "person.2.slash"`, `deletionEventsCancelled = "calendar"`, `deletionEntriesWithdrawn =
+  "trophy"`, `deletionTournamentsCancelled = "trophy.fill"` (filled: the organizer's own, told from the entered),
+  `deletionMessages = "bubble.left"` — `DeleteAccountSheet`'s rows, the accent on the mark. The cancellation notice's mark (2026-11-08,
   `lily/Config/DesignTokens+Inbox.swift`): `Symbols.eventCancelled = "calendar.badge.exclamationmark"`. In `DesignTokens.swift`,
   `Layout.mapCardListMaxHeight` is 400 (about three and a half of the two-row cards; 352, about five one-row cards,
   until 2026-11-06) beside `mapSelectedCardWidth 340` and `pressedCardScale 0.97`.
@@ -180,7 +198,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   +Profile (`profile-corner` and `profile-sheet` — the corner control on every tab root and the profile sheet's root
   container, 2026-11-07 — `profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
   `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-settings`, `settings-sign-out`,
-  `settings-privacy`, `settings-terms`, and the delete flow's `settings-delete-account`, `terms-delete-account`,
+  `settings-privacy`, `settings-terms`, `settings-privacy-policy` (the pushed policy screen, 2026-11-08), and the
+  delete flow's `settings-delete-account`, `terms-delete-account`,
   `delete-account-confirm`, `delete-account-cancel`, `delete-account-acknowledge`; 2026-11-07), +Currency, +Layout, +Landing (`intro-pager`), +Localization.
 - Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `createPlaceSuggestion(_ index: Int)`
   (`create-place-suggestion-<index>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,

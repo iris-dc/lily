@@ -27,3 +27,14 @@ nonisolated extension DesignTokens.Layout {
     /// on an iPad's readable column.
     static let dropdownMaxWidth: CGFloat = 400
 }
+
+nonisolated extension DesignTokens.Spacing {
+    /// Sign out and Delete account stack flush at the settings list's end (owner correction 2026-11-08): each label
+    /// already carries the 44 pt hit area, whose slack holds the pair visually apart while they read as one group.
+    static let accountActions: CGFloat = 0
+    /// Regular layouts only: the iPad's fixed-height form sheet folds ~6 pt into the red Delete account label at
+    /// rest, cutting it mid-glyph. This clearance above the group moves the label wholly below the fold (Sign out
+    /// keeps ~12 pt above it), so the fold cuts blank hit-area slack and a scroll reveals the pair, as before the
+    /// 2026-11-08 flush correction. Compact layouts take none and stay pixel-identical.
+    static let accountActionsFoldClearance: CGFloat = 16
+}

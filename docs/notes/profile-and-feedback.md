@@ -118,3 +118,21 @@
   corner button itself draws from the `ProfileStore` snapshot and costs no request. The delete flow's teardown (Pinned
   16) holds unchanged: the acknowledge tap ends the session, `sessionDidEnd()` clears `isProfilePresented`, and the
   whole presentation chain collapses over the landing (`LilySettingsTests` delete walk, unchanged but for the helper).
+- **Owner correction (2026-11-08): Sign out and Delete account close ranks.** The settings list's two ending text
+  actions sat a full `xl` apart on top of their 44 pt hit areas and read as unrelated; they now stack flush
+  (`DesignTokens.Spacing.accountActions`, 0) as one account-actions group. Details and the corner-circle alignment
+  correction of the same day: `design-and-ui.md` (2026-11-08); the relocation contract records the supersession.
+- **Owner correction (2026-11-08): the privacy policy reads in the app.** The Settings privacy row stops opening the
+  browser: it pushes `PrivacyPolicyScreen` (`settings-privacy-policy`) on the profile sheet's stack — the date line,
+  the seven sections of Laurel's `/privacy` page as `AppBranding.Privacy` data (`Section`/`Paragraph`, 33 catalog keys
+  in the seven languages; the native read joins the recorded debt, `localization.md` 2026-11-08), and a footer naming
+  `AppConfig.Moderation.privacyURL`, which stays the canonical address App Store Connect points at — the in-app copy
+  and Laurel's page must change together, in the same change (recorded in the Config and Profile Views contracts).
+  The terms row keeps its browser link (the owner asked only about privacy). Like Settings, the screen takes the
+  language as an input and re-renders in place. Tests: `PrivacyConfigTests` (the shape, every key resolving in all
+  seven languages, the footer's address); `LilySettingsTests.testThePrivacyRowPushesThePolicyInApp` (shard 4
+  unchanged). Shots (en/ru, top and scrolled): `reviews/2026-11-07-profile-lifecycle-brainstorm/corrections1-shots/`.
+- **Owner correction (2026-11-08): the delete summary's consequences became marked glyph rows** —
+  `DeletionConsequence` rows from `DeleteAccountViewModel.rows(for:)` (the view appends the always-true messages
+  row itself); presentation only, the pinned rendering rule stands. The design round, the glyph choices and the
+  rejected inset-card variant: `design-and-ui.md` (2026-11-08).

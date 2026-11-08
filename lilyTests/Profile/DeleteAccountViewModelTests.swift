@@ -38,25 +38,26 @@ struct DeleteAccountViewModelTests {
         makeModel(repository: MockMeRepository(identity: FakeIdentityProvider(currentUserID: "u-1"), logger: logger))
     }
 
-    @Test func theSummaryDropsZeroCountLinesAndNothingElse() {
+    @Test func theSummaryDropsZeroCountRowsAndNothingElse() {
+        typealias Copy = AppBranding.DeleteAccount
         let plan = DeletionPlan(groupsTransferring: 2,
                                 groupsDeleted: 1,
                                 eventsCancelled: 1,
                                 entriesWithdrawn: 3,
                                 tournamentsCancelled: 0)
-        let lines = DeleteAccountViewModel.lines(for: plan)
-        #expect(lines == [AppBranding.DeleteAccount.groupsTransferring(2),
-                          AppBranding.DeleteAccount.groupsDeleted(1),
-                          AppBranding.DeleteAccount.eventsCancelled(1),
-                          AppBranding.DeleteAccount.entriesWithdrawn(3)],
-                "one line per non-zero count, in the plan's order, the zero dropped")
-        #expect(DeleteAccountViewModel.lines(for: nil).isEmpty)
+        let rows = DeleteAccountViewModel.rows(for: plan)
+        #expect(rows == [DeletionConsequence(kind: .groupsTransferring, text: Copy.groupsTransferring(2)),
+                         DeletionConsequence(kind: .groupsDeleted, text: Copy.groupsDeleted(1)),
+                         DeletionConsequence(kind: .eventsCancelled, text: Copy.eventsCancelled(1)),
+                         DeletionConsequence(kind: .entriesWithdrawn, text: Copy.entriesWithdrawn(3))],
+                "one row per non-zero count, in the plan's order, the zero dropped")
+        #expect(DeleteAccountViewModel.rows(for: nil).isEmpty)
         let empty = DeletionPlan(groupsTransferring: 0,
                                  groupsDeleted: 0,
                                  eventsCancelled: 0,
                                  entriesWithdrawn: 0,
                                  tournamentsCancelled: 0)
-        #expect(DeleteAccountViewModel.lines(for: empty).isEmpty,
+        #expect(DeleteAccountViewModel.rows(for: empty).isEmpty,
                 "an account owning nothing keeps only the view's always-true messages sentence")
     }
 
@@ -66,7 +67,7 @@ struct DeleteAccountViewModelTests {
         await viewModel.prepare()
 
         #expect(viewModel.plan?.groupsTransferring == 2 && !viewModel.isLoadingPlan)
-        #expect(viewModel.summaryLines.count == 4, "the mock plan's zero count is dropped")
+        #expect(viewModel.summaryRows.count == 4, "the mock plan's zero count is dropped")
     }
 
     @Test func aFailedPlanLoadReportsThePopupAndBlocksNothing() async {
@@ -77,7 +78,7 @@ struct DeleteAccountViewModelTests {
         await viewModel.prepare()
 
         #expect(errorCenter.current?.error == .deletionPlanUnavailable)
-        #expect(viewModel.plan == nil && viewModel.summaryLines.isEmpty)
+        #expect(viewModel.plan == nil && viewModel.summaryRows.isEmpty)
         #expect(!viewModel.isLocked, "a failed preview never stands between the caller and erasure")
         #expect(logger.messages(in: .auth, at: .warning).contains { $0.contains("Deletion plan load failed") })
     }

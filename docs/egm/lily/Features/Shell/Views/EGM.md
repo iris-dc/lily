@@ -44,7 +44,11 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `EventListView` (Explore's root), `ChatsView` and `ChatsSplitView`'s sidebar column (the relocation contract §3).
   The rendering was settled by the 2026-11-08 design round: the hidden capsule and the 36 pt circle kept as rendered
   (`docs/notes/design-and-ui.md` 2026-11-08; shots under
-  `reviews/2026-11-07-profile-lifecycle-brainstorm/slice4-shots/design-round/`).
+  `reviews/2026-11-07-profile-lifecycle-brainstorm/slice4-shots/design-round/`). An owner correction the same day
+  backs the circle out of the hidden capsule's 10 pt content inset (`.padding(.leading,
+  -DesignTokens.Layout.profileCornerCapsuleInset)`), so it takes the capsule's own leading edge — flush with the
+  large titles' 16 pt margin on the iPhone, the system capsule's own edge on the iPad (`design-and-ui.md` 2026-11-08,
+  owner corrections; shots under `reviews/2026-11-07-profile-lifecycle-brainstorm/corrections1-shots/`).
 - `[HomeTab.swift:HomeTab]`: `NavigationStack(path: $navigation.homePath) { HomeView(dependencies:) }` with
   `.animatesTabBar(depth: navigation.homePath.count)`.
 - `[HomeView.swift:HomeView]`: `dependencies`; `events = dependencies.lists.homeEvents`, `tournaments =

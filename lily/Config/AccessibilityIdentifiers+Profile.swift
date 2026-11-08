@@ -21,6 +21,8 @@ nonisolated extension AccessibilityIdentifiers {
     static let settingsSignOut = "settings-sign-out"
     static let settingsPrivacy = "settings-privacy"
     static let settingsTerms = "settings-terms"
+    /// The pushed privacy policy screen (its content container; the sections are plain text).
+    static let settingsPrivacyPolicy = "settings-privacy-policy"
     /// The delete-account flow: the Settings row, the terms sheet's entry and the sheet's three actions.
     static let settingsDeleteAccount = "settings-delete-account"
     static let termsDeleteAccount = "terms-delete-account"

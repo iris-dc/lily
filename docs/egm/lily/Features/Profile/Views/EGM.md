@@ -6,8 +6,8 @@ Source: `lily/Features/Profile/Views/`
 
 The profile sheet (`MainTabView` presents it from the corner button on every tab root since 2026-11-07; before that a
 tab): the caller's name and bio as the backend holds them (each with the card and sheet that change it) with
-a link row into `SettingsScreen` (the language and currency dropdown cards, the contact (feedback) card, the privacy and
-terms links and Sign out), or the guest prompt with Sign in and the language, currency and contact rows inline — a guest
+a link row into `SettingsScreen` (the language and currency dropdown cards, the contact (feedback) card, the privacy
+policy pushed in place (2026-11-08), the terms link and Sign out), or the guest prompt with Sign in and the language, currency and contact rows inline — a guest
 gets no Settings screen (2026-11-07). `ProfileView` and the pushed `SettingsScreen` re-render in place when the language
 changes rather than being rebuilt like the other tabs, whose rebuild would crossfade over the pick made here.
 `SettingsChoiceRow` is the shared dropdown card the language and currency rows are built from.
@@ -32,20 +32,37 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   root (2026-11-07), title `AppBranding.Settings.title`, a `ScrollView` that scrolls only past the screen
   (`.scrollBounceBehavior(.basedOnSize)`): `LanguageRow`, `CurrencyRow`, `FeedbackRow` presenting
   `FeedbackSheet(viewModel:errorCenter:)` over `dependencies.makeFeedbackViewModel()`, two `SettingsLinkRow` legal
-  links — `AppBranding.Moderation.privacyLink` / `AppBranding.Settings.privacySubtitle` / `DesignTokens.Symbols.privacy`
-  / `AccessibilityIdentifiers.settingsPrivacy` opening `AppConfig.Moderation.privacyURL`, and `Moderation.termsLink` /
-  `Settings.termsSubtitle` / `Symbols.terms` / `settingsTerms` opening `termsURL`, both through
-  `@Environment(\.openURL)` — Sign out, a full-width `lilyTextButton()` text action (identifier
+  rows — `AppBranding.Moderation.privacyLink` / `AppBranding.Settings.privacySubtitle` / `DesignTokens.Symbols.privacy`
+  / `AccessibilityIdentifiers.settingsPrivacy` pushing `PrivacyPolicyScreen(language:)` through
+  `navigationDestination(isPresented:)` (owner correction 2026-11-08; before that it opened the browser), and
+  `Moderation.termsLink` / `Settings.termsSubtitle` / `Symbols.terms` / `settingsTerms` opening
+  `AppConfig.Moderation.termsURL` through `@Environment(\.openURL)` — Sign out, a full-width `lilyTextButton()` text action (identifier
   `AccessibilityIdentifiers.settingsSignOut`) moved off the profile header, and Delete account (2026-11-07), a
   full-width destructive `lilyTextButton(color: .red)` (identifier `settingsDeleteAccount`) presenting
-  `DeleteAccountSheet(viewModel: dependencies.makeDeleteAccountViewModel(), errorCenter:)` in a sheet.
+  `DeleteAccountSheet(viewModel: dependencies.makeDeleteAccountViewModel(), errorCenter:)` in a sheet. The two sit
+  flush in their own `VStack(spacing: DesignTokens.Spacing.accountActions)` (0), one account-actions group whose
+  44 pt hit areas' slack keeps the labels apart (owner correction 2026-11-08, `design-and-ui.md`); on regular
+  layouts alone the group takes `Spacing.accountActionsFoldClearance` (16) of top padding, so the iPad form sheet's
+  fold cuts blank slack instead of the red label mid-glyph (compact stays pixel-identical; `design-and-ui.md`
+  2026-11-08 follow-up).
+- `PrivacyPolicyScreen(language: AppLanguage)` `[lily/Features/Profile/Views/PrivacyPolicyScreen.swift:PrivacyPolicyScreen]`
+  (2026-11-08, owner correction): the policy read in place, pushed from Settings' privacy row — a `ContentScreen`
+  `ScrollView` under the inline title `AppBranding.Moderation.privacyLink`, identifier
+  `AccessibilityIdentifiers.settingsPrivacyPolicy` (`.contain` first): the `AppBranding.Privacy.updated` date line
+  (`.subheadline` `.secondary`), every `AppBranding.Privacy.sections` section as a `LilyTheme.Fonts.cardTitle` heading
+  over its paragraphs (`.subheadline` ink; a semibold lead runs into its body where the served page has one), and the
+  `AppBranding.Privacy.alsoAt` footer (`.footnote` `.secondary`) naming `AppConfig.Moderation.privacyURL`; the column
+  is `readableColumn()`. Like `SettingsScreen` it takes the language as an input, so a pick re-renders the push in place.
 - `DeleteAccountSheet(viewModel: DeleteAccountViewModel, errorCenter: ErrorCenter)`
   `[lily/Features/Profile/Views/DeleteAccountSheet.swift:DeleteAccountSheet]` (2026-11-07, the deletion contract):
   a `NavigationStack` titled `AppBranding.DeleteAccount.title` under
   `.lilyFormSheet(errorCenter:lockedWhile: viewModel.isLocked)` and `.presentationDetents([.large])`, presented from
-  Settings and from `TermsSheet`. Three states: `summary` (the view model's plural lines — zero counts dropped — then
-  `DeleteAccount.approximate` only when lines show, the always-true `DeleteAccount.messagesSentence`, the
-  `irreversible` note, and the prominent confirm button `deleteAccountConfirm` opening a `confirmationDialog`
+  Settings and from `TermsSheet`. Three states: `summary` (the view model's `summaryRows` — zero counts dropped —
+  styled as marked rows, 2026-11-08 owner correction: each `DeletionConsequence` a `Label` in `IconColumnLabelStyle`,
+  the mark `DesignTokens.Symbols.deletion…` in `Color.lilyAccent` and `accessibilityHidden` beside ink text; the view
+  appends the always-true `DeleteAccount.messagesSentence` as the same list's last row (`consequences`); then
+  `DeleteAccount.approximate` only when rows show and the `irreversible` note, both `.subheadline` `.secondary`
+  (`footnotes`); and the prominent confirm button `deleteAccountConfirm` opening a `confirmationDialog`
   (`dialogTitle` / destructive `confirmAction` / `irreversible` as the message) whose destructive action runs
   `viewModel.confirmDeletion()`); `deleting` (a spinner with `DeleteAccount.deleting`); `acknowledgment` (an
   `EmptyStateView` with `Tombstone.symbol`, `deletedTitle`, `deletedMessage` and the prominent `acknowledgeAction`
@@ -99,6 +116,11 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   object) are given `.id(language)` because a closure input is not a change SwiftUI counts, so they would keep the old
   copy `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`; the Settings link row and the legal rows take
   their copy as plain inputs, which the language re-render recomputes.
+- The in-app policy mirrors the page Laurel serves at `AppConfig.Moderation.privacyURL` — the canonical address App
+  Store Connect points at — section for section and fact for fact (`AppBranding.Privacy`,
+  `lily/Config/AppBranding+Privacy.swift`): a change to either side lands in both in the same change; the terms row
+  keeps its browser link on purpose (the owner asked only about privacy, 2026-11-08)
+  `[lily/Features/Profile/Views/PrivacyPolicyScreen.swift:PrivacyPolicyScreen]`.
 - The profile loads lazily, once per session, from the `.task(id: session.state.user?.id) { await
   profile.loadIfNeeded() }` on `ProfileView`'s `NavigationStack` — the sheet's content, so it runs only while the
   sheet is up and a user who never opens the profile costs no request (the corner button reads the snapshot alone);
@@ -133,8 +155,9 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   `dependencies.makeDisplayNameViewModel()` and `AboutSheet` from `dependencies.makeAboutViewModel()`
   `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`; `FeedbackSheet` from
   `dependencies.makeFeedbackViewModel()` on Settings `[lily/Features/Profile/Views/SettingsScreen.swift:SettingsScreen]`.
-- `openURL` into the browser from the legal rows (`AppConfig.Moderation.privacyURL`, `termsURL`)
-  `[lily/Features/Profile/Views/SettingsScreen.swift:legalRow]`.
+- `openURL` into the browser from the terms row alone (`AppConfig.Moderation.termsURL`)
+  `[lily/Features/Profile/Views/SettingsScreen.swift:termsRow]`; the privacy row pushes `PrivacyPolicyScreen` in place
+  instead (2026-11-08) `[lily/Features/Profile/Views/SettingsScreen.swift:privacyRow]`.
 - `ProfileStore.loadIfNeeded()` (`GET /api/profile` once per session) from the `.task(id: session.state.user?.id) {
   await profile.loadIfNeeded() }` on `ProfileView`'s `NavigationStack`
   `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`.
@@ -147,7 +170,9 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
 
 - Run: `./scripts/ci.sh unit` (`lilyTests/Preferences` covers the choice stores behind these rows, `lilyTests/Profile`
   the store, the editors' model, `SettingsConfigTests` — the Settings glyphs and copy keys, the delete copy and the
-  launch-argument literal — and `DeleteAccountViewModelTests`); `./scripts/ci.sh ui`
+  launch-argument literal — `PrivacyConfigTests` — the policy's seven-section shape, every key resolving in all
+  seven languages, the footer naming the served address — and `DeleteAccountViewModelTests`); `./scripts/ci.sh ui`
   (`LilyProfileTests` walks the display name and the "About you" cards and sheets; `LilySettingsTests` the Settings
-  push, the guest root, a language pick inside Settings, Sign out, the delete flow end to end on the mock backend and
+  push, the guest root, a language pick inside Settings, the privacy policy pushed in place with its first section rendered, Sign out,
+  the delete flow end to end on the mock backend and
   the deleted sender's tombstone under `-mock-deleted-user`).

@@ -7,7 +7,7 @@ nonisolated extension AppBranding {
     }
 
     /// Copy of the delete-account flow: the Settings row and the sheet it presents — the summary (one plural line per
-    /// non-zero count, composed by `DeleteAccountViewModel.lines(for:)`, with the always-true messages sentence), the
+    /// non-zero count, composed by `DeleteAccountViewModel.rows(for:)`, with the always-true messages sentence), the
     /// destructive confirmation, the locked wait and the one-time acknowledgment.
     enum DeleteAccount {
         static var title: String { localized("Delete account") }

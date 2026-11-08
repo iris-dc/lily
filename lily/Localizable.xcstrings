@@ -31504,6 +31504,1326 @@
           }
         }
       }
+    },
+    "Last updated 8 November 2026.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последнее обновление: 8 ноября 2026 года."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Última actualización: 8 de noviembre de 2026."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière mise à jour : 8 novembre 2026."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Останнє оновлення: 8 листопада 2026 року."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ostatnia aktualizacja: 8 listopada 2026 r."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Última atualização: 8 de novembro de 2026."
+          }
+        }
+      }
+    },
+    "Who we are": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Кто мы"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quiénes somos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qui nous sommes"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Хто ми"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kim jesteśmy"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quem somos"
+          }
+        }
+      }
+    },
+    "iskra is a meetup app for sport events: you find and join games near you, run groups with their own chat, and enter or organise tournaments. The service is operated by its developer. For every matter in this policy, including requests about your data, contact support@iskra.red.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra — приложение для спортивных встреч: вы находите игры рядом и присоединяетесь к ним, ведёте группы с собственным чатом, участвуете в турнирах и организуете их. Сервисом управляет его разработчик. По любым вопросам этой политики, включая запросы о ваших данных, пишите на support@iskra.red."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra es una app de quedadas deportivas: encuentras partidos cerca de ti y te unes a ellos, llevas grupos con su propio chat y participas en torneos o los organizas. El servicio lo gestiona su desarrollador. Para cualquier asunto de esta política, incluidas las solicitudes sobre tus datos, escribe a support@iskra.red."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra est une app de rencontres sportives : vous trouvez des matchs près de chez vous et les rejoignez, animez des groupes avec leur propre chat, et participez à des tournois ou en organisez. Le service est exploité par son développeur. Pour toute question relative à cette politique, y compris les demandes concernant vos données, écrivez à support@iskra.red."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra — застосунок для спортивних зустрічей: ви знаходите ігри поруч і долучаєтеся до них, ведете групи з власним чатом, берете участь у турнірах і організовуєте їх. Сервісом керує його розробник. З будь-яких питань цієї політики, включно із запитами про ваші дані, пишіть на support@iskra.red."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra to aplikacja do sportowych spotkań: znajdujesz mecze w pobliżu i dołączasz do nich, prowadzisz grupy z własnym czatem, bierzesz udział w turniejach i je organizujesz. Serwisem zarządza jego deweloper. We wszystkich sprawach tej polityki, w tym wnioskach dotyczących Twoich danych, napisz na support@iskra.red."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A iskra é uma app de encontros desportivos: encontra jogos perto de si e junta-se a eles, gere grupos com o seu próprio chat e participa em torneios ou organiza-os. O serviço é operado pelo seu programador. Para qualquer assunto desta política, incluindo pedidos sobre os seus dados, contacte support@iskra.red."
+          }
+        }
+      }
+    },
+    "What we store, and why": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что мы храним и зачем"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué guardamos y por qué"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce que nous conservons, et pourquoi"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Що ми зберігаємо і навіщо"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Co przechowujemy i dlaczego"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O que guardamos e porquê"
+          }
+        }
+      }
+    },
+    "Your account.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваш аккаунт."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu cuenta."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre compte."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваш акаунт."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Twoje konto."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A sua conta."
+          }
+        }
+      }
+    },
+    "Your email address and password are held by our sign-in provider, AWS Cognito; our own servers see only your account identifier, never your password. We store the display name you choose and, if you write one, a short \"about you\" text; the list of users you block; the terms version you accepted and when; and per-sport counters derived from what you view, join and host, which help order your feed by relevance. We need this to run your account (performance of our contract with you), and all of it is deleted with your account.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваш адрес электронной почты и пароль хранятся у нашего провайдера входа, AWS Cognito; наши собственные серверы видят только идентификатор вашего аккаунта и никогда — пароль. Мы храним выбранное вами отображаемое имя и, если вы его написали, короткий текст «о себе»; список заблокированных вами пользователей; версию условий, которую вы приняли, и когда; а также счётчики по видам спорта, выведенные из того, что вы просматриваете, к чему присоединяетесь и что проводите, — они помогают упорядочивать вашу ленту по релевантности. Это нужно нам для работы вашего аккаунта (исполнение нашего договора с вами), и всё это удаляется вместе с аккаунтом."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu dirección de correo y tu contraseña las guarda nuestro proveedor de inicio de sesión, AWS Cognito; nuestros propios servidores solo ven el identificador de tu cuenta, nunca tu contraseña. Guardamos el nombre visible que eliges y, si lo escribes, un breve texto «sobre ti»; la lista de usuarios que bloqueas; la versión de las condiciones que aceptaste y cuándo; y contadores por deporte derivados de lo que ves, a lo que te unes y lo que organizas, que ayudan a ordenar tu feed por relevancia. Lo necesitamos para gestionar tu cuenta (ejecución de nuestro contrato contigo), y todo ello se elimina con tu cuenta."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre adresse e-mail et votre mot de passe sont conservés par notre fournisseur de connexion, AWS Cognito ; nos propres serveurs ne voient que l’identifiant de votre compte, jamais votre mot de passe. Nous conservons le nom d’affichage que vous choisissez et, si vous en écrivez un, un court texte « à propos de vous » ; la liste des utilisateurs que vous bloquez ; la version des conditions que vous avez acceptée et quand ; ainsi que des compteurs par sport dérivés de ce que vous consultez, rejoignez et organisez, qui aident à classer votre fil par pertinence. Nous en avons besoin pour faire fonctionner votre compte (exécution de notre contrat avec vous), et tout cela est supprimé avec votre compte."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваша електронна адреса та пароль зберігаються в нашого провайдера входу, AWS Cognito; наші власні сервери бачать лише ідентифікатор вашого акаунта й ніколи — пароль. Ми зберігаємо вибране вами видиме ім’я і, якщо ви його написали, короткий текст «про себе»; список заблокованих вами користувачів; версію умов, яку ви прийняли, і коли; а також лічильники за видами спорту, виведені з того, що ви переглядаєте, до чого долучаєтеся і що проводите, — вони допомагають упорядковувати вашу стрічку за релевантністю. Це потрібно нам для роботи вашого акаунта (виконання нашого договору з вами), і все це видаляється разом з акаунтом."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Twój adres e-mail i hasło przechowuje nasz dostawca logowania, AWS Cognito; nasze własne serwery widzą tylko identyfikator Twojego konta, nigdy hasło. Przechowujemy wybraną przez Ciebie nazwę i, jeśli go napiszesz, krótki tekst „o Tobie”; listę zablokowanych przez Ciebie użytkowników; wersję zaakceptowanych przez Ciebie warunków i moment akceptacji; oraz liczniki według dyscyplin, wyprowadzone z tego, co przeglądasz, do czego dołączasz i co prowadzisz — pomagają one porządkować Twój feed według trafności. Potrzebujemy tego do obsługi Twojego konta (wykonanie naszej umowy z Tobą), a wszystko to jest usuwane razem z kontem."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O seu endereço de e-mail e a sua palavra-passe ficam guardados no nosso fornecedor de início de sessão, a AWS Cognito; os nossos próprios servidores veem apenas o identificador da sua conta, nunca a palavra-passe. Guardamos o nome que escolhe mostrar e, se o escrever, um breve texto «sobre si»; a lista de utilizadores que bloqueia; a versão dos termos que aceitou e quando; e contadores por desporto derivados do que vê, do que se junta e do que organiza, que ajudam a ordenar o seu feed por relevância. Precisamos disto para gerir a sua conta (execução do nosso contrato consigo), e tudo isto é apagado com a sua conta."
+          }
+        }
+      }
+    },
+    "What you create.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что вы создаёте."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que creas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce que vous créez."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Що ви створюєте."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To, co tworzysz."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O que cria."
+          }
+        }
+      }
+    },
+    "Groups, events, tournament entries and results, chat messages and their attachments are stored so the people you share them with can see them. Chat messages are kept at most 365 days, and attachments (pictures, videos and files) are removed from storage at most 365 days after upload. Notices in your in-app inbox are kept 90 days, and records of your participation in an event are kept 365 days after the event's start.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Группы, события, турнирные заявки и результаты, сообщения чатов и их вложения хранятся, чтобы их видели те, с кем вы ими делитесь. Сообщения чатов хранятся не более 365 дней, а вложения (изображения, видео и файлы) удаляются из хранилища не позднее чем через 365 дней после загрузки. Уведомления во входящих внутри приложения хранятся 90 дней, а записи о вашем участии в событии — 365 дней после его начала."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los grupos, los eventos, las inscripciones y resultados de torneos, los mensajes de chat y sus adjuntos se guardan para que puedan verlos las personas con las que los compartes. Los mensajes de chat se conservan como máximo 365 días, y los adjuntos (imágenes, vídeos y archivos) se eliminan del almacenamiento como máximo 365 días después de subirlos. Los avisos de tu bandeja dentro de la app se conservan 90 días, y los registros de tu participación en un evento, 365 días después de su inicio."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les groupes, les événements, les inscriptions et résultats de tournois, les messages de chat et leurs pièces jointes sont conservés pour que les personnes avec qui vous les partagez puissent les voir. Les messages de chat sont conservés au plus 365 jours, et les pièces jointes (images, vidéos et fichiers) sont supprimées du stockage au plus 365 jours après leur envoi. Les notifications de votre boîte de réception dans l’app sont conservées 90 jours, et les traces de votre participation à un événement, 365 jours après son début."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Групи, події, турнірні заявки та результати, повідомлення чатів і їхні вкладення зберігаються, щоб їх бачили ті, з ким ви ними ділитеся. Повідомлення чатів зберігаються щонайбільше 365 днів, а вкладення (зображення, відео та файли) видаляються зі сховища щонайпізніше через 365 днів після завантаження. Сповіщення у вхідних у застосунку зберігаються 90 днів, а записи про вашу участь у події — 365 днів після її початку."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grupy, wydarzenia, zgłoszenia i wyniki turniejów, wiadomości czatów i ich załączniki są przechowywane po to, aby widziały je osoby, którym je udostępniasz. Wiadomości czatów są przechowywane najwyżej 365 dni, a załączniki (zdjęcia, filmy i pliki) są usuwane z magazynu najpóźniej 365 dni po przesłaniu. Powiadomienia w skrzynce w aplikacji są przechowywane 90 dni, a zapisy Twojego udziału w wydarzeniu — 365 dni od jego rozpoczęcia."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os grupos, os eventos, as inscrições e resultados de torneios, as mensagens de chat e os seus anexos são guardados para que as pessoas com quem os partilha os possam ver. As mensagens de chat são mantidas no máximo 365 dias, e os anexos (imagens, vídeos e ficheiros) são removidos do armazenamento no máximo 365 dias após o envio. Os avisos na sua caixa de entrada na app são mantidos 90 dias, e os registos da sua participação num evento, 365 dias após o seu início."
+          }
+        }
+      }
+    },
+    "Your devices.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваши устройства."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus dispositivos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos appareils."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваші пристрої."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Twoje urządzenia."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os seus dispositivos."
+          }
+        }
+      }
+    },
+    "If you allow notifications, we store your device's push token, together with its platform, the app's version and the language it shows, so notifications arrive and are worded in your language. A device's record is removed 180 days after its last registration — the app refreshes the registration while you stay signed in — and all your devices are deleted when you delete your account.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если вы разрешили уведомления, мы храним push-токен вашего устройства вместе с его платформой, версией приложения и языком, на котором оно показывается, чтобы уведомления доставлялись и были сформулированы на вашем языке. Запись об устройстве удаляется через 180 дней после последней регистрации — приложение обновляет регистрацию, пока вы остаётесь в системе, — а все ваши устройства удаляются при удалении аккаунта."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si permites las notificaciones, guardamos el token push de tu dispositivo, junto con su plataforma, la versión de la app y el idioma en que se muestra, para que las notificaciones lleguen y estén redactadas en tu idioma. El registro de un dispositivo se elimina 180 días después de su última inscripción — la app renueva la inscripción mientras sigas con la sesión iniciada — y todos tus dispositivos se eliminan cuando eliminas tu cuenta."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si vous autorisez les notifications, nous conservons le jeton push de votre appareil, avec sa plateforme, la version de l’app et la langue qu’elle affiche, pour que les notifications arrivent et soient rédigées dans votre langue. L’enregistrement d’un appareil est supprimé 180 jours après sa dernière inscription — l’app renouvelle l’inscription tant que vous restez connecté — et tous vos appareils sont supprimés quand vous supprimez votre compte."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Якщо ви дозволили сповіщення, ми зберігаємо push-токен вашого пристрою разом із його платформою, версією застосунку та мовою, якою він показується, щоб сповіщення надходили й були сформульовані вашою мовою. Запис про пристрій видаляється через 180 днів після останньої реєстрації — застосунок оновлює реєстрацію, поки ви залишаєтеся в системі, — а всі ваші пристрої видаляються разом з акаунтом."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeśli zezwolisz na powiadomienia, przechowujemy token push Twojego urządzenia wraz z jego platformą, wersją aplikacji i językiem, w którym jest wyświetlana, aby powiadomienia docierały i były sformułowane w Twoim języku. Wpis urządzenia jest usuwany 180 dni po jego ostatniej rejestracji — aplikacja odnawia rejestrację, dopóki sesja pozostaje aktywna — a wszystkie Twoje urządzenia są usuwane wraz z usunięciem konta."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se permitir notificações, guardamos o token push do seu dispositivo, juntamente com a sua plataforma, a versão da app e o idioma em que ela se mostra, para que as notificações cheguem e venham redigidas no seu idioma. O registo de um dispositivo é removido 180 dias após a última inscrição — a app renova a inscrição enquanto mantiver sessão iniciada — e todos os seus dispositivos são apagados quando apaga a sua conta."
+          }
+        }
+      }
+    },
+    "Usage statistics.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Статистика использования."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estadísticas de uso."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistiques d’utilisation."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Статистика використання."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statystyki użycia."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estatísticas de utilização."
+          }
+        }
+      }
+    },
+    "We record which events, groups and tournaments you view, create, join and leave, when you open a chat, run a search, view a list, send, accept or decline an invite, start a conversation or record a match result, and the shape of the filters you use — identifiers and categories tied to your account identifier, never coordinates, message text or names. These records order what you see by relevance and show us how the app is used (our legitimate interest in running a useful service); they expire at most 180 days after they are recorded.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мы записываем, какие события, группы и турниры вы просматриваете, создаёте, к каким присоединяетесь и какие покидаете, когда вы открываете чат, выполняете поиск, просматриваете список, отправляете, принимаете или отклоняете приглашение, начинаете переписку или вносите результат матча, а также форму используемых вами фильтров — идентификаторы и категории, привязанные к идентификатору вашего аккаунта, но никогда не координаты, не текст сообщений и не имена. Эти записи упорядочивают то, что вы видите, по релевантности и показывают нам, как используется приложение (наш законный интерес в работе полезного сервиса); они истекают не позднее чем через 180 дней после записи."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registramos qué eventos, grupos y torneos ves, creas, a cuáles te unes y cuáles dejas, cuándo abres un chat, haces una búsqueda, ves una lista, envías, aceptas o rechazas una invitación, inicias una conversación o anotas el resultado de un partido, y la forma de los filtros que usas — identificadores y categorías ligados al identificador de tu cuenta, nunca coordenadas, texto de mensajes ni nombres. Estos registros ordenan lo que ves por relevancia y nos muestran cómo se usa la app (nuestro interés legítimo en mantener un servicio útil); caducan como máximo 180 días después de registrarse."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous enregistrons quels événements, groupes et tournois vous consultez, créez, rejoignez et quittez, quand vous ouvrez un chat, lancez une recherche, consultez une liste, envoyez, acceptez ou refusez une invitation, démarrez une conversation ou saisissez le résultat d’un match, ainsi que la forme des filtres que vous utilisez — des identifiants et des catégories liés à l’identifiant de votre compte, jamais de coordonnées, de texte de messages ni de noms. Ces enregistrements classent ce que vous voyez par pertinence et nous montrent comment l’app est utilisée (notre intérêt légitime à faire tourner un service utile) ; ils expirent au plus 180 jours après leur enregistrement."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ми записуємо, які події, групи й турніри ви переглядаєте, створюєте, до яких долучаєтеся і які залишаєте, коли ви відкриваєте чат, виконуєте пошук, переглядаєте список, надсилаєте, приймаєте чи відхиляєте запрошення, починаєте переписку або вносите результат матчу, а також форму фільтрів, якими користуєтеся, — ідентифікатори й категорії, прив’язані до ідентифікатора вашого акаунта, але ніколи не координати, не текст повідомлень і не імена. Ці записи впорядковують те, що ви бачите, за релевантністю і показують нам, як використовується застосунок (наш законний інтерес у роботі корисного сервісу); вони спливають щонайпізніше через 180 днів після запису."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapisujemy, które wydarzenia, grupy i turnieje przeglądasz, tworzysz, do których dołączasz i które opuszczasz, kiedy otwierasz czat, wyszukujesz, przeglądasz listę, wysyłasz, przyjmujesz lub odrzucasz zaproszenie, zaczynasz rozmowę albo wpisujesz wynik meczu, a także kształt używanych przez Ciebie filtrów — identyfikatory i kategorie powiązane z identyfikatorem Twojego konta, nigdy współrzędne, treść wiadomości ani nazwy. Te zapisy porządkują to, co widzisz, według trafności i pokazują nam, jak używana jest aplikacja (nasz prawnie uzasadniony interes w prowadzeniu użytecznego serwisu); wygasają najpóźniej 180 dni po zapisaniu."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registamos que eventos, grupos e torneios vê, cria, a quais se junta e quais deixa, quando abre um chat, faz uma pesquisa, vê uma lista, envia, aceita ou recusa um convite, inicia uma conversa ou regista o resultado de uma partida, e a forma dos filtros que usa — identificadores e categorias ligados ao identificador da sua conta, nunca coordenadas, texto de mensagens ou nomes. Estes registos ordenam o que vê por relevância e mostram-nos como a app é usada (o nosso interesse legítimo em manter um serviço útil); expiram no máximo 180 dias depois de registados."
+          }
+        }
+      }
+    },
+    "Feedback.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обратная связь."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comentarios."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retours."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зворотний зв’язок."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opinie."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feedback."
+          }
+        }
+      }
+    },
+    "A message you send through the contact form, with the reply email you may choose to include, is kept at most 365 days.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сообщение, отправленное через форму обратной связи, вместе с адресом для ответа, который вы можете указать, хранится не более 365 дней."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un mensaje que envías mediante el formulario de contacto, con el correo de respuesta que decidas incluir, se conserva como máximo 365 días."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un message envoyé via le formulaire de contact, avec l’adresse de réponse que vous choisissez d’y joindre, est conservé au plus 365 jours."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Повідомлення, надіслане через форму зворотного зв’язку, разом з адресою для відповіді, яку ви можете вказати, зберігається щонайбільше 365 днів."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wiadomość wysłana przez formularz kontaktowy, wraz z adresem do odpowiedzi, który możesz podać, jest przechowywana najwyżej 365 dni."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma mensagem enviada através do formulário de contacto, com o e-mail de resposta que decidir incluir, é mantida no máximo 365 dias."
+          }
+        }
+      }
+    },
+    "Moderation.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модерация."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modération."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модерація."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderacja."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderação."
+          }
+        }
+      }
+    },
+    "An abuse report, including a copy of the reported content so it can be reviewed even after a deletion, is kept 180 days. Moderator actions, and every event and account deletion, are written to an audit log that holds identifiers and short labels of what changed — an event's title, a group's or tournament's name, a status, a reason — never message text or email addresses, and has no expiry, because it is what holds moderators accountable (our legitimate interest in keeping the service safe).": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Жалоба на нарушение, включая копию контента, на который пожаловались, чтобы её можно было рассмотреть даже после удаления, хранится 180 дней. Действия модераторов, а также каждое удаление события и аккаунта записываются в журнал аудита, который содержит идентификаторы и короткие подписи того, что изменилось, — название события, имя группы или турнира, статус, причину — но никогда не текст сообщений и не адреса электронной почты; срока хранения у него нет, потому что именно он обеспечивает подотчётность модераторов (наш законный интерес в безопасности сервиса)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una denuncia de abuso, incluida una copia del contenido denunciado para poder revisarla incluso tras una eliminación, se conserva 180 días. Las acciones de los moderadores, y cada eliminación de un evento o de una cuenta, se escriben en un registro de auditoría que contiene identificadores y etiquetas breves de lo que cambió — el título de un evento, el nombre de un grupo o torneo, un estado, un motivo — nunca texto de mensajes ni direcciones de correo, y no caduca, porque es lo que hace responsables a los moderadores (nuestro interés legítimo en mantener el servicio seguro)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un signalement d’abus, y compris une copie du contenu signalé pour pouvoir l’examiner même après une suppression, est conservé 180 jours. Les actions des modérateurs, ainsi que chaque suppression d’événement ou de compte, sont écrites dans un journal d’audit qui contient des identifiants et de courts libellés de ce qui a changé — le titre d’un événement, le nom d’un groupe ou d’un tournoi, un statut, un motif — jamais de texte de messages ni d’adresses e-mail, et n’expire pas, car c’est lui qui rend les modérateurs responsables de leurs actes (notre intérêt légitime à garder le service sûr)."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скарга на порушення, включно з копією контенту, на який поскаржилися, щоб її можна було розглянути навіть після видалення, зберігається 180 днів. Дії модераторів, а також кожне видалення події чи акаунта записуються в журнал аудиту, який містить ідентифікатори й короткі підписи того, що змінилося, — назву події, ім’я групи чи турніру, статус, причину — але ніколи не текст повідомлень і не електронні адреси; строку зберігання він не має, бо саме він забезпечує підзвітність модераторів (наш законний інтерес у безпеці сервісу)."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zgłoszenie nadużycia, wraz z kopią zgłoszonej treści, aby można je było rozpatrzyć nawet po usunięciu, jest przechowywane 180 dni. Działania moderatorów oraz każde usunięcie wydarzenia i konta są zapisywane w dzienniku audytu, który zawiera identyfikatory i krótkie etykiety tego, co się zmieniło — tytuł wydarzenia, nazwę grupy lub turnieju, status, powód — nigdy treść wiadomości ani adresy e-mail, i nie wygasa, bo to on zapewnia rozliczalność moderatorów (nasz prawnie uzasadniony interes w utrzymaniu bezpiecznego serwisu)."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma denúncia de abuso, incluindo uma cópia do conteúdo denunciado para poder ser analisada mesmo após uma eliminação, é mantida 180 dias. As ações dos moderadores, e cada eliminação de um evento ou de uma conta, são escritas num registo de auditoria que guarda identificadores e etiquetas curtas do que mudou — o título de um evento, o nome de um grupo ou torneio, um estado, um motivo — nunca texto de mensagens ou endereços de e-mail, e não expira, porque é o que responsabiliza os moderadores (o nosso interesse legítimo em manter o serviço seguro)."
+          }
+        }
+      }
+    },
+    "Approximate position.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Примерное местоположение."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posición aproximada."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Position approximative."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Приблизне розташування."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Przybliżona lokalizacja."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posição aproximada."
+          }
+        }
+      }
+    },
+    "Only if you grant the app location access, it sends your position, rounded to about one kilometre, with requests for nearby events so they can be ordered by distance, and a coarse home area derived from it is kept for the same ordering. We never store your exact position or any movement history. You can withdraw this at any time in your device's settings (consent).": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только если вы дали приложению доступ к геопозиции, оно отправляет ваше местоположение, округлённое примерно до одного километра, вместе с запросами событий поблизости, чтобы их можно было упорядочить по расстоянию; грубая домашняя область, выведенная из него, хранится для того же упорядочивания. Мы никогда не храним ваше точное местоположение или историю перемещений. Вы можете отозвать доступ в любой момент в настройках устройства (согласие)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo si concedes a la app acceso a la ubicación, esta envía tu posición, redondeada a aproximadamente un kilómetro, con las solicitudes de eventos cercanos para poder ordenarlos por distancia, y se conserva una zona de residencia aproximada derivada de ella para el mismo orden. Nunca guardamos tu posición exacta ni ningún historial de movimientos. Puedes retirarlo en cualquier momento en los ajustes de tu dispositivo (consentimiento)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seulement si vous accordez à l’app l’accès à la localisation, elle envoie votre position, arrondie à environ un kilomètre, avec les requêtes d’événements à proximité pour qu’ils puissent être classés par distance, et une zone de résidence approximative qui en est dérivée est conservée pour le même classement. Nous ne conservons jamais votre position exacte ni aucun historique de déplacements. Vous pouvez retirer cet accès à tout moment dans les réglages de votre appareil (consentement)."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Лише якщо ви надали застосунку доступ до геопозиції, він надсилає ваше розташування, округлене приблизно до одного кілометра, разом із запитами подій поблизу, щоб їх можна було впорядкувати за відстанню; груба домашня область, виведена з нього, зберігається для того ж упорядкування. Ми ніколи не зберігаємо ваше точне розташування чи історію переміщень. Ви можете відкликати доступ будь-коли в налаштуваннях пристрою (згода)."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tylko jeśli przyznasz aplikacji dostęp do lokalizacji, wysyła ona Twoją pozycję, zaokrągloną do około jednego kilometra, wraz z zapytaniami o wydarzenia w pobliżu, aby można je było uporządkować według odległości, a wyprowadzony z niej przybliżony obszar domowy jest przechowywany do tego samego porządkowania. Nigdy nie przechowujemy Twojej dokładnej pozycji ani historii przemieszczania się. Możesz to wycofać w każdej chwili w ustawieniach urządzenia (zgoda)."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Só se conceder à app acesso à localização é que ela envia a sua posição, arredondada a cerca de um quilómetro, com os pedidos de eventos próximos, para que possam ser ordenados por distância, e uma zona de residência aproximada derivada dela é mantida para a mesma ordenação. Nunca guardamos a sua posição exata nem qualquer histórico de movimentos. Pode retirar este acesso a qualquer momento nas definições do seu dispositivo (consentimento)."
+          }
+        }
+      }
+    },
+    "Technical logs.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Технические журналы."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registros técnicos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Journaux techniques."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Технічні журнали."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dzienniki techniczne."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registos técnicos."
+          }
+        }
+      }
+    },
+    "Our servers keep operational logs for debugging and abuse protection; they can include your account identifier and, when a request is refused for being too frequent, your network address. They are deleted after about two weeks.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Наши серверы ведут эксплуатационные журналы для отладки и защиты от злоупотреблений; в них могут попадать идентификатор вашего аккаунта и, когда запрос отклонён как слишком частый, ваш сетевой адрес. Они удаляются примерно через две недели."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuestros servidores mantienen registros operativos para la depuración y la protección frente a abusos; pueden incluir el identificador de tu cuenta y, cuando una solicitud se rechaza por demasiado frecuente, tu dirección de red. Se eliminan al cabo de unas dos semanas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nos serveurs tiennent des journaux opérationnels pour le débogage et la protection contre les abus ; ils peuvent contenir l’identifiant de votre compte et, quand une requête est refusée pour excès de fréquence, votre adresse réseau. Ils sont supprimés au bout d’environ deux semaines."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Наші сервери ведуть експлуатаційні журнали для налагодження й захисту від зловживань; до них можуть потрапляти ідентифікатор вашого акаунта і, коли запит відхилено як надто частий, ваша мережева адреса. Вони видаляються приблизно за два тижні."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nasze serwery prowadzą dzienniki operacyjne do debugowania i ochrony przed nadużyciami; mogą one zawierać identyfikator Twojego konta oraz, gdy żądanie zostaje odrzucone jako zbyt częste, Twój adres sieciowy. Są usuwane po około dwóch tygodniach."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os nossos servidores mantêm registos operacionais para depuração e proteção contra abusos; podem incluir o identificador da sua conta e, quando um pedido é recusado por ser demasiado frequente, o seu endereço de rede. São apagados ao fim de cerca de duas semanas."
+          }
+        }
+      }
+    },
+    "Where your data lives": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Где находятся ваши данные"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dónde se guardan tus datos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Où se trouvent vos données"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Де зберігаються ваші дані"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gdzie znajdują się Twoje dane"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onde ficam os seus dados"
+          }
+        }
+      }
+    },
+    "Everything is stored in the European Union, in Amazon Web Services' Frankfurt region (eu-central-1): your sign-in identity in AWS Cognito, everything else in AWS databases and storage in the same region. One exception leaves the EU: when Apple delivers a push notification, your device's token and the notification's content pass through Apple's systems, which may process them outside the EU; that transfer is covered by standard contractual clauses in our agreement with Apple.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Всё хранится в Европейском союзе, во франкфуртском регионе Amazon Web Services (eu-central-1): ваши данные входа — в AWS Cognito, всё остальное — в базах данных и хранилище AWS в том же регионе. Одно исключение покидает ЕС: когда Apple доставляет push-уведомление, токен вашего устройства и содержимое уведомления проходят через системы Apple, которые могут обрабатывать их за пределами ЕС; эта передача покрыта стандартными договорными положениями в нашем соглашении с Apple."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todo se guarda en la Unión Europea, en la región de Fráncfort de Amazon Web Services (eu-central-1): tu identidad de inicio de sesión en AWS Cognito, y todo lo demás en bases de datos y almacenamiento de AWS en la misma región. Una excepción sale de la UE: cuando Apple entrega una notificación push, el token de tu dispositivo y el contenido de la notificación pasan por los sistemas de Apple, que pueden procesarlos fuera de la UE; esa transferencia está cubierta por cláusulas contractuales tipo en nuestro acuerdo con Apple."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout est stocké dans l’Union européenne, dans la région de Francfort d’Amazon Web Services (eu-central-1) : votre identité de connexion dans AWS Cognito, tout le reste dans des bases de données et un stockage AWS de la même région. Une exception quitte l’UE : quand Apple remet une notification push, le jeton de votre appareil et le contenu de la notification passent par les systèmes d’Apple, qui peuvent les traiter hors de l’UE ; ce transfert est couvert par des clauses contractuelles types dans notre accord avec Apple."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Усе зберігається в Європейському союзі, у франкфуртському регіоні Amazon Web Services (eu-central-1): ваші дані входу — в AWS Cognito, усе інше — в базах даних і сховищі AWS у тому ж регіоні. Один виняток залишає ЄС: коли Apple доставляє push-сповіщення, токен вашого пристрою і вміст сповіщення проходять через системи Apple, які можуть обробляти їх поза ЄС; цю передачу покривають стандартні договірні положення в нашій угоді з Apple."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wszystko jest przechowywane w Unii Europejskiej, we frankfurckim regionie Amazon Web Services (eu-central-1): Twoja tożsamość logowania w AWS Cognito, a wszystko inne w bazach danych i magazynie AWS w tym samym regionie. Jeden wyjątek opuszcza UE: gdy Apple dostarcza powiadomienie push, token Twojego urządzenia i treść powiadomienia przechodzą przez systemy Apple, które mogą je przetwarzać poza UE; ten transfer jest objęty standardowymi klauzulami umownymi w naszej umowie z Apple."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tudo fica guardado na União Europeia, na região de Frankfurt da Amazon Web Services (eu-central-1): a sua identidade de início de sessão na AWS Cognito, e tudo o resto em bases de dados e armazenamento da AWS na mesma região. Uma exceção sai da UE: quando a Apple entrega uma notificação push, o token do seu dispositivo e o conteúdo da notificação passam pelos sistemas da Apple, que os podem processar fora da UE; essa transferência está coberta por cláusulas contratuais-tipo no nosso acordo com a Apple."
+          }
+        }
+      }
+    },
+    "Who we share data with": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "С кем мы делимся данными"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Con quién compartimos datos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avec qui nous partageons des données"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "З ким ми ділимося даними"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komu udostępniamy dane"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Com quem partilhamos dados"
+          }
+        }
+      }
+    },
+    "We do not sell your data, and the app contains no third-party advertising or tracking. We use two processors: Amazon Web Services, which hosts the service, and Apple, which delivers push notifications and provides the app's maps — the map screens load Apple Maps, and when you set an event's place, the place name you type is sent from your device to Apple's Maps service to find it. What you post is visible to other users according to where you post it: a public group or event is visible to anyone, a private group only to its members.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мы не продаём ваши данные, и в приложении нет сторонней рекламы или трекинга. Мы используем двух обработчиков: Amazon Web Services, на котором размещён сервис, и Apple, которая доставляет push-уведомления и предоставляет карты приложения — экраны карт загружают Apple Maps, а когда вы задаёте место события, введённое вами название места отправляется с вашего устройства в сервис Apple Maps для поиска. То, что вы публикуете, видно другим пользователям в зависимости от того, где вы это публикуете: открытая группа или событие видны всем, закрытая группа — только её участникам."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No vendemos tus datos, y la app no contiene publicidad ni rastreo de terceros. Usamos dos encargados del tratamiento: Amazon Web Services, que aloja el servicio, y Apple, que entrega las notificaciones push y proporciona los mapas de la app — las pantallas de mapa cargan Apple Maps, y cuando fijas el lugar de un evento, el nombre del lugar que escribes se envía desde tu dispositivo al servicio de mapas de Apple para encontrarlo. Lo que publicas es visible para otros usuarios según dónde lo publiques: un grupo o evento público lo ve cualquiera; un grupo privado, solo sus miembros."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous ne vendons pas vos données, et l’app ne contient ni publicité ni pistage tiers. Nous utilisons deux sous-traitants : Amazon Web Services, qui héberge le service, et Apple, qui remet les notifications push et fournit les cartes de l’app — les écrans de carte chargent Apple Maps, et quand vous définissez le lieu d’un événement, le nom de lieu que vous saisissez est envoyé depuis votre appareil au service de cartes d’Apple pour le trouver. Ce que vous publiez est visible des autres utilisateurs selon l’endroit où vous le publiez : un groupe ou un événement public est visible de tous, un groupe privé seulement de ses membres."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ми не продаємо ваші дані, і в застосунку немає сторонньої реклами чи трекінгу. Ми використовуємо двох обробників: Amazon Web Services, де розміщено сервіс, і Apple, яка доставляє push-сповіщення та надає карти застосунку — екрани карт завантажують Apple Maps, а коли ви задаєте місце події, введена вами назва місця надсилається з вашого пристрою в сервіс карт Apple для пошуку. Те, що ви публікуєте, бачать інші користувачі залежно від того, де ви це публікуєте: відкриту групу чи подію бачить будь-хто, закриту групу — лише її учасники."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nie sprzedajemy Twoich danych, a aplikacja nie zawiera reklam ani śledzenia stron trzecich. Korzystamy z dwóch podmiotów przetwarzających: Amazon Web Services, który hostuje serwis, oraz Apple, które dostarcza powiadomienia push i zapewnia mapy aplikacji — ekrany map ładują Apple Maps, a gdy ustawiasz miejsce wydarzenia, wpisana przez Ciebie nazwa miejsca jest wysyłana z Twojego urządzenia do serwisu map Apple, aby je znaleźć. To, co publikujesz, widzą inni użytkownicy zależnie od tego, gdzie to publikujesz: grupę lub wydarzenie publiczne widzi każdy, grupę prywatną — tylko jej członkowie."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não vendemos os seus dados, e a app não contém publicidade nem rastreio de terceiros. Usamos dois subcontratantes: a Amazon Web Services, que aloja o serviço, e a Apple, que entrega as notificações push e fornece os mapas da app — os ecrãs de mapa carregam o Apple Maps, e quando define o local de um evento, o nome do local que escreve é enviado do seu dispositivo para o serviço de mapas da Apple para o encontrar. O que publica é visível para outros utilizadores conforme onde o publica: um grupo ou evento público é visível para qualquer pessoa, um grupo privado apenas para os seus membros."
+          }
+        }
+      }
+    },
+    "Deleting your account": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удаление аккаунта"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar tu cuenta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer votre compte"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Видалення акаунта"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usuwanie konta"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar a sua conta"
+          }
+        }
+      }
+    },
+    "You can delete your account in the app at any time: Settings → Delete account. It cannot be undone. Your account is disabled and signed out everywhere at once and can never be used again; the erasure then completes in the background, normally within minutes. It deletes your profile (name, about text, preference counters, blocked list, home area) and your notification devices, and removes your sign-in identity (email and password) from the sign-in provider as its final step. Groups you own pass to their longest-standing member or are deleted; upcoming games you host are cancelled and the players notified; your upcoming tournament entries are withdrawn and tournaments you organise are cancelled.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вы можете удалить аккаунт в приложении в любой момент: «Настройки» → «Удалить аккаунт». Это нельзя отменить. Аккаунт сразу отключается и выходит из системы на всех устройствах и больше никогда не может быть использован; затем стирание завершается в фоне, обычно за несколько минут. Удаляются ваш профиль (имя, текст «о себе», счётчики предпочтений, список заблокированных, домашняя область) и ваши устройства для уведомлений, а последним шагом данные входа (адрес и пароль) удаляются у провайдера входа. Группы, которыми вы владеете, переходят участнику с самым долгим стажем или удаляются; предстоящие игры, которые вы проводите, отменяются с уведомлением игроков; ваши предстоящие турнирные заявки отзываются, а турниры, которые вы организуете, отменяются."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puedes eliminar tu cuenta en la app en cualquier momento: Ajustes → Eliminar cuenta. No se puede deshacer. Tu cuenta se desactiva y se cierra la sesión en todas partes a la vez, y no puede volver a usarse nunca; el borrado se completa después en segundo plano, normalmente en minutos. Elimina tu perfil (nombre, texto sobre ti, contadores de preferencias, lista de bloqueados, zona de residencia) y tus dispositivos de notificaciones, y como último paso retira tu identidad de inicio de sesión (correo y contraseña) del proveedor de inicio de sesión. Los grupos que posees pasan a su miembro más antiguo o se eliminan; los partidos próximos que organizas se cancelan y se avisa a los jugadores; tus inscripciones próximas a torneos se retiran y los torneos que organizas se cancelan."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous pouvez supprimer votre compte dans l’app à tout moment : Réglages → Supprimer le compte. C’est irréversible. Votre compte est désactivé et déconnecté partout à la fois et ne peut plus jamais être utilisé ; l’effacement s’achève ensuite en arrière-plan, normalement en quelques minutes. Il supprime votre profil (nom, texte à propos de vous, compteurs de préférences, liste des bloqués, zone de résidence) et vos appareils de notification, et retire en dernier votre identité de connexion (e-mail et mot de passe) du fournisseur de connexion. Les groupes que vous possédez passent à leur membre le plus ancien ou sont supprimés ; les matchs à venir que vous organisez sont annulés et les joueurs prévenus ; vos inscriptions à venir aux tournois sont retirées et les tournois que vous organisez sont annulés."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ви можете видалити акаунт у застосунку будь-коли: «Налаштування» → «Видалити акаунт». Це неможливо скасувати. Акаунт одразу вимикається й виходить із системи всюди та більше ніколи не може бути використаний; стирання потім завершується у фоні, зазвичай за кілька хвилин. Видаляються ваш профіль (ім’я, текст «про себе», лічильники вподобань, список заблокованих, домашня область) і ваші пристрої для сповіщень, а останнім кроком дані входу (адреса й пароль) видаляються в провайдера входу. Групи, якими ви володієте, переходять до учасника з найдовшим стажем або видаляються; майбутні ігри, які ви проводите, скасовуються зі сповіщенням гравців; ваші майбутні турнірні заявки відкликаються, а турніри, які ви організовуєте, скасовуються."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Możesz usunąć konto w aplikacji w każdej chwili: Ustawienia → Usuń konto. Nie da się tego cofnąć. Konto zostaje od razu wyłączone i wylogowane wszędzie naraz i nigdy nie może zostać użyte ponownie; wymazywanie dokańcza się potem w tle, zwykle w kilka minut. Usuwa ono Twój profil (nazwę, tekst o Tobie, liczniki preferencji, listę zablokowanych, obszar domowy) i Twoje urządzenia powiadomień, a na końcu usuwa Twoją tożsamość logowania (e-mail i hasło) u dostawcy logowania. Grupy, które posiadasz, przechodzą na członka z najdłuższym stażem albo są usuwane; nadchodzące mecze, które prowadzisz, są odwoływane z powiadomieniem graczy; Twoje nadchodzące zgłoszenia turniejowe są wycofywane, a turnieje, które organizujesz, są odwoływane."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pode apagar a sua conta na app a qualquer momento: Definições → Apagar conta. Não pode ser desfeito. A sua conta é desativada e a sessão é terminada em todo o lado de uma vez, e nunca mais pode ser usada; o apagamento conclui-se depois em segundo plano, normalmente em minutos. Apaga o seu perfil (nome, texto sobre si, contadores de preferências, lista de bloqueados, zona de residência) e os seus dispositivos de notificações, e remove a sua identidade de início de sessão (e-mail e palavra-passe) do fornecedor de início de sessão como passo final. Os grupos que possui passam para o membro mais antigo ou são apagados; os jogos futuros que organiza são cancelados e os jogadores avisados; as suas inscrições futuras em torneios são retiradas e os torneios que organiza são cancelados."
+          }
+        }
+      }
+    },
+    "Messages you wrote, and games and tournaments you took part in, remain visible to the other participants but are no longer shown with your name: they carry a neutral \"Deleted user\" label or a neutral placeholder name instead. A few traces of your name do survive for a bounded time inside other people's data, where nothing can look them up: a reply or pinned message that quoted one of your messages keeps the quoted name until chat retention removes it (at most 365 days), an invite notice that named you as its sender expires with the recipient's inbox (90 days), and an abuse report's snapshot keeps what it recorded until the report expires (180 days). Everything else runs out its ordinary retention: chat messages and their attachments at most 365 days, inbox notices 90 days, abuse reports 180 days, contact-form messages 365 days — the reply email you attached is removed at deletion, the message itself expires on its schedule — and participation records 365 days after an event's start.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Написанные вами сообщения, а также игры и турниры, в которых вы участвовали, остаются видимыми другим участникам, но больше не показываются с вашим именем: вместо него — нейтральная подпись «Удалённый пользователь» или нейтральное имя-заполнитель. Несколько следов вашего имени сохраняются на ограниченный срок внутри данных других людей, где их ничем нельзя найти: ответ или закреплённое сообщение, цитировавшее ваше, хранит процитированное имя, пока его не удалит срок хранения чата (не более 365 дней); приглашение, называвшее вас отправителем, истекает вместе с входящими получателя (90 дней); снимок в жалобе хранит записанное, пока не истечёт жалоба (180 дней). Всё остальное дорабатывает свой обычный срок хранения: сообщения чатов и их вложения — не более 365 дней, уведомления во входящих — 90 дней, жалобы — 180 дней, сообщения формы обратной связи — 365 дней (указанный вами адрес для ответа удаляется при удалении аккаунта, само сообщение истекает по своему расписанию), записи об участии — 365 дней после начала события."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los mensajes que escribiste, y los partidos y torneos en los que participaste, siguen siendo visibles para los demás participantes pero ya no se muestran con tu nombre: llevan en su lugar una etiqueta neutra «Usuario eliminado» o un nombre de relleno neutro. Algunas huellas de tu nombre sobreviven un tiempo acotado dentro de los datos de otras personas, donde nada puede buscarlas: una respuesta o un mensaje fijado que citaba uno de tus mensajes conserva el nombre citado hasta que la retención del chat lo elimina (como máximo 365 días), un aviso de invitación que te nombraba como remitente caduca con la bandeja del destinatario (90 días), y la instantánea de una denuncia conserva lo que registró hasta que la denuncia caduca (180 días). Todo lo demás agota su retención ordinaria: los mensajes de chat y sus adjuntos, como máximo 365 días; los avisos de la bandeja, 90 días; las denuncias, 180 días; los mensajes del formulario de contacto, 365 días — el correo de respuesta que adjuntaste se elimina al borrar la cuenta, el mensaje caduca según su calendario — y los registros de participación, 365 días después del inicio de un evento."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les messages que vous avez écrits, et les matchs et tournois auxquels vous avez participé, restent visibles des autres participants mais ne portent plus votre nom : ils portent à la place une étiquette neutre « Utilisateur supprimé » ou un nom de substitution neutre. Quelques traces de votre nom survivent un temps borné dans les données d’autres personnes, où rien ne peut les retrouver : une réponse ou un message épinglé qui citait l’un de vos messages garde le nom cité jusqu’à ce que la rétention du chat le supprime (au plus 365 jours), un avis d’invitation qui vous nommait comme expéditeur expire avec la boîte du destinataire (90 jours), et l’instantané d’un signalement garde ce qu’il a enregistré jusqu’à l’expiration du signalement (180 jours). Tout le reste épuise sa rétention ordinaire : les messages de chat et leurs pièces jointes au plus 365 jours, les avis de la boîte 90 jours, les signalements 180 jours, les messages du formulaire de contact 365 jours — l’adresse de réponse que vous aviez jointe est supprimée à la suppression, le message expire selon son calendrier — et les traces de participation 365 jours après le début d’un événement."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Написані вами повідомлення, а також ігри й турніри, у яких ви брали участь, залишаються видимими іншим учасникам, але більше не показуються з вашим ім’ям: замість нього — нейтральний підпис «Видалений користувач» або нейтральне ім’я-заповнювач. Кілька слідів вашого імені зберігаються обмежений час усередині даних інших людей, де їх нічим не знайти: відповідь чи закріплене повідомлення, що цитувало ваше, тримає процитоване ім’я, доки його не прибере строк зберігання чату (щонайбільше 365 днів); запрошення, що називало вас відправником, спливає разом із вхідними отримувача (90 днів); знімок у скарзі тримає записане, доки не спливе скарга (180 днів). Усе інше допрацьовує свій звичайний строк зберігання: повідомлення чатів і їхні вкладення — щонайбільше 365 днів, сповіщення у вхідних — 90 днів, скарги — 180 днів, повідомлення форми зворотного зв’язку — 365 днів (вказана вами адреса для відповіді видаляється під час видалення акаунта, саме повідомлення спливає за своїм розкладом), записи про участь — 365 днів після початку події."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Napisane przez Ciebie wiadomości oraz mecze i turnieje z Twoim udziałem pozostają widoczne dla pozostałych uczestników, ale nie są już pokazywane z Twoją nazwą: noszą zamiast niej neutralną etykietę „Usunięty użytkownik” albo neutralną nazwę zastępczą. Kilka śladów Twojej nazwy przetrwa przez ograniczony czas wewnątrz danych innych osób, gdzie nic nie może ich wyszukać: odpowiedź lub przypięta wiadomość, która cytowała jedną z Twoich wiadomości, zachowuje cytowaną nazwę, aż usunie ją okres przechowywania czatu (najwyżej 365 dni); zawiadomienie o zaproszeniu, które wymieniało Cię jako nadawcę, wygasa wraz ze skrzynką odbiorcy (90 dni); a migawka zgłoszenia zachowuje to, co zapisała, aż zgłoszenie wygaśnie (180 dni). Cała reszta dobiega swojego zwykłego okresu przechowywania: wiadomości czatów i ich załączniki najwyżej 365 dni, powiadomienia skrzynki 90 dni, zgłoszenia 180 dni, wiadomości formularza kontaktowego 365 dni — dołączony przez Ciebie adres do odpowiedzi jest usuwany przy usunięciu konta, sama wiadomość wygasa według swojego harmonogramu — a zapisy udziału 365 dni od rozpoczęcia wydarzenia."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As mensagens que escreveu, e os jogos e torneios em que participou, continuam visíveis para os outros participantes mas deixam de aparecer com o seu nome: passam a ter uma etiqueta neutra «Utilizador eliminado» ou um nome de substituição neutro. Alguns vestígios do seu nome sobrevivem por um tempo limitado dentro dos dados de outras pessoas, onde nada os pode procurar: uma resposta ou mensagem afixada que citava uma das suas mensagens mantém o nome citado até a retenção do chat o remover (no máximo 365 dias), um aviso de convite que o nomeava como remetente expira com a caixa de entrada do destinatário (90 dias), e a cópia de uma denúncia mantém o que registou até a denúncia expirar (180 dias). Tudo o resto esgota a sua retenção normal: mensagens de chat e os seus anexos no máximo 365 dias, avisos da caixa de entrada 90 dias, denúncias 180 dias, mensagens do formulário de contacto 365 dias — o e-mail de resposta que juntou é removido na eliminação, a mensagem expira no seu calendário — e os registos de participação 365 dias após o início de um evento."
+          }
+        }
+      }
+    },
+    "What outlives deletion carries your old account identifier, never your email: the audit log keeps its entries in the identifier-and-short-label form described above, with no expiry, and gains one permanent entry recording that the deletion completed; usage statistics expire at most 180 days after they were recorded; and a minimal identifier-only marker of the completed deletion keeps the deleted account refused for 30 days and then expires.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "То, что переживает удаление, несёт ваш прежний идентификатор аккаунта и никогда — почту: журнал аудита хранит свои записи в описанной выше форме «идентификаторы и короткие подписи», без срока, и получает одну постоянную запись о том, что удаление завершилось; статистика использования истекает не позднее чем через 180 дней после записи; а минимальная отметка о завершённом удалении, содержащая только идентификатор, держит удалённый аккаунт отклонённым 30 дней и затем истекает."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lo que sobrevive a la eliminación lleva tu antiguo identificador de cuenta, nunca tu correo: el registro de auditoría conserva sus entradas en la forma de identificadores y etiquetas breves descrita más arriba, sin caducidad, y gana una entrada permanente que registra que la eliminación se completó; las estadísticas de uso caducan como máximo 180 días después de registrarse; y un marcador mínimo, solo con el identificador, de la eliminación completada mantiene la cuenta eliminada rechazada durante 30 días y luego caduca."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce qui survit à la suppression porte votre ancien identifiant de compte, jamais votre e-mail : le journal d’audit garde ses entrées sous la forme d’identifiants et de courts libellés décrite plus haut, sans expiration, et gagne une entrée permanente notant que la suppression s’est achevée ; les statistiques d’utilisation expirent au plus 180 jours après leur enregistrement ; et un marqueur minimal, réduit à l’identifiant, de la suppression achevée maintient le compte supprimé refusé pendant 30 jours, puis expire."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Те, що переживає видалення, несе ваш колишній ідентифікатор акаунта й ніколи — пошту: журнал аудиту тримає свої записи в описаній вище формі «ідентифікатори й короткі підписи», без строку, і отримує один постійний запис про те, що видалення завершилося; статистика використання спливає щонайпізніше через 180 днів після запису; а мінімальна позначка про завершене видалення, що містить лише ідентифікатор, тримає видалений акаунт відхиленим 30 днів і потім спливає."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To, co przetrwa usunięcie, nosi Twój dawny identyfikator konta, nigdy adres e-mail: dziennik audytu zachowuje swoje wpisy w opisanej wyżej formie identyfikatorów i krótkich etykiet, bez wygaśnięcia, i zyskuje jeden trwały wpis odnotowujący, że usunięcie się zakończyło; statystyki użycia wygasają najpóźniej 180 dni po zapisaniu; a minimalny, złożony z samego identyfikatora znacznik zakończonego usunięcia utrzymuje usunięte konto odrzucane przez 30 dni, po czym wygasa."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O que sobrevive à eliminação carrega o seu antigo identificador de conta, nunca o seu e-mail: o registo de auditoria mantém as suas entradas na forma de identificadores e etiquetas curtas descrita acima, sem expiração, e ganha uma entrada permanente a registar que a eliminação se concluiu; as estatísticas de utilização expiram no máximo 180 dias depois de registadas; e um marcador mínimo, só com o identificador, da eliminação concluída mantém a conta apagada recusada por 30 dias e depois expira."
+          }
+        }
+      }
+    },
+    "Your rights": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваши права"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus derechos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos droits"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваші права"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Twoje prawa"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os seus direitos"
+          }
+        }
+      }
+    },
+    "You can ask for a copy of your data, have mistakes corrected (your display name and \"about you\" text you can edit in the app yourself), have your data erased (the in-app deletion above starts at once; a request by email is handled within 30 days), restrict or object to processing, and take your data elsewhere. Write to support@iskra.red. You also have the right to complain to your data protection authority.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вы можете запросить копию своих данных, исправить ошибки (отображаемое имя и текст «о себе» вы можете изменить в приложении сами), стереть свои данные (удаление в приложении, описанное выше, начинается сразу; запрос по почте обрабатывается в течение 30 дней), ограничить обработку или возразить против неё и забрать свои данные с собой. Пишите на support@iskra.red. Вы также вправе пожаловаться в свой орган по защите данных."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puedes pedir una copia de tus datos, que se corrijan errores (tu nombre visible y el texto «sobre ti» puedes editarlos tú en la app), que se borren tus datos (la eliminación en la app descrita arriba empieza al momento; una solicitud por correo se atiende en un plazo de 30 días), restringir el tratamiento u oponerte a él, y llevarte tus datos a otra parte. Escribe a support@iskra.red. También tienes derecho a reclamar ante tu autoridad de protección de datos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous pouvez demander une copie de vos données, faire corriger des erreurs (votre nom d’affichage et le texte « à propos de vous », vous pouvez les modifier vous-même dans l’app), faire effacer vos données (la suppression dans l’app décrite plus haut démarre aussitôt ; une demande par e-mail est traitée sous 30 jours), restreindre le traitement ou vous y opposer, et emporter vos données ailleurs. Écrivez à support@iskra.red. Vous avez aussi le droit de saisir votre autorité de protection des données."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ви можете попросити копію своїх даних, виправити помилки (видиме ім’я і текст «про себе» ви можете змінити в застосунку самі), стерти свої дані (видалення в застосунку, описане вище, починається одразу; запит поштою опрацьовується протягом 30 днів), обмежити обробку чи заперечити проти неї та забрати свої дані з собою. Пишіть на support@iskra.red. Ви також маєте право поскаржитися до свого органу захисту даних."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Możesz poprosić o kopię swoich danych, o poprawienie błędów (nazwę i tekst o Tobie możesz edytować w aplikacji samodzielnie), o wymazanie swoich danych (usunięcie w aplikacji opisane wyżej zaczyna się od razu; wniosek e-mailem jest obsługiwany w ciągu 30 dni), ograniczyć przetwarzanie lub się mu sprzeciwić, a także zabrać swoje dane gdzie indziej. Napisz na support@iskra.red. Masz też prawo złożyć skargę do swojego organu ochrony danych."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pode pedir uma cópia dos seus dados, mandar corrigir erros (o nome que mostra e o texto «sobre si» pode editá-los na app por si), mandar apagar os seus dados (a eliminação na app descrita acima começa de imediato; um pedido por e-mail é tratado no prazo de 30 dias), restringir o tratamento ou opor-se a ele, e levar os seus dados para outro lado. Escreva para support@iskra.red. Tem também o direito de reclamar junto da sua autoridade de proteção de dados."
+          }
+        }
+      }
+    },
+    "Changes": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Изменения"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambios"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifications"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зміни"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zmiany"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alterações"
+          }
+        }
+      }
+    },
+    "When this policy changes, we update it and the date at its top. A change to the terms it accompanies is put to you in the app before you can post again.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда эта политика меняется, мы обновляем её и дату вверху. Изменение условий, которые она сопровождает, предлагается вам в приложении, прежде чем вы сможете снова публиковать."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando esta política cambia, la actualizamos junto con la fecha en su parte superior. Un cambio de las condiciones a las que acompaña se te plantea en la app antes de que puedas volver a publicar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand cette politique change, nous la mettons à jour ainsi que la date en haut. Un changement des conditions qu’elle accompagne vous est présenté dans l’app avant que vous puissiez publier à nouveau."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Коли ця політика змінюється, ми оновлюємо її та дату вгорі. Зміну умов, які вона супроводжує, вам буде запропоновано в застосунку, перш ніж ви зможете знову публікувати."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gdy ta polityka się zmienia, aktualizujemy ją wraz z datą u góry. Zmianę warunków, którym towarzyszy, przedstawiamy Ci w aplikacji, zanim znowu coś opublikujesz."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quando esta política muda, atualizamo-la, bem como a data no topo. Uma alteração aos termos que ela acompanha é-lhe apresentada na app antes de poder voltar a publicar."
+          }
+        }
+      }
+    },
+    "This policy is also available at %@.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Эта политика также доступна по адресу %@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta política también está disponible en %@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette politique est aussi disponible à l’adresse %@."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ця політика також доступна за адресою %@."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta polityka jest też dostępna pod adresem %@."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta política também está disponível em %@."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

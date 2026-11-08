@@ -46,8 +46,9 @@ struct DeleteAccountSheet: View {
         }
     }
 
-    /// What deleting touches: one plural line per non-zero count (zero lines dropped), the counts framed as
-    /// approximate, and the messages sentence unconditionally, so an account owning nothing still reads it.
+    /// What deleting touches, each consequence a marked row: one plural line per non-zero count (zero rows dropped),
+    /// the counts framed as approximate, and the messages sentence unconditionally, so an account owning nothing
+    /// still reads it.
     private var summary: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
             ScrollView {
@@ -56,18 +57,8 @@ struct DeleteAccountSheet: View {
                         ProgressView()
                             .frame(maxWidth: .infinity)
                     }
-                    ForEach(viewModel.summaryLines, id: \.self) { line in
-                        Text(line)
-                    }
-                    if !viewModel.summaryLines.isEmpty {
-                        Text(Copy.approximate)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Text(Copy.messagesSentence)
-                    Text(Copy.irreversible)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    consequenceList
+                    footnotes
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -76,6 +67,52 @@ struct DeleteAccountSheet: View {
         }
         .padding(DesignTokens.Spacing.xl)
         .readableColumn()
+    }
+
+    /// The view model's non-zero rows, then the always-true messages sentence as the same list's last row. The accent
+    /// sits on the marks (never on body text); the words stay ink, and each mark says nothing on its own.
+    private var consequenceList: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+            ForEach(consequences) { row in
+                Label {
+                    Text(row.text)
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: Self.symbol(for: row.kind))
+                        .foregroundStyle(Color.lilyAccent)
+                        .accessibilityHidden(true)
+                }
+                .labelStyle(.iconColumn)
+            }
+        }
+    }
+
+    private var consequences: [DeletionConsequence] {
+        viewModel.summaryRows + [DeletionConsequence(kind: .messages, text: Copy.messagesSentence)]
+    }
+
+    private var footnotes: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
+            if !viewModel.summaryRows.isEmpty {
+                Text(Copy.approximate)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Text(Copy.irreversible)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private static func symbol(for kind: DeletionConsequence.Kind) -> String {
+        switch kind {
+        case .groupsTransferring: DesignTokens.Symbols.deletionGroupsTransferring
+        case .groupsDeleted: DesignTokens.Symbols.deletionGroupsDeleted
+        case .eventsCancelled: DesignTokens.Symbols.deletionEventsCancelled
+        case .entriesWithdrawn: DesignTokens.Symbols.deletionEntriesWithdrawn
+        case .tournamentsCancelled: DesignTokens.Symbols.deletionTournamentsCancelled
+        case .messages: DesignTokens.Symbols.deletionMessages
+        }
     }
 
     private var confirmButton: some View {

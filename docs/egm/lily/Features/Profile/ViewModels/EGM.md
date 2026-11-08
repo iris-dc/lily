@@ -26,10 +26,15 @@ and routes to the store. `DeleteAccountViewModel` (2026-11-07) is the delete flo
   `[lily/Features/Profile/ViewModels/DeleteAccountViewModel.swift:DeleteAccountViewModel]` (2026-11-07, the deletion
   contract): `init(repository: any MeRepository, session: any AccountDeletionSession, errorCenter: ErrorCenter,
   logger: any Logging, sleep: Sleep = systemSleep)`; state `plan: DeletionPlan?`, `isLoadingPlan`, `isDeleting`,
-  `isDeleted`, derived `isLocked` (`isDeleting || isDeleted`) and `summaryLines` (`nonisolated static
-  lines(for: DeletionPlan?) -> [String]`, one `AppBranding.DeleteAccount` plural line per non-zero count in the plan's
-  field order, zero-count lines dropped — the relocation contract's pinned rendering rule; the always-true messages
-  sentence is the view's); `prepare() async`, `confirmDeletion() async`, `acknowledge() async`.
+  `isDeleted`, derived `isLocked` (`isDeleting || isDeleted`) and `summaryRows` (`nonisolated static
+  rows(for: DeletionPlan?) -> [DeletionConsequence]`, one `AppBranding.DeleteAccount` plural row per non-zero count in
+  the plan's field order, zero-count rows dropped — the relocation contract's pinned rendering rule; the always-true
+  messages sentence is the view's); `prepare() async`, `confirmDeletion() async`, `acknowledge() async`.
+- `nonisolated struct DeletionConsequence: Equatable, Identifiable`
+  `[lily/Features/Profile/ViewModels/DeleteAccountViewModel.swift:DeletionConsequence]` (2026-11-08, owner
+  correction, the styled consequences list): `kind: Kind` (`groupsTransferring | groupsDeleted | eventsCancelled |
+  entriesWithdrawn | tournamentsCancelled | messages`), `text: String`, `id = kind` — the summary's row model;
+  `messages` is the unconditional sentence `DeleteAccountSheet` appends itself.
 - `typealias DisplayNameViewModel = ProfileFieldViewModel<DisplayNameDraft>` and
   `typealias AboutViewModel = ProfileFieldViewModel<AboutDraft>`, each with a convenience
   `init(store:errorCenter:logger:)` fixing the field `[lily/Features/Profile/ViewModels/ProfileFieldViewModel.swift:DisplayNameViewModel]`,

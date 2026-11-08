@@ -1,9 +1,9 @@
 import XCTest
 
 /// The Settings screen pushed from the profile root: a signed-in user finds the language, currency and contact rows,
-/// the two legal links and Sign out at the end; a guest keeps the three rows inline on Profile and gets no Settings
-/// link; a language picked inside Settings relabels the screen in place without popping it; and Sign out from Settings
-/// returns to the landing.
+/// the two legal rows and Sign out at the end; the privacy row pushes the policy in place; a guest keeps the three
+/// rows inline on Profile and gets no Settings link; a language picked inside Settings relabels the screen in place
+/// without popping it; and Sign out from Settings returns to the landing.
 final class LilySettingsTests: LilyUITestCase {
     @MainActor
     func testSettingsFromProfileListsEveryRow() {
@@ -108,6 +108,22 @@ final class LilySettingsTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Deleted user"].waitForExistence(timeout: 10),
                       "the deleted sender's bubble carries the localized name, not the stored placeholder")
         XCTAssertFalse(app.staticTexts["Player"].exists, "the stored placeholder never shows on a flagged row")
+    }
+
+    /// The privacy row pushes the policy in place (owner correction 2026-11-08); the date line and the first
+    /// section render without a backend, and the terms row stays beside it as the browser link.
+    @MainActor
+    func testThePrivacyRowPushesThePolicyInApp() {
+        tapSignInWithApple()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+        openProfileSheet()
+        openSettings()
+
+        tapAfterScrolling(app.buttons["settings-privacy"])
+        XCTAssertTrue(app.navigationBars["Privacy policy"].waitForExistence(timeout: 5), "the policy opens in the app")
+        XCTAssertTrue(app.otherElements["settings-privacy-policy"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Who we are"].exists, "the first section's heading renders")
+        XCTAssertTrue(app.staticTexts["Last updated 8 November 2026."].exists, "the date line opens the screen")
     }
 
     @MainActor

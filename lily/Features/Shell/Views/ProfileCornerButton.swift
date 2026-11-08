@@ -5,7 +5,8 @@ import SwiftUI
 /// the profile header draws. The initials come from the profile snapshot, there at first frame with no network; the
 /// lazy load-on-profile-open rule is untouched, since the sheet's content runs it. Tapping it presents the profile
 /// sheet (`AppNavigation.isProfilePresented`, mounted by `MainTabView`). An iOS 26 toolbar item draws its own glass
-/// capsule, so the item hides it and the circle's glass is the one surface — no glass on glass.
+/// capsule, so the item hides it and the circle's glass is the one surface — no glass on glass; the circle backs out
+/// of the hidden capsule's content inset to take the capsule's own leading edge, flush with the large titles.
 struct ProfileCornerButton: ToolbarContent {
     let dependencies: AppDependencies
 
@@ -25,6 +26,8 @@ struct ProfileCornerButton: ToolbarContent {
                              systemImage: initials == nil ? DesignTokens.Symbols.profile : nil,
                              size: DesignTokens.Layout.profileCornerSize)
             }
+            // The hidden capsule keeps its content inset, which held the circle off the large titles' leading margin.
+            .padding(.leading, -DesignTokens.Layout.profileCornerCapsuleInset)
             .accessibilityLabel(AppBranding.profileTitle)
             .accessibilityIdentifier(AccessibilityIdentifiers.profileCorner)
         }

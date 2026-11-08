@@ -133,3 +133,45 @@ the asset catalog.
   large title, and its explicit 44 pt frame duplicates the bar item's standard tap target. No code change — the
   first cut stands as rendered; the owed-clause comments were resolved. Spec, per-variant notes, the decision and
   the shots: `reviews/2026-11-07-profile-lifecycle-brainstorm/slice4-shots/design-round/`.
+- **Owner corrections (2026-11-08): the settings account actions and the corner circle's alignment.** (1) On the
+  Settings screen, Sign out and Delete account sat a full `xl` apart on top of their 44 pt hit areas — about 53 pt of
+  blank between the labels, which read as unrelated actions. They now stack flush
+  (`DesignTokens.Spacing.accountActions`, 0): the hit areas' slack alone holds the labels about 28 pt apart, so the
+  pair reads as one account-actions group while the list's `xl` spacing above keeps it clearly off the legal rows.
+  (2) `ProfileCornerButton`'s 36 pt circle sat 26 pt from the leading edge — 10 pt right of the large titles' 16 pt
+  margin, which the owner read as misaligned (vertical centring was already right: circle and trailing items both
+  centre near 84 pt). Measured against the design round's visible-capsule variant, the hidden toolbar capsule keeps
+  a 10 pt content inset on the iPhone's and the iPad's bars alike (the system's own capsule sits at 16 pt and 10 pt);
+  the button backs out by `Layout.profileCornerCapsuleInset` (10), landing the circle flush with the iPhone titles'
+  margin and on the system capsule's own edge on the iPad. A plain `buttonStyle` without the correction left a 4 pt
+  residue on the iPhone and was rejected, as was the visible capsule (glass on glass, the design round's loser).
+  Both corrections supersede the relocation contract's pins where they conflict (recorded there the same day);
+  before/after shots: `reviews/2026-11-07-profile-lifecycle-brainstorm/corrections1-shots/`.
+- **Owner correction (2026-11-08): the privacy policy reads in the app, styled as reading content.** By analogy with
+  the delete confirmation (an inline-titled screen read in place), `PrivacyPolicyScreen` renders the policy under an
+  inline "Privacy policy" title on `ContentScreen`: the date line in `.subheadline` `.secondary`, each section as a
+  `LilyTheme.Fonts.cardTitle` heading in ink over `.subheadline` ink paragraphs whose semibold lead runs into the body
+  (the served page's `<strong>` leads), and a `.footnote` `.secondary` footer naming the canonical address; the column
+  is `readableColumn()`, and nothing is accented (the accent never colours body text). Supersedes the relocation
+  contract's browser-link pin for the privacy row; the terms row keeps the browser on purpose. Shots under
+  `reviews/2026-11-07-profile-lifecycle-brainstorm/corrections1-shots/`.
+- **Owner correction (2026-11-08): the delete confirmation's consequences read as marked rows.** The pre-deletion
+  summary's plain sentences became one list of glyph rows: each consequence carries its domain's mark in the accent
+  (`person.2` the group transfer, `person.2.slash` the deleted groups, `calendar` the cancelled games, `trophy` the
+  withdrawn entries, `trophy.fill` the organizer's cancelled tournaments, `bubble.left` the always-true messages
+  sentence; `DesignTokens+Profile.swift`) beside ink text in one `IconColumnLabelStyle` column — the accent-on-mark
+  rule, never on the words; the approximate and irreversible notes stay `.subheadline` `.secondary` under the list.
+  Two variants were rendered on the iPhone 17 Pro simulator with the mock counts and judged against the flow's
+  gravity (destructive, serious, readable): the bare glyph-row list won; the inset glass-card variant wrapped three
+  rows of five inside the card's padding and its glass surface read as a tappable card, softening a destructive
+  advisory into furniture. The copy logic is untouched (zero-count rows dropped, the messages sentence unconditional
+  — the relocation contract's pinned rule; the supersession recorded there the same day). Shots (both variants, final
+  en, accessibility XXXL, ru): `reviews/2026-11-07-profile-lifecycle-brainstorm/corrections1-shots/delete-summary/`.
+- **Follow-up (2026-11-08): the iPad form sheet's fold no longer cuts Delete account mid-glyph.** With the account
+  actions flush, the profile sheet's fixed-height iPad form sheet folded ~6 pt into the red label at rest
+  (`corrections1-shots/stage4-ipad/settings-top.png`); the fold now lands on blank hit-area slack:
+  `DesignTokens.Spacing.accountActionsFoldClearance` (16) pads the group's top on regular layouts only
+  (`\.layoutMode`, never the device), dropping the label wholly below the fold — fully hidden until a scroll, the
+  state the pre-correction 24 pt spacing produced — while Sign out keeps ~12 pt of clearance. Compact layouts take
+  no padding and stay pixel-identical. A taller sheet was rejected: the iPad form sheet's size is the system's, and
+  page sizing would trade the settled floating card for a full page sheet.

@@ -22,6 +22,14 @@ struct SettingsConfigTests {
         }
     }
 
+    @Test func everyDeletionConsequenceSymbolExists() {
+        for name in [Symbols.deletionGroupsTransferring, Symbols.deletionGroupsDeleted,
+                     Symbols.deletionEventsCancelled, Symbols.deletionEntriesWithdrawn,
+                     Symbols.deletionTournamentsCancelled, Symbols.deletionMessages] {
+            #expect(UIImage(systemName: name) != nil, "no SF Symbol named \(name)")
+        }
+    }
+
     @Test func theDeleteFlowCopyKeysResolve() {
         typealias Copy = AppBranding.DeleteAccount
         let copy = [Copy.title, Copy.approximate, Copy.messagesSentence, Copy.irreversible, Copy.dialogTitle,
