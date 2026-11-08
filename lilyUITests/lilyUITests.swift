@@ -39,6 +39,16 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Sunset 5-a-side"].waitForExistence(timeout: 5))
     }
 
+    /// The profile is no tab: the corner button on Home opens it as a sheet.
+    @MainActor
+    func testCornerButtonOnHomeOpensTheProfileSheet() {
+        tapSignInWithApple()
+        openHomeTab()
+        openProfileSheet()
+
+        XCTAssertTrue(app.staticTexts["apple@example.com"].waitForExistence(timeout: 5), "the sheet shows the account")
+    }
+
     @MainActor
     func testMapSelectedCardStaysAboveTheTabBar() {
         relaunchAsGuest()

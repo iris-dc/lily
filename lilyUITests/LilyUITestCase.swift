@@ -51,12 +51,6 @@ class LilyUITestCase: XCTestCase {
         openTab(titled: "Explore")
     }
 
-    /// Opens the Profile tab (the account, the language row and the contact row) and waits for its root.
-    @MainActor
-    func openProfileTab() {
-        openTab(titled: "Profile")
-    }
-
     /// Tab titles double as the roots' navigation titles, so one name finds both.
     @MainActor
     private func openTab(titled title: String) {

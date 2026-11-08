@@ -4,7 +4,8 @@ Source: `lily/Features/Profile/`
 
 ## Overview
 
-The Profile tab and the caller's backend profile. The tab shows the signed-in user (the name other players see and the
+The profile sheet (presented from the shell's corner button since 2026-11-07, the relocation contract; a tab before)
+and the caller's backend profile. The sheet shows the signed-in user (the name other players see and the
 bio under it, each with the card that edits it, and the account's email) with a link row into Settings (the language
 and currency dropdown cards, the contact card, the privacy and terms links and Sign out), or the guest prompt with
 Sign in and the language, currency and contact rows inline (a guest has no Settings screen; 2026-11-07). The display name and the bio are what the

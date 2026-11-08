@@ -22,6 +22,8 @@ struct ChatsSplitView: View {
                                  onOpenRoom: { navigation.open(chat: $0) })
             }
             .navigationTitle(AppBranding.chatsTitle)
+            // The corner control belongs to the sidebar column, the tab's root; the detail column gets none.
+            .toolbar { ProfileCornerButton(dependencies: dependencies) }
             .navigationSplitViewColumnWidth(min: DesignTokens.Layout.chatsSidebarMinWidth,
                                             ideal: DesignTokens.Layout.chatsSidebarIdealWidth,
                                             max: DesignTokens.Layout.chatsSidebarMaxWidth)

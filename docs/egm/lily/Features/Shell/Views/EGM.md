@@ -4,29 +4,47 @@ Source: `lily/Features/Shell/Views/`
 
 ## Overview
 
-The signed-in and guest shell: a `TabView` of Home, Explore, Chats (flag-gated) and Profile, kept by the root for the
-app's lifetime and empty while the landing covers it; the Home root with its guest prompt or the three-section overview;
+The signed-in and guest shell: a `TabView` of Home, Explore and Chats (flag-gated), kept by the root for the
+app's lifetime and empty while the landing covers it; the profile as a sheet, presented once from the shell root over
+the corner control every tab root carries (`ProfileCornerButton`; the Profile tab was removed 2026-11-07, the
+relocation contract); the Home root with its guest prompt or the three-section overview;
 the Explore tab wrapping the shared `EventListView` with the group and tournament carousels; and the Chats tab choosing
 between a stack and the iPad split view. Lists are read from `dependencies.lists` (`ShellLists`), navigation from
 `dependencies.navigation` (`AppNavigation`), and the screens shown inside (`ProfileView`, `ChatsView`, `ChatsSplitView`,
 `EventListView`, `EventDetailView`, `GroupCarousel`, `TournamentCarousel`) belong to other features.
 
-Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views/HomeTab.swift`,
+Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views/ProfileCornerButton.swift`,
+`lily/Features/Shell/Views/HomeTab.swift`,
 `lily/Features/Shell/Views/HomeView.swift`, `lily/Features/Shell/Views/HomeOverview.swift`,
 `lily/Features/Shell/Views/ExploreTab.swift`, `lily/Features/Shell/Views/ChatTab.swift`,
 `lily/Features/Shell/Views/GuestSignInPrompt.swift`.
 
 ## Interface
 
-- `[MainTabView.swift:MainTabView]`: `dependencies: AppDependencies`, `showsContent: Bool`; reads `\.layoutMode`.
-  `TabView(selection: $navigation.selectedTab)` of `Tab(value: .home)` (`HomeTab`), `.explore` (`ExploreTab`), `.chat`
-  (`ChatTab`, with `.badge(unreadChats)`) and `.profile` (`ProfileView(dependencies:language:)`); Home, Explore and
-  Chats trees carry `.id(language)` where `language = dependencies.language.language`. `unreadChats =
+- `[MainTabView.swift:MainTabView]`: `dependencies: AppDependencies`, `showsContent: Bool`, `termsPresented: Bool`
+  (the root's `TermsViewModel.isPresented`, handed down by `AppRootView`); reads `\.layoutMode`.
+  `TabView(selection: $navigation.selectedTab)` of `Tab(value: .home)` (`HomeTab`), `.explore` (`ExploreTab`) and `.chat`
+  (`ChatTab`, with `.badge(unreadChats)`); every tab's tree carries `.id(language)` where
+  `language = dependencies.language.language`. The profile sheet mounts on the `TabView` (2026-11-07):
+  `.sheet(isPresented: $navigation.isProfilePresented) { ProfileView(dependencies:language:) }` — above each tab's
+  `.id(language)` (a language pick rebuilds the tabs while the sheet re-renders in place) and inside the root's
+  `.id(shellGeneration)`. `unreadChats =
   dependencies.unreadCenter.count + (dependencies.inbox.hasUnread ? 1 : 0)`, exposed as
   `.accessibilityValue(Text(AppBranding.Chats.unreadChats(unreadChats)), isEnabled: unreadChats > 0)`. Labels pair
-  `AppBranding.homeTitle`/`exploreTitle`/`chatsTitle`/`profileTitle` with `DesignTokens.Symbols.home`/`explore`/
-  `chat`/`profile` through `tabLabel(for:symbol:)`, which reads the title from `AppTab.title`, a `UIImage.SymbolConfiguration(weight:
+  `AppBranding.homeTitle`/`exploreTitle`/`chatsTitle` with `DesignTokens.Symbols.home`/`explore`/
+  `chat` through `tabLabel(for:symbol:)`, which reads the title from `AppTab.title`, a `UIImage.SymbolConfiguration(weight:
   DesignTokens.TabBar.symbolWeight)`; `.tabBarMinimizeBehavior(.onScrollDown)`.
+- `[ProfileCornerButton.swift:ProfileCornerButton]` (2026-11-07): `ToolbarContent` over `dependencies`; one
+  `.topBarLeading` item under `.sharedBackgroundVisibility(.hidden)` whose button sets
+  `navigation.isProfilePresented = true`. The label is an `AvatarCircle` at `DesignTokens.Layout.profileCornerSize`:
+  the signed-in caller's initials from `dependencies.profile.displayName` (the snapshot answers at first frame; the
+  button itself triggers no request), the `DesignTokens.Symbols.profile` glyph for a guest or while no name is known —
+  the profile header's own fallback. Accessibility label `AppBranding.profileTitle`, identifier
+  `AccessibilityIdentifiers.profileCorner`. Applied at exactly four stack roots, nowhere else: `HomeView`,
+  `EventListView` (Explore's root), `ChatsView` and `ChatsSplitView`'s sidebar column (the relocation contract §3).
+  The rendering was settled by the 2026-11-08 design round: the hidden capsule and the 36 pt circle kept as rendered
+  (`docs/notes/design-and-ui.md` 2026-11-08; shots under
+  `reviews/2026-11-07-profile-lifecycle-brainstorm/slice4-shots/design-round/`).
 - `[HomeTab.swift:HomeTab]`: `NavigationStack(path: $navigation.homePath) { HomeView(dependencies:) }` with
   `.animatesTabBar(depth: navigation.homePath.count)`.
 - `[HomeView.swift:HomeView]`: `dependencies`; `events = dependencies.lists.homeEvents`, `tournaments =
@@ -34,6 +52,7 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `LoadKey: Hashable { userID: String?; eventsVersion: Int; tournamentsVersion: Int }`. Body: `ContentScreen` showing
   `GuestSignInPrompt(symbolName: DesignTokens.Symbols.home, message: AppBranding.Home.guestMessage, dependencies:)` or
   `HomeOverview(groups: dependencies.myGroups, events:, tournaments:, dependencies:)`; `.navigationTitle(AppBranding.homeTitle)`;
+  `.toolbar { ProfileCornerButton(dependencies:) }`;
   `.groupDestinations(dependencies:onTournamentChange: tournaments.replace)`; `.navigationDestination(for:
   SportEvent.self)` pushing `EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for:onChange:
   events.replace), dependencies:)`; `.task(id: loadKey) { await loadIfStale() }`.
@@ -66,6 +85,12 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   keeps the bar from sliding in.
 - `[MainTabView.swift:MainTabView.body]`: `.onChange(of: layoutMode.isRegular, initial: true)` writes
   `dependencies.navigation.usesSplitChats`; the navigation model never reads size classes itself.
+- `[MainTabView.swift:MainTabView.body]`: the profile sheet yields to the terms sheet (2026-11-07, relocation contract
+  §4 / Pinned 15): `.onChange(of: termsPresented, initial: true)` clears `navigation.isProfilePresented` the moment the
+  debt shows, collapsing the sheet and every child presentation (the sign-in sheet included), so the root's
+  non-dismissable terms sheet can present — an ancestor cannot present over a live descendant presentation. The two
+  never both present is a maintained invariant, not an accident of timing. A session end tears the sheet down twice
+  over: `sessionDidEnd()` clears the flag and the `shellGeneration` bump rebuilds the view.
 - `[HomeView.swift:HomeView.loadIfStale]`: `await dependencies.sessionController.restore()` first, then `guard
   !Task.isCancelled, content == .overview else { return }`: a guest asks for nothing and nothing is requested before the
   pool confirmed the cached user. The three loads (`events.loadIfStale()`, `myGroups.loadIfStale()` behind
@@ -97,8 +122,10 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `tournaments.load()` (flag) and `events.load()`.
 - Navigation writes: `[HomeOverview.swift:HomeOverview.groupsContent]` `dependencies.navigation.open(group:)`;
   `[HomeOverview.swift:HomeOverview.emptyState]` `dependencies.navigation.selectedTab = .explore`;
-  `[MainTabView.swift:MainTabView.body]` binds `selectedTab` and sets `usesSplitChats`; `[HomeTab.swift:HomeTab]` and
-  `[ChatTab.swift:ChatTab]` bind `homePath` and `chatPath`.
+  `[MainTabView.swift:MainTabView.body]` binds `selectedTab` and `isProfilePresented` (presenting `ProfileView` as the
+  profile sheet, which mounts its own `.errorPopup`), sets `usesSplitChats` and clears `isProfilePresented` when
+  `termsPresented` turns true; `[ProfileCornerButton.swift:ProfileCornerButton]` sets `isProfilePresented = true`;
+  `[HomeTab.swift:HomeTab]` and `[ChatTab.swift:ChatTab]` bind `homePath` and `chatPath`.
 - `[MainTabView.swift:MainTabView.tabLabel(for:symbol:)]`: builds `UIImage(systemName:withConfiguration:)` glyphs (UIKit).
 - `[GuestSignInPrompt.swift:GuestSignInPrompt]`: presents `SignInSheet`, which mounts its own `.errorPopup`.
 - `[HomeView.swift:HomeView.body]`: `tournaments.replace` and `events.replace` are handed to the destinations as change

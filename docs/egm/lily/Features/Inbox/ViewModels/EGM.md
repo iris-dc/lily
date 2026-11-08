@@ -5,7 +5,8 @@ Source: `lily/Features/Inbox/ViewModels/`
 ## Overview
 
 `InboxViewModel` is the inbox screen's model: the store's items as timeline rows, Accept and Decline on an invite, the
-event behind an event reminder and the tournament behind a match reminder. It holds no copy of the items; they live in
+event behind an event reminder, the tournament behind a match reminder and the group behind an ownership notice. It
+holds no copy of the items; they live in
 `InboxStore` ([State](../State/EGM.md)), which the realtime controller and the Chats row share.
 
 ## Interface
@@ -18,7 +19,7 @@ event behind an event reminder and the tournament behind a match reminder. It ho
   `isBusy(_ item: InboxItem) -> Bool`.
 - Actions: `appear() async`, `refresh() async`, `loadOlder() async` (answers nothing; the store's Bool is dropped),
   `noteNewItems() async`,
-  `accept(_:) async`, `decline(_:) async`, `openEvent(for:) async`, `openTournament(for:)`.
+  `accept(_:) async`, `decline(_:) async`, `openEvent(for:) async`, `openTournament(for:)`, `openGroup(for:) async`.
 - Private: `answer(_:verb:wanting:_:)`, `noteLanded(_:of:)`, `inviteReadBack: LostAnswer<[InboxItem]>`,
   `restated(_:for:)`, `AppError.isInviteVerdict` (`inviteNotPending` or `inviteExpired`)
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:isInviteVerdict]`.
@@ -49,18 +50,24 @@ event behind an event reminder and the tournament behind a match reminder. It ho
 - Accept: the answered item replaces the held one; a group goes into Mine at once and its chat opens; a tournament
   bumps `tournamentChanges`, reloads Mine first when the caller has entered, then opens the tournament; an acceptance
   naming neither reloads Mine, opens nothing and shows no popup `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:accept]`.
-- `openEvent(for:)` runs one at a time (`openingItemID`) and only for an item with a `reminder`; `openTournament(for:)`
-  needs a `matchReminder` and fetches nothing `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:openEvent]`,
-  `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:openTournament]`.
+- `openEvent(for:)` and `openGroup(for:)` run one at a time (`openingItemID`) and only for an item with their payload;
+  `openTournament(for:)` needs a `matchReminder` and fetches nothing. `openGroup` finds the group in Mine (reloading it
+  once when not yet held — the caller owns the group now, so Mine is where it surfaces) and opens it on Home; a group
+  Mine never learns logs a warning and reports `AppError.groupNotFound`
+  `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:openEvent]`,
+  `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:openTournament]`,
+  `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:openGroup]`.
 - Main-actor isolated by the target's default.
 
 ## Side Effects
 
 - `repository.accept(itemID:)` and `repository.decline(itemID:)`; `store.loadIfStale()`, `store.reload()`,
   `store.loadOlder()`, `store.markRead()`, `store.replace(_:)` `[lily/Features/Inbox/ViewModels/InboxViewModel.swift]`.
-- `myGroups.add(group)` and `myGroups.reload()`; `tournamentChanges.recordChange()`
-  `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:accept]`.
-- Navigation: `navigation.open(chat:)`, `navigation.open(tournament:)`, `navigation.openInChat(_:)` (a match
+- `myGroups.add(group)` and `myGroups.reload()` (an accept's, and `openGroup`'s for a group not yet held);
+  `tournamentChanges.recordChange()` `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:accept]`,
+  `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:openGroup]`.
+- Navigation: `navigation.open(chat:)`, `navigation.open(tournament:)`, `navigation.open(group:)` (an ownership
+  notice), `navigation.openInChat(_:)` (a match
   reminder's `TournamentDestination`); `opener.open(eventID:from:)` pushes the game or reports one that is gone
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:accept]`,
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:openEvent]`,
@@ -68,7 +75,8 @@ event behind an event reminder and the tournament behind a match reminder. It ho
 - `reporter.report(failure)` for every failed answer the read-back did not find landed
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:answer]`.
 - Logging under `.inbox`: info on an accept (group, or tournament with its entry), a decline, a reminder opening a
-  game or a match; warning on an acceptance into nothing this build knows and on a verdict; error on other failures;
+  game or a match, an ownership notice opening its group; warning on an acceptance into nothing this build knows, on a
+  verdict and on an ownership notice naming a group Mine does not hold; error on other failures;
   the `LostAnswer` lines with `what` = "Invite <id> <verb>": warning "Invite <id> <verb> outcome unknown (<error>);
   reading back", info "Reading back after <error> on Invite <id> <verb>" and "Invite <id> <verb> landed despite
   <error>; nothing to report", warning "Could not read back after Invite <id> <verb>: <error>"
@@ -77,4 +85,5 @@ event behind an event reminder and the tournament behind a match reminder. It ho
 
 ## Verification
 
-- Run: `./scripts/ci.sh unit` (`lilyTests/Inbox/InboxViewModelTests.swift`, `InboxViewModelTournamentTests.swift`).
+- Run: `./scripts/ci.sh unit` (`lilyTests/Inbox/InboxViewModelTests.swift`, `InboxViewModelTournamentTests.swift`,
+  `DeletionNoticeTests.swift`).

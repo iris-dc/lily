@@ -61,7 +61,8 @@ lily/
                  RemoteRealtimeEndpointProvider, FixedRealtimeEndpointProvider), RealtimeSessionController (+Connection, +Routing):
                  the one connection, its rooms, its renewal and the resume protocol
     Navigation/  AppNavigation (selected tab + the Home and Chats stack paths, for pushes made from outside a tab: open(group:) on
-                 Home, open(chat:) and openInChat(_:) on Chats; startTab(for:); a SessionObserver, reset on sign-out)
+                 Home, open(chat:) and openInChat(_:) on Chats; startTab(for:); isProfilePresented, the profile sheet's
+                 flag (2026-11-07); a SessionObserver, reset on sign-out)
     System/      Pasteboard interface + SystemPasteboard (UIPasteboard), so copying is testable; FileManager+RemoveIfPresent (remove when
                  there, nothing when not, throw when refused); Calendar+NextFullHour (the forms' proposed start, a date on the hour kept);
                  TimeInterval+Units (the hour and the day a fixture or config date is built from)
@@ -127,7 +128,9 @@ lily/
                  the slides and their content (Models/IntroSlide, IntroContent, IntroFixtures, TapPulseCurve), LandingViewModel and the two
                  buttons (Models + Views + ViewModels)
     SignIn/      Sign-in sheet with provider buttons and the email form (Views + ViewModels)
-    Shell/       MainTabView (TabView(selection:) over AppTab: Home, Explore, Chats, Profile; the unread badge on Chats), HomeTab (the
+    Shell/       MainTabView (TabView(selection:) over AppTab: Home, Explore, Chats; the unread badge on Chats; mounts the profile
+                 sheet above the per-tab language identity and yields it to the terms sheet; 2026-11-07), ProfileCornerButton (the
+                 top-left corner control on every tab root — initials or the person glyph — opening the profile sheet; 2026-11-07), HomeTab (the
                  Home stack), HomeView, HomeOverview (your groups above your games), HomeContent (guest prompt or overview, shared
                  with Chats), GuestSignInPrompt, ExploreTab (Explore with the groups and tournaments carousels), ChatTab (the Chats stack);
                  Models (HomeOverviewState + HomeListSnapshot + HomeSectionState: Home's spinner / empty / sections rule while its three
@@ -267,12 +270,14 @@ lily/
                  + MatchScheduleView (the organiser's time and place), TournamentParticipationControl + TournamentMenu, TeamNameSheet,
                  the Create/Edit sheets over TournamentDraftSheet and TournamentDraftForm (+ Schedule))
     Inbox/       Models (InboxItem with InboxItemKind, InviteStatus, InvitePayload and TournamentInvitePayload (both over the shared
-                 InviteAnswer), ReminderPayload, MatchReminderPayload and the captions; InboxPage; InviteAcceptance (a group or a
+                 InviteAnswer), ReminderPayload, MatchReminderPayload, DeletionNoticePayloads (EventCancelledPayload,
+                 GroupOwnershipTransferredPayload) and the captions; InboxPage; InviteAcceptance (a group or a
                  tournament); InboxDestination; InboxTimeline (day chips, unknown kinds hidden)), Interfaces (InboxRepository),
                  Implementations (RemoteInboxRepository, MockInboxRepository + MockInboxFixtures), State (InboxStore, the one source
                  of the caller's inbox), ViewModels (InboxViewModel: accept into a group or a tournament, decline, open the
-                 reminder's game or match), Views (InboxView, InboxItemRow (the group invite and game reminder cards) +
-                 InboxItemRow+Tournaments (the tournament invite and match reminder cards) over InboxCardParts, InboxRow (the pinned
+                 reminder's game or match or the ownership notice's group), Views (InboxView, InboxItemRow (the group invite and
+                 game reminder cards) + InboxItemRow+Tournaments (the tournament invite and match reminder cards) +
+                 InboxItemRow+Notices (the account-deletion notice cards) over InboxCardParts, InboxRow (the pinned
                  row on Chats))
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ and Moderation/ included;

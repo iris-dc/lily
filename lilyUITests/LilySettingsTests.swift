@@ -9,7 +9,7 @@ final class LilySettingsTests: LilyUITestCase {
     func testSettingsFromProfileListsEveryRow() {
         tapSignInWithApple()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
-        openProfileTab()
+        openProfileSheet()
         XCTAssertTrue(app.buttons["profile-settings"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Sign out"].exists, "Sign out moved off the profile root into Settings")
         XCTAssertFalse(app.buttons["profile-language"].exists, "the preference rows moved into Settings")
@@ -26,7 +26,7 @@ final class LilySettingsTests: LilyUITestCase {
     @MainActor
     func testGuestProfileKeepsItsRowsInlineAndGetsNoSettings() {
         relaunchAsGuest()
-        openProfileTab()
+        openProfileSheet()
 
         XCTAssertTrue(app.buttons["profile-language"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["profile-currency"].exists)
@@ -41,7 +41,7 @@ final class LilySettingsTests: LilyUITestCase {
     func testPickingALanguageInSettingsRelabelsItInPlace() {
         tapSignInWithApple()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
-        openProfileTab()
+        openProfileSheet()
         openSettings()
 
         app.buttons["profile-language"].tap()
@@ -70,7 +70,7 @@ final class LilySettingsTests: LilyUITestCase {
     func testDeletingTheAccountWalksToTheSignedOutLanding() {
         tapSignInWithApple()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
-        openProfileTab()
+        openProfileSheet()
         openSettings()
         tapAfterScrolling(app.buttons["settings-delete-account"])
 
@@ -114,7 +114,7 @@ final class LilySettingsTests: LilyUITestCase {
     func testSigningOutFromSettingsReturnsToTheLanding() {
         tapSignInWithApple()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
-        openProfileTab()
+        openProfileSheet()
         openSettings()
 
         tapAfterScrolling(app.buttons["settings-sign-out"])

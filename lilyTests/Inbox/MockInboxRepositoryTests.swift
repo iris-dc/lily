@@ -12,10 +12,16 @@ struct MockInboxRepositoryTests {
     private let inviteID = MockInboxFixtures.inviteID
     private let reminderID = MockInboxFixtures.reminderID
 
-    private func makeRepositories(now: @escaping () -> Date) -> (groups: MockGroupRepository, inbox: MockInboxRepository) {
+    private func makeRepositories(deletedUser: Bool = false,
+                                  now: @escaping () -> Date) -> (groups: MockGroupRepository, inbox: MockInboxRepository) {
         let groups = MockGroupRepository(identity: identity, logger: logger, now: now)
         let tournaments = MockTournamentRepository(groups: groups, identity: identity, logger: logger, now: now)
-        let inbox = MockInboxRepository(groups: groups, tournaments: tournaments, identity: identity, logger: logger, now: now)
+        let inbox = MockInboxRepository(groups: groups,
+                                        tournaments: tournaments,
+                                        identity: identity,
+                                        logger: logger,
+                                        deletedUser: deletedUser,
+                                        now: now)
         return (groups, inbox)
     }
 
@@ -42,6 +48,28 @@ struct MockInboxRepositoryTests {
         #expect(invite.groupId == climbing && invite.groupName == "Climbing Buddies" && invite.groupVisibility == .private)
         #expect(invite.inviterName == "Noor" && invite.inviterUserId == MockGroupFixtures.memberID(for: "Noor"))
         #expect(invite.status == .pending && invite.isOpen(now: now))
+    }
+
+    /// `-mock-deleted-user`: another account's deletion leaves the two notices, newest in the inbox; neither is
+    /// answerable, and without the flag nothing changes.
+    @Test func theDeletedUserFlagAppendsTheTwoDeletionNotices() async throws {
+        let (_, inbox) = makeRepositories(deletedUser: true) { now }
+
+        let page = try await inbox.page(before: nil, limit: AppConfig.Inbox.pageSize)
+
+        #expect(page.items.count == 6 && page.items.map(\.id) == page.items.map(\.id).sorted())
+        #expect(page.items.map(\.createdAt) == page.items.map(\.createdAt).sorted(), "ids follow time")
+        #expect(page.items.allSatisfy { $0.isVisible })
+        let cancelled = try #require(page.items[4].eventCancelled)
+        #expect(page.items[4].id == MockInboxFixtures.eventCancelledID && cancelled.startsAt > now)
+        let ownership = try #require(page.items[5].groupOwnershipTransferred)
+        #expect(page.items[5].id == MockInboxFixtures.ownershipID)
+        #expect(ownership.groupId == MockGroupFixtures.padelID && ownership.groupName == "Sunday Padel Crew")
+        await #expect(throws: AppError.inviteNotPending) { try await inbox.accept(itemID: MockInboxFixtures.ownershipID) }
+
+        let (_, plain) = makeRepositories()
+        let plainPage = try await plain.page(before: nil, limit: 50)
+        #expect(plainPage.items.count == 4, "without the flag nothing changes")
     }
 
     @Test func acceptingAdmitsIntoClimbingBuddiesAndReplaysTheSameShape() async throws {

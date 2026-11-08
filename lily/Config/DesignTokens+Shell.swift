@@ -9,3 +9,9 @@ nonisolated extension DesignTokens {
         static let symbolWeight: UIImage.SymbolWeight = .light
     }
 }
+
+nonisolated extension DesignTokens.Layout {
+    /// The corner profile button's circle (initials or the person glyph). The toolbar item's own capsule is hidden, so
+    /// the circle is the one surface — no glass on glass.
+    static let profileCornerSize: CGFloat = 36
+}

@@ -11,6 +11,8 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
     let reminder: ReminderPayload?
     let tournamentInvite: TournamentInvitePayload?
     let matchReminder: MatchReminderPayload?
+    let eventCancelled: EventCancelledPayload?
+    let groupOwnershipTransferred: GroupOwnershipTransferredPayload?
 
     init(id: String,
          kind: InboxItemKind,
@@ -18,7 +20,9 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
          invite: InvitePayload? = nil,
          reminder: ReminderPayload? = nil,
          tournamentInvite: TournamentInvitePayload? = nil,
-         matchReminder: MatchReminderPayload? = nil) {
+         matchReminder: MatchReminderPayload? = nil,
+         eventCancelled: EventCancelledPayload? = nil,
+         groupOwnershipTransferred: GroupOwnershipTransferredPayload? = nil) {
         self.id = id
         self.kind = kind
         self.createdAt = createdAt
@@ -26,6 +30,8 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
         self.reminder = reminder
         self.tournamentInvite = tournamentInvite
         self.matchReminder = matchReminder
+        self.eventCancelled = eventCancelled
+        self.groupOwnershipTransferred = groupOwnershipTransferred
     }
 
     /// Whether this build can draw the item: a known kind with its payload.
@@ -35,6 +41,8 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
         case .eventReminder: reminder != nil
         case .tournamentInvite: tournamentInvite != nil
         case .matchReminder: matchReminder != nil
+        case .eventCancelled: eventCancelled != nil
+        case .groupOwnershipTransferred: groupOwnershipTransferred != nil
         case .unknown: false
         }
     }
@@ -53,25 +61,33 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
                          invite: invite?.responding(status, at: date),
                          reminder: reminder,
                          tournamentInvite: tournamentInvite?.responding(status, at: date),
-                         matchReminder: matchReminder)
+                         matchReminder: matchReminder,
+                         eventCancelled: eventCancelled,
+                         groupOwnershipTransferred: groupOwnershipTransferred)
     }
 }
 
-/// `group_invite`, `event_reminder`, `tournament_invite` or `match_reminder`; anything else keeps its name, so a page
-/// or a stream from a newer backend still decodes.
+/// `group_invite`, `event_reminder`, `tournament_invite`, `match_reminder`, `event_cancelled` or
+/// `group_ownership_transferred`; anything else keeps its name, so a page or a stream from a newer backend still
+/// decodes.
 nonisolated enum InboxItemKind: WireNamedKind {
     case groupInvite
     case eventReminder
     case tournamentInvite
     case matchReminder
+    case eventCancelled
+    case groupOwnershipTransferred
     case unknown(String)
 
-    static let known: [InboxItemKind] = [.groupInvite, .eventReminder, .tournamentInvite, .matchReminder]
+    static let known: [InboxItemKind] = [.groupInvite, .eventReminder, .tournamentInvite, .matchReminder,
+                                         .eventCancelled, .groupOwnershipTransferred]
 
     private static let groupInviteName = "group_invite"
     private static let eventReminderName = "event_reminder"
     private static let tournamentInviteName = "tournament_invite"
     private static let matchReminderName = "match_reminder"
+    private static let eventCancelledName = "event_cancelled"
+    private static let groupOwnershipTransferredName = "group_ownership_transferred"
 
     var wireName: String {
         switch self {
@@ -79,6 +95,8 @@ nonisolated enum InboxItemKind: WireNamedKind {
         case .eventReminder: Self.eventReminderName
         case .tournamentInvite: Self.tournamentInviteName
         case .matchReminder: Self.matchReminderName
+        case .eventCancelled: Self.eventCancelledName
+        case .groupOwnershipTransferred: Self.groupOwnershipTransferredName
         case .unknown(let name): name
         }
     }

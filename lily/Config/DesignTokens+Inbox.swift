@@ -5,4 +5,6 @@ nonisolated extension DesignTokens.Symbols {
     static let inbox = "bell.badge"
     /// Trailing disclosure on a card that opens something (the reminder's game).
     static let chevron = "chevron.right"
+    /// The cancellation notice's mark: a game's calendar under a warning badge.
+    static let eventCancelled = "calendar.badge.exclamationmark"
 }

@@ -6,8 +6,9 @@ Source: `lily/Features/Inbox/Implementations/`
 
 The two concrete `InboxRepository` types and the fixture builder the mock uses. `RemoteInboxRepository` maps each
 protocol method to one `APIRequest` under `/api/me/inbox` through `APIClient.send(_:failingWith:)`.
-`MockInboxRepository` keeps four fixture items in memory, mirrors the backend's monotonic read marker and invite
-refusals, and delegates admission to the group and tournament mocks; `MockInboxFixtures` builds those items from the
+`MockInboxRepository` keeps the fixture items in memory (four; six with the deletion notices under
+`-mock-deleted-user`), mirrors the backend's monotonic read marker and invite refusals, and delegates admission to the
+group and tournament mocks; `MockInboxFixtures` builds those items from the
 other features' fixtures, so previews, UI tests and `-mock-events` runs need no backend.
 
 ## Interface
@@ -18,14 +19,16 @@ other features' fixtures, so previews, UI tests and `-mock-events` runs need no 
   `decline(itemID:)` (answers `InviteDeclination.item`).
 - `final class MockInboxRepository: InboxRepository`
   `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:MockInboxRepository]`:
-  `init(groups: MockGroupRepository, tournaments: MockTournamentRepository, identity: any IdentityProvider, logger: any Logging, now: @escaping () -> Date = { .now })`;
+  `init(groups: MockGroupRepository, tournaments: MockTournamentRepository, identity: any IdentityProvider, logger: any Logging, deletedUser: Bool = false, now: @escaping () -> Date = { .now })`;
   private `items: [InboxItem]`, `lastReadID: String?`; helpers `admittance(for:entering:)`, `invite(at:)`,
   `requireUser()`.
 - `nonisolated enum MockInboxFixtures` `[lily/Features/Inbox/Implementations/MockInboxFixtures.swift:MockInboxFixtures]`:
-  `tournamentInviteID`, `reminderID`, `matchReminderID`, `inviteID` (`itemID(index:)` 1 to 4), `inviterName`
+  `tournamentInviteID`, `reminderID`, `matchReminderID`, `inviteID`, `eventCancelledID`, `ownershipID`
+  (`itemID(index:)` 1 to 6), `inviterName`
   (`"Noor"`), `itemID(index:)` (prefix `01J8MOCKNB` plus a zero-padded 16-digit index), `make(now:) -> [InboxItem]`
-  (oldest first: tournament invite, event reminder, match reminder, group invite) built from `MockTournamentFixtures`,
-  `MockEventFixtures` and `MockGroupFixtures`.
+  (oldest first: tournament invite, event reminder, match reminder, group invite) and `deletionNotices(now:)` (the
+  cancelled "Friday 5-a-side" snapshot, no event behind it, and Sunday Padel Crew handed to the caller), built from
+  `MockTournamentFixtures`, `MockEventFixtures` and `MockGroupFixtures`.
 
 ## Invariants
 
@@ -51,9 +54,11 @@ other features' fixtures, so previews, UI tests and `-mock-events` runs need no 
   `tournaments.join(id:teamName: nil)` only when entering and `!invite.isTeam`, and always answers
   `tournaments.invited(id)`; an item with neither payload throws `inviteNotPending`
   `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:admittance]`.
-- Fixtures are built once from `now()` at init, and each pending tournament invite is registered with
-  `tournaments.noteInvitee(of:)` `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:init]`.
-- Fixture ids order lexically as created; ages are 2 days, 10 min, 5 min and 60 s before `now`; a builder answering
+- Fixtures are built once from `now()` at init — `deletionNotices` appended only under `deletedUser` — and each
+  pending tournament invite is registered with `tournaments.noteInvitee(of:)`
+  `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:init]`.
+- Fixture ids order lexically as created; ages are 2 days, 10 min, 5 min, 60 s and (the notices) 40 s and 30 s
+  before `now`; a builder answering
   `nil` (a missing group, event or match fixture) is dropped; invites expire after `AppConfig.Inbox.mockInviteExpiry`
   (7 days) and the event reminder starts after `AppConfig.Inbox.mockReminderLead` (1 hour)
   `[lily/Features/Inbox/Implementations/MockInboxFixtures.swift:make]`, `[lily/Config/AppConfig+Inbox.swift:AppConfig.Inbox]`.

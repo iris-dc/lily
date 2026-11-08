@@ -1,15 +1,20 @@
 import SwiftUI
 import UIKit
 
-/// The shell's four tabs. Copy is read into views as plain strings, so a new language rebuilds the trees of Home, Explore
+/// The shell's tabs. Copy is read into views as plain strings, so a new language rebuilds the trees of Home, Explore
 /// and Chats (`.id(language)`) while the bar itself only re-renders its titles: a rebuilt bar slid its indicator in from
-/// the first tab and drew the glyphs at its own heavy weight until the tab was tapped again. Profile, where the language
-/// is picked, re-renders in place instead (it takes the language as an input): its crossfade dimmed the screen for a
-/// frame at the pick. The root keeps this view for the app's lifetime, under the landing while signed out; the tabs
-/// hold nothing then (`showsContent`), so no screen loads or asks for the position behind the landing.
+/// the first tab and drew the glyphs at its own heavy weight until the tab was tapped again. The profile is no tab: the
+/// corner button on every tab root presents it as a sheet mounted here, above each tab's `.id(language)` — a language
+/// picked inside it rebuilds the tabs underneath while the sheet, whose content takes the language as an input,
+/// re-renders in place — and inside the root's `.id(shellGeneration)`, so a session end tears it down twice over (the
+/// flag clears in `sessionDidEnd()` and the generation bump rebuilds this view). The root keeps this view for the
+/// app's lifetime, under the landing while signed out; the tabs hold nothing then (`showsContent`), so no screen loads
+/// or asks for the position behind the landing.
 struct MainTabView: View {
     let dependencies: AppDependencies
     let showsContent: Bool
+    /// Whether the root's terms sheet wants the screen (`TermsViewModel.isPresented`): the profile sheet yields to it.
+    let termsPresented: Bool
     @Environment(\.layoutMode) private var layoutMode
 
     private var language: AppLanguage { dependencies.language.language }
@@ -42,14 +47,9 @@ struct MainTabView: View {
                 // A tab badge is not in the accessibility tree; the value says what it means and lets tests see it.
                 .accessibilityValue(Text(AppBranding.Chats.unreadChats(unreadChats)), isEnabled: unreadChats > 0)
             }
-            Tab(value: .profile) {
-                content { ProfileView(dependencies: dependencies, language: language) }
-            } label: {
-                tabLabel(for: .profile, symbol: DesignTokens.Symbols.profile)
-            }
         }
         // iPadOS draws the tabs as a top bar on its own; the iPhone keeps its floating bar. `.sidebarAdaptable` was tried
-        // and dropped: its sidebar only repeated the four tabs and iPadOS opened it by itself in landscape,
+        // and dropped: its sidebar only repeated the tabs and iPadOS opened it by itself in landscape,
         // taking 280 pt from the content column.
         .tabBarMinimizeBehavior(.onScrollDown)
         // The tabs fill and the bar shows at once, under the landing that the root fades out over them; animated, the
@@ -58,6 +58,15 @@ struct MainTabView: View {
         // The navigation model stays ignorant of size classes; the shell tells it which Chats layout is on screen.
         .onChange(of: layoutMode.isRegular, initial: true) {
             dependencies.navigation.usesSplitChats = layoutMode.isRegular
+        }
+        // The profile sheet, presented once for the whole shell; the corner button on every tab root raises the flag.
+        .sheet(isPresented: $navigation.isProfilePresented) {
+            ProfileView(dependencies: dependencies, language: language)
+        }
+        // An ancestor cannot present while a descendant's presentation is live, so the moment a signed-in caller owes
+        // the terms, the profile sheet and every child presentation collapse; only then can the root's sheet present.
+        .onChange(of: termsPresented, initial: true) {
+            if termsPresented { dependencies.navigation.isProfilePresented = false }
         }
     }
 
@@ -87,5 +96,5 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView(dependencies: .makeMock(), showsContent: true)
+    MainTabView(dependencies: .makeMock(), showsContent: true, termsPresented: false)
 }

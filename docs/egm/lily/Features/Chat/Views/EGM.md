@@ -25,9 +25,11 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 
 ### Screens, transcript and composer
 
-- `[ChatsView.swift:ChatsView]` compact tab root over `AppDependencies`; same file: `View.conversationDestinations
+- `[ChatsView.swift:ChatsView]` compact tab root over `AppDependencies`; carries the shared `ProfileCornerButton` in
+  its toolbar (a stack root; 2026-11-07); same file: `View.conversationDestinations
   (dependencies:)` (`groupDestinations`, `InboxDestination`, `SportEvent`) and `View.conversationLoads(dependencies:)`.
-- `[ChatsSplitView.swift:ChatsSplitView]` a `NavigationSplitView`: the list in the sidebar, a detail stack bound to
+- `[ChatsSplitView.swift:ChatsSplitView]` a `NavigationSplitView`: the list in the sidebar (whose column carries the
+  shared `ProfileCornerButton`; the detail column gets none, 2026-11-07), a detail stack bound to
   `navigation.chatPath` showing `InboxView`, a `ChatView` or an `EmptyStateView` for `navigation.selectedConversation`.
 - `[ConversationList.swift:ConversationList]` `dependencies`, `selection: ConversationSelection?`, `onOpenInbox`,
   `onOpenRoom: (SportGroup) -> Void`; `InboxRow` over `GroupRowList`, Clear/Delete long-press item, pull-to-refresh.

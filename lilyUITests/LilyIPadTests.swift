@@ -92,6 +92,21 @@ final class LilyIPadTests: LilyUITestCase {
                       "the tile shows the distance from the mock position: \(tile.label)")
     }
 
+    /// The corner profile button sits in each root's toolbar on the iPad's top bar and opens the profile sheet.
+    @MainActor
+    func testCornerButtonIsReachableOnEveryTabRoot() {
+        tapSignInWithApple()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+        let corner = app.buttons["profile-corner"]
+        XCTAssertTrue(corner.waitForExistence(timeout: 10), "Explore's root carries the corner button")
+        openHomeTab()
+        XCTAssertTrue(corner.waitForExistence(timeout: 10), "Home's root carries the corner button")
+        openChatsTab()
+        XCTAssertTrue(corner.waitForExistence(timeout: 10), "the Chats sidebar carries the corner button")
+        openProfileSheet()
+        XCTAssertTrue(app.staticTexts["apple@example.com"].waitForExistence(timeout: 5), "the corner opens the profile sheet")
+    }
+
     /// On a regular width Chats is a split view: the list stays beside the room, through a rotation and back.
     @MainActor
     func testChatsSplitShowsListAndRoomTogether() {

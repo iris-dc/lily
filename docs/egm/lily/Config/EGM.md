@@ -118,7 +118,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Events.Create.name(for: PlayerLimit)`, `Events.Create.message(for: EventDraft.Issue)`, `Events.Create.coordinateText(_:)`,
   `Groups.members(_:)`, `Groups.caption(_:)`, `Groups.Create.message(for: GroupDraft.Issue)`, `Chat.replyingTo(_:)`,
   `Chat.Pins.pinnedMessage(_:of:)`, `Chat.Polls.voterCount(_:)`, `Chat.tournamentStarted(format:)`,
-  `Inbox.invitedYou(inviter:group:)`, `Intro.headline(for: IntroSlide) -> [String]`, `People.name(_:isSelf:)`,
+  `Inbox.invitedYou(inviter:group:)`, `Inbox.wasCancelled(_:)` and `Inbox.isNowYours(_:)` (the account-deletion
+  notices' sentences, beside `Inbox.openGroup`; 2026-11-08), `Intro.headline(for: IntroSlide) -> [String]`, `People.name(_:isSelf:)`,
   `Tournaments.entries(_:of:teamSize:)`, `Tournaments.Create.message(for:format:)`, `Tournaments.Match.score(_:_:)`,
   `Tournaments.Match.status(_: MatchStatus)`, `Feedback.tooLong(limit:)`, `Moderation.blockConfirmationTitle(name:)`.
 - The map's selected-stack list (2026-11-06), both in `lily/Config/AppBranding+EventsMap.swift`:
@@ -146,7 +147,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Typography` (`headlineSize 44`, `headlineTracking -1.8`, `titleTracking -0.5`), `Symbols` (SF Symbol names:
   `home = "house"`, `explore = "binoculars"`, `game = "calendar"`, `profile = "person"`, `groups = "person.3"`,
   `tournament = "trophy"`, ...), `MessageArrival` (`+Groups.swift`), `TabBar.symbolWeight: UIImage.SymbolWeight = .light`
-  (`lily/Config/DesignTokens+Shell.swift`).
+  and `Layout.profileCornerSize` 36 (the corner profile button's circle, 2026-11-07), both in
+  `lily/Config/DesignTokens+Shell.swift`.
 - Sport marks and the map's cards (`lily/Config/DesignTokens+SportMarks.swift`, 2026-11-06): `Layout.sportGlyphFraction
   0.46`, `sportMarkGlowRadius 4`, `sportMarkRimWidth 0.5`, `chipMarkSize 16`, `mapCardMarkSize 44`,
   `mapCardMeterWidth 28`, `mapCardTitleLines 2`, `mapCardListFade 56`, `mapCardVisibleShare 0.01` (any sliver of a
@@ -160,7 +162,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `lily/Config/DesignTokens+Settings.swift`): `Symbols.settings = "gearshape"` (the profile root's link row),
   `Symbols.privacy = "lock.shield"` and `Symbols.terms = "doc.text"` (the legal rows), beside that file's dropdown tokens.
   The deleted-account mark (2026-11-07, `lily/Config/DesignTokens+Profile.swift`): `Symbols.deletedUser = "person.slash"`,
-  drawn by `Tombstone` beside the localized "Deleted user" name. In `DesignTokens.swift`,
+  drawn by `Tombstone` beside the localized "Deleted user" name. The cancellation notice's mark (2026-11-08,
+  `lily/Config/DesignTokens+Inbox.swift`): `Symbols.eventCancelled = "calendar.badge.exclamationmark"`. In `DesignTokens.swift`,
   `Layout.mapCardListMaxHeight` is 400 (about three and a half of the two-row cards; 352, about five one-row cards,
   until 2026-11-06) beside `mapSelectedCardWidth 340` and `pressedCardScale 0.97`.
 - Non-scalar members: `Symbols.fileGlyphs: [(type: UTType, symbol: String)]` (8 entries),
@@ -174,7 +177,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - Kebab-case, area-prefixed `static let` literals: root (`events-filter`, `create-submit`, `auth-email`, ...),
   +Groups (`chat-list`, `chat-composer`, `create-group`, ...), +Tournaments (45 literals and 6 builders, e.g. `match-score-a`), +Polls,
   +Attachments, +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
-  +Profile (`profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
+  +Profile (`profile-corner` and `profile-sheet` — the corner control on every tab root and the profile sheet's root
+  container, 2026-11-07 — `profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
   `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-settings`, `settings-sign-out`,
   `settings-privacy`, `settings-terms`, and the delete flow's `settings-delete-account`, `terms-delete-account`,
   `delete-account-confirm`, `delete-account-cancel`, `delete-account-acknowledge`; 2026-11-07), +Currency, +Layout, +Landing (`intro-pager`), +Localization.

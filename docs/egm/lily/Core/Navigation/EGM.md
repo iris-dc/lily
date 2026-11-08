@@ -5,7 +5,8 @@ Source: `lily/Core/Navigation/`
 ## Overview
 
 The shell's navigation state in one observable object: the selected tab, the `NavigationPath` of the Home and Chats
-stacks, and on a regular width the conversation the Chats split view shows. Anything that opens a screen from elsewhere
+stacks, on a regular width the conversation the Chats split view shows, and whether the profile sheet is up
+(2026-11-07, the relocation contract). Anything that opens a screen from elsewhere
 (a group detail's "Open chat", an accepted invite, a tapped notification, a keyboard shortcut) selects a tab and goes
 through this type, so the tab bar and the stack roots are the only views that bind to it. It observes the session so a
 sign-out resets every per-user path.
@@ -15,7 +16,8 @@ sign-out resets every per-user path.
 - `@Observable final class AppNavigation: SessionObserver` (main-actor). State: `var selectedTab: AppTab = .explore`,
   `var homePath = NavigationPath()`, `var chatPath = NavigationPath()`, `var usesSplitChats = false`,
   `var selectedConversation: ConversationSelection?`, `var pendingCreate: CreateIntent?`,
-  `private(set) var shellGeneration = 0` [`lily/Core/Navigation/AppNavigation.swift:AppNavigation`].
+  `var isProfilePresented = false` (the profile sheet `MainTabView` presents; the corner button on every tab root sets
+  it, 2026-11-07), `private(set) var shellGeneration = 0` [`lily/Core/Navigation/AppNavigation.swift:AppNavigation`].
 - Opening: `openInHome(_ destination: some Hashable)`, `openInChat(_ destination: some Hashable)`,
   `open(group: SportGroup)`, `open(tournament: TournamentDestination)`, `open(chat group: SportGroup)`,
   `openInbox()`, `openFromNotification(_ destination: some Hashable)`, `requestCreate(_ intent: CreateIntent)`
@@ -45,7 +47,11 @@ sign-out resets every per-user path.
   `state.isSignedIn`; `sessionDidRestore()` selects the signed-in start tab
   [`AppNavigation.swift:AppNavigation.startTab(signedIn:)`, `AppNavigation.swift:AppNavigation.sessionDidRestore()`].
 - `sessionDidEnd()` increments `shellGeneration` (the root keys the shell on it), selects Explore, clears
-  `selectedConversation` and `pendingCreate`, and empties both paths [`AppNavigation.swift:AppNavigation.sessionDidEnd()`].
+  `selectedConversation`, `pendingCreate` and `isProfilePresented`, and empties both paths
+  [`AppNavigation.swift:AppNavigation.sessionDidEnd()`].
+- `isProfilePresented` is only state: the model presents nothing itself. The shell also clears it the moment the terms
+  sheet must present (the profile sheet yields; the mount and the yield are `MainTabView`'s,
+  `docs/egm/lily/Features/Shell/Views/EGM.md`) [`AppNavigation.swift:AppNavigation`].
 - `usesSplitChats` is set by the shell from the window's layout; the model never reads a size class
   [`AppNavigation.swift:AppNavigation.usesSplitChats`].
 

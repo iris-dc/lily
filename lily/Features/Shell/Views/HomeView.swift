@@ -43,6 +43,7 @@ struct HomeView: View {
             }
         }
         .navigationTitle(AppBranding.homeTitle)
+        .toolbar { ProfileCornerButton(dependencies: dependencies) }
         .groupDestinations(dependencies: dependencies, onTournamentChange: tournaments.replace)
         // The only `SportEvent` destination on this stack (the cards here and a group detail's Events segment push them).
         .navigationDestination(for: SportEvent.self) { event in

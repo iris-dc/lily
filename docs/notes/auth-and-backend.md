@@ -81,3 +81,10 @@ Release builds point at `https://api.iskra.red` (`AppConfig.API.productionBaseUR
   the entry on `TermsSheet` (`terms-delete-account`); the identical teardown on both paths is the relocation
   contract's. Tests: `DeleteAccountViewModelTests` (the poll over `HeldSleep`, the teardown order over a spy
   session), `LilySettingsTests` end to end on `MockMeRepository`'s state machine.
+- **Session ends and the profile sheet (2026-11-07, relocation slice 4).** `AppNavigation.sessionDidEnd()` now also
+  clears `isProfilePresented`, so every end path composes with the sheet: Settings' Sign out dismisses it over the
+  landing while `shellGeneration` rebuilds the shell (the migrated `testSigningOutReturnsToTheLanding`); the
+  account-deleted end keeps its pinned order — only the acknowledge tap ends the session, then the flag clears and the
+  chain collapses; and a terms debt arising while the sheet is up (a sign-in from the sheet under
+  `-mock-terms-pending`, or `noteTermsRequired()`) makes `MainTabView` drop the sheet first, so the root's terms sheet
+  always presents (`testSignInFromTheProfileSheetYieldsToTheTermsSheet`).

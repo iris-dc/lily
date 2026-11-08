@@ -96,3 +96,21 @@ Every person the app names can be opened (2026-09-29): roster rows, event partic
   assertions replaced across the suite), `AppDependenciesPeopleTests`;
   UI: `LilyPeopleTests.testProfileMessageButtonOpensAConversation` now checks Back lands on the profile and finds the
   conversation on the Chats tab after. Screenshots 09/10 under `reviews/2026-11-05-about-and-history/`.
+
+- **The account-deletion notices (2026-11-08).** The two `InboxItemKind`s the deletion backend writes (the
+  account-deletion contract §8, `groups-plan/account-deletion-plan.md`) render as inbox cards: `event_cancelled`
+  (payload `eventCancelled {eventId, title, startsAt}` — a plain card with the warning mark
+  (`Symbols.eventCancelled`), the bolded "%@ was cancelled" sentence and the shared time caption; the event is gone,
+  delete-plus-notify, so the card opens nothing) and `group_ownership_transferred` (payload
+  `groupOwnershipTransferred {groupId, groupName}` — an `InboxOpenCard` with the owner's crown whose tap opens the
+  group on Home through `InboxViewModel.openGroup(for:)`: Mine is reloaded once when the group is not yet held, since
+  the caller owns it now; a group Mine never learns reaches the popup as `groupNotFound`). Neither notice is
+  answerable: `inviteAnswer` stays `nil` and the mock refuses accept/decline with `inviteNotPending`, like the
+  backend. The wire JSON is pinned as the contract samples it (`ContractSamples.inboxEventCancelled` /
+  `inboxOwnershipTransferred` in `lilyTests/Support/InboxFixtures.swift`) and tested in `DeletionNoticeTests`; the
+  cards bold the one name through `NoticeSentence` over `SentenceEmphasis`, the helper `InviteSentence` now shares.
+  Mock fixtures 5 and 6 (`MockInboxFixtures.deletionNotices`: the cancelled "Friday 5-a-side", Sunday Padel Crew
+  handed to the caller) join the inbox only under `-mock-deleted-user`, so the default runs' badge, row caption and
+  card walks are untouched; `LilyChatTests.testTheDeletionNoticesShowAsInboxCards` walks both cards and the group
+  open. Three new catalog keys ("%@ was cancelled", "%@ is now yours", "Open group") in the seven languages; a native
+  read is owed with the other recent keys.

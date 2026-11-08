@@ -8,6 +8,7 @@ struct AppNavigationTests {
         let navigation = AppNavigation()
         #expect(navigation.selectedTab == .explore)
         #expect(navigation.homePath.isEmpty && navigation.chatPath.isEmpty)
+        #expect(!navigation.isProfilePresented, "the profile sheet starts down")
     }
 
     /// A push from a group detail or an accepted invite must show the tab too, or the pushed screen stays out of sight.
@@ -46,7 +47,7 @@ struct AppNavigationTests {
     }
 
     @Test func tabsAreInBarOrder() {
-        #expect(AppTab.allCases == [.home, .explore, .chat, .profile])
+        #expect(AppTab.allCases == [.home, .explore, .chat], "the profile is no tab; the corner button presents it")
         #expect(AppTab.shown == AppTab.allCases, "debug builds have chat on, so every tab is drawn")
     }
 
@@ -115,12 +116,14 @@ struct AppNavigationTests {
         navigation.usesSplitChats = true
         navigation.open(chat: .fixture(id: "b"))
         navigation.requestCreate(.game)
+        navigation.isProfilePresented = true
 
         navigation.sessionDidEnd()
 
         #expect(navigation.selectedTab == .explore)
         #expect(navigation.homePath.isEmpty && navigation.chatPath.isEmpty)
         #expect(navigation.selectedConversation == nil && navigation.pendingCreate == nil)
+        #expect(!navigation.isProfilePresented, "the profile sheet never survives into the next session")
     }
 
     /// A restore that signed the user in lands on Home, their start tab, whatever showed before.
@@ -138,7 +141,7 @@ struct AppNavigationTests {
         let navigation = AppNavigation()
         navigation.open(group: .fixture(id: "a"))
         navigation.requestCreate(.game)
-        navigation.selectedTab = .profile
+        navigation.isProfilePresented = true
         #expect(navigation.shellGeneration == 0)
 
         navigation.sessionDidEnd()

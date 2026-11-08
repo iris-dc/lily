@@ -1,6 +1,6 @@
 import XCTest
 
-/// The rows behind the profile root. The contact form (on Settings once signed in; a guest's inline row signs them in
+/// The rows behind the profile sheet (opened from the corner button on every tab root). The contact form (on Settings once signed in; a guest's inline row signs them in
 /// first): a user picks what the message is about, writes it and is thanked; the mock accepts the send, so no backend
 /// is needed. The currency row on Settings: a pick changes the currency the create form's price and the filter's cap
 /// are typed in. The display name: a new account starts as the backend's "Player" and chooses a name on the card; the
@@ -14,7 +14,7 @@ final class LilyProfileTests: LilyUITestCase {
     func testPickingACurrencyOnProfileChangesThePriceFieldsSymbol() {
         tapSignInWithApple()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
-        openProfileTab()
+        openProfileSheet()
         openSettings()
 
         let picker = app.buttons["profile-currency"]
@@ -28,6 +28,7 @@ final class LilyProfileTests: LilyUITestCase {
             .matching(NSPredicate(format: "identifier == 'profile-currency' AND label CONTAINS 'PLN'")).firstMatch
         XCTAssertTrue(picked.waitForExistence(timeout: 5), "the row reads its title and the choice")
 
+        closeProfileSheet()
         openExploreTab()
         tapCreateButton()
         // The price row is the form's last; a Form row off screen is not in the accessibility tree yet.
@@ -45,7 +46,7 @@ final class LilyProfileTests: LilyUITestCase {
     @MainActor
     func testSendingFeedbackFromProfileThanksTheUser() {
         relaunchAsGuest()
-        openProfileTab()
+        openProfileSheet()
 
         let row = app.buttons["profile-feedback"]
         XCTAssertTrue(row.waitForExistence(timeout: 5))
@@ -81,7 +82,7 @@ final class LilyProfileTests: LilyUITestCase {
     func testChoosingADisplayNameOnProfileShowsIt() {
         tapSignInWithApple()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
-        openProfileTab()
+        openProfileSheet()
         XCTAssertTrue(app.staticTexts["Player"].waitForExistence(timeout: 5), "a new account starts as the backend's default")
         let nudge = app.staticTexts["Choose a name other players will see"]
         XCTAssertTrue(nudge.waitForExistence(timeout: 5), "the card nudges while the default stands")
@@ -107,7 +108,7 @@ final class LilyProfileTests: LilyUITestCase {
     func testWritingAboutYouOnProfileShowsIt() {
         tapSignInWithApple()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
-        openProfileTab()
+        openProfileSheet()
         let card = app.buttons["profile-about"]
         XCTAssertTrue(card.waitForExistence(timeout: 5))
         XCTAssertTrue(card.label.contains("Tell other players about yourself"), "the card nudges while nothing is written")
@@ -131,7 +132,7 @@ final class LilyProfileTests: LilyUITestCase {
     func testSigningOutReturnsToTheLanding() {
         tapSignInWithApple()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
-        openProfileTab()
+        openProfileSheet()
         XCTAssertTrue(app.staticTexts["apple@example.com"].waitForExistence(timeout: 5))
         openSettings()
 

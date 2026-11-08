@@ -1,9 +1,9 @@
 import Foundation
 import Observation
 
-/// The inbox screen: the store's items as rows, Accept / Decline on an invite, the game behind a game reminder and
-/// the tournament behind a match reminder. The items live in `InboxStore`, which the realtime controller and the Chats
-/// row share, so the screen never holds a copy.
+/// The inbox screen: the store's items as rows, Accept / Decline on an invite, the game behind a game reminder, the
+/// tournament behind a match reminder and the group behind an ownership notice. The items live in `InboxStore`, which
+/// the realtime controller and the Chats row share, so the screen never holds a copy.
 @Observable
 final class InboxViewModel {
     let store: InboxStore
@@ -129,6 +129,24 @@ final class InboxViewModel {
         guard let reminder = item.matchReminder else { return }
         logger.info(.inbox, "Reminder \(item.id) opened match \(reminder.matchId) of tournament \(reminder.tournamentId)")
         navigation.openInChat(reminder.destination)
+    }
+
+    /// The group an ownership notice names, on Home: the caller owns it now, so Mine holds it — reloaded once when the
+    /// notice is newer than the list; a group Mine never learns reaches the popup.
+    func openGroup(for item: InboxItem) async {
+        guard let payload = item.groupOwnershipTransferred, openingItemID == nil else { return }
+        openingItemID = item.id
+        defer { openingItemID = nil }
+        if !myGroups.groups.contains(where: { $0.id == payload.groupId }) {
+            await myGroups.reload()
+        }
+        guard let group = myGroups.groups.first(where: { $0.id == payload.groupId }) else {
+            logger.warning(.inbox, "Notice \(item.id) names group \(payload.groupId), which Mine does not hold")
+            reporter.report(AppError.groupNotFound)
+            return
+        }
+        logger.info(.inbox, "Notice \(item.id) opened group \(group.id)")
+        navigation.open(group: group)
     }
 
     /// One answer per invite at a time; `TRY_AGAIN` is repeated once. An outcome left unknown (a lost connection, a

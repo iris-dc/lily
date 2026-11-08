@@ -18,6 +18,10 @@ final class AppNavigation: SessionObserver {
     var selectedConversation: ConversationSelection?
     /// A create asked for by a shortcut, waiting for Explore to present its sheet.
     var pendingCreate: CreateIntent?
+    /// Whether the profile sheet is up, presented once from the shell root (`MainTabView`); the corner button on every
+    /// tab root sets it. Cleared with the session like every per-user state, and by the shell whenever the terms sheet
+    /// must present — the profile sheet yields, since an ancestor cannot present over a live descendant presentation.
+    var isProfilePresented = false
     /// Counts the sessions that ended. The root keys the shell on it, so a sign-out takes the shell away as it was
     /// (the crossfade never shows its screens turning into a guest's) and a new one is built under the landing.
     private(set) var shellGeneration = 0
@@ -111,6 +115,7 @@ final class AppNavigation: SessionObserver {
         selectedTab = .explore
         selectedConversation = nil
         pendingCreate = nil
+        isProfilePresented = false
         popHomeToRoot()
         popChatToRoot()
     }

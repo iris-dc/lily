@@ -17,12 +17,12 @@ module and bundle id (`iris.lily`) keep it; the home screen says iskra.
   other side confirms, schedules and reminders.
 - **People**: profiles with a display name you choose on Profile (a new account starts as "Player") and a few words
   about yourself, showing another player what you share with them (groups, games, tournaments); direct conversations,
-  an inbox for invites and reminders, push notifications once the Apple Developer account exists.
+  an inbox for invites, reminders and account notices, push notifications once the Apple Developer account exists.
 - **Seven languages** (en, ru, es, fr, uk, pl, pt), prices in your currency, iPhone and iPad layouts.
 
-Release builds ship Explore, events, people's profiles and the Profile tab; groups, chat (with conversations and the
-inbox) and tournaments are behind feature flags for now, on in debug builds and in the Staging configuration (a release
-build for trying the app on a phone).
+Release builds ship Explore, events, people's profiles and your own profile behind the top-left corner button (the
+bar is Home and Explore); groups, chat (with conversations and the inbox) and tournaments are behind feature flags for
+now, on in debug builds and in the Staging configuration (a release build for trying the app on a phone).
 
 ## How it fits together
 
@@ -31,7 +31,7 @@ build for trying the app on a phone).
  │  iskra  (this repository) │  tokens  │  Amazon Cognito            │
  │  SwiftUI, iOS 26          │◀────────▶│  user pool "lily-users"    │
  │  Home · Explore · Chats · │          │  email + password          │
- │  Profile                  │          └────────────────────────────┘
+ │  profile in the corner    │          └────────────────────────────┘
  └─────────────┬─────────────┘
                │  HTTPS, Bearer access token
                ▼

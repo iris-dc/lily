@@ -52,6 +52,7 @@ struct EventListView<Header: View>: View {
             // An event's "Hosted in" link and the carousel push groups here, so every stack knows the group screens.
             .groupDestinations(dependencies: dependencies)
             .toolbar {
+                ProfileCornerButton(dependencies: dependencies)
                 ToolbarItem(placement: .topBarTrailing) { EventFilterButton(viewModel: viewModel) }
                 if layout == .switchable {
                     // iOS 26 gives every toolbar item its own glass; the segmented picker already draws one.

@@ -13,6 +13,10 @@ nonisolated extension InboxItem {
             tournamentInvite.map { AppBranding.Inbox.invitedYou(inviter: $0.inviterName, group: $0.tournamentName) }
         case .matchReminder:
             matchReminder.map { AppBranding.Groups.caption([AppBranding.Inbox.matchReminderTitle, $0.tournamentName]) }
+        case .eventCancelled:
+            eventCancelled.map { AppBranding.Inbox.wasCancelled($0.title) }
+        case .groupOwnershipTransferred:
+            groupOwnershipTransferred.map { AppBranding.Inbox.isNowYours($0.groupName) }
         case .unknown:
             nil
         }
@@ -52,5 +56,11 @@ nonisolated extension ReminderPayload {
 nonisolated extension MatchReminderPayload {
     func startsAtCaption(now: Date, calendar: Calendar = .autoupdatingCurrent) -> String {
         InboxTimeCaption.text(for: scheduledAt, now: now, calendar: calendar)
+    }
+}
+
+nonisolated extension EventCancelledPayload {
+    func startsAtCaption(now: Date, calendar: Calendar = .autoupdatingCurrent) -> String {
+        InboxTimeCaption.text(for: startsAt, now: now, calendar: calendar)
     }
 }

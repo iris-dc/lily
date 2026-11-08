@@ -3,12 +3,14 @@ import Foundation
 /// The four items of a mock inbox, oldest first: Noor's invite into the Padel Open (the private tournament nothing else
 /// reaches), a game reminder for the first fixture event, a match reminder for the caller's scheduled table-tennis match,
 /// then Noor's invite into Climbing Buddies, the private group nothing else reaches. Ids sort like ULIDs, the group
-/// invite being the newest.
+/// invite being the newest. Under `-mock-deleted-user` two newer notices join them (`deletionNotices`).
 nonisolated enum MockInboxFixtures {
     static let tournamentInviteID = itemID(index: 1)
     static let reminderID = itemID(index: 2)
     static let matchReminderID = itemID(index: 3)
     static let inviteID = itemID(index: 4)
+    static let eventCancelledID = itemID(index: 5)
+    static let ownershipID = itemID(index: 6)
     static let inviterName = "Noor"
     private static let idPrefix = "01J8MOCKNB"
     private static let idDigits = 16
@@ -17,6 +19,10 @@ nonisolated enum MockInboxFixtures {
     private static let reminderAge: TimeInterval = 10 * 60
     private static let matchReminderAge: TimeInterval = 5 * 60
     private static let inviteAge: TimeInterval = 60
+    private static let eventCancelledAge: TimeInterval = 40
+    private static let ownershipAge: TimeInterval = 30
+    /// The cancelled fixture game would start this far ahead; the event itself is gone, as the deletion job leaves it.
+    private static let cancelledEventLead: TimeInterval = 2 * .day
 
     /// Sortable like a ULID: a fixed prefix and a zero-padded sequence.
     static func itemID(index: Int) -> String {
@@ -90,5 +96,31 @@ nonisolated enum MockInboxFixtures {
                          kind: .groupInvite,
                          createdAt: now.addingTimeInterval(-inviteAge),
                          invite: invite)
+    }
+
+    /// What another account's deletion leaves in the caller's inbox (`-mock-deleted-user`), newest of the fixtures:
+    /// the snapshot of a cancelled upcoming game (no event behind it) and the group handed to the caller — Sunday
+    /// Padel Crew, whose fixture the caller owns.
+    static func deletionNotices(now: Date) -> [InboxItem] {
+        [eventCancelled(now: now), ownershipTransferred(now: now)].compactMap { $0 }
+    }
+
+    private static func eventCancelled(now: Date) -> InboxItem {
+        let payload = EventCancelledPayload(eventId: "mock-event-cancelled",
+                                            title: "Friday 5-a-side",
+                                            startsAt: now.addingTimeInterval(cancelledEventLead))
+        return InboxItem(id: eventCancelledID,
+                         kind: .eventCancelled,
+                         createdAt: now.addingTimeInterval(-eventCancelledAge),
+                         eventCancelled: payload)
+    }
+
+    private static func ownershipTransferred(now: Date) -> InboxItem? {
+        guard let group = MockGroupFixtures.ref(for: MockGroupFixtures.padelID) else { return nil }
+        let payload = GroupOwnershipTransferredPayload(groupId: group.id, groupName: group.name)
+        return InboxItem(id: ownershipID,
+                         kind: .groupOwnershipTransferred,
+                         createdAt: now.addingTimeInterval(-ownershipAge),
+                         groupOwnershipTransferred: payload)
     }
 }

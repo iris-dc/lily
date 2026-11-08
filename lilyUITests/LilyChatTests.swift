@@ -3,7 +3,8 @@ import XCTest
 /// The Chats tab against the mock repositories: the inbox row over the caller's rooms, the inbox's invite and reminder
 /// cards, deleting a conversation, replying, attachments and the picture viewer (helpers in
 /// `LilyChatTests+Attachments.swift`). Identifiers mirror `AccessibilityIdentifiers(+Inbox, +Attachments)`; the item
-/// ids mirror `MockInboxFixtures` (the tournament invite and the match reminder, ids 1 and 3, are `LilyTournamentTests`').
+/// ids mirror `MockInboxFixtures` (the tournament invite and the match reminder, ids 1 and 3, are `LilyTournamentTests`';
+/// ids 5 and 6 are the `-mock-deleted-user` deletion notices).
 final class LilyChatTests: LilyUITestCase {
     let inviteID = "01J8MOCKNB0000000000000004"
     let reminderID = "01J8MOCKNB0000000000000002"
@@ -92,6 +93,23 @@ final class LilyChatTests: LilyUITestCase {
 
         XCTAssertTrue(app.staticTexts["Hosted in Kreuzberg Kickers"].waitForExistence(timeout: 10), "the game's detail opens")
         XCTAssertTrue(app.staticTexts["Sunset 5-a-side"].exists)
+    }
+
+    /// `-mock-deleted-user`: another account's deletion leaves two notices in the inbox — the cancelled game's card
+    /// (the event is gone, so it opens nothing) and the group handed to the caller, whose card opens it on Home.
+    @MainActor
+    func testTheDeletionNoticesShowAsInboxCards() {
+        relaunch(appending: "-mock-deleted-user")
+        tapSignInWithApple()
+        openInbox()
+
+        XCTAssertTrue(labelled("Friday 5-a-side was cancelled").waitForExistence(timeout: 10),
+                      "the cancellation card names the gone event")
+        let ownership = app.buttons["inbox-item-01J8MOCKNB0000000000000006"]
+        XCTAssertTrue(ownership.waitForExistence(timeout: 10), "the ownership notice is a card")
+        ownership.tap()
+        XCTAssertTrue(app.buttons["group-open-chat"].waitForExistence(timeout: 10), "the notice opens the group detail")
+        XCTAssertTrue(labelled("Sunday Padel Crew").exists, "the detail heads with the group")
     }
 
     /// Deleting the conversation from its Chats row, after the confirmation: the Chats root no longer lists Marta, the

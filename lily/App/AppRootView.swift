@@ -25,7 +25,7 @@ struct AppRootView: View {
 
     var body: some View {
         ZStack {
-            MainTabView(dependencies: dependencies, showsContent: showsShell)
+            MainTabView(dependencies: dependencies, showsContent: showsShell, termsPresented: terms.isPresented)
                 .id(dependencies.navigation.shellGeneration)
             if !showsShell {
                 // Copy is read into views as plain strings, so a new language needs the tree rebuilt, not re-rendered;

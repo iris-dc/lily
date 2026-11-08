@@ -18,7 +18,8 @@ nonisolated extension AppBranding {
         }
     }
 
-    /// The inbox conversation: invites with Accept / Decline, game reminders that open the game.
+    /// The inbox conversation: invites with Accept / Decline, game reminders that open the game, and the notices an
+    /// account's deletion writes (a cancelled game, a group handed over).
     enum Inbox {
         static let title = AppBranding.name
         /// Caption of the Chats row while the inbox is empty.
@@ -33,6 +34,8 @@ nonisolated extension AppBranding {
         /// VoiceOver names of the reminder cards' chevrons.
         static var openGame: String { localized("Open event") }
         static var openTournament: String { localized("Open tournament") }
+        /// VoiceOver name of the ownership notice's chevron.
+        static var openGroup: String { localized("Open group") }
         static var emptyTitle: String { Home.emptyTitle }
         static var emptyMessage: String { localized("Invites and reminders for your events show up here.") }
         static var loadFailedTitle: String { localized("Couldn't load your notifications") }
@@ -51,6 +54,16 @@ nonisolated extension AppBranding {
         /// The match reminder's opponent line.
         static func versus(_ opponent: String) -> String {
             localized("vs \(opponent)")
+        }
+
+        /// The cancellation notice: an upcoming game its host's deletion removed; the card bolds the title.
+        static func wasCancelled(_ title: String) -> String {
+            localized("\(title) was cancelled")
+        }
+
+        /// The ownership notice: the group the deletion job handed to the caller; the card bolds the name.
+        static func isNowYours(_ group: String) -> String {
+            localized("\(group) is now yours")
         }
     }
 }

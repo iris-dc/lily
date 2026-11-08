@@ -24,7 +24,8 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   callbacks forward to `PushEventRelay.shared.deliver(token:)` and `.fail(_:)`; the `nonisolated` notification-center
   methods answer `[.banner, .sound, .list]` and route `PushPayload.tap(from:)` to `PushEventRelay.shared.notificationTapped(_:)`.
 - `AppRootView` (`lily/App/AppRootView.swift:AppRootView`): `init(dependencies:)` seeds `@State terms` and `@State sync`;
-  body is `MainTabView(dependencies:, showsContent: showsShell)` keyed by `navigation.shellGeneration` under `LandingView`
+  body is `MainTabView(dependencies:, showsContent: showsShell, termsPresented: terms.isPresented)` (the last so the
+  shell's profile sheet yields to the terms sheet, 2026-11-07) keyed by `navigation.shellGeneration` under `LandingView`
   keyed by `language.language` while `!showsShell`, with `.errorPopup(dependencies.errorCenter)` and the `TermsSheet`,
   then `.motionProvider()` outermost (`lily/Core/UI/Layout/MotionPreference.swift`), so the sheet reads `\.motion` too;
   `private struct SyncKey { phase; userID; language }` keys `.task(id:) { await sync.run(active:user:) }`.
@@ -57,7 +58,9 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `makeRealtimeEndpointProvider: @MainActor (MeStore) -> any RealtimeEndpointProvider`, `attachmentUploader`,
   `mediaPreparer`, `attachmentSession: URLSession`. `remote(client:realtimeEndpoint:identity:logger:)` binds the
   `Remote*Repository` set, `NoRealtimeTransport()`, `RemoteRealtimeEndpointProvider(override:me:)`, `URLSessionAttachmentUploader`,
-  `DeviceMediaPreparer`, `URLSession(configuration: .default)`; `mock(identity:logger:autoReplies:mockPicker:termsPending:)` (no defaults)
+  `DeviceMediaPreparer`, `URLSession(configuration: .default)`;
+  `mock(identity:logger:events:profiles:autoReplies:mockPicker:termsPending:deletedFixtures:)` (the Bools default to
+  false; `deletedFixtures` adds the deleted-flagged chat, tournament and inbox fixtures, 2026-11-08)
   binds the `Mock*Repository` set, `MockRealtimeTransport`, `FixedRealtimeEndpointProvider(url: AppConfig.Realtime.mockEndpoint)`,
   `MockAttachmentUploader(store:)` and `MockAttachmentURLProtocol.makeSession()`.
 - `GroupDependencies` (`lily/App/AppDependencies+Groups.swift:GroupDependencies`): `init(repositories:identity:tokenProvider:errorCenter:logger:snapshots:)`

@@ -55,15 +55,31 @@ struct GroupRepositories {
     /// in-memory bus the controller subscribes to, and the chat mock, the uploader and the loader's session share one
     /// attachment store. `mockPicker` swaps the system pickers for the bundled photo, clip and document
     /// (`-mock-attachment-picker`); `termsPending` makes the me mock owe the terms until the first acceptance of the
-    /// run (`-mock-terms-pending`); `deletedFixtures` makes the chat, tournament (and, built by the caller, event)
-    /// mocks serve the deleted-flagged fixtures (`-mock-deleted-user`).
-    /// The two inbox-shaped mocks fed by the tournament mock; split out of `mock` for its body-length limit.
-    private static func inboxMocks(groups: MockGroupRepository,
-                                   tournaments: MockTournamentRepository,
-                                   identity: any IdentityProvider,
-                                   logger: any Logging) -> (MockInboxRepository, MockTournamentInviteRepository) {
-        (MockInboxRepository(groups: groups, tournaments: tournaments, identity: identity, logger: logger),
-         MockTournamentInviteRepository(groups: groups, tournaments: tournaments, identity: identity, logger: logger))
+    /// run (`-mock-terms-pending`); `deletedFixtures` makes the chat, tournament, inbox (and, built by the
+    /// caller, event) mocks serve the deleted-flagged fixtures (`-mock-deleted-user`).
+    /// The mocks that share one group and one tournament instance; split out of `mock` for its body-length limit.
+    private struct DataMocks {
+        let groups: MockGroupRepository
+        let tournaments: MockTournamentRepository
+        let inbox: MockInboxRepository
+        let tournamentInvites: MockTournamentInviteRepository
+    }
+
+    private static func makeDataMocks(identity: any IdentityProvider,
+                                      logger: any Logging,
+                                      deletedFixtures: Bool) -> DataMocks {
+        let groups = MockGroupRepository(identity: identity, logger: logger)
+        let tournaments = MockTournamentRepository(groups: groups,
+                                                   identity: identity,
+                                                   logger: logger,
+                                                   deletedFixtures: deletedFixtures)
+        let inbox = MockInboxRepository(groups: groups,
+                                        tournaments: tournaments,
+                                        identity: identity,
+                                        logger: logger,
+                                        deletedUser: deletedFixtures)
+        let invites = MockTournamentInviteRepository(groups: groups, tournaments: tournaments, identity: identity, logger: logger)
+        return DataMocks(groups: groups, tournaments: tournaments, inbox: inbox, tournamentInvites: invites)
     }
 
     static func mock(identity: any IdentityProvider,
@@ -74,35 +90,30 @@ struct GroupRepositories {
                      mockPicker: Bool = false,
                      termsPending: Bool = false,
                      deletedFixtures: Bool = false) -> GroupRepositories {
-        let groups = MockGroupRepository(identity: identity, logger: logger)
-        let tournaments = MockTournamentRepository(groups: groups,
-                                                   identity: identity,
-                                                   logger: logger,
-                                                   deletedFixtures: deletedFixtures)
-        let (inbox, tournamentInvites) = inboxMocks(groups: groups, tournaments: tournaments, identity: identity, logger: logger)
+        let mocks = makeDataMocks(identity: identity, logger: logger, deletedFixtures: deletedFixtures)
         let transport = MockRealtimeTransport(logger: logger)
         let attachments = MockAttachmentStore()
         MockAttachmentURLProtocol.serve(attachments)
-        return GroupRepositories(groups: groups,
-                                 invites: MockInviteRepository(groups: groups, identity: identity, logger: logger),
-                                 inbox: inbox,
+        return GroupRepositories(groups: mocks.groups,
+                                 invites: MockInviteRepository(groups: mocks.groups, identity: identity, logger: logger),
+                                 inbox: mocks.inbox,
                                  me: MockMeRepository(identity: identity, logger: logger, termsPending: termsPending),
                                  moderation: MockModerationRepository(logger: logger),
-                                 chat: MockChatRepository(groups: groups,
+                                 chat: MockChatRepository(groups: mocks.groups,
                                                           transport: transport,
                                                           identity: identity,
                                                           logger: logger,
                                                           attachments: attachments,
                                                           autoReplies: autoReplies,
                                                           deletedSender: deletedFixtures),
-                                 users: MockUserRepository(groups: groups,
+                                 users: MockUserRepository(groups: mocks.groups,
                                                            events: events,
-                                                           tournaments: tournaments,
+                                                           tournaments: mocks.tournaments,
                                                            profiles: profiles,
                                                            identity: identity,
                                                            logger: logger),
-                                 tournaments: tournaments,
-                                 tournamentInvites: tournamentInvites,
+                                 tournaments: mocks.tournaments,
+                                 tournamentInvites: mocks.tournamentInvites,
                                  realtimeTransport: transport,
                                  makeRealtimeEndpointProvider: { _ in
                                      FixedRealtimeEndpointProvider(url: AppConfig.Realtime.mockEndpoint)

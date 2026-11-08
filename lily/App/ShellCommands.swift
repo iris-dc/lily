@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The scene's menu commands, which a hardware keyboard reaches as shortcuts (and iPadOS lists in its menu bar):
-/// ⌘1 to ⌘4 select the tabs in bar order, ⌘N, ⌘⇧N and ⌘⇧T ask Explore for a new game, group or tournament (a guest
+/// ⌘1 onward select the shown tabs in bar order, ⌘N, ⌘⇧N and ⌘⇧T ask Explore for a new game, group or tournament (a guest
 /// is offered sign-in there, as from the "+" button). The commands only touch `AppNavigation`; the views do the rest.
 /// Nothing happens on the launch or landing screens: a create parked there would pop its sheet the moment the user
 /// entered the app.

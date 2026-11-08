@@ -25,6 +25,7 @@ struct ChatsView: View {
             }
         }
         .navigationTitle(AppBranding.chatsTitle)
+        .toolbar { ProfileCornerButton(dependencies: dependencies) }
         .conversationDestinations(dependencies: dependencies)
         .conversationLoads(dependencies: dependencies)
     }

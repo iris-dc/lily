@@ -14,9 +14,9 @@ Files: `lily/Features/Shell/Models/AppTab.swift`, `lily/Features/Shell/Models/Cr
 ## Interface
 
 - `[AppTab.swift:AppTab]`: `nonisolated enum AppTab: Hashable, CaseIterable, Sendable` with cases `home`, `explore`,
-  `chat`, `profile` in bar order; `static var shown: [AppTab]` = `allCases.filter { $0 != .chat ||
-  AppConfig.FeatureFlags.chat }`; `var title: String` maps to `AppBranding.homeTitle`, `.exploreTitle`, `.chatsTitle`,
-  `.profileTitle`.
+  `chat` in bar order (the profile is no tab since 2026-11-07: the corner button presents it as a sheet,
+  `AppNavigation.isProfilePresented`); `static var shown: [AppTab]` = `allCases.filter { $0 != .chat ||
+  AppConfig.FeatureFlags.chat }`; `var title: String` maps to `AppBranding.homeTitle`, `.exploreTitle`, `.chatsTitle`.
 - `[CreateIntent.swift:CreateIntent]`: `nonisolated enum CreateIntent: Hashable, Sendable` with cases `game`, `group`,
   `tournament`; a marker with no members.
 - `[HomeContent.swift:HomeContent]`: `nonisolated enum HomeContent: Equatable, Sendable` with cases `signInPrompt`,
@@ -33,7 +33,8 @@ Files: `lily/Features/Shell/Models/AppTab.swift`, `lily/Features/Shell/Models/Cr
 ## Invariants
 
 - `[AppTab.swift:AppTab.shown]`: keeps `allCases` order and drops `.chat` only when `AppConfig.FeatureFlags.chat` is
-  off; the file's comment ties the ⌘1–⌘4 shortcuts to this list so the numbers never skip.
+  off; the file's comment ties the ⌘1–⌘3 shortcuts to this list so the numbers never skip (`ShellCommands` numbers by
+  `index + 1`, so Release, with chat off, is ⌘1 Home, ⌘2 Explore).
 - `[HomeContent.swift:HomeContent.init]`: only `SessionState.isSignedIn` yields `.overview`; a guest or a signed-out
   state yields `.signInPrompt`.
 - `[HomeOverviewState.swift:HomeOverviewState.resolve]`: a `nil` list (a feature flag off) is dropped by `compactMap`

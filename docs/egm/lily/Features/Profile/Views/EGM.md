@@ -4,7 +4,8 @@ Source: `lily/Features/Profile/Views/`
 
 ## Overview
 
-The Profile tab: the caller's name and bio as the backend holds them (each with the card and sheet that change it) with
+The profile sheet (`MainTabView` presents it from the corner button on every tab root since 2026-11-07; before that a
+tab): the caller's name and bio as the backend holds them (each with the card and sheet that change it) with
 a link row into `SettingsScreen` (the language and currency dropdown cards, the contact (feedback) card, the privacy and
 terms links and Sign out), or the guest prompt with Sign in and the language, currency and contact rows inline — a guest
 gets no Settings screen (2026-11-07). `ProfileView` and the pushed `SettingsScreen` re-render in place when the language
@@ -14,7 +15,10 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
 ## Interface
 
 - `ProfileView(dependencies: AppDependencies, language: AppLanguage)` `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`:
-  a `NavigationStack` with `ContentScreen`, title `AppBranding.profileTitle`; signed in: an `AvatarCircle` of the
+  the profile sheet's content — a `NavigationStack` (the sheet's stack) with `ContentScreen`, title
+  `AppBranding.profileTitle`; the root content carries `.accessibilityElement(children: .contain)` then
+  `AccessibilityIdentifiers.profileSheet`, and the stack mounts `.errorPopup(dependencies.errorCenter)` itself (the
+  topmost mount draws; the app root's popup sits below the sheet) (2026-11-07); signed in: an `AvatarCircle` of the
   profile name's initials (a glyph while the name is unknown), the name from `dependencies.profile` (a small spinner
   while the first load runs) and the email, then `DisplayNameRow(store:action:)`, `AboutRow(store:action:)` and the
   Settings link row (a `SettingsLinkRow` titled `AppBranding.Settings.title` with `AppBranding.Settings.rowSubtitle`,
@@ -96,7 +100,9 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   copy `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`; the Settings link row and the legal rows take
   their copy as plain inputs, which the language re-render recomputes.
 - The profile loads lazily, once per session, from the `.task(id: session.state.user?.id) { await
-  profile.loadIfNeeded() }` on `ProfileView`'s `NavigationStack`, so a user who never opens Profile costs no request; the header shows the backend's name,
+  profile.loadIfNeeded() }` on `ProfileView`'s `NavigationStack` — the sheet's content, so it runs only while the
+  sheet is up and a user who never opens the profile costs no request (the corner button reads the snapshot alone);
+  the header shows the backend's name,
   a spinner only while the first load runs and nothing when it failed (the cards below still write)
   `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`, `[lily/Features/Profile/Views/ProfileView.swift:signedIn]`.
 - A pick applies at once through the store's `select(_:)`, with no animation

@@ -1,8 +1,11 @@
 import Foundation
 
-/// Identifiers of the display name and "About you" cards and their sheets, and of the Settings screen; a UI test that
-/// reads one mirrors the literal by hand.
+/// Identifiers of the corner profile button and its sheet, the display name and "About you" cards and their sheets,
+/// and the Settings screen; a UI test that reads one mirrors the literal by hand.
 nonisolated extension AccessibilityIdentifiers {
+    /// The corner profile button on every tab root, and the profile sheet it presents (on the sheet's root container).
+    static let profileCorner = "profile-corner"
+    static let profileSheet = "profile-sheet"
     /// The "Display name" card on Profile.
     static let profileName = "profile-name"
     static let profileNameField = "profile-name-field"

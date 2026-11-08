@@ -2,9 +2,11 @@ import SwiftUI
 
 /// The caller's profile (the name other players see and the bio, with the cards that edit them) and the way into
 /// Settings, or the guest prompt with the language, the currency and the contact card inline (a guest has no Settings
-/// screen). The screen re-renders in place when the language changes (`language` is an input for that alone; every row
+/// screen). The content of the profile sheet `MainTabView` presents from the corner button: it owns the sheet's
+/// `NavigationStack` and mounts its own `.errorPopup` (the topmost mount draws; the root's popup sits below the
+/// sheet). The screen re-renders in place when the language changes (`language` is an input for that alone; every row
 /// reads its copy afresh, or is given the language as its identity when nothing else about it changes), rather than
-/// being rebuilt like the other tabs, whose rebuild would crossfade over the pick made here.
+/// being rebuilt like the tabs, whose rebuild would crossfade over the pick made here.
 struct ProfileView: View {
     let dependencies: AppDependencies
     /// The language the copy is in; a change re-runs this body and, through it, every row's.
@@ -42,11 +44,15 @@ struct ProfileView: View {
                 .padding(.vertical, DesignTokens.Spacing.xl)
                 .readableColumn()
             }
+            // `.contain` first, or the identifier stamps every child and overrides theirs.
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheet)
             .navigationTitle(AppBranding.profileTitle)
             .navigationDestination(isPresented: $isSettingsPresented) {
                 SettingsScreen(dependencies: dependencies, language: language)
             }
         }
+        .errorPopup(dependencies.errorCenter)
         .sheet(isPresented: $isSignInPresented) {
             SignInSheet(session: session, errorCenter: dependencies.errorCenter)
         }

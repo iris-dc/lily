@@ -103,7 +103,9 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
 
 ## Invariants
 
-- Layout (`EventListView`): `EventListLayout.resolve(mode: layoutMode)`; `.switchable` draws one column with the
+- Layout (`EventListView`): `EventListLayout.resolve(mode: layoutMode)`; the toolbar leads with the shared
+  `ProfileCornerButton` at `.topBarLeading` (Explore's stack root; `lily/Features/Shell/Views`, 2026-11-07), the
+  trailing items unchanged; `.switchable` draws one column with the
   create button floating over it and a segmented list/map `Picker` in the toolbar under
   `.sharedBackgroundVisibility(.hidden)`; `.sideBySide` draws the content column at
   `DesignTokens.Layout.exploreContentFraction` beside a permanent map pane (`accessibilityElement(children:

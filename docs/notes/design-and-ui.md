@@ -116,3 +116,20 @@ the asset catalog.
 - **Pre-merge review (2026-11-06).** The pre-merge review changed the map list pill to count a card while any part
   of it shows (`mapCardVisibleShare` 0.01), so at accessibility sizes a card taller than the list no longer makes the
   pill count from the top; details in `events.md` (2026-11-06, staging review fixes to the map list).
+- **Corner profile control, first cut (2026-11-07, before its design round).** `ProfileCornerButton` hides the iOS 26
+  toolbar item's own glass capsule (`.sharedBackgroundVisibility(.hidden)`, the segmented picker's existing pattern)
+  and draws the familiar `AvatarCircle` at `Layout.profileCornerSize` (36): the signed-in caller's initials, the
+  person glyph for guests or before the first load names the caller — one glass surface, no glass on glass. The
+  contract pins behavior and placement only; size, surface and tint are owed to a rendered design round before the
+  relocation slice merges (settled 2026-11-08, below), and the Release two-tab bar needs the owner's screenshot sign-off.
+- **Corner profile control, the design round (2026-11-08).** The rendered round the relocation contract owed: three
+  treatments of `ProfileCornerButton` built from the same slice-4 working state in worktrees — the baseline (the
+  36 pt `AvatarCircle` over the hidden toolbar capsule), the initials or glyph plain inside the item's own glass
+  capsule, and a 30 pt circle centred in the 44 pt hit area — each captured on the iPhone 17 Pro simulator on Home
+  and Explore, signed in (initials) and as a guest (person glyph), and judged by brand fit, glance legibility and
+  consistency with the existing toolbar items. The baseline won all three: the accent coin is the app's identity
+  mark and holds its weight beside the trailing capsules; the plain-capsule variant dissolved identity into a
+  generic button and paired an ink initial with an accent guest glyph; the 30 pt coin read undersized beside the
+  large title, and its explicit 44 pt frame duplicates the bar item's standard tap target. No code change — the
+  first cut stands as rendered; the owed-clause comments were resolved. Spec, per-variant notes, the decision and
+  the shots: `reviews/2026-11-07-profile-lifecycle-brainstorm/slice4-shots/design-round/`.

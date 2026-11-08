@@ -66,6 +66,27 @@ extension LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Discover groups"].waitForExistence(timeout: 5))
     }
 
+    /// Opens the profile sheet from the corner button on the current tab root and waits for its title: "Profile" is
+    /// the sheet's navigation title, no tab's.
+    @MainActor
+    func openProfileSheet() {
+        let corner = app.buttons["profile-corner"]
+        XCTAssertTrue(corner.waitForExistence(timeout: 10), "the tab root carries the corner profile button")
+        corner.tap()
+        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
+    }
+
+    /// Closes the profile sheet by dragging it down from its bar, and waits for the root's corner button to be back.
+    @MainActor
+    func closeProfileSheet() {
+        let grabber = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08))
+        let bottom = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98))
+        grabber.press(forDuration: 0.1, thenDragTo: bottom, withVelocity: .default, thenHoldForDuration: 0)
+        let corner = app.buttons["profile-corner"]
+        XCTAssertTrue(corner.waitForExistence(timeout: 5), "the root is back once the sheet is gone")
+        waitUntilHittableAndStill(corner)
+    }
+
     /// Pushes Settings from the signed-in profile root's link row and waits for its title.
     @MainActor
     func openSettings() {

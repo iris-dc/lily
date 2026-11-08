@@ -26,12 +26,31 @@ struct InviteSentence: View {
 
     var body: Text {
         var text = AttributedString(AppBranding.Inbox.invitedYou(inviter: Self.inviterMarker, group: Self.targetMarker))
-        Self.replace(Self.inviterMarker, with: inviter, in: &text)
-        Self.replace(Self.targetMarker, with: target, in: &text)
+        SentenceEmphasis.replace(Self.inviterMarker, with: inviter, in: &text)
+        SentenceEmphasis.replace(Self.targetMarker, with: target, in: &text)
         return Text(text)
     }
+}
 
-    private static func replace(_ marker: String, with name: String, in text: inout AttributedString) {
+/// "**Sunset 5-a-side** was cancelled": one name in bold inside the localized copy, wherever a language puts it.
+struct NoticeSentence: View {
+    let name: String
+    /// The copy, given the stand-in the name replaces.
+    let copy: (String) -> String
+
+    private static let marker = "\u{FFFC}1"
+
+    var body: Text {
+        var text = AttributedString(copy(Self.marker))
+        SentenceEmphasis.replace(Self.marker, with: name, in: &text)
+        return Text(text)
+    }
+}
+
+/// Swaps a formatting marker for a strongly emphasised run, so the sentences' bold names land wherever a language
+/// puts them.
+private enum SentenceEmphasis {
+    static func replace(_ marker: String, with name: String, in text: inout AttributedString) {
         guard let range = text.range(of: marker) else { return }
         var emphasised = AttributedString(name)
         emphasised.inlinePresentationIntent = .stronglyEmphasized

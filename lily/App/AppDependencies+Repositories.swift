@@ -39,7 +39,7 @@ struct Repositories {
 
     /// `systemPush` keeps the real permission prompt and token (`-system-push`); the registry stays in memory.
     /// `eventsFailFirst` makes the events mock refuse its first list load (`-mock-events-fail`); `deletedUser` makes
-    /// the chat, event and tournament mocks serve the deleted-flagged fixtures (`-mock-deleted-user`).
+    /// the chat, event, tournament and inbox mocks serve the deleted-flagged fixtures (`-mock-deleted-user`).
     static func mock(identity: any IdentityProvider,
                      logger: any Logging,
                      autoReplies: Bool = false,

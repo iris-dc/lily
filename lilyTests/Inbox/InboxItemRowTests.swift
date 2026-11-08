@@ -23,4 +23,12 @@ struct InboxItemRowTests {
     @Test func aReminderDrawsItsCard() {
         #expect(height(of: .reminder()) > 0)
     }
+
+    @Test func theDeletionNoticesDrawTheirCards() {
+        #expect(height(of: .eventCancelled()) > 0)
+        #expect(height(of: .groupOwnershipTransferred()) > 0)
+        let bareCancelled = InboxItem(id: "bare-c", kind: .eventCancelled, createdAt: .now)
+        let bareOwnership = InboxItem(id: "bare-o", kind: .groupOwnershipTransferred, createdAt: .now)
+        #expect(height(of: bareCancelled) == 0 && height(of: bareOwnership) == 0)
+    }
 }

@@ -27,7 +27,8 @@ feature runs without a backend behind its mocks, and every feature has a unit-te
   of framed miniature screens over the aurora, with "Explore events" (guest) and "Sign in" pinned under every slide.
 - SignIn: [`./SignIn/EGM.md`](./SignIn/EGM.md) - the sign-in sheet and the email + password form; every credential
   call goes through `SessionController` (`lily/Core/Auth`), validation through `CredentialsValidator`.
-- Shell: [`./Shell/EGM.md`](./Shell/EGM.md) - the `TabView` of Home, Explore, Chats (flag-gated) and Profile, the Home
+- Shell: [`./Shell/EGM.md`](./Shell/EGM.md) - the `TabView` of Home, Explore and Chats (flag-gated) with the profile
+  as a sheet behind the corner control on every tab root (the Profile tab removed 2026-11-07), the Home
   root and overview, and the two app-lifetime services behind them: `ShellLists` (owns the Home and Explore list view
   models) and `ShellSync` (the ordered per-user sync chain). The screens inside the tabs belong to other features.
 - Events: [`./Events/EGM.md`](./Events/EGM.md) - finding sport events near the user, joining and leaving them, creating
@@ -49,7 +50,8 @@ feature runs without a backend behind its mocks, and every feature has a unit-te
   competitions with entries and teams, a room of their own, brackets or standings, player-reported results and
   organiser-run disputes, walkovers and scheduling; the repositories send exactly once, the `TRY_AGAIN` repeat lives in
   the view models' `WriteGate` and `CreateFlow`.
-- Profile: [`./Profile/EGM.md`](./Profile/EGM.md) - the Profile tab and the caller's backend profile: the name other
+- Profile: [`./Profile/EGM.md`](./Profile/EGM.md) - the profile sheet (presented from the shell's corner button since
+  2026-11-07) and the caller's backend profile: the name other
   players see (chosen on a card and sheet; the backend's "Player" until the user picks one) and the "About you" bio
   (a card and sheet of its own) with a link into `SettingsScreen` (language, currency, the contact card, the legal
   links and Sign out; 2026-11-07), or the guest prompt with the language, currency and contact rows inline;

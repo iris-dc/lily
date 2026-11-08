@@ -2,7 +2,7 @@ import Foundation
 
 /// The inbox without a backend: the fixture items for whoever is signed in, a read marker kept for the run, and an
 /// accept that admits into the group mock's Climbing Buddies or enters the tournament mock's Padel Open, the private
-/// group and tournament nothing else reaches.
+/// group and tournament nothing else reaches. Under `-mock-deleted-user` the two deletion notices join the fixtures.
 final class MockInboxRepository: InboxRepository {
     private var items: [InboxItem]
     private var lastReadID: String?
@@ -16,8 +16,11 @@ final class MockInboxRepository: InboxRepository {
          tournaments: MockTournamentRepository,
          identity: any IdentityProvider,
          logger: any Logging,
+         deletedUser: Bool = false,
          now: @escaping () -> Date = { .now }) {
-        self.items = MockInboxFixtures.make(now: now())
+        var items = MockInboxFixtures.make(now: now())
+        if deletedUser { items += MockInboxFixtures.deletionNotices(now: now()) }
+        self.items = items
         self.groups = groups
         self.tournaments = tournaments
         self.identity = identity

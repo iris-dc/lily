@@ -25,7 +25,7 @@ nonisolated extension AppConfig {
 
 nonisolated extension AppConfig.LaunchArguments {
     /// Makes the mock repositories serve deleted-flagged fixtures (a chat message whose sender is deleted, a past
-    /// game hosted by a deleted user, a tournament entry of one), so tombstone rendering and the deleted-user glyph
-    /// are walkable without a backend.
+    /// game hosted by a deleted user, a tournament entry of one, and the two inbox notices another account's deletion
+    /// writes), so tombstone rendering, the deleted-user glyph and the deletion notices are walkable without a backend.
     static let mockDeletedUser = "-mock-deleted-user"
 }

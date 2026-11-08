@@ -3,7 +3,7 @@ import SwiftUI
 /// One item of the inbox as a system card on the surface colour (a plain fill, never glass: the list draws many at
 /// once): an invite into a group or a tournament with Accept / Decline while it is open and its status once it is not,
 /// or a reminder that opens its game or its match's tournament. The parts are `InboxCardParts.swift`, the tournament
-/// cards `InboxItemRow+Tournaments.swift`. The body switches on the kind, so a case added to `InboxItemKind` fails to
+/// cards `InboxItemRow+Tournaments.swift`, the deletion notices `InboxItemRow+Notices.swift`. The body switches on the kind, so a case added to `InboxItemKind` fails to
 /// compile here until it has a card; a kind this build cannot draw renders nothing, as does a known kind whose payload
 /// is missing.
 struct InboxItemRow: View {
@@ -27,6 +27,14 @@ struct InboxItemRow: View {
         case .matchReminder:
             if let reminder = item.matchReminder {
                 MatchReminderCard(item: item, reminder: reminder, viewModel: viewModel)
+            }
+        case .eventCancelled:
+            if let payload = item.eventCancelled {
+                EventCancelledCard(item: item, payload: payload, viewModel: viewModel)
+            }
+        case .groupOwnershipTransferred:
+            if let payload = item.groupOwnershipTransferred {
+                GroupOwnershipCard(item: item, payload: payload, viewModel: viewModel)
             }
         case .unknown:
             EmptyView()

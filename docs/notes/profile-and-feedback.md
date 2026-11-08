@@ -110,3 +110,11 @@
   the native read stays owed with the other recent keys. UI: `LilySettingsTests.testDeletingTheAccountWalksToTheSignedOutLanding`
   (which also asserts the "Session expired" popup's absence over the landing) and
   `testADeletedSendersMessageShowsTheTombstone` (shard 4 unchanged).
+- **The profile opens as a sheet (2026-11-07, relocation slice 4).** `ProfileView` is now the content of the sheet
+  `MainTabView` presents from the corner button; its `NavigationStack` is the sheet's stack, the root content carries
+  `profile-sheet` (with `.contain` first) and the stack mounts its own `.errorPopup` (the root's popup sits below a
+  sheet). Nothing else about the screen moved: the four child flows (sign-in, display name, about, feedback) stay
+  sheets, Settings stays the only push, and the lazy `loadIfNeeded()` task now runs only while the sheet is up — the
+  corner button itself draws from the `ProfileStore` snapshot and costs no request. The delete flow's teardown (Pinned
+  16) holds unchanged: the acknowledge tap ends the session, `sessionDidEnd()` clears `isProfilePresented`, and the
+  whole presentation chain collapses over the landing (`LilySettingsTests` delete walk, unchanged but for the helper).

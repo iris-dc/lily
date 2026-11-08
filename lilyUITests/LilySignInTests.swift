@@ -27,11 +27,21 @@ final class LilySignInTests: LilyUITestCase {
     @MainActor
     func testSignInFromProfileDismissesTheSheet() {
         relaunchAsGuest()
-        openProfileTab()
+        openProfileSheet()
         let apple = tapSignInWithApple()
 
         XCTAssertTrue(apple.waitForNonExistence(timeout: 10), "the sheet must close once the guest is signed in")
         XCTAssertTrue(app.staticTexts["apple@example.com"].waitForExistence(timeout: 5), "Profile shows the account")
+    }
+
+    /// A guest's corner glyph on Explore opens the profile sheet with the sign-in prompt.
+    @MainActor
+    func testGuestCornerOnExploreOpensTheProfileSheetWithSignIn() {
+        relaunchAsGuest()
+        openProfileSheet()
+
+        XCTAssertTrue(app.staticTexts["You're browsing as a guest"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Sign in"].exists, "the guest sheet leads with sign-in")
     }
 
     /// With `-mock-auth-confirm` the mock behaves like the pool: sign-up asks for the emailed code (123456 here), and
@@ -96,6 +106,24 @@ final class LilySignInTests: LilyUITestCase {
         enter(text, into: app.descendants(matching: .any)["chat-composer"])
         app.buttons["chat-send"].tap()
         XCTAssertTrue(app.staticTexts[text].waitForExistence(timeout: 10), "the write goes through once the terms are accepted")
+    }
+
+    /// With `-mock-terms-pending`, a sign-in started from the profile sheet yields to the terms sheet: the account
+    /// loads owing the terms, the profile sheet and its sign-in collapse, and the root's non-dismissable terms sheet
+    /// presents (the relocation contract's maintained invariant: the two never both present).
+    @MainActor
+    func testSignInFromTheProfileSheetYieldsToTheTermsSheet() {
+        relaunch(appendingArguments: ["-start-as-guest", "-mock-terms-pending"])
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
+        openProfileSheet()
+        tapSignInWithApple()
+
+        let accept = app.buttons["terms-accept"]
+        XCTAssertTrue(accept.waitForExistence(timeout: 10), "the terms sheet presents once the account loaded owing them")
+        XCTAssertTrue(app.navigationBars["Profile"].waitForNonExistence(timeout: 5), "the profile sheet yields to the terms")
+
+        accept.tap()
+        XCTAssertTrue(accept.waitForNonExistence(timeout: 10), "the recorded acceptance closes the sheet")
     }
 }
 

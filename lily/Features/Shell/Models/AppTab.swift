@@ -1,11 +1,12 @@
 import Foundation
 
 /// The tabs of the main shell, in bar order. `AppNavigation.selectedTab` holds the current one; `chat` exists only
-/// while `AppConfig.FeatureFlags.chat` is on.
+/// while `AppConfig.FeatureFlags.chat` is on. The profile is no tab: the corner button on every tab root presents it
+/// as a sheet (`AppNavigation.isProfilePresented`).
 nonisolated enum AppTab: Hashable, CaseIterable, Sendable {
-    case home, explore, chat, profile
+    case home, explore, chat
 
-    /// The tabs the shell draws, in bar order: the ⌘1 to ⌘4 shortcuts follow this list, so the numbers never skip.
+    /// The tabs the shell draws, in bar order: the ⌘1 to ⌘3 shortcuts follow this list, so the numbers never skip.
     static var shown: [AppTab] {
         allCases.filter { $0 != .chat || AppConfig.FeatureFlags.chat }
     }
@@ -16,7 +17,6 @@ nonisolated enum AppTab: Hashable, CaseIterable, Sendable {
         case .home: AppBranding.homeTitle
         case .explore: AppBranding.exploreTitle
         case .chat: AppBranding.chatsTitle
-        case .profile: AppBranding.profileTitle
         }
     }
 }

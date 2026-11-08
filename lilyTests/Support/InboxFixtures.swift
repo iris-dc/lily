@@ -48,6 +48,27 @@ extension InboxItem {
                         createdAt: Date = Date(timeIntervalSince1970: 1_800_000_000)) -> InboxItem {
         InboxItem(id: id, kind: .unknown("poke"), createdAt: createdAt)
     }
+
+    /// The notice a host's account deletion leaves for a joined upcoming game; the event itself is gone.
+    static func eventCancelled(id: String = "01J9INBOX00000000000000006",
+                               eventID: String = "e-cancelled",
+                               title: String = "Sunset 5-a-side",
+                               startsAt: Date = Date(timeIntervalSince1970: 1_800_172_800),
+                               createdAt: Date = Date(timeIntervalSince1970: 1_800_000_000)) -> InboxItem {
+        InboxItem(id: id,
+                  kind: .eventCancelled,
+                  createdAt: createdAt,
+                  eventCancelled: EventCancelledPayload(eventId: eventID, title: title, startsAt: startsAt))
+    }
+
+    /// The notice the deletion job writes to a group's new owner.
+    static func groupOwnershipTransferred(id: String = "01J9INBOX00000000000000007",
+                                          groupID: String = "g9",
+                                          groupName: String = "Sunday Padel Crew",
+                                          createdAt: Date = Date(timeIntervalSince1970: 1_800_000_000)) -> InboxItem {
+        let payload = GroupOwnershipTransferredPayload(groupId: groupID, groupName: groupName)
+        return InboxItem(id: id, kind: .groupOwnershipTransferred, createdAt: createdAt, groupOwnershipTransferred: payload)
+    }
 }
 
 extension InboxPage {
@@ -95,4 +116,16 @@ extension ContractSamples {
     static let inviteDeclined = #"{"item":\#(inboxDeclinedInvite)}"#
     static let inboxReadMarker = #"{"lastReadId":"\#(inboxInviteID)"}"#
     static let inboxItemEnvelope = #"{"type":"inbox_item","item":\#(inboxInvite)}"#
+    static let inboxEventCancelledID = "01JE5K0C4V7Q9S1T3V5X7Z9B1D"
+    static let inboxOwnershipID = "01JE5K0C4W8R0T2V4X6Z8B0D2F"
+    /// The account-deletion contract (section 8): the notice every participant of a removed upcoming event receives.
+    static let inboxEventCancelled = """
+    {"id":"\(inboxEventCancelledID)","kind":"event_cancelled","createdAt":"2026-11-07T10:00:00Z",\
+    "eventCancelled":{"eventId":"evt_01J","title":"Sunset 5-a-side","startsAt":"2026-11-09T18:30:00Z"}}
+    """
+    /// The account-deletion contract (section 8): the notice a group's new owner receives once the handoff commits.
+    static let inboxOwnershipTransferred = """
+    {"id":"\(inboxOwnershipID)","kind":"group_ownership_transferred","createdAt":"2026-11-07T10:00:01Z",\
+    "groupOwnershipTransferred":{"groupId":"7b1c2d3e-4f50-4a6b-8c9d-0e1f2a3b4c5d","groupName":"Sunday Padel Crew"}}
+    """
 }
