@@ -16,12 +16,15 @@ struct SignInSheet: View {
     @State private var detent: PresentationDetent = .medium
     private let session: SessionController
     private let errorCenter: ErrorCenter
+    /// Rides along for the legal sheets the email form's sign-up footnote presents.
+    private let language: AppLanguage
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    init(session: SessionController, errorCenter: ErrorCenter) {
+    init(session: SessionController, errorCenter: ErrorCenter, language: AppLanguage) {
         self.session = session
         self.errorCenter = errorCenter
+        self.language = language
         _viewModel = State(initialValue: SignInViewModel(session: session))
     }
 
@@ -47,7 +50,7 @@ struct SignInSheet: View {
                 ToolbarItem(placement: .topBarTrailing) { closeButton }
             }
             .navigationDestination(isPresented: $viewModel.isEmailFormPresented) {
-                EmailSignInView(session: session, detent: formDetent)
+                EmailSignInView(session: session, errorCenter: errorCenter, language: language, detent: formDetent)
             }
         }
         .presentationDetents([.medium, .large], selection: $detent)
@@ -114,5 +117,7 @@ struct SignInSheet: View {
 
 #Preview {
     let dependencies = AppDependencies.makeMock()
-    SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
+    SignInSheet(session: dependencies.sessionController,
+                errorCenter: dependencies.errorCenter,
+                language: dependencies.language.language)
 }

@@ -21,7 +21,7 @@ final class UserProfileViewModel {
     private let repository: any UserRepository
     private let identity: any IdentityProvider
     private let myGroups: MyGroupsStore
-    private let reporter: GroupErrorReporter
+    private let errorCenter: ErrorCenter
     private let logger: any Logging
     private let gate: WriteGate
     private var hasLoggedOpen = false
@@ -30,19 +30,19 @@ final class UserProfileViewModel {
          repository: any UserRepository,
          identity: any IdentityProvider,
          myGroups: MyGroupsStore,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay) {
         self.destination = destination
         self.repository = repository
         self.identity = identity
         self.myGroups = myGroups
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.logger = logger
         gate = WriteGate(category: .groups,
                          logger: logger,
                          tryAgainDelay: tryAgainDelay,
-                         report: { reporter.report($0) })
+                         report: { errorCenter.report($0) })
     }
 
     var userID: String { destination.userId }
@@ -75,7 +75,7 @@ final class UserProfileViewModel {
             guard !AppError.isCancellation(error) else { return }
             logger.error(.groups, "Loading profile \(userID) failed: \(error)")
             if profile == nil { state = .failed }
-            reporter.report(error)
+            errorCenter.report(error)
         }
     }
 

@@ -136,3 +136,25 @@
   `DeletionConsequence` rows from `DeleteAccountViewModel.rows(for:)` (the view appends the always-true messages
   row itself); presentation only, the pinned rendering rule stands. The design round, the glyph choices and the
   rejected inset-card variant: `design-and-ui.md` (2026-11-08).
+- **Owner decision (2026-11-08): the app never prompts to accept terms — the terms read in place like the policy.**
+  Agreement is by use (a sign-up footnote names the two documents; the blocking terms gate is removed end to end in
+  the same overall change), so Settings' terms row stops opening the browser: it pushes `TermsScreen`
+  (`settings-terms-of-use`) — six sections of Laurel's `/terms` page as `AppBranding.Terms` data minus the page's
+  version stamp, rendered by the new shared `LegalScreen` (the privacy and terms screens are one reading screen over
+  different sections). The privacy screen slims to the sections alone: the owner removed the "Last updated" date
+  line and the "also available at" footer (their catalog keys deleted; the served page keeps both). Eleven new
+  catalog keys in the seven languages plus the shared "Changes" heading (`AppBranding.Legal.changesTitle`); the
+  native read stays owed. Tests: `TermsConfigTests` (the shape, the agreement-by-use framing, every key in every
+  language), `PrivacyConfigTests` slimmed with the screen; UI: `LilySettingsTests.testTheTermsRowPushesTheTermsInApp`,
+  and the privacy walk now asserts the date line's absence (shard 4 unchanged). Follow-up owed with the gate
+  removal: the privacy "Changes" paragraph still says a terms change "is put to you in the app before you can post
+  again", which the gate removal must reword in the app and on Laurel's page in the same change. Shots:
+  `reviews/2026-11-07-profile-lifecycle-brainstorm/corrections2-shots/`.
+- **The terms gate is removed; the sign-up footnote carries the agreement (2026-11-08, owner decision — stage two;
+  the mechanics are in `auth-and-backend.md`, the groups-side teardown in `groups.md`).** `TermsSheet` and its delete
+  entry are gone, so account deletion is reachable through Settings alone; `LegalSheet` (Profile/Views) presents
+  `TermsScreen`/`PrivacyPolicyScreen` modally for the sign-up footnote, in their own stack with Close (`legal-close`)
+  — the same screens Settings pushes, readable both ways. The follow-up recorded above is resolved: the privacy
+  "Changes" paragraph now reads "Continuing to use iskra after a change constitutes acceptance of the updated
+  policy." in the app and on Laurel's `privacy.html`, changed together. Compliance: guideline 1.2's agree-to-terms
+  expectation is met by the footnote (the checklist records it, dated).

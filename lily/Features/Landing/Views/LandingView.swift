@@ -38,7 +38,9 @@ struct LandingView: View {
         .ignoresSafeArea(.keyboard)
         .onChange(of: visibleSlide) { viewModel.slideShown(visibleSlide) }
         .sheet(isPresented: $viewModel.isSignInPresented) {
-            SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
+            SignInSheet(session: dependencies.sessionController,
+                        errorCenter: dependencies.errorCenter,
+                        language: dependencies.language.language)
         }
     }
 

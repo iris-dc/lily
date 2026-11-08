@@ -7,14 +7,9 @@ struct MeStoreTests {
     private let repository = FakeMeRepository()
     private let identity = FakeIdentityProvider(currentUserID: TestFixtures.user.id)
     private let logger = SpyLogger()
-    private let errorCenter: ErrorCenter
-
-    init() {
-        errorCenter = ErrorCenter(logger: logger)
-    }
 
     private func makeStore() -> MeStore {
-        MeStore(repository: repository, identity: identity, errorCenter: errorCenter, logger: logger)
+        MeStore(repository: repository, identity: identity, logger: logger)
     }
 
     @Test func loadsOncePerUserAndExposesTheAccount() async {
@@ -24,7 +19,7 @@ struct MeStoreTests {
         await store.loadIfNeeded()
         await store.loadIfNeeded()
         #expect(repository.meCallCount == 1)
-        #expect(store.account?.isOperator == true && !store.needsTerms && store.realtimeEndpoint == nil)
+        #expect(store.account?.isOperator == true && store.realtimeEndpoint == nil)
 
         identity.currentUserID = "someone-else"
         await store.loadIfNeeded()
@@ -52,7 +47,7 @@ struct MeStoreTests {
         identity.currentUserID = nil
         await store.loadIfNeeded()
 
-        #expect(store.account == nil && repository.meCallCount == 1 && !store.needsTerms)
+        #expect(store.account == nil && repository.meCallCount == 1)
     }
 
     /// The load is bookkeeping: a failure is logged, never shown, and the next `loadIfNeeded` tries again.
@@ -61,7 +56,7 @@ struct MeStoreTests {
         let store = makeStore()
 
         await store.loadIfNeeded()
-        #expect(store.account == nil && errorCenter.current == nil)
+        #expect(store.account == nil)
         #expect(logger.messages(in: .groups, at: .warning).count == 1)
 
         repository.meResult = .success(.fixture())
@@ -72,11 +67,10 @@ struct MeStoreTests {
     @Test func signOutClearsTheAccount() async {
         let store = makeStore()
         await store.loadIfNeeded()
-        store.noteTermsRequired()
 
         store.sessionDidEnd()
 
-        #expect(store.account == nil && !store.needsTerms)
+        #expect(store.account == nil)
     }
 
     @Test func aSecondLoadForTheSameUserReusesTheAccount() async {

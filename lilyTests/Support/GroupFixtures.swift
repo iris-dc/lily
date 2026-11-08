@@ -158,7 +158,6 @@ extension ContractSamples {
     "realtimeEndpoint":"https://abc.appsync-api.eu-central-1.amazonaws.com/event","attachmentsEnabled":true}
     """
     static let minimalMe = #"{"userId":"u-1","isOperator":false,"termsVersion":1}"#
-    static let termsAcceptance = #"{"acceptedTermsVersion":2,"acceptedTermsAt":"2026-09-25T09:00:00Z"}"#
     /// `GET /api/me/deletion-plan` (the account-deletion contract, §2): exactly five integers, advisory counts.
     static let deletionPlan = """
     {"groupsTransferring": 2, "groupsDeleted": 1, "eventsCancelled": 1,\

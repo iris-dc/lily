@@ -113,7 +113,7 @@ timeouts live in `AppConfig.API` (`lily/Config/`) and are cited by name.
   `CreateFlow.swift:CreateFlow.attemptTwice(_:_:_:)`].
 - Calls the caller's `refetch` and `apply` closures once per read-back [`LostAnswer.swift:LostAnswer.settle(_:despite:intent:)`],
   and the caller's `settling` closure once per non-cancelled failure [`WriteGate.swift:WriteGate.run(_:settling:_:)`].
-- Calls the caller's `report` closure (an `ErrorCenter` or a `GroupErrorReporter`) with the kept failure
+- Calls the caller's `report` closure (the shared `ErrorCenter`) with the kept failure
   [`WriteGate.swift:WriteGate.run(_:settling:_:)`, `CreateFlow.swift:CreateFlow.submit(clientID:describing:send:update:)`].
 - Logging under the caller's `category`: info "<what> lost a race; retrying once" [`LostRace.swift`]; warning or
   error "<what> failed: <error>" [`WriteGate.swift`]; warning "<what> outcome unknown (<error>); reading back", info

@@ -2,9 +2,10 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The in-app privacy policy's copy: the sections mirror the served page's shape, every key resolves in all seven
-/// languages (a missing catalog entry would silently show English), and the footer names the canonical address. Like
-/// the other copy suites, it reads the keys through `AppBranding` on the English test host.
+/// The in-app privacy policy's copy: the sections mirror the served page's shape, and every key resolves in all seven
+/// languages (a missing catalog entry would silently show English). The page's date line and self-referencing footer
+/// stay on the page alone (owner decision 2026-11-08). Like the other copy suites, it reads the keys through
+/// `AppBranding` on the English test host.
 struct PrivacyConfigTests {
     private typealias Privacy = AppBranding.Privacy
 
@@ -37,13 +38,9 @@ struct PrivacyConfigTests {
         }
     }
 
-    @Test func theFooterNamesTheServedPage() {
-        #expect(Privacy.alsoAt.contains(AppConfig.Moderation.privacyURL.absoluteString))
-    }
-
-    /// Every key the screen shows, in English (the keys themselves): the date line and each section's texts.
+    /// Every key the screen shows, in English (the keys themselves): each section's texts.
     private static var copyTexts: [String] {
-        [Privacy.updated] + Privacy.sections.flatMap { section in
+        Privacy.sections.flatMap { section in
             [section.title] + section.paragraphs.flatMap { [$0.lead, $0.body].compactMap { $0 } }
         }
     }

@@ -21,23 +21,23 @@ final class InvitePeopleViewModel {
     private var hasLoaded = false
 
     private let repository: any InviteRepository
-    private let reporter: GroupErrorReporter
+    private let errorCenter: ErrorCenter
     private let logger: any Logging
     private let gate: WriteGate
 
     init(target: InviteTarget,
          repository: any InviteRepository,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay) {
         self.target = target
         self.repository = repository
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.logger = logger
         gate = WriteGate(category: target.logCategory,
                          logger: logger,
                          tryAgainDelay: tryAgainDelay,
-                         report: { reporter.report($0) })
+                         report: { errorCenter.report($0) })
     }
 
     /// The candidates whose name contains the query (case and diacritics aside), every one while the query is blank.
@@ -74,7 +74,7 @@ final class InvitePeopleViewModel {
             guard !AppError.isCancellation(error) else { return }
             loadFailed = true
             logger.error(target.logCategory, "Loading invite candidates for \(target.logName) failed: \(error)")
-            reporter.report(error)
+            errorCenter.report(error)
         }
     }
 

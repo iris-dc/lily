@@ -236,14 +236,13 @@ struct GroupDetailViewModelTests {
         #expect(harness.presentedError == nil && harness.logs().isEmpty)
     }
 
-    @Test func termsRequiredRaisesTheTermsSheetWithoutARefetch() async {
+    @Test func termsRequiredReachesThePopupWithoutARefetch() async {
         let viewModel = harness.makeGroupDetailViewModel(.fixture(id: "g"))
         harness.repository.actionError = AppError.termsRequired
 
         await viewModel.join()
 
         #expect(harness.presentedError == .termsRequired)
-        #expect(harness.termsRequiredCount == 1)
         #expect(harness.repository.fetchedGroupIDs.isEmpty)
     }
 }

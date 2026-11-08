@@ -12,7 +12,7 @@ holds no copy of the items; they live in
 ## Interface
 
 - `@Observable final class InboxViewModel` `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:InboxViewModel]`;
-  `init(store: InboxStore, repository: any InboxRepository, opener: EventOpener, myGroups: MyGroupsStore, tournamentChanges: ChangeTracker, navigation: AppNavigation, reporter: GroupErrorReporter, logger: any Logging, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay, now: @escaping () -> Date = { .now })`.
+  `init(store: InboxStore, repository: any InboxRepository, opener: EventOpener, myGroups: MyGroupsStore, tournamentChanges: ChangeTracker, navigation: AppNavigation, errorCenter: ErrorCenter, logger: any Logging, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay, now: @escaping () -> Date = { .now })`.
 - State: `store`, `busyItemIDs: Set<String>` (answers in flight), `openingItemID: String?` (the reminder whose game
   is being fetched), `now`; derived `rows: [InboxTimelineRow]` (`InboxTimeline.rows(store.items)`), `hasOlder`,
   `isLoadingOlder`, `loadFailed`, `isInitialLoad` (`!store.hasLoaded && !store.loadFailed`), `newestID`;
@@ -72,7 +72,7 @@ holds no copy of the items; they live in
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:accept]`,
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:openEvent]`,
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:openTournament]`.
-- `reporter.report(failure)` for every failed answer the read-back did not find landed
+- `errorCenter.report(failure)` for every failed answer the read-back did not find landed
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:answer]`.
 - Logging under `.inbox`: info on an accept (group, or tournament with its entry), a decline, a reminder opening a
   game or a match, an ownership notice opening its group; warning on an acceptance into nothing this build knows, on a

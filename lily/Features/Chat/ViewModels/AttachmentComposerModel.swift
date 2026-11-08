@@ -22,7 +22,7 @@ final class AttachmentComposerModel {
     private let maxPerMessage: Int
     private var tasks: [String: Task<Void, Never>] = [:]
     private let cache: any AttachmentCache
-    private let reporter: GroupErrorReporter
+    private let errorCenter: ErrorCenter
     /// Stored ids whose files went (or are going) into the cache: the answer and the live echo both settle one
     /// message, and the second must neither copy again nor delete what the first is still copying.
     private var seeded: Set<String> = []
@@ -33,7 +33,7 @@ final class AttachmentComposerModel {
          uploader: any AttachmentUploader,
          preparer: any MediaPreparer,
          cache: any AttachmentCache,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          logger: any Logging,
          maxPerMessage: Int = AppConfig.Chat.Attachments.maxPerMessage,
          maxConcurrentUploads: Int = AppConfig.Chat.Attachments.maxConcurrentUploads) {
@@ -43,7 +43,7 @@ final class AttachmentComposerModel {
         self.uploader = uploader
         self.preparer = preparer
         self.cache = cache
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.logger = logger
         self.maxPerMessage = maxPerMessage
         slots = SlotGate(limit: maxConcurrentUploads)
@@ -144,7 +144,7 @@ final class AttachmentComposerModel {
     func dropRefused(_ id: String, _ error: any Error) {
         drafts.removeAll { $0.id == id }
         logger.warning(.chat, "Attachment \(id) could not be prepared: \(error)")
-        reporter.report(error)
+        errorCenter.report(error)
     }
 
     /// Both objects are in the bucket under the ticket's id: the send may name `ref`.
@@ -157,7 +157,7 @@ final class AttachmentComposerModel {
     func failUpload(_ id: String, _ error: any Error) {
         setState(of: id, to: .failed)
         logger.error(.chat, "Attachment \(id) upload failed in group \(groupID): \(error)")
-        reporter.report(inThisRoom(error))
+        errorCenter.report(inThisRoom(error))
     }
 
     /// A backend refusal for size names no room; the popup should name this room's caps.

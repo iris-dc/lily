@@ -181,7 +181,7 @@ struct TournamentDetailViewModelTests {
         #expect(harness.repository.joins.isEmpty && viewModel.permissions.organizerProfile == nil)
     }
 
-    @Test func aTermsRefusalRaisesTheTermsSheet() async {
+    @Test func aTermsRefusalReachesThePopup() async {
         harness.repository.details["t"] = .fixture(tournament: .fixture(organizerUserId: TestFixtures.user.id))
         harness.repository.actionError = AppError.termsRequired
         let viewModel = harness.makeDetailViewModel(for: destination)
@@ -189,7 +189,7 @@ struct TournamentDetailViewModelTests {
 
         await viewModel.cancel()
 
-        #expect(harness.presentedError == .termsRequired && harness.termsRequiredCount == 1)
+        #expect(harness.presentedError == .termsRequired)
     }
 
     @Test func aTryAgainIsRepeatedOnce() async {

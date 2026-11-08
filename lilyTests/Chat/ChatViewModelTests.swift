@@ -214,14 +214,14 @@ struct ChatViewModelTests {
         #expect(viewModel.room.messages.map(\.isDeleted) == [true, false])
     }
 
-    /// The backend gates deletes behind the current terms like every other write: the terms sheet must follow the popup.
-    @Test func aTermsRequiredOnDeleteRaisesTheTermsSheet() async {
+    /// The backend can still gate a delete behind the terms; the refusal reaches the popup like any other.
+    @Test func aTermsRequiredOnDeleteReachesThePopup() async {
         let (harness, viewModel) = await makeHarness(cached: [first])
         harness.chat.deleteError = AppError.termsRequired
 
         await viewModel.delete(first)
 
-        #expect(harness.errorCenter.current?.error == .termsRequired && harness.termsRequiredCount == 1)
+        #expect(harness.errorCenter.current?.error == .termsRequired)
         #expect(viewModel.room.messages.map(\.isDeleted) == [false])
     }
 }

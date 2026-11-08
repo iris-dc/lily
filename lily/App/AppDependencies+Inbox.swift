@@ -13,7 +13,7 @@ extension AppDependencies {
                        myGroups: myGroups,
                        tournamentChanges: tournamentChanges,
                        navigation: navigation,
-                       reporter: groups.errorReporter,
+                       errorCenter: errorCenter,
                        logger: logger)
     }
 }

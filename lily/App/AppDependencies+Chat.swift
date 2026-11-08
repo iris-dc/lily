@@ -66,7 +66,7 @@ extension AppDependencies {
                       attachments: makeAttachmentComposer(for: group),
                       attachmentLoader: groups.attachments.loader,
                       identity: identity,
-                      reporter: groups.errorReporter,
+                      errorCenter: errorCenter,
                       outbox: outbox,
                       recorder: interactionRecorder,
                       logger: logger)
@@ -80,7 +80,7 @@ extension AppDependencies {
                                 uploader: groups.attachments.uploader,
                                 preparer: groups.attachments.preparer,
                                 cache: groups.attachments.cache,
-                                reporter: groups.errorReporter,
+                                errorCenter: errorCenter,
                                 logger: logger)
     }
 
@@ -91,7 +91,7 @@ extension AppDependencies {
                            outbox: outbox,
                            realtime: realtime,
                            unread: unreadCenter,
-                           reporter: groups.errorReporter,
+                           errorCenter: errorCenter,
                            logger: logger)
     }
 }

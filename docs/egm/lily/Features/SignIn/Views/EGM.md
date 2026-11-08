@@ -8,13 +8,16 @@ The sign-in sheet and the email form pushed inside it. `SignInSheet` is presente
 prompts: a navigation stack with Close, the title and three `ProviderButton`s centred in the medium detent, with its own
 `.errorPopup` because a sheet draws above the root's. `EmailSignInView` is the email + password form whose third step is
 the confirmation code; it owns the choreography that grows the sheet to the large detent before a field takes focus so
-the keyboard never pushes the sheet.
+the keyboard never pushes the sheet. The sign-up step ends on the agreement footnote (2026-11-08, owner decision:
+agreement is by use, the app never prompts to accept terms): one localized caption whose two document names are
+tappable runs presenting the in-app legal screens as sheets (`LegalSheet`, Profile Views).
 
 Files: `lily/Features/SignIn/Views/SignInSheet.swift`, `lily/Features/SignIn/Views/EmailSignInView.swift`.
 
 ## Interface
 
-- `[SignInSheet.swift:SignInSheet]`: `init(session: SessionController, errorCenter: ErrorCenter)`; `@State viewModel:
+- `[SignInSheet.swift:SignInSheet]`: `init(session: SessionController, errorCenter: ErrorCenter, language: AppLanguage)`
+  (the language rides through to the footnote's legal sheets); `@State viewModel:
   SignInViewModel`, `@State restHeight: CGFloat?`, `@State detent: PresentationDetent = .medium`; reads `\.dismiss` and
   `\.dynamicTypeSize`. Body: `NavigationStack { ContentScreen { GeometryReader { ScrollView { column } } } }` with
   `.presentationDetents([.medium, .large], selection: $detent)`, `.lilyFormSheet()`, `.errorPopup(errorCenter)`.
@@ -25,12 +28,14 @@ Files: `lily/Features/SignIn/Views/SignInSheet.swift`, `lily/Features/SignIn/Vie
 - `[SignInSheet.swift:SignInSheet.closeButton]`: a trailing toolbar `Button` with `DesignTokens.Symbols.dismiss`,
   `.accessibilityLabel(AppBranding.Forms.close)` and `AccessibilityIdentifiers.signInClose`.
 - `[SignInSheet.swift:SignInSheet.body]`: `.navigationDestination(isPresented: $viewModel.isEmailFormPresented) {
-  EmailSignInView(session: session, detent: formDetent) }`; private `restDetent` and `formDetent: Binding<PresentationDetent>`.
-- `[EmailSignInView.swift:EmailSignInView]`: `init(session: SessionController, detent: Binding<PresentationDetent>)`;
+  EmailSignInView(session: session, errorCenter: errorCenter, language: language, detent: formDetent) }`; private
+  `restDetent` and `formDetent: Binding<PresentationDetent>`.
+- `[EmailSignInView.swift:EmailSignInView]`: `init(session: SessionController, errorCenter: ErrorCenter,
+  language: AppLanguage, detent: Binding<PresentationDetent>)`;
   `@State viewModel: EmailSignInViewModel`, `@FocusState focusedField: Field?` (private `enum Field { email, password,
   code }`), `@Binding detent`; reads `\.dismiss`. Body: `ContentScreen { ScrollView { ScreenTitle(text:
   viewModel.mode.title, subtitle: viewModel.subtitle); codeField or credentialFields; submitButton; resendButton (confirm
-  only); modeToggle } }` under `.readableColumn()`.
+  only); modeToggle; agreementFootnote (sign-up only) } }` under `.readableColumn()`.
 - `[EmailSignInView.swift:EmailSignInView.credentialFields]`: `TextField(AppBranding.emailFieldPlaceholder)` with
   `.textContentType(.username)`, `.keyboardType(.emailAddress)`, `.textInputAutocapitalization(.never)`,
   `.autocorrectionDisabled()`, `.submitLabel(.next)`, `.lilyField()`, `AccessibilityIdentifiers.authEmail`;
@@ -45,6 +50,12 @@ Files: `lily/Features/SignIn/Views/SignInSheet.swift`, `lily/Features/SignIn/Vie
   `AppBranding.Forms.back`, `AccessibilityIdentifiers.authBack`); private `textButton(_:identifier:action:)` is a
   full-width label under `lilyTextButton(font: LilyTheme.Fonts.caption)` (`lily/Core/UI/Components/ButtonModifiers.swift`):
   ink, `.secondary` while disabled, the 44pt hit area from the style.
+- `[EmailSignInView.swift:EmailSignInView.agreementFootnote]` (2026-11-08): a caption `Text(agreementText)` in
+  `.secondary`, centred, `AccessibilityIdentifiers.authAgreement`; `agreementText` formats
+  `AppBranding.signUpAgreement(terms:privacy:)` with object-replacement markers (the `InviteSentence` pattern) and
+  swaps each for an ink, underlined link run carrying `AppConfig.Legal.termsLink` / `privacyLink`; a local
+  `OpenURLAction` maps the token to `LegalSheet.Document` and sets `@State presentedLegal`, presented by
+  `.sheet(item:)` as `LegalSheet(document:language:errorCenter:)`. Shown only while `viewModel.mode == .signUp`.
 - `[EmailSignInView.swift:View.firstTapGrowsTheSheet]`: `private extension View`; `func firstTapGrowsTheSheet(detent:
   PresentationDetent, action: @escaping () -> Void) -> some View`, a clear tap-catching overlay present only while
   `detent != .large`, hidden from accessibility.
@@ -83,6 +94,8 @@ Files: `lily/Features/SignIn/Views/SignInSheet.swift`, `lily/Features/SignIn/Vie
   `DispatchQueue.main.async` hops for the focus and the pop.
 - `[SignInSheet.swift:SignInSheet.body]`: `.errorPopup(errorCenter)` mounts the shared popup on the sheet;
   `onChange(of: proxy.size.height, initial: true)` reads geometry into state.
+- `[EmailSignInView.swift:EmailSignInView.agreementFootnote]`: presents the legal sheets (`LegalSheet`); reading
+  content only, no network.
 - No logging, disk or network calls are made directly by these views.
 
 ## Verification

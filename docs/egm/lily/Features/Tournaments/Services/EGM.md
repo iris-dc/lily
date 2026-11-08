@@ -20,7 +20,7 @@ itself and needs no fetch. A tournament that is gone or unreachable reaches the 
 ```swift
 init(tournaments: any TournamentRepository,
      navigation: AppNavigation,
-     reporter: GroupErrorReporter,   // lily/Features/Groups/Services/GroupErrorReporter.swift
+     errorCenter: ErrorCenter,   // lily/Core/Errors/ErrorCenter.swift
      logger: any Logging)
 ```
 
@@ -58,9 +58,8 @@ init(tournaments: any TournamentRepository,
   logging: `logger.warning(.tournaments, "Tournament <id> behind <source> is unavailable: <error>")` on a
   non-cancellation failure (`LogCategory.tournaments`, `lily/Core/Logging/Interfaces/Logging.swift`).
 - `[lily/Features/Tournaments/Services/TournamentOpener.swift:TournamentOpener.open(tournamentID:matchID:from:)]`:
-  error popup: `reporter.report(error)` wraps the error as `AppError`, hands it to `ErrorCenter`, and runs the
-  terms-required callback when the error is `.termsRequired`
-  (`lily/Features/Groups/Services/GroupErrorReporter.swift`).
+  error popup: `errorCenter.report(error)` wraps the error as `AppError` and shows it
+  (`lily/Core/Errors/ErrorCenter.swift`).
 - `[lily/Features/Tournaments/Services/TournamentOpener.swift:TournamentOpener]`: no disk, UserDefaults, timers or
   spawned tasks.
 

@@ -13,7 +13,7 @@ struct UserProfileViewModelTests {
                              repository: users,
                              identity: harness.identity,
                              myGroups: harness.store,
-                             reporter: harness.reporter,
+                             errorCenter: harness.errorCenter,
                              logger: harness.logger,
                              tryAgainDelay: .zero)
     }
@@ -162,13 +162,13 @@ struct UserProfileViewModelTests {
         #expect(!harness.logs(.error).mentioning("conversation", "u-2", "\(AppError.conversationLimit)").isEmpty)
     }
 
-    /// A `TERMS_REQUIRED` on the start raises the terms sheet like every groups write.
-    @Test func termsRequiredRaisesTheTermsSheet() async {
+    /// A `TERMS_REQUIRED` on the start reaches the popup like every groups write.
+    @Test func termsRequiredReachesThePopup() async {
         users.conversationResult = .failure(.termsRequired)
 
         await makeViewModel().message()
 
-        #expect(harness.presentedError == .termsRequired && harness.termsRequiredCount == 1)
+        #expect(harness.presentedError == .termsRequired)
     }
 
     @Test func aSecondTapWhileOneRunsIsDropped() async {

@@ -20,7 +20,7 @@ final class EditTournamentViewModel {
 
     init(tournament: Tournament,
          repository: any TournamentRepository,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
          now: @escaping () -> Date = { .now },
@@ -32,7 +32,7 @@ final class EditTournamentViewModel {
         self.logger = logger
         self.now = now
         self.onChange = onChange
-        gate = WriteGate(category: .tournaments, logger: logger, tryAgainDelay: tryAgainDelay, report: { reporter.report($0) })
+        gate = WriteGate(category: .tournaments, logger: logger, tryAgainDelay: tryAgainDelay, report: { errorCenter.report($0) })
     }
 
     var issues: [TournamentDraft.Issue] { draft.issues(now: now(), rules: rules) }

@@ -2121,46 +2121,6 @@
         }
       }
     },
-    "Accept the terms of use to continue.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Чтобы продолжить, примите условия использования."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Acepta las condiciones de uso para continuar."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Acceptez les conditions d’utilisation pour continuer."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Щоб продовжити, прийміть умови використання."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zaakceptuj warunki korzystania, aby kontynuować."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aceite os termos de utilização para continuar."
-          }
-        }
-      }
-    },
     "Account suspended": {
       "localizations": {
         "ru": {
@@ -3515,86 +3475,6 @@
         }
       }
     },
-    "Be kind. There is zero tolerance for objectionable content or abusive behaviour: offending messages are removed and the accounts behind them are suspended.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Будьте доброжелательны. Оскорбительный контент и агрессивное поведение недопустимы: такие сообщения удаляются, а аккаунты их авторов блокируются."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sé amable. No se tolera el contenido ofensivo ni el comportamiento abusivo: esos mensajes se eliminan y las cuentas responsables se suspenden."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Soyez bienveillant. Aucune tolérance pour les contenus choquants ou les comportements abusifs : ces messages sont supprimés et les comptes concernés suspendus."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Будьте доброзичливими. Образливий контент і агресивна поведінка неприпустимі: такі повідомлення видаляються, а облікові записи їхніх авторів блокуються."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bądź życzliwy. Nie tolerujemy obraźliwych treści ani agresywnego zachowania: takie wiadomości są usuwane, a odpowiedzialne za nie konta zawieszane."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Seja gentil. Não há tolerância para conteúdo ofensivo ou comportamento abusivo: essas mensagens são removidas e as contas responsáveis são suspensas."
-          }
-        }
-      }
-    },
-    "Before you join in": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Прежде чем начать"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Antes de participar"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Avant de participer"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Перш ніж почати"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zanim zaczniesz"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Antes de participar"
-          }
-        }
-      }
-    },
     "Beginner": {
       "localizations": {
         "ru": {
@@ -3955,6 +3835,46 @@
         }
       }
     },
+    "By creating an account you agree to the %@ and %@.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Создавая аккаунт, вы принимаете %1$@ и %2$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al crear una cuenta aceptas las %1$@ y la %2$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En créant un compte, vous acceptez les %1$@ et la %2$@."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Створюючи обліковий запис, ви приймаєте %1$@ і %2$@."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tworząc konto, akceptujesz %1$@ i %2$@."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ao criar uma conta, aceita os %1$@ e a %2$@."
+          }
+        }
+      }
+    },
     "Can't invite more people": {
       "localizations": {
         "ru": {
@@ -3995,6 +3915,86 @@
         }
       }
     },
+    "Contact": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Контакты"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contacto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Контакти"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontakt"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contacto"
+          }
+        }
+      }
+    },
+    "Every message, group and profile can be reported from within the app, and you can block any user so their messages no longer reach you. Reports are reviewed and acted on within 24 hours; a moderator may delete content, remove or ban members, delete groups and events, and suspend accounts. Moderator actions, and event and account deletions, are recorded in an audit log, as the privacy policy describes.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "На любое сообщение, группу или профиль можно пожаловаться прямо в приложении, а любого пользователя — заблокировать, чтобы его сообщения до вас больше не доходили. Жалобы рассматриваются, и меры принимаются в течение 24 часов; модератор может удалять контент, исключать или блокировать участников, удалять группы и события и приостанавливать аккаунты. Действия модераторов, а также удаления событий и аккаунтов записываются в журнал аудита, как описано в политике конфиденциальности."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cualquier mensaje, grupo o perfil puede denunciarse desde la propia app, y puedes bloquear a cualquier usuario para que sus mensajes dejen de llegarte. Las denuncias se revisan y se actúa sobre ellas en un plazo de 24 horas; un moderador puede eliminar contenido, expulsar o vetar miembros, eliminar grupos y eventos, y suspender cuentas. Las acciones de los moderadores, y las eliminaciones de eventos y cuentas, se registran en un registro de auditoría, como describe la política de privacidad."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque message, groupe et profil peut être signalé depuis l’app, et vous pouvez bloquer n’importe quel utilisateur pour que ses messages ne vous parviennent plus. Les signalements sont examinés et traités sous 24 heures ; un modérateur peut supprimer des contenus, exclure ou bannir des membres, supprimer des groupes et des événements, et suspendre des comptes. Les actions des modérateurs, ainsi que les suppressions d’événements et de comptes, sont consignées dans un journal d’audit, comme le décrit la politique de confidentialité."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "На будь-яке повідомлення, групу чи профіль можна поскаржитися прямо в застосунку, а будь-якого користувача — заблокувати, щоб його повідомлення до вас більше не доходили. Скарги розглядаються, і заходи вживаються протягом 24 годин; модератор може видаляти контент, виключати чи блокувати учасників, видаляти групи й події та призупиняти акаунти. Дії модераторів, а також видалення подій і акаунтів записуються до журналу аудиту, як описано в політиці конфіденційності."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Każdą wiadomość, grupę i profil można zgłosić bezpośrednio w aplikacji, a każdego użytkownika zablokować, by jego wiadomości już do Ciebie nie docierały. Zgłoszenia są rozpatrywane, a działania podejmowane w ciągu 24 godzin; moderator może usuwać treści, usuwać lub blokować członków, usuwać grupy i wydarzenia oraz zawieszać konta. Działania moderatorów oraz usunięcia wydarzeń i kont są zapisywane w dzienniku audytu, jak opisuje polityka prywatności."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qualquer mensagem, grupo ou perfil pode ser denunciado dentro da app, e pode bloquear qualquer utilizador para que as mensagens dele deixem de lhe chegar. As denúncias são analisadas e tratadas num prazo de 24 horas; um moderador pode apagar conteúdo, remover ou banir membros, apagar grupos e eventos, e suspender contas. As ações dos moderadores, e as eliminações de eventos e contas, são registadas num registo de auditoria, como descreve a política de privacidade."
+          }
+        }
+      }
+    },
     "Find sports events": {
       "localizations": {
         "ru": {
@@ -4031,6 +4031,446 @@
           "stringUnit": {
             "state": "translated",
             "value": "Eventos desportivos"
+          }
+        }
+      }
+    },
+    "Questions and complaints: support@iskra.red. The service is operated by the app's developer, reachable at that address.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вопросы и жалобы: support@iskra.red. Сервисом управляет разработчик приложения, доступный по этому адресу."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preguntas y reclamaciones: support@iskra.red. El servicio lo gestiona el desarrollador de la app, localizable en esa dirección."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questions et réclamations : support@iskra.red. Le service est exploité par le développeur de l’app, joignable à cette adresse."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запитання та скарги: support@iskra.red. Сервісом керує розробник застосунку, доступний за цією адресою."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pytania i skargi: support@iskra.red. Usługę prowadzi deweloper aplikacji, dostępny pod tym adresem."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perguntas e reclamações: support@iskra.red. O serviço é operado pelo programador da app, contactável nesse endereço."
+          }
+        }
+      }
+    },
+    "Reporting and moderation": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Жалобы и модерация"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denuncias y moderación"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signalements et modération"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скарги й модерація"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zgłoszenia i moderacja"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denúncias e moderação"
+          }
+        }
+      }
+    },
+    "The service": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сервис"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El servicio"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le service"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сервіс"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usługa"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O serviço"
+          }
+        }
+      }
+    },
+    "The terms of use changed": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las condiciones de uso cambiaron"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les conditions d’utilisation ont changé"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warunki korzystania zmieniły się"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os termos de utilização mudaram"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Условия использования изменились"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Умови використання змінилися"
+          }
+        }
+      }
+    },
+    "When these terms change, we update them here. By continuing to use iskra after a change you agree to the updated terms.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда эти условия меняются, мы обновляем их здесь. Продолжая пользоваться iskra после изменения, вы соглашаетесь с обновлёнными условиями."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando estas condiciones cambian, las actualizamos aquí. Al seguir usando iskra después de un cambio, aceptas las condiciones actualizadas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand ces conditions changent, nous les mettons à jour ici. En continuant à utiliser iskra après un changement, vous acceptez les conditions mises à jour."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Коли ці умови змінюються, ми оновлюємо їх тут. Продовжуючи користуватися iskra після зміни, ви погоджуєтеся з оновленими умовами."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gdy te warunki się zmieniają, aktualizujemy je tutaj. Kontynuując korzystanie z aplikacji iskra po zmianie, akceptujesz zaktualizowane warunki."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quando estes termos mudam, atualizamo-los aqui. Ao continuar a usar a iskra depois de uma alteração, concorda com os termos atualizados."
+          }
+        }
+      }
+    },
+    "When this policy changes, we update it and the date at its top. Continuing to use iskra after a change constitutes acceptance of the updated policy.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда эта политика меняется, мы обновляем её и дату вверху. Продолжая пользоваться iskra после изменения, вы принимаете обновлённую политику."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando esta política cambia, la actualizamos junto con la fecha en su parte superior. Seguir usando iskra tras un cambio supone aceptar la política actualizada."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand cette politique change, nous la mettons à jour ainsi que la date en haut. Continuer à utiliser iskra après un changement vaut acceptation de la politique mise à jour."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Коли ця політика змінюється, ми оновлюємо її та дату вгорі. Продовжуючи користуватися iskra після зміни, ви приймаєте оновлену політику."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gdy ta polityka się zmienia, aktualizujemy ją wraz z datą u góry. Dalsze korzystanie z iskra po zmianie oznacza akceptację zaktualizowanej polityki."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quando esta política muda, atualizamo-la, bem como a data no topo. Continuar a usar a iskra após uma alteração significa aceitar a política atualizada."
+          }
+        }
+      }
+    },
+    "You are responsible for what you post: event details, group names and descriptions, your display name, your \"about you\" text and your messages. iskra has zero tolerance for objectionable content and abusive users: harassment, threats, hate speech, sexual content, spam and impersonation are not allowed. Content that breaks these rules is removed and the accounts behind it are suspended or removed without notice.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вы отвечаете за то, что публикуете: детали событий, названия и описания групп, ваше отображаемое имя, текст «о себе» и ваши сообщения. iskra не допускает неприемлемый контент и агрессивных пользователей: травля, угрозы, язык вражды, сексуальный контент, спам и выдача себя за других запрещены. Контент, нарушающий эти правила, удаляется, а стоящие за ним аккаунты приостанавливаются или удаляются без предупреждения."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eres responsable de lo que publicas: los detalles de los eventos, los nombres y descripciones de los grupos, tu nombre visible, tu texto sobre ti y tus mensajes. iskra tiene tolerancia cero con el contenido inaceptable y los usuarios abusivos: el acoso, las amenazas, el discurso de odio, el contenido sexual, el spam y la suplantación de identidad no están permitidos. El contenido que incumple estas normas se elimina y las cuentas responsables se suspenden o se eliminan sin previo aviso."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous êtes responsable de ce que vous publiez : les détails des événements, les noms et descriptions des groupes, votre nom affiché, votre texte à propos de vous et vos messages. iskra applique une tolérance zéro envers les contenus répréhensibles et les utilisateurs abusifs : le harcèlement, les menaces, les discours haineux, les contenus sexuels, le spam et l’usurpation d’identité sont interdits. Les contenus qui enfreignent ces règles sont supprimés et les comptes concernés sont suspendus ou supprimés sans préavis."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ви відповідаєте за те, що публікуєте: деталі подій, назви й описи груп, ваше видиме ім’я, текст «про себе» та ваші повідомлення. iskra не допускає неприйнятний контент і агресивних користувачів: цькування, погрози, мова ворожнечі, сексуальний контент, спам і видавання себе за інших заборонені. Контент, що порушує ці правила, видаляється, а відповідальні за нього акаунти призупиняються або видаляються без попередження."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odpowiadasz za to, co publikujesz: szczegóły wydarzeń, nazwy i opisy grup, swoją widoczną nazwę, tekst o Tobie i swoje wiadomości. iskra nie toleruje nieakceptowalnych treści ani agresywnych użytkowników: nękanie, groźby, mowa nienawiści, treści seksualne, spam i podszywanie się pod innych są zabronione. Treści łamiące te zasady są usuwane, a stojące za nimi konta są zawieszane lub usuwane bez ostrzeżenia."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "É responsável pelo que publica: os detalhes dos eventos, os nomes e descrições dos grupos, o seu nome visível, o seu texto sobre si e as suas mensagens. A iskra tem tolerância zero com conteúdo censurável e utilizadores abusivos: assédio, ameaças, discurso de ódio, conteúdo sexual, spam e falsidade de identidade não são permitidos. O conteúdo que viola estas regras é removido e as contas por trás dele são suspensas ou removidas sem aviso."
+          }
+        }
+      }
+    },
+    "You may delete your account at any time in the app: Settings → Delete account. Deletion cannot be undone. It removes your sign-in identity and profile; groups you own pass to their longest-standing member or are deleted; upcoming games you host are cancelled and the players notified; your upcoming tournament entries are withdrawn and tournaments you organise are cancelled. Messages you wrote, and the results of games and tournaments you took part in, remain visible to the other participants, no longer shown with your name but under a neutral \"Deleted user\" label or a neutral placeholder name; for a bounded time your name can remain quoted inside other people's replies, invite notices and abuse reports. The details and the retention periods are in the privacy policy.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вы можете удалить аккаунт в приложении в любой момент: «Настройки» → «Удалить аккаунт». Удаление нельзя отменить. Оно удаляет ваши данные входа и профиль; группы, которыми вы владеете, переходят участнику с самым долгим стажем или удаляются; предстоящие игры, которые вы проводите, отменяются с уведомлением игроков; ваши предстоящие турнирные заявки отзываются, а турниры, которые вы организуете, отменяются. Написанные вами сообщения, а также результаты игр и турниров, в которых вы участвовали, остаются видимыми другим участникам — уже без вашего имени, под нейтральной подписью «Удалённый пользователь» или нейтральным именем-заполнителем; ограниченное время ваше имя может оставаться в цитатах в чужих ответах, приглашениях и жалобах. Подробности и сроки хранения — в политике конфиденциальности."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puedes eliminar tu cuenta en cualquier momento en la app: Ajustes → Eliminar cuenta. La eliminación no se puede deshacer. Retira tu identidad de inicio de sesión y tu perfil; los grupos que posees pasan a su miembro más antiguo o se eliminan; los partidos próximos que organizas se cancelan y se avisa a los jugadores; tus inscripciones próximas a torneos se retiran y los torneos que organizas se cancelan. Los mensajes que escribiste, y los resultados de los partidos y torneos en los que participaste, siguen siendo visibles para los demás participantes, ya sin tu nombre, bajo una etiqueta neutra «Usuario eliminado» o un nombre de relleno neutro; durante un tiempo limitado tu nombre puede seguir citado en respuestas de otras personas, avisos de invitación y denuncias. Los detalles y los plazos de conservación están en la política de privacidad."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous pouvez supprimer votre compte à tout moment dans l’app : Réglages → Supprimer le compte. La suppression est irréversible. Elle retire votre identité de connexion et votre profil ; les groupes que vous possédez passent à leur membre le plus ancien ou sont supprimés ; les matchs à venir que vous organisez sont annulés et les joueurs prévenus ; vos inscriptions à venir aux tournois sont retirées et les tournois que vous organisez sont annulés. Les messages que vous avez écrits, et les résultats des matchs et tournois auxquels vous avez participé, restent visibles des autres participants, sans votre nom, sous une étiquette neutre « Utilisateur supprimé » ou un nom de substitution neutre ; pendant un temps limité, votre nom peut rester cité dans les réponses d’autres personnes, les avis d’invitation et les signalements. Les détails et les durées de conservation figurent dans la politique de confidentialité."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ви можете видалити акаунт у застосунку будь-коли: «Налаштування» → «Видалити акаунт». Видалення неможливо скасувати. Воно видаляє ваші дані входу та профіль; групи, якими ви володієте, переходять до учасника з найдовшим стажем або видаляються; майбутні ігри, які ви проводите, скасовуються зі сповіщенням гравців; ваші майбутні турнірні заявки відкликаються, а турніри, які ви організовуєте, скасовуються. Написані вами повідомлення, а також результати ігор і турнірів, у яких ви брали участь, залишаються видимими іншим учасникам — уже без вашого імені, під нейтральним підписом «Видалений користувач» або нейтральним ім’ям-заповнювачем; обмежений час ваше ім’я може залишатися в цитатах у чужих відповідях, запрошеннях і скаргах. Подробиці та строки зберігання — у політиці конфіденційності."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Możesz usunąć konto w każdej chwili w aplikacji: Ustawienia → Usuń konto. Usunięcia nie da się cofnąć. Usuwa ono Twoją tożsamość logowania i profil; grupy, które posiadasz, przechodzą na członka z najdłuższym stażem albo są usuwane; nadchodzące mecze, które prowadzisz, są odwoływane z powiadomieniem graczy; Twoje nadchodzące zgłoszenia turniejowe są wycofywane, a turnieje, które organizujesz, są odwoływane. Napisane przez Ciebie wiadomości oraz wyniki meczów i turniejów z Twoim udziałem pozostają widoczne dla pozostałych uczestników — już bez Twojej nazwy, pod neutralną etykietą „Usunięty użytkownik” albo neutralną nazwą zastępczą; przez ograniczony czas Twoja nazwa może pozostawać w cytatach w cudzych odpowiedziach, zaproszeniach i zgłoszeniach. Szczegóły i okresy przechowywania opisuje polityka prywatności."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pode apagar a sua conta a qualquer momento na app: Definições → Apagar conta. A eliminação não pode ser desfeita. Remove a sua identidade de início de sessão e o seu perfil; os grupos que possui passam para o membro mais antigo ou são apagados; os jogos futuros que organiza são cancelados e os jogadores avisados; as suas inscrições futuras em torneios são retiradas e os torneios que organiza são cancelados. As mensagens que escreveu, e os resultados dos jogos e torneios em que participou, continuam visíveis para os outros participantes, já sem o seu nome, sob uma etiqueta neutra «Utilizador eliminado» ou um nome de substituição neutro; por um tempo limitado o seu nome pode continuar citado em respostas de outras pessoas, avisos de convite e denúncias. Os detalhes e os prazos de conservação estão na política de privacidade."
+          }
+        }
+      }
+    },
+    "Your account": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваш аккаунт"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu cuenta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre compte"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваш акаунт"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Twoje konto"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A sua conta"
+          }
+        }
+      }
+    },
+    "Your content and conduct": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваш контент и поведение"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu contenido y tu conducta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre contenu et votre conduite"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваш контент і поведінка"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Twoje treści i zachowanie"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O seu conteúdo e a sua conduta"
+          }
+        }
+      }
+    },
+    "iskra lets you find and organise sport events, join groups and chat with their members, and enter or organise tournaments. By creating an account or using iskra you agree to these terms. How we handle your data is described in the privacy policy.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra позволяет находить и организовывать спортивные события, вступать в группы и общаться с их участниками, а также участвовать в турнирах и организовывать их. Создавая аккаунт или используя iskra, вы соглашаетесь с этими условиями. Как мы обращаемся с вашими данными, описано в политике конфиденциальности."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra te permite encontrar y organizar eventos deportivos, unirte a grupos y chatear con sus miembros, e inscribirte en torneos u organizarlos. Al crear una cuenta o usar iskra aceptas estas condiciones. Cómo tratamos tus datos se describe en la política de privacidad."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra vous permet de trouver et d’organiser des événements sportifs, de rejoindre des groupes et de discuter avec leurs membres, et de vous inscrire à des tournois ou d’en organiser. En créant un compte ou en utilisant iskra, vous acceptez ces conditions. La manière dont nous traitons vos données est décrite dans la politique de confidentialité."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra дає змогу знаходити й організовувати спортивні події, вступати до груп і спілкуватися з їхніми учасниками, а також брати участь у турнірах чи організовувати їх. Створюючи акаунт або користуючись iskra, ви погоджуєтеся з цими умовами. Як ми поводимося з вашими даними, описано в політиці конфіденційності."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iskra pozwala znajdować i organizować wydarzenia sportowe, dołączać do grup i rozmawiać z ich członkami oraz zapisywać się na turnieje i je organizować. Tworząc konto lub korzystając z aplikacji iskra, akceptujesz te warunki. Sposób, w jaki obchodzimy się z Twoimi danymi, opisuje polityka prywatności."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A iskra permite-lhe encontrar e organizar eventos desportivos, juntar-se a grupos e conversar com os seus membros, e inscrever-se em torneios ou organizá-los. Ao criar uma conta ou usar a iskra, concorda com estes termos. A forma como tratamos os seus dados está descrita na política de privacidade."
           }
         }
       }
@@ -10319,46 +10759,6 @@
         }
       }
     },
-    "I agree": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Принимаю"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Acepto"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "J’accepte"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Погоджуюся"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zgadzam się"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Concordo"
-          }
-        }
-      }
-    },
     "In %@": {
       "localizations": {
         "ru": {
@@ -16579,46 +16979,6 @@
         }
       }
     },
-    "Please accept the updated terms": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Примите обновлённые условия"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Acepta las condiciones actualizadas"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Veuillez accepter les nouvelles conditions"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Прийміть оновлені умови"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zaakceptuj zaktualizowane warunki"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aceite os termos atualizados"
-          }
-        }
-      }
-    },
     "Please rephrase": {
       "localizations": {
         "ru": {
@@ -19815,46 +20175,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nome do evento"
-          }
-        }
-      }
-    },
-    "Support": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Поддержка"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Soporte"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Assistance"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Підтримка"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pomoc"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Suporte"
           }
         }
       }
@@ -31505,46 +31825,6 @@
         }
       }
     },
-    "Last updated 8 November 2026.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Последнее обновление: 8 ноября 2026 года."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Última actualización: 8 de noviembre de 2026."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dernière mise à jour : 8 novembre 2026."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Останнє оновлення: 8 листопада 2026 року."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ostatnia aktualizacja: 8 listopada 2026 r."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Última atualização: 8 de novembro de 2026."
-          }
-        }
-      }
-    },
     "Who we are": {
       "localizations": {
         "ru": {
@@ -32741,86 +33021,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Alterações"
-          }
-        }
-      }
-    },
-    "When this policy changes, we update it and the date at its top. A change to the terms it accompanies is put to you in the app before you can post again.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Когда эта политика меняется, мы обновляем её и дату вверху. Изменение условий, которые она сопровождает, предлагается вам в приложении, прежде чем вы сможете снова публиковать."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cuando esta política cambia, la actualizamos junto con la fecha en su parte superior. Un cambio de las condiciones a las que acompaña se te plantea en la app antes de que puedas volver a publicar."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quand cette politique change, nous la mettons à jour ainsi que la date en haut. Un changement des conditions qu’elle accompagne vous est présenté dans l’app avant que vous puissiez publier à nouveau."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Коли ця політика змінюється, ми оновлюємо її та дату вгорі. Зміну умов, які вона супроводжує, вам буде запропоновано в застосунку, перш ніж ви зможете знову публікувати."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gdy ta polityka się zmienia, aktualizujemy ją wraz z datą u góry. Zmianę warunków, którym towarzyszy, przedstawiamy Ci w aplikacji, zanim znowu coś opublikujesz."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quando esta política muda, atualizamo-la, bem como a data no topo. Uma alteração aos termos que ela acompanha é-lhe apresentada na app antes de poder voltar a publicar."
-          }
-        }
-      }
-    },
-    "This policy is also available at %@.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Эта политика также доступна по адресу %@."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Esta política también está disponible en %@."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cette politique est aussi disponible à l’adresse %@."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ця політика також доступна за адресою %@."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ta polityka jest też dostępna pod adresem %@."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Esta política também está disponível em %@."
           }
         }
       }

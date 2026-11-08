@@ -36,3 +36,23 @@ The app ships in English (the source language and the fallback), Russian, Spanis
   terminology (аккаунт/акаунт, the tombstone «Удалённый пользователь» and its siblings quoted exactly, gender-neutral
   Polish phrasing) — the native read joins the recorded debt. `PrivacyConfigTests.everyKeyResolvesInEveryLanguage`
   fails on a key any language lacks.
+- **The in-app terms' 11 keys, and two privacy keys deleted (2026-11-08, owner decision).** `AppBranding.Terms`
+  renders Settings → Terms of use from the catalog: five section titles and six paragraph bodies (the "Changes"
+  heading is shared with the policy through `AppBranding.Legal.changesTitle`, one declaration), mirroring Laurel's
+  `/terms` page minus its version stamp. The privacy date line ("Last updated 8 November 2026.") and footer ("This
+  policy is also available at %@.") left the catalog with the screen's date line and footer (owner decision). The
+  ru, es, fr, uk, pl and pt values were written in this session against the catalog's existing terminology (the
+  deletion and tombstone sentences carried over from the privacy keys; «Настройки» → «Удалить аккаунт» and its
+  siblings quoted exactly); the native read joins the recorded debt.
+  `TermsConfigTests.everyKeyResolvesInEveryLanguage` fails on a key any language lacks; the catalog stays
+  byte-stable under the json round trip.
+- **Terms-gate removal keys (2026-11-08).** Removed with the sheet: "Before you join in", the zero-tolerance sheet
+  message, "I agree" and "Support", and the `TERMS_REQUIRED` popup's two lines ("Please accept the updated terms" /
+  "Accept the terms of use to continue."). The refusal, which laurel retired, stays decoded with transitional copy —
+  new key "The terms of use changed" over the existing retry body — because every error owes copy of its own
+  (`everyErrorHasCopy`); the new title's six translations join the native-read debt. Reworded: the privacy "Changes" paragraph (old key deleted; the agreement-by-use
+  sentence added in the seven languages, mirrored on laurel's page). New: the sign-up footnote "By creating an account
+  you agree to the %@ and %@." (`AppBranding.signUpAgreement`, the two document names interpolated so each language
+  orders the sentence its own way). The six translations are machine-written like the other recent keys — the native
+  read stays owed — and ru/uk/pl take the interpolated document names in their catalog (nominative) form mid-sentence,
+  flagged for that read.

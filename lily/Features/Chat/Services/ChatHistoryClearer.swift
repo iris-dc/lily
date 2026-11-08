@@ -12,7 +12,7 @@ final class ChatHistoryClearer {
     private let outbox: ChatOutbox
     private let realtime: RealtimeSessionController
     private let unread: UnreadCenter
-    private let reporter: GroupErrorReporter
+    private let errorCenter: ErrorCenter
     private let logger: any Logging
 
     init(repository: any ChatRepository,
@@ -20,14 +20,14 @@ final class ChatHistoryClearer {
          outbox: ChatOutbox,
          realtime: RealtimeSessionController,
          unread: UnreadCenter,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          logger: any Logging) {
         self.repository = repository
         self.cache = cache
         self.outbox = outbox
         self.realtime = realtime
         self.unread = unread
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.logger = logger
     }
 
@@ -49,7 +49,7 @@ final class ChatHistoryClearer {
         } catch {
             guard !AppError.isCancellation(error) else { return nil }
             logger.log(AppError.chatLogLevel(for: error), .chat, "Clearing the chat failed for group \(group.id): \(error)")
-            reporter.report(error)
+            errorCenter.report(error)
             return nil
         }
     }

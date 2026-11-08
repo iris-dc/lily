@@ -9,12 +9,18 @@ struct EmailSignInView: View {
     /// The sheet's detent, the sheet's own state: the form grows the sheet before a field takes the focus and gives it
     /// back when the focus goes (`focus(_:)`, `goBack`).
     @Binding private var detent: PresentationDetent
+    /// Ride along for the legal sheets the sign-up footnote presents (`LegalSheet`).
+    private let errorCenter: ErrorCenter
+    private let language: AppLanguage
+    @State private var presentedLegal: LegalSheet.Document?
     @Environment(\.dismiss) private var dismiss
 
     private enum Field { case email, password, code }
 
-    init(session: SessionController, detent: Binding<PresentationDetent>) {
+    init(session: SessionController, errorCenter: ErrorCenter, language: AppLanguage, detent: Binding<PresentationDetent>) {
         _viewModel = State(initialValue: EmailSignInViewModel(session: session))
+        self.errorCenter = errorCenter
+        self.language = language
         _detent = detent
     }
 
@@ -37,6 +43,9 @@ struct EmailSignInView: View {
                         resendButton
                     }
                     modeToggle
+                    if viewModel.mode == .signUp {
+                        agreementFootnote
+                    }
                 }
                 .padding(DesignTokens.Spacing.xl)
                 .readableColumn()
@@ -55,6 +64,9 @@ struct EmailSignInView: View {
             withAnimation(.smooth(duration: DesignTokens.Duration.normal)) {
                 detent = field == nil ? .medium : .large
             }
+        }
+        .sheet(item: $presentedLegal) { document in
+            LegalSheet(document: document, language: language, errorCenter: errorCenter)
         }
         // The sheet cannot reach this view model, so the form stops its own submit when it goes away.
         .onDisappear { viewModel.cancel() }
@@ -170,6 +182,49 @@ struct EmailSignInView: View {
         .lilyTextButton(font: LilyTheme.Fonts.caption)
         .accessibilityIdentifier(identifier)
     }
+
+    /// Stand-ins formatted into the agreement copy in place of the two document names (`InviteSentence`'s pattern).
+    private static let termsMarker = "\u{FFFC}1"
+    private static let privacyMarker = "\u{FFFC}2"
+
+    /// "By creating an account you agree to the Terms of use and Privacy policy": one localized sentence whose two
+    /// names are tappable runs opening the in-app documents as sheets. Ink and underlined, not the accent, which
+    /// never colours text below the headline size; each language orders the sentence its own way around the names.
+    private var agreementFootnote: some View {
+        Text(agreementText)
+            .font(LilyTheme.Fonts.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .environment(\.openURL, OpenURLAction { url in
+                guard let document = LegalSheet.Document(agreementURL: url) else { return .systemAction }
+                presentedLegal = document
+                return .handled
+            })
+            .accessibilityIdentifier(AccessibilityIdentifiers.authAgreement)
+    }
+
+    private var agreementText: AttributedString {
+        var text = AttributedString(AppBranding.signUpAgreement(terms: Self.termsMarker, privacy: Self.privacyMarker))
+        replaceMarker(Self.termsMarker,
+                      with: AppBranding.Moderation.termsLink,
+                      opening: AppConfig.Legal.termsLink,
+                      in: &text)
+        replaceMarker(Self.privacyMarker,
+                      with: AppBranding.Moderation.privacyLink,
+                      opening: AppConfig.Legal.privacyLink,
+                      in: &text)
+        return text
+    }
+
+    private func replaceMarker(_ marker: String, with name: String, opening url: URL, in text: inout AttributedString) {
+        guard let range = text.range(of: marker) else { return }
+        var link = AttributedString(name)
+        link.link = url
+        link.underlineStyle = .single
+        link.foregroundColor = Color.lilyInk
+        text.replaceSubrange(range, with: link)
+    }
 }
 
 private extension View {
@@ -190,5 +245,11 @@ private extension View {
 
 #Preview {
     @Previewable @State var detent: PresentationDetent = .medium
-    NavigationStack { EmailSignInView(session: AppDependencies.makeMock().sessionController, detent: $detent) }
+    let dependencies = AppDependencies.makeMock()
+    NavigationStack {
+        EmailSignInView(session: dependencies.sessionController,
+                        errorCenter: dependencies.errorCenter,
+                        language: .english,
+                        detent: $detent)
+    }
 }

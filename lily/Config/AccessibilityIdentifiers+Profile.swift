@@ -23,9 +23,12 @@ nonisolated extension AccessibilityIdentifiers {
     static let settingsTerms = "settings-terms"
     /// The pushed privacy policy screen (its content container; the sections are plain text).
     static let settingsPrivacyPolicy = "settings-privacy-policy"
-    /// The delete-account flow: the Settings row, the terms sheet's entry and the sheet's three actions.
+    /// The pushed terms-of-use screen (its content container; the sections are plain text).
+    static let settingsTermsOfUse = "settings-terms-of-use"
+    /// Close on the legal sheets the sign-up footnote presents (the same screens Settings pushes).
+    static let legalClose = "legal-close"
+    /// The delete-account flow: the Settings row and the sheet's three actions.
     static let settingsDeleteAccount = "settings-delete-account"
-    static let termsDeleteAccount = "terms-delete-account"
     static let deleteAccountConfirm = "delete-account-confirm"
     static let deleteAccountCancel = "delete-account-cancel"
     static let deleteAccountAcknowledge = "delete-account-acknowledge"

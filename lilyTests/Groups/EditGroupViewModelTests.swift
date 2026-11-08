@@ -20,7 +20,7 @@ struct EditGroupViewModelTests {
                                       onChange: @escaping @MainActor (SportGroup) -> Void) -> EditGroupViewModel {
         EditGroupViewModel(group: group,
                            repository: harness.repository,
-                           reporter: harness.reporter,
+                           errorCenter: harness.errorCenter,
                            logger: harness.logger,
                            tryAgainDelay: .zero,
                            onChange: onChange)

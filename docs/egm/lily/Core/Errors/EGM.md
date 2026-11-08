@@ -31,7 +31,9 @@ draws.
     `attachmentNotFound`, `attachmentTooLarge(caps: AttachmentCaps)`, `attachmentTypeNotAllowed`, `attachmentsDisabled`,
     `attachmentUploadFailed`, `attachmentUnavailable`, `pollsNotAllowed`, `notAPoll`, `pollAnonymous`, `voteFailed`,
     `notPinnable`, `tooManyPins`, `pinFailed`;
-  - moderation and people: `reportFailed`, `blockLimitReached`, `userNotFound`, `accountSuspended`, `termsRequired`,
+  - moderation and people: `reportFailed`, `blockLimitReached`, `userNotFound`, `accountSuspended`, `termsRequired`
+    (a tolerant decode of the `TERMS_REQUIRED` refusal laurel retired 2026-11-08; its copy is transitional — "The
+    terms of use changed" / the shared retry body — never an acceptance prompt),
     `feedbackFailed`, `profileUnavailable`, `profileUpdateFailed`, `aboutUpdateFailed`, `conversationFailed`,
     `conversationLimit`, `deletionPlanUnavailable` (the deletion-plan preview failed without a code of its own) and
     `accountDeletionFailed` (`DELETE /api/me` failed before the job was claimed; a 401 instead means it landed,
@@ -90,8 +92,8 @@ draws.
   (`AppError.swift:isCancellation`): every path into the mapper filters a cancellation first through it (the view
   models and stores before they report; `WriteGate`, `CreateFlow`, `LostAnswer` and `StoreLoader` for what runs through
   them; `SessionController.report(_:during:fallback:)` tests `CancellationError` itself), and the two funnels
-  `ErrorCenter.report(_: any Error)` and `GroupErrorReporter.report` wrap without a check of their own, relying on
-  their callers (`ErrorCenter.swift:report`, `lily/Features/Groups/Services/GroupErrorReporter.swift:report`).
+  `ErrorCenter.report(_: any Error)` wraps without a check of its own, relying on
+  its callers (`ErrorCenter.swift:report`).
 - `ErrorCenter.report` filters, de-duplicates and queues nothing: each call replaces `current` with a
   `PresentedError` carrying a fresh `UUID`, so an identical error re-animates; `report(_: any Error)` goes through
   `AppError.wrapping` first. `dismiss(nil)` always clears `current`; `dismiss(id)` only when it is the current one

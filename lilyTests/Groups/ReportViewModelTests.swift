@@ -13,7 +13,7 @@ struct ReportViewModelTests {
         ReportViewModel(target: target,
                         title: title,
                         repository: moderation,
-                        reporter: harness.reporter,
+                        errorCenter: harness.errorCenter,
                         logger: harness.logger)
     }
 
@@ -106,7 +106,7 @@ struct ReportViewModelTests {
         #expect(harness.tournamentLogs().isEmpty && harness.logs().isEmpty)
     }
 
-    @Test func aFailureReachesThePopupAndATermsRefusalTheTermsSheet() async {
+    @Test func aFailureAndATermsRefusalReachThePopup() async {
         let viewModel = makeViewModel()
         viewModel.reason = .other
         moderation.error = AppError.reportFailed
@@ -118,6 +118,6 @@ struct ReportViewModelTests {
 
         moderation.error = AppError.termsRequired
         await viewModel.submit()
-        #expect(harness.presentedError == .termsRequired && harness.termsRequiredCount == 1)
+        #expect(harness.presentedError == .termsRequired)
     }
 }

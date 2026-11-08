@@ -1,14 +1,12 @@
 import Foundation
 
 /// Answers a signed-in mock user: an operator when signed in as the Apple tester, mirroring the backend's operators
-/// group, no realtime endpoint, attachments on (the mock store stands in for the bucket), and the terms accepted unless the
-/// app was started with `-mock-terms-pending`, which makes `me()` owe them until the first acceptance of the run.
+/// group, no realtime endpoint, attachments on (the mock store stands in for the bucket), and the terms stamped
+/// accepted, as Laurel stamps them at account creation (owner decision 2026-11-08: agreement is by use).
 /// Account deletion rehearses the contract in memory: `deleteAccount()` claims a job (a replay while it runs answers
 /// success again), the poll's next `me()` still answers while the job "runs", then the account is deleted and every
 /// route throws the tombstone's 401 as `.sessionExpired`, so the delete flow is walkable without a backend.
 final class MockMeRepository: MeRepository {
-    /// Whether `me()` answers no accepted terms version; `acceptTerms` ends it for the run.
-    private(set) var owesTerms: Bool
     private enum DeletionProgress: Equatable {
         case idle, running, deleted
     }
@@ -21,16 +19,10 @@ final class MockMeRepository: MeRepository {
                                            tournamentsCancelled: 0)
     private let identity: any IdentityProvider
     private let logger: any Logging
-    private let now: () -> Date
 
-    init(identity: any IdentityProvider,
-         logger: any Logging,
-         now: @escaping () -> Date = { .now },
-         termsPending: Bool = false) {
+    init(identity: any IdentityProvider, logger: any Logging) {
         self.identity = identity
         self.logger = logger
-        self.now = now
-        owesTerms = termsPending
     }
 
     func me() async throws -> Account {
@@ -40,14 +32,8 @@ final class MockMeRepository: MeRepository {
         return Account(userId: userID,
                        isOperator: userID == MockUsers.user(for: .apple).id,
                        termsVersion: AppConfig.Moderation.mockTermsVersion,
-                       acceptedTermsVersion: owesTerms ? nil : AppConfig.Moderation.mockTermsVersion,
+                       acceptedTermsVersion: AppConfig.Moderation.mockTermsVersion,
                        attachmentsEnabled: true)
-    }
-
-    func acceptTerms(version: Int) async throws -> TermsAcceptance {
-        owesTerms = false
-        logger.info(.groups, "Mock terms v\(version) accepted")
-        return TermsAcceptance(acceptedTermsVersion: version, acceptedTermsAt: now())
     }
 
     func deletionPlan() async throws -> DeletionPlan {

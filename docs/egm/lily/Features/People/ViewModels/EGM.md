@@ -8,12 +8,12 @@ Source: `lily/Features/People/ViewModels/`
 `UserRepository`, exposes a three-case `State`, and offers one write, `message()`, which starts (or answers again) the
 direct conversation with the person, puts it into Mine and hands the conversation to the view through
 `openedConversation`, which pushes its chat on the profile's own stack, so Back returns to the profile. Failures go through a `WriteGate` and the
-shared `GroupErrorReporter` under the `.groups` log category. The screen is in [Views](../Views/EGM.md).
+shared `ErrorCenter` under the `.groups` log category. The screen is in [Views](../Views/EGM.md).
 
 ## Interface
 
 - `@Observable final class UserProfileViewModel` `[lily/Features/People/ViewModels/UserProfileViewModel.swift:UserProfileViewModel]`;
-  `init(destination: UserProfileDestination, repository: any UserRepository, identity: any IdentityProvider, myGroups: MyGroupsStore, reporter: GroupErrorReporter, logger: any Logging, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay)`.
+  `init(destination: UserProfileDestination, repository: any UserRepository, identity: any IdentityProvider, myGroups: MyGroupsStore, errorCenter: ErrorCenter, logger: any Logging, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay)`.
 - `enum State: Equatable { case loading; case loaded(UserProfile); case failed }`
   `[lily/Features/People/ViewModels/UserProfileViewModel.swift:UserProfileViewModel.State]`.
 - `destination: UserProfileDestination`; read-only `state` (starts `.loading`) and `isStartingConversation`;
@@ -59,10 +59,8 @@ shared `GroupErrorReporter` under the `.groups` log category. The screen is in [
 - `myGroups.add(conversation)`: `MyGroupsStore.add` removes a same-id entry, inserts per `SportGroup.mineOrder` and
   records a change `[lily/Features/People/ViewModels/UserProfileViewModel.swift:message]`,
   `[lily/Features/Groups/State/MyGroupsStore.swift:add]`.
-- `reporter.report(error)` on a failed load and, through the gate, on a failed write; `GroupErrorReporter.report`
-  wraps to `AppError`, calls `errorCenter.report` and `onTermsRequired()` for `.termsRequired`
-  `[lily/Features/People/ViewModels/UserProfileViewModel.swift:load]`,
-  `[lily/Features/Groups/Services/GroupErrorReporter.swift:report]`.
+- `errorCenter.report(error)` on a failed load and, through the gate, on a failed write
+  `[lily/Features/People/ViewModels/UserProfileViewModel.swift:load]`.
 - Logging under `.groups`: info "Profile <id> opened" once, info "Conversation <id> started with <id>", error
   "Loading profile <id> failed" `[lily/Features/People/ViewModels/UserProfileViewModel.swift:logOpenOnce]`,
   `[lily/Features/People/ViewModels/UserProfileViewModel.swift:message]`,

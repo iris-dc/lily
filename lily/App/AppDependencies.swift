@@ -103,7 +103,7 @@ final class AppDependencies {
                                      tournaments: groupRepositories.tournaments,
                                      identity: identity,
                                      navigation: navigation,
-                                     groups: groups,
+                                     errorCenter: errorCenter,
                                      defaults: defaults,
                                      languageCode: { language.language.code },
                                      logger: logger)

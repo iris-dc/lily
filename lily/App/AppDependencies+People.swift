@@ -9,7 +9,7 @@ extension AppDependencies {
                              repository: userRepository,
                              identity: identity,
                              myGroups: myGroups,
-                             reporter: groups.errorReporter,
+                             errorCenter: errorCenter,
                              logger: logger)
     }
 }

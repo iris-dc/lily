@@ -1,8 +1,8 @@
 import XCTest
 
 /// The Settings screen pushed from the profile root: a signed-in user finds the language, currency and contact rows,
-/// the two legal rows and Sign out at the end; the privacy row pushes the policy in place; a guest keeps the three
-/// rows inline on Profile and gets no Settings link; a language picked inside Settings relabels the screen in place
+/// the two legal rows and Sign out at the end; the privacy and terms rows push their documents in place; a guest
+/// keeps the three rows inline on Profile and gets no Settings link; a language picked inside Settings relabels the screen in place
 /// without popping it; and Sign out from Settings returns to the landing.
 final class LilySettingsTests: LilyUITestCase {
     @MainActor
@@ -110,8 +110,8 @@ final class LilySettingsTests: LilyUITestCase {
         XCTAssertFalse(app.staticTexts["Player"].exists, "the stored placeholder never shows on a flagged row")
     }
 
-    /// The privacy row pushes the policy in place (owner correction 2026-11-08); the date line and the first
-    /// section render without a backend, and the terms row stays beside it as the browser link.
+    /// The privacy row pushes the policy in place (owner correction 2026-11-08); the first section renders without
+    /// a backend, and the served page's date line stays off the screen (owner decision 2026-11-08).
     @MainActor
     func testThePrivacyRowPushesThePolicyInApp() {
         tapSignInWithApple()
@@ -123,7 +123,24 @@ final class LilySettingsTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Privacy policy"].waitForExistence(timeout: 5), "the policy opens in the app")
         XCTAssertTrue(app.otherElements["settings-privacy-policy"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Who we are"].exists, "the first section's heading renders")
-        XCTAssertTrue(app.staticTexts["Last updated 8 November 2026."].exists, "the date line opens the screen")
+        XCTAssertFalse(app.staticTexts["Last updated 8 November 2026."].exists,
+                       "the date line stays on the served page alone")
+    }
+
+    /// The terms row pushes the terms in place (owner decision 2026-11-08: agreement is by use, so the terms are
+    /// reading content like the privacy policy, with no version stamp and nothing to accept).
+    @MainActor
+    func testTheTermsRowPushesTheTermsInApp() {
+        tapSignInWithApple()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+        openProfileSheet()
+        openSettings()
+
+        tapAfterScrolling(app.buttons["settings-terms"])
+        XCTAssertTrue(app.navigationBars["Terms of use"].waitForExistence(timeout: 5), "the terms open in the app")
+        XCTAssertTrue(app.otherElements["settings-terms-of-use"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["The service"].exists, "the first section's heading renders")
+        XCTAssertFalse(app.buttons["I agree"].exists, "nothing asks for acceptance")
     }
 
     @MainActor

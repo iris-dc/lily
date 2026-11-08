@@ -111,14 +111,14 @@ final class PushHarness {
     func makeOpener() -> EventOpener {
         EventOpener(events: events,
                     navigation: navigation,
-                    reporter: GroupErrorReporter(errorCenter: errorCenter) {},
+                    errorCenter: errorCenter,
                     logger: logger)
     }
 
     func makeTournamentOpener() -> TournamentOpener {
         TournamentOpener(tournaments: tournaments,
                          navigation: navigation,
-                         reporter: GroupErrorReporter(errorCenter: errorCenter) {},
+                         errorCenter: errorCenter,
                          logger: logger)
     }
 

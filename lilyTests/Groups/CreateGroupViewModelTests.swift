@@ -15,7 +15,7 @@ struct CreateGroupViewModelTests {
                                          identity: harness.identity,
                                          store: harness.store,
                                          locationService: harness.location,
-                                         reporter: harness.reporter,
+                                         errorCenter: harness.errorCenter,
                                          logger: harness.logger,
                                          tryAgainDelay: .zero,
                                          onCreated: harness.sink.record)
@@ -57,7 +57,7 @@ struct CreateGroupViewModelTests {
                                                 identity: harness.identity,
                                                 store: harness.store,
                                                 locationService: FakeLocationService(),
-                                                reporter: harness.reporter,
+                                                errorCenter: harness.errorCenter,
                                                 logger: harness.logger,
                                                 tryAgainDelay: .zero,
                                                 onCreated: harness.sink.record)
@@ -194,13 +194,13 @@ struct CreateGroupViewModelTests {
         #expect(harness.logs(.info).contains { $0.contains("updated with the latest details") })
     }
 
-    @Test func termsRequiredRaisesTheTermsSheet() async {
+    @Test func termsRequiredReachesThePopup() async {
         fillDraft()
         harness.repository.actionError = AppError.termsRequired
 
         await viewModel.submit()
 
-        #expect(harness.presentedError == .termsRequired && harness.termsRequiredCount == 1)
+        #expect(harness.presentedError == .termsRequired)
     }
 
     @Test func cancellationStaysQuiet() async {

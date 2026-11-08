@@ -13,7 +13,7 @@ opener's preview until the fetch answers, derives permissions, and reads the det
 entry or match write whose outcome is unknown (entries also after the refusals a stale detail earns). `CreateTournamentViewModel` and `EditTournamentViewModel` are the `TournamentDraftEditing`
 conformers ([`../Interfaces/EGM.md`](../Interfaces/EGM.md)) behind the draft sheets. Every dependency is a protocol
 (`TournamentRepository`, `IdentityProvider`, `LocationService`, `ListSnapshotStore`, `Logging`, `PushOptIn`,
-`GroupRepository`, `InteractionRecorder`) or a shared store (`ChangeTracker`, `ErrorCenter`, `GroupErrorReporter`,
+`GroupRepository`, `InteractionRecorder`) or a shared store (`ChangeTracker`, `ErrorCenter`,
 `MyGroupsStore`, `AppNavigation`); the models they manipulate are in [`../Models/EGM.md`](../Models/EGM.md). None
 of the seven files sends invites; the invite sheet is the shared one built by `AppDependencies`.
 
@@ -35,7 +35,7 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   `distanceText(for:) -> String?`.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.init]`:
   `init(destination: TournamentDestination, repository:, groupRepository: any GroupRepository, myGroups:
-  MyGroupsStore, identity:, navigation: AppNavigation, changes: ChangeTracker, reporter: GroupErrorReporter,
+  MyGroupsStore, identity:, navigation: AppNavigation, changes: ChangeTracker, errorCenter: ErrorCenter,
   recorder: any InteractionRecorder, logger:, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay, now: @escaping
   () -> Date = { .now }, pushOptIn: any PushOptIn = NoPushOptIn(), onChange: @MainActor (Tournament) -> Void)`; builds a
   `WriteGate(category: .tournaments, ..., isExpected: { $0.isTournamentRefusal })`.
@@ -124,7 +124,7 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   action at a time, signed-in only (`guard !isBusy, identity.currentUserID != nil`); the `WriteGate` repeats a
   `TRY_AGAIN` once after `AppConfig.API.tryAgainDelay`, stays quiet on cancellation, asks `settling` first (a landed
   write answers `true` with no popup), then logs refusals at warning and faults at error, and reports every other
-  non-cancelled failure through `reporter` (so `.termsRequired` raises the terms sheet).
+  non-cancelled failure through the shared `ErrorCenter`.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:AppError.isTournamentRefusal]`: the expected
   refusals are `.tournamentNotFound`, `.registrationClosed`, `.tournamentFull`, `.alreadyEntered`, `.teamFull`,
   `.entryNotFound`, `.notOrganizer`, `.tournamentLocked`, `.notEnoughEntries`, `.notInMatch`, `.matchNotReady`,

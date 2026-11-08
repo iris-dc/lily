@@ -18,7 +18,7 @@ final class EditGroupViewModel {
 
     init(group: SportGroup,
          repository: any GroupRepository,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
          onChange: @escaping @MainActor (SportGroup) -> Void) {
@@ -27,7 +27,7 @@ final class EditGroupViewModel {
         self.repository = repository
         self.logger = logger
         self.onChange = onChange
-        gate = WriteGate(category: .groups, logger: logger, tryAgainDelay: tryAgainDelay, report: { reporter.report($0) })
+        gate = WriteGate(category: .groups, logger: logger, tryAgainDelay: tryAgainDelay, report: { errorCenter.report($0) })
     }
 
     var issues: [GroupDraft.Issue] { draft.issues }

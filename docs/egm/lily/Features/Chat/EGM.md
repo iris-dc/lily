@@ -20,8 +20,8 @@ outlive a room (`ChatOutbox`, `UnreadCenter`) or are shared between a chat and i
 
 The room cache (`ChatHistoryCache`) is the truth that the realtime controller (`lily/Core/Realtime`) and
 `ChatViewModel` both write; `RemoteChatRepository` performs no retry of its own (one `client.send` per route, the
-caller's `LostRace.attemptTwice` repeats); no file in `Services` calls `ErrorCenter` directly (errors go through
-`GroupErrorReporter` in `lily/Features/Groups/Services`). Everything runs without a backend behind the mocks, and
+caller's `LostRace.attemptTwice` repeats); only `ChatHistoryClearer` in `Services` reports to the shared `ErrorCenter`
+(2026-11-08: the `GroupErrorReporter` seam went with the terms gate). Everything runs without a backend behind the mocks, and
 the unit suites live under `lilyTests/Chat` (`./scripts/ci.sh unit`).
 
 ## Subdirectories & Boundaries

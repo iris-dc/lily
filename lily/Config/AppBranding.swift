@@ -194,6 +194,12 @@ nonisolated enum AppBranding {
     /// counterpart under the sign-in form.
     static var signInPrompt: String { localized("Already have an account? Sign in") }
 
+    /// The agreement footnote under the sign-up form. The two document names are interpolated so each language
+    /// orders the sentence its own way; the view swaps them in as tappable runs (`EmailSignInView.agreementText`).
+    static func signUpAgreement(terms: String, privacy: String) -> String {
+        localized("By creating an account you agree to the \(terms) and \(privacy).")
+    }
+
     /// `minimumLength` is the minimum password length from `AppConfig.Auth`.
     static func passwordHint(minimumLength: Int) -> String {
         localized("At least \(minimumLength) characters")

@@ -17,7 +17,9 @@ struct GuestSignInPrompt: View {
         }
         .readableColumn()
         .sheet(isPresented: $isSignInPresented) {
-            SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
+            SignInSheet(session: dependencies.sessionController,
+                        errorCenter: dependencies.errorCenter,
+                        language: dependencies.language.language)
         }
     }
 }

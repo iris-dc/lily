@@ -17,7 +17,7 @@ final class InboxViewModel {
     private let myGroups: MyGroupsStore
     private let tournamentChanges: ChangeTracker
     private let navigation: AppNavigation
-    private let reporter: GroupErrorReporter
+    private let errorCenter: ErrorCenter
     private let logger: any Logging
     private let tryAgainDelay: Duration
     let now: () -> Date
@@ -28,7 +28,7 @@ final class InboxViewModel {
          myGroups: MyGroupsStore,
          tournamentChanges: ChangeTracker,
          navigation: AppNavigation,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
          now: @escaping () -> Date = { .now }) {
@@ -38,7 +38,7 @@ final class InboxViewModel {
         self.myGroups = myGroups
         self.tournamentChanges = tournamentChanges
         self.navigation = navigation
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.logger = logger
         self.tryAgainDelay = tryAgainDelay
         self.now = now
@@ -142,7 +142,7 @@ final class InboxViewModel {
         }
         guard let group = myGroups.groups.first(where: { $0.id == payload.groupId }) else {
             logger.warning(.inbox, "Notice \(item.id) names group \(payload.groupId), which Mine does not hold")
-            reporter.report(AppError.groupNotFound)
+            errorCenter.report(AppError.groupNotFound)
             return
         }
         logger.info(.inbox, "Notice \(item.id) opened group \(group.id)")
@@ -180,7 +180,7 @@ final class InboxViewModel {
             }
             let isVerdict = (failure as? AppError)?.isInviteVerdict == true
             logger.log(isVerdict ? .warning : .error, .inbox, "Invite \(item.id) \(verb) failed: \(failure)")
-            reporter.report(failure)
+            errorCenter.report(failure)
         }
     }
 

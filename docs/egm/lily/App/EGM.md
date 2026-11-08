@@ -23,11 +23,11 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `UNUserNotificationCenter.current().delegate = self` and calls `LaunchAnimations.freeze()`; the token and failure
   callbacks forward to `PushEventRelay.shared.deliver(token:)` and `.fail(_:)`; the `nonisolated` notification-center
   methods answer `[.banner, .sound, .list]` and route `PushPayload.tap(from:)` to `PushEventRelay.shared.notificationTapped(_:)`.
-- `AppRootView` (`lily/App/AppRootView.swift:AppRootView`): `init(dependencies:)` seeds `@State terms` and `@State sync`;
-  body is `MainTabView(dependencies:, showsContent: showsShell, termsPresented: terms.isPresented)` (the last so the
-  shell's profile sheet yields to the terms sheet, 2026-11-07) keyed by `navigation.shellGeneration` under `LandingView`
-  keyed by `language.language` while `!showsShell`, with `.errorPopup(dependencies.errorCenter)` and the `TermsSheet`,
-  then `.motionProvider()` outermost (`lily/Core/UI/Layout/MotionPreference.swift`), so the sheet reads `\.motion` too;
+- `AppRootView` (`lily/App/AppRootView.swift:AppRootView`): `init(dependencies:)` seeds `@State sync`;
+  body is `MainTabView(dependencies:, showsContent: showsShell)` (the terms sheet and its yield machinery were removed
+  2026-11-08 — owner decision: the app never prompts to accept terms) keyed by `navigation.shellGeneration` under `LandingView`
+  keyed by `language.language` while `!showsShell`, with `.errorPopup(dependencies.errorCenter)`,
+  then `.motionProvider()` outermost (`lily/Core/UI/Layout/MotionPreference.swift`), so every sheet reads `\.motion` too;
   `private struct SyncKey { phase; userID; language }` keys `.task(id:) { await sync.run(active:user:) }`.
 - `ShellCommands` (`lily/App/ShellCommands.swift:ShellCommands`): new event Cmd-N (`navigation.requestCreate(.game)`),
   new group Cmd-Shift-N (only if `AppConfig.FeatureFlags.groups`), new tournament Cmd-Shift-T (only if
@@ -51,7 +51,7 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
 - `struct Repositories` (`lily/App/AppDependencies+Repositories.swift:Repositories`): `events`, `profile`, `feedback`, `interactions`,
   `groups: GroupRepositories`, `devices`, `pushRegistrar`. `remote(baseURL:realtimeEndpoint:identity:tokenProvider:logger:)`
   binds the `Remote*` set over one `URLSessionAPIClient` plus `SystemPushRegistrar`;
-  `mock(identity:logger:autoReplies:mockPicker:systemPush:termsPending:eventsFailFirst:deletedUser:)` binds the `Mock*` set,
+  `mock(identity:logger:autoReplies:mockPicker:systemPush:eventsFailFirst:deletedUser:)` binds the `Mock*` set,
   `NoOpInteractionRecorder()` and `SystemPushRegistrar` only when `systemPush`, else `MockPushRegistrar`.
 - `GroupRepositories` (`lily/App/AppDependencies+Groups.swift:GroupRepositories`): `groups`, `invites`, `inbox`, `me`,
   `moderation`, `chat`, `users`, `tournaments`, `tournamentInvites`, `realtimeTransport`,
@@ -59,12 +59,12 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `mediaPreparer`, `attachmentSession: URLSession`. `remote(client:realtimeEndpoint:identity:logger:)` binds the
   `Remote*Repository` set, `NoRealtimeTransport()`, `RemoteRealtimeEndpointProvider(override:me:)`, `URLSessionAttachmentUploader`,
   `DeviceMediaPreparer`, `URLSession(configuration: .default)`;
-  `mock(identity:logger:events:profiles:autoReplies:mockPicker:termsPending:deletedFixtures:)` (the Bools default to
+  `mock(identity:logger:events:profiles:autoReplies:mockPicker:deletedFixtures:)` (the Bools default to
   false; `deletedFixtures` adds the deleted-flagged chat, tournament and inbox fixtures, 2026-11-08)
   binds the `Mock*Repository` set, `MockRealtimeTransport`, `FixedRealtimeEndpointProvider(url: AppConfig.Realtime.mockEndpoint)`,
   `MockAttachmentUploader(store:)` and `MockAttachmentURLProtocol.makeSession()`.
 - `GroupDependencies` (`lily/App/AppDependencies+Groups.swift:GroupDependencies`): `init(repositories:identity:tokenProvider:errorCenter:logger:snapshots:)`
-  builds `MyGroupsStore` (the one reader of `snapshots`, which is not stored), `MeStore`, `InboxStore`, `BlockListStore`, `GroupErrorReporter`, `InMemoryChatHistoryCache`,
+  builds `MyGroupsStore` (the one reader of `snapshots`, which is not stored), `MeStore`, `InboxStore`, `BlockListStore`, `InMemoryChatHistoryCache`,
   `ChatOutbox`, `UnreadCenter`, `ChatCatchUp`, `AttachmentDependencies`, `RealtimeSessionController`; stores `repositories: GroupRepositories`
   (the root's repository pass-throughs read `groups.repositories.<name>`; it has no forwarders of its own); `pasteboard: any Pasteboard = SystemPasteboard()`;
   `sessionObservers` is `[myGroups, me, inbox, blocks, chatHistory, outbox, unreadCenter, attachments.loader,
@@ -86,9 +86,9 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `makeInvitePeopleViewModel`, `makeTournamentInvitePeopleViewModel`, `makeReportViewModel` (`+Groups.swift`); `makeChatViewModel`,
   `makeAttachmentComposer`, `makeChatHistoryClearer`, `myGroupsDidChange()`, `myGroupsDidLoad()` (`+Chat.swift`);
   `makeTournamentListViewModel(scope:snapshots:)`, `makeTournamentDetailViewModel`, `makeCreateTournamentViewModel`,
-  `makeEditTournamentViewModel` (`+Tournaments.swift`); `makeInboxViewModel`, `makeUserProfileViewModel`, `makeTermsViewModel`,
+  `makeEditTournamentViewModel` (`+Tournaments.swift`); `makeInboxViewModel`, `makeUserProfileViewModel`,
   `makeFeedbackViewModel`, `makeDisplayNameViewModel`, `makeAboutViewModel`, `makeDeleteAccountViewModel`
-  (`+Inbox`, `+People`, `+Moderation`, `+Feedback`, `+Profile`; the last builds `DeleteAccountViewModel` over
+  (`+Inbox`, `+People`, `+Feedback`, `+Profile`; the last builds `DeleteAccountViewModel` over
   `meRepository` and `sessionController` as its `AccountDeletionSession`, 2026-11-07). The
   `+Groups`, `+Chat`, `+Push`, `+Inbox`, `+People` and `+Tournaments` extensions expose their stores and repositories as
   pass-throughs.
@@ -108,7 +108,7 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
 | `-mock-user-id <sub>` | the mock sign-in's user id (mock auth only) | `makeAuthService` |
 | `-mock-location` | `MockLocationService` and `MockGeocodingService` (deterministic geocoding) | `makeLocationService`, `makeGeocoder` |
 | `-mock-events` | `Repositories.mock` and `NoOpListSnapshotStore` | `makeRepositories`, `makeListSnapshotStore` |
-| `-mock-events-fail`, `-mock-chat-replies`, `-mock-attachment-picker`, `-mock-terms-pending`, `-system-push` | knobs of `Repositories.mock` | `makeRepositories` |
+| `-mock-events-fail`, `-mock-chat-replies`, `-mock-attachment-picker`, `-system-push` | knobs of `Repositories.mock` | `makeRepositories` |
 | `-api-base-url <url>` | replaces `AppConfig.API.baseURL` | `apiBaseURL(from:logger:)` |
 | `-realtime-endpoint <url>` | `RemoteRealtimeEndpointProvider(override:)` | `realtimeEndpoint(from:logger:)` |
 | `-hold-popups` | `ErrorCenter(autoDismissDelay: nil)` | `makeErrorCenter` |
@@ -148,8 +148,8 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   carousels are muted: `discover.reportsSearchFailures = false`, `exploreTournaments.reportsFailures = false`
   (`lily/App/AppDependencies+Shell.swift:AppDependencies.makeShellLists`).
 - `AppRootView` builds the shell once under the landing, keyed by `navigation.shellGeneration`; the landing is keyed
-  by `language.language`; the terms sheet's binding has an empty setter so it cannot be swiped away; one `sync.run`
-  per `SyncKey` (`lily/App/AppRootView.swift:AppRootView.body`, `AppRootView.termsPresented`, `AppRootView.SyncKey`).
+  by `language.language`; one `sync.run`
+  per `SyncKey` (`lily/App/AppRootView.swift:AppRootView.body`, `AppRootView.SyncKey`).
   The root is the one place `motionProvider()` and `layoutModeProvider()` are applied; the layout provider sits inside
   the sheet modifier, the motion provider outside it (`lily/App/AppRootView.swift:AppRootView.body`).
 - Every shell command is a no-op outside the shell and the group and tournament commands exist only under their
@@ -182,8 +182,7 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
 - State: `finishWiring` sets `navigation.selectedTab`, registers observers on `sessionController` and sets the expiry
   reporter's hook, which spawns `Task { await controller?.endExpiredSession() }` over a weak controller when the pool
   refuses to refresh the token (`lily/App/AppDependencies+Session.swift`); `makeShellLists`
-  mutates the new view models' failure-reporting flags; `makeTermsViewModel`'s closure calls
-  `await sessionController.signOut()` (`lily/App/AppDependencies+Moderation.swift`).
+  mutates the new view models' failure-reporting flags.
 - Logging through `OSLogLogger()`: `.auth` for `-reset-session`, mock auth, the mock user id and guest mode;
   `.events`, `.chat`, `.push`, `.groups` for each mock knob (`AppDependencies.makeRepositories`); `.network` for a
   base-URL override or a malformed URL; `.chat` for a realtime-endpoint override; `.localization` for the language

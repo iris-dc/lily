@@ -1,16 +1,15 @@
 import SwiftUI
 
 /// Shows the landing over the main shell while signed out, on the session state (which starts from the cache, so the
-/// first frame is already one of the two), ties `ShellSync` to the scene phase and the user (the restore once, a run
-/// whenever either changes), and presents the terms sheet while a signed-in caller owes the current terms. Wiring only:
-/// what a run does, and in which order, is `ShellSync`'s. The shell is built once, under the landing, since an iOS 26
-/// tab bar built in view slides its pill in from the first tab and draws heavy glyphs; its tabs hold nothing while
-/// covered (`MainTabView.showsContent`), a sign-out builds the next shell under the landing again
-/// (`AppNavigation.shellGeneration`), and UIKit's animations stay off until the first frame has committed
-/// (`LaunchAnimations`), so the bar a cold launch shows at once places its pill rather than sliding it.
+/// first frame is already one of the two), and ties `ShellSync` to the scene phase and the user (the restore once, a
+/// run whenever either changes). Wiring only: what a run does, and in which order, is `ShellSync`'s. The shell is
+/// built once, under the landing, since an iOS 26 tab bar built in view slides its pill in from the first tab and
+/// draws heavy glyphs; its tabs hold nothing while covered (`MainTabView.showsContent`), a sign-out builds the next
+/// shell under the landing again (`AppNavigation.shellGeneration`), and UIKit's animations stay off until the first
+/// frame has committed (`LaunchAnimations`), so the bar a cold launch shows at once places its pill rather than
+/// sliding it.
 struct AppRootView: View {
     let dependencies: AppDependencies
-    @State private var terms: TermsViewModel
     @State private var sync: ShellSync
     @Environment(\.scenePhase) private var scenePhase
 
@@ -19,13 +18,12 @@ struct AppRootView: View {
 
     init(dependencies: AppDependencies) {
         self.dependencies = dependencies
-        _terms = State(initialValue: dependencies.makeTermsViewModel())
         _sync = State(initialValue: dependencies.makeShellSync())
     }
 
     var body: some View {
         ZStack {
-            MainTabView(dependencies: dependencies, showsContent: showsShell, termsPresented: terms.isPresented)
+            MainTabView(dependencies: dependencies, showsContent: showsShell)
                 .id(dependencies.navigation.shellGeneration)
             if !showsShell {
                 // Copy is read into views as plain strings, so a new language needs the tree rebuilt, not re-rendered;
@@ -50,18 +48,9 @@ struct AppRootView: View {
         .onChange(of: dependencies.myGroups.groups) { dependencies.myGroupsDidChange() }
         .onChange(of: dependencies.myGroups.loadVersion) { dependencies.myGroupsDidLoad() }
         .errorPopup(dependencies.errorCenter)
-        .sheet(isPresented: termsPresented) {
-            TermsSheet(viewModel: terms, dependencies: dependencies)
-        }
-        // Outside the sheet: a presentation reads the environment above its modifier, and the terms sheet's aurora
-        // judges the preference too.
+        // Outside everything a presentation reads: a sheet reads the environment above its modifier, and every
+        // sheet's aurora judges the motion preference too.
         .motionProvider()
-    }
-
-    /// The setter is empty on purpose: the sheet cannot be swiped away. It follows `MeStore.needsTerms` and goes only
-    /// once the acceptance is recorded or the session ends.
-    private var termsPresented: Binding<Bool> {
-        Binding(get: { terms.isPresented }, set: { _ in })
     }
 
     private var showsShell: Bool { session.state.showsShell }

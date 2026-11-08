@@ -175,13 +175,13 @@ struct InboxViewModelTests {
         #expect(harness.inbox.items.first?.invite?.status == .pending)
     }
 
-    @Test func aTermsRefusalRaisesTheTermsSheet() async {
+    @Test func aTermsRefusalReachesThePopup() async {
         let viewModel = await harness.openInbox([invite])
         harness.inboxRepository.acceptError = AppError.termsRequired
 
         await viewModel.accept(invite)
 
-        #expect(harness.presentedError == .termsRequired && harness.termsRequiredCount == 1)
+        #expect(harness.presentedError == .termsRequired)
     }
 
     /// One answer per invite at a time: a second tap while the first is out is dropped.

@@ -11,7 +11,7 @@ Protocols (`Interfaces`) separate callers from the `Remote*` and `Mock*` reposit
 are `nonisolated` wire and rule types (`SportGroup`, `GroupDraft` validation, `GroupAccess` role rules); `State`
 holds the caller's long-lived stores, with `MyGroupsStore` the one source of the caller's groups; `ViewModels` run the
 screens and their writes (one `TRY_AGAIN` repeat, refetch on an unknown outcome, errors through
-`GroupErrorReporter` in `Services` to the shared `ErrorCenter`); `Views` are the SwiftUI screens, sheets, rows and
+the shared `ErrorCenter`); `Views` are the SwiftUI screens, sheets, rows and
 the `groupDestinations` navigation modifier. All of it runs without a backend behind the mocks, and its unit suites
 live under `lilyTests/Groups` (`./scripts/ci.sh unit`).
 
@@ -32,11 +32,11 @@ live under `lilyTests/Groups` (`./scripts/ci.sh unit`).
   `/api/groups`, `/api/groups/{id}/...`, `/api/me`, `/api/reports` and `/api/blocks` with per-route fallback errors
   and no retry of their own; `Mock*` repositories and `MockGroupFixtures` (six Berlin communities, Marta's
   conversation, tournament rooms) replaying Laurel's refusals and orders in memory.
-- Services: [`./Services/EGM.md`](./Services/EGM.md) - `GroupErrorReporter`: wraps any error as `AppError`, reports
-  it to `ErrorCenter`, and calls back on `.termsRequired` so the terms sheet is raised.
+- Services: removed 2026-11-08 with the terms gate — `GroupErrorReporter` existed to raise the terms sheet on
+  `.termsRequired`; every view model reports to the shared `ErrorCenter` directly now.
 - State: [`./State/EGM.md`](./State/EGM.md) - `MyGroupsStore` (per-caller `groups-mine` snapshot, 60 s freshness
   with a 10 s retry hold, `mineOrder` kept on local edits and room messages, `ChangeTracker` bumps),
-  `MeStore` (account and terms state) and `BlockListStore` (replace-never-merge block list), all `SessionObserver`s
+  `MeStore` (the caller's account) and `BlockListStore` (replace-never-merge block list), all `SessionObserver`s
   cleared on sign-out.
 - ViewModels: [`./ViewModels/EGM.md`](./ViewModels/EGM.md) - eight `@Observable` view models: create and edit drafts,
   Discover (300 ms debounce, 40-character query cap, 1.5 s position head start, cursor paging, plain-browse snapshot),

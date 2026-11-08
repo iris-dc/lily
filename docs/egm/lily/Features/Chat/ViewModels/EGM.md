@@ -19,7 +19,7 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   `repository: any ChatRepository`, `groups: any GroupRepository`, `links: SystemRowLinks`, `pasteboard: any
   Pasteboard`, `cache: any ChatHistoryCache`, `realtime: RealtimeSessionController`, `catchUp: ChatCatchUp`,
   `unread: UnreadCenter`, `me: MeStore`, `blocks: BlockListStore`, `attachments: AttachmentComposerModel`,
-  `attachmentLoader: AttachmentLoader`, `identity: any IdentityProvider`, `reporter: GroupErrorReporter`,
+  `attachmentLoader: AttachmentLoader`, `identity: any IdentityProvider`, `errorCenter: ErrorCenter`,
   `outbox: ChatOutbox`, `recorder: any InteractionRecorder`, `logger: any Logging`,
   `now`, `sleep`, `tryAgainDelay = AppConfig.API.tryAgainDelay`; builds `SystemRowContent` and `ReadMarkerFlusher`.
 - `[ChatViewModel.swift:ChatViewModel]` Observed state: `group`, `draft: MessageDraft`, `attachments`,
@@ -56,7 +56,7 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   `leavesPinOutcomeUnknown`, `endsRoomAccess`, `isChatRefusal`, `static chatLogLevel(for:) -> LogLevel`.
 - `[lily/Features/Chat/ViewModels/AttachmentComposerModel.swift:AttachmentComposerModel.init]` takes `groupID`,
   `caps: AttachmentCaps`, `repository: any ChatRepository`, `uploader: any AttachmentUploader`, `preparer: any
-  MediaPreparer`, `cache: any AttachmentCache`, `reporter: GroupErrorReporter`, `logger`,
+  MediaPreparer`, `cache: any AttachmentCache`, `errorCenter: ErrorCenter`, `logger`,
   `maxPerMessage = AppConfig.Chat.Attachments.maxPerMessage`,
   `maxConcurrentUploads = AppConfig.Chat.Attachments.maxConcurrentUploads` (a `SlotGate`).
 - `[AttachmentComposerModel.swift:AttachmentComposerModel]` `private(set) drafts: [AttachmentDraft]`,
@@ -106,7 +106,7 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   unless the backend answered `.messageNotFound`.
 - `[ChatViewModel.swift:ChatViewModel.report]` Cancellation is silent; `.notAMember` and `.groupNotFound`
   (`endsRoomAccess`) remove the group locally and set `isGone`; refusals in `isChatRefusal` log at warning, faults at
-  error; everything but cancellation reaches `GroupErrorReporter.report`.
+  error; everything but cancellation reaches `ErrorCenter.report`.
 - `[ChatViewModel+Live.swift:ChatViewModel.handle]` An own live echo (`clientMessageId` and sent by the current
   user) confirms the pending bubble; `memberLeft` naming the caller or `groupDeleted` sets `isGone`;
   `tournamentChanged`, `matchUpdated`, `messageDeleted`, `membershipChanged`, `inboxItem`, `unknown` change nothing
@@ -154,7 +154,7 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   `removeGroupLocally`, and `envelopes(for:)` consumed by `liveTask`. Cache: `ChatHistoryCache.update`, `room`.
   Outbox writes through `pending`. Read marker through `ReadMarkerFlusher.opened`, `flush`, `noteRead`,
   `reset`. `SystemRowContent.recordChange(for:)` on live messages; `recorder.record(.chatOpened)` once;
-  `pasteboard.copy`; `GroupErrorReporter.report` for the popup (and the terms sheet on `TERMS_REQUIRED`).
+  `pasteboard.copy`; `ErrorCenter.report` for the popup.
 - `[ChatViewModel]` Logs under `.chat` (`.cache` for "Room cache hit/miss for group"): "Message sent", "deleted in
   group", "Send outcome unknown for", "Send landed for", "Blocked user", "pinned in group", "unpinned in group",
   "Vote of", "Vote in poll <id> outcome unknown", "Pinning message <id> outcome unknown", "landed despite", "Could
@@ -163,7 +163,7 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
 - `[AttachmentComposerModel]` One `Task` per draft in `tasks`, cancelled by `remove`, `reset` and `deinit`. Disk:
   `deleteLocalFiles()`, `FileManager.default.removeItem(at: ownedFile)`, `AttachmentCache.store(copying:for:variant:)`.
   Network: `ChatRepository.requestUpload`, `AttachmentUploader.upload`. Media: `MediaPreparer.prepareImage`,
-  `prepareVideo`, `prepareFile`; `PhotosPickerItem.loadTransferable`; `UIImage.jpegData`. `GroupErrorReporter.report`
+  `prepareVideo`, `prepareFile`; `PhotosPickerItem.loadTransferable`; `UIImage.jpegData`. `ErrorCenter.report`
   on a refusal and an upload failure. Logs under `.chat`: "uploaded as" (info), "upload failed" (error), "could not
   be prepared", "could not seed the cache", "The files importer failed", "could not be loaded" (warning),
   "Attachment dropped", "prepared for a slot that is gone: files deleted", "uploaded for a composer that is gone: files

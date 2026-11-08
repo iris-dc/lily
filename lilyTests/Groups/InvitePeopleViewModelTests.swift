@@ -140,13 +140,13 @@ struct InvitePeopleViewModelTests {
         #expect(harness.logs(.error).mentioning("u-2", "\(AppError.alreadyMember)").count == 1)
     }
 
-    @Test func aTermsRefusalRaisesTheTermsSheet() async {
+    @Test func aTermsRefusalReachesThePopup() async {
         let viewModel = await openSheet([marta])
         harness.invites.inviteResult = .failure(.termsRequired)
 
         await viewModel.invite(marta)
 
-        #expect(harness.presentedError == .termsRequired && harness.termsRequiredCount == 1)
+        #expect(harness.presentedError == .termsRequired)
     }
 
     @Test func captionsNameWhatIsShared() {

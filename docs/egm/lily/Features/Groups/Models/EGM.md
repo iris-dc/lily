@@ -6,9 +6,9 @@ Source: `lily/Features/Groups/Models/`
 
 Twenty-seven files of `nonisolated` value types, no logic that reaches outside the process. Three families: the wire
 types decoded from Laurel's group, member, account, invite and moderation answers (`SportGroup`, `GroupMember`,
-`GroupMembership`, `MembershipChange`, `Account`, `TermsAcceptance`, `DeletionPlan`, `SentInvite`, `InviteCandidate`,
+`GroupMembership`, `MembershipChange`, `Account`, `DeletionPlan`, `SentInvite`, `InviteCandidate`,
 `ReportReceipt`, `BlockedUsers`, `UnbanReceipt`) and the request bodies that mirror the backend's DTOs key for key
-(`CreateGroupPayload`, `UpdateGroupPayload`, `RoleChangePayload`, `SendInvitePayload`, `TermsAcceptancePayload`,
+(`CreateGroupPayload`, `UpdateGroupPayload`, `RoleChangePayload`, `SendInvitePayload`,
 `ReportPayload`); the on-device rules the screens and their tests share (`GroupDraft` validation, `GroupAccess`,
 `GroupDetailSection`); and small values for navigation and dialogs (`GroupScope`, `GroupConfirmation`,
 `GroupDetailContext`, `GroupInfoDestination`, `DiscoverGroupsDestination`, `InviteTarget`, `ReportTarget`,
@@ -57,12 +57,11 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   [`lily/Features/Groups/Models/CreateGroupPayload.swift`:`CreateGroupPayload`]; `UpdateGroupPayload(draft:)` (the same
   set without `clientGroupId` and `visibility`) [`lily/Features/Groups/Models/UpdateGroupPayload.swift`:`UpdateGroupPayload`];
   `SendInvitePayload { userId }` [`lily/Features/Groups/Models/SentInvite.swift`:`SendInvitePayload`];
-  `TermsAcceptancePayload { version }` [`lily/Features/Groups/Models/Account.swift`:`TermsAcceptancePayload`];
   `ReportPayload(target:reason:comment:)` { `targetType`, `targetId`, `groupId?`, `reason`, `comment?` }
   [`lily/Features/Groups/Models/Report.swift`:`ReportPayload`].
 - `Account` (the answer of `GET /api/me`): `userId`, `isOperator`, `termsVersion`, `acceptedTermsVersion?`,
-  `realtimeEndpoint: URL?`, `attachmentsEnabled`; `termsAccepted`, `acceptingTerms(_:)`; `TermsAcceptance
-  { acceptedTermsVersion, acceptedTermsAt }` [`lily/Features/Groups/Models/Account.swift`:`Account`].
+  `realtimeEndpoint: URL?`, `attachmentsEnabled`; the two terms fields stay decoded and ignored (2026-11-08:
+  agreement is by use, stamped by the backend at creation) [`lily/Features/Groups/Models/Account.swift`:`Account`].
 - `DeletionPlan` (the answer of `GET /api/me/deletion-plan`, the account-deletion contract §2): exactly five advisory
   `Int` counts — `groupsTransferring`, `groupsDeleted`, `eventsCancelled`, `entriesWithdrawn`, `tournamentsCancelled` —
   for the delete flow's summary copy; the execute path re-derives everything, so the preview may be stale. Same file:
@@ -157,8 +156,6 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   "In <viaName>" for `group`, "Played <viaName>" for `event` and the `viaName` alone for an unknown source
   [`lily/Features/Groups/Models/InviteCandidate.swift`:`InviteCandidate.caption`]. `MemberRole` and `GroupVisibility`
   decode strictly: an unknown value fails the payload, by design.
-- `Account.termsAccepted` is `(acceptedTermsVersion ?? 0) >= termsVersion`
-  [`lily/Features/Groups/Models/Account.swift`:`Account.termsAccepted`].
 - `ReportTarget.group`/`.tournament` carry their own id as `groupID`, `.message` carries its room, `.user` none;
   `logCategory` is `.tournaments` for a tournament and `.groups` otherwise, as is `InviteTarget.logCategory`
   [`lily/Features/Groups/Models/Report.swift`:`ReportTarget.logCategory`]

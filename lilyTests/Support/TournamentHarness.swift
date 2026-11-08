@@ -1,8 +1,8 @@
 import Foundation
 @testable import lily
 
-/// The collaborators every tournament view model shares, over fakes: one identity, one fake repository, one reporter
-/// whose terms requests are counted. Collaborators are created in the body: a main-actor default argument would run
+/// The collaborators every tournament view model shares, over fakes: one identity, one fake repository, one error
+/// center every failure funnels into. Collaborators are created in the body: a main-actor default argument would run
 /// off the actor.
 @MainActor
 final class TournamentHarness: LoadsGroups {
@@ -20,12 +20,9 @@ final class TournamentHarness: LoadsGroups {
     let navigation = AppNavigation()
     let errorCenter: ErrorCenter
     let groups: MyGroupsStore
-    private let terms: TermsCountingReporter
     private let recordedTournaments = Recorded<Tournament>()
     private let recordedDetails = Recorded<TournamentDetail>()
 
-    var reporter: GroupErrorReporter { terms.reporter }
-    var termsRequiredCount: Int { terms.termsRequiredCount }
     var presentedError: AppError? { errorCenter.current?.error }
     /// What the view models handed on: every `Tournament` from a detail's `onChange`, every `TournamentDetail` from a
     /// create's `onCreated` or an edit's `onChange`.
@@ -40,7 +37,6 @@ final class TournamentHarness: LoadsGroups {
                                changes: groupChanges,
                                errorCenter: errorCenter,
                                logger: logger)
-        terms = TermsCountingReporter(errorCenter: errorCenter)
         repository.organizerUserID = TestFixtures.user.id
     }
 
@@ -75,7 +71,7 @@ final class TournamentHarness: LoadsGroups {
                                          identity: identity,
                                          navigation: navigation,
                                          changes: changes,
-                                         reporter: reporter,
+                                         errorCenter: errorCenter,
                                          recorder: recorder,
                                          logger: logger,
                                          tryAgainDelay: .zero,
@@ -105,7 +101,7 @@ final class TournamentHarness: LoadsGroups {
                                   identity: identity,
                                   locationService: locationService ?? MockLocationService(),
                                   groups: groups,
-                                  reporter: reporter,
+                                  errorCenter: errorCenter,
                                   logger: logger,
                                   now: { Self.now },
                                   pushOptIn: pushOptIn ?? NoPushOptIn(),
@@ -117,7 +113,7 @@ final class TournamentHarness: LoadsGroups {
     func makeEditViewModel(for tournament: Tournament) -> EditTournamentViewModel {
         EditTournamentViewModel(tournament: tournament,
                                 repository: repository,
-                                reporter: reporter,
+                                errorCenter: errorCenter,
                                 logger: logger,
                                 tryAgainDelay: .zero,
                                 now: { Self.now },

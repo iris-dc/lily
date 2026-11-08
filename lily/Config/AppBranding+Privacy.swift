@@ -5,29 +5,11 @@ nonisolated extension AppBranding {
     /// so the screen is data-driven and the copy translates like everything else. It mirrors the page Laurel serves
     /// at `AppConfig.Moderation.privacyURL` — the canonical address App Store Connect points at — section for section,
     /// fact for fact: a change to either side lands in both in the same change
-    /// (`laurel/src/main/resources/pages/privacy.html`).
+    /// (`laurel/src/main/resources/pages/privacy.html`). The page's date line and its self-referencing footer stay on
+    /// the page alone (owner decision 2026-11-08: the in-app screen carries the sections and nothing else).
     enum Privacy {
-        /// One heading with its paragraphs; the title text is its identity (one key per text, the catalog's rule).
-        nonisolated struct Section: Identifiable, Sendable {
-            let title: String
-            let paragraphs: [Paragraph]
-            var id: String { title }
-        }
-
-        /// One paragraph, opened by a short bold lead ("Your account.") where the page uses one.
-        nonisolated struct Paragraph: Identifiable, Sendable {
-            var lead: String?
-            let body: String
-            var id: String { body }
-        }
-
-        /// The policy's date line; it moves with the served page's when the policy changes.
-        static var updated: String { localized("Last updated 8 November 2026.") }
-
-        /// The footer's cross-reference to the served page, which stays the canonical address.
-        static var alsoAt: String {
-            localized("This policy is also available at \(AppConfig.Moderation.privacyURL.absoluteString).")
-        }
+        typealias Section = Legal.Section
+        typealias Paragraph = Legal.Paragraph
 
         /// The whole policy in the page's order; the two long sections live in `AppBranding+PrivacyDetails.swift`.
         static var sections: [Section] {
@@ -83,10 +65,10 @@ nonisolated extension AppBranding {
         }
 
         static var changes: Section {
-            Section(title: localized("Changes"), paragraphs: [
+            Section(title: Legal.changesTitle, paragraphs: [
                 Paragraph(body: localized("""
-                    When this policy changes, we update it and the date at its top. A change to the terms it \
-                    accompanies is put to you in the app before you can post again.
+                    When this policy changes, we update it and the date at its top. Continuing to use iskra after \
+                    a change constitutes acceptance of the updated policy.
                     """))
             ])
         }

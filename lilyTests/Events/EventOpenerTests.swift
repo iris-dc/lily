@@ -14,7 +14,7 @@ struct EventOpenerTests {
         errorCenter = ErrorCenter(logger: logger)
         opener = EventOpener(events: events,
                              navigation: navigation,
-                             reporter: GroupErrorReporter(errorCenter: errorCenter) {},
+                             errorCenter: errorCenter,
                              logger: logger)
     }
 

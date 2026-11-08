@@ -9,14 +9,14 @@ lily/
                  drives ShellSync), AppDependencies (composition root) + AppDependencies+Groups (GroupRepositories, the set the
                  remote and mock wirings build; GroupDependencies: the group, invite, inbox, account, moderation and chat
                  repositories, MyGroupsStore, MeStore, InboxStore, the chat cache, UnreadCenter, the realtime controller,
-                 GroupErrorReporter, the pasteboard, the group and tournament change trackers, ChatOutbox, BlockListStore, the session observers to register; the
+                 the pasteboard, the group and tournament change trackers, ChatOutbox, BlockListStore, the session observers to register; the
                  factories of every groups view model, the invite sheet's included) + AppDependencies+Chat, +Inbox and +People (the
                  chat, inbox and profile factories) + AppDependencies+Events (the event view-model factories) + AppDependencies+Push
                  (PushDependencies: the registrar and device repository the data layer chose, EventOpener,
                  PushCoordinator) + AppDependencies+Repositories (Repositories, Auth and the data-layer factories; 2026-11-02)
                  + AppDependencies+Localization (the language store built from the stored choice and the launch arguments)
                  + AppDependencies+Tournaments (the tournament repository and change tracker over the group dependencies; the
-                 tournament view-model factories) + AppDependencies+Moderation (the terms sheet's view model) + AppDependencies+Session
+                 tournament view-model factories) + AppDependencies+Session
                  (the session store settled from the launch arguments; -reset-session decided and logged once as startsFresh and handed to
                  the session, language, currency and filter stores; wireSessionExpiry, the hook that ends the session when the pool
                  refuses to refresh the token) + AppDependencies+Shell (makeShellSync) + AppDependencies+Currency
@@ -127,9 +127,9 @@ lily/
     Landing/     First screen: the intro pager (IntroPager, IntroSlideView, IntroPageIndicator, IntroScreenFrame, IntroScreens),
                  the slides and their content (Models/IntroSlide, IntroContent, IntroFixtures, TapPulseCurve), LandingViewModel and the two
                  buttons (Models + Views + ViewModels)
-    SignIn/      Sign-in sheet with provider buttons and the email form (Views + ViewModels)
+    SignIn/      Sign-in sheet with provider buttons and the email form with the sign-up agreement footnote (Views + ViewModels)
     Shell/       MainTabView (TabView(selection:) over AppTab: Home, Explore, Chats; the unread badge on Chats; mounts the profile
-                 sheet above the per-tab language identity and yields it to the terms sheet; 2026-11-07), ProfileCornerButton (the
+                 sheet above the per-tab language identity; 2026-11-07), ProfileCornerButton (the
                  top-left corner control on every tab root — initials or the person glyph — opening the profile sheet; 2026-11-07), HomeTab (the
                  Home stack), HomeView, HomeOverview (your groups above your games), HomeContent (guest prompt or overview, shared
                  with Chats), GuestSignInPrompt, ExploreTab (Explore with the groups and tournaments carousels), ChatTab (the Chats stack);
@@ -168,16 +168,14 @@ lily/
                  (ProfileFieldViewModel<Draft>, as DisplayNameViewModel and AboutViewModel; DeleteAccountViewModel, the delete
                  flow's state machine), Views (ProfileView, SettingsScreen (the pushed
                  settings: language, currency, contact, the legal rows, Sign out, Delete account; 2026-11-07),
-                 PrivacyPolicyScreen (the policy read in place, 2026-11-08), DeleteAccountSheet
+                 LegalScreen, PrivacyPolicyScreen, TermsScreen and LegalSheet (the shared reading rendering, the policy and
+                 terms read in place, 2026-11-08), DeleteAccountSheet
                  (the delete flow: summary, destructive confirm, locked wait, one-time acknowledgment), DisplayNameRow
                  and DisplayNameSheet, AboutRow and AboutSheet, the Language and Currency rows, SettingsChoiceRow (the popover
                  card the Language and Currency rows share)) (updated 2026-11-07)
     Feedback/    The contact form: Models (FeedbackKind, FeedbackDraft with its issues and the one payload builder,
                  FeedbackEnvironment: app version, OS version, device model, language), FeedbackRepository interface, remote
                  (POST /api/feedback) and mock implementations, FeedbackViewModel, Views (FeedbackRow on Settings and the guest profile, FeedbackSheet)
-    Moderation/  The terms sheet: ViewModels (TermsViewModel: shown while a signed-in caller owes the terms, accept, sign out), Views
-                 (TermsSheet, presented by AppRootView; since 2026-11-07 also the terms-pending way into DeleteAccountSheet);
-                 the report sheet and the moderation repository stay under Groups
     Groups/      Groups, invites, the account and moderation: Models (SportGroup with GroupKind and Counterpart (a direct
                  conversation is a group of kind direct), GroupMember,
                  GroupMembership, GroupVisibility, MemberRole, GroupAccess, GroupDraft and the create/update payloads, GroupScope (with
@@ -191,7 +189,7 @@ lily/
                  admits into and leaves, +Discover the mock's Discover filter and its three orders over GroupScope.searchPrefix;
                  MockInviteCandidatePool + MockInviteLedger, the candidate pool (every non-direct membership, tournament rooms included)
                  and the one send both invite mocks call), State (MyGroupsStore, MeStore, BlockListStore: the one block list, loaded by
-                 the shell sync), Services (GroupErrorReporter), ViewModels (DiscoverGroups (the Discover search behind the carousel and
+                 the shell sync), ViewModels (DiscoverGroups (the Discover search behind the carousel and
                  the Discover screen; Home reads MyGroupsStore.communities directly), GroupDetail, GroupLoader,
                  CreateGroup, EditGroup, Members, InvitePeople (over an InviteTarget), Report), Views (GroupCarousel, GroupTile, DiscoverGroupsView, DiscoverGroupList, GroupRowList,
                  GroupRow (with GroupRowContent, the row from its fields), GroupCard, GroupBadge,
@@ -281,7 +279,7 @@ lily/
                  InboxItemRow+Notices (the account-deletion notice cards) over InboxCardParts, InboxRow (the pinned
                  row on Chats))
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
-                 listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ and Moderation/ included;
+                 listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ included;
                  Profile/ holds ProfileStoreTests and ProfileStoreBioTests, DisplayNameViewModelTests, AboutViewModelTests,
                  DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01, and MapCardListEdgesTests since 2026-11-06, with CreateEventPlaceTests, EditEventPlaceTests and EventDraftPlaceTests from the 2026-11-06 pre-merge review; Location/ holds PlaceSuggestionTests since then); Support/ holds fakes
                  (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, ShellDoubles,

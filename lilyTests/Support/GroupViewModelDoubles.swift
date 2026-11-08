@@ -20,22 +20,8 @@ final class CallCounter {
     }
 }
 
-/// A `GroupErrorReporter` whose requests for the terms sheet are counted; the harnesses share it.
-@MainActor
-final class TermsCountingReporter {
-    private(set) var termsRequiredCount = 0
-    private(set) lazy var reporter = GroupErrorReporter(errorCenter: errorCenter) { [weak self] in
-        self?.termsRequiredCount += 1
-    }
-    private let errorCenter: ErrorCenter
-
-    init(errorCenter: ErrorCenter) {
-        self.errorCenter = errorCenter
-    }
-}
-
 /// The collaborators every groups and inbox view model shares, over fakes: one identity, one store, one inbox, one
-/// reporter whose terms requests are counted. Collaborators are created in the body: a main-actor default argument
+/// error center every failure funnels into. Collaborators are created in the body: a main-actor default argument
 /// would run off the actor.
 @MainActor
 final class GroupHarness {
@@ -56,10 +42,7 @@ final class GroupHarness {
     let errorCenter: ErrorCenter
     let store: MyGroupsStore
     let inbox: InboxStore
-    private let terms: TermsCountingReporter
 
-    var reporter: GroupErrorReporter { terms.reporter }
-    var termsRequiredCount: Int { terms.termsRequiredCount }
     var changed: [SportGroup] { sink.values }
     var presentedError: AppError? { errorCenter.current?.error }
 
@@ -73,7 +56,6 @@ final class GroupHarness {
                               logger: logger,
                               snapshots: snapshots ?? NoOpListSnapshotStore())
         inbox = InboxStore(repository: inboxRepository, identity: identity, errorCenter: errorCenter, logger: logger)
-        terms = TermsCountingReporter(errorCenter: errorCenter)
     }
 
     func logs(_ level: LogLevel? = nil) -> [String] {
@@ -91,11 +73,11 @@ final class GroupHarness {
     func makeInboxViewModel() -> InboxViewModel {
         InboxViewModel(store: inbox,
                        repository: inboxRepository,
-                       opener: EventOpener(events: events, navigation: navigation, reporter: reporter, logger: logger),
+                       opener: EventOpener(events: events, navigation: navigation, errorCenter: errorCenter, logger: logger),
                        myGroups: store,
                        tournamentChanges: tournamentChanges,
                        navigation: navigation,
-                       reporter: reporter,
+                       errorCenter: errorCenter,
                        logger: logger,
                        tryAgainDelay: .zero)
     }
@@ -119,7 +101,7 @@ final class GroupHarness {
                                     repository: repository,
                                     identity: identity,
                                     store: store,
-                                    reporter: reporter,
+                                    errorCenter: errorCenter,
                                     recorder: recorder,
                                     logger: logger,
                                     tryAgainDelay: .zero,
@@ -132,7 +114,7 @@ final class GroupHarness {
         return MembersViewModel(group: group,
                                 repository: repository,
                                 identity: identity,
-                                reporter: reporter,
+                                errorCenter: errorCenter,
                                 logger: logger,
                                 tryAgainDelay: .zero,
                                 onChange: sink.record)
@@ -143,7 +125,7 @@ final class GroupHarness {
     }
 
     func makeInvitePeopleViewModel(for target: InviteTarget) -> InvitePeopleViewModel {
-        InvitePeopleViewModel(target: target, repository: invites, reporter: reporter, logger: logger, tryAgainDelay: .zero)
+        InvitePeopleViewModel(target: target, repository: invites, errorCenter: errorCenter, logger: logger, tryAgainDelay: .zero)
     }
 
     /// `snapshots` is optional because a main-actor default value cannot be built in the parameter list.

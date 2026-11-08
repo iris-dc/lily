@@ -28,7 +28,6 @@ struct GroupsConfigTests {
     @Test func moderationPaths() {
         #expect(Paths.reports == "/api/reports")
         #expect(Paths.block(userID: "u1") == "/api/blocks/u1")
-        #expect(Paths.meTerms == "/api/me/terms")
         #expect(AppConfig.Moderation.termsURL.absoluteString == "https://api.iskra.red/terms")
         #expect(AppConfig.Moderation.privacyURL.absoluteString == "https://api.iskra.red/privacy")
     }

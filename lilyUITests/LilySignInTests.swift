@@ -78,52 +78,26 @@ final class LilySignInTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10), "a confirmed sign-up must sign the user in")
     }
 
-    /// With `-mock-terms-pending` the mock account owes the current terms, so the sheet comes up as soon as the
-    /// account loaded after the sign-in; it cannot be swiped away, and "I agree" (or "Sign out") is the only way on.
-    /// The first gated write, a chat message, then goes through.
+    /// The sign-up form carries the agreement footnote (owner decision 2026-11-08: agreement is by use, the app
+    /// never prompts to accept terms), and its two names open the in-app documents as sheets over the form.
     @MainActor
-    func testANewAccountAcceptsTheTermsBeforeItsFirstWrite() {
-        relaunch(appending: "-mock-terms-pending")
-        tapSignInWithApple()
+    func testSignUpShowsTheAgreementFootnoteWithWorkingLinks() {
+        openEmailForm()
+        app.buttons["auth-mode-toggle"].tap()
+        XCTAssertTrue(app.staticTexts["Create your account"].waitForExistence(timeout: 5))
 
-        let accept = app.buttons["terms-accept"]
-        XCTAssertTrue(accept.waitForExistence(timeout: 10), "a new account is asked for the terms once its account loaded")
-        XCTAssertTrue(app.staticTexts["Before you join in"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["terms-sign-out"].waitForExistence(timeout: 5),
-                      "the only way out without agreeing is signing out")
-        attachScreenshot(named: "terms-sheet")
+        let footnote = app.staticTexts["auth-agreement"]
+        XCTAssertTrue(footnote.waitForExistence(timeout: 5), "the sign-up form carries the agreement footnote")
+        XCTAssertTrue(footnote.label.contains("Terms of use") && footnote.label.contains("Privacy policy"),
+                      "the sentence names both documents")
+        attachScreenshot(named: "signup-agreement")
 
-        app.swipeDown()
-        waitUntilHittableAndStill(accept)
-        XCTAssertTrue(accept.isHittable, "the sheet cannot be swiped away")
-
-        accept.tap()
-        XCTAssertTrue(accept.waitForNonExistence(timeout: 10), "the recorded acceptance closes the sheet")
-
-        openRoom(MockIDs.kickersRow, titled: "Kreuzberg Kickers")
-
-        let text = "See you at seven"
-        enter(text, into: app.descendants(matching: .any)["chat-composer"])
-        app.buttons["chat-send"].tap()
-        XCTAssertTrue(app.staticTexts[text].waitForExistence(timeout: 10), "the write goes through once the terms are accepted")
-    }
-
-    /// With `-mock-terms-pending`, a sign-in started from the profile sheet yields to the terms sheet: the account
-    /// loads owing the terms, the profile sheet and its sign-in collapse, and the root's non-dismissable terms sheet
-    /// presents (the relocation contract's maintained invariant: the two never both present).
-    @MainActor
-    func testSignInFromTheProfileSheetYieldsToTheTermsSheet() {
-        relaunch(appendingArguments: ["-start-as-guest", "-mock-terms-pending"])
-        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
-        openProfileSheet()
-        tapSignInWithApple()
-
-        let accept = app.buttons["terms-accept"]
-        XCTAssertTrue(accept.waitForExistence(timeout: 10), "the terms sheet presents once the account loaded owing them")
-        XCTAssertTrue(app.navigationBars["Profile"].waitForNonExistence(timeout: 5), "the profile sheet yields to the terms")
-
-        accept.tap()
-        XCTAssertTrue(accept.waitForNonExistence(timeout: 10), "the recorded acceptance closes the sheet")
+        let termsLink = app.links["Terms of use"]
+        XCTAssertTrue(termsLink.waitForExistence(timeout: 5), "the document names are tappable links")
+        termsLink.tap()
+        XCTAssertTrue(app.otherElements["settings-terms-of-use"].waitForExistence(timeout: 5), "the terms open in the app")
+        app.buttons["legal-close"].tap()
+        XCTAssertTrue(footnote.waitForExistence(timeout: 5), "Close returns to the form")
     }
 }
 

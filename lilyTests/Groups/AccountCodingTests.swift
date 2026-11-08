@@ -13,13 +13,11 @@ struct AccountCodingTests {
         #expect(!older.attachmentsEnabled && !older.isOperator && older.termsVersion == 1)
     }
 
-    @Test func theFlagSurvivesARoundTripAndTheTermsAcceptance() throws {
+    @Test func theFlagSurvivesARoundTrip() throws {
         let account = Account.fixture(attachmentsEnabled: true)
         let decoded = try APIJSONCoding.makeDecoder().decode(Account.self, from: APIJSONCoding.makeEncoder().encode(account))
 
         #expect(decoded == account)
-        let accepted = account.acceptingTerms(TermsAcceptance(acceptedTermsVersion: 1, acceptedTermsAt: .now))
-        #expect(accepted.attachmentsEnabled && accepted.termsAccepted)
         #expect(!Account.fixture().attachmentsEnabled, "the fixture's default is off, like an older backend")
     }
 }

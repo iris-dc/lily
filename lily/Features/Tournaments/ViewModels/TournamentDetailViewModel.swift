@@ -34,7 +34,7 @@ final class TournamentDetailViewModel {
     let identity: any IdentityProvider
     let logger: any Logging
     let pushOptIn: any PushOptIn
-    private let reporter: GroupErrorReporter
+    private let errorCenter: ErrorCenter
     private let now: () -> Date
     private let onChange: @MainActor (Tournament) -> Void
     /// Read by the `+Actions` file: the chat opener fetches the room and pushes it.
@@ -61,7 +61,7 @@ final class TournamentDetailViewModel {
          identity: any IdentityProvider,
          navigation: AppNavigation,
          changes: ChangeTracker,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          recorder: any InteractionRecorder,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
@@ -76,13 +76,13 @@ final class TournamentDetailViewModel {
         self.identity = identity
         self.navigation = navigation
         self.changes = changes
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.recorder = recorder
         self.logger = logger
         gate = WriteGate(category: .tournaments,
                          logger: logger,
                          tryAgainDelay: tryAgainDelay,
-                         report: { reporter.report($0) },
+                         report: { errorCenter.report($0) },
                          isExpected: { $0.isTournamentRefusal })
         self.now = now
         self.pushOptIn = pushOptIn
@@ -185,7 +185,7 @@ final class TournamentDetailViewModel {
         } else if detail == nil {
             state = .failed
         }
-        reporter.report(error)
+        errorCenter.report(error)
     }
 
     /// The opener's copy when it handed one over, else the spinner.
@@ -244,8 +244,8 @@ final class TournamentDetailViewModel {
     }
 
     /// One action at a time; the gate repeats a `TRY_AGAIN` once, keeps a dismissed screen quiet, logs a refusal at
-    /// warning (an expected product state: the detail was stale) and sends every failure to the popup through the
-    /// reporter, so a `TERMS_REQUIRED` raises the terms sheet. Answers whether the work went through, so a sheet can
+    /// warning (an expected product state: the detail was stale) and sends every failure to the shared popup.
+    /// Answers whether the work went through, so a sheet can
     /// close on success. Shared with the `+Actions`, `+Entries` and `+Matches` files.
     @discardableResult
     func perform(_ action: String, _ work: () async throws -> Void) async -> Bool {

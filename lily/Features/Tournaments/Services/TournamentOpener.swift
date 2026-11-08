@@ -6,13 +6,13 @@ import Foundation
 final class TournamentOpener {
     private let tournaments: any TournamentRepository
     private let navigation: AppNavigation
-    private let reporter: GroupErrorReporter
+    private let errorCenter: ErrorCenter
     private let logger: any Logging
 
-    init(tournaments: any TournamentRepository, navigation: AppNavigation, reporter: GroupErrorReporter, logger: any Logging) {
+    init(tournaments: any TournamentRepository, navigation: AppNavigation, errorCenter: ErrorCenter, logger: any Logging) {
         self.tournaments = tournaments
         self.navigation = navigation
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.logger = logger
     }
 
@@ -30,7 +30,7 @@ final class TournamentOpener {
         } catch {
             guard !AppError.isCancellation(error) else { return false }
             logger.warning(.tournaments, "Tournament \(tournamentID) behind \(source) is unavailable: \(error)")
-            reporter.report(error)
+            errorCenter.report(error)
             return false
         }
     }

@@ -15,7 +15,7 @@ final class GroupDetailViewModel {
     private let repository: any GroupRepository
     private let identity: any IdentityProvider
     private let store: MyGroupsStore
-    private let reporter: GroupErrorReporter
+    private let errorCenter: ErrorCenter
     private let recorder: any InteractionRecorder
     private let logger: any Logging
     private let tryAgainDelay: Duration
@@ -43,7 +43,7 @@ final class GroupDetailViewModel {
          repository: any GroupRepository,
          identity: any IdentityProvider,
          store: MyGroupsStore,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          recorder: any InteractionRecorder,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
@@ -53,7 +53,7 @@ final class GroupDetailViewModel {
         self.repository = repository
         self.identity = identity
         self.store = store
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.recorder = recorder
         self.logger = logger
         self.tryAgainDelay = tryAgainDelay
@@ -154,7 +154,7 @@ final class GroupDetailViewModel {
                 return
             }
             guard identity.isStillCaller(caller, orDrop: "\(intent.name) failure", logger: logger) else { return }
-            reporter.report(error)
+            errorCenter.report(error)
         }
     }
 
@@ -263,7 +263,7 @@ private extension AppError {
         self == .groupActionFailed || self == .network
     }
 
-    /// Worth another look: every refusal but the terms gate (nothing about the group changed) and every unknown outcome.
+    /// Worth another look: every refusal but a terms refusal (nothing about the group changed) and every unknown outcome.
     var needsGroupRefresh: Bool {
         (isGroupConflict && self != .termsRequired) || leavesOutcomeUnknown
     }

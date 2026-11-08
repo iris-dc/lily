@@ -156,7 +156,6 @@ struct TournamentDetailEntryOutcomesTests {
         await viewModel.join()
 
         #expect(harness.repository.fetchedIDs.count == 1 && harness.presentedError == .termsRequired)
-        #expect(harness.termsRequiredCount == 1)
     }
 
     @Test func theTournamentsCapOnAJoinIsAWarningNotAnError() async {

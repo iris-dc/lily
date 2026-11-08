@@ -11,7 +11,7 @@ leave and delete (`GroupDetailViewModel`), a group loaded behind an event's badg
 with role-gated admin actions (`MembersViewModel`), the invite sheet (`InvitePeopleViewModel`) and the report sheet
 (`ReportViewModel`). They depend only on the protocols in [Interfaces](../Interfaces/EGM.md) and the stores in
 [State](../State/EGM.md); writes go through `WriteGate`, `CreateFlow` or `LostRace.attemptTwice` (one `TRY_AGAIN`
-repeat, cancellation silent), failures through `GroupErrorReporter` in [Services](../Services/EGM.md), and membership
+repeat, cancellation silent), failures through the shared `ErrorCenter`, and membership
 changes into `MyGroupsStore`, whose `add`/`replace`/`remove` bump the shared `ChangeTracker`. The screens that drive
 them are in [Views](../Views/EGM.md).
 
@@ -20,11 +20,11 @@ them are in [Views](../Views/EGM.md).
 - `CreateGroupViewModel: GroupDraftEditing`: `draft`, `private(set) isSubmitting`, `private(set) createdGroup:
   SportGroup?`, `issues`, `canSubmit`, `isDone` (`createdGroup != nil`), `prepare() async`, `submit() async`;
   `init(repository: any GroupRepository, identity: any IdentityProvider, store: MyGroupsStore,
-  locationService: any LocationService, reporter: GroupErrorReporter, logger: any Logging, tryAgainDelay: Duration =
+  locationService: any LocationService, errorCenter: ErrorCenter, logger: any Logging, tryAgainDelay: Duration =
   AppConfig.API.tryAgainDelay, onCreated: @escaping @MainActor (SportGroup) -> Void)`; owns a private
   `CreateFlow<SportGroup>` [`lily/Features/Groups/ViewModels/CreateGroupViewModel.swift`:`CreateGroupViewModel.init`].
 - `EditGroupViewModel: GroupDraftEditing`: `draft`, `private(set) isSubmitting`, `private(set) updatedGroup`, `issues`,
-  `hasChanges`, `canSubmit`, `isDone`, `submit() async` (no `prepare` override); `init(group:, repository:, reporter:,
+  `hasChanges`, `canSubmit`, `isDone`, `submit() async` (no `prepare` override); `init(group:, repository:, errorCenter:,
   logger:, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay, onChange: @escaping @MainActor (SportGroup) ->
   Void)`; owns a private `WriteGate` [`lily/Features/Groups/ViewModels/EditGroupViewModel.swift`:`EditGroupViewModel.init`].
 - `DiscoverGroupsViewModel`: settable `query`, `typeFilter: EventType?`, `reportsSearchFailures` (default true; the
@@ -41,7 +41,7 @@ them are in [Views](../Views/EGM.md).
 - `GroupDetailViewModel`: `private(set) group`, `let context: GroupDetailContext`, `private(set) isBusy`,
   `private(set) isGone`; computed `access: GroupAccess`, `showsRoster`, `showsOpenChat`, `canReport`,
   `reportTarget`, `showsMenu`; methods `recordViewed()`, `join()`, `leave()`, `delete()`, `accept(_ updated:)`,
-  `refreshFromStore()`; `init(group:, context:, repository:, identity:, store: MyGroupsStore, reporter:, recorder:,
+  `refreshFromStore()`; `init(group:, context:, repository:, identity:, store: MyGroupsStore, errorCenter:, recorder:,
   logger:, tryAgainDelay:, now:)`; private `Intent { join, leave, delete }` and `Refetch { fresh, gone, unavailable }`,
   and a private `AppError` extension (`isGroupConflict`, `leavesOutcomeUnknown`, `needsGroupRefresh`)
   [`lily/Features/Groups/ViewModels/GroupDetailViewModel.swift`:`GroupDetailViewModel`].
@@ -51,17 +51,17 @@ them are in [Views](../Views/EGM.md).
 - `InvitePeopleViewModel`: `enum Content { loading, failed, nobody, noMatches, people }`; `let target: InviteTarget`,
   `private(set)` `candidates`, `isLoading`, `loadFailed`, `sendingUserIDs: Set<String>`, settable `query`; computed
   `visible`, `content`, `showsSearch`; `isSending(_:)`, `load()`, `invite(_:)`; `init(target:, repository: any
-  InviteRepository, reporter:, logger:, tryAgainDelay:)`; owns a `WriteGate`
+  InviteRepository, errorCenter:, logger:, tryAgainDelay:)`; owns a `WriteGate`
   [`lily/Features/Groups/ViewModels/InvitePeopleViewModel.swift`:`InvitePeopleViewModel.init`].
 - `MembersViewModel`: `enum MemberAction: CaseIterable { makeAdmin, removeAdmin, remove, ban }` with `title`,
   `isDestructive`, `confirmation(for:) -> GroupConfirmation?`; `private(set)` `group`, `members`, `bans`, `isLoading`,
   `isBusy`; computed `access`, `showsBans`; `isSelf(_:)`, `update(group:)`, `actions(for:) -> [MemberAction]`,
-  `load()`, `perform(_:on:)`, `unban(_:)`; `init(group:, repository:, identity:, reporter:, logger:, tryAgainDelay:,
+  `load()`, `perform(_:on:)`, `unban(_:)`; `init(group:, repository:, identity:, errorCenter:, logger:, tryAgainDelay:,
   onChange: @escaping @MainActor (SportGroup) -> Void)`; owns a `WriteGate`
   [`lily/Features/Groups/ViewModels/MembersViewModel.swift`:`MembersViewModel.MemberAction`].
 - `ReportViewModel`: `let target: ReportTarget`, `let title`, settable `reason: ReportReason?` and `comment`,
   `private(set) isSubmitting`, `isSubmitted`; computed `trimmedComment`, `canSubmit`; `submit()`; `init(target:,
-  title:, repository: any ModerationRepository, reporter:, logger:)`
+  title:, repository: any ModerationRepository, errorCenter:, logger:)`
   [`lily/Features/Groups/ViewModels/ReportViewModel.swift`:`ReportViewModel.init`].
 
 ## Invariants
@@ -162,7 +162,7 @@ them are in [Views](../Views/EGM.md).
   [`lily/Features/Groups/ViewModels/DiscoverGroupsViewModel.swift`:`DiscoverGroupsViewModel.performSearch`].
 - Disk: `snapshots.load` in `DiscoverGroupsViewModel.init`, `snapshots.save` after a plain-browse answer
   [`lily/Features/Groups/ViewModels/DiscoverGroupsViewModel.swift`:`DiscoverGroupsViewModel.init`].
-- Errors: `reporter.report(error)` (hence `ErrorCenter`) for kept failures of create, edit, detail, invite, members
+- Errors: `errorCenter.report(error)` for kept failures of create, edit, detail, invite, members
   and report; `errorCenter.report` directly for Discover (the first page when `reportsSearchFailures`, a paging
   failure always) and the loader
   [`lily/Features/Groups/ViewModels/GroupLoaderViewModel.swift`:`GroupLoaderViewModel.load`].

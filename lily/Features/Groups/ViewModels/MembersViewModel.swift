@@ -39,7 +39,7 @@ final class MembersViewModel {
 
     private let repository: any GroupRepository
     private let identity: any IdentityProvider
-    private let reporter: GroupErrorReporter
+    private let errorCenter: ErrorCenter
     private let logger: any Logging
     private let gate: WriteGate
     private let onChange: @MainActor (SportGroup) -> Void
@@ -47,19 +47,19 @@ final class MembersViewModel {
     init(group: SportGroup,
          repository: any GroupRepository,
          identity: any IdentityProvider,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
          onChange: @escaping @MainActor (SportGroup) -> Void) {
         self.group = group
         self.repository = repository
         self.identity = identity
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.logger = logger
         gate = WriteGate(category: .groups,
                          logger: logger,
                          tryAgainDelay: tryAgainDelay,
-                         report: { reporter.report($0) })
+                         report: { errorCenter.report($0) })
         self.onChange = onChange
     }
 
@@ -96,7 +96,7 @@ final class MembersViewModel {
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logger.error(.groups, "Loading members of group \(group.id) failed: \(error)")
-            reporter.report(error)
+            errorCenter.report(error)
         }
     }
 

@@ -7,11 +7,12 @@ struct MockMeAndModerationRepositoryTests {
     private let identity = FakeIdentityProvider(currentUserID: MockUsers.user(for: .apple).id)
     private let logger = SpyLogger()
 
-    @Test func theAppleTesterIsAnOperatorWithTheTermsAccepted() async throws {
+    @Test func theAppleTesterIsAnOperatorWithTheTermsStampedAccepted() async throws {
         let repository = MockMeRepository(identity: identity, logger: logger)
 
         let account = try await repository.me()
-        #expect(account.userId == identity.currentUserID && account.isOperator && account.termsAccepted)
+        #expect(account.userId == identity.currentUserID && account.isOperator)
+        #expect(account.acceptedTermsVersion == account.termsVersion, "stamped at creation, as Laurel stamps them")
         #expect(account.realtimeEndpoint == nil && account.attachmentsEnabled, "the mock store stands in for the bucket")
 
         identity.currentUserID = "mock-google"
@@ -19,33 +20,6 @@ struct MockMeAndModerationRepositoryTests {
 
         identity.currentUserID = nil
         await #expect(throws: AppError.sessionExpired) { try await repository.me() }
-    }
-
-    @Test func termsAcceptanceEchoesTheVersion() async throws {
-        let now = Date(timeIntervalSince1970: 1_800_000_000)
-        let repository = MockMeRepository(identity: identity, logger: logger) { now }
-
-        #expect(try await repository.acceptTerms(version: 3) == TermsAcceptance(acceptedTermsVersion: 3, acceptedTermsAt: now))
-    }
-
-    /// `-mock-terms-pending` makes the mock owe the terms until the first acceptance of the run; without it they are
-    /// accepted from the start.
-    @Test func aPendingMockOwesTheTermsUntilAccepted() async throws {
-        let repository = MockMeRepository(identity: identity, logger: logger, termsPending: true)
-
-        let owed = try await repository.me()
-        #expect(owed.acceptedTermsVersion == nil && !owed.termsAccepted && repository.owesTerms)
-        #expect(owed.termsVersion == AppConfig.Moderation.mockTermsVersion, "the current version is still named")
-
-        _ = try await repository.acceptTerms(version: AppConfig.Moderation.mockTermsVersion)
-
-        let accepted = try await repository.me()
-        #expect(accepted.termsAccepted && !repository.owesTerms)
-        #expect(logger.messages(in: .groups, at: .info) == ["Mock terms v\(AppConfig.Moderation.mockTermsVersion) accepted"])
-
-        let settled = MockMeRepository(identity: identity, logger: logger)
-        let fresh = try await settled.me()
-        #expect(fresh.termsAccepted && !settled.owesTerms, "without the flag the terms are accepted from the start")
     }
 
     /// The mock delete rehearses the contract: a replay while the job runs answers success again, the poll's first

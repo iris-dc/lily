@@ -111,13 +111,9 @@ struct ChatHistoryClearerTests {
         #expect(harness.unread.hasUnread(groupID: "g") && harness.store.groups.map(\.id) == ["g"])
         #expect(harness.errorCenter.current?.error == .chatUnavailable)
         #expect(harness.chatLogs(.error).contains("Clearing the chat failed for group g: chatUnavailable"))
-
-        harness.chat.clearError = AppError.termsRequired
-        #expect(await harness.clearer.clear(group) == nil)
-        #expect(harness.termsRequiredCount == 1, "a terms gate raises the terms sheet as on the groups screens")
     }
 
-    /// The terms gate is a refusal the room expects: a warning, never an error, and the terms sheet as on the groups screens.
+    /// A terms refusal is one the room expects: a warning, never an error.
     @Test func aRefusedClearIsAWarningNotAnError() async {
         await seed(group)
         harness.chat.clearError = AppError.termsRequired
@@ -126,7 +122,6 @@ struct ChatHistoryClearerTests {
 
         #expect(harness.chatLogs(.warning).filter { $0 == "Clearing the chat failed for group g: termsRequired" }.count == 1)
         #expect(harness.chatLogs(.error).isEmpty)
-        #expect(harness.termsRequiredCount == 1)
     }
 
     @Test func cancellationStaysQuiet() async {

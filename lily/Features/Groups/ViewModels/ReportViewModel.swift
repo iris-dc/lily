@@ -3,7 +3,7 @@ import Observation
 
 /// The report sheet: a reason, an optional comment, one send. What is reported is fixed when the sheet opens (a
 /// tournament, a group or a message); the backend keeps the report and answers a receipt, and the sheet thanks the
-/// caller. Failures reach the popup through the reporter; nothing is retried, a repeat on the same target answers the
+/// caller. Failures reach the popup through the errorCenter; nothing is retried, a repeat on the same target answers the
 /// same report.
 @Observable
 final class ReportViewModel {
@@ -16,18 +16,18 @@ final class ReportViewModel {
     private(set) var isSubmitted = false
 
     private let repository: any ModerationRepository
-    private let reporter: GroupErrorReporter
+    private let errorCenter: ErrorCenter
     private let logger: any Logging
 
     init(target: ReportTarget,
          title: String,
          repository: any ModerationRepository,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          logger: any Logging) {
         self.target = target
         self.title = title
         self.repository = repository
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.logger = logger
     }
 
@@ -52,7 +52,7 @@ final class ReportViewModel {
         } catch {
             guard !AppError.isCancellation(error) else { return }
             logger.error(target.logCategory, "Report on \(target.kind.rawValue) \(target.id) failed: \(error)")
-            reporter.report(error)
+            errorCenter.report(error)
         }
     }
 }

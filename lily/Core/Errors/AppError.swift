@@ -173,7 +173,7 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case unknown
 
     /// Normalises any thrown error into an `AppError`. It filters no cancellation itself: the paths into the popup do
-    /// (`isCancellation`), the `ErrorCenter` and `GroupErrorReporter` funnels through their callers.
+    /// (`isCancellation`), the `ErrorCenter` funnel through its callers.
     static func wrapping(_ error: any Error) -> AppError {
         if let appError = error as? AppError { return appError }
         if (error as? URLError) != nil { return .network }

@@ -54,8 +54,7 @@ struct GroupRepositories {
     /// group instance (and the two tournament mocks one tournament instance); the chat mock echoes over the one
     /// in-memory bus the controller subscribes to, and the chat mock, the uploader and the loader's session share one
     /// attachment store. `mockPicker` swaps the system pickers for the bundled photo, clip and document
-    /// (`-mock-attachment-picker`); `termsPending` makes the me mock owe the terms until the first acceptance of the
-    /// run (`-mock-terms-pending`); `deletedFixtures` makes the chat, tournament, inbox (and, built by the
+    /// (`-mock-attachment-picker`); `deletedFixtures` makes the chat, tournament, inbox (and, built by the
     /// caller, event) mocks serve the deleted-flagged fixtures (`-mock-deleted-user`).
     /// The mocks that share one group and one tournament instance; split out of `mock` for its body-length limit.
     private struct DataMocks {
@@ -88,7 +87,6 @@ struct GroupRepositories {
                      profiles: MockProfileRepository,
                      autoReplies: Bool = false,
                      mockPicker: Bool = false,
-                     termsPending: Bool = false,
                      deletedFixtures: Bool = false) -> GroupRepositories {
         let mocks = makeDataMocks(identity: identity, logger: logger, deletedFixtures: deletedFixtures)
         let transport = MockRealtimeTransport(logger: logger)
@@ -97,7 +95,7 @@ struct GroupRepositories {
         return GroupRepositories(groups: mocks.groups,
                                  invites: MockInviteRepository(groups: mocks.groups, identity: identity, logger: logger),
                                  inbox: mocks.inbox,
-                                 me: MockMeRepository(identity: identity, logger: logger, termsPending: termsPending),
+                                 me: MockMeRepository(identity: identity, logger: logger),
                                  moderation: MockModerationRepository(logger: logger),
                                  chat: MockChatRepository(groups: mocks.groups,
                                                           transport: transport,
@@ -146,8 +144,6 @@ struct GroupDependencies {
     let realtime: RealtimeSessionController
     /// The cache, loader, uploader and preparer of chat attachments (`AppDependencies+Chat.swift`).
     let attachments: AttachmentDependencies
-    /// Every groups and chat screen reports failures through it: the popup, plus `MeStore.noteTermsRequired()` on `TERMS_REQUIRED`.
-    let errorReporter: GroupErrorReporter
     let pasteboard: any Pasteboard = SystemPasteboard()
     /// Counts group changes made anywhere, as `AppDependencies.eventChanges` does for events.
     let groupChanges = ChangeTracker()
@@ -170,12 +166,11 @@ struct GroupDependencies {
                                      logger: logger,
                                      snapshots: snapshots)
         self.myGroups = myGroups
-        let me = MeStore(repository: repositories.me, identity: identity, errorCenter: errorCenter, logger: logger)
+        let me = MeStore(repository: repositories.me, identity: identity, logger: logger)
         self.me = me
         let inbox = InboxStore(repository: repositories.inbox, identity: identity, errorCenter: errorCenter, logger: logger)
         self.inbox = inbox
         blocks = BlockListStore(repository: repositories.moderation, identity: identity, logger: logger)
-        errorReporter = GroupErrorReporter(errorCenter: errorCenter) { me.noteTermsRequired() }
         let chatHistory = InMemoryChatHistoryCache(activity: myGroups, logger: logger)
         self.chatHistory = chatHistory
         let unreadCenter = UnreadCenter()
@@ -235,7 +230,7 @@ extension AppDependencies {
                              repository: groupRepository,
                              identity: identity,
                              store: myGroups,
-                             reporter: groups.errorReporter,
+                             errorCenter: errorCenter,
                              recorder: interactionRecorder,
                              logger: logger)
     }
@@ -249,7 +244,7 @@ extension AppDependencies {
                              identity: identity,
                              store: myGroups,
                              locationService: locationService,
-                             reporter: groups.errorReporter,
+                             errorCenter: errorCenter,
                              logger: logger,
                              onCreated: onCreated)
     }
@@ -258,7 +253,7 @@ extension AppDependencies {
                                 onChange: @escaping @MainActor (SportGroup) -> Void) -> EditGroupViewModel {
         EditGroupViewModel(group: group,
                            repository: groupRepository,
-                           reporter: groups.errorReporter,
+                           errorCenter: errorCenter,
                            logger: logger,
                            onChange: onChange)
     }
@@ -268,7 +263,7 @@ extension AppDependencies {
         MembersViewModel(group: group,
                          repository: groupRepository,
                          identity: identity,
-                         reporter: groups.errorReporter,
+                         errorCenter: errorCenter,
                          logger: logger,
                          onChange: onChange)
     }
@@ -277,7 +272,7 @@ extension AppDependencies {
     func makeInvitePeopleViewModel(for group: SportGroup) -> InvitePeopleViewModel {
         InvitePeopleViewModel(target: .group(id: group.id),
                               repository: inviteRepository,
-                              reporter: groups.errorReporter,
+                              errorCenter: errorCenter,
                               logger: logger)
     }
 
@@ -285,7 +280,7 @@ extension AppDependencies {
     func makeTournamentInvitePeopleViewModel(for tournamentID: String) -> InvitePeopleViewModel {
         InvitePeopleViewModel(target: .tournament(id: tournamentID),
                               repository: tournamentInviteRepository,
-                              reporter: groups.errorReporter,
+                              errorCenter: errorCenter,
                               logger: logger)
     }
 
@@ -294,7 +289,7 @@ extension AppDependencies {
         ReportViewModel(target: target,
                         title: title,
                         repository: moderationRepository,
-                        reporter: groups.errorReporter,
+                        errorCenter: errorCenter,
                         logger: logger)
     }
 }

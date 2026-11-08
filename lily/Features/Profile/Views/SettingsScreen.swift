@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The signed-in settings, pushed from the profile root's link row: the language and currency cards, the contact card,
-/// the privacy policy (pushed in place, owner correction 2026-11-08), the terms link, Sign out and Delete account at
-/// the end. Guests never reach it: their three rows stay inline on the profile root. Like `ProfileView`, the screen
+/// the privacy policy and the terms of use (each pushed in place; owner correction and decision 2026-11-08), Sign out
+/// and Delete account at the end. Guests never reach it: their three rows stay inline on the profile root. Like `ProfileView`, the screen
 /// re-renders in place when the language changes (`language` is an input for that alone), so a pick made here never
 /// pops the push.
 struct SettingsScreen: View {
@@ -12,7 +12,7 @@ struct SettingsScreen: View {
     @State private var isFeedbackPresented = false
     @State private var isDeletePresented = false
     @State private var isPrivacyPresented = false
-    @Environment(\.openURL) private var openURL
+    @State private var isTermsPresented = false
     @Environment(\.layoutMode) private var layoutMode
 
     var body: some View {
@@ -39,6 +39,9 @@ struct SettingsScreen: View {
         .navigationDestination(isPresented: $isPrivacyPresented) {
             PrivacyPolicyScreen(language: language)
         }
+        .navigationDestination(isPresented: $isTermsPresented) {
+            TermsScreen(language: language)
+        }
         .sheet(isPresented: $isFeedbackPresented) {
             FeedbackSheet(viewModel: dependencies.makeFeedbackViewModel(), errorCenter: dependencies.errorCenter)
         }
@@ -55,12 +58,13 @@ struct SettingsScreen: View {
                         identifier: AccessibilityIdentifiers.settingsPrivacy) { isPrivacyPresented = true }
     }
 
-    /// The terms stay a browser link (the owner asked only about privacy); Laurel serves the page beside the API.
+    /// The terms read in place too (owner decision 2026-11-08): agreement is by use, so they are reading content
+    /// like the policy above, with no version stamp and nothing to accept.
     private var termsRow: some View {
         SettingsLinkRow(title: AppBranding.Moderation.termsLink,
                         subtitle: AppBranding.Settings.termsSubtitle,
                         systemImage: DesignTokens.Symbols.terms,
-                        identifier: AccessibilityIdentifiers.settingsTerms) { openURL(AppConfig.Moderation.termsURL) }
+                        identifier: AccessibilityIdentifiers.settingsTerms) { isTermsPresented = true }
     }
 
     /// Sign out and Delete account read as one account-actions group: flush, since each label already carries the

@@ -1,19 +1,26 @@
 import Foundation
 
 nonisolated extension AppConfig {
-    /// Reports, blocks and the terms: limits and the addresses the legal links open.
+    /// Reports, blocks and the legal documents: limits and the served pages' addresses.
     enum Moderation {
         static let commentMaxLength = 500
         /// The backend's `moderation.max-blocks`; the mock refuses past it so the popup can be seen.
         static let maxBlocks = 500
-        /// What the mock `GET /api/me` answers as the current and accepted terms version.
+        /// What the mock `GET /api/me` answers as the current and accepted terms version (wire fields the client
+        /// decodes and ignores: agreement is by use, stamped at account creation).
         static let mockTermsVersion = 1
         static let supportEmail = "support@iskra.red"
-        /// What the sheet's Support link opens.
-        static let supportURL = URL(string: "mailto:" + supportEmail)!
-        /// Laurel serves the legal pages beside the API; a simulator debug build opens the deployed ones, not localhost's.
+        /// Laurel serves the legal pages beside the API; they stay the canonical addresses (App Store Connect points
+        /// at `privacyURL`), while the app reads the same documents in place.
         static let termsURL = API.productionBaseURL.appending(path: "terms")
         static let privacyURL = API.productionBaseURL.appending(path: "privacy")
+    }
+
+    /// The sign-up footnote's link tokens: not web addresses, only what its two link runs carry so a tap routes to
+    /// the matching in-app screen (`LegalSheet.Document(agreementURL:)`); the served pages stay under `Moderation`.
+    enum Legal {
+        static let termsLink = URL(string: "iskra://legal/terms")!
+        static let privacyLink = URL(string: "iskra://legal/privacy")!
     }
 }
 
@@ -22,17 +29,10 @@ nonisolated extension AppConfig.API.Paths {
     static let reports = "/api/reports"
     static let blocks = "/api/blocks"
     static let me = "/api/me"
-    static let meTerms = "\(me)/terms"
     /// The advisory counts preview of account deletion; `DELETE` on `me` itself executes it.
     static let meDeletionPlan = "\(me)/deletion-plan"
 
     static func block(userID: String) -> String {
         "\(blocks)/\(userID)"
     }
-}
-
-nonisolated extension AppConfig.LaunchArguments {
-    /// Makes the mock `GET /api/me` answer no accepted terms version until `PUT /api/me/terms`, so the terms sheet and
-    /// its acceptance can be walked without a backend; the UI tests pass it with `-mock-events`.
-    static let mockTermsPending = "-mock-terms-pending"
 }

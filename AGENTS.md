@@ -125,7 +125,7 @@ undo your own edit in a dirty tree: it drops the user's uncommitted work on that
   `FileManager.removeItemIfPresent`, `TimeInterval.hour`/`.day`), `Foundation` (`String.trimmed` and `nonBlankTrimmed`,
   how every typed field is read), `UI` (`Components`, `Layout`, `Effects`, `Theme`, `Interfaces`).
 - `lily/Features/`: `Landing`, `SignIn`, `Shell` (`ShellSync` in `Services` runs the per-user loads), `Events`,
-  `Groups`, `Chat`, `Inbox`, `People`, `Tournaments`, `Profile`, `Feedback`, `Moderation`.
+  `Groups`, `Chat`, `Inbox`, `People`, `Tournaments`, `Profile`, `Feedback`.
 - `lilyTests/`: Swift Testing suites by area; `Support/` holds the fakes, fixtures and harnesses (`FakeAPIClient`,
   `StubBackend`, `GroupHarness`, `RealtimeHarness`, `TournamentHarness`, `PushHarness`, `SpyLogger`, `HeldSleep`,
   `DateClock`, `RequestHold`).
@@ -191,7 +191,7 @@ decides, never the device.
   default a missing key.
 - **Launch arguments** (`AppConfig.LaunchArguments`, debug builds only): `-reset-session`, `-start-as-guest`,
   `-mock-location`, `-mock-auth`, `-mock-auth-confirm`, `-mock-auth-fail`, `-mock-events`, `-mock-events-fail`,
-  `-mock-chat-replies`, `-mock-attachment-picker`, `-mock-terms-pending`, `-hold-popups`, `-freeze-aurora`,
+  `-mock-chat-replies`, `-mock-attachment-picker`, `-hold-popups`, `-freeze-aurora`,
   `-system-push`, and the value-taking `-app-language <code>`, `-api-base-url <url>`, `-mock-user-id <sub>`,
   `-realtime-endpoint <url>`. UI tests launch with `-reset-session -mock-location -mock-auth -mock-events
   -freeze-aurora -app-language en` and must keep passing without a backend.

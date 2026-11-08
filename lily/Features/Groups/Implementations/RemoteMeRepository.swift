@@ -11,11 +11,6 @@ final class RemoteMeRepository: MeRepository {
         try await client.send(.get(AppConfig.API.Paths.me), failingWith: .unknown)
     }
 
-    func acceptTerms(version: Int) async throws -> TermsAcceptance {
-        let request = APIRequest<TermsAcceptance>.put(AppConfig.API.Paths.meTerms, body: TermsAcceptancePayload(version: version))
-        return try await client.send(request, failingWith: .unknown)
-    }
-
     func deletionPlan() async throws -> DeletionPlan {
         try await client.send(.get(AppConfig.API.Paths.meDeletionPlan), failingWith: .deletionPlanUnavailable)
     }

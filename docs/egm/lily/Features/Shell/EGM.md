@@ -30,7 +30,7 @@ screens inside the tabs and the sheet (`ProfileView`, `ChatsView`, `ChatsSplitVi
 - Views: [./Views/EGM.md](./Views/EGM.md) - `MainTabView` (the `TabView` bound to `AppNavigation.selectedTab`, empty
   with the bar hidden while `!showsContent`, chat badge from `unreadCenter` and `inbox.hasUnread`, outline glyphs via
   `UIImage.SymbolConfiguration`, `usesSplitChats` from `LayoutMode`; mounts the profile sheet above the per-tab
-  language identity and yields it to the terms sheet), `ProfileCornerButton` (the shared `.topBarLeading` control at
+  language identity), `ProfileCornerButton` (the shared `.topBarLeading` control at
   the four stack roots, initials or the person glyph, raising `AppNavigation.isProfilePresented`; 2026-11-07),
   `HomeTab` and `ChatTab` (the stacks bound to
   `homePath` and `chatPath`; the iPad split view for a signed-in regular width), `HomeView` (guest prompt or overview;

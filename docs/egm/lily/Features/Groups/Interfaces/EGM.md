@@ -23,7 +23,7 @@ in [ViewModels](../ViewModels/EGM.md). Failures surface as `AppError`.
 - `InviteRepository`: `candidates(groupID:) async throws -> [InviteCandidate]`,
   `invite(groupID:userID:) async throws -> SentInvite`
   [`lily/Features/Groups/Interfaces/InviteRepository.swift`:`InviteRepository`].
-- `MeRepository`: `me() async throws -> Account`, `acceptTerms(version: Int) async throws -> TermsAcceptance`,
+- `MeRepository`: `me() async throws -> Account`,
   `deletionPlan() async throws -> DeletionPlan`, `deleteAccount() async throws`
   [`lily/Features/Groups/Interfaces/MeRepository.swift`:`MeRepository`].
 - `ModerationRepository`: `report(_: ReportPayload) async throws -> ReportReceipt`, `blocks() -> Set<String>`,
@@ -59,8 +59,6 @@ in [ViewModels](../ViewModels/EGM.md). Failures surface as `AppError`.
 - `candidates` are sorted by name, never include the group's members or banned users, and `isInvited` marks a
   pending invite; `invite` is idempotent for a pending invitee (a repeat answers the existing invite)
   [`lily/Features/Groups/Interfaces/InviteRepository.swift`:`InviteRepository.candidates`].
-- `acceptTerms(version:)` must be called with the current `Account.termsVersion`
-  [`lily/Features/Groups/Interfaces/MeRepository.swift`:`MeRepository.acceptTerms`].
 - `deletionPlan()` is advisory (the backend re-derives on execute); `deleteAccount()` is asynchronous-accepted — a
   return means the deletion job is claimed, first call and replays alike, and once the job completed the backend's
   categorical 401 arrives as `.sessionExpired`, which callers treat as landed (`DeletionSettle.isLanded`)
@@ -78,8 +76,8 @@ in [ViewModels](../ViewModels/EGM.md). Failures surface as `AppError`.
 - None performed by these files: they are protocol declarations only.
 - Contracts conformers must carry out: create, update, soft-delete, join, leave, remove, set-role and unban on the
   backend [`lily/Features/Groups/Interfaces/GroupRepository.swift`:`GroupRepository`]; send a direct invite
-  [`lily/Features/Groups/Interfaces/InviteRepository.swift`:`InviteRepository.invite`]; record terms acceptance and
-  execute account deletion [`lily/Features/Groups/Interfaces/MeRepository.swift`:`MeRepository.acceptTerms`]; file a report and mutate the
+  [`lily/Features/Groups/Interfaces/InviteRepository.swift`:`InviteRepository.invite`];
+  execute account deletion [`lily/Features/Groups/Interfaces/MeRepository.swift`:`MeRepository.deleteAccount`]; file a report and mutate the
   block list [`lily/Features/Groups/Interfaces/ModerationRepository.swift`:`ModerationRepository`]; record room
   activity so the Chats list reorders by latest message without a reload
   [`lily/Features/Groups/Interfaces/RoomActivityRecorder.swift`:`RoomActivityRecorder.noteMessage`].

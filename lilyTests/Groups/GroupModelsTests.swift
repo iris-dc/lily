@@ -130,16 +130,14 @@ struct GroupModelsTests {
         #expect(roster.items == [marta])
     }
 
-    @Test func accountDecodesAndJudgesTheTerms() throws {
+    /// The two terms fields still decode — laurel serves them; the client ignores them (owner decision 2026-11-08).
+    @Test func accountDecodesWithTheIgnoredTermsFields() throws {
         let owing = try ContractSamples.decode(Account.self, from: ContractSamples.me)
-        #expect(owing.isOperator && owing.termsVersion == 2 && owing.acceptedTermsVersion == 1 && !owing.termsAccepted)
+        #expect(owing.isOperator && owing.termsVersion == 2 && owing.acceptedTermsVersion == 1)
         #expect(owing.realtimeEndpoint?.host() == "abc.appsync-api.eu-central-1.amazonaws.com")
 
         let fresh = try ContractSamples.decode(Account.self, from: ContractSamples.minimalMe)
-        #expect(!fresh.isOperator && fresh.acceptedTermsVersion == nil && fresh.realtimeEndpoint == nil && !fresh.termsAccepted)
-
-        let acceptance = try ContractSamples.decode(TermsAcceptance.self, from: ContractSamples.termsAcceptance)
-        #expect(owing.acceptingTerms(acceptance).termsAccepted)
+        #expect(!fresh.isOperator && fresh.acceptedTermsVersion == nil && fresh.realtimeEndpoint == nil)
     }
 
     @Test func moderationAnswersDecode() throws {

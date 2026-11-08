@@ -46,8 +46,8 @@ final class ChatViewModel {
     /// The bytes of stored pictures, for the bubbles and the viewer.
     let attachmentLoader: AttachmentLoader
     let identity: any IdentityProvider
-    /// Failures reach the popup through it, and a `TERMS_REQUIRED` raises the terms sheet as on the groups screens.
-    let reporter: GroupErrorReporter
+    /// Failures reach the shared popup through it.
+    let errorCenter: ErrorCenter
     let outbox: ChatOutbox
     let recorder: any InteractionRecorder
     let logger: any Logging
@@ -68,7 +68,7 @@ final class ChatViewModel {
          attachments: AttachmentComposerModel,
          attachmentLoader: AttachmentLoader,
          identity: any IdentityProvider,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          outbox: ChatOutbox,
          recorder: any InteractionRecorder,
          logger: any Logging,
@@ -96,7 +96,7 @@ final class ChatViewModel {
         self.attachments = attachments
         self.attachmentLoader = attachmentLoader
         self.identity = identity
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.outbox = outbox
         self.recorder = recorder
         self.logger = logger
@@ -196,7 +196,7 @@ final class ChatViewModel {
             realtime.removeGroupLocally(group.id, reason: "\(appError)")
             isGone = true
         }
-        reporter.report(error)
+        errorCenter.report(error)
     }
 
     private func loadMembers() async {

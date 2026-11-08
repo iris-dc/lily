@@ -79,7 +79,7 @@ Release builds point at `https://api.iskra.red` (`AppConfig.API.productionBaseUR
   `beginAccountDeletion()` runs at the confirm (racing 401s end nothing under the locked sheet) and a refusal before
   the claim backs out through `cancelAccountDeletion()` with the popup. Deletion is reachable terms-pending through
   the entry on `TermsSheet` (`terms-delete-account`); the identical teardown on both paths is the relocation
-  contract's. Tests: `DeleteAccountViewModelTests` (the poll over `HeldSleep`, the teardown order over a spy
+  contract's. (The terms-pending path was removed 2026-11-08 with the terms gate; Settings is the one way in.) Tests: `DeleteAccountViewModelTests` (the poll over `HeldSleep`, the teardown order over a spy
   session), `LilySettingsTests` end to end on `MockMeRepository`'s state machine.
 - **Session ends and the profile sheet (2026-11-07, relocation slice 4).** `AppNavigation.sessionDidEnd()` now also
   clears `isProfilePresented`, so every end path composes with the sheet: Settings' Sign out dismisses it over the
@@ -87,4 +87,17 @@ Release builds point at `https://api.iskra.red` (`AppConfig.API.productionBaseUR
   account-deleted end keeps its pinned order — only the acknowledge tap ends the session, then the flag clears and the
   chain collapses; and a terms debt arising while the sheet is up (a sign-in from the sheet under
   `-mock-terms-pending`, or `noteTermsRequired()`) makes `MainTabView` drop the sheet first, so the root's terms sheet
-  always presents (`testSignInFromTheProfileSheetYieldsToTheTermsSheet`).
+  always presents (`testSignInFromTheProfileSheetYieldsToTheTermsSheet`). (Removed 2026-11-08: the terms gate and the yield went; the walk retired with them.)
+- **The terms gate is removed; agreement is by use (2026-11-08, owner decision).** The app never prompts to accept
+  terms: `TermsSheet`/`TermsViewModel` and the root's non-dismissable mount are gone, nothing raises a sheet on
+  `TERMS_REQUIRED` (the code stays decoded and mapped to popup copy as a defensive path; Laurel retired the refusal on
+  its side the same day), and `PUT /api/me/terms` is no longer called (laurel keeps it as a compat endpoint for shipped
+  clients). Laurel stamps `acceptedTermsVersion` at account creation, so the stored model stays coherent; `Account`
+  decodes and ignores the two terms fields. Apple guideline 1.2's agree-to-terms expectation is met by the sign-up
+  footnote on the email form's sign-up step ("By creating an account you agree to the Terms of use and Privacy
+  policy", `auth-agreement`): one localized sentence (`AppBranding.signUpAgreement`) whose two names are tappable
+  ink-underlined runs opening `TermsScreen`/`PrivacyPolicyScreen` as `LegalSheet`s over the sign-in context
+  (`AppConfig.Legal` link tokens; `SignInSheet` and `EmailSignInView` carry `errorCenter` and `language` through for
+  them). The privacy policy's Changes paragraph reads agreement-by-use on both sides (the app's catalog key and
+  laurel's `privacy.html`, changed together). Walk:
+  `LilySignInTests.testSignUpShowsTheAgreementFootnoteWithWorkingLinks`; key coverage: `SignUpAgreementTests`.

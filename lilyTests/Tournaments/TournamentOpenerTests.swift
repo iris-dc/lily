@@ -14,7 +14,7 @@ struct TournamentOpenerTests {
         errorCenter = ErrorCenter(logger: logger)
         opener = TournamentOpener(tournaments: tournaments,
                                   navigation: navigation,
-                                  reporter: GroupErrorReporter(errorCenter: errorCenter) {},
+                                  errorCenter: errorCenter,
                                   logger: logger)
     }
 

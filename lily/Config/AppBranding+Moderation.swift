@@ -1,7 +1,8 @@
 import Foundation
 
 nonisolated extension AppBranding {
-    /// Copy of reporting, blocking and the terms sheet.
+    /// Copy of reporting and blocking, plus the two legal documents' names (the Settings rows, the legal screens and
+    /// the sign-up footnote share them).
     enum Moderation {
         static var reportMessage: String { localized("Report message") }
         static var block: String { localized("Block") }
@@ -20,16 +21,7 @@ nonisolated extension AppBranding {
         /// Under `thanks` once a report went out.
         static var thanksMessage: String { localized("We review every report and act where the terms were broken.") }
         static var done: String { AppBranding.done }
-        static var termsTitle: String { localized("Before you join in") }
-        static var termsMessage: String {
-            localized("""
-                Be kind. There is zero tolerance for objectionable content or abusive behaviour: \
-                offending messages are removed and the accounts behind them are suspended.
-                """)
-        }
         static var termsLink: String { localized("Terms of use") }
         static var privacyLink: String { localized("Privacy policy") }
-        static var supportLink: String { localized("Support") }
-        static var accept: String { localized("I agree") }
     }
 }

@@ -8,8 +8,7 @@ Three `@Observable final class` stores that hold the signed-in caller's groups-r
 conform to `SessionObserver` (implementing `sessionDidEnd`; the other callbacks keep the protocol's empty defaults).
 `MyGroupsStore` is the one source of the caller's groups (`groups(in: .mine)`), seeded from and saved to a per-caller
 snapshot file, reloaded under the shared freshness rules, and reordered locally when a room message lands (it is the
-`RoomActivityRecorder` the chat layer talks to). `MeStore` holds the `GET /api/me` account and the terms-acceptance
-state; `BlockListStore` holds the caller's block list. All three load once per caller through a `SingleFlight` keyed by the
+`RoomActivityRecorder` the chat layer talks to). `MeStore` holds the `GET /api/me` account; `BlockListStore` holds the caller's block list. All three load once per caller through a `SingleFlight` keyed by the
 caller and drop an answer whose caller has changed. Protocols: [Interfaces](../Interfaces/EGM.md); value types:
 [Models](../Models/EGM.md).
 
@@ -28,12 +27,12 @@ caller and drop an answer whose caller has changed. Protocols: [Interfaces](../I
 - `MyGroupsStore` methods: `loadIfStale() async`, `reload() async`, `add(_:)`, `replace(_:)`, `apply(_:)`,
   `remove(id:)`, `noteMessage(_:in:)` (the `RoomActivityRecorder` requirement), `sessionDidEnd()`
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.add`].
-- `MeStore: SessionObserver`; `init(repository: any MeRepository, identity: any IdentityProvider, errorCenter:
-  ErrorCenter, logger: any Logging)`; state `private(set) var account: Account?`, `private(set) var termsOutdated:
-  Bool`; computed `needsTerms`, `realtimeEndpoint: URL?`, `attachmentsEnabled`, `isLoading` (`account?.isOperator` is read
-  on the account itself); methods
-  `loadIfNeeded() async`, `reload() async`, `acceptTerms() async -> Bool`, `noteTermsRequired()`, `sessionDidEnd()`
-  [`lily/Features/Groups/State/MeStore.swift`:`MeStore.acceptTerms`].
+- `MeStore: SessionObserver`; `init(repository: any MeRepository, identity: any IdentityProvider, logger: any
+  Logging)`; state `private(set) var account: Account?`; computed `realtimeEndpoint: URL?`, `attachmentsEnabled`,
+  `isLoading` (`account?.isOperator` is read on the account itself); methods `loadIfNeeded() async`, `reload() async`,
+  `sessionDidEnd()` (the terms-acceptance state and write were removed 2026-11-08: agreement is by use, stamped by the
+  backend at creation; the answer's terms fields are decoded and ignored)
+  [`lily/Features/Groups/State/MeStore.swift`:`MeStore`].
 - `BlockListStore: SessionObserver`; `init(repository: any ModerationRepository, identity: any IdentityProvider,
   logger: any Logging)`; state `private(set) var blockedUserIDs: Set<String>`; methods `loadIfNeeded() async`,
   `reload() async`, `block(userID:) async throws`, `sessionDidEnd()`
@@ -61,10 +60,6 @@ caller and drop an answer whose caller has changed. Protocols: [Interfaces](../I
 - `MeStore.reload` and `BlockListStore.reload` run `load.run(key: userID)`: a same-user call joins the flight, another
   user's waits it out and loads for them [`lily/Features/Groups/State/MeStore.swift`:`MeStore.reload`;
   `lily/Features/Groups/State/BlockListStore.swift`:`BlockListStore.reload`].
-- `acceptTerms` drops an acceptance answered after the caller signed out: `account` stays as the sign-out left it; a
-  refusal answered after the sign-out is dropped the same way (no error log, no `ErrorCenter` report), both through
-  `identity.isStillCaller` with the `.cache` debug lines "Terms acceptance for a previous caller dropped" and "Terms
-  acceptance failure for a previous caller dropped" [`lily/Features/Groups/State/MeStore.swift`:`MeStore.acceptTerms`].
 - On a load answer `groups` is replaced in the backend's order, except that a held group whose locally noted
   `lastMessageAt` is later keeps that message and its `mineOrder` position; `loadVersion` increments only here
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.applyMine`].
@@ -80,23 +75,16 @@ caller and drop an answer whose caller has changed. Protocols: [Interfaces](../I
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.recordChange`].
 - `communities` excludes `.direct` conversations and `.tournament` rooms (`isCommunity` is `kind == .group`)
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.communities`].
-- `MeStore.loadIfNeeded` fetches only when `account == nil` or the loaded user differs; `needsTerms` is `termsOutdated
-  || !account.termsAccepted`; `termsOutdated` is set by `noteTermsRequired()` only and cleared by a successful
-  `acceptTerms()`, a load whose account has the terms accepted, or the private `clear()` (the session's end, and a
-  load or reload with no signed-in user) [`lily/Features/Groups/State/MeStore.swift`:`MeStore.needsTerms`,
-  `MeStore.clear`].
-- `MeStore.acceptTerms` reloads first and sends the fresh `account.termsVersion`; it answers `false` silently when the
-  account is gone (sign-out meanwhile), on cancellation, or when the caller changed while the acceptance was out
-  (answer or refusal), and `false` with an `ErrorCenter` report when the reload failed or the acceptance was refused for
-  the current caller [`lily/Features/Groups/State/MeStore.swift`:`MeStore.acceptTerms`].
+- `MeStore.loadIfNeeded` fetches only when `account == nil` or the loaded user differs; the private `clear()` (the
+  session's end, and a load or reload with no signed-in user) drops the account
+  [`lily/Features/Groups/State/MeStore.swift`:`MeStore.clear`].
 - `BlockListStore` replaces, never merges: `blockedUserIDs = answer` on every load and block; `loadIfNeeded` skips a
   user it already loaded; a guest clears; load failures are a warning only, never reported
   [`lily/Features/Groups/State/BlockListStore.swift`:`BlockListStore.performLoad`].
 - A load or block answer is dropped when `identity.isStillCaller` says the caller changed; cancellation is swallowed
   with a debug log [`lily/Features/Groups/State/BlockListStore.swift`:`BlockListStore.performLoad`]
   [`lily/Features/Groups/State/MeStore.swift`:`MeStore.performLoad`].
-- `sessionDidEnd` clears everything: `groups = []` plus `loader.reset()`; `account`, `loadedUserID`, `loadFailure`,
-  `termsOutdated`; `blockedUserIDs` and `loadedUserID`
+- `sessionDidEnd` clears everything: `groups = []` plus `loader.reset()`; `account` and `loadedUserID`; `blockedUserIDs` and `loadedUserID`
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.clear`]
   [`lily/Features/Groups/State/MeStore.swift`:`MeStore.clear`]
   [`lily/Features/Groups/State/BlockListStore.swift`:`BlockListStore.clear`].
@@ -104,7 +92,7 @@ caller and drop an answer whose caller has changed. Protocols: [Interfaces](../I
 ## Side Effects
 
 - Network through the injected repositories: `groups(in: .mine, cursor: nil, near: nil)` on a stale `loadIfStale` or
-  `reload`; `me()` on `loadIfNeeded`, `reload` and at the start of `acceptTerms`; `acceptTerms(version:)`; `blocks()`
+  `reload`; `me()` on `loadIfNeeded` and `reload`; `blocks()`
   on the first `loadIfNeeded` per user and on `reload`; `block(userID:)`
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.fetchMine`]
   [`lily/Features/Groups/State/MeStore.swift`:`MeStore.performLoad`]
@@ -114,13 +102,13 @@ caller and drop an answer whose caller has changed. Protocols: [Interfaces](../I
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.saveSnapshot`].
 - `ChangeTracker.recordChange()` from `add`, `replace` and `remove`
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.recordChange`].
-- `ErrorCenter`: `MeStore.acceptTerms` reports a refused acceptance or an unreadable account; `MyGroupsStore` load
-  failures are reported by `StoreLoader.loadOnce` [`lily/Features/Groups/State/MeStore.swift`:`MeStore.acceptTerms`]
-  [`lily/Core/Changes/StoreLoader.swift`:`StoreLoader.loadOnce`].
+- `ErrorCenter`: `MyGroupsStore` load failures are reported by `StoreLoader.loadOnce`
+  [`lily/Core/Changes/StoreLoader.swift`:`StoreLoader.loadOnce`]. `MeStore` reports nothing: a failed load is a
+  warning log only.
 - Spawned work: every `SingleFlight.run` starts an unstructured `Task` (not a child of the caller) for the load so a
   cancelled caller does not cancel the request [`lily/Core/Concurrency/SingleFlight.swift`:`SingleFlight.run`].
 - Logging, ids and counts only: `.groups` info "Loaded N groups", "Block list loaded: N blocked", "User X blocked",
-  "Account loaded; terms accepted: ...", "Terms vN accepted"; `.groups` warning for a failed block-list or account
+  "Account loaded: ...", "Terms vN accepted"; `.groups` warning for a failed block-list or account
   load, error for a failed terms acceptance; `.groups` debug "Group X moved by message Y" and the cancellations;
   `.cache` debug for reuse, invalidation and sign-out clears
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.applyMine`]

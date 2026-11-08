@@ -45,7 +45,6 @@ struct Repositories {
                      autoReplies: Bool = false,
                      mockPicker: Bool = false,
                      systemPush: Bool = false,
-                     termsPending: Bool = false,
                      eventsFailFirst: Bool = false,
                      deletedUser: Bool = false) -> Repositories {
         let events = MockEventRepository(identity: identity,
@@ -59,7 +58,6 @@ struct Repositories {
                                             profiles: profiles,
                                             autoReplies: autoReplies,
                                             mockPicker: mockPicker,
-                                            termsPending: termsPending,
                                             deletedFixtures: deletedUser)
         return Repositories(events: events,
                             profile: profiles,
@@ -135,8 +133,6 @@ extension AppDependencies {
         if mockPicker { logger.info(.chat, "Launch argument requested the mock attachment picker") }
         let systemPush = arguments.contains(AppConfig.LaunchArguments.systemPush)
         if systemPush { logger.info(.push, "Launch argument kept the system push registrar") }
-        let termsPending = arguments.contains(AppConfig.LaunchArguments.mockTermsPending)
-        if termsPending { logger.info(.groups, "Launch argument made the mock owe the terms") }
         let eventsFailFirst = arguments.contains(AppConfig.LaunchArguments.mockEventsFail)
         if eventsFailFirst { logger.info(.events, "Launch argument made the first mock events load fail") }
         let deletedUser = arguments.contains(AppConfig.LaunchArguments.mockDeletedUser)
@@ -146,7 +142,6 @@ extension AppDependencies {
                      autoReplies: autoReplies,
                      mockPicker: mockPicker,
                      systemPush: systemPush,
-                     termsPending: termsPending,
                      eventsFailFirst: eventsFailFirst,
                      deletedUser: deletedUser)
     }

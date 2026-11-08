@@ -32,8 +32,9 @@ level; the six subdirectories below hold them.
   `DraftSubmitting` model over the store, as `DisplayNameViewModel` and `AboutViewModel`.
 - Views: [./Views/EGM.md](./Views/EGM.md) - `ProfileView` (the profile's name or the guest prompt, Sign in, a guest's
   feedback gated behind an account), `SettingsScreen` (pushed from the signed-in root: language, currency, contact,
-  the privacy policy pushed in place (owner correction 2026-11-08), the terms link, Sign out and Delete account),
-  `PrivacyPolicyScreen` (the policy read in place over `AppBranding.Privacy`, 2026-11-08), `DeleteAccountSheet` (the
+  the privacy policy and the terms of use each pushed in place (owner correction and decision 2026-11-08), Sign out
+  and Delete account), `LegalScreen` (the shared reading rendering), `PrivacyPolicyScreen` and `TermsScreen` (the
+  policy and the terms read in place over `AppBranding.Privacy` / `AppBranding.Terms`, 2026-11-08), `DeleteAccountSheet` (the
   delete flow: summary, destructive confirm, locked wait, one-time acknowledgment), `DisplayNameRow` and
   `DisplayNameSheet`, `AboutRow` and `AboutSheet`, `LanguageRow` and
   `CurrencyRow` over the shared `SettingsChoiceRow` popover card.

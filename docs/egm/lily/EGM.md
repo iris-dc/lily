@@ -12,7 +12,7 @@ under `docs/egm/` and not beside the code. Four top-level folders: `App` is the 
 that knows concrete types; `Config` holds every constant, string, token and identifier as `nonisolated` enum
 namespaces; `Core` is the shared machinery (auth, networking, realtime, changes and freshness, localisation, UI
 components); `Features` holds the twelve user-facing features, each split by layer; the eight that own a data layer
-keep protocols in `Interfaces/` and concrete types in `Implementations/` (Landing, Moderation, Shell and SignIn have
+keep protocols in `Interfaces/` and concrete types in `Implementations/` (Landing, Shell and SignIn have
 neither).
 
 The target compiles with default `@MainActor` isolation; plain data types are `nonisolated` so they stay `Sendable`,
@@ -42,7 +42,7 @@ and Staging, off in Release). Everything runs without AWS credentials behind the
   currency and preference stores, location, logging, statistics, validation, the `Foundation` string helpers, system
   seams, and the shared SwiftUI layer (UI: `ContentScreen`, `LayoutMode`, the aurora).
 - Features: [`./Features/EGM.md`](./Features/EGM.md) - Landing, SignIn, Shell, Events, Groups, Chat, Inbox, People,
-  Tournaments, Profile, Feedback, Moderation; data flows Views -> ViewModels -> Interfaces -> Implementations ->
+  Tournaments, Profile, Feedback; data flows Views -> ViewModels -> Interfaces -> Implementations ->
   Laurel, with Models shared by every layer; the feature flags are read by the callers that show or route to a
   gated feature (Shell, Groups, Events, Landing, `ShellCommands`, `AppNavigation`) and, for the chat flag, by
   `TournamentDetailViewModel`.

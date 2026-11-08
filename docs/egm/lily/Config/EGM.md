@@ -38,7 +38,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `json = "application/json"`, `Retry-After` (the last added in `AppConfig+Chat.swift`).
   `Query`: `scope`, `lat`, `lon`, `before`, `after`, `q`, `type`, `cursor`, `limit`, `ids`.
 - `API.Paths`: roots `/api/events`, `/api/profile`, `/api/interactions`, `/api/groups`, `/api/me/inbox`,
-  `/api/me/inbox/read`, `/api/reports`, `/api/blocks`, `/api/me`, `/api/me/terms`, `/api/me/deletion-plan`
+  `/api/me/inbox/read`, `/api/reports`, `/api/blocks`, `/api/me`, `/api/me/deletion-plan`
   (`meDeletionPlan`, the deletion contract's counts preview; `DELETE` on `me` executes), `/api/conversations`,
   `/api/feedback`, `/api/me/devices`, `/api/tournaments`; one `static func` per sub-resource, e.g. `event(id:)`,
   `participants(eventId:)`, `group(id:)`, `groupMembers(id:)`, `messages(id:)`, `message(id:messageID:)`, `read(id:)`,
@@ -47,7 +47,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - `LaunchArguments` (`lily/Config/AppConfig.swift:AppConfig.LaunchArguments`): `isHonored` is `true` under `#if DEBUG`;
   `flagPrefix = "-"`. Flags: `-reset-session`, `-mock-location`, `-start-as-guest`, `-mock-auth`, `-mock-auth-confirm`,
   `-mock-auth-fail`, `-mock-events`, `-mock-events-fail`, `-hold-popups`, `-freeze-aurora`, `-mock-attachment-picker`,
-  `-mock-chat-replies`, `-mock-terms-pending`, `-system-push`, `-mock-deleted-user` (2026-11-07, the deleted-flagged mock fixtures). Value-taking: `-api-base-url`, `-mock-user-id`,
+  `-mock-chat-replies`, `-system-push`, `-mock-deleted-user` (2026-11-07, the deleted-flagged mock fixtures). Value-taking: `-api-base-url`, `-mock-user-id`,
   `-app-language`, `-realtime-endpoint`. `static func value(following: String, in: [String]) -> String?`;
   `static func appLanguage(from: [String]) -> AppLanguage?` (`lily/Config/AppConfig+Localization.swift`).
 - `FeatureFlags` (`lily/Config/AppConfig+FeatureFlags.swift:AppConfig.FeatureFlags`): `groups`, `chat`, and
@@ -113,8 +113,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   (reuses the "Done" key) and the five `%lld` plural lines `groupsTransferring(_:)`, `groupsDeleted(_:)`,
   `eventsCancelled(_:)`, `entriesWithdrawn(_:)`, `tournamentsCancelled(_:)`, one per non-zero count of the deletion
   plan), `Moderation`, `Forms` (`close`,
-  `back`, `cancel`), `People`, `Privacy` (+ its `Section` and `Paragraph` structs, the data-driven policy;
-  2026-11-08), `Settings`, `Tournaments` (+ `Create`, `Schedule`, `Match`, `Standings`).
+  `back`, `cancel`), `People`, `Legal` (the shared `Section` and `Paragraph` structs of the legal reading screens and
+  the shared `changesTitle`; 2026-11-08), `Privacy` and `Terms` (the data-driven policy and terms over `Legal`'s
+  types; 2026-11-08), `Settings`, `Tournaments` (+ `Create`, `Schedule`, `Match`, `Standings`).
 - Representative functions: `Events.spotsLeft(_:)`, `Events.joined(_:of:)`, `Events.Create.capacity(_:needed:)`,
   `Events.Create.name(for: PlayerLimit)`, `Events.Create.message(for: EventDraft.Issue)`, `Events.Create.coordinateText(_:)`,
   `Groups.members(_:)`, `Groups.caption(_:)`, `Groups.Create.message(for: GroupDraft.Issue)`, `Chat.replyingTo(_:)`,
@@ -131,17 +132,31 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - The Settings screen (2026-11-07, `lily/Config/AppBranding+Settings.swift`): `Settings.title` ("Settings", the
   screen's title and its link row on the profile root), `Settings.rowSubtitle` ("Language, currency and your account"),
   `Settings.privacySubtitle` ("How your data is handled") and `Settings.termsSubtitle` ("What you agree to"); the legal
-  rows' titles stay `Moderation.termsLink` / `privacyLink`; the terms row's destination stays
-  `AppConfig.Moderation.termsURL`, and since 2026-11-08 (owner correction) the privacy row pushes the in-app policy
-  below instead of opening `privacyURL`.
+  rows' titles stay `Moderation.termsLink` / `privacyLink`; since 2026-11-08 both legal rows push the in-app
+  documents below instead of opening `AppConfig.Moderation.termsURL` / `privacyURL` (the privacy row by owner
+  correction, the terms row by the owner decision that agreement is by use and the app never prompts for terms).
 - The in-app privacy policy (2026-11-08, owner correction; `lily/Config/AppBranding+Privacy.swift` and
-  `AppBranding+PrivacyDetails.swift`): `Privacy.updated` (the date line), `Privacy.alsoAt` (the footer naming
-  `AppConfig.Moderation.privacyURL`, which stays the canonical address), and `Privacy.sections` — seven
-  `Privacy.Section`s (`whoWeAre`, `storage`, `residency`, `sharing`, `deletion`, `rights`, `changes`) of
-  `Privacy.Paragraph`s (an optional bold `lead`, a `body`), 33 keys mirroring Laurel's
-  `src/main/resources/pages/privacy.html` section for section and fact for fact — the in-app copy and the served page
-  change together, in the same change. `PrivacyConfigTests` pins the shape and that every key resolves in all seven
-  languages.
+  `AppBranding+PrivacyDetails.swift`): `Privacy.sections` — seven `Legal.Section`s (`whoWeAre`, `storage`,
+  `residency`, `sharing`, `deletion`, `rights`, `changes`) of `Legal.Paragraph`s (an optional bold `lead`, a `body`),
+  31 keys mirroring Laurel's `src/main/resources/pages/privacy.html` section for section and fact for fact — the
+  in-app copy and the served page change together, in the same change. The page's date line and self-referencing
+  footer stay on the page alone: `Privacy.updated` and `Privacy.alsoAt` left with their catalog keys (owner decision
+  2026-11-08). `PrivacyConfigTests` pins the shape and that every key resolves in all seven languages.
+- The in-app terms of use (2026-11-08, owner decision: agreement is by use, the app never prompts to accept terms;
+  `lily/Config/AppBranding+Terms.swift`): `Terms.sections` — six `Legal.Section`s (`service`, `conduct`,
+  `moderation`, `account`, `changes`, `contact`) of one lead-less paragraph each, 11 new keys plus the shared
+  `Changes` heading (`Legal.changesTitle`, one declaration), mirroring Laurel's `src/main/resources/pages/terms.html`
+  minus the page's version stamp — no version is put to the reader and nothing asks to be accepted; the two sides
+  change together, in the same change. `TermsConfigTests` pins the shape, the agreement-by-use framing (no "version",
+  the "you agree to these terms" sentence) and that every key resolves in all seven languages.
+- The sign-up agreement (2026-11-08, the gate removal's other half): `AppBranding.signUpAgreement(terms:privacy:)`
+  (key "By creating an account you agree to the %@ and %@."), rendered by `EmailSignInView.agreementFootnote` under
+  `AccessibilityIdentifiers.authAgreement` with the two names as link runs carrying `AppConfig.Legal.termsLink` /
+  `privacyLink` (`iskra://legal/...` tokens, not web addresses; `LegalSheet.Document(agreementURL:)` routes them).
+  Gone with the terms sheet: `AppBranding.Moderation.termsTitle`, `termsMessage`, `accept`, `supportLink`;
+  `AppConfig.Moderation.supportURL`; `AppConfig.API.Paths.meTerms`; `LaunchArguments.mockTermsPending`;
+  `AccessibilityIdentifiers.termsAccept`, `termsSignOut`, `termsDeleteAccount`. The privacy `changes` paragraph reads
+  agreement-by-use (changed together with laurel's page). `SignUpAgreementTests` pins the key in all seven languages.
 - The one helper every string goes through: `nonisolated func localized(_ key: String.LocalizationValue) -> String`
   (`lily/Core/Localization/Localized.swift:localized`); a `\(count)` interpolation becomes the catalog's `%lld` or `%@`.
 
@@ -198,8 +213,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   +Profile (`profile-corner` and `profile-sheet` — the corner control on every tab root and the profile sheet's root
   container, 2026-11-07 — `profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
   `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-settings`, `settings-sign-out`,
-  `settings-privacy`, `settings-terms`, `settings-privacy-policy` (the pushed policy screen, 2026-11-08), and the
-  delete flow's `settings-delete-account`, `terms-delete-account`,
+  `settings-privacy`, `settings-terms`, `settings-privacy-policy` and `settings-terms-of-use` (the pushed policy
+  and terms screens, 2026-11-08), `legal-close` (Close on the legal sheets the sign-up footnote presents, 2026-11-08), and the
+  delete flow's `settings-delete-account`,
   `delete-account-confirm`, `delete-account-cancel`, `delete-account-acknowledge`; 2026-11-07), +Currency, +Layout, +Landing (`intro-pager`), +Localization.
 - Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `createPlaceSuggestion(_ index: Int)`
   (`create-place-suggestion-<index>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
@@ -232,9 +248,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `lily/Config/AppBranding+TournamentResults.swift`). `Lists.snapshotFormat = 2`: a directory written under
   another number is swept. `Realtime.productionEndpoint` stays `nil` until the stack is deployed; in debug the
   `-realtime-endpoint` argument decides. `Push.redactedToken` stands in for the device token in log lines.
-  `URL(string:)!` is force-unwrapped on literals only (`API.localBaseURL`, `API.productionBaseURL`, `Moderation.supportURL`,
+  `URL(string:)!` is force-unwrapped on literals only (`API.localBaseURL`, `API.productionBaseURL`, `AppConfig.Legal.termsLink` and `privacyLink`,
   `Realtime.mockEndpoint`); `termsURL` and `privacyURL` are appended to `API.productionBaseURL`. The `/api/me` routes derive from
-  `Paths.me` (`inbox`, `inboxRead`, `devices`, `meTerms`, `meDeletionPlan`), as every nested path derives from its parent.
+  `Paths.me` (`inbox`, `inboxRead`, `devices`, `meDeletionPlan`), as every nested path derives from its parent.
 - `AppBranding`: every localized member is a computed `static var` or a `static func`, never `static let`; the eight
   `static let`s are non-localized constants (`name`, `Events.separatorGlyph = "·"`, `Events.captionSeparator`,
   `Events.Create.coordinateFormat = "%.4f, %.4f"`, `Inbox.title`, `Tournaments.Match.scoreSeparator = "–"`,

@@ -110,15 +110,15 @@ struct ChatViewModelSendTests {
         #expect(harness.errorCenter.current?.error == .tryAgain)
     }
 
-    /// A send refused for outdated terms shows the popup and raises the terms sheet, as on the groups screens.
-    @Test func aTermsRequiredOnSendRaisesTheTermsSheet() async {
+    /// A send the backend refuses over the terms shows the popup, like any other refusal.
+    @Test func aTermsRequiredOnSendReachesThePopup() async {
         let (harness, viewModel) = await makeOpenChat()
         harness.chat.sendErrors = [AppError.termsRequired]
 
         await viewModel.send()
 
         #expect(viewModel.pending.map(\.hasFailed) == [true])
-        #expect(harness.errorCenter.current?.error == .termsRequired && harness.termsRequiredCount == 1)
+        #expect(harness.errorCenter.current?.error == .termsRequired)
     }
 
     @Test func discardDropsAFailedBubble() async {

@@ -36,8 +36,8 @@ feature runs without a backend behind its mocks, and every feature has a unit-te
   the join and leave rules.
 - Groups: [`./Groups/EGM.md`](./Groups/EGM.md) - communities a user founds, discovers, joins and runs, plus the two
   other things the backend keeps as groups of another kind, direct conversations (`direct`) and tournament rooms
-  (`tournament`); `MyGroupsStore` is the one source of the caller's groups; `GroupErrorReporter` in its `Services` is
-  the error path Chat and Tournaments reuse.
+  (`tournament`); `MyGroupsStore` is the one source of the caller's groups; every screen reports failures to the shared
+  `ErrorCenter` (the `GroupErrorReporter` seam went with the terms gate, 2026-11-08).
 - Chat: [`./Chat/EGM.md`](./Chat/EGM.md) - the Chats tab and one open room: transcript, composer, replies, polls, pins,
   attachments and the full-screen viewer; the room cache (`ChatHistoryCache`) is the truth the realtime controller and
   `ChatViewModel` both write.
@@ -58,6 +58,6 @@ feature runs without a backend behind its mocks, and every feature has a unit-te
   `ProfileStore` is the one source of that profile over `ProfileRepository` (`GET` and `PUT /api/profile`).
 - Feedback: [`./Feedback/EGM.md`](./Feedback/EGM.md) - the contact form (reached from Settings when signed in, from
   the guest profile root otherwise): a question, feedback or bug report posted once to `POST /api/feedback`.
-- Moderation: [`./Moderation/EGM.md`](./Moderation/EGM.md) - the terms-acceptance gate: a sheet presented while a
-  signed-in caller owes the current terms, closed only by a recorded acceptance or by signing out; the acceptance
-  write lives in `MeStore` (Groups `State`), the legal URLs in `AppConfig.Moderation`.
+- Moderation: removed 2026-11-08 (owner decision: the app never prompts to accept terms) — the folder held only
+  the terms gate (`TermsSheet`, `TermsViewModel`); reporting and blocking live in Groups, the sign-up agreement
+  footnote in SignIn, the legal reading screens in Profile.

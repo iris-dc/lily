@@ -15,17 +15,17 @@ struct PushDependencies {
          tournaments: any TournamentRepository,
          identity: any IdentityProvider,
          navigation: AppNavigation,
-         groups: GroupDependencies,
+         errorCenter: ErrorCenter,
          defaults: UserDefaults,
          languageCode: @escaping () -> String,
          logger: any Logging) {
         let opener = EventOpener(events: events,
                                  navigation: navigation,
-                                 reporter: groups.errorReporter,
+                                 errorCenter: errorCenter,
                                  logger: logger)
         let tournamentOpener = TournamentOpener(tournaments: tournaments,
                                                 navigation: navigation,
-                                                reporter: groups.errorReporter,
+                                                errorCenter: errorCenter,
                                                 logger: logger)
         self.opener = opener
         self.registrar = registrar

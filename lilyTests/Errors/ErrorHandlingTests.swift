@@ -74,7 +74,9 @@ struct ErrorMessageMapperTests {
         #expect(ErrorMessageMapper.message(for: .groupCreationFailed).title == "Couldn't create your group")
         #expect(ErrorMessageMapper.message(for: .inviteExpired).title == "Invite expired")
         #expect(ErrorMessageMapper.message(for: .messageSendFailed).title == "Not sent")
-        #expect(ErrorMessageMapper.message(for: .termsRequired).title == "Please accept the updated terms")
+        #expect(ErrorMessageMapper.message(for: .termsRequired)
+                == ErrorMessage(title: "The terms of use changed", body: "Please try again in a moment."),
+                "the refusal laurel retired (2026-11-08) keeps transitional copy, never an acceptance prompt")
         #expect(ErrorMessageMapper.message(for: .replyTargetNotFound)
                 == ErrorMessage(title: "That message is gone", body: "It was deleted before your reply was sent."))
         #expect(ErrorMessageMapper.message(for: .membershipLimitReached).body.contains("\(AppConfig.Groups.maxMemberships)"))

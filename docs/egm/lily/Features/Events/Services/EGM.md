@@ -7,7 +7,7 @@ Source: `lily/Features/Events/Services/`
 Two services. `EventOpener`: the shared path that turns an event id into the detail screen, used by the inbox reminder
 card and by a tapped reminder notification. It fetches the event through the injected `EventRepository`
 ([Interfaces](../Interfaces/EGM.md)) and hands it to `AppNavigation.openFromNotification`; a failure other than
-cancellation is logged at warning and forwarded to `GroupErrorReporter`, which reaches the shared error popup. The
+cancellation is logged at warning and forwarded to the shared `ErrorCenter`, the error popup's funnel. The
 class carries no `nonisolated` marker and so runs on the main actor by the target's default.
 
 ## Interface
@@ -27,7 +27,7 @@ class carries no `nonisolated` marker and so runs on the main actor by the targe
   heard of; a successful override logs at info whether it landed "within" or "beyond" the search region
   (`AppConfig.Events.placeSearchRegionMeters / 2` from the proposal), the one sign of a far-off namesake. A picked
   spot passes untouched. A cancellation passes through unlogged. Logs outcomes under `.location`, never the text.
-  - `init(events: any EventRepository, navigation: AppNavigation, reporter: GroupErrorReporter, logger: any Logging)`:
+  - `init(events: any EventRepository, navigation: AppNavigation, errorCenter: ErrorCenter, logger: any Logging)`:
     stores the four dependencies and does nothing else.
   - `@discardableResult func open(eventID: String, from source: String) async -> Bool`: `true` once the event was
     fetched and pushed, `false` on any error, cancellation included. `source` appears only in the warning line.
@@ -40,7 +40,7 @@ class carries no `nonisolated` marker and so runs on the main actor by the targe
   before any logging or reporting (`AppError.isCancellation` covers `Task.isCancelled`, `CancellationError` and
   `URLError.cancelled`, `lily/Core/Errors/AppError.swift`).
 - `open` never throws: failures surface only through the `Bool`, the logger and the reporter.
-- Main-actor isolation: `AppNavigation` and `GroupErrorReporter` are called directly, with no actor hops.
+- Main-actor isolation: `AppNavigation` and `ErrorCenter` are called directly, with no actor hops.
 
 ## Side Effects
 
@@ -50,8 +50,7 @@ class carries no `nonisolated` marker and so runs on the main actor by the targe
   pushes onto the Chats stack when `AppConfig.FeatureFlags.chat` is on, otherwise onto Home.
 - Logging: `logger.warning(.events, "Event <id> behind <source> is unavailable: <error>")` on a non-cancellation
   failure.
-- Error reporting: `reporter.report(error)` (`lily/Features/Groups/Services/GroupErrorReporter.swift`) wraps the error
-  into `AppError`, forwards it to `ErrorCenter.report` and invokes `onTermsRequired` for `.termsRequired`.
+- Error reporting: `errorCenter.report(error)` wraps the error into `AppError` and shows the shared popup.
 
 ## Verification
 

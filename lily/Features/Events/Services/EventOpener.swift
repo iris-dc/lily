@@ -6,13 +6,13 @@ import Foundation
 final class EventOpener {
     private let events: any EventRepository
     private let navigation: AppNavigation
-    private let reporter: GroupErrorReporter
+    private let errorCenter: ErrorCenter
     private let logger: any Logging
 
-    init(events: any EventRepository, navigation: AppNavigation, reporter: GroupErrorReporter, logger: any Logging) {
+    init(events: any EventRepository, navigation: AppNavigation, errorCenter: ErrorCenter, logger: any Logging) {
         self.events = events
         self.navigation = navigation
-        self.reporter = reporter
+        self.errorCenter = errorCenter
         self.logger = logger
     }
 
@@ -26,7 +26,7 @@ final class EventOpener {
         } catch {
             guard !AppError.isCancellation(error) else { return false }
             logger.warning(.events, "Event \(eventID) behind \(source) is unavailable: \(error)")
-            reporter.report(error)
+            errorCenter.report(error)
             return false
         }
     }

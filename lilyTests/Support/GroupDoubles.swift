@@ -190,14 +190,12 @@ final class FakeInviteRepository: InviteRepository, HoldsRequests {
     }
 }
 
-/// Scriptable `MeRepository`: `me()` answers from `meResult`, `acceptTerms` refuses with `acceptError`;
-/// `holdsRequests` parks `me()` and `acceptTerms`.
+/// Scriptable `MeRepository`: `me()` answers from `meResult`; `holdsRequests` parks the requests.
 @MainActor
 final class FakeMeRepository: MeRepository, HoldsRequests {
     var meResult: Result<Account, AppError> = .success(.fixture())
     /// Thrown by `me()` instead of `meResult` when set, for errors that are not `AppError` (such as `CancellationError`).
     var thrownError: (any Error)?
-    var acceptError: AppError?
     var deletionPlanResult: Result<DeletionPlan, AppError> = .success(DeletionPlan(groupsTransferring: 0,
                                                                                    groupsDeleted: 0,
                                                                                    eventsCancelled: 0,
@@ -206,7 +204,6 @@ final class FakeMeRepository: MeRepository, HoldsRequests {
     var deleteError: AppError?
     let hold = RequestHold()
     private(set) var meCallCount = 0
-    private(set) var acceptedVersions: [Int] = []
     private(set) var deleteCallCount = 0
 
     func me() async throws -> Account {
@@ -214,13 +211,6 @@ final class FakeMeRepository: MeRepository, HoldsRequests {
         try await hold.waitOrThrow()
         if let thrownError { throw thrownError }
         return try meResult.get()
-    }
-
-    func acceptTerms(version: Int) async throws -> TermsAcceptance {
-        acceptedVersions.append(version)
-        try await hold.waitOrThrow()
-        if let acceptError { throw acceptError }
-        return TermsAcceptance(acceptedTermsVersion: version, acceptedTermsAt: .now)
     }
 
     func deletionPlan() async throws -> DeletionPlan {

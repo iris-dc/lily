@@ -1,13 +1,16 @@
 import Foundation
 
-/// The backend's `GET /api/me`: what the caller is allowed to do and what they still owe. `Me` would be the
-/// endpoint's name, but two letters are below the project's minimum for a type name. A missing `attachmentsEnabled`
-/// reads as off: the field arrived with attachments, and an older backend has no bucket to take them.
+/// The backend's `GET /api/me`: what the caller is allowed to do. `Me` would be the endpoint's name, but two letters
+/// are below the project's minimum for a type name. A missing `attachmentsEnabled` reads as off: the field arrived
+/// with attachments, and an older backend has no bucket to take them. The two terms fields stay decoded for wire
+/// compatibility and are ignored: the app never prompts for terms — agreement is by use, and the backend stamps
+/// `acceptedTermsVersion` at account creation (owner decision 2026-11-08).
 nonisolated struct Account: Hashable, Codable, Sendable {
     let userId: String
     let isOperator: Bool
-    /// The terms version every write requires accepted.
+    /// The terms version the backend names current; decoded and ignored.
     let termsVersion: Int
+    /// The version stamped at account creation; decoded and ignored.
     let acceptedTermsVersion: Int?
     /// Where live chat connects; absent while the backend has no realtime API configured.
     let realtimeEndpoint: URL?
@@ -41,26 +44,4 @@ nonisolated struct Account: Hashable, Codable, Sendable {
                   realtimeEndpoint: try container.decodeIfPresent(URL.self, forKey: .realtimeEndpoint),
                   attachmentsEnabled: try container.decodeIfPresent(Bool.self, forKey: .attachmentsEnabled) ?? false)
     }
-
-    var termsAccepted: Bool { (acceptedTermsVersion ?? 0) >= termsVersion }
-
-    func acceptingTerms(_ acceptance: TermsAcceptance) -> Account {
-        Account(userId: userId,
-                isOperator: isOperator,
-                termsVersion: termsVersion,
-                acceptedTermsVersion: acceptance.acceptedTermsVersion,
-                realtimeEndpoint: realtimeEndpoint,
-                attachmentsEnabled: attachmentsEnabled)
-    }
-}
-
-/// Body of `PUT /api/me/terms`; the version must be the one `Account.termsVersion` names.
-nonisolated struct TermsAcceptancePayload: Encodable, Equatable, Sendable {
-    let version: Int
-}
-
-/// Answer of `PUT /api/me/terms`.
-nonisolated struct TermsAcceptance: Hashable, Codable, Sendable {
-    let acceptedTermsVersion: Int
-    let acceptedTermsAt: Date
 }

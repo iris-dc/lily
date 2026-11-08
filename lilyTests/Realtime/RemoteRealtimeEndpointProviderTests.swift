@@ -13,7 +13,7 @@ struct RemoteRealtimeEndpointProviderTests {
     private let overrideURL = URL(string: "https://override.test/event")!
 
     private func makeStore() -> MeStore {
-        MeStore(repository: repository, identity: identity, errorCenter: ErrorCenter(logger: logger), logger: logger)
+        MeStore(repository: repository, identity: identity, logger: logger)
     }
 
     @Test func theEndpointComesFromTheAccountUnlessOverridden() async {

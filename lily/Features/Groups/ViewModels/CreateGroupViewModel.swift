@@ -26,7 +26,7 @@ final class CreateGroupViewModel {
          identity: any IdentityProvider,
          store: MyGroupsStore,
          locationService: any LocationService,
-         reporter: GroupErrorReporter,
+         errorCenter: ErrorCenter,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
          onCreated: @escaping @MainActor (SportGroup) -> Void) {
@@ -40,7 +40,7 @@ final class CreateGroupViewModel {
                           category: .groups,
                           logger: logger,
                           tryAgainDelay: tryAgainDelay,
-                          report: { reporter.report($0) },
+                          report: { errorCenter.report($0) },
                           leavesOutcomeUnknown: { $0 == .network || $0 == .groupCreationFailed },
                           notFound: .groupNotFound,
                           lookup: { try await repository.group(id: $0) },

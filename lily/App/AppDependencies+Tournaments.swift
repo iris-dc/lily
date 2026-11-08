@@ -30,7 +30,7 @@ extension AppDependencies {
                                   identity: identity,
                                   navigation: navigation,
                                   changes: tournamentChanges,
-                                  reporter: groups.errorReporter,
+                                  errorCenter: errorCenter,
                                   recorder: interactionRecorder,
                                   logger: logger,
                                   pushOptIn: pushCoordinator,
@@ -45,7 +45,7 @@ extension AppDependencies {
                                   identity: identity,
                                   locationService: locationService,
                                   groups: myGroups,
-                                  reporter: groups.errorReporter,
+                                  errorCenter: errorCenter,
                                   logger: logger,
                                   pushOptIn: pushCoordinator,
                                   lockedGroup: lockedGroup,
@@ -56,7 +56,7 @@ extension AppDependencies {
                                      onChange: @escaping @MainActor (TournamentDetail) -> Void) -> EditTournamentViewModel {
         EditTournamentViewModel(tournament: tournament,
                                 repository: tournamentRepository,
-                                reporter: groups.errorReporter,
+                                errorCenter: errorCenter,
                                 logger: logger,
                                 onChange: onChange)
     }

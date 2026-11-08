@@ -54,7 +54,7 @@ struct ProfileView: View {
         }
         .errorPopup(dependencies.errorCenter)
         .sheet(isPresented: $isSignInPresented) {
-            SignInSheet(session: session, errorCenter: dependencies.errorCenter)
+            SignInSheet(session: session, errorCenter: dependencies.errorCenter, language: language)
         }
         .sheet(isPresented: $isNamePresented) {
             DisplayNameSheet(viewModel: dependencies.makeDisplayNameViewModel(), errorCenter: dependencies.errorCenter)

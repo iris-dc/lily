@@ -34,7 +34,11 @@
   `LilyLanguageTests` prove it) and inside the root's `.id(shellGeneration)`. `MainTabView` takes
   `termsPresented: Bool` from `AppRootView`'s `TermsViewModel` and clears the flag the moment it turns true (Pinned
   15), so the root's non-dismissable terms sheet always presents; walked by
-  `LilySignInTests.testSignInFromTheProfileSheetYieldsToTheTermsSheet`. UI tests migrated from `openProfileTab()` to
+  `LilySignInTests.testSignInFromTheProfileSheetYieldsToTheTermsSheet` (removed 2026-11-08 with the terms gate: no
+  terms sheet exists to yield to). UI tests migrated from `openProfileTab()` to
   `openProfileSheet()`/`closeProfileSheet()` (`LilyUITestCase+Screens`); the corner's rendering was settled by the
   2026-11-08 design round (the baseline kept; see `design-and-ui.md`), and the Release two-tab screenshot sign-off
   is owed to the owner.
+- **Terms-over-sheet yield removed (2026-11-08).** With the terms gate gone (owner decision; `auth-and-backend.md`),
+  `MainTabView` lost `termsPresented` and its `onChange` collapse, and `AppRootView` lost the `TermsViewModel` and the
+  sheet mount; the profile sheet is the shell's only root-level presentation.

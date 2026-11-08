@@ -2,8 +2,7 @@ import Foundation
 
 /// The frame around one backend write a screen makes: a `TRY_AGAIN` is repeated once through `LostRace`, a
 /// cancellation (the screen was dismissed) stays quiet, any other failure is logged under `category` (at warning when
-/// `isExpected` names it a product state the screen shows, else at error) and handed to `report` (an `ErrorCenter`, or
-/// a `GroupErrorReporter` so `TERMS_REQUIRED` still raises the terms sheet), unless `settling` read a lost answer back
+/// `isExpected` names it a product state the screen shows, else at error) and handed to `report` (the shared `ErrorCenter`), unless `settling` read a lost answer back
 /// and found the write landed. `run` answers whether the write went through, so a sheet can close on success. The busy
 /// flag stays at the call site: every screen has its own shape and some release it before a prompt.
 struct WriteGate {

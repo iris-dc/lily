@@ -21,8 +21,7 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
 
 ## Interface
 
-- `[MainTabView.swift:MainTabView]`: `dependencies: AppDependencies`, `showsContent: Bool`, `termsPresented: Bool`
-  (the root's `TermsViewModel.isPresented`, handed down by `AppRootView`); reads `\.layoutMode`.
+- `[MainTabView.swift:MainTabView]`: `dependencies: AppDependencies`, `showsContent: Bool`; reads `\.layoutMode`.
   `TabView(selection: $navigation.selectedTab)` of `Tab(value: .home)` (`HomeTab`), `.explore` (`ExploreTab`) and `.chat`
   (`ChatTab`, with `.badge(unreadChats)`); every tab's tree carries `.id(language)` where
   `language = dependencies.language.language`. The profile sheet mounts on the `TabView` (2026-11-07):
@@ -89,12 +88,10 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   keeps the bar from sliding in.
 - `[MainTabView.swift:MainTabView.body]`: `.onChange(of: layoutMode.isRegular, initial: true)` writes
   `dependencies.navigation.usesSplitChats`; the navigation model never reads size classes itself.
-- `[MainTabView.swift:MainTabView.body]`: the profile sheet yields to the terms sheet (2026-11-07, relocation contract
-  §4 / Pinned 15): `.onChange(of: termsPresented, initial: true)` clears `navigation.isProfilePresented` the moment the
-  debt shows, collapsing the sheet and every child presentation (the sign-in sheet included), so the root's
-  non-dismissable terms sheet can present — an ancestor cannot present over a live descendant presentation. The two
-  never both present is a maintained invariant, not an accident of timing. A session end tears the sheet down twice
-  over: `sessionDidEnd()` clears the flag and the `shellGeneration` bump rebuilds the view.
+- `[MainTabView.swift:MainTabView.body]`: the terms-over-sheet yield was removed 2026-11-08 with the terms gate
+  (owner decision: the app never prompts to accept terms); the profile sheet is the shell's root-level sheet. A
+  session end tears it down twice over: `sessionDidEnd()` clears the flag and the `shellGeneration` bump rebuilds the
+  view.
 - `[HomeView.swift:HomeView.loadIfStale]`: `await dependencies.sessionController.restore()` first, then `guard
   !Task.isCancelled, content == .overview else { return }`: a guest asks for nothing and nothing is requested before the
   pool confirmed the cached user. The three loads (`events.loadIfStale()`, `myGroups.loadIfStale()` behind
@@ -127,8 +124,7 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
 - Navigation writes: `[HomeOverview.swift:HomeOverview.groupsContent]` `dependencies.navigation.open(group:)`;
   `[HomeOverview.swift:HomeOverview.emptyState]` `dependencies.navigation.selectedTab = .explore`;
   `[MainTabView.swift:MainTabView.body]` binds `selectedTab` and `isProfilePresented` (presenting `ProfileView` as the
-  profile sheet, which mounts its own `.errorPopup`), sets `usesSplitChats` and clears `isProfilePresented` when
-  `termsPresented` turns true; `[ProfileCornerButton.swift:ProfileCornerButton]` sets `isProfilePresented = true`;
+  profile sheet, which mounts its own `.errorPopup`), sets `usesSplitChats`; `[ProfileCornerButton.swift:ProfileCornerButton]` sets `isProfilePresented = true`;
   `[HomeTab.swift:HomeTab]` and `[ChatTab.swift:ChatTab]` bind `homePath` and `chatPath`.
 - `[MainTabView.swift:MainTabView.tabLabel(for:symbol:)]`: builds `UIImage(systemName:withConfiguration:)` glyphs (UIKit).
 - `[GuestSignInPrompt.swift:GuestSignInPrompt]`: presents `SignInSheet`, which mounts its own `.errorPopup`.

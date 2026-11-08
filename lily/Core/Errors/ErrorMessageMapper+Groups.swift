@@ -45,8 +45,9 @@ nonisolated extension ErrorMessageMapper {
         case .accountSuspended:
             accountSuspendedMessage
         case .termsRequired:
-            ErrorMessage(title: localized("Please accept the updated terms"),
-                         body: localized("Accept the terms of use to continue."))
+            // A tolerant decode of a refusal laurel retired (2026-11-08): agreement is by use, nothing to accept.
+            ErrorMessage(title: localized("The terms of use changed"),
+                         body: localized("Please try again in a moment."))
         case .feedbackFailed:
             ErrorMessage(title: localized("Couldn't send your message"), body: localized("Please try again in a moment."))
         default:

@@ -39,18 +39,12 @@ final class RealtimeHarness {
     let clearer: ChatHistoryClearer
     let attachmentLoader: AttachmentLoader
     let controller: RealtimeSessionController
-    private let terms: TermsCountingReporter
-
-    var reporter: GroupErrorReporter { terms.reporter }
-    /// How often the reporter asked for the terms sheet.
-    var termsRequiredCount: Int { terms.termsRequiredCount }
 
     init(tokens: FakeAuthTokenProvider? = nil) {
         errorCenter = ErrorCenter(logger: logger)
-        terms = TermsCountingReporter(errorCenter: errorCenter)
         store = MyGroupsStore(repository: groups, identity: identity, changes: changes, errorCenter: errorCenter, logger: logger)
         inbox = InboxStore(repository: inboxRepository, identity: identity, errorCenter: errorCenter, logger: logger)
-        me = MeStore(repository: meRepository, identity: identity, errorCenter: errorCenter, logger: logger)
+        me = MeStore(repository: meRepository, identity: identity, logger: logger)
         blocks = BlockListStore(repository: moderation, identity: identity, logger: logger)
         cache = InMemoryChatHistoryCache(logger: logger)
         catchUp = ChatCatchUp(repository: chat, cache: cache, logger: logger)
@@ -79,7 +73,7 @@ final class RealtimeHarness {
                                      outbox: outbox,
                                      realtime: controller,
                                      unread: unread,
-                                     reporter: terms.reporter,
+                                     errorCenter: errorCenter,
                                      logger: logger)
     }
 
@@ -115,7 +109,7 @@ final class RealtimeHarness {
                       attachments: makeAttachmentComposer(for: group),
                       attachmentLoader: attachmentLoader,
                       identity: identity,
-                      reporter: reporter,
+                      errorCenter: errorCenter,
                       outbox: outbox,
                       recorder: recorder,
                       logger: logger,
@@ -143,7 +137,7 @@ final class RealtimeHarness {
                                 uploader: uploader,
                                 preparer: preparer,
                                 cache: attachmentCache,
-                                reporter: reporter,
+                                errorCenter: errorCenter,
                                 logger: logger,
                                 maxPerMessage: maxPerMessage)
     }

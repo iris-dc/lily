@@ -111,7 +111,9 @@ struct GroupDetailView: View {
                     tournaments.add($0.tournament)
                 }, errorCenter: dependencies.errorCenter)
             case .signIn:
-                SignInSheet(session: dependencies.sessionController, errorCenter: dependencies.errorCenter)
+                SignInSheet(session: dependencies.sessionController,
+                            errorCenter: dependencies.errorCenter,
+                            language: dependencies.language.language)
             case .report:
                 ReportSheet(viewModel: dependencies.makeReportViewModel(for: viewModel.reportTarget, title: Copy.reportGroup),
                             errorCenter: dependencies.errorCenter)

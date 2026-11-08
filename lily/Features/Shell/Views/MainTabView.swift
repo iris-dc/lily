@@ -13,8 +13,6 @@ import UIKit
 struct MainTabView: View {
     let dependencies: AppDependencies
     let showsContent: Bool
-    /// Whether the root's terms sheet wants the screen (`TermsViewModel.isPresented`): the profile sheet yields to it.
-    let termsPresented: Bool
     @Environment(\.layoutMode) private var layoutMode
 
     private var language: AppLanguage { dependencies.language.language }
@@ -63,11 +61,6 @@ struct MainTabView: View {
         .sheet(isPresented: $navigation.isProfilePresented) {
             ProfileView(dependencies: dependencies, language: language)
         }
-        // An ancestor cannot present while a descendant's presentation is live, so the moment a signed-in caller owes
-        // the terms, the profile sheet and every child presentation collapse; only then can the root's sheet present.
-        .onChange(of: termsPresented, initial: true) {
-            if termsPresented { dependencies.navigation.isProfilePresented = false }
-        }
     }
 
     /// A tab's screen, or nothing while the landing covers the shell; the bar hides then, which keeps it built, so it
@@ -96,5 +89,5 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView(dependencies: .makeMock(), showsContent: true, termsPresented: false)
+    MainTabView(dependencies: .makeMock(), showsContent: true)
 }
