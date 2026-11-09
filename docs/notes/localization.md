@@ -56,3 +56,5 @@ The app ships in English (the source language and the fallback), Russian, Spanis
   orders the sentence its own way). The six translations are machine-written like the other recent keys — the native
   read stays owed — and ru/uk/pl take the interpolated document names in their catalog (nominative) form mid-sentence,
   flagged for that read.
+
+- 2026-11-09: `SWIFT_EMIT_LOC_STRINGS` turned off on the app target's three configurations (it was YES; the test targets already had NO). With it on, building from the Xcode GUI re-extracts strings and rewrites `Localizable.xcstrings` - harmless on this Mac (command-line builds never write back) but it dirtied the catalog on the other Mac after every Staging build, so every later `git pull` refused to merge. The catalogs are hand-maintained and read through `localized()`, which the extractor cannot see, so extraction only ever produced noise. Evidence: the other Mac's recurring "local changes to lily/Localizable.xcstrings would be overwritten by merge".
