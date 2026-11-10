@@ -43,8 +43,10 @@ final class CreationWizardModel<EventModel: EventDraftEditing> {
         if let kind = opening.seed.kind { enter(kind) }
     }
 
-    /// The entered kind's pages in walking order; empty before a kind is entered.
-    var steps: [CreationStep] { kind.map(CreationSteps.steps(for:)) ?? [] }
+    /// The entered kind's pages in walking order, derived from the opening alone (its flags, seed and
+    /// eligible-groups fact decide the hosting-group page) so the walk is deterministic per attempt; empty before a
+    /// kind is entered.
+    var steps: [CreationStep] { kind.map { CreationSteps.steps(for: $0, opening: opening) } ?? [] }
 
     /// The draft on screen, for the shell to watch for edits; `nil` before a kind is entered.
     var draft: EventDraft? { eventModel?.draft }
@@ -58,7 +60,7 @@ final class CreationWizardModel<EventModel: EventDraftEditing> {
     /// a kind whose pages have not landed is refused before the kind is fixed, so the wizard is never stuck on it.
     func enter(_ kind: CreationKind) {
         guard self.kind == nil else { return }
-        guard let first = CreationSteps.steps(for: kind).first else {
+        guard let first = CreationSteps.steps(for: kind, opening: opening).first else {
             logger.warning(.ui, "Creation wizard has no pages for \(name(of: kind)) yet")
             return
         }

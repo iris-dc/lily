@@ -33,6 +33,16 @@ struct CreateEventViewModelTests {
         #expect(harness.created.first?.price == Price(amount: 40, currencyCode: "PLN"))
     }
 
+    /// The wizard's hosting-group page shows a placeholder until the groups read lands; prepare marks it.
+    @Test func prepareMarksTheGroupsReadAsLanded() async {
+        let harness = CreateEventHarness()
+        #expect(!harness.viewModel.hasLoadedGroups)
+
+        await harness.viewModel.prepare()
+
+        #expect(harness.viewModel.hasLoadedGroups)
+    }
+
     @Test func prepareTakesTheSpotFromTheLocationService() async {
         let harness = CreateEventHarness(locationService: MockLocationService(coordinate: AppConfig.Location.mockCenter))
 

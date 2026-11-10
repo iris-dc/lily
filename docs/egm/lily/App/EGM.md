@@ -83,7 +83,9 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
 - View-model factories, one per screen: `makeEventListViewModel(scope:snapshots:)`, `makeLandingViewModel`, `makeEventDetailViewModel`,
   `makeEditEventViewModel`, `makeCreateEventViewModel(onCreated:lockedGroup:)` (`+Events.swift`);
   `makeCreationWizardModel(seed:onCreatedEvent:)` (`lily/App/AppDependencies+Create.swift`, 2026-11-10: builds
-  `CreationWizardModel<CreateEventViewModel>` over `CreationWizardPolicy.opening(for:flags: .current)` and
+  `CreationWizardModel<CreateEventViewModel>` over `CreationWizardPolicy.opening(for:flags:hasEligibleGroups:)`
+  (`.current` flags; the eligible-groups fact read once from `myGroups.eligibleForEvents`, so the event walk never
+  follows a groups reload) and
   `CreationWizardFactories`, whose event factory closes over `makeCreateEventViewModel` with the caller's
   `onCreatedEvent` and the seed's locked group — a strong capture, the root outlives every wizard); `makeDiscoverGroupsViewModel`,
   `makeGroupDetailViewModel`, `makeGroupLoaderViewModel`, `makeCreateGroupViewModel`, `makeEditGroupViewModel`, `makeMembersViewModel`,

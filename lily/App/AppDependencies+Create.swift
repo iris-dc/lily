@@ -4,8 +4,9 @@ import Foundation
 /// view-model factories and the logging facade. The only place the wizard meets concrete types.
 extension AppDependencies {
     /// `onCreatedEvent` is the presenting screen's existing created-callback, unchanged per entry point; a group
-    /// screen's seed carries the locked hosting group, which the event factory passes through. The wizard view
-    /// dismisses itself once the created event is handed on.
+    /// screen's seed carries the locked hosting group, which the event factory passes through. The eligible-groups
+    /// fact is read here, once, from the store the shell loads at sign-in, so the walk never follows a reload. The
+    /// wizard view dismisses itself once the created event is handed on.
     func makeCreationWizardModel(
         seed: CreationSeed,
         onCreatedEvent: @escaping @MainActor (SportEvent) -> Void
@@ -14,8 +15,9 @@ extension AppDependencies {
         let factories = CreationWizardFactories(event: { lockedGroup in
             self.makeCreateEventViewModel(onCreated: onCreatedEvent, lockedGroup: lockedGroup)
         })
-        return CreationWizardModel(opening: CreationWizardPolicy.opening(for: seed, flags: .current),
-                                   factories: factories,
-                                   logger: logger)
+        let opening = CreationWizardPolicy.opening(for: seed,
+                                                   flags: .current,
+                                                   hasEligibleGroups: !myGroups.eligibleForEvents.isEmpty)
+        return CreationWizardModel(opening: opening, factories: factories, logger: logger)
     }
 }

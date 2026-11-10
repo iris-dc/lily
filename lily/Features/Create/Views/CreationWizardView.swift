@@ -79,9 +79,13 @@ struct CreationWizardView<EventModel: EventDraftEditing>: View {
     @ViewBuilder
     private func eventPage(_ step: CreationStep.EventStep, viewModel: EventModel) -> some View {
         switch step {
-        case .basics: EventBasicsPage(wizard: model, viewModel: viewModel, onCancel: requestClose)
+        case .name: EventNamePage(wizard: model, viewModel: viewModel, onCancel: requestClose)
+        case .type: EventTypePage(wizard: model, viewModel: viewModel, onCancel: requestClose)
+        case .when: EventWhenPage(wizard: model, viewModel: viewModel, onCancel: requestClose)
+        case .group: EventGroupPage(wizard: model, viewModel: viewModel, onCancel: requestClose)
         case .place: EventPlacePage(wizard: model, viewModel: viewModel, onCancel: requestClose)
         case .players: EventPlayersPage(wizard: model, viewModel: viewModel, onCancel: requestClose)
+        case .details: EventDetailsPage(wizard: model, viewModel: viewModel, onCancel: requestClose)
         }
     }
 

@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// The chrome every wizard step shares: the step title as the navigation title with the plural-safe "Step n of m"
-/// counter under it (the counter is the step indicator), the page's fields scrolling over the aurora with a reader
-/// that brings the focused field into view, Cancel in the toolbar, and a bottom bar on an opaque background carrying
-/// the one primary button — Next, or the submit button on the final step — so the keyboard never overlaps bare
-/// content. On the final step a stale issue an earlier step owns is named in a hint that pops back to that step.
+/// The chrome every wizard step shares: the step title as the navigation title with the animated progress mark under
+/// it (the plural-safe "Step n of m" stays as the mark's accessibility label), one short caption on the steps whose
+/// purpose needs extra knowledge, the page's fields easing in over the aurora with a reader that brings the focused
+/// field into view, Cancel in the toolbar, and a bottom bar on an opaque background carrying the one primary button —
+/// Next, or the submit button on the final step — so the keyboard never overlaps bare content. On the final step a
+/// stale issue an earlier step owns is named in a hint that pops back to that step.
 struct WizardStepScaffold<Model: EventDraftEditing, Content: View>: View {
     let wizard: CreationWizardModel<Model>
     let step: CreationStep
@@ -21,8 +22,8 @@ struct WizardStepScaffold<Model: EventDraftEditing, Content: View>: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
-                        counter
-                        content()
+                        WizardProgressBar(number: number, count: wizard.steps.count)
+                        enteringContent
                     }
                     .padding(DesignTokens.Layout.screenMargin)
                     .readableColumn()
@@ -38,10 +39,19 @@ struct WizardStepScaffold<Model: EventDraftEditing, Content: View>: View {
         .toolbar { WizardCancelItem(isDisabled: wizard.isSubmitting, action: onCancel) }
     }
 
-    private var counter: some View {
-        Text(Copy.step(number, of: wizard.steps.count))
-            .font(LilyTheme.Fonts.caption)
-            .foregroundStyle(.secondary)
+    /// The caption and the page's fields ease in together on entry; the progress mark above them stays put and
+    /// animates its fill instead.
+    private var enteringContent: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+            if let caption = caption(for: step) {
+                Text(caption)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            content()
+        }
+        .wizardEntrance()
     }
 
     private var number: Int { (wizard.steps.firstIndex(of: step) ?? 0) + 1 }
@@ -104,11 +114,26 @@ struct WizardStepScaffold<Model: EventDraftEditing, Content: View>: View {
 
     private func title(for step: CreationStep) -> String {
         switch step {
-        case .event(.basics): Copy.eventBasics
+        case .event(.name): Copy.eventName
+        case .event(.type): Copy.eventType
+        case .event(.when): Copy.eventWhen
+        case .event(.group): Copy.eventGroup
         case .event(.place): Copy.eventPlace
-        case .event(.players): Copy.eventPlayersAndDetails
+        case .event(.players): Copy.eventPlayers
+        case .event(.details): Copy.eventDetails
         // Never scaffolded: the map picker draws its own screen; the place title satisfies exhaustiveness.
         case .eventMap: Copy.eventPlace
+        }
+    }
+
+    /// The one short line under a step title whose purpose needs extra knowledge; the plain steps carry none.
+    private func caption(for step: CreationStep) -> String? {
+        switch step {
+        case .event(.group): Copy.eventGroupCaption
+        case .event(.place): Copy.eventPlaceCaption
+        case .event(.players): Copy.eventPlayersCaption
+        case .event(.details): Copy.eventDetailsCaption
+        case .event, .eventMap: nil
         }
     }
 

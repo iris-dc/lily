@@ -23,7 +23,10 @@ flow's key events.
   State: `opening`, `private(set) kind: CreationKind?`, `private(set) eventModel: EventModel?`,
   `path: [CreationStep]` (the entries pushed beyond the stack's root: steps, and the place step's map picker),
   `private(set) isDirty: Bool`.
-  Derived: `steps: [CreationStep]`, `draft: EventDraft?`, `isSubmitting`, `canSubmit`, `isDone`.
+  Derived: `steps: [CreationStep]` (through `CreationSteps.steps(for:opening:)`, so the walk — including whether the
+  event flow's hosting-group page exists — is fixed by the opening's flags, seed and eligible-groups fact,
+  deterministic per attempt),
+  `draft: EventDraft?`, `isSubmitting`, `canSubmit`, `isDone`.
   Actions: `enter(_ kind:)`, `prepare() async`, `noteDraftChanged()`, `allowsNext(from:) -> Bool`,
   `firstBlockingIssue(on:) -> EventDraft.Issue?`, `blockedEarlierStep(before:) -> CreationStep?`,
   `advance(from:)`, `pop(to:)`, `submit() async`, `noteClosed()`.
@@ -31,8 +34,8 @@ flow's key events.
 ## Invariants
 
 - The kind pick is one-way: `enter(_:)` drops a second call whatever kind it names; a kind whose pages have not
-  landed (`CreationSteps.steps(for:)` empty — group and tournament until slice 3) is refused *before* the kind is
-  fixed, with a `.ui` warning, so the wizard is never stuck on a kind it cannot walk.
+  landed (`CreationSteps.steps(for:opening:)` empty — group and tournament until slice 3) is refused *before* the
+  kind is fixed, with a `.ui` warning, so the wizard is never stuck on a kind it cannot walk.
 - A seeded kind enters at `init`; entering from the kind page appends the kind's first step to `path` (the kind page
   stays the root), while a flow whose opening skips the kind page keeps the first step as the root and never in
   `path`. `pop(to:)` restores exactly that shape (`CreationWizardModel.pop(to:)`).
@@ -63,7 +66,8 @@ flow's key events.
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (`lilyTests/Create/CreationWizardModelTests.swift` — the one-way kind and the refused
-  kind, lazy factory invocation and the locked-group pass-through, prepare once per entry, the dirty rule including
+  kind, the opening-decided step walk (the hosting-group page present under offered groups, absent under a locked
+  seed, the flag off or no group to host in), lazy factory invocation and the locked-group pass-through, prepare once per entry, the dirty rule including
   an edit during a held prepare and the proposal-is-not-an-edit rule, the gating walk with the refused-Next debug
   line, the top-of-the-path advance guard, `pop(to:)` in both root shapes, the stale-earlier-issue final gate, the submit lock over a held repository,
   dismissal signal on done, and the abandoned-once rule — log lines pinned by count plus fragment).

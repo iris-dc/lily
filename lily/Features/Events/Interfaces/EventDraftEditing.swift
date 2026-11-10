@@ -13,6 +13,9 @@ protocol EventDraftEditing: DraftSubmitting where Issue == EventDraft.Issue {
     var showsGroupRow: Bool { get }
     var eligibleGroups: [EventGroupRef] { get }
     var explainsNoEligibleGroups: Bool { get }
+    /// Whether the eligible-groups read has landed; the wizard's hosting-group page shows a disabled placeholder
+    /// until it has.
+    var hasLoadedGroups: Bool { get }
     /// Places answering to what is typed into the name field; picking one fills the name and the spot at once.
     func placeSuggestions(for query: String) async -> [PlaceSuggestion]
 }
@@ -23,4 +26,7 @@ extension EventDraftEditing {
     var eligibleGroups: [EventGroupRef] { [] }
 
     var explainsNoEligibleGroups: Bool { false }
+
+    /// Only a create reads the groups store; every other flow has nothing pending.
+    var hasLoadedGroups: Bool { true }
 }

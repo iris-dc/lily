@@ -214,3 +214,42 @@ the asset catalog.
   (`coordinateText`) left every row and remain only the wire's fallback place name (`PlaceResolver`) and the picker
   screen's own concern. Round-2 shots for the owner's comparison: `/tmp/slice2-shots/round2/` beside round 1 in
   `/tmp/slice2-shots/`.
+- **The event wizard walks one idea per page, with motion (2026-11-10, second design round).** The owner superseded
+  slice 2's three-step grouping (recorded in the step table of `groups-plan/creation-wizard-plan.md`): the event
+  flow is now Name (keyboard up on entry) / Type / When / Hosting group / Place / Players / Details, the create
+  button on Details. Type is a single choice as glass cards in the kind page's look (`WizardChoiceCard`: the accent
+  `chosen` check marks the current choice — accent on the mark, never the words) and picking auto-advances with the
+  stack's own push; re-entering shows the choice and the same card advances again. The hosting-group page exists
+  exactly when the groups flag is on and the seed locked nothing (`CreationSteps.eventSteps(opening:)`,
+  deterministic per attempt; the page shows a placeholder until the groups read lands, `hasLoadedGroups`)
+  (superseded in part the same day: the skip-on-none bullet below). Motion,
+  all through `\.motion`: the "Step n of m" counter became an animated progress mark (`WizardProgressBar`, a 4 pt
+  capsule track whose accent fill grows from the previous step's share on entry — the `IntroPageIndicator` pattern;
+  the counter string stays as its accessibility label), and each page's caption and fields ease in with a short
+  slide-up and fade (`wizardEntrance()`, 12 pt over `Duration.fast`; reduced motion keeps the fade and a settled
+  fill). Steps whose purpose needs extra knowledge carry one `.subheadline` `.secondary` caption under the title
+  (owner addition): Hosting group, Place (the either-half-is-enough line, moved up from the hint slot), Players and
+  Details, in all seven languages; Name, Type and When carry none. Pinned behaviours unchanged: opaque bottom bar,
+  scroll-to-focus, the final-gate hint popping back, submit lock, one-way kind, the dirty rule. Rendered judging of
+  the captions' tone and the motion is the follow-up design-judge round.
+- **Wizard caption round applied (2026-11-10, after the one-idea-per-page round).** Two caption findings against the
+  round-1 captures: (1) the Hosting-group caption parsed two ways — "No group keeps it open to everyone" read
+  garden-path as "none does", the opposite — so it now says "A group event lives on that group's page; without one
+  it's open to everyone.", no option name mid-sentence; (2) Players and Details trimmed to the one-line read Place
+  set the bar for at compact width ("A cap closes the event when full; a number needed lets more join.", "Price,
+  what to expect, who you're looking for — all optional."), all three re-translated in the seven languages with the
+  catalog byte-stable. Two nits stay owner calls, recorded so the next round judges them on purpose: the Type page
+  keeps its always-enabled Next beside the auto-advancing cards (the scaffold's one-bar-per-step chrome), and the
+  Name page keeps the always-on issue hint (the plan's pinned mechanism). Round-2 captures (an English keyboard — the AGENTS.md defaults reset
+  did not survive the host's boot resync, the capture test switched the live input mode through the globe
+  menu; the Type page tapping Basketball so the auto-advance is rendered motion, not a claim):
+  `/tmp/s21-shots/round2/`.
+- **The hosting-group page also skips on none (2026-11-10, review after the caption round).** The plan's pin —
+  skipped when locked, groups off, or none — had lost its third branch: a caller with no group to host in walked a
+  dead page whose only content was the read-only "No group" row (and, in no group at all, no explanation either —
+  the line keyed on `belongsToGroups`). The fact now rides the opening
+  (`CreationWizardPolicy.Opening.hasEligibleGroups`, read once from `MyGroupsStore.eligibleForEvents` in
+  `makeCreationWizardModel`, the store the shell loads at sign-in), so `CreationSteps.eventSteps(opening:)` drops
+  the step and the walk stays deterministic per attempt, never following the async groups reload; the page's
+  explanation line now keys on the same loaded-and-empty read as its read-only row, the belt for a groups change
+  mid-attempt. Pinned in `CreationStepsTests`, `CreationWizardPolicyTests` and `CreationWizardModelTests`.

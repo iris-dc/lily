@@ -6,9 +6,10 @@ Source: `lily/Features/Create/Views/` (the event step pages: [./Event/EGM.md](./
 
 The creation wizard's chrome: `CreationWizardView` owns the `NavigationStack` whose root is the kind page when the
 policy shows one and the kind's first step otherwise, with every Next pushing the next step; `CreationKindPage` is
-the glass kind choice; `WizardStepScaffold` is the chrome every step shares (title, counter, Cancel, the bottom bar
-with the one primary button, the scroll reader and the final-gate hint), with `WizardCancelItem` and
-`WizardIssueHint` as its shared pieces. All are generic over the event view-model type, mirroring
+the glass kind choice; `WizardStepScaffold` is the chrome every step shares (title, the animated progress mark with
+the plural-safe counter as its accessibility label, the optional step caption, the entrance motion, Cancel, the
+bottom bar with the one primary button, the scroll reader and the final-gate hint), with `WizardCancelItem`,
+`WizardIssueHint`, `WizardProgressBar`, `WizardChoiceCard` and the `wizardEntrance()` modifier as its shared pieces. All are generic over the event view-model type, mirroring
 [`../State/EGM.md`](../State/EGM.md); the pages bind to the view model through `EventDraftEditing` only. The wizard
 view is presentation-agnostic — the presenting screen (Explore, since slice 2's bridge) chooses full-screen
 cover or form sheet and injects the model through `AppDependencies.makeCreationWizardModel`.
@@ -27,9 +28,23 @@ cover or form sheet and injects the model through `AppDependencies.makeCreationW
   kind's first step.
 - `WizardStepScaffold<Model, Content>` (`lily/Features/Create/Views/WizardStepScaffold.swift:WizardStepScaffold`):
   `wizard`, `step`, optional `scrollTarget: AnyHashable?`, `onCancel`, `@ViewBuilder content`. Renders the step title
-  (`.navigationTitle`, large) with the plural-safe `AppBranding.Create.step(_:of:)` counter under it (the counter is
-  the step indicator), the content scrolling over `ContentScreen` inside the readable column, and a bottom
-  safe-area-inset bar on `.bar` background over a `Color.lilySurface` underlay carrying the one primary button.
+  (`.navigationTitle`, large) with `WizardProgressBar` under it (the step indicator since the second design round,
+  2026-11-10), one short `.subheadline` `.secondary` caption on the steps whose purpose needs extra knowledge
+  (`AppBranding.Create.event*Caption`: hosting group, place, players, details; name, type and when carry none), the
+  caption and fields easing in together through `wizardEntrance()`, the content scrolling over `ContentScreen`
+  inside the readable column, and a bottom safe-area-inset bar on `.bar` background over a `Color.lilySurface`
+  underlay carrying the one primary button.
+- `WizardProgressBar` (`lily/Features/Create/Views/WizardProgressBar.swift:WizardProgressBar`): `number` (from one),
+  `count`; a `wizardProgressBarHeight` capsule track (`lilyInk` at `wizardProgressTrack`) whose accent fill grows to
+  `number/count` of the width on appear, starting from the previous step's share so entering a step is seen filling
+  the difference; animated (`.smooth`, `Duration.normal`) only while `\.motion` allows movement, settled otherwise;
+  the plural-safe `AppBranding.Create.step(_:of:)` stays as its accessibility label.
+- `WizardChoiceCard` (`lily/Features/Create/Views/WizardChoiceCard.swift:WizardChoiceCard`): the single-choice glass
+  card of the wizard's auto-advancing pages — the label, and the accent `chosen` check on the current choice (accent
+  on the mark, never the words); whole-card tap target, `.isSelected` trait on the selection.
+- `wizardEntrance()` (`lily/Features/Create/Views/WizardEntrance.swift`): the step content's entrance — a fade with
+  a `wizardEntranceOffset` slide-up over `Duration.fast`, the slide dropped under reduced motion, state reset on
+  disappear so a pop-return eases in again.
 - `WizardCancelItem` (same file): the shared Cancel toolbar item, `AppBranding.Forms.cancel` under the existing
   `create-cancel` identifier, disabled while submitting. `WizardIssueHint` (same file): a step's first live issue in
   the shared `ValidationHint` look, nothing when clean.
@@ -64,6 +79,9 @@ cover or form sheet and injects the model through `AppDependencies.makeCreationW
   `\.motion` allows movement; the bottom bar sits on an opaque `.bar` background over a `Color.lilySurface` underlay
   (the aurora's brightest patch otherwise bleeds through the material; design-judge round, 2026-11-10) so the
   keyboard never overlaps bare content.
+- Every added motion reads `\.motion`, never raw reduce-motion: the progress fill and the entrance slide are
+  movement and settle instantly under reduced motion (the entrance fade stays — a fade in place is allowed either
+  way); the auto-advancing pages (kind, type) push with the stack's own transition.
 
 ## Side Effects
 

@@ -13,6 +13,8 @@ final class CreateEventViewModel {
     private(set) var eligibleGroups: [EventGroupRef] = []
     /// Whether the caller belongs to any group at all; with groups but none eligible, the row explains why.
     private(set) var belongsToGroups = false
+    /// Whether `prepare()` has read the groups store; the wizard's hosting-group page shows a placeholder until then.
+    private(set) var hasLoadedGroups = false
     /// Set when the sheet opened from a group's Events segment: the draft is stamped with it and the form shows it
     /// read-only instead of the picker.
     let lockedGroup: EventGroupRef?
@@ -102,6 +104,7 @@ final class CreateEventViewModel {
     func prepare() async {
         eligibleGroups = groups.eligibleForEvents.map(\.ref)
         belongsToGroups = !groups.communities.isEmpty
+        hasLoadedGroups = true
         guard draft.coordinate == nil else { return }
         let position = await locationService.currentLocation()
         self.position = position

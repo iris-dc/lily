@@ -3,8 +3,8 @@ import SwiftUI
 /// The event flow's place step: the shared place name field in the glass capsule with the geocoder's suggestions in
 /// one glass card directly under it, then the pick-on-map row pushing the map picker on the wizard's own stack as
 /// the path element `CreationStep.eventMap` (the typed path disables a link carrying any other value; the shell's
-/// `navigationDestination` renders the picker). The hint line carries the step's first live issue, or the
-/// either-half-is-enough explanation while nothing is wrong.
+/// `navigationDestination` renders the picker). The scaffold's caption states the either-half-is-enough rule; the
+/// hint line under the fields carries the step's first live issue.
 struct EventPlacePage<Model: EventDraftEditing>: View {
     let wizard: CreationWizardModel<Model>
     @Bindable var viewModel: Model
@@ -23,7 +23,7 @@ struct EventPlacePage<Model: EventDraftEditing>: View {
             nameField
             if !suggestions.isEmpty { suggestionCard }
             mapRow
-            hint
+            WizardIssueHint(issue: wizard.firstBlockingIssue(on: Self.step))
         }
         // Focus drops the moment the stack moves (a write from a view already leaving the hierarchy is ignored),
         // so a pop-return never re-presents the keyboard over the bottom bar.
@@ -59,16 +59,6 @@ struct EventPlacePage<Model: EventDraftEditing>: View {
             LabeledContent(Copy.pickOnMap) {
                 Text(viewModel.draft.coordinate == nil ? Copy.spotNotSet : Copy.spotSet)
             }
-        }
-    }
-
-    @ViewBuilder private var hint: some View {
-        if let issue = wizard.firstBlockingIssue(on: Self.step) {
-            WizardIssueHint(issue: issue)
-        } else {
-            Text(Copy.whereHint)
-                .font(LilyTheme.Fonts.caption)
-                .foregroundStyle(.secondary)
         }
     }
 }

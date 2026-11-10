@@ -20,6 +20,7 @@ struct CreationWizardModelTests {
 
         init(seed: CreationSeed = .empty,
              flags: CreationWizardPolicy.Flags = CreationWizardModelTests.everythingOn,
+             hasEligibleGroups: Bool = true,
              locationService: (any LocationService)? = nil,
              lockedGroup: EventGroupRef? = nil) {
             let events = CreateEventHarness(locationService: locationService, lockedGroup: lockedGroup)
@@ -32,9 +33,8 @@ struct CreationWizardModelTests {
                 recorded.record(locked)
                 return events.viewModel
             })
-            model = CreationWizardModel(opening: CreationWizardPolicy.opening(for: seed, flags: flags),
-                                        factories: factories,
-                                        logger: logger)
+            let opening = CreationWizardPolicy.opening(for: seed, flags: flags, hasEligibleGroups: hasEligibleGroups)
+            model = CreationWizardModel(opening: opening, factories: factories, logger: logger)
         }
 
         var viewModel: CreateEventViewModel { events.viewModel }
@@ -48,12 +48,12 @@ struct CreationWizardModelTests {
         harness.model.enter(.event)
         #expect(harness.model.kind == .event && harness.model.eventModel != nil)
         #expect(harness.factoryLockedGroups.values.count == 1)
-        #expect(harness.model.path == [.event(.basics)])
+        #expect(harness.model.path == [.event(.name)])
         #expect(harness.logger.count(in: .ui, mentioning: "begun", "event") == 1)
 
         harness.model.enter(.group)
         #expect(harness.model.kind == .event)
-        #expect(harness.factoryLockedGroups.values.count == 1 && harness.model.path == [.event(.basics)])
+        #expect(harness.factoryLockedGroups.values.count == 1 && harness.model.path == [.event(.name)])
         #expect(harness.logger.count(in: .ui, mentioning: "begun") == 1)
     }
 
@@ -75,7 +75,9 @@ struct CreationWizardModelTests {
         #expect(!harness.model.opening.showsKindPage)
         #expect(harness.model.kind == .event && harness.model.eventModel != nil)
         #expect(harness.model.path.isEmpty, "the first step is the stack root, never a path entry")
-        #expect(harness.model.steps == [.event(.basics), .event(.place), .event(.players)])
+        #expect(harness.model.steps == [.event(.name), .event(.type), .event(.when),
+                                        .event(.place), .event(.players), .event(.details)],
+                "flags without groups walk no hosting-group page")
         #expect(harness.logger.count(in: .ui, mentioning: "begun", "event") == 1)
     }
 
@@ -84,6 +86,22 @@ struct CreationWizardModelTests {
 
         #expect(harness.factoryLockedGroups.values == [Self.group])
         #expect(harness.viewModel.lockedGroup == Self.group)
+        #expect(!harness.model.steps.contains(.event(.group)), "a locked seed walks no hosting-group page")
+    }
+
+    /// The hosting-group page is on the walk exactly when groups are on, the seed locks nothing and a group was
+    /// there to host in; the walk is decided at the opening, so the eligible-groups reload can never change it
+    /// mid-attempt.
+    @Test func theGroupStepFollowsTheOpening() {
+        let offered = Harness(seed: CreationSeed(kind: .event))
+        #expect(offered.model.steps.contains(.event(.group)))
+
+        let flagless = Harness(seed: CreationSeed(kind: .event),
+                               flags: CreationWizardPolicy.Flags(groups: false, tournaments: true))
+        #expect(!flagless.model.steps.contains(.event(.group)))
+
+        let groupless = Harness(seed: CreationSeed(kind: .event), hasEligibleGroups: false)
+        #expect(!groupless.model.steps.contains(.event(.group)), "no group to host in walks no hosting-group page")
     }
 
     @Test func prepareRunsTheEnteredKindsPrepareOnce() async {
@@ -137,15 +155,15 @@ struct CreationWizardModelTests {
     @Test func advanceMovesForwardOnlyWhenTheStepOwnsNoLiveIssue() {
         let harness = Harness(seed: CreationSeed(kind: .event))
 
-        harness.model.advance(from: .event(.basics))
+        harness.model.advance(from: .event(.name))
         #expect(harness.model.path.isEmpty)
-        #expect(!harness.model.allowsNext(from: .event(.basics)))
+        #expect(!harness.model.allowsNext(from: .event(.name)))
         #expect(harness.logger.count(in: .ui, at: .debug, mentioning: "refused Next", "titleMissing") == 1)
 
         harness.viewModel.draft.title = "Thursday five-a-side"
-        #expect(harness.model.allowsNext(from: .event(.basics)), "the place issue belongs to the place step")
-        harness.model.advance(from: .event(.basics))
-        #expect(harness.model.path == [.event(.place)])
+        #expect(harness.model.allowsNext(from: .event(.name)), "the place issue belongs to the place step")
+        harness.model.advance(from: .event(.name))
+        #expect(harness.model.path == [.event(.type)])
     }
 
     /// Only the entry on top advances: a double-tapped Next pushes once, and a tap gone stale across a pop neither
@@ -153,52 +171,52 @@ struct CreationWizardModelTests {
     @Test func advanceRunsOnlyFromTheStepOnTop() {
         let seeded = Harness(seed: CreationSeed(kind: .event))
         seeded.viewModel.draft.title = "Thursday five-a-side"
-        seeded.model.advance(from: .event(.basics))
-        seeded.model.advance(from: .event(.basics))
-        #expect(seeded.model.path == [.event(.place)], "a double tap pushes once")
+        seeded.model.advance(from: .event(.name))
+        seeded.model.advance(from: .event(.name))
+        #expect(seeded.model.path == [.event(.type)], "a double tap pushes once")
 
-        seeded.model.pop(to: .event(.basics))
-        seeded.model.advance(from: .event(.place))
+        seeded.model.pop(to: .event(.name))
+        seeded.model.advance(from: .event(.type))
         #expect(seeded.model.path.isEmpty, "a stale tap from a popped step pushes nothing")
 
         let picked = Harness()
         picked.model.enter(.event)
         picked.viewModel.draft.title = "Thursday five-a-side"
-        picked.model.advance(from: .event(.basics))
-        picked.model.advance(from: .event(.basics))
-        #expect(picked.model.path == [.event(.basics), .event(.place)], "one push under the kind-page root too")
+        picked.model.advance(from: .event(.name))
+        picked.model.advance(from: .event(.name))
+        #expect(picked.model.path == [.event(.name), .event(.type)], "one push under the kind-page root too")
     }
 
     @Test func popReturnsToTheOwningStepInBothRootShapes() {
         let seeded = Harness(seed: CreationSeed(kind: .event))
         seeded.events.completeDraft()
-        seeded.model.advance(from: .event(.basics))
-        seeded.model.advance(from: .event(.place))
-        #expect(seeded.model.path == [.event(.place), .event(.players)])
-        seeded.model.pop(to: .event(.basics))
+        seeded.model.advance(from: .event(.name))
+        seeded.model.advance(from: .event(.type))
+        #expect(seeded.model.path == [.event(.type), .event(.when)])
+        seeded.model.pop(to: .event(.name))
         #expect(seeded.model.path.isEmpty, "the first step is the root when the kind page is skipped")
 
         let picked = Harness()
         picked.model.enter(.event)
         picked.events.completeDraft()
-        picked.model.advance(from: .event(.basics))
-        picked.model.pop(to: .event(.basics))
-        #expect(picked.model.path == [.event(.basics)], "the kind page stays the root under a picked kind")
+        picked.model.advance(from: .event(.name))
+        picked.model.pop(to: .event(.name))
+        #expect(picked.model.path == [.event(.name)], "the kind page stays the root under a picked kind")
     }
 
     /// An issue that aged on an earlier step blocks the final gate; the hint names that step to pop back to.
     @Test func aStaleEarlierIssueBlocksTheFinalGateAndNamesItsStep() {
         let harness = Harness(seed: CreationSeed(kind: .event))
         harness.events.completeDraft()
-        harness.model.advance(from: .event(.basics))
-        harness.model.advance(from: .event(.place))
-        #expect(harness.model.blockedEarlierStep(before: .event(.players)) == nil)
+        for step in harness.model.steps.dropLast() { harness.model.advance(from: step) }
+        #expect(harness.model.path.last == .event(.details), "the walk reaches the final step")
+        #expect(harness.model.blockedEarlierStep(before: .event(.details)) == nil)
 
         harness.viewModel.draft.title = " "
 
         #expect(!harness.model.canSubmit)
-        #expect(harness.model.blockedEarlierStep(before: .event(.players)) == .event(.basics))
-        #expect(harness.model.firstBlockingIssue(on: .event(.basics)) == .titleMissing)
+        #expect(harness.model.blockedEarlierStep(before: .event(.details)) == .event(.name))
+        #expect(harness.model.firstBlockingIssue(on: .event(.name)) == .titleMissing)
     }
 
     @Test func submitLocksCreatesOnceAndSignalsDone() async {

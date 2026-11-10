@@ -160,7 +160,7 @@ final class LilySmokeTests: LilyUITestCase {
         tapCreateButton()
 
         XCTAssertTrue(app.buttons["Continue with Apple"].waitForExistence(timeout: 5), "a guest must be asked to sign in first")
-        XCTAssertFalse(app.navigationBars["Basics"].exists, "the wizard must not open for a guest")
+        XCTAssertFalse(app.navigationBars["Name"].exists, "the wizard must not open for a guest")
     }
 
     @MainActor
@@ -173,7 +173,7 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertFalse(app.navigationBars["New group"].exists, "the form must not open for a guest")
     }
 
-    /// The "+" menu's event item opens the creation wizard on Basics; the mock location fills the spot, so the title
+    /// The "+" menu's event item opens the creation wizard on Name; the mock location fills the spot, so the title
     /// and the place name walk it to the end. On the way the pick-on-map row must push the picker, and back must keep
     /// the typed title (the plan's pinned wizard behaviours). The new game must show under Home without a manual
     /// refresh, and its detail must know the caller hosts it. Nothing scrolls before the tab tap: a scrolled list
@@ -184,17 +184,16 @@ final class LilySmokeTests: LilyUITestCase {
         tapCreateButton()
 
         let title = "Thursday five-a-side"
-        waitForWizardStep("Basics")
+        waitForWizardStep("Name")
         enter(title, into: app.textFields["create-title"])
-        tapNext()
-        waitForWizardStep("Place")
+        walkWizardNameToPlace()
         openWizardMapAndReturn()
-        assertBackToBasicsKeeps(title)
-        tapNext()
-        waitForWizardStep("Place")
+        assertBackToNameKeeps(title)
+        walkWizardNameToPlace()
         enter("Test Park", into: app.textFields["create-location-name"])
         tapNext()
-        waitForWizardStep(Self.wizardFinalEventStep)
+        waitForWizardStep("Players")
+        continueToDetails()
         submitWizard()
 
         openFromHome(title)
@@ -212,11 +211,14 @@ final class LilySmokeTests: LilyUITestCase {
         waitForWizardStep("Place")
     }
 
-    /// Back within the kind's steps is free and preserves entered state (the plan's pinned behaviour).
+    /// Back within the kind's steps is free and preserves entered state (the plan's pinned behaviour): Place pops
+    /// through Hosting group, When and Type to Name, where the typed title still reads.
     @MainActor
-    private func assertBackToBasicsKeeps(_ title: String) {
-        app.navigationBars["Place"].buttons["Basics"].tap()
-        waitForWizardStep("Basics")
+    private func assertBackToNameKeeps(_ title: String) {
+        tapWizardBack(from: "Place", to: "Hosting group")
+        tapWizardBack(from: "Hosting group", to: "When")
+        tapWizardBack(from: "When", to: "Type")
+        tapWizardBack(from: "Type", to: "Name")
         XCTAssertEqual(app.textFields["create-title"].value as? String, title, "back must preserve the typed title")
     }
 }

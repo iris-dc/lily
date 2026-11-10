@@ -159,10 +159,15 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   agreement-by-use (changed together with laurel's page). `SignUpAgreementTests` pins the key in all seven languages.
 - The creation wizard's chrome (2026-11-10, `lily/Config/AppBranding+Create.swift`): `Create` — `kindTitle`
   ("What are you creating?"), `kindEvent`/`kindGroup`/`kindTournament` (reusing the per-kind "New event" / "New group" /
-  "New tournament" keys), the event step titles `eventBasics` ("Basics"), `eventPlace` ("Place"),
-  `eventPlayersAndDetails` ("Players and details"), `next` ("Next"), `step(_:of:)` ("Step %lld of %lld", plain
-  string units in every language — identical across plural categories by design, so xcstringstool's two-`%lld`
-  pivot warning never fires; see `docs/notes/localization.md` 2026-11-10), and the discard confirmation
+  "New tournament" keys), the one-idea event step titles (second design round, same day) `eventName` ("Name"),
+  `eventType` ("Type"), `eventWhen` ("When"), `eventGroup` ("Hosting group"), `eventPlace` ("Place"), `eventPlayers`
+  ("Players"), `eventDetails` ("Details") — Name/When/Place/Players reuse existing keys; "Basics" and
+  "Players and details" left the catalog with the regrouping — the step captions `eventGroupCaption`,
+  `eventPlaceCaption` (aliasing `Events.Create.whereHint`), `eventPlayersCaption`, `eventDetailsCaption` (one
+  secondary-ink line each, new keys in all seven languages), `next` ("Next"), `step(_:of:)` ("Step %lld of %lld",
+  plain string units in every language — identical across plural categories by design, so xcstringstool's two-`%lld`
+  pivot warning never fires; see `docs/notes/localization.md` 2026-11-10; since the second round the progress mark's
+  accessibility label), and the discard confirmation
   `discardTitle` ("Discard this draft?"), `discard`, `keepEditing`. The wizard's fields keep each kind's existing `Create` copy; the final step reuses each kind's submit.
 - The one helper every string goes through: `nonisolated func localized(_ key: String.LocalizationValue) -> String`
   (`lily/Core/Localization/Localized.swift:localized`); a `\(count)` interpolation becomes the catalog's `%lld` or `%@`.
@@ -203,7 +208,10 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `deletionGroupsDeleted = "person.2.slash"`, `deletionEventsCancelled = "calendar"`, `deletionEntriesWithdrawn =
   "trophy"`, `deletionTournamentsCancelled = "trophy.fill"` (filled: the organizer's own, told from the entered),
   `deletionMessages = "bubble.left"` — `DeleteAccountSheet`'s rows, the accent on the mark. The cancellation notice's mark (2026-11-08,
-  `lily/Config/DesignTokens+Inbox.swift`): `Symbols.eventCancelled = "calendar.badge.exclamationmark"`. In `DesignTokens.swift`,
+  `lily/Config/DesignTokens+Inbox.swift`): `Symbols.eventCancelled = "calendar.badge.exclamationmark"`. The creation
+  wizard's chrome (2026-11-10, second design round, `lily/Config/DesignTokens+Create.swift`):
+  `Layout.wizardProgressBarHeight` 4 and `Opacity.wizardProgressTrack` 0.25 (the progress mark's capsule and its
+  track), `Layout.wizardEntranceOffset` 12 (the step content's slide-up on entry). In `DesignTokens.swift`,
   `Layout.mapCardListMaxHeight` is 400 (about three and a half of the two-row cards; 352, about five one-row cards,
   until 2026-11-06) beside `mapSelectedCardWidth 340` and `pressedCardScale 0.97`.
 - Non-scalar members: `Symbols.fileGlyphs: [(type: UTType, symbol: String)]` (8 entries),
@@ -225,8 +233,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   delete flow's `settings-delete-account`,
   `delete-account-confirm`, `delete-account-cancel`, `delete-account-acknowledge`; 2026-11-07), +Currency, +Layout, +Landing (`intro-pager`), +Localization,
   +Create (2026-11-10, the creation wizard: `create-kind-event`, `create-kind-group`, `create-kind-tournament` — the
-  kind page's choice cards — `create-next`, the bottom bar's Next, and `create-step`, a step page's container, a
-  container element so children keep their own identifiers; the final step keeps `create-submit`).
+  kind page's choice cards — `create-next`, the bottom bar's Next, `createEventType(_ wireName:)`
+  (`create-type-<wireName>`, the type page's choice cards; second design round), and `create-step`, a step page's
+  container, a container element so children keep their own identifiers; the final step keeps `create-submit`).
 - Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `createPlaceSuggestion(_ index: Int)`
   (`create-place-suggestion-<index>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
   `message(clientID:)` (`message-client-<id>`), `message(id:)`, `messageQuote(id:)`, `memberRow(_:)`, `inviteCandidate(_:)`,

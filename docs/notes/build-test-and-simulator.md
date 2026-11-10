@@ -88,3 +88,13 @@ To run on the mock auth service, launch with `-mock-auth`; add `-mock-auth-fail`
   signs in to the real pool reads the account file inside the test, never in a command line, and signs in only when
   the landing shows: `-reset-session` clears the cached choice, but `restore()` finds the pool's session in the keychain
   and signs the user back in. The events age out as they start, the last in early December.
+- **The keyboard-reset recipe can lose to the host's input-source sync (2026-11-10, the wizard round-2 captures).**
+  `defaults write com.apple.keyboard.preferences KeyboardLastUsed -string "en_US@sw=QWERTY;hw=Automatic"` plus a
+  shutdown-and-boot came back as `pl_PL` on this Mac: the boot re-syncs the device's `AppleKeyboards` and
+  `AppleLanguages` (global domain) from the host, re-adding the host's Polish input and flipping the active mode, so
+  the captures typed under a PL badge with Polish spell-check dots on English words. Writing en-only arrays to the
+  global domain did not hold over a boot either. What worked: the throwaway capture test switches the live input
+  mode itself — with the keyboard up, long-press the globe (`app.buttons["Next keyboard"].press(forDuration: 1.0)`)
+  and tap the "English (US)" row; the switch holds for the rest of the capture session, across app launches. Verify
+  the result from the still, not the prefs: crop the spacebar badge (`crop=1206:620:0:ih-620`) and read EN, no
+  squiggles.

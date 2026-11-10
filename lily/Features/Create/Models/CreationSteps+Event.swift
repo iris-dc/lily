@@ -1,16 +1,28 @@
 import Foundation
 
 nonisolated extension CreationSteps {
-    /// The event page that owns an issue: exhaustive, so a new issue case must pick its page before it compiles.
+    /// The event pages this attempt walks. The hosting-group page exists exactly when the attempt may choose one —
+    /// the groups flag is on, the seed locked nothing and the caller had a group to host in — all read once at the
+    /// opening, so the step list is deterministic per attempt and the walk cannot change under a late groups reload.
+    static func eventSteps(opening: CreationWizardPolicy.Opening) -> [CreationStep.EventStep] {
+        let offersGroupChoice = opening.flags.groups && opening.seed.lockedGroup == nil && opening.hasEligibleGroups
+        return CreationStep.EventStep.allCases.filter { $0 != .group || offersGroupChoice }
+    }
+
+    /// The event page that owns an issue: exhaustive, so a new issue case must pick its page before it compiles. The
+    /// type and hosting-group pages own none by design: a single choice and an optional one have nothing to refuse.
     static func eventStep(owning issue: EventDraft.Issue) -> CreationStep.EventStep {
         switch issue {
-        case .titleMissing, .titleTooLong, .startsAtTooSoon:
-            .basics
+        case .titleMissing, .titleTooLong:
+            .name
+        case .startsAtTooSoon:
+            .when
         case .placeMissing, .locationNameTooLong:
             .place
-        case .capacityOutOfRange, .capacityBelowParticipants, .descriptionTooLong, .lookingForTooLong,
-             .priceUnreadable, .priceOutOfRange:
+        case .capacityOutOfRange, .capacityBelowParticipants:
             .players
+        case .descriptionTooLong, .lookingForTooLong, .priceUnreadable, .priceOutOfRange:
+            .details
         }
     }
 

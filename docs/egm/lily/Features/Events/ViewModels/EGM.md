@@ -41,7 +41,9 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   `init(repository:identity:locationService:groups: MyGroupsStore, errorCenter:logger:now:
   currencyCode:pushOptIn:lockedGroup: EventGroupRef? = nil, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
   onCreated: @MainActor (SportEvent) -> Void)`. State:
-  `draft`, `isSubmitting`, `createdEvent`, `eligibleGroups`, `belongsToGroups`, `let lockedGroup`. Derived:
+  `draft`, `isSubmitting`, `createdEvent`, `eligibleGroups`, `belongsToGroups`, `hasLoadedGroups` (set once
+  `prepare()` has read the groups store; the wizard's hosting-group page shows a placeholder until then,
+  2026-11-10), `let lockedGroup`. Derived:
   `issues`, `canSubmit`, `isDone`, `earliestStart`, `capacityRange`, `showsGroupRow`, `explainsNoEligibleGroups`.
   Methods: `prepare()`, `submit()`. `extension CreateEventViewModel: EventDraftEditing {}`. Takes a
   `geocoder: any GeocodingService = MockGeocodingService()` behind a `PlaceResolver`: `submit()` first fills whichever

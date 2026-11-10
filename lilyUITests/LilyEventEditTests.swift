@@ -8,6 +8,7 @@ final class LilyEventEditTests: LilyUITestCase {
     @MainActor
     func testHostEditsTheirGameFromTheDetail() {
         startCreating("Thursday five-a-side")
+        continueToDetails()
         submitWizard()
 
         openFromHome("Thursday five-a-side")
@@ -33,6 +34,7 @@ final class LilyEventEditTests: LilyUITestCase {
     @MainActor
     func testOpeningTheMapOnAnEditedGameTurnsSaveOnOnlyAfterADrag() {
         startCreating("Map check")
+        continueToDetails()
         submitWizard()
         openFromHome("Map check")
         openEditSheet()
@@ -65,13 +67,14 @@ final class LilyEventEditTests: LilyUITestCase {
         startCreating("Open run")
         // Outside a `Form` the stepper is one element: its label carries the text, no separate static text.
         let stepper = app.steppers["create-capacity"]
-        XCTAssertTrue(stepper.waitForExistence(timeout: 5), "the capacity stepper is on the final step")
+        XCTAssertTrue(stepper.waitForExistence(timeout: 5), "the capacity stepper is on the Players step")
         XCTAssertTrue(waitUntil(stepper, holds: "label == %@", "10 players"),
                       "the stepper names a cap until the choice changes: \(stepper.label)")
 
         choosePlayerLimit("At least")
         XCTAssertTrue(waitUntil(stepper, holds: "label == %@", "10 players needed"),
                       "the stepper names the number needed: \(stepper.label)")
+        continueToDetails()
         submitWizard()
 
         openFromHome("Open run")
@@ -86,14 +89,16 @@ final class LilyEventEditTests: LilyUITestCase {
         choosePlayerLimit("Any number")
         XCTAssertTrue(app.steppers["create-capacity"].waitForNonExistence(timeout: 5), "there is no number to step")
         XCTAssertTrue(app.staticTexts["No limit: anyone can join."].exists, "the footer explains the choice")
+        continueToDetails()
         submitWizard()
 
         openFromHome("Open walk")
         XCTAssertTrue(app.staticTexts["1 joined"].waitForExistence(timeout: 5), "the count stands alone")
     }
 
-    /// Signs in and walks the creation wizard to its final step (the spot comes from the mock location), where the
-    /// player fields and the submit button live; the edit tests then reopen the created game through the edit form.
+    /// Signs in and walks the creation wizard to its Players step (the spot comes from the mock location), where
+    /// the player fields live; Details follows with the submit button, and the edit tests then reopen the created
+    /// game through the edit form.
     @MainActor
     private func startCreating(_ title: String) {
         tapSignInWithApple()

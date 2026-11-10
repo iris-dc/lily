@@ -6,6 +6,8 @@ nonisolated extension AccessibilityIdentifiers {
     static let createKindEvent = "create-kind-event"
     static let createKindGroup = "create-kind-group"
     static let createKindTournament = "create-kind-tournament"
+    /// The type page's choice cards, one per known event type, by wire name ("create-type-table_tennis").
+    static func createEventType(_ wireName: String) -> String { "create-type-\(wireName)" }
     /// The bottom bar's primary button on every step but the last (the final step keeps `createSubmit`).
     static let createNext = "create-next"
     /// A step page's content container, a container element so children keep their own identifiers.

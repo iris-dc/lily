@@ -18,8 +18,9 @@ nonisolated struct CreationSeed: Hashable, Sendable {
 }
 
 /// The rules behind the wizard's opening: which kinds the feature flags offer, whether the kind page shows, and the
-/// seed the flow starts from. A pure function of flags and entry context, so the degrade matrix is tested as a
-/// function, not as view logic; sign-in state never enters it (`CreateIntentPolicy` owns everything auth-aware).
+/// seed the flow starts from. A pure function of flags, entry context and the caller's groups as read at opening, so
+/// the degrade matrix is tested as a function, not as view logic; sign-in state never enters it (`CreateIntentPolicy`
+/// owns everything auth-aware).
 nonisolated enum CreationWizardPolicy {
     /// The flags the matrix switches on, a value so every cell is testable; `current` reads the build's flags.
     struct Flags: Hashable, Sendable {
@@ -39,6 +40,13 @@ nonisolated enum CreationWizardPolicy {
         /// The seed, normalized: a kind the flags do not offer is dropped, and the only offered kind is filled in
         /// when the seed carries none, so a flow without a kind page always knows its kind.
         let seed: CreationSeed
+        /// The flags the opening was decided under, carried so the step lists derive from the same context — the
+        /// event flow's hosting-group page follows the groups flag (`CreationSteps.eventSteps(opening:)`).
+        let flags: Flags
+        /// Whether the caller had a group to host in when the wizard opened, read once from the groups store by the
+        /// composition root: the hosting-group page is skipped when locked, groups off, or none, and the walk never
+        /// moves under the async groups reload.
+        let hasEligibleGroups: Bool
     }
 
     static func kindsOffered(flags: Flags) -> [CreationKind] {
@@ -51,13 +59,15 @@ nonisolated enum CreationWizardPolicy {
         }
     }
 
-    static func opening(for seed: CreationSeed, flags: Flags) -> Opening {
+    static func opening(for seed: CreationSeed, flags: Flags, hasEligibleGroups: Bool) -> Opening {
         let offered = kindsOffered(flags: flags)
         var normalized = seed
         if let kind = normalized.kind, !offered.contains(kind) { normalized.kind = nil }
         if normalized.kind == nil, offered.count == 1 { normalized.kind = offered.first }
         return Opening(kindsOffered: offered,
                        showsKindPage: normalized.kind == nil && offered.count > 1,
-                       seed: normalized)
+                       seed: normalized,
+                       flags: flags,
+                       hasEligibleGroups: hasEligibleGroups)
     }
 }

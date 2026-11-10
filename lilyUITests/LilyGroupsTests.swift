@@ -78,8 +78,8 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Hosted in Kreuzberg Kickers"].waitForExistence(timeout: 5))
     }
 
-    /// From a group the form shows the group read-only; from Explore the wizard's Basics page offers a choice
-    /// starting at "No group", and a clean Cancel closes it silently.
+    /// From a group the form shows the group read-only; from Explore the wizard gives the choice its own Hosting
+    /// group step starting at "No group". A clean Cancel on Name closes silently; a dirty one asks to discard.
     @MainActor
     func testCreatingAnEventInsideAGroupPresetsTheGroup() {
         tapSignInWithApple()
@@ -96,12 +96,27 @@ final class LilyGroupsTests: LilyUITestCase {
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
         tapCreateButton()
-        waitForWizardStep("Basics")
-        let picker = app.descendants(matching: .any)["create-group"]
-        XCTAssertTrue(picker.waitForExistence(timeout: 5), "a member of groups gets the Group row")
-        XCTAssertTrue(text(of: picker).contains("No group"), "nothing is preselected from Explore: \(text(of: picker))")
+        waitForWizardStep("Name")
         app.buttons["create-cancel"].tap()
-        XCTAssertTrue(app.navigationBars["Basics"].waitForNonExistence(timeout: 5), "a clean wizard closes silently")
+        XCTAssertTrue(app.navigationBars["Name"].waitForNonExistence(timeout: 5), "a clean wizard closes silently")
+
+        tapCreateButton()
+        waitForWizardStep("Name")
+        enter("Group pick", into: app.textFields["create-title"])
+        tapNext()
+        pickWizardEventType()
+        waitForWizardStep("When")
+        tapNext()
+        waitForWizardStep("Hosting group")
+        let picker = app.descendants(matching: .any)["create-group"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5), "a member of groups gets the choice on its own step")
+        XCTAssertTrue(text(of: picker).contains("No group"), "nothing is preselected from Explore: \(text(of: picker))")
+        XCTAssertTrue(app.staticTexts["A group event lives on that group's page; without one it's open to everyone."]
+            .exists, "the step explains what the choice means")
+        app.buttons["create-cancel"].tap()
+        confirm("Discard")
+        XCTAssertTrue(app.navigationBars["Hosting group"].waitForNonExistence(timeout: 5),
+                      "a dirty wizard closes on the confirmed discard")
     }
 
     /// Inviting starts on the group's detail, reached from Home: the sheet lists the people the caller shares a group
