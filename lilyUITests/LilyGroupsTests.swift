@@ -78,7 +78,8 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Hosted in Kreuzberg Kickers"].waitForExistence(timeout: 5))
     }
 
-    /// From a group the form shows the group read-only; from Explore it offers a choice starting at "No group".
+    /// From a group the form shows the group read-only; from Explore the wizard's Basics page offers a choice
+    /// starting at "No group", and a clean Cancel closes it silently.
     @MainActor
     func testCreatingAnEventInsideAGroupPresetsTheGroup() {
         tapSignInWithApple()
@@ -95,10 +96,12 @@ final class LilyGroupsTests: LilyUITestCase {
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
         tapCreateButton()
-        XCTAssertTrue(app.navigationBars["New event"].waitForExistence(timeout: 5))
+        waitForWizardStep("Basics")
         let picker = app.descendants(matching: .any)["create-group"]
         XCTAssertTrue(picker.waitForExistence(timeout: 5), "a member of groups gets the Group row")
         XCTAssertTrue(text(of: picker).contains("No group"), "nothing is preselected from Explore: \(text(of: picker))")
+        app.buttons["create-cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Basics"].waitForNonExistence(timeout: 5), "a clean wizard closes silently")
     }
 
     /// Inviting starts on the group's detail, reached from Home: the sheet lists the people the caller shares a group

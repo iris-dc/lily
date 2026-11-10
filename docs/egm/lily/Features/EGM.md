@@ -4,7 +4,7 @@ Source: `lily/Features/`
 
 ## Overview
 
-The twelve user-facing features of iskra, one folder each, every folder split by layer
+The thirteen user-facing features of iskra, one folder each, every folder split by layer
 (`Models`, `Interfaces`, `Implementations`, `ViewModels`, `Views`, and where needed `State` and `Services`).
 This folder holds no source files of its own. Within a feature, data flows Views -> ViewModels -> Interfaces ->
 Implementations -> Laurel, with Models shared by every layer; callers depend on the protocols in `Interfaces`, and
@@ -15,7 +15,8 @@ identifiers in `lily/Config` ([`../Config/EGM.md`](../Config/EGM.md)).
 
 Three features are behind `AppConfig.FeatureFlags` (on in debug and Staging, off in Release): Groups, Chat (with
 conversations and the inbox) and Tournaments. The flags are read by the callers that show or route to a gated
-feature (Shell, Events, the Landing intro slides, `ShellCommands` and `AppNavigation` outside this folder); inside the
+feature (Shell, Events, Create (`CreationWizardPolicy.Flags.current`), the Landing intro slides, `ShellCommands`
+and `AppNavigation` outside this folder); inside the
 gated features themselves they are read by Groups (`GroupDetailSection`, `GroupDetailViewModel`, `GroupDetailView`,
 `GroupDetailMenu`, for the chat and tournaments flags) and by `TournamentDetailViewModel` (the chat flag). Every
 feature runs without a backend behind its mocks, and every feature has a unit-test folder of the same name under
@@ -34,6 +35,12 @@ feature runs without a backend behind its mocks, and every feature has a unit-te
 - Events: [`./Events/EGM.md`](./Events/EGM.md) - finding sport events near the user, joining and leaving them, creating
   and editing one's own, over `/api/events`; `EventListViewModel` owns a list and its freshness, `EventDetailViewModel`
   the join and leave rules.
+- Create: [`./Create/EGM.md`](./Create/EGM.md) - the paged creation wizard (slice 2 of the creation-wizard plan,
+  2026-11-10): `CreationKind` and the seed, the flags-by-context opening matrix (`CreationWizardPolicy`, pure, no
+  auth input) and the per-kind step lists with the event issue partition and Next gating (`CreationSteps`); the
+  wizard shell model (`CreationWizardModel`, `State/`) and the chrome with the event flow's three glass pages
+  (`Views/`, `Views/Event/`). Slice 2's bridge wires the event entry: Explore's "+" event item and the ⌘N intent
+  walk the wizard; the group and tournament entries keep their form sheets until slice 3.
 - Groups: [`./Groups/EGM.md`](./Groups/EGM.md) - communities a user founds, discovers, joins and runs, plus the two
   other things the backend keeps as groups of another kind, direct conversations (`direct`) and tournament rooms
   (`tournament`); `MyGroupsStore` is the one source of the caller's groups; every screen reports failures to the shared

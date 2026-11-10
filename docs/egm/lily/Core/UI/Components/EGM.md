@@ -49,8 +49,9 @@ use the generated `Color.lily*` asset symbols.
   `BusyButton<Label>(isBusy:, action: (() async -> Void)?, label:)`, each with a `Text` convenience and
   `BusyButton.init(_ title:, isBusy:, write: () async -> Bool, onSuccess: () -> Void)`
   [`lily/Core/UI/Components/BusyButton.swift:BusyLabel`, `BusyButton`].
-  `DraftSubmitButton(title:, isSubmitting:, isEnabled:, action: () async -> Void)`
-  [`lily/Core/UI/Components/DraftSubmitButton.swift:DraftSubmitButton`].
+  `DraftSubmitButton(title:, isSubmitting:, isEnabled:, sizing: ButtonSizing = .fitted, controlSize: ControlSize? = nil,
+  action: () async -> Void)` [`lily/Core/UI/Components/DraftSubmitButton.swift:DraftSubmitButton`] (the sizing pair
+  added 2026-11-10 for the creation wizard's bottom bar; the defaults keep the draft sheets' toolbar look).
   `ProviderButton(provider: AuthProvider.Kind, isLoading: = false, isDisabled: = false, action:)` and `ProviderGlyph(provider:)`
   [`lily/Core/UI/Components/ProviderButton.swift:ProviderButton`, `ProviderGlyph`] (`AppBranding.signInButtonTitle(for:)`).
 - Chips: `lilyChip(_ glass: Glass)` (caption font, `glassEffect(glass, in: .capsule)`) and
@@ -186,7 +187,8 @@ use the generated `Color.lily*` asset symbols.
   `BusyButton` is
   `.disabled(action == nil || isBusy)` and unstyled [`lily/Core/UI/Components/BusyButton.swift:BusyButton`];
   `DraftSubmitButton` is `.disabled(!isEnabled)`, shows a small `ProgressView` labelled `title` while submitting and is
-  `lilyProminentButton(sizing: .fitted, controlSize: nil)` [`lily/Core/UI/Components/DraftSubmitButton.swift:DraftSubmitButton`];
+  `lilyProminentButton(sizing:controlSize:)` with the toolbar defaults `.fitted`/`nil` (the creation wizard's bottom
+  bar passes `.flexible`/`.large`, 2026-11-10) [`lily/Core/UI/Components/DraftSubmitButton.swift:DraftSubmitButton`];
   `ProviderButton` is `.disabled(isDisabled || isLoading)` [`lily/Core/UI/Components/ProviderButton.swift:ProviderButton`].
 - Chips: `lilyChip` is always a glass capsule and `tappableLabel` a minimum, not fixed, height
   [`lily/Core/UI/Components/ChipModifiers.swift:View.lilyChip`, `View.tappableLabel`]; `ChoiceChip` is

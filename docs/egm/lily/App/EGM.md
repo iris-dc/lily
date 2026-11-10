@@ -81,7 +81,11 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `makeListSnapshotStore(arguments:startsFresh:directory:logger:)`; instance factories `makeShellSync()` and
   `makeShellLists()` (`lily/App/AppDependencies+Shell.swift:AppDependencies.makeShellLists`).
 - View-model factories, one per screen: `makeEventListViewModel(scope:snapshots:)`, `makeLandingViewModel`, `makeEventDetailViewModel`,
-  `makeEditEventViewModel`, `makeCreateEventViewModel(onCreated:lockedGroup:)` (`+Events.swift`); `makeDiscoverGroupsViewModel`,
+  `makeEditEventViewModel`, `makeCreateEventViewModel(onCreated:lockedGroup:)` (`+Events.swift`);
+  `makeCreationWizardModel(seed:onCreatedEvent:)` (`lily/App/AppDependencies+Create.swift`, 2026-11-10: builds
+  `CreationWizardModel<CreateEventViewModel>` over `CreationWizardPolicy.opening(for:flags: .current)` and
+  `CreationWizardFactories`, whose event factory closes over `makeCreateEventViewModel` with the caller's
+  `onCreatedEvent` and the seed's locked group — a strong capture, the root outlives every wizard); `makeDiscoverGroupsViewModel`,
   `makeGroupDetailViewModel`, `makeGroupLoaderViewModel`, `makeCreateGroupViewModel`, `makeEditGroupViewModel`, `makeMembersViewModel`,
   `makeInvitePeopleViewModel`, `makeTournamentInvitePeopleViewModel`, `makeReportViewModel` (`+Groups.swift`); `makeChatViewModel`,
   `makeAttachmentComposer`, `makeChatHistoryClearer`, `myGroupsDidChange()`, `myGroupsDidLoad()` (`+Chat.swift`);

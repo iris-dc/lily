@@ -8,8 +8,7 @@ final class LilyEventEditTests: LilyUITestCase {
     @MainActor
     func testHostEditsTheirGameFromTheDetail() {
         startCreating("Thursday five-a-side")
-        app.buttons["create-submit"].tap()
-        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        submitWizard()
 
         openFromHome("Thursday five-a-side")
         openEditSheet()
@@ -30,12 +29,11 @@ final class LilyEventEditTests: LilyUITestCase {
     }
 
     /// Opening the map on the game's own spot is no change: the arrival settles nudge the pin by centimetres and must
-    /// not turn Save on; a drag must, and the row must read the new spot.
+    /// not turn Save on; a drag must. The row reads "Spot set" throughout: the coordinates stay on the picker screen.
     @MainActor
     func testOpeningTheMapOnAnEditedGameTurnsSaveOnOnlyAfterADrag() {
         startCreating("Map check")
-        app.buttons["create-submit"].tap()
-        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        submitWizard()
         openFromHome("Map check")
         openEditSheet()
         let save = app.buttons["create-submit"]
@@ -57,7 +55,7 @@ final class LilyEventEditTests: LilyUITestCase {
         waitUntilHittableAndStill(map)
         leaveSpotPicker()
         assertBecomesEnabled(save, "a dragged spot is something to save")
-        XCTAssertNotEqual(text(of: row), before, "the row must show the new spot")
+        XCTAssertEqual(text(of: row), before, "the row still reads Spot set: the coordinates stay on the picker")
     }
 
     /// "At least" turns the stepper's count into the number needed, and the created game counts towards it instead of
@@ -65,12 +63,16 @@ final class LilyEventEditTests: LilyUITestCase {
     @MainActor
     func testCreatingAGameThatNeedsAtLeastSoManyCountsTowardsTheNumber() {
         startCreating("Open run")
-        XCTAssertTrue(app.staticTexts["10 players"].exists, "the stepper names a cap until the choice changes")
+        // Outside a `Form` the stepper is one element: its label carries the text, no separate static text.
+        let stepper = app.steppers["create-capacity"]
+        XCTAssertTrue(stepper.waitForExistence(timeout: 5), "the capacity stepper is on the final step")
+        XCTAssertTrue(waitUntil(stepper, holds: "label == %@", "10 players"),
+                      "the stepper names a cap until the choice changes: \(stepper.label)")
 
         choosePlayerLimit("At least")
-        XCTAssertTrue(app.staticTexts["10 players needed"].waitForExistence(timeout: 5), "the stepper names the number needed")
-        app.buttons["create-submit"].tap()
-        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        XCTAssertTrue(waitUntil(stepper, holds: "label == %@", "10 players needed"),
+                      "the stepper names the number needed: \(stepper.label)")
+        submitWizard()
 
         openFromHome("Open run")
         XCTAssertTrue(app.staticTexts["1 joined · 10 needed"].waitForExistence(timeout: 5), "the bar counts towards the number")
@@ -82,26 +84,21 @@ final class LilyEventEditTests: LilyUITestCase {
         startCreating("Open walk")
 
         choosePlayerLimit("Any number")
-        XCTAssertTrue(app.staticTexts["10 players"].waitForNonExistence(timeout: 5), "there is no number to step")
+        XCTAssertTrue(app.steppers["create-capacity"].waitForNonExistence(timeout: 5), "there is no number to step")
         XCTAssertTrue(app.staticTexts["No limit: anyone can join."].exists, "the footer explains the choice")
-        app.buttons["create-submit"].tap()
-        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        submitWizard()
 
         openFromHome("Open walk")
         XCTAssertTrue(app.staticTexts["1 joined"].waitForExistence(timeout: 5), "the count stands alone")
     }
 
-    /// Signs in, opens the create sheet and fills the two required texts; the spot comes from the mock location. The
-    /// place row is dragged into the tree first: the event-type chips push it below the fold on a 6.1-inch phone.
+    /// Signs in and walks the creation wizard to its final step (the spot comes from the mock location), where the
+    /// player fields and the submit button live; the edit tests then reopen the created game through the edit form.
     @MainActor
     private func startCreating(_ title: String) {
         tapSignInWithApple()
         tapCreateButton()
-        XCTAssertTrue(app.navigationBars["New event"].waitForExistence(timeout: 5))
-        enter(title, into: app.textFields["create-title"])
-        let locationName = app.textFields["create-location-name"]
-        dragUpUntilExists(locationName)
-        enter("Canal Path", into: locationName)
+        walkEventWizardToPlayers(title: title, place: "Canal Path")
     }
 
     /// Taps a segment of the Players picker, scrolling it into view first; a segmented picker's segments are buttons.

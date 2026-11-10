@@ -45,7 +45,8 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `playerLimit` (default `.maximum`), `description`, `lookingFor`, `skillLevel?`, `priceText`, `let locale`,
   `let currencyCode`, `group: EventGroupRef?`. Inits `init(startsAt:currencyCode:locale:clientId:)` and
   `init(editing: SportEvent, currencyCode:locale:)`. Nested `Rules` (`minimumLeadTime`, `minimumCapacity`;
-  `.creation`, `.editing(participantCount:)`, `capacityRange(for:)`) and `Issue` (`titleMissing`, `titleTooLong`,
+  `.creation`, `.editing(participantCount:)`, `capacityRange(for:)`) and `Issue` (`CaseIterable` since 2026-11-10,
+  iterated by the creation wizard's partition test; `titleMissing`, `titleTooLong`,
   `startsAtTooSoon`, `placeMissing` (neither a name nor a spot; either is enough, the geocoder fills the other on
   submit), `locationNameTooLong`, `capacityOutOfRange`,
   `capacityBelowParticipants`, `descriptionTooLong`, `lookingForTooLong`, `priceUnreadable`, `priceOutOfRange`).
@@ -96,8 +97,10 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `PickerSettlePolicy.isAChoice(_:current:isFirstSettle:minimumMoveMeters:)`,
   `MapFraming.initialRegion(userLocation:radiusMeters:) -> MKCoordinateRegion?`, `EventListLayout`
   (`switchable`, `sideBySide`; `resolve(mode: LayoutMode)`), `EventsPresentation` (`list`, `map`; `title`,
-  `symbolName`, `wireValue`), `ExploreSheet` (`createGame`, `createGroup`, `createTournament`, `signIn`;
-  `init(_ intent: CreateIntent)`).
+  `symbolName`, `wireValue`), `ExploreSheet` (`wizard(CreationSeed)`, `createGroup`, `createTournament`, `signIn`;
+  `Identifiable` by an explicit `id` string now that a case carries a payload; `init(_ intent: CreateIntent)` — the
+  game intent becomes `.wizard(CreationSeed(kind: .event))`, the slice-2 bridge of the creation-wizard plan, while
+  group and tournament keep their forms until slice 3).
 
 ## Invariants
 
@@ -147,7 +150,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - `Participation.init` precedence: `userID == nil` → `hidden`; hosted by the user → `hosting`; `participates` →
   `leave`; `isFull` → `full`; else `join`.
 - `CreateIntentPolicy.decide`: no intent → not consumed; an intent while a sheet is up → consumed, nothing presented;
-  otherwise consumed with `sheet(for:isSignedIn:)`, which substitutes `.signIn` for a guest.
+  otherwise consumed with `sheet(for:isSignedIn:)`, which substitutes `.signIn` for a guest. The guest substitution
+  and the consume-without-presenting invariant are this policy's sole property; `CreationWizardPolicy` never sees
+  sign-in state (2026-11-10, creation-wizard slice 2).
 - `PickerSettlePolicy.isAChoice`: without a current spot, only a settle after the first counts; with one, the move
   must be `>= AppConfig.Location.pickerMinimumMoveMeters` (1 m). `MapFraming.initialRegion` is `nil` without a user
   position, else a square of `2 * radius * DesignTokens.Layout.mapRegionPadding` (1.3) metres.

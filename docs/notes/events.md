@@ -212,3 +212,35 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   clears the suggestions when the field is left even while the name row is unmounted (idempotent with the row-level
   clear) — and a still-focused name row scrolled off-viewport and back restarts `.task(id: name)` with an unchanged
   name, one duplicate `MKLocalSearch` per remount, accepted as a bounded cost.
+- **Event creation walks the wizard; groups and tournaments keep their sheets (2026-11-10, creation-wizard slice 2
+  bridge).** The "+" menu stays, but its event item and the ⌘N intent now present the creation wizard
+  (`ExploreSheet.wizard(CreationSeed(kind: .event))`): `ExploreSheet` dropped its raw value for the payload case and
+  is `Identifiable` by an explicit id, and `CreateIntentPolicy` keeps sole ownership of the guest substitution and the
+  consume-without-presenting invariant. Explore makes the model once per presentation
+  (`AppDependencies.makeCreationWizardModel(seed:onCreatedEvent: viewModel.add)`) and owns it above both presenters —
+  a full-screen cover on a compact width, a `lilyFormSheet()` sheet on a regular one, split by two item bindings over
+  the one `presentedSheet` — so a mid-flow width-class change (Stage Manager) re-hosts the flow; the model is cleared
+  only after a real dismissal (`presentedSheet` nil in `onDismiss`), never on a re-host. The group and tournament menu
+  items keep `CreateGroupSheet`/`CreateTournamentSheet`, and `GroupDetailView` keeps `CreateEventSheet`, until
+  slice 3. Tests: `CreateIntentPolicyTests` re-pinned to the wizard case; the UI suites migrate with the slice's test
+  item, after this bridge.
+- **Slice-2 review fixes (2026-11-10).** Four defects from the pre-merge review of the wizard bridge, fixed the same
+  day. (1) The Place step's pick-on-map row pushed a foreign value (`WizardMapDestination`) while the wizard's stack
+  binds the typed `[CreationStep]` path — a typed-path stack disables a link carrying any other value, so the tap was
+  silently consumed (an XCUI probe saw the hittable row tapped and no picker). The picker is now the path element
+  `CreationStep.eventMap` (never in `steps(for:)`; the shell's `navigationDestination` renders it), so the push works
+  and a re-host rebuilt from the path keeps the picker. (2) Back hides while a submit is in flight
+  (`navigationBarBackButtonHidden(steps.first == step || isSubmitting)`) — the plan's third lock beside the disabled
+  Cancel and the refused dismissal; popping mid-submit could silently drop edits into an already-written create.
+  (3) `advance(from:)` runs only from the entry on top of the path: a double-tapped Next pushed the same step twice,
+  and a tap gone stale across a pop could skip a step (`CreationWizardModelTests.advanceRunsOnlyFromTheStepOnTop`).
+  (4) The abandoned log moved off the wizard's `onDisappear` — a width-class re-host fired it mid-flow, logging a
+  false abandonment and latching the once-only guard — into Explore's real-dismissal seam (`clearWizardAfterDismiss`,
+  `presentedSheet` nil). UI coverage: the smoke walk pins the map push and back-preserves-state, and the groups
+  test's Explore half migrated to the wizard (`waitForWizardStep("Basics")`, clean-Cancel close). A fifth defect
+  surfaced by the new back walk: popping back into a step whose field was left focused re-presented the keyboard
+  mid-transition, and the scaffold's bottom bar never picked up that keyboard's inset, leaving Next under the
+  keyboard (AX frames at failure: the bar at y 777 under the keyboard at y 583–816); every wizard page now drops its
+  focus when the wizard's path changes (`.onChange(of: wizard.path)` — an `onDisappear` write was tried first and is
+  ignored, the view already leaving the hierarchy; the place page gained a `FocusState` passed into the shared
+  `PlaceNameField`), so a pop-return lands keyboard-down.

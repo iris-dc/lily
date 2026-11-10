@@ -187,3 +187,30 @@ the asset catalog.
   whole-card `GlassCard`, a trailing `.subheadline` `.secondary` chevron as the cue, `.plain` in both its shapes (an
   action `Button`, or `NavigationLink(value:)` for the wizard's pushes) because a default-styled `NavigationLink`
   tints its label with the accent; rendering unchanged on the Profile and Settings rows.
+- **The creation wizard's pages are glass, its chrome one scaffold (2026-11-10, creation-wizard slice 2).** The
+  owner picked the custom glass substrate over form pages in the side-by-side prototype round (variant B; reference
+  shots copied to `groups-plan/creation-wizard-prototypes/small/` beside the plan): capsule fields (`lilyField` /
+  `lilyMultilineField`, the sign-in look), section contents in `GlassCard`s, the geocoder's suggestion rows in one
+  card directly under the place field, the pick-on-map row as a `GlassNavigationRow`, menu pickers behind an outer
+  label (outside a `Form` they draw none of their own). `WizardStepScaffold` pins the chrome: the step title as a
+  large navigation title with the "Step n of m" counter under it in caption `.secondary` (the counter is the step
+  indicator), Cancel in the toolbar, and a bottom safe-area bar on `.bar` background carrying exactly one primary
+  button — Next as the full-width prominent capsule, or the final step's submit through `DraftSubmitButton` grown to
+  `.flexible`/`.large` — so the keyboard never overlaps bare content; the final-gate hint names the earlier step
+  whose stale issue blocks and pops back on tap. The kind page is glass choice cards, one per offered kind. The
+  scaffold's scroll reader brings the focused capsule into view, animated only when `\.motion` allows movement. The
+  bar's exact look over the keyboard and a possible counter glyph stay open for the rendered design round, per the
+  plan's one open question.
+- **Wizard design-judge round applied (2026-11-10, creation-wizard slice 2).** Three findings against the round-1
+  wizard captures: (1) the discard confirmation's visible "Keep editing" action (`AppBranding.Create.keepEditing`) —
+  iOS 26 draws a `confirmationDialog` as a centered dialog with no automatic Cancel, and it also swallows an explicit
+  `.cancel`-role button (a round-2 render proved it: the `.cancel`-role action was in the tree and the dialog still
+  showed the destructive Discard alone), so the keep action is a plain-role button that does nothing but close. (2) The step scaffold's bottom bar takes a `Color.lilySurface` underlay beneath
+  `.background(.bar)`: the aurora's brightest patch bled through the bare material as a saturated red spot beside the
+  Next capsule (round-1 `basics-typed.png`); the underlay keeps the bar opaque and the material finish while damping
+  the bleed — the owner compares the two renders and may call the bare material acceptable instead. (3) The
+  pick-on-map row's value is human copy — "Spot set" (`Events.Create.spotSet`, new catalog key in all seven
+  languages) or "Not set" — in the wizard's `EventPlacePage` and the shared `PlacePickerRow` alike; raw coordinates
+  (`coordinateText`) left every row and remain only the wire's fallback place name (`PlaceResolver`) and the picker
+  screen's own concern. Round-2 shots for the owner's comparison: `/tmp/slice2-shots/round2/` beside round 1 in
+  `/tmp/slice2-shots/`.

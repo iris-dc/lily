@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The Explore screen: the upcoming games as a list, switchable to a map, narrowed through the filter sheet the
-/// toolbar opens, with the "+" menu floating over the content (a signed-in user gets the game, group or
-/// tournament form, a guest the sign-in sheet) and a header (the carousels) above the list. On a wide window
+/// toolbar opens, with the "+" menu floating over the content (a signed-in user gets the creation wizard for a game,
+/// the group or tournament form for the rest, a guest the sign-in sheet) and a header (the carousels) above the list. On a wide window
 /// (`LayoutMode.wide`) the map is not a mode but a pane: the content column on the left, the map always on the right,
 /// and the picker gone (`EventListLayout`).
 struct EventListView<Header: View>: View {
@@ -16,6 +16,9 @@ struct EventListView<Header: View>: View {
     let refreshHeader: () async -> Void
     @State var presentation: EventsPresentation = .list
     @State var presentedSheet: ExploreSheet?
+    /// The wizard behind `presentedSheet`'s wizard case, made once per presentation in `present(_:)` and owned above
+    /// both presenters, so a mid-flow width-class change re-hosts the same flow instead of destroying it.
+    @State var wizardModel: CreationWizardModel<CreateEventViewModel>?
     /// The header's measured height: a spinner or empty state is centred in what the screen leaves under it.
     @State var headerHeight: CGFloat = 0
     @Environment(\.scenePhase) private var scenePhase
@@ -24,6 +27,22 @@ struct EventListView<Header: View>: View {
     private var layout: EventListLayout { .resolve(mode: layoutMode) }
     /// Whether the map is the whole content right now: the switchable layout with the picker on "Map".
     var showsMapAlone: Bool { layout == .switchable && presentation == .map }
+
+    /// Whether the wizard is up and rides the full-screen cover: only on a compact width; any other width keeps it a
+    /// sheet, sized like every form.
+    private var presentsWizardAsCover: Bool {
+        guard case .wizard = presentedSheet else { return false }
+        return layoutMode == .compact
+    }
+
+    /// The two presenters split `presentedSheet` between them: each shows it only while the other does not claim it.
+    private var sheetItem: Binding<ExploreSheet?> {
+        Binding(get: { presentsWizardAsCover ? nil : presentedSheet }, set: { presentedSheet = $0 })
+    }
+
+    private var wizardCoverItem: Binding<ExploreSheet?> {
+        Binding(get: { presentsWizardAsCover ? presentedSheet : nil }, set: { presentedSheet = $0 })
+    }
 
     init(listTitle: String?,
          viewModel: EventListViewModel,
@@ -73,7 +92,10 @@ struct EventListView<Header: View>: View {
         // A shortcut's create waits on the navigation until Explore is on screen; `initial` catches one that arrived
         // while another tab was showing.
         .onChange(of: dependencies.navigation.pendingCreate, initial: true) { consumePendingCreate() }
-        .sheet(item: $presentedSheet) { sheet in sheetContent(for: sheet) }
+        .sheet(item: sheetItem, onDismiss: clearWizardAfterDismiss) { sheet in sheetContent(for: sheet) }
+        // The wizard rides a full-screen cover on a compact width and a form sheet elsewhere; both presenters share
+        // `presentedSheet`, so a width-class change mid-flow re-hosts the wizard rather than losing the draft.
+        .fullScreenCover(item: wizardCoverItem, onDismiss: clearWizardAfterDismiss) { _ in wizardContent }
     }
 
     /// One column with the list or the map, or, side by side, the content column (with the "+" over its corner) and
@@ -96,7 +118,7 @@ struct EventListView<Header: View>: View {
     private func withCreateButton(_ content: some View) -> some View {
         ZStack(alignment: .bottomTrailing) {
             content
-            CreateMenuButton(onCreateGame: { presentForUser(.createGame) },
+            CreateMenuButton(onCreateGame: { presentForUser(.wizard(CreationSeed(kind: .event))) },
                              onCreateGroup: { presentForUser(.createGroup) },
                              onCreateTournament: { presentForUser(.createTournament) })
                 .padding(DesignTokens.Spacing.lg)

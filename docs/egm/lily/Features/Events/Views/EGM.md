@@ -20,8 +20,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
 - `EventListView<Header: View>` (`lily/Features/Events/Views/EventListView.swift`,
   `EventListView+Content.swift`): `init(listTitle: String?, viewModel: EventListViewModel,
   dependencies: AppDependencies, refreshHeader: @escaping () async -> Void, @ViewBuilder header:)`. State:
-  `presentation: EventsPresentation`, `presentedSheet: ExploreSheet?`, `headerHeight`. Members: `showsMapAlone`,
-  `sheetContent(for:)`, `consumePendingCreate()`, `presentForUser(_:)`,
+  `presentation: EventsPresentation`, `presentedSheet: ExploreSheet?`,
+  `wizardModel: CreationWizardModel<CreateEventViewModel>?` (made once per presentation in `present(_:)`, owned above
+  both presenters so a mid-flow width-class change re-hosts the wizard), `headerHeight`. Members: `showsMapAlone`,
+  `sheetContent(for:)`, `wizardContent`, `clearWizardAfterDismiss()`, `consumePendingCreate()`, `presentForUser(_:)`,
   `presentationPicker`, `content`, `listContent`, `eventList`, `filteredOutState`, `loadFailedState`,
   `emptyState`, `stateSlot`, `refreshableScroll`.
 - `EventDetailView` (`lily/Features/Events/Views/EventDetailView.swift`): `init(viewModel: EventDetailViewModel,
@@ -115,7 +117,9 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   placeholder: = AppBranding.Events.Create.locationNamePlaceholder, nameIdentifier:pickerIdentifier:
   focus: FocusState<Field?>.Binding, equals:)`, and `where Field == Never` the same without focus; the name row is
   `PlaceNameField` without its suggestion machinery (recomposed 2026-11-10, zero visual change).
-  `PlacePickerRow(coordinate:)` (`PlacePickerRow.swift`) is the `NavigationLink` to the picker.
+  `PlacePickerRow(coordinate:)` (`PlacePickerRow.swift`) is the `NavigationLink` to the picker; its value is
+  `Events.Create.spotSet`/`spotNotSet` (human copy since the 2026-11-10 design-judge round — the raw coordinates stay
+  on the picker screen, `coordinateText` remaining only the wire's fallback name through `PlaceResolver`).
 - Cards and rows: `EventCard(event:distance:)` (`EventCard.swift`), `EventCardList(events:distance:
   horizontalPadding: = DesignTokens.Layout.screenMargin, singleColumn: = false)` (`EventCardList.swift`),
   `EventPreviewCard(event:detail:surface: = .glass)`
@@ -153,8 +157,14 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `navigation.pendingCreate` (with `initial: true`) → `consumePendingCreate()`, which applies
   `CreateIntentPolicy.decide` and clears `pendingCreate` when consumed.
 - `presentForUser` routes the "+" choice through `CreateIntentPolicy.sheet(for:isSignedIn:)`: a guest gets `.signIn`,
-  logged at info under `.auth`. `CreateEventSheet` is built with `onCreated: viewModel.add`; the detail destination
-  with `onChange: viewModel.replace`.
+  logged at info under `.auth`. The wizard case (2026-11-10, creation-wizard slice 2: the "+" menu's event item and
+  the game intent) presents `CreationWizardView` over
+  `dependencies.makeCreationWizardModel(seed:onCreatedEvent: viewModel.add)`: a full-screen cover on a compact width,
+  a `lilyFormSheet()` sheet otherwise, split by two item bindings over the one `presentedSheet` so a width-class
+  change mid-flow re-hosts the flow; the model is cleared only after a real dismissal (`clearWizardAfterDismiss`:
+  `presentedSheet` is nil then, not on a re-host), which also books the flow's close (`noteClosed()`, the abandoned
+  log, before the model is dropped), and the wizard mounts its own popup and dismissal rules, so the presenters add
+  sizing only. The detail destination is built with `onChange: viewModel.replace`.
 - Detail (`EventDetailView.participationControl`) switches on `viewModel.participation`: `.hidden` nothing, `.join` a
   prominent `BusyButton` → `join()`, `.leave` a glass `BusyButton` → `leave()`, `.full` a prominent `BusyButton`
   with no action, `.hosting` a caption. The Edit toolbar item (`lilyToolbarTextButton()`) shows only when `canEdit`;
@@ -250,8 +260,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `.groupDestinations(dependencies:)`; `PlacePickerRow` pushes `LocationPickerView`;
   `dependencies.navigation.open(group:)` / `open(tournament:)` after a create from Explore;
   `navigation.pendingCreate = nil` when consumed; `LocationPickerView` calls `dismiss()` on Done.
-- Sheets: `CreateEventSheet`, `CreateGroupSheet`, `CreateTournamentSheet`, `SignInSheet` (through `ExploreSheet`) and
-  `EditEventSheet`; `EventDraftSheet` hands `errorCenter` to Core's `DraftSheet`.
+- Sheets and covers: `CreationWizardView` (the wizard case: a full-screen cover on compact, a form sheet otherwise),
+  `CreateGroupSheet`, `CreateTournamentSheet`, `SignInSheet` (through `ExploreSheet`) and `EditEventSheet`;
+  `CreateEventSheet` left Explore with the slice-2 bridge and remains the group screen's create sheet until slice 3;
+  `EventDraftSheet` hands `errorCenter` to Core's `DraftSheet`.
 - `dependencies.tournamentChanges.recordChange()` after a tournament is created from Explore.
 - Logging: `.ui` debug when a create shortcut is dropped because a sheet is up; `.auth` info when a guest is sent
   to sign in.

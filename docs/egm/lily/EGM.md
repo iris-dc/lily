@@ -11,7 +11,7 @@ ship every other file inside the app bundle, which is why these contracts live
 under `docs/egm/` and not beside the code. Four top-level folders: `App` is the composition root and the only place
 that knows concrete types; `Config` holds every constant, string, token and identifier as `nonisolated` enum
 namespaces; `Core` is the shared machinery (auth, networking, realtime, changes and freshness, localisation, UI
-components); `Features` holds the twelve user-facing features, each split by layer; the eight that own a data layer
+components); `Features` holds the thirteen user-facing features, each split by layer; the eight that own a data layer
 keep protocols in `Interfaces/` and concrete types in `Implementations/` (Landing, Shell and SignIn have
 neither).
 
@@ -41,8 +41,8 @@ and Staging, off in Release). Everything runs without AWS credentials behind the
   (Realtime), `PushCoordinator` (Push), `AppNavigation`, `AppLocale` and `localized(_:)` (Localization), the
   currency and preference stores, location, logging, statistics, validation, the `Foundation` string helpers, system
   seams, and the shared SwiftUI layer (UI: `ContentScreen`, `LayoutMode`, the aurora).
-- Features: [`./Features/EGM.md`](./Features/EGM.md) - Landing, SignIn, Shell, Events, Groups, Chat, Inbox, People,
-  Tournaments, Profile, Feedback; data flows Views -> ViewModels -> Interfaces -> Implementations ->
+- Features: [`./Features/EGM.md`](./Features/EGM.md) - Landing, SignIn, Shell, Events, Create, Groups, Chat,
+  Inbox, People, Tournaments, Profile, Feedback; data flows Views -> ViewModels -> Interfaces -> Implementations ->
   Laurel, with Models shared by every layer; the feature flags are read by the callers that show or route to a
-  gated feature (Shell, Groups, Events, Landing, `ShellCommands`, `AppNavigation`) and, for the chat flag, by
-  `TournamentDetailViewModel`.
+  gated feature (Shell, Groups, Events, Create, Landing, `ShellCommands`, `AppNavigation`) and, for the chat flag,
+  by `TournamentDetailViewModel`.

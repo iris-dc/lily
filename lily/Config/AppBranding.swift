@@ -79,8 +79,11 @@ nonisolated enum AppBranding {
             static var pickOnMap: String { localized("Set the spot on the map") }
             /// Value of the map row while the draft has no coordinate yet.
             static var spotNotSet: String { localized("Not set") }
-            /// Value of the map row once a spot is set: `%f` latitude, `%f` longitude, four decimals (about 10 m). Never
-            /// localized: a comma for the decimals would collide with the one between them.
+            /// Value of the map row once a spot is set; the exact coordinates stay on the picker screen.
+            static var spotSet: String { localized("Spot set") }
+            /// The wire's fallback location name when only a spot is given (`PlaceResolver`): `%f` latitude, `%f`
+            /// longitude, four decimals (about 10 m). Never localized: a comma for the decimals would collide with
+            /// the one between them.
             static let coordinateFormat = "%.4f, %.4f"
             static var mapTitle: String { localized("Where is it?") }
             static var mapHint: String { localized("Move the map until the pin sits on the spot.") }

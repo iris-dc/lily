@@ -5,7 +5,7 @@ Source: `lily/Config/`
 ## Overview
 
 Four `nonisolated enum` namespaces, each a root file plus `+Area.swift` files that are `nonisolated extension`s of the
-root or of one of its nested enums (65 files, about 3,200 lines). `AppConfig` is the non-visual configuration: API
+root or of one of its nested enums (74 files, about 3,800 lines). `AppConfig` is the non-visual configuration: API
 paths and base URLs, limits mirrored from the Laurel backend, launch-argument literals, feature flags, Cognito ids.
 `AppBranding` holds every user-facing string as a computed `static var` or `static func` whose body is
 `localized("English text")`, so the English text is the catalog key. `DesignTokens` holds the visual constants and
@@ -157,6 +157,13 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `AppConfig.Moderation.supportURL`; `AppConfig.API.Paths.meTerms`; `LaunchArguments.mockTermsPending`;
   `AccessibilityIdentifiers.termsAccept`, `termsSignOut`, `termsDeleteAccount`. The privacy `changes` paragraph reads
   agreement-by-use (changed together with laurel's page). `SignUpAgreementTests` pins the key in all seven languages.
+- The creation wizard's chrome (2026-11-10, `lily/Config/AppBranding+Create.swift`): `Create` — `kindTitle`
+  ("What are you creating?"), `kindEvent`/`kindGroup`/`kindTournament` (reusing the per-kind "New event" / "New group" /
+  "New tournament" keys), the event step titles `eventBasics` ("Basics"), `eventPlace` ("Place"),
+  `eventPlayersAndDetails` ("Players and details"), `next` ("Next"), `step(_:of:)` ("Step %lld of %lld", plain
+  string units in every language — identical across plural categories by design, so xcstringstool's two-`%lld`
+  pivot warning never fires; see `docs/notes/localization.md` 2026-11-10), and the discard confirmation
+  `discardTitle` ("Discard this draft?"), `discard`, `keepEditing`. The wizard's fields keep each kind's existing `Create` copy; the final step reuses each kind's submit.
 - The one helper every string goes through: `nonisolated func localized(_ key: String.LocalizationValue) -> String`
   (`lily/Core/Localization/Localized.swift:localized`); a `\(count)` interpolation becomes the catalog's `%lld` or `%@`.
 
@@ -216,7 +223,10 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `settings-privacy`, `settings-terms`, `settings-privacy-policy` and `settings-terms-of-use` (the pushed policy
   and terms screens, 2026-11-08), `legal-close` (Close on the legal sheets the sign-up footnote presents, 2026-11-08), and the
   delete flow's `settings-delete-account`,
-  `delete-account-confirm`, `delete-account-cancel`, `delete-account-acknowledge`; 2026-11-07), +Currency, +Layout, +Landing (`intro-pager`), +Localization.
+  `delete-account-confirm`, `delete-account-cancel`, `delete-account-acknowledge`; 2026-11-07), +Currency, +Layout, +Landing (`intro-pager`), +Localization,
+  +Create (2026-11-10, the creation wizard: `create-kind-event`, `create-kind-group`, `create-kind-tournament` — the
+  kind page's choice cards — `create-next`, the bottom bar's Next, and `create-step`, a step page's container, a
+  container element so children keep their own identifiers; the final step keeps `create-submit`).
 - Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `createPlaceSuggestion(_ index: Int)`
   (`create-place-suggestion-<index>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
   `message(clientID:)` (`message-client-<id>`), `message(id:)`, `messageQuote(id:)`, `memberRow(_:)`, `inviteCandidate(_:)`,
@@ -227,7 +237,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 ## Invariants
 
-- Every top-level declaration in all 65 files is `nonisolated`: the four root enums and every `extension`
+- Every top-level declaration in all 74 files is `nonisolated`: the four root enums and every `extension`
   (`grep -c nonisolated` is 34 across the 13 `DesignTokens*` files and 1 in each `AccessibilityIdentifiers*` file;
   `grep "^extension\|^enum\|^struct" lily/Config/AppBranding*.swift` returns nothing). No `Sendable`, `@MainActor` or
   other isolation annotation appears in the directory.

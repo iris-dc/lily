@@ -31,11 +31,12 @@ final class LilyProfileTests: LilyUITestCase {
         closeProfileSheet()
         openExploreTab()
         tapCreateButton()
-        // The price row is the form's last; a Form row off screen is not in the accessibility tree yet.
+        walkEventWizardToPlayers(title: "Price check", place: "Canal Path")
+        // The price card is the final step's last; a card below the fold may be out of the tree on a 6.1-inch phone.
         let symbol = app.descendants(matching: .any)["create-price-currency"]
         scrollUntilHittable(symbol)
         XCTAssertTrue(Self.zlotySymbols.contains(symbol.label), "the price field is in złoty now: \(symbol.label)")
-        app.buttons["create-cancel"].tap()
+        discardWizard()
 
         app.buttons["events-filter"].tap()
         let capSymbol = app.staticTexts["filter-price-currency"]

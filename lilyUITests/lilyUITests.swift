@@ -160,7 +160,7 @@ final class LilySmokeTests: LilyUITestCase {
         tapCreateButton()
 
         XCTAssertTrue(app.buttons["Continue with Apple"].waitForExistence(timeout: 5), "a guest must be asked to sign in first")
-        XCTAssertFalse(app.navigationBars["New event"].exists, "the form must not open for a guest")
+        XCTAssertFalse(app.navigationBars["Basics"].exists, "the wizard must not open for a guest")
     }
 
     @MainActor
@@ -173,26 +173,50 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertFalse(app.navigationBars["New group"].exists, "the form must not open for a guest")
     }
 
-    /// The mock location fills the spot, so title and place are all the form still needs. The new game must show
-    /// under Home without a manual refresh, and its detail must know the caller hosts it. Nothing scrolls before
-    /// the tab tap: a scrolled list minimises the tab bar, and a minimised tab bar swallows tab taps.
+    /// The "+" menu's event item opens the creation wizard on Basics; the mock location fills the spot, so the title
+    /// and the place name walk it to the end. On the way the pick-on-map row must push the picker, and back must keep
+    /// the typed title (the plan's pinned wizard behaviours). The new game must show under Home without a manual
+    /// refresh, and its detail must know the caller hosts it. Nothing scrolls before the tab tap: a scrolled list
+    /// minimises the tab bar, and a minimised tab bar swallows tab taps.
     @MainActor
     func testCreatingAGameShowsItOnHome() {
         tapSignInWithApple()
         tapCreateButton()
-        XCTAssertTrue(app.navigationBars["New event"].waitForExistence(timeout: 5))
 
         let title = "Thursday five-a-side"
+        waitForWizardStep("Basics")
         enter(title, into: app.textFields["create-title"])
+        tapNext()
+        waitForWizardStep("Place")
+        openWizardMapAndReturn()
+        assertBackToBasicsKeeps(title)
+        tapNext()
+        waitForWizardStep("Place")
         enter("Test Park", into: app.textFields["create-location-name"])
-
-        let submit = app.buttons["create-submit"]
-        XCTAssertTrue(submit.waitForExistence(timeout: 5))
-        assertBecomesEnabled(submit, "title, place and the mock position complete the draft")
-        submit.tap()
-        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        tapNext()
+        waitForWizardStep(Self.wizardFinalEventStep)
+        submitWizard()
 
         openFromHome(title)
         XCTAssertTrue(app.staticTexts["You host this event"].waitForExistence(timeout: 5), "the host must see the hosting notice")
+    }
+
+    /// The pick-on-map row pushes the picker on the wizard's own stack; Done returns to the Place step.
+    @MainActor
+    private func openWizardMapAndReturn() {
+        let row = app.descendants(matching: .any)["create-pick-on-map"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Where is it?"].waitForExistence(timeout: 5), "the map row must push the picker")
+        app.buttons["create-map-done"].tap()
+        waitForWizardStep("Place")
+    }
+
+    /// Back within the kind's steps is free and preserves entered state (the plan's pinned behaviour).
+    @MainActor
+    private func assertBackToBasicsKeeps(_ title: String) {
+        app.navigationBars["Place"].buttons["Basics"].tap()
+        waitForWizardStep("Basics")
+        XCTAssertEqual(app.textFields["create-title"].value as? String, title, "back must preserve the typed title")
     }
 }

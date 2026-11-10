@@ -58,3 +58,10 @@ The app ships in English (the source language and the fallback), Russian, Spanis
   flagged for that read.
 
 - 2026-11-09: `SWIFT_EMIT_LOC_STRINGS` turned off on the app target's three configurations (it was YES; the test targets already had NO). With it on, building from the Xcode GUI re-extracts strings and rewrites `Localizable.xcstrings` - harmless on this Mac (command-line builds never write back) but it dirtied the catalog on the other Mac after every Staging build, so every later `git pull` refused to merge. The catalogs are hand-maintained and read through `localized()`, which the extractor cannot see, so extraction only ever produced noise. Evidence: the other Mac's recurring "local changes to lily/Localizable.xcstrings would be overwritten by merge".
+
+- 2026-11-10: the "Step %lld of %lld" plural variations (the creation wizard's step counter) were flattened to plain
+  string units in all six localizations. The values were identical across every plural category by design — "Step N
+  of M" inflects in none of the seven languages — and xcstringstool cannot infer the pivot argument with `%lld` in
+  two positions, so every build warned "Cannot reliably infer argument number for plural variation" once per
+  language, breaking the zero-`/lily/`-warnings gate. Plain units say the same thing with no warning; the byte-stable
+  JSON round trip was proven before the edit and `scripts/l10n-check.py` stayed green.

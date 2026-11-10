@@ -166,6 +166,12 @@ lily/
                  spot, 2026-11-05)), Services (EventOpener: fetch a game by id and push its detail, shared
                  by the inbox's reminder card and a tapped notification; PlaceResolver: fills the missing half of a draft's
                  place through the geocoder on submit, 2026-11-05)
+    Create/      The paged creation wizard over the existing create view models (slice 2 of the creation-wizard plan, 2026-11-10):
+                 Models (CreationKind, CreationSeed + CreationWizardPolicy (the flags-by-context opening matrix), CreationStep (+ the
+                 eventMap path element, the place step's map picker) + CreationSteps (+Event: the issue partition and the Next gating)),
+                 State (CreationWizardModel + CreationWizardFactories, the shell's observable state behind the chrome),
+                 Views (CreationWizardView (the NavigationStack shell), CreationKindPage, WizardStepScaffold (+ WizardCancelItem and
+                 WizardIssueHint)), Views/Event (EventBasicsPage, EventPlacePage, EventPlayersPage, the event flow's three glass pages)
     Profile/     Guest and signed-in profile; Interfaces (ProfileRepository: GET and PUT /api/profile, the name or the bio;
                  ProfileFieldDraft, what the two editors' drafts share), remote and mock implementations, Models (Profile with
                  its bio, ProfileUpdateRequest with one field per request, DisplayNameDraft and AboutDraft with their issues),
@@ -291,7 +297,7 @@ lily/
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ included;
                  Profile/ holds ProfileStoreTests and ProfileStoreBioTests, DisplayNameViewModelTests, AboutViewModelTests,
-                 DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01, and MapCardListEdgesTests since 2026-11-06, with CreateEventPlaceTests, EditEventPlaceTests and EventDraftPlaceTests from the 2026-11-06 pre-merge review; Location/ holds PlaceSuggestionTests since then); Support/ holds fakes
+                 DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01, and MapCardListEdgesTests since 2026-11-06, with CreateEventPlaceTests, EditEventPlaceTests and EventDraftPlaceTests from the 2026-11-06 pre-merge review; Location/ holds PlaceSuggestionTests since then; Create/ holds CreationStepsTests, CreationWizardPolicyTests and CreationWizardModelTests (the creation wizard, 2026-11-10)); Support/ holds fakes
                  (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, ShellDoubles,
                  StatisticsDoubles, GroupDoubles (with FakeInviteRepository), GroupViewModelDoubles with the shared GroupHarness and the
                  TermsCountingReporter every harness uses, InboxDoubles, PeopleDoubles, LocationDoubles, PushDoubles, FeedbackDoubles,
@@ -306,6 +312,7 @@ lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCan
                  Fixtures/pairings holds the shared pairing fixtures TournamentScheduleTests reproduces)
 lilyUITests/     LilyUITestCase (launch + the primitives) + LilyUITestCase+Screens (the screen-reaching helpers)
                  + LilyUITestCase+Elements (element primitives: text, scroll-and-tap, predicate wait, confirmation taps; 2026-11-02)
+                 + LilyUITestCase+Wizard (the creation wizard's walk: step waits, Next, submit, discard; 2026-11-10)
                  + MockIDs (the fixture row ids, 2026-11-02), LilySmokeTests, LilySignInTests,
                  LilyGroupsTests (+ Helpers), LilyChatTests (+ Attachments, + Composer, + Polls, + Rows, + Viewer), LilyPeopleTests, LilyEventEditTests, LilyLanguageTests,
                  LilyTournamentTests (+ Helpers), LilyDiscoverTests, LilyProfileTests, LilySettingsTests, LilyRosterTests, LilyStateTests, LilyIPadTests: end-to-end

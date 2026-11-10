@@ -4,7 +4,11 @@ import Testing
 struct CreateIntentPolicyTests {
     private typealias Decision = CreateIntentPolicy.Decision
 
-    @Test(arguments: [(CreateIntent.game, ExploreSheet.createGame), (.group, .createGroup), (.tournament, .createTournament)])
+    @Test(arguments: [
+        (CreateIntent.game, ExploreSheet.wizard(CreationSeed(kind: .event))),
+        (CreateIntent.group, ExploreSheet.createGroup),
+        (CreateIntent.tournament, ExploreSheet.createTournament)
+    ])
     func aSignedInUsersIntentOpensTheMatchingSheet(intent: CreateIntent, sheet: ExploreSheet) {
         let decision = CreateIntentPolicy.decide(intent: intent, presentedSheet: nil, isSignedIn: true)
         #expect(decision == Decision(consumes: true, present: sheet))
@@ -16,7 +20,7 @@ struct CreateIntentPolicyTests {
         #expect(decision == Decision(consumes: true, present: .signIn))
     }
 
-    @Test(arguments: [ExploreSheet.createGame, .signIn], [true, false])
+    @Test(arguments: [ExploreSheet.wizard(CreationSeed(kind: .event)), .signIn], [true, false])
     func anIntentOverAnOpenSheetIsConsumedWithoutPresenting(presentedSheet: ExploreSheet, isSignedIn: Bool) {
         let decision = CreateIntentPolicy.decide(intent: .game, presentedSheet: presentedSheet, isSignedIn: isSignedIn)
         #expect(decision == Decision(consumes: true, present: nil))
@@ -32,7 +36,8 @@ struct CreateIntentPolicyTests {
         #expect(CreateIntentPolicy.sheet(for: .createGroup, isSignedIn: false) == .signIn)
     }
 
-    @Test func thePlusMenuOpensTheFormForAUser() {
-        #expect(CreateIntentPolicy.sheet(for: .createTournament, isSignedIn: true) == .createTournament)
+    @Test func thePlusMenuOpensTheWizardForAUser() {
+        let wizard = ExploreSheet.wizard(CreationSeed(kind: .event))
+        #expect(CreateIntentPolicy.sheet(for: wizard, isSignedIn: true) == wizard)
     }
 }

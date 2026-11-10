@@ -143,7 +143,8 @@ final class LilyIPadTests: LilyUITestCase {
         XCTAssertTrue(inbox.exists && app.buttons[MockIDs.kickersRow].exists, "the list stays beside it")
     }
 
-    /// A sheet that is a form is a centred form sheet on an iPad, not a page as wide as the screen.
+    /// A sheet that is a form is a centred form sheet on an iPad, not a page as wide as the screen; the "+" menu's
+    /// event item opens the creation wizard, whose first step's title field is what measures the sheet.
     @MainActor
     func testCreateSheetIsAFormOnIPad() {
         tapSignInWithApple()

@@ -104,7 +104,7 @@ nonisolated struct EventDraft: Equatable, Sendable {
     }
 
     /// One reason a draft cannot be sent, in the order the form shows its fields.
-    enum Issue: Hashable, Sendable {
+    enum Issue: CaseIterable, Hashable, Sendable {
         case titleMissing
         case titleTooLong
         case startsAtTooSoon
