@@ -67,13 +67,7 @@ struct GroupDraftForm: View {
 
     private var visibilitySection: some View {
         Section {
-            Picker(Copy.visibility, selection: $draft.visibility) {
-                ForEach(GroupVisibility.allCases, id: \.self) { visibility in
-                    Label(visibility.displayName, systemImage: visibility.symbolName).tag(visibility)
-                }
-            }
-            .pickerStyle(.segmented)
-            .accessibilityIdentifier(AccessibilityIdentifiers.createGroupVisibility)
+            GroupVisibilityChoice(visibility: $draft.visibility)
         } header: {
             Text(Copy.visibility)
         } footer: {
@@ -83,8 +77,8 @@ struct GroupDraftForm: View {
 
     private var permissionsSection: some View {
         Section {
-            Toggle(Copy.membersCanCreateEvents, isOn: $draft.membersCanCreateEvents)
-            Toggle(Copy.membersCanInvite, isOn: $draft.membersCanInvite)
+            GroupPermissionToggles(membersCanCreateEvents: $draft.membersCanCreateEvents,
+                                   membersCanInvite: $draft.membersCanInvite)
         } header: {
             Text(Copy.permissionsSection)
         }

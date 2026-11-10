@@ -4,7 +4,7 @@ Source: `lily/Core/UI/Components/`
 
 ## Overview
 
-The reusable SwiftUI pieces every feature screen is built from, 43 files with no subfolders: the screen scaffold and
+The reusable SwiftUI pieces every feature screen is built from, 44 files with no subfolders: the screen scaffold and
 its aurora (`ContentScreen`, `AuroraBackground`, `FilmGrainOverlay`), the button, chip, picker and field modifiers that give
 the app its one look, the cards, titles, rows, avatars, sport marks (`sportFill`)
 and tiles, the list and empty states, the filter dropdowns, the
@@ -107,10 +107,18 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/ConversationRow.swift:ConversationRow`, `AvatarRowDivider`]; `CaptionedTitle<Title>(lines: [String], title:)`
   (the title in `LilyTheme.Fonts.itemTitle` over one caption line per entry, the text column `ConversationRow` and `TileContent` share)
   [`lily/Core/UI/Components/CaptionedTitle.swift:CaptionedTitle`];
-  `SettingsLinkRow(title:, subtitle:, systemImage:, identifier:, action:)` (a whole-card `GlassCard` button with icon,
-  title, subtitle cut to `DesignTokens.Layout.settingsSubtitleLines` (2) and chevron, `.buttonStyle(.plain)`,
-  `.lilyHoverable()`; Profile's display name, "About you", Settings-link and contact rows and Settings' legal rows)
-  [`lily/Core/UI/Components/SettingsLinkRow.swift:SettingsLinkRow`];
+  `GlassNavigationRow<Value: Hashable, Label: View>` [`lily/Core/UI/Components/GlassNavigationRow.swift:GlassNavigationRow`],
+  the glass chevron row: the caller's label in a whole-card `GlassCard` with a trailing `.subheadline` `.secondary`
+  `DesignTokens.Symbols.chevron`, rendered as a `Button` (`init(identifier:, action:, label:)`, `Value == Never`) or a
+  `NavigationLink(value:)` (`init(value:, identifier:, label:)`), both `.buttonStyle(.plain)`, `.lilyHoverable()` and
+  carrying `identifier`; `GlassNavigationRowLabel(title:, subtitle: String? = nil, systemImage:)`
+  [`lily/Core/UI/Components/GlassNavigationRow.swift:GlassNavigationRowLabel`], the icon-title-subtitle content
+  (subtitle `.subheadline` `.secondary`, cut to `DesignTokens.Layout.settingsSubtitleLines` (2)), which the
+  `GlassNavigationRow(title:, subtitle: String? = nil, systemImage:, identifier:, action:)` and
+  `GlassNavigationRow(title:, subtitle: String? = nil, systemImage:, value:, identifier:)` conveniences fix `Label` to;
+  `SettingsLinkRow(title:, subtitle:, systemImage:, identifier:, action:)`, since 2026-11-10 a thin wrapper over the
+  action-based `GlassNavigationRow` convenience, rendering as before (Profile's display name, "About you",
+  Settings-link and contact rows and Settings' legal rows) [`lily/Core/UI/Components/SettingsLinkRow.swift:SettingsLinkRow`];
   `EntriesBar(fillRatio: Double, text: String, isFull: = false, isNearlyFull: = false, showsTrack: = true)` with
   `init(event: SportEvent)` (the track only while `event.playerLimit.hasCapacity`) and `init(tournament: Tournament)`
   [`lily/Core/UI/Components/EntriesBar.swift:EntriesBar`], whose track is a `CapacityMeter`;
@@ -170,8 +178,11 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/ButtonModifiers.swift:LilyTextButtonStyle.makeBody`]; `lilyToolbarTextButton` is a tint
   and not a style because a `.borderless` or custom style collapses an iOS 26 toolbar item to an icon-sized circle and
   the bar dims a disabled tinted label itself [`lily/Core/UI/Components/ButtonModifiers.swift:View.lilyToolbarTextButton`].
-  `ValidationHint` puts the accent on the glyph only, `ChevronLink` on nothing: the chevron is the link's cue
-  [`lily/Core/UI/Components/ValidationHint.swift:ValidationHint`, `lily/Core/UI/Components/ChevronLink.swift:ChevronLink`].
+  `ValidationHint` puts the accent on the glyph only, `ChevronLink` and `GlassNavigationRow` on nothing: the chevron is
+  the cue, and the row is `.plain` in both its shapes because a default-styled `NavigationLink` tints its label with the
+  accent (a bare one also has no glass surface or full-row tap target)
+  [`lily/Core/UI/Components/ValidationHint.swift:ValidationHint`, `lily/Core/UI/Components/ChevronLink.swift:ChevronLink`,
+  `lily/Core/UI/Components/GlassNavigationRow.swift:GlassNavigationRow`].
   `BusyButton` is
   `.disabled(action == nil || isBusy)` and unstyled [`lily/Core/UI/Components/BusyButton.swift:BusyButton`];
   `DraftSubmitButton` is `.disabled(!isEnabled)`, shows a small `ProgressView` labelled `title` while submitting and is
@@ -258,8 +269,9 @@ use the generated `Color.lily*` asset symbols.
   `PlaceholderTextView.init` adds the placeholder label and a `NotificationCenter` observer for
   `UITextView.textDidChangeNotification` (object `self`, no explicit `removeObserver`); `takeFocus()` calls
   `becomeFirstResponder()` [`lily/Core/UI/Components/GrowingTextView.swift:GrowingTextView.Coordinator`, `PlaceholderTextView`].
-- Navigation and bindings: `TileCarousel`, `TileLink`, `ChevronLink` and (through it) `OwnerTitleBlock` push through
-  `NavigationLink(value:)`;
+- Navigation and bindings: `TileCarousel`, `TileLink`, `ChevronLink` and (through it) `OwnerTitleBlock`, and
+  `GlassNavigationRow(value:identifier:label:)` push through `NavigationLink(value:)`; `GlassNavigationRow`'s action
+  init, and `SettingsLinkRow` through it, call the caller's closure;
   `FilterDropdownButton` reports `onPresentedChange?(isPresented)` on every change (the events filter button reports
   its sheet sessions itself); `TypeFilterPanel` writes the
   `EventType?` binding [`lily/Core/UI/Components/TileCarousel.swift:TileLink`,

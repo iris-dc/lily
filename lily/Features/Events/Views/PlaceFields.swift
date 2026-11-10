@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The name field and the map row of every form that asks for a spot (event, group, tournament, match schedule).
-/// No `Section` of its own: the forms keep their header and footer.
+/// The name row is `PlaceNameField` without its suggestion machinery; a form that offers suggestions (the event
+/// form) composes the parts itself. No `Section` of its own: the forms keep their header and footer.
 struct PlaceFields<Field: Hashable>: View {
     @Binding var name: String
     @Binding var coordinate: Coordinate?
@@ -35,14 +36,14 @@ struct PlaceFields<Field: Hashable>: View {
 
     @ViewBuilder
     private var nameField: some View {
-        let field = TextField(placeholder, text: $name)
-            .textInputAutocapitalization(.words)
-            .submitLabel(.done)
-            .accessibilityIdentifier(nameIdentifier)
         if let focus, let focusValue {
-            field.focused(focus, equals: focusValue)
+            PlaceNameField(name: $name,
+                           placeholder: placeholder,
+                           identifier: nameIdentifier,
+                           focus: focus,
+                           equals: focusValue)
         } else {
-            field
+            PlaceNameField<Never>(name: $name, placeholder: placeholder, identifier: nameIdentifier)
         }
     }
 }

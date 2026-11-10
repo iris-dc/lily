@@ -8,7 +8,8 @@ The SwiftUI screens and components of the Events feature: the Explore screen (`E
 extension), the event detail, the shared create/edit form and its sheets, the filter button and sheet, the events
 map and the location picker, and the cards and rows other features reuse (`EventCard`, `EventCardList`,
 `EventPreviewCard`, `EventMapCardList`,
-`EventFactsCard`, `EventLocationMap`, `ParticipantRow`, `PlaceFields`, `PlacePickerRow`, `PriceAmountField`,
+`EventFactsCard`, `EventLocationMap`, `ParticipantRow`, `PlaceFields`, `PlaceNameField`, `PlaceSuggestionRows`,
+`HostingGroupRow`, `PlacePickerRow`, `PriceAmountField`,
 `SkillLevelPicker`). Views
 draw what the [ViewModels](../ViewModels/EGM.md) decide and call back into them; copy comes from `AppBranding`,
 sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decisions from the
@@ -29,26 +30,56 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `Tombstone.symbol` as `OwnerTitleBlock`'s `subtitleMark` for a deleted host; the view model's `hostProfile` is nil
   then, so the line is plain, never a link.
 - `EventDraftForm<Model: EventDraftEditing>` (`lily/Features/Events/Views/EventDraftForm.swift`):
-  `@Bindable var viewModel: Model`; a `Form` with game, where, players and details sections.
+  `@Bindable var viewModel: Model`; a `Form` with game, where, players and details sections, whose contents are
+  standalone views the sections recompose (2026-11-10, creation-wizard slice 1):
+  `HostingGroupRow(lockedGroup:showsNoEligibleGroups:eligibleGroups:selection:)`
+  (`lily/Features/Events/Views/HostingGroupRow.swift:HostingGroupRow`, the one group row of the event and tournament
+  forms: a read-only `LabeledContent` for a locked group or no eligible group, else a `lilyMenuPicker()` `Picker`
+  over the eligible groups, every shape under `AccessibilityIdentifiers.createGroup`),
+  `EventPlayersFields<Model: EventDraftEditing>` (`EventPlayersFields.swift`: the segmented `PlayerLimit` picker
+  `createPlayerLimit` and the capacity `Stepper` `createCapacity`, shown only while `draft.playerLimit.hasCapacity`,
+  over `viewModel.capacityRange`) and `EventDetailsFields<Model: EventDraftEditing>` (`EventDetailsFields.swift`: the
+  description and looking-for fields, `SkillLevelPicker` under `lilyMenuPicker()` and the price row over
+  `PriceAmountField`); headers and first-issue footers stay in the form. The form also carries a belt for the
+  extracted suggestion machinery: `.onChange(of: focusedField)` on the `Form` itself clears `suggestions` whenever
+  the focused field is not `.locationName` — a `Form` culls off-viewport rows, so `PlaceNameField`'s row-level clear
+  is not mounted then; the belt is idempotent with it. A still-focused name row scrolled off-viewport and back
+  restarts `.task(id: name)` with an unchanged name (one duplicate geocoder search per remount), accepted as a
+  bounded cost (`docs/notes/events.md`, 2026-11-10).
 - `EventDraftSheet<Model: EventDraftEditing>` (`lily/Features/Events/Views/EventDraftSheet.swift`): `viewModel`,
   `title`, `submitTitle`, `errorCenter`; wraps Core's `DraftSheet` around `EventDraftForm`. `CreateEventSheet`
   (`CreateEventSheet.swift`: `CreateEventViewModel`, `ErrorCenter`) and `EditEventSheet` (`EditEventSheet.swift`:
   `EditEventViewModel`, `ErrorCenter`) are its two titled uses.
 - `CreateMenuButton` (`lily/Features/Events/Views/CreateMenuButton.swift`): `onCreateGame`, `onCreateGroup`,
   `onCreateTournament: () -> Void = {}`; the floating "+".
-- `EventDraftForm+Place.swift` (2026-11-06): the Where section, split out for the form's file limit; the stored state
-  (`suggestions`, `focusedField`) stays in `EventDraftForm.swift`. `pickedCoordinate` is the map row's binding, its
-  setter `viewModel.draft.pickSpot($0)` (a non-nil spot becomes the user's: `spotPickedOnMap`, `suggestedName = nil`);
-  `suggestionRows` are the geocoder's places for the typed name (titles in `Color.primary`, the glyph on the button's
-  accent tint; the rows hold semantic styles only, since a generated asset colour stored in them crashed the list
-  diff, see `docs/notes/events.md` 2026-11-06; identifiers `AccessibilityIdentifiers.createPlaceSuggestion(index)`;
-  the `ForEach` keys by `PlaceSuggestion.id`, which includes the coordinate), a row's action
+- `EventDraftForm+Place.swift` (2026-11-06; recomposed 2026-11-10 from the extracted place parts, slice 1 of the
+  creation-wizard plan): the Where section, split out for the form's file limit; the stored state (`suggestions`,
+  `focusedField`) stays in `EventDraftForm.swift`. `whereSection` composes, in the pixel-pinned pre-extraction order,
+  `PlaceNameField` (the suggesting init, wired `focus: $focusedField, equals: .locationName`,
+  `query: { viewModel.draft.placeSuggestionQuery }`, `search: { await viewModel.placeSuggestions(for: $0) }`),
+  `PlacePickerRow` under `AccessibilityIdentifiers.createPickOnMap`, then `suggestionRows`. `pickedCoordinate` is the
+  map row's binding, its setter `viewModel.draft.pickSpot($0)` (a non-nil spot becomes the user's: `spotPickedOnMap`,
+  `suggestedName = nil`); `suggestionRows` is `PlaceSuggestionRows(suggestions:pick:)`, the pick
   `viewModel.draft.apply(suggestion)` (name, spot and `suggestedName` at once) then clearing the rows and the focus.
-  The form's debounced `.task(id: locationName)` (`AppConfig.Events.placeSuggestionDebounce`, 300 ms) asks only while
-  `focusedField == .locationName` and `draft.placeSuggestionQuery` is non-nil, through
-  `viewModel.placeSuggestions(for:)`; after the await it drops the answer unless the task is live, the field is still
-  focused and `draft.placeSuggestionQuery` still equals the query asked (`MKLocalSearch` ignores cancellation, so a
-  late answer would otherwise put rows back under a left field or right after a pick).
+- `PlaceNameField<Field: Hashable>` (`lily/Features/Events/Views/PlaceNameField.swift:PlaceNameField`, extracted
+  2026-11-10 so the event form and the creation wizard's place pages compose the same parts in either order): the
+  place name `TextField` row. Plain inits `init(name:placeholder: = AppBranding.Events.Create.locationNamePlaceholder,
+  identifier:, focus: FocusState<Field?>.Binding, equals:)` and, `where Field == Never`, the same without focus (the
+  name row inside `PlaceFields`); the suggesting inits (both focus shapes) add `suggestions: Binding<[PlaceSuggestion]>`,
+  `query: () -> String?` and `search: (String) async -> [PlaceSuggestion]` and own the machinery: a debounced
+  `.task(id: name)` (`AppConfig.Events.placeSuggestionDebounce`, 300 ms) asks only while the field is focused and
+  `query()` is non-nil (clearing the rows otherwise), and after the await drops the answer unless the task is live,
+  the field is still focused and `query()` still equals the query asked (`MKLocalSearch` ignores cancellation, so a
+  late answer would otherwise put rows back under a left field or right after a pick); an `onChange` of the focus
+  clears the rows when the field is left. Focus crosses views only as a `FocusState<Field?>.Binding` plus `equals:`
+  (never a plain `Binding`); given none the field owns a private `@FocusState`. The suggestions array is the
+  composing view's state, because the rows may render anywhere relative to the field.
+- `PlaceSuggestionRows(suggestions: [PlaceSuggestion], pick: (PlaceSuggestion) -> Void)` (same file): the geocoder's
+  places for the typed name, identical wherever a caller puts them (titles in `Color.primary`, the glyph on the
+  button's accent tint; the rows hold semantic styles only, since a generated asset colour stored in them crashed the
+  list diff, see `docs/notes/events.md` 2026-11-06; identifiers `AccessibilityIdentifiers.createPlaceSuggestion(index)`;
+  the `ForEach` keys by `PlaceSuggestion.id`, which includes the coordinate). What a pick does stays with the caller,
+  who owns the suggestions and the focus.
 - `EventFilterButton` (`lily/Features/Events/Views/EventFilterButton.swift`): `viewModel: EventListViewModel`; a
   toolbar button presenting `EventFilterSheet` (`EventFilterSheet.swift`: `viewModel`, `onDone`) as a `lilyFormSheet()`
   (full screen on the iPhone, like the create forms; a dropdown popover before 2026-11-05), the filled/outline glyph and
@@ -82,7 +113,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `init(coordinate: Binding<Coordinate?>)`; a map under a fixed pin.
 - `PlaceFields<Field: Hashable>` (`lily/Features/Events/Views/PlaceFields.swift`): `init(name:coordinate:
   placeholder: = AppBranding.Events.Create.locationNamePlaceholder, nameIdentifier:pickerIdentifier:
-  focus: FocusState<Field?>.Binding, equals:)`, and `where Field == Never` the same without focus.
+  focus: FocusState<Field?>.Binding, equals:)`, and `where Field == Never` the same without focus; the name row is
+  `PlaceNameField` without its suggestion machinery (recomposed 2026-11-10, zero visual change).
   `PlacePickerRow(coordinate:)` (`PlacePickerRow.swift`) is the `NavigationLink` to the picker.
 - Cards and rows: `EventCard(event:distance:)` (`EventCard.swift`), `EventCardList(events:distance:
   horizontalPadding: = DesignTokens.Layout.screenMargin, singleColumn: = false)` (`EventCardList.swift`),
@@ -133,12 +165,12 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `.coordinateMissing`, players `.capacityOutOfRange` / `.capacityBelowParticipants`, details
   `.descriptionTooLong` / `.lookingForTooLong` / `.priceUnreadable` / `.priceOutOfRange`. The date picker is
   bounded below by `viewModel.earliestStart`; the capacity `Stepper` appears only when
-  `draft.playerLimit.hasCapacity`, over `viewModel.capacityRange`; the group row shows when `showsGroupRow` as the
-  read-only `lockedGroup`, read-only "No group" when `explainsNoEligibleGroups`, else a `Picker` over
-  `eligibleGroups` styled by `lilyMenuPicker()` (value and chevron in `.secondary`, not the form's accent tint), and
-  the details section's `SkillLevelPicker` (a default-styled `Picker` that a `Form` draws as a menu) is styled by
-  `lilyMenuPicker()` the same way; the title's submit moves focus to the location name; the price is typed as
-  `draft.priceText` through `PriceAmountField`.
+  `draft.playerLimit.hasCapacity`, over `viewModel.capacityRange` (both in `EventPlayersFields`); the group row shows
+  when `showsGroupRow`, rendered by the shared `HostingGroupRow` (the read-only `lockedGroup`, read-only "No group"
+  when `explainsNoEligibleGroups`, else a `Picker` over `eligibleGroups` styled by `lilyMenuPicker()`, value and
+  chevron in `.secondary`, not the form's accent tint), and `EventDetailsFields`' `SkillLevelPicker` (a
+  default-styled `Picker` that a `Form` draws as a menu) is styled by `lilyMenuPicker()` the same way; the title's
+  submit moves focus to the location name; the price is typed as `draft.priceText` through `PriceAmountField`.
 - `PriceAmountField` (`lily/Features/Events/Views/PriceAmountField.swift`): `init(text: Binding<String>, placeholder:,
   currencyCode:, label:, identifier:, currencyIdentifier:, focus: FocusState<Bool>.Binding? = nil)`; an `HStack` of a
   trailing `.decimalPad` `TextField` at `DesignTokens.Layout.priceFieldWidth` (focused through `focus` when given,

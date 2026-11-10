@@ -116,8 +116,9 @@ lily/
                  TileGrid on a regular width), CardHeader (the chips-and-time header of the event and tournament cards), OwnerTitleBlock
                  (title, host or organiser line and group line of the two details), ChevronLink (secondary label + .caption2 chevron, the linked line OwnerTitleBlock and HostedInLine draw; 2026-11-01), ValidationHint (accent glyph hidden from accessibility + secondary words, the form footers' hints; 2026-11-01), ListSegment (a list segment's loading / empty / failed
                  / content over ListState), VisibilityChip, DraftSheet (the one sheet around every create and edit form: Cancel, submit,
-                 form sizing, own popup) + DraftSubmitButton + CaptionedControl (a caption over a control), SettingsLinkRow
-                 (a glass link card: icon, title, subtitle, chevron; Profile's display name and contact rows share it; 2026-10-31),
+                 form sizing, own popup) + DraftSubmitButton + CaptionedControl (a caption over a control), GlassNavigationRow + GlassNavigationRowLabel (the glass
+                 chevron row with a full-row tap target, an action Button or a NavigationLink(value:); 2026-11-10) and SettingsLinkRow
+                 (a thin wrapper over its action shape: icon, title, subtitle, chevron; Profile's display name and contact rows share it; 2026-10-31),
                  FilterDropdown (FilterDropdownButton + DropdownPanel, the dropdown scaffold of the Discover type filters; Explore's events filter is a form sheet since 2026-11-05), ...), Interfaces
                  (DraftSubmitting: what DraftSheet reads from a form's view model), Layout (LayoutMode, MotionPreference (full or reduced, resolved once from Reduce Motion and read as `\.motion`; 2026-11-01), ReadableColumn, AdaptiveCardGrid,
                  TileGrid, FormSheet, UsableWidth, FlowArrangement (the pure wrapping arithmetic behind FlowLayout), Binding+IsPresent
@@ -155,8 +156,12 @@ lily/
                  selected map stack's scrolling cards, in one glass panel with its header for several, and the "+N more" pill;
                  2026-11-06), filter button and sheet (EventFilterSheet, the full-screen form, 2026-11-05; over SkillLevelPicker, the one level picker), create button, the Create/Edit sheets (thin wrappers over
                  EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm, whose +Place file holds the Where
-                 section with the geocoder's suggestions), PlaceFields (the
-                 place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms), PriceAmountField (the
+                 section and whose section contents are standalone views it recomposes: HostingGroupRow (the one group row of the
+                 event and tournament forms), EventPlayersFields and EventDetailsFields (2026-11-10)), PlaceNameField (the place name
+                 row, owning the debounced geocoder machinery when given the suggestion seam) + PlaceSuggestionRows (the suggestion
+                 rows a caller places freely; both 2026-11-10), PlaceFields (the
+                 place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms, its name row a
+                 PlaceNameField without suggestions), PriceAmountField (the
                  one decimal-pad price field of the filter sheet's cap and the form's price), location picker, EventLocationMap (the detail's pinned
                  spot, 2026-11-05)), Services (EventOpener: fetch a game by id and push its detail, shared
                  by the inbox's reminder card and a tapped notification; PlaceResolver: fills the missing half of a draft's
@@ -195,7 +200,9 @@ lily/
                  GroupRow (with GroupRowContent, the row from its fields), GroupCard, GroupBadge,
                  GroupDetailView with GroupHeader, HostedInLine (the "Hosted in" line of the event and tournament title blocks),
                  GroupActionRow, GroupDetailMenu, GroupEventsSegment, MembersList, MemberRow, GroupLoaderView, the Create/Edit sheets
-                 (thin wrappers over GroupDraftSheet over the shared DraftSheet around GroupDraftForm), InvitePeopleSheet over
+                 (thin wrappers over GroupDraftSheet over the shared DraftSheet around GroupDraftForm, whose visibility and
+                 permissions section contents are the standalone GroupVisibilityChoice (title and identifier parameterized, shared
+                 with the tournament form) and GroupPermissionToggles; 2026-11-10), InvitePeopleSheet over
                  InviteCandidateRow, ReportSheet (a reason, a comment, Send, thanks; a group, a tournament or a message), GroupDestinations)
     Chat/        Interfaces (ChatRepository, ChatHistoryCache, AttachmentUploader, AttachmentCache, MediaPreparer, GalleryItem, FrameClock), Models (ChatMessage,
                  MessageKind (text, event_created, the four tournament notes; an unknown kind decodes as `unknown(name)` and the
@@ -267,7 +274,10 @@ lily/
                  GroupTournamentsSegment, TournamentDetailView with TournamentHeader + TournamentFacts, TournamentEntriesSegment +
                  EntryRow, TournamentResultsSegment over BracketView, StandingsTable and MatchList (all drawing MatchCell), MatchSheet
                  + MatchScheduleView (the organiser's time and place), TournamentParticipationControl + TournamentMenu, TeamNameSheet,
-                 the Create/Edit sheets over TournamentDraftSheet and TournamentDraftForm (+ Schedule))
+                 the Create/Edit sheets over TournamentDraftSheet and TournamentDraftForm (+ Schedule), whose sections recompose
+                 the standalone TournamentBasicsControls, TournamentScheduleFields, TournamentEntriesFields and
+                 TournamentWhoMayJoinControls (its group row and visibility picker the shared HostingGroupRow and
+                 GroupVisibilityChoice; 2026-11-10))
     Inbox/       Models (InboxItem with InboxItemKind, InviteStatus, InvitePayload and TournamentInvitePayload (both over the shared
                  InviteAnswer), ReminderPayload, MatchReminderPayload, DeletionNoticePayloads (EventCancelledPayload,
                  GroupOwnershipTransferredPayload) and the captions; InboxPage; InviteAcceptance (a group or a
@@ -314,3 +324,10 @@ Pass of 2026-11-02 (deep-review finding L008): the poll and pin files of 2026-10
 Pre-merge review of 2026-11-06: the Events Views entry now names EventFilterSheet instead of "filter button and panel", and
 the place tests added by the review fixes (CreateEventPlaceTests, EditEventPlaceTests, EventDraftPlaceTests,
 PlaceSuggestionTests, PlaceMatchPolicyTests) are listed under lilyTests.
+
+Slice 1 of the creation-wizard plan (2026-11-10): the create forms' section contents became standalone views the forms
+recompose (GlassNavigationRow under Core/UI/Components; PlaceNameField, PlaceSuggestionRows, HostingGroupRow,
+EventPlayersFields, EventDetailsFields under Events; GroupVisibilityChoice, GroupPermissionToggles under Groups;
+TournamentBasicsControls, TournamentScheduleFields, TournamentEntriesFields, TournamentWhoMayJoinControls under
+Tournaments), each added to its line above; the slice review deduplicated the tournament form's group row and
+visibility picker into the shared HostingGroupRow and GroupVisibilityChoice.

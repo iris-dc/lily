@@ -182,3 +182,8 @@ the asset catalog.
   the relocation contract, same date). The privacy screen lost its `.secondary` date line and `.footnote` footer:
   the owner removed both from the reading screen; the served pages keep theirs. Shots (terms in en and ru, privacy in en; top and
   scrolled): `reviews/2026-11-07-profile-lifecycle-brainstorm/corrections2-shots/`.
+- **`GlassNavigationRow` is the glass chevron row (2026-11-10, creation-wizard slice 1).** Extracted from
+  `SettingsLinkRow` (now a thin wrapper over its action shape) into `Core/UI/Components`: the caller's label in a
+  whole-card `GlassCard`, a trailing `.subheadline` `.secondary` chevron as the cue, `.plain` in both its shapes (an
+  action `Button`, or `NavigationLink(value:)` for the wizard's pushes) because a default-styled `NavigationLink`
+  tints its label with the accent; rendering unchanged on the Profile and Settings rows.

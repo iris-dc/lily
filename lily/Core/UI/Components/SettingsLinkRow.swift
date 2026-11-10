@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// A settings link as one glass card: an icon, the title, a line on what it is for and a chevron, the whole card the
-/// button. Profile's display name, "About you" and contact rows share it; a subtitle longer than its lines (the bio) is cut.
+/// button. Profile's display name, "About you" and contact rows share it; a subtitle longer than its lines (the bio) is
+/// cut. A thin wrapper over `GlassNavigationRow`, which the creation wizard shares.
 struct SettingsLinkRow: View {
     let title: String
     let subtitle: String
@@ -10,31 +11,10 @@ struct SettingsLinkRow: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            GlassCard {
-                HStack(spacing: DesignTokens.Spacing.md) {
-                    Label {
-                        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-                            Text(title)
-                            Text(subtitle)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(DesignTokens.Layout.settingsSubtitleLines)
-                                // Inside the label a long subtitle is cut on one line unless told it may grow downwards.
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    } icon: {
-                        Image(systemName: systemImage)
-                    }
-                    Spacer()
-                    Image(systemName: DesignTokens.Symbols.chevron)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .lilyHoverable()
-        .accessibilityIdentifier(identifier)
+        GlassNavigationRow(title: title,
+                           subtitle: subtitle,
+                           systemImage: systemImage,
+                           identifier: identifier,
+                           action: action)
     }
 }

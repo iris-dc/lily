@@ -201,3 +201,14 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   identity, so `EventLocationMap` keys the map by its coordinate (`.id`) to follow an edit that moves the spot (the
   detail stays on screen through `EventDetailViewModel.accept`); the card is one accessible button (the
   `.accessibilityElement(children: .contain)` wrapper removed, `.isButton` added).
+- **The create form's section contents are standalone views (2026-11-10, creation-wizard slice 1 and its review).**
+  `EventDraftForm`'s section contents extracted so the coming wizard pages recompose the same parts: `PlaceNameField`
+  (+ `PlaceSuggestionRows`, one file) owns the debounced suggestion machinery while the composing view keeps the
+  `suggestions` array and the focus, `PlaceFields` composes the plain name row, `EventPlayersFields` and
+  `EventDetailsFields` carry the players and details rows, and `HostingGroupRow` is the one group row of the event and
+  tournament forms (the slice review merged the tournament form's verbatim copy into it). Zero visual change; headers
+  and first-issue footers stay in the form. Two residues of moving the machinery onto the row, both from the review:
+  a `Form` culls off-viewport rows, so the form keeps a belt — `.onChange(of: focusedField)` on the `Form` itself
+  clears the suggestions when the field is left even while the name row is unmounted (idempotent with the row-level
+  clear) — and a still-focused name row scrolled off-viewport and back restarts `.task(id: name)` with an unchanged
+  name, one duplicate `MKLocalSearch` per remount, accepted as a bounded cost.

@@ -4,9 +4,10 @@ Source: `lily/Features/Groups/Views/`
 
 ## Overview
 
-Twenty-five SwiftUI files: the Discover screen with its card list, carousel and tiles; the group detail (header,
+Twenty-seven SwiftUI files: the Discover screen with its card list, carousel and tiles; the group detail (header,
 access-driven action row and toolbar menu, Events, Tournaments and Members segments, its sheets and one confirmation
-dialog); the shared create/edit draft form and sheet; the invite and report sheets; roster, group and conversation
+dialog); the shared create/edit draft form and sheet with its standalone visibility and permission section contents
+(extracted 2026-11-10 for the creation wizard's pages); the invite and report sheets; roster, group and conversation
 rows; and `groupDestinations`, the `View` modifier that registers every typed navigation destination a stack needs
 for groups. Views own or receive the view models of [ViewModels](../ViewModels/EGM.md) through `AppDependencies` and
 call them from `task`, `refreshable`, `onChange` and button actions; role gating comes from `GroupAccess` and
@@ -44,7 +45,14 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   [`lily/Features/Groups/Views/GroupDraftSheet.swift`:`GroupDraftSheet`]; `GroupDraftForm(draft: Binding<GroupDraft>,
   issues:, allowsVisibilityChoice:)` (identifiers `createGroupName`, `createGroupDescription`,
   `createGroupLocationName`, `createGroupPickOnMap`, `createGroupVisibility`)
-  [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`]; `CreateGroupSheet(viewModel:, errorCenter:)`
+  [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`]; `GroupVisibilityChoice(visibility:
+  Binding<GroupVisibility>, title: String = AppBranding.Groups.Create.visibility, identifier: String =
+  AccessibilityIdentifiers.createGroupVisibility)`, the segmented public/private picker (the defaults keep the group
+  form's call site unchanged; the tournament form passes its own title and `tournamentVisibility`, 2026-11-10)
+  [`lily/Features/Groups/Views/GroupVisibilityChoice.swift`:`GroupVisibilityChoice`], and
+  `GroupPermissionToggles(membersCanCreateEvents:, membersCanInvite:)`, the two member-permission toggles
+  [`lily/Features/Groups/Views/GroupPermissionToggles.swift`:`GroupPermissionToggles`] — the form's visibility and
+  permissions section contents, standalone since 2026-11-10; `CreateGroupSheet(viewModel:, errorCenter:)`
   and `EditGroupSheet(viewModel:, errorCenter:)` [`lily/Features/Groups/Views/CreateGroupSheet.swift`:`CreateGroupSheet`]
   [`lily/Features/Groups/Views/EditGroupSheet.swift`:`EditGroupSheet`].
 - `InvitePeopleSheet(viewModel:, errorCenter:)` (identifier `inviteSearch`; Done is `lilyToolbarTextButton()`) and
@@ -98,10 +106,11 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   `UserProfileView`, `isTournamentRoom` to `TournamentDetailView`; a `SportGroup` push is `.standalone`, a
   `GroupInfoDestination` push `.fromChat`; a nil `onTournamentChange` defaults to
   `dependencies.tournamentChanges.recordChange()` [`lily/Features/Groups/Views/GroupDestinations.swift`:`GroupDestinations`].
-- `GroupDraftForm` shows the visibility section only when `allowsVisibilityChoice` (create true, edit false); each
-  section's footer shows the first matching `GroupDraft.Issue` (name and description issues under the group section,
-  the three location issues under "where"); the form uses `readableColumn()`
-  [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`].
+- `GroupDraftForm` shows the visibility section only when `allowsVisibilityChoice` (create true, edit false); the
+  visibility and permissions section contents are `GroupVisibilityChoice` and `GroupPermissionToggles`, recomposed
+  with no visual change; each section's footer stays in the form and shows the first matching `GroupDraft.Issue`
+  (name and description issues under the group section, the three location issues under "where"); the form uses
+  `readableColumn()` [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`].
 - `DiscoverGroupList` shows a `ProgressView` while `isInitialLoad`, an `EmptyStateView` in a refreshable scroll when
   `nothingMatched`, else an `AdaptiveCardGrid`; `loadMore` fires only when the appearing card is the last and
   `canLoadMore`; `DiscoverGroupsView` roots in `ContentScreen` with an always-shown navigation-drawer search
