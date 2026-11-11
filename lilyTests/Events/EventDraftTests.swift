@@ -21,6 +21,7 @@ struct EventDraftTests {
         Breakage(issue: .titleMissing) { $0.title = " \n" },
         Breakage(issue: .titleTooLong) { $0.title = text(limits.titleMaxLength + 1) },
         Breakage(issue: .startsAtTooSoon) { $0.startsAt = EventDraft.earliestStart(now: now).addingTimeInterval(-1) },
+        Breakage(issue: .endsBeforeStart) { $0.endsAt = $0.startsAt },
         Breakage(issue: .placeMissing) { $0.locationName = ""; $0.coordinate = nil },
         Breakage(issue: .locationNameTooLong) { $0.locationName = text(limits.locationNameMaxLength + 1) },
         Breakage(issue: .capacityOutOfRange) { $0.capacity = limits.capacityRange.upperBound + 1 },
@@ -94,12 +95,14 @@ struct EventDraftTests {
         draft.lookingFor = "   "
         draft.skillLevel = .advanced
         draft.price = Decimal(string: "7.5")
+        draft.endsAt = draft.startsAt.addingTimeInterval(AppConfig.Events.Creation.proposedDuration)
         let spot = Coordinate(latitude: 48.8566, longitude: 2.3522)
 
         let event = draft.makeEvent(hostUserId: "u-1", hostName: "Jo", coordinate: spot)
 
         #expect(event.id == draft.clientId && event.title == "Sunset 5-a-side")
         #expect(event.type == draft.type && event.startsAt == draft.startsAt && event.capacity == draft.capacity)
+        #expect(event.endsAt == draft.endsAt, "the finish time rides through the mock's stored event")
         #expect(event.location == EventLocation(name: "Test Park", coordinate: spot))
         #expect(event.hostUserId == "u-1" && event.hostName == "Jo")
         #expect(event.participates && event.participantCount == 1)
@@ -161,6 +164,21 @@ struct EventDraftTests {
         #expect(draft.trimmedLookingFor?.count == Self.limits.lookingForMaxLength)
     }
 
+    /// The finish time is optional; a set one must lie strictly after the start, wherever the start moves.
+    @Test func aSetFinishMustLieAfterTheStart() {
+        var draft = Self.makeValidDraft()
+        #expect(draft.endsAt == nil && issues(of: draft).isEmpty, "no finish time is nothing to judge")
+
+        draft.endsAt = draft.startsAt.addingTimeInterval(1)
+        #expect(issues(of: draft).isEmpty)
+
+        draft.endsAt = draft.startsAt
+        #expect(issues(of: draft) == [.endsBeforeStart], "at the start is before it, not after")
+
+        draft.endsAt = draft.startsAt.addingTimeInterval(-1)
+        #expect(issues(of: draft) == [.endsBeforeStart])
+    }
+
     @Test func theStartMayBeExactlyTheLeadTimeAhead() {
         let earliest = EventDraft.earliestStart(now: Self.now)
         #expect(earliest == Self.now.addingTimeInterval(Self.limits.minimumLeadTime))
@@ -190,13 +208,14 @@ struct EventDraftTests {
     /// Issues come in the order the form shows its fields, so the first one is the one nearest the top.
     @Test func issuesFollowTheFormOrder() {
         var draft = EventDraft(startsAt: Self.now)
+        draft.endsAt = draft.startsAt.addingTimeInterval(-1)
         draft.capacity = Self.limits.capacityRange.lowerBound - 1
         draft.description = Self.text(Self.limits.descriptionMaxLength + 1)
         draft.lookingFor = Self.text(Self.limits.lookingForMaxLength + 1)
         draft.priceText = "10000000"
 
         #expect(issues(of: draft) == [
-            .titleMissing, .startsAtTooSoon, .placeMissing,
+            .titleMissing, .startsAtTooSoon, .endsBeforeStart, .placeMissing,
             .capacityOutOfRange, .descriptionTooLong, .lookingForTooLong, .priceOutOfRange,
         ])
     }

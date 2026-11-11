@@ -19,7 +19,8 @@ struct EventDetailsFields<Model: EventDraftEditing>: View {
     }
 
     /// Empty or zero means free. The draft holds the text and reads it as an amount on every change, so Create never
-    /// races a pending commit of the decimal pad, which has no return key.
+    /// races a pending commit of the decimal pad, which has no return key. The symbol is the inline currency menu,
+    /// as on the wizard's Details step, so a host edits the event's own currency here too.
     private var priceRow: some View {
         HStack(spacing: DesignTokens.Spacing.xs) {
             Text(Copy.price)
@@ -29,7 +30,8 @@ struct EventDetailsFields<Model: EventDraftEditing>: View {
                              currencyCode: viewModel.draft.currencyCode,
                              label: Copy.price,
                              identifier: AccessibilityIdentifiers.createPrice,
-                             currencyIdentifier: AccessibilityIdentifiers.createPriceCurrency)
+                             currencyIdentifier: AccessibilityIdentifiers.createPriceCurrency,
+                             currencySelection: $viewModel.draft.currencyCode)
         }
     }
 }

@@ -6,16 +6,12 @@ import Observation
 /// generic over all three; only the composition root names its parameters). Observation rides the conforming
 /// `@Observable` class, so views reading through the existential still track.
 protocol CreationWizardControlling: AnyObject, Observable {
-    /// The opening the policy decided: kinds offered, kind page shown or skipped, seed, flags, the eligible-groups fact.
-    var opening: CreationWizardPolicy.Opening { get }
     /// The entries pushed beyond the stack's root, in order; read-only here, the shell alone binds it.
     var path: [CreationStep] { get }
-    /// The entered kind's pages in walking order; empty before a kind is entered.
+    /// The entered kind's pages in walking order.
     var steps: [CreationStep] { get }
     var isSubmitting: Bool { get }
     var canSubmit: Bool { get }
-    /// Fixes the kind for this attempt (one-way) and makes its view model.
-    func enter(_ kind: CreationKind)
     /// Pushes the next step when the current page owns no live issue; refused otherwise.
     func advance(from step: CreationStep)
     /// Pops back to `step`.

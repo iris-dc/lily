@@ -94,7 +94,7 @@ nonisolated extension AppBranding {
         }
 
         enum Create {
-            /// The kind page's group card; the edit sheet titles with `editTitle`.
+            /// The "+" menu's group item; the edit sheet titles with `editTitle`.
             static var title: String { localized("New group") }
             static var editTitle: String { localized("Edit group") }
             static var submit: String { localized("Create group") }

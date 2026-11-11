@@ -53,7 +53,9 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   `mock-event-<index>`; start `now + 3 h + index * 7 h`; coordinates `Coordinate.aroundMockCenter(lat:lon:)`
   (`lily/Core/Location/Models/Coordinate+MockOffset.swift`: offsets as fractions of
   `AppConfig.Location.fixtureSpreadDegrees` around `AppConfig.Location.mockCenter`); prices in
-  `AppConfig.Currency.defaultCode`; two templates carry a group (`MockGroupFixtures.kickersID`, `padelID`). In
+  `AppConfig.Currency.defaultCode`; two templates carry a group (`MockGroupFixtures.kickersID`, `padelID`); two
+  carry `durationHours` (the Hills ride 3 h, Sunrise yoga 1 h), so `endsAt` reaches the mock world in both shapes
+  (2026-11-11). In
   `MockEventRepository.init` every fourth fixture starts joined (`joinedStride = 4`).
 - `MockEventRepository.events(in:near:)` ignores the position: `.upcoming` → `filter(\.isListed)` (a private group's
   game is never on Explore), `.joined` → `filter(\.participates)`, `.group(id)` → `group?.id == id`. With

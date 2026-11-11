@@ -47,7 +47,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   over the shared `DraftSheet` (identifiers `createGroupCancel`, `createGroupSubmit`)
   [`lily/Features/Groups/Views/GroupDraftSheet.swift`:`GroupDraftSheet`]; `GroupDraftForm(draft: Binding<GroupDraft>,
   issues:)` (identifiers `createGroupName`, `createGroupDescription`, `createGroupLocationName`,
-  `createGroupPickOnMap`)
+  `createGroupPickOnMap`; the description row wears the shared `OptionalMarker`, 2026-11-11 — the where section's
+  footer already says "Optional for a private group.")
   [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`], and
   `GroupPermissionToggles(membersCanCreateEvents:, membersCanInvite:)`, the two member-permission toggles
   [`lily/Features/Groups/Views/GroupPermissionToggles.swift`:`GroupPermissionToggles`] — the permissions section

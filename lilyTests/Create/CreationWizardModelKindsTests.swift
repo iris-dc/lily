@@ -9,13 +9,11 @@ struct CreationWizardModelKindsTests {
     private typealias Harness = CreationWizardHarness
     private static let group = EventGroupRef(id: "group-1", name: "Mitte Kickers", visibility: .private, isDeleted: false)
 
-    @Test func enteringGroupWalksItsOwnPages() {
-        let harness = Harness()
-
-        harness.model.enter(.group)
+    @Test func aSeededGroupWalksItsOwnPages() {
+        let harness = Harness(seed: CreationSeed(kind: .group))
 
         #expect(harness.model.kind == .group && harness.model.groupModel != nil && harness.model.eventModel == nil)
-        #expect(harness.model.path == [.group(.name)], "the kind page stays the root")
+        #expect(harness.model.path.isEmpty, "the first step is the stack root")
         #expect(harness.model.steps == [.group(.name), .group(.description), .group(.type), .group(.visibility),
                                         .group(.place), .group(.permissions)])
         #expect(harness.logger.count(in: .ui, mentioning: "begun", "group") == 1)

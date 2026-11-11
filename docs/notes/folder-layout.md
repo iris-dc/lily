@@ -116,7 +116,7 @@ lily/
                  TileGrid on a regular width), CardHeader (the chips-and-time header of the event and tournament cards), OwnerTitleBlock
                  (title, host or organiser line and group line of the two details), ChevronLink (secondary label + .caption2 chevron, the linked line OwnerTitleBlock and HostedInLine draw; 2026-11-01), ValidationHint (accent glyph hidden from accessibility + secondary words, the form footers' hints; 2026-11-01), ListSegment (a list segment's loading / empty / failed
                  / content over ListState), VisibilityChip, DraftSheet (the one sheet around every create and edit form: Cancel, submit,
-                 form sizing, own popup) + DraftSubmitButton + CaptionedControl (a caption over a control), GlassNavigationRow + GlassNavigationRowLabel (the glass
+                 form sizing, own popup) + DraftSubmitButton + CaptionedControl (a caption over a control) + OptionalMarker (the one-word optional-field tag; 2026-11-11), GlassNavigationRow + GlassNavigationRowLabel (the glass
                  chevron row with a full-row tap target, an action Button or a NavigationLink(value:); 2026-11-10) and SettingsLinkRow
                  (a thin wrapper over its action shape: icon, title, subtitle, chevron; Profile's display name and contact rows share it; 2026-10-31),
                  FilterDropdown (FilterDropdownButton + DropdownPanel, the dropdown scaffold of the Discover type filters; Explore's events filter is a form sheet since 2026-11-05), ...), Interfaces
@@ -155,10 +155,10 @@ lily/
                  ViewModels (list with its filter and freshness extensions, detail with who is in, create, edit), Views (cards, EventCardList (the
                  bare card list), list screen, map, detail with the host's Edit button, ParticipantRow, preview card, EventMapCardList (the
                  selected map stack's scrolling cards, in one glass panel with its header for several, and the "+N more" pill;
-                 2026-11-06), filter button and sheet (EventFilterSheet, the full-screen form, 2026-11-05; over SkillLevelPicker, the one level picker), CreateButton (the floating "+", one tap into the wizard since slice 3, 2026-11-11), the Edit sheet (a thin wrapper over
+                 2026-11-06), filter button and sheet (EventFilterSheet, the full-screen form, 2026-11-05; over SkillLevelPicker, the one level picker), CreateButton (the floating "+": a menu of the kinds CreationWizardPolicy offers, each opening the wizard seeded — back with the third design round 2026-11-11 — or a plain one-tap event button when only events are flagged on), the Edit sheet (a thin wrapper over
                  EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm, whose +Place file holds the Where
                  section and whose section contents are standalone views it recomposes: HostingGroupRow (the one group row of the
-                 event and tournament forms), EventPlayersFields and EventDetailsFields (2026-11-10)), PlaceNameField (the place name
+                 event and tournament forms), EventPlayersFields and EventDetailsFields (2026-11-10), EventFinishTimeControl (the optional finish-time control the wizard's When page shares, 2026-11-11)), PlaceNameField (the place name
                  row, owning the debounced geocoder machinery when given the suggestion seam) + PlaceSuggestionRows (the suggestion
                  rows a caller places freely; both 2026-11-10), PlaceFields (the
                  place name plus the PlacePickerRow of the event, group, tournament and match-schedule forms, its name row a
@@ -174,9 +174,10 @@ lily/
                  offersGroupChoice shared by the event and tournament walks), CreationIssue (the per-kind issue under one roof)),
                  Interfaces (CreationWizardControlling, what the pages read so each stays generic over its own kind alone),
                  State (CreationWizardModel (+Gating) + CreationWizardFactories + CreationDraft, the shell's observable state behind
-                 the chrome), Views (CreationWizardView (the NavigationStack shell), CreationKindPage, WizardStepScaffold (+
+                 the chrome), Views (CreationWizardView (the NavigationStack shell; the kind page left with the third design
+                 round, 2026-11-11 — every entry is seeded), WizardStepScaffold (+
                  WizardCancelItem and WizardIssueHint), WizardStepCopy (per-step titles, captions, submit copy and identifiers),
-                 WizardChoiceCard, WizardProgressBar, WizardEntrance), Views/Event, Views/Group and Views/Tournament (the event,
+                 WizardChoiceCard, WizardTypePicker (the searchable compact type grid, 2026-11-11), WizardProgressBar, WizardEntrance), Views/Event, Views/Group and Views/Tournament (the event,
                  group and tournament flows' 7 + 6 + 9 one-idea glass pages)
     Profile/     Guest and signed-in profile; Interfaces (ProfileRepository: GET and PUT /api/profile, the name or the bio;
                  ProfileFieldDraft, what the two editors' drafts share), remote and mock implementations, Models (Profile with

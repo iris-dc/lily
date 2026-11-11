@@ -4,7 +4,7 @@ Source: `lily/Core/UI/Components/`
 
 ## Overview
 
-The reusable SwiftUI pieces every feature screen is built from, 44 files with no subfolders: the screen scaffold and
+The reusable SwiftUI pieces every feature screen is built from, 45 files with no subfolders: the screen scaffold and
 its aurora (`ContentScreen`, `AuroraBackground`, `FilmGrainOverlay`), the button, chip, picker and field modifiers that give
 the app its one look, the cards, titles, rows, avatars, sport marks (`sportFill`)
 and tiles, the list and empty states, the filter dropdowns, the
@@ -90,6 +90,9 @@ use the generated `Color.lily*` asset symbols.
   (`ViewThatFits`: one row with `chips(true)`, else a `FlowLayout` with `chips(false)` over
   `Text(startsAt, format: .relative(presentation: .named))`); `CaptionedControl<Content>(_ title:, content:)`
   [`lily/Core/UI/Components/CaptionedControl.swift:CaptionedControl`];
+  `OptionalMarker()` [`lily/Core/UI/Components/OptionalMarker.swift:OptionalMarker`], the one-word
+  `AppBranding.Forms.optional` tag in `LilyTheme.Fonts.caption` and `.secondary` (never accent) that marks an
+  optional field in the creation wizard's pages and the edit forms (2026-11-11);
   `PlaceLine(name:, distance: String? = nil, font: Font = .subheadline)` [`lily/Core/UI/Components/PlaceLine.swift:PlaceLine`].
 - Marks and rows: `AvatarCircle(initials:, systemImage: String? = nil, size: CGFloat = DesignTokens.Layout.avatarSize, tint: Tint = .accent)`,
   a glyph-only `init(systemImage:, size:, tint:)`, `enum Tint { case accent, secondary,

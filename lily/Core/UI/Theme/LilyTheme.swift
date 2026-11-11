@@ -39,6 +39,9 @@ enum LilyTheme {
 
         /// The day alone, for what is past or far (a profile's shared history).
         static var date: Date.FormatStyle { Date.FormatStyle(date: .abbreviated, time: .omitted, locale: AppLocale.locale) }
+
+        /// The time alone, for a finish on the start's own day.
+        static var time: Date.FormatStyle { Date.FormatStyle(date: .omitted, time: .shortened, locale: AppLocale.locale) }
     }
 
     /// The one selected look for toggling controls (map pins, `ChoiceChip`): accent glass with a white label when on,

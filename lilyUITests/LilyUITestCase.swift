@@ -158,8 +158,8 @@ class LilyUITestCase: XCTestCase {
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
     }
 
-    /// Taps the floating "+" on Explore (AccessibilityIdentifiers.eventsCreate): one plain tap that opens the
-    /// creation wizard's kind page for a signed-in user and the sign-in sheet for a guest.
+    /// Taps the floating "+" on Explore (AccessibilityIdentifiers.eventsCreate): a debug build offers every kind, so
+    /// the tap opens the menu of "New ..." items, whoever is signed in; `tapCreateMenuItem(_:)` picks one by title.
     @MainActor
     func tapCreateButton() {
         let create = app.buttons["events-create"]

@@ -187,6 +187,22 @@ struct SportEventCodingTests {
         #expect(!json.contains(#""sport""#))
     }
 
+    /// The backend omits `endsAt` when the host set none, and a set one reads and writes as an ISO-8601 instant.
+    @Test func endsAtIsOptionalOnTheWireAndRoundTrips() throws {
+        let bare = try decoder.decode(SportEvent.self, from: Data(ContractSamples.event.utf8))
+        #expect(bare.endsAt == nil)
+        let bareJSON = try #require(String(bytes: APIJSONCoding.makeEncoder().encode(bare), encoding: .utf8))
+        #expect(!bareJSON.contains("endsAt"), "absent stays absent, never null")
+
+        let timed = ContractSamples.event.replacingOccurrences(
+            of: #""startsAt":"2026-09-13T17:00:00Z""#,
+            with: #""startsAt":"2026-09-13T17:00:00Z","endsAt":"2026-09-13T19:00:00Z""#)
+        let event = try decoder.decode(SportEvent.self, from: Data(timed.utf8))
+        #expect(event.endsAt == Date(timeIntervalSince1970: 1_789_326_000))
+        let json = try #require(String(bytes: APIJSONCoding.makeEncoder().encode(event), encoding: .utf8))
+        #expect(json.contains(#""endsAt":"2026-09-13T19:00:00Z""#))
+    }
+
     /// The backend omits `capacity` for a game without a limit, and the app omits it back.
     @Test func aMissingCapacityIsNoLimit() throws {
         let event = try decoder.decode(SportEvent.self, from: Data(ContractSamples.unlimitedEvent.utf8))

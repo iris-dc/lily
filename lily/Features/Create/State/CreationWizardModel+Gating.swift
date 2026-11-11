@@ -3,18 +3,17 @@ import Foundation
 /// The seams the chrome and the pages read (`CreationWizardControlling`): the walk, the per-step gating over
 /// `CreationSteps`, the hint copy and the active view model's request state.
 extension CreationWizardModel: CreationWizardControlling {
-    /// The entered kind's pages in walking order, derived from the opening alone (its flags, seed and
-    /// eligible-groups fact decide the hosting-group pages) so the walk is deterministic per attempt; empty before a
-    /// kind is entered.
-    var steps: [CreationStep] { kind.map { CreationSteps.steps(for: $0, opening: opening) } ?? [] }
+    /// The kind's pages in walking order, derived from the opening alone (its flags, seed and
+    /// eligible-groups fact decide the hosting-group pages) so the walk is deterministic per attempt.
+    var steps: [CreationStep] { CreationSteps.steps(for: kind, opening: opening) }
 
-    /// The draft on screen, for the shell to watch for edits; `.none` before a kind is entered.
+    /// The draft on screen, for the shell to watch for edits; the kind's view model is made at init, so this is
+    /// its draft (`.none` is only the map's formal fallback).
     var draft: CreationDraft {
         switch kind {
         case .event: eventModel.map { .event($0.draft) } ?? .none
         case .group: groupModel.map { .group($0.draft) } ?? .none
         case .tournament: tournamentModel.map { .tournament($0.draft) } ?? .none
-        case nil: .none
         }
     }
 
@@ -29,7 +28,6 @@ extension CreationWizardModel: CreationWizardControlling {
         case .event: eventModel
         case .group: groupModel
         case .tournament: tournamentModel
-        case nil: nil
         }
     }
 

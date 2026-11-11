@@ -18,46 +18,29 @@ struct CreationWizardPolicyTests {
         CreationWizardPolicy.opening(for: seed, flags: flags, hasEligibleGroups: true)
     }
 
-    @Test func thePlusWithEverythingOnOpensTheKindPageWithAllThreeKinds() {
-        let opening = Self.opening(for: .empty, flags: Self.everythingOn)
-        #expect(opening == Opening(kindsOffered: [.event, .group, .tournament],
-                                   showsKindPage: true,
-                                   seed: .empty,
-                                   flags: Self.everythingOn,
-                                   hasEligibleGroups: true))
+    /// The "+" menu's items, cell by cell: the kinds the flags leave, the event always among them. The Release cell
+    /// is the single-tap event button — one kind offered, so the menu collapses to one tap.
+    @Test func theMenuOffersExactlyTheKindsTheFlagsLeave() {
+        #expect(CreationWizardPolicy.kindsOffered(flags: Self.everythingOn) == [.event, .group, .tournament])
+        #expect(CreationWizardPolicy.kindsOffered(flags: Flags(groups: true, tournaments: false)) == [.event, .group])
+        #expect(CreationWizardPolicy.kindsOffered(flags: Flags(groups: false, tournaments: true)) == [.event, .tournament])
+        #expect(CreationWizardPolicy.kindsOffered(flags: Self.releaseFlags) == [.event])
     }
 
-    @Test func thePlusWithoutTournamentsOffersEventAndGroup() {
-        let opening = Self.opening(for: .empty, flags: Flags(groups: true, tournaments: false))
-        #expect(opening == Opening(kindsOffered: [.event, .group],
-                                   showsKindPage: true,
-                                   seed: .empty,
-                                   flags: Flags(groups: true, tournaments: false),
-                                   hasEligibleGroups: true))
-    }
-
-    @Test func thePlusWithoutGroupsOffersEventAndTournament() {
-        let opening = Self.opening(for: .empty, flags: Flags(groups: false, tournaments: true))
-        #expect(opening == Opening(kindsOffered: [.event, .tournament],
-                                   showsKindPage: true,
-                                   seed: .empty,
-                                   flags: Flags(groups: false, tournaments: true),
-                                   hasEligibleGroups: true))
-    }
-
-    @Test func theReleasePlusSkipsTheKindPageAndOpensTheEventFlow() {
-        let opening = Self.opening(for: .empty, flags: Self.releaseFlags)
-        #expect(opening == Opening(kindsOffered: [.event],
-                                   showsKindPage: false,
+    /// An empty seed (the single-tap Release "+") opens the event flow directly: the wizard always knows its kind,
+    /// so its first page is that kind's Name step (the kind page left with the third design round, 2026-11-11).
+    @Test(arguments: CreationWizardPolicyTests.allFlags)
+    func anEmptySeedNormalizesToTheEventFlow(flags: Flags) {
+        let opening = Self.opening(for: .empty, flags: flags)
+        #expect(opening == Opening(kindsOffered: CreationWizardPolicy.kindsOffered(flags: flags),
                                    seed: CreationSeed(kind: .event),
-                                   flags: Self.releaseFlags,
+                                   flags: flags,
                                    hasEligibleGroups: true))
     }
 
     @Test(arguments: CreationWizardPolicyTests.allFlags)
     func aSeededEventOpensTheEventFlowUnderAnyFlags(flags: Flags) {
         let opening = Self.opening(for: CreationSeed(kind: .event), flags: flags)
-        #expect(!opening.showsKindPage)
         #expect(opening.seed == CreationSeed(kind: .event))
         #expect(opening.kindsOffered == CreationWizardPolicy.kindsOffered(flags: flags))
     }
@@ -66,7 +49,6 @@ struct CreationWizardPolicyTests {
     func aSeededGroupOpensTheGroupFlowWhileGroupsAreOn(tournaments: Bool) {
         let opening = Self.opening(for: CreationSeed(kind: .group),
                                    flags: Flags(groups: true, tournaments: tournaments))
-        #expect(!opening.showsKindPage)
         #expect(opening.seed == CreationSeed(kind: .group))
     }
 
@@ -74,41 +56,32 @@ struct CreationWizardPolicyTests {
     func aSeededTournamentOpensTheTournamentFlowWhileTournamentsAreOn(groups: Bool) {
         let opening = Self.opening(for: CreationSeed(kind: .tournament),
                                    flags: Flags(groups: groups, tournaments: true))
-        #expect(!opening.showsKindPage)
         #expect(opening.seed == CreationSeed(kind: .tournament))
     }
 
-    @Test func aGameFromAGroupKeepsItsLockedGroupAndSkipsTheKindPage() {
+    @Test func aGameFromAGroupKeepsItsLockedGroup() {
         let seed = CreationSeed(kind: .event, lockedGroup: Self.group)
         let opening = Self.opening(for: seed, flags: Self.everythingOn)
         #expect(opening == Opening(kindsOffered: [.event, .group, .tournament],
-                                   showsKindPage: false,
                                    seed: seed,
                                    flags: Self.everythingOn,
                                    hasEligibleGroups: true))
     }
 
-    @Test func aTournamentFromAGroupKeepsItsLockedGroupAndSkipsTheKindPage() {
+    @Test func aTournamentFromAGroupKeepsItsLockedGroup() {
         let seed = CreationSeed(kind: .tournament, lockedGroup: Self.group)
         let opening = Self.opening(for: seed, flags: Self.everythingOn)
-        #expect(!opening.showsKindPage)
         #expect(opening.seed == seed)
     }
 
-    @Test func aSeededKindTheFlagsDoNotOfferFallsBackToTheKindPage() {
-        let opening = Self.opening(for: CreationSeed(kind: .tournament),
-                                   flags: Flags(groups: true, tournaments: false))
-        #expect(opening == Opening(kindsOffered: [.event, .group],
-                                   showsKindPage: true,
-                                   seed: .empty,
-                                   flags: Flags(groups: true, tournaments: false),
-                                   hasEligibleGroups: true))
-    }
+    /// A seeded kind the flags do not offer cannot open its flow; it falls back to the event, which always ships.
+    @Test func aSeededKindTheFlagsDoNotOfferFallsBackToTheEvent() {
+        let noTournaments = Self.opening(for: CreationSeed(kind: .tournament),
+                                         flags: Flags(groups: true, tournaments: false))
+        #expect(noTournaments.seed == CreationSeed(kind: .event))
 
-    @Test func aSeededKindTheFlagsDoNotOfferFallsBackToTheOnlyKindInRelease() {
-        let opening = Self.opening(for: CreationSeed(kind: .group), flags: Self.releaseFlags)
-        #expect(opening == Opening(kindsOffered: [.event],
-                                   showsKindPage: false,
+        let release = Self.opening(for: CreationSeed(kind: .group), flags: Self.releaseFlags)
+        #expect(release == Opening(kindsOffered: [.event],
                                    seed: CreationSeed(kind: .event),
                                    flags: Self.releaseFlags,
                                    hasEligibleGroups: true))

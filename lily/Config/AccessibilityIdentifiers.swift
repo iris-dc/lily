@@ -21,6 +21,10 @@ nonisolated enum AccessibilityIdentifiers {
     static let createTitle = "create-title"
     static let createLocationName = "create-location-name"
     static let createPickOnMap = "create-pick-on-map"
+    /// The optional finish time: the add affordance, the picker and its clear button.
+    static let createEndsAtAdd = "create-ends-at-add"
+    static let createEndsAt = "create-ends-at"
+    static let createEndsAtRemove = "create-ends-at-remove"
 
     /// One place suggestion under the create form's name field, by its position.
     static func createPlaceSuggestion(_ index: Int) -> String {

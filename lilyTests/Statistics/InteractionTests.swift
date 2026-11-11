@@ -55,19 +55,20 @@ struct InteractionTests {
 
     /// Laurel's `FilterSummaryDto.MAX_TYPES`: a change on one side must be repeated on the other.
     @Test func theTypeCapIsTheBackendsLiteral() {
-        #expect(AppConfig.Statistics.maxFilterTypes == 32)
+        #expect(AppConfig.Statistics.maxFilterTypes == 48)
     }
 
-    /// Selecting every type this build offers must never earn the 400 that drops the whole batch.
-    @Test func aFilterWithEveryTypeStillFitsTheBackendsCap() {
-        #expect(EventType.known.count <= AppConfig.Statistics.maxFilterTypes)
+    /// Selecting every type this build offers must never earn the 400 that drops the whole batch: the backend's
+    /// cap rose to 48 with the 14 new types, so the whole known list fits and goes out untruncated — and should it
+    /// ever outgrow the cap again, the summary truncates instead of failing the batch (the test below).
+    @Test func aFilterWithEveryTypeFitsTheBackendsCapWhole() {
+        #expect(EventType.known.count <= AppConfig.Statistics.maxFilterTypes, "the premise: the known list fits")
         var filter = EventFilter()
         filter.types = Set(EventType.known)
 
         let summary = FilterSummary(filter)
 
-        #expect(summary.types == EventType.known.map(\.wireName).sorted(), "every name, nothing dropped, in order")
-        #expect(summary.types.count <= AppConfig.Statistics.maxFilterTypes)
+        #expect(summary.types == EventType.known.map(\.wireName).sorted())
     }
 
     /// Only unknown names can be that many; the summary keeps the first names in order instead of failing the batch.

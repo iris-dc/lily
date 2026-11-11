@@ -20,9 +20,10 @@ to the edit form's.
   `nameTooShort`/`nameTooLong`.
 - `GroupDescriptionPage<Model>` (`GroupDescriptionPage.swift:GroupDescriptionPage`): the multiline description
   capsule (`create-group-description`, `lilyMultilineField`); the caption says what it is for and that it is
-  optional; owns `descriptionTooLong`.
-- `GroupTypePage<Model>` (`GroupTypePage.swift:GroupTypePage`): one `WizardChoiceCard` per `EventType.known` led by
-  the "Any type" card (`create-type-any`, `DesignTokens.Symbols.anyType`; the per-type cards reuse
+  optional, and the shared `OptionalMarker` sits under the field (2026-11-11); owns `descriptionTooLong`.
+- `GroupTypePage<Model>` (`GroupTypePage.swift:GroupTypePage`): the shared `WizardTypePicker` (the third design
+  round, 2026-11-11) — a search field (`create-type-search`) over the compact grid, led by the "Any type" card
+  (`create-type-any`, `DesignTokens.Symbols.anyType`; the per-type cards reuse
   `createEventType(_:)`); picking writes `draft.type` (nil for any) and auto-advances; re-entering shows the current
   choice. No issues by design.
 - `GroupVisibilityPage<Model>` (`GroupVisibilityPage.swift:GroupVisibilityPage`): one `WizardChoiceCard` per
@@ -35,7 +36,9 @@ to the edit form's.
   directly under the field (a pick applies the suggestion and clears the rows), then the pick-on-map
   `GlassNavigationRow` (`create-group-pick-on-map`, value `spotSet`/`spotNotSet`) pushing `LocationPickerView` as
   the path element `CreationStep.groupMap`. Owns `locationNameMissing`/`locationNameTooLong`/`coordinateMissing`,
-  conditional on the visibility choice; the caption states that rule (`groupPlaceCaption`, 2026-11-11).
+  conditional on the visibility choice; the caption states that rule (`groupPlaceCaption`, 2026-11-11). A private
+  draft also wears the shared `OptionalMarker` under the name field, so the marker renders exactly while the place
+  is optional.
 - `GroupPermissionsPage<Model>` (`GroupPermissionsPage.swift:GroupPermissionsPage`): the final step — the shared
   `GroupPermissionToggles` in one `GlassCard`, the caption naming what the toggles rule and the organisers'
   standing rights (`groupPermissionsCaption`, 2026-11-11); the scaffold's bottom bar carries the create button

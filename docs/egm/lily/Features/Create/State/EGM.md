@@ -5,7 +5,7 @@ Source: `lily/Features/Create/State/`
 ## Overview
 
 The wizard shell's observable state, one type: `CreationWizardModel` owns the opening the policy decided, the kind
-entered once per attempt, the lazily created view model of that kind, the navigation path of entered steps, the
+fixed at init by the normalized seed, the view model of that kind (made at init), the navigation path of entered steps, the
 user-edit flag behind the discard confirmation and the submit lock the chrome reads. It is generic over the three
 kind view-model types (`EventModel: EventDraftEditing`, `GroupModel: GroupDraftEditing`,
 `TournamentModel: TournamentDraftEditing`), so the shell stays statically typed and only the composition root
@@ -28,27 +28,29 @@ kind's view model; this type only routes its issues through `CreationSteps` and 
 - `CreationWizardModel<EventModel, GroupModel, TournamentModel>` (same file; the gating seams in
   `CreationWizardModel+Gating.swift`): `@Observable final class`;
   `init(opening: CreationWizardPolicy.Opening, factories: CreationWizardFactories<...>, logger: any Logging)`.
-  State: `opening`, `private(set) kind: CreationKind?`, `private(set) eventModel/groupModel/tournamentModel`
+  State: `opening`, `kind: CreationKind` (a `let`, fixed at init, 2026-11-11), `private(set) eventModel/groupModel/tournamentModel`
   (the entered kind's alone is non-nil), `path: [CreationStep]` (the entries pushed beyond the stack's root),
   `private(set) isDirty: Bool`.
   Derived: `steps: [CreationStep]` (through `CreationSteps.steps(for:opening:)`, so each walk — including whether
   the hosting-group pages exist — is fixed by the opening's flags, seed and eligible-groups fact, deterministic per
   attempt), `draft: CreationDraft`, `active: (any DraftSubmitting)?` (the entered kind's view model behind the
   shared request-state seam), `isSubmitting`, `canSubmit`, `isDone`.
-  Actions: `enter(_ kind:)`, `prepare() async`, `noteDraftChanged()`, `allowsNext(from:) -> Bool`,
+  Actions: `prepare() async`, `noteDraftChanged()`, `allowsNext(from:) -> Bool`,
   `firstBlockingIssue(on:) -> CreationIssue?`, `blockingMessage(on:) -> String?`,
   `blockedEarlierStep(before:) -> CreationStep?`, `advance(from:)`, `pop(to:)`, `submit() async`, `noteClosed()`.
 
 ## Invariants
 
-- The kind pick is one-way: `enter(_:)` drops a second call whatever kind it names, and only the entered kind's
+- The kind pick is one-way by construction (2026-11-11, the round-3 review: `enter(_:)` folded into `init`, `kind`
+  is a `let`), and only the entered kind's
   view model is ever made (exactly once, through the injected factory, passing `opening.seed.lockedGroup` to the
   event and tournament factories); `prepare()` forwards to the created model's `prepare()` once per attempt — a
   run whose task was cancelled mid-await re-arms (`hasPrepared` resets), so the next ask runs the kinds'
   idempotent prepares again (2026-11-11).
-- A seeded kind enters at `init`; entering from the kind page appends the kind's first step to `path` (the kind page
-  stays the root), while a flow whose opening skips the kind page keeps the first step as the root and never in
-  `path`. `pop(to:)` restores exactly that shape (`CreationWizardModel.pop(to:)`).
+- The opening's seed always carries a kind (the policy normalizes a missing one to the event), fixed at `init`
+  (the never-taken `.event` fallback is the optional seed's tax);
+  the kind's first step is the stack root and never in `path`, and `pop(to:)` restores exactly that shape
+  (`CreationWizardModel.pop(to:)`). (The kind-page root shape left with the third design round, 2026-11-11.)
 - Dirty is the user's edit, latched by `noteDraftChanged()` and never unlatched: the draft is compared against the
   pristine draft the factory made, with `prepare()`'s own write excluded by shape — a coordinate the user neither
   picked on the map (`spotPickedOnMap`) nor took from a suggestion (`suggestedName`) is read as if unchanged — so an
@@ -67,8 +69,8 @@ kind's view model; this type only routes its issues through `CreationSteps` and 
   idempotent create flow lives; `isDone` is the view model's. `noteClosed()` logs abandoned at most once and never
   after a create succeeded; the presenter calls it on the flow's real dismissal (Explore's and the group detail's
   `clearWizardAfterDismiss`), never on a width-class re-host.
-- Logging is `.ui`, ids and kinds only, never user text: "Creation wizard begun for <kind>" (info, on enter),
-  "Creation wizard submitted <kind>" (info), "Creation wizard abandoned (kind: <kind|none>)" (info),
+- Logging is `.ui`, ids and kinds only, never user text: "Creation wizard begun for <kind>" (info, at init),
+  "Creation wizard submitted <kind>" (info), "Creation wizard abandoned (kind: <kind>)" (info),
   "Creation wizard refused Next: <issue>" (debug).
 
 ## Side Effects
@@ -78,7 +80,7 @@ kind's view model; this type only routes its issues through `CreationSteps` and 
 
 ## Verification
 
-- Run: `./scripts/ci.sh unit` (`lilyTests/Create/CreationWizardModelTests.swift` — the one-way kind, the
+- Run: `./scripts/ci.sh unit` (`lilyTests/Create/CreationWizardModelTests.swift` — the init-fixed kind, the
   opening-decided event walk, lazy factory invocation and the locked-group pass-through, prepare once per entry, the
   dirty rule including an edit during a held prepare, the gating walk with the refused-Next debug line, the
   top-of-the-path advance guard, `pop(to:)` in both root shapes, the stale-earlier-issue final gate, the submit lock

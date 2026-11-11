@@ -34,24 +34,33 @@ nonisolated extension CreationStep {
         }
     }
 
-    /// The one short line under a step title whose purpose needs extra knowledge; the plain steps carry none.
+    /// The one short line under every step title (the owner's third design round, 2026-11-11); the map cases carry
+    /// none (the picker draws its own screen).
     var wizardCaption: String? {
         switch self {
+        case .event(.name): Copy.eventNameCaption
+        case .event(.type): Copy.typeCaption
+        case .event(.when): Copy.eventWhenCaption
         case .event(.group): Copy.eventGroupCaption
         case .event(.place): Copy.eventPlaceCaption
         case .event(.players): Copy.eventPlayersCaption
         case .event(.details): Copy.eventDetailsCaption
+        case .group(.name): Copy.groupNameCaption
         case .group(.description): Copy.groupDescriptionCaption
+        case .group(.type): Copy.groupTypeCaption
         case .group(.visibility): Copy.groupVisibilityCaption
         case .group(.place): Copy.groupPlaceCaption
         case .group(.permissions): Copy.groupPermissionsCaption
+        case .tournament(.name): Copy.tournamentNameCaption
+        case .tournament(.type): Copy.typeCaption
+        case .tournament(.format): Copy.tournamentFormatCaption
         case .tournament(.schedule): Copy.tournamentScheduleCaption
         case .tournament(.group): Copy.tournamentGroupCaption
         case .tournament(.place): Copy.tournamentPlaceCaption
         case .tournament(.entries): Copy.tournamentEntriesCaption
         case .tournament(.whoMayJoin): Copy.tournamentWhoCaption
         case .tournament(.details): Copy.tournamentDetailsCaption
-        case .event, .group, .tournament, .eventMap, .groupMap, .tournamentMap: nil
+        case .eventMap, .groupMap, .tournamentMap: nil
         }
     }
 

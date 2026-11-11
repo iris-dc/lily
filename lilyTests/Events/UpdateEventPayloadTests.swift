@@ -8,12 +8,13 @@ struct UpdateEventPayloadTests {
     private static let requiredKeys: Set<String> = [
         "title", "type", "startsAt", "location", "capacity", "allowsExtraParticipants",
     ]
-    private static let optionalKeys: Set<String> = ["description", "lookingFor", "skillLevel", "price"]
+    private static let optionalKeys: Set<String> = ["endsAt", "description", "lookingFor", "skillLevel", "price"]
 
     /// The id travels in the path and the group cannot change, so neither is in the body.
     @Test func encodesEveryEditableFieldAndNeitherTheIdNorTheGroup() throws {
         var draft = EventDraft.fixture(now: Self.now)
         draft.type = .tennis
+        draft.endsAt = draft.startsAt.addingTimeInterval(.hour)
         draft.capacity = 4
         draft.playerLimit = .minimum
         draft.description = "Bring both colours"
@@ -28,6 +29,7 @@ struct UpdateEventPayloadTests {
         #expect(json["title"] as? String == "Thursday five-a-side")
         #expect(json["type"] as? String == "tennis")
         #expect(json["startsAt"] as? String == "2027-01-16T08:00:00Z")
+        #expect(json["endsAt"] as? String == "2027-01-16T09:00:00Z")
         #expect(json["capacity"] as? Int == 4)
         #expect(json["allowsExtraParticipants"] as? Bool == true)
         #expect(json["skillLevel"] as? String == "intermediate")
@@ -47,6 +49,7 @@ struct UpdateEventPayloadTests {
 
         #expect(Set(try ContractSamples.jsonObject(of: payload).keys) == Self.requiredKeys)
         #expect(payload.description == nil && payload.lookingFor == nil && payload.price == nil)
+        #expect(payload.endsAt == nil, "no finish time is an absent key, which the backend reads as clearing it")
     }
 
     @Test func textsAreTrimmed() throws {

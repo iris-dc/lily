@@ -118,7 +118,8 @@ final class LilySmokeTests: LilyUITestCase {
         let tennis = app.buttons["filter-type-tennis"]
         XCTAssertTrue(tennis.waitForExistence(timeout: 5), "the filter panel should drop down")
         tennis.tap()
-        app.buttons["filter-free-only"].tap()
+        // The full type list pushes the price row below the fold, where it is not in the accessibility tree.
+        tapAfterScrolling(app.buttons["filter-free-only"])
         app.buttons["Done"].tap()
 
         XCTAssertTrue(app.maps.firstMatch.waitForExistence(timeout: 5), "the map stays whatever the criteria match")
@@ -152,44 +153,49 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)["Pickup at the Cage"].firstMatch.waitForExistence(timeout: 10))
     }
 
-    /// Creating needs an account: a guest's "+" goes straight to the sign-in sheet, never the wizard.
+    /// Creating needs an account: the "+" menu shows for a guest too, but picking an item opens the sign-in sheet,
+    /// never the wizard.
     @MainActor
     func testGuestPlusOpensSignIn() {
         relaunchAsGuest()
 
-        tapCreateButton()
+        tapCreateMenuItem("New event")
 
         XCTAssertTrue(app.buttons["Continue with Apple"].waitForExistence(timeout: 5), "a guest must be asked to sign in first")
-        XCTAssertFalse(app.navigationBars[Self.wizardKindTitle].exists, "the wizard must not open for a guest")
+        XCTAssertFalse(app.navigationBars["Name"].exists, "the wizard must not open for a guest")
     }
 
-    /// The guest's "+" offers no kind choice either: none of the kind page's cards shows, only sign-in.
+    /// The guest's "+" menu offers every kind, and each item substitutes sign-in: no kind opens its wizard for a guest.
     @MainActor
-    func testGuestPlusShowsNoKindCards() {
+    func testGuestPlusOffersEveryKindAndEachAsksToSignIn() {
         relaunchAsGuest()
 
         tapCreateButton()
+        XCTAssertTrue(app.buttons["New event"].waitForExistence(timeout: 5), "the menu offers the event item")
+        XCTAssertTrue(app.buttons["New tournament"].exists, "the menu offers the tournament item")
+        let group = app.buttons["New group"]
+        XCTAssertTrue(group.exists, "the menu offers the group item")
+        group.tap()
 
         XCTAssertTrue(app.buttons["Continue with Apple"].waitForExistence(timeout: 5), "a guest must be asked to sign in first")
-        XCTAssertFalse(app.buttons["create-kind-group"].exists, "no kind card shows for a guest")
-        XCTAssertFalse(app.navigationBars[Self.wizardKindTitle].exists, "the kind page must not open for a guest")
+        XCTAssertFalse(app.navigationBars["Name"].exists, "the group wizard must not open for a guest")
     }
 
-    /// The "+" opens the wizard on its kind page, whose Event card opens Name; the mock location fills the spot, so
-    /// the title and the place name walk it to the end. On the way the pick-on-map row must push the picker, and back
-    /// must keep the typed title (the plan's pinned wizard behaviours). The new game must show under Home without a
-    /// manual refresh, and its detail must know the caller hosts it. Nothing scrolls before the tab tap: a scrolled
-    /// list minimises the tab bar, and a minimised tab bar swallows tab taps.
+    /// The "+" menu's "New event" opens the wizard seeded, straight on Name; the mock location fills the spot, so
+    /// the title and the place name walk it to the end. On the way the When step's optional finish time must add and
+    /// remove, the pick-on-map row must push the picker, and back must keep the typed title (the plan's pinned wizard
+    /// behaviours). The new game must show under Home without a manual refresh, and its detail must know the caller
+    /// hosts it. Nothing scrolls before the tab tap: a scrolled list minimises the tab bar, and a minimised tab bar
+    /// swallows tab taps.
     @MainActor
     func testCreatingAGameShowsItOnHome() {
         tapSignInWithApple()
-        tapCreateButton()
-        pickCreationKind("create-kind-event")
+        tapCreateMenuItem("New event")
 
         let title = "Thursday five-a-side"
         waitForWizardStep("Name")
         enter(title, into: app.textFields["create-title"])
-        walkWizardNameToPlace()
+        walkWizardNameToPlace { self.assertFinishTimeAddsAndRemoves() }
         openWizardMapAndReturn()
         assertBackToNameKeeps(title)
         walkWizardNameToPlace()
@@ -223,5 +229,4 @@ final class LilySmokeTests: LilyUITestCase {
         tapWizardBack(from: "When", to: "Type")
         tapWizardBack(from: "Type", to: "Name")
         XCTAssertEqual(app.textFields["create-title"].value as? String, title, "back must preserve the typed title")
-    }
-}
+    }}

@@ -7,6 +7,8 @@ import Foundation
 nonisolated enum EventType: WireNamedKind {
     case football, basketball, tennis, padel, running, volleyball, cycling, climbing, yoga, swimming
     case tableTennis, badminton, martialArts, fitness, skiing, hiking, travel, esports, boardGames
+    case squash, golf, surfing, skateboarding, dance, boxing, rowing, sailing, chess, darts
+    case bowling, pickleball, handball, hockey
     case other
     /// A type this build does not know, kept by name.
     case unknown(String)
@@ -14,7 +16,9 @@ nonisolated enum EventType: WireNamedKind {
     /// The types this build offers in chips and pickers, Other last; a type a newer backend sends is never among them.
     static let known: [EventType] = [
         .football, .basketball, .tennis, .padel, .running, .volleyball, .cycling, .climbing, .yoga, .swimming,
-        .tableTennis, .badminton, .martialArts, .fitness, .skiing, .hiking, .travel, .esports, .boardGames, .other,
+        .tableTennis, .badminton, .martialArts, .fitness, .skiing, .hiking, .travel, .esports, .boardGames,
+        .squash, .golf, .surfing, .skateboarding, .dance, .boxing, .rowing, .sailing, .chess, .darts,
+        .bowling, .pickleball, .handball, .hockey, .other,
     ]
 
     /// The backend's lower-cased constant name; an unknown type's is the one it came with.
@@ -39,6 +43,20 @@ nonisolated enum EventType: WireNamedKind {
         case .travel: "travel"
         case .esports: "esports"
         case .boardGames: "board_games"
+        case .squash: "squash"
+        case .golf: "golf"
+        case .surfing: "surfing"
+        case .skateboarding: "skateboarding"
+        case .dance: "dance"
+        case .boxing: "boxing"
+        case .rowing: "rowing"
+        case .sailing: "sailing"
+        case .chess: "chess"
+        case .darts: "darts"
+        case .bowling: "bowling"
+        case .pickleball: "pickleball"
+        case .handball: "handball"
+        case .hockey: "hockey"
         case .other: "other"
         case .unknown(let name): name
         }
@@ -65,6 +83,20 @@ nonisolated enum EventType: WireNamedKind {
         case .travel: localized("Travel")
         case .esports: localized("Esports")
         case .boardGames: localized("Board games")
+        case .squash: localized("Squash")
+        case .golf: localized("Golf")
+        case .surfing: localized("Surfing")
+        case .skateboarding: localized("Skateboarding")
+        case .dance: localized("Dance")
+        case .boxing: localized("Boxing")
+        case .rowing: localized("Rowing")
+        case .sailing: localized("Sailing")
+        case .chess: localized("Chess")
+        case .darts: localized("Darts")
+        case .bowling: localized("Bowling")
+        case .pickleball: localized("Pickleball")
+        case .handball: localized("Handball")
+        case .hockey: localized("Hockey")
         case .other, .unknown: localized("Other")
         }
     }
@@ -90,6 +122,20 @@ nonisolated enum EventType: WireNamedKind {
         case .travel: "airplane"
         case .esports: "gamecontroller"
         case .boardGames: "dice"
+        case .squash: "figure.squash"
+        case .golf: "figure.golf"
+        case .surfing: "figure.surfing"
+        case .skateboarding: "skateboard"
+        case .dance: "figure.dance"
+        case .boxing: "figure.boxing"
+        case .rowing: "figure.rower"
+        case .sailing: "figure.sailing"
+        case .chess: "checkerboard.rectangle"
+        case .darts: "target"
+        case .bowling: "figure.bowling"
+        case .pickleball: "figure.pickleball"
+        case .handball: "figure.handball"
+        case .hockey: "figure.hockey"
         case .other, .unknown: "figure.mixed.cardio"
         }
     }

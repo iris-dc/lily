@@ -24,6 +24,8 @@ nonisolated enum MockEventFixtures {
         /// The group the game is hosted in; two fixtures carry one so the badge and "Hosted in" have data. The private
         /// group's game is off Explore, as on the backend, and reached through its group's Events segment.
         var group: EventGroupRef?
+        /// Hours from the start to the finish; most templates leave it out so both endsAt shapes are seen.
+        var durationHours: Double?
     }
 
     private static let templates: [Template] = [
@@ -107,7 +109,8 @@ nonisolated enum MockEventFixtures {
             host: "Sam",
             offset: (0.5, 1.0),
             description: "60 km with two proper climbs. Bring lights for the way back.",
-            skillLevel: .advanced
+            skillLevel: .advanced,
+            durationHours: 3
         ),
         Template(
             title: "Bouldering intro",
@@ -128,7 +131,8 @@ nonisolated enum MockEventFixtures {
             host: "Priya",
             offset: (-1.0, 0.1),
             description: "Mats on the grass, an hour of slow flow. Bring your own mat and a warm layer.",
-            skillLevel: .beginner
+            skillLevel: .beginner,
+            durationHours: 1
         ),
     ]
 
@@ -140,11 +144,13 @@ nonisolated enum MockEventFixtures {
         (0..<count).map { index in
             let template = templates[index % templates.count]
             let hoursAhead = firstStartHours + Double(index) * hoursBetweenEvents
+            let startsAt = now.addingTimeInterval(hoursAhead * .hour)
             return SportEvent(
                 id: "mock-event-\(index)",
                 title: template.title,
                 type: template.type,
-                startsAt: now.addingTimeInterval(hoursAhead * .hour),
+                startsAt: startsAt,
+                endsAt: template.durationHours.map { startsAt.addingTimeInterval($0 * .hour) },
                 location: EventLocation(name: template.location, coordinate: coordinate(for: template)),
                 capacity: template.capacity,
                 allowsExtraParticipants: template.allowsExtraParticipants,

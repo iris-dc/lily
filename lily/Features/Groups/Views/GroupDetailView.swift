@@ -109,7 +109,7 @@ struct GroupDetailView: View {
                 EditGroupSheet(viewModel: dependencies.makeEditGroupViewModel(for: group, onChange: viewModel.accept),
                                errorCenter: dependencies.errorCenter)
             case .createEvent, .createTournament:
-                // The wizard, seeded with the kind and this group locked (the kind page never shows here); on a
+                // The wizard, seeded with the kind and this group locked (the flow opens on its first step); on a
                 // regular width it is this form sheet, on compact the full-screen cover below claims it.
                 wizardContent.lilyFormSheet()
             case .signIn:

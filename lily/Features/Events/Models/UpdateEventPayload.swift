@@ -7,6 +7,8 @@ nonisolated struct UpdateEventPayload: Encodable, Equatable, Sendable {
     let title: String
     let type: EventType
     let startsAt: Date
+    /// Omitted when the host set no finish time, never sent as `null`; the backend reads absent as clearing it.
+    let endsAt: Date?
     let location: CreateEventPayload.Location
     /// Omitted for a game without a limit, which the backend reads as lifting one.
     let capacity: Int?
@@ -22,6 +24,7 @@ nonisolated struct UpdateEventPayload: Encodable, Equatable, Sendable {
         title = draft.trimmedTitle
         type = draft.type
         startsAt = draft.startsAt
+        endsAt = draft.endsAt
         location = CreateEventPayload.Location(name: draft.trimmedLocationName, coordinate: coordinate)
         capacity = draft.capacityIfLimited
         allowsExtraParticipants = draft.allowsExtraParticipants

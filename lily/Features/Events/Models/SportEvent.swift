@@ -8,6 +8,8 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     let title: String
     let type: EventType
     let startsAt: Date
+    /// The optional finish time; absent when the host set none (the wire omits it, never `null`).
+    let endsAt: Date?
     let location: EventLocation
     /// The players the host wants: a cap, or with `allowsExtraParticipants` the number needed; `nil` for no limit.
     let capacity: Int?
@@ -36,6 +38,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
          title: String,
          type: EventType,
          startsAt: Date,
+         endsAt: Date? = nil,
          location: EventLocation,
          capacity: Int?,
          allowsExtraParticipants: Bool = false,
@@ -53,6 +56,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
         self.title = title
         self.type = type
         self.startsAt = startsAt
+        self.endsAt = endsAt
         self.location = location
         self.capacity = capacity
         self.allowsExtraParticipants = allowsExtraParticipants
@@ -69,8 +73,8 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, title, type, startsAt, location, capacity, allowsExtraParticipants, participantCount, hostName, deleted
-        case hostUserId, isJoined, description, lookingFor, skillLevel, price, group
+        case id, title, type, startsAt, endsAt, location, capacity, allowsExtraParticipants, participantCount
+        case hostName, deleted, hostUserId, isJoined, description, lookingFor, skillLevel, price, group
     }
 
     init(from decoder: any Decoder) throws {
@@ -79,6 +83,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
         title = try container.decode(String.self, forKey: .title)
         type = try container.decode(EventType.self, forKey: .type)
         startsAt = try container.decode(Date.self, forKey: .startsAt)
+        endsAt = try container.decodeIfPresent(Date.self, forKey: .endsAt)
         location = try container.decode(EventLocation.self, forKey: .location)
         capacity = try container.decodeIfPresent(Int.self, forKey: .capacity)
         allowsExtraParticipants = try container.decodeIfPresent(Bool.self, forKey: .allowsExtraParticipants) ?? false
@@ -142,6 +147,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
                    title: draft.trimmedTitle,
                    type: draft.type,
                    startsAt: draft.startsAt,
+                   endsAt: draft.endsAt,
                    location: draft.place.location(at: draft.coordinate ?? location.coordinate),
                    capacity: draft.capacityIfLimited,
                    allowsExtraParticipants: draft.allowsExtraParticipants,
@@ -163,6 +169,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
                    title: title,
                    type: type,
                    startsAt: startsAt,
+                   endsAt: endsAt,
                    location: location,
                    capacity: capacity,
                    allowsExtraParticipants: allowsExtraParticipants,

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The creation wizard from a group's screen: a new game or tournament opens seeded with the kind and this group
-/// locked, so the kind page never shows and the hosting-group page is skipped. The presentation mirrors Explore's —
+/// locked, so the flow starts on that kind's first step and the hosting-group page is skipped. The presentation mirrors Explore's —
 /// a full-screen cover on a compact width, a form sheet otherwise, both over the one `presentedSheet`, with the
 /// model owned above the presenters so a width-class change mid-flow re-hosts the flow instead of destroying it.
 extension GroupDetailView {

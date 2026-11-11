@@ -231,7 +231,7 @@ nonisolated enum AppConfig {
         /// The most type names a `filter_applied` carries, the backend's `FilterSummaryDto.MAX_TYPES`: a longer list is
         /// a `400 VALIDATION_FAILED` for the whole batch, which the recorder drops without retry, so `EventType.known`
         /// must stay within it.
-        static let maxFilterTypes = 32
+        static let maxFilterTypes = 48
     }
 
     /// Process arguments recognised at launch (used by UI tests). Debug builds only: `AppDependencies` reads them

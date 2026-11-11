@@ -1,7 +1,7 @@
 import Foundation
 
-/// What the creation wizard makes: the kind picked on its first page, or carried in by the entry point's seed.
-/// Declaration order is the kind page's order; `CreationWizardPolicy` filters it by the feature flags.
+/// What the creation wizard makes, carried in by the entry point's seed (the "+" menu, a keyboard shortcut, a group
+/// screen's buttons). Declaration order is the "+" menu's order; `CreationWizardPolicy` filters it by the feature flags.
 nonisolated enum CreationKind: CaseIterable, Hashable, Sendable {
     case event
     case group

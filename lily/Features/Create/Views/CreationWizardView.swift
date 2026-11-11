@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// The creation wizard's shell: a `NavigationStack` whose root is the kind page when the policy shows one and the
-/// first step otherwise, with every Next pushing the next step. The kind pick is one-way — a kind's first step hides
-/// the system back button (which also disables the pop gesture), so back stops there and the kind page cannot be
-/// revisited within the attempt. Cancel asks before discarding a draft the user edited and closes silently
+/// The creation wizard's shell: a `NavigationStack` whose root is the seeded kind's first step — the "+" menu and
+/// every other entry point name the kind, so there is no kind page (the owner's third design round, 2026-11-11) —
+/// with every Next pushing the next step. Cancel asks before discarding a draft the user edited and closes silently
 /// otherwise; close, paging back and interactive dismissal are locked while a submit is in flight; the error popup is
 /// mounted here, and the view dismisses itself once the view model reports done. Presentation-agnostic: the
-/// presenting screen chooses cover or sheet.
+/// presenting screen chooses cover or sheet. The shell draws the flow's one `ContentScreen` aurora under the stack;
+/// the step pages render transparent content over it, so a push never composites two live auroras (the third
+/// round's performance pass — each pushed page used to carry its own full aurora and grain).
 struct CreationWizardView<EventModel: EventDraftEditing,
                           GroupModel: GroupDraftEditing,
                           TournamentModel: TournamentDraftEditing>: View {
@@ -24,11 +25,13 @@ struct CreationWizardView<EventModel: EventDraftEditing,
 
     var body: some View {
         @Bindable var model = model
-        NavigationStack(path: $model.path) {
-            root
-                .navigationDestination(for: CreationStep.self) { step in
-                    stepPage(for: step)
-                }
+        ContentScreen {
+            NavigationStack(path: $model.path) {
+                root
+                    .navigationDestination(for: CreationStep.self) { step in
+                        stepPage(for: step)
+                    }
+            }
         }
         .tint(Color.lilyAccent)
         .errorPopup(errorCenter)
@@ -49,9 +52,7 @@ struct CreationWizardView<EventModel: EventDraftEditing,
     }
 
     @ViewBuilder private var root: some View {
-        if model.opening.showsKindPage {
-            CreationKindPage(model: model, onCancel: requestClose)
-        } else if let first = model.steps.first {
+        if let first = model.steps.first {
             stepPage(for: first)
         }
     }
@@ -68,41 +69,43 @@ struct CreationWizardView<EventModel: EventDraftEditing,
         }
     }
 
-    /// The one-way mechanism: back stops at the kind's first step, pushed or root alike. Hiding the back button
-    /// while a submit is out also disables the pop gesture (the locked-while-busy contract).
-    private func hidesBack(on step: CreationStep) -> Bool {
-        model.steps.first == step || model.isSubmitting
-    }
+    /// Hiding the back button while a submit is out also disables the pop gesture (the locked-while-busy contract).
+    /// The one-way kind rule needs nothing here any more: the kind's first step is the stack root.
+    private var hidesBack: Bool { model.isSubmitting }
 
     @ViewBuilder private func eventStepPage(_ step: CreationStep.EventStep) -> some View {
         if let viewModel = model.eventModel {
             eventPage(step, viewModel: viewModel)
-                .navigationBarBackButtonHidden(hidesBack(on: .event(step)))
+                .navigationBarBackButtonHidden(hidesBack)
         }
     }
 
     @ViewBuilder private func groupStepPage(_ step: CreationStep.GroupStep) -> some View {
         if let viewModel = model.groupModel {
             groupPage(step, viewModel: viewModel)
-                .navigationBarBackButtonHidden(hidesBack(on: .group(step)))
+                .navigationBarBackButtonHidden(hidesBack)
         }
     }
 
     @ViewBuilder private func tournamentStepPage(_ step: CreationStep.TournamentStep) -> some View {
         if let viewModel = model.tournamentModel {
             tournamentPage(step, viewModel: viewModel)
-                .navigationBarBackButtonHidden(hidesBack(on: .tournament(step)))
+                .navigationBarBackButtonHidden(hidesBack)
         }
     }
 
     /// One map page for every kind: the picker over the kind's draft, shown while its view model exists. A spot
-    /// from the map picker is the user's choice (`PlacePickingDraft.pickSpot`), whatever the kind.
+    /// from the map picker is the user's choice (`PlacePickingDraft.pickSpot`), whatever the kind. The picker draws
+    /// no background of its own here and the navigation container is cleared like the step pages', so the shell's
+    /// one aurora shows through the map push too.
     @ViewBuilder
     private func mapPage<Model: AnyObject, Draft: PlacePickingDraft>(
         for viewModel: Model?, draft: ReferenceWritableKeyPath<Model, Draft>) -> some View {
         if let viewModel {
             LocationPickerView(coordinate: Binding(get: { viewModel[keyPath: draft].coordinate },
-                                                   set: { viewModel[keyPath: draft].pickSpot($0) }))
+                                                   set: { viewModel[keyPath: draft].pickSpot($0) }),
+                               drawsBackground: false)
+                .containerBackground(Color.clear, for: .navigation)
         }
     }
 

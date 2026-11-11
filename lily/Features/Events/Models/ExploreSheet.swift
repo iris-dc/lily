@@ -1,10 +1,10 @@
 import Foundation
 
-/// The sheets Explore presents: the creation wizard for anything new (its kind page asks what to make when the seed
-/// carries no kind), and sign-in for a guest who asked to create. The screen holds one of these as its presented
+/// The sheets Explore presents: the creation wizard for anything new (seeded with the kind the "+" menu or a
+/// shortcut named), and sign-in for a guest who asked to create. The screen holds one of these as its presented
 /// sheet; a keyboard shortcut's `CreateIntent` maps onto a seeded wizard.
 nonisolated enum ExploreSheet: Identifiable, Hashable, Sendable {
-    /// The creation wizard, carrying what the entry point seeds it with (the "+" seeds nothing, a shortcut its kind).
+    /// The creation wizard, carrying what the entry point seeds it with (a menu item or shortcut names its kind).
     case wizard(CreationSeed)
     case signIn
 

@@ -11,6 +11,8 @@ nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
     var title = ""
     var type: EventType = .football
     var startsAt: Date
+    /// The optional finish time; `nil` when the host set none. A set one must lie after the start (`.endsBeforeStart`).
+    var endsAt: Date?
     var locationName = ""
     /// Starts from the user's position, is moved on the map, or is geocoded from the typed name; one half of the
     /// place is required (`PlaceDraft.Requirement.nameOrSpot`).
@@ -35,8 +37,9 @@ nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
     /// The locale the price is typed in and an edit is seeded in, so the text and its amount always agree: the app's
     /// locale when the draft was made, like `currencyCode`.
     let locale: Locale
-    /// The currency `price` is typed in: the user's preferred one for a new game, the game's own for an edit.
-    let currencyCode: String
+    /// The currency `price` is typed in: the user's preferred one for a new game, the game's own for an edit, and
+    /// the host's to change inline at the price field — the event keeps its own currency on the wire either way.
+    var currencyCode: String
     /// The group to host the game in; `nil` for a game of its own. The ref, not a bare id, so the stored event can
     /// show its badge without a second lookup.
     var group: EventGroupRef?
@@ -62,6 +65,7 @@ nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
         title = event.title
         type = event.type
         startsAt = event.startsAt
+        endsAt = event.endsAt
         locationName = event.locationName
         coordinate = event.location.coordinate
         // The stored spot is the host's choice: an edited name alone must not move the game under its players.
@@ -108,6 +112,8 @@ nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
         case titleMissing
         case titleTooLong
         case startsAtTooSoon
+        /// A finish time at or before the start; only a set one is judged.
+        case endsBeforeStart
         /// Neither a place name nor a spot; either is enough, the geocoder fills the other on submit.
         case placeMissing
         case locationNameTooLong
@@ -163,6 +169,7 @@ nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
         if trimmedTitle.isEmpty { issues.append(.titleMissing) }
         if trimmedTitle.wireLength > limits.titleMaxLength { issues.append(.titleTooLong) }
         if startsAt < Self.earliestStart(now: now, rules: rules) { issues.append(.startsAtTooSoon) }
+        if let endsAt, endsAt <= startsAt { issues.append(.endsBeforeStart) }
         issues += place.issues(maxLength: limits.locationNameMaxLength, requiring: .nameOrSpot).map(Issue.init)
         return issues
     }
@@ -210,6 +217,7 @@ nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
                    title: trimmedTitle,
                    type: type,
                    startsAt: startsAt,
+                   endsAt: endsAt,
                    location: place.location(at: coordinate),
                    capacity: capacityIfLimited,
                    allowsExtraParticipants: allowsExtraParticipants,

@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// The event flow's type step, one idea: what kind of game it is. Glass choice cards like the kind page; picking
-/// fixes the type and auto-advances with the push animation, and re-entering shows the current choice selected (the
-/// same card advances again). The step owns no issues: one type is always selected.
+/// The event flow's type step, one idea: what kind of game it is. A search field over the compact type grid
+/// (`WizardTypePicker`); picking fixes the type and auto-advances with the push animation, and re-entering shows the
+/// current choice selected (the same card advances again). The step owns no issues: one type is always selected.
 struct EventTypePage<Model: EventDraftEditing>: View {
     let wizard: any CreationWizardControlling
     @Bindable var viewModel: Model
@@ -12,18 +12,13 @@ struct EventTypePage<Model: EventDraftEditing>: View {
 
     var body: some View {
         WizardStepScaffold(wizard: wizard, step: Self.step, onCancel: onCancel) {
-            ForEach(EventType.known, id: \.self) { type in
-                WizardChoiceCard(title: type.displayName,
-                                 systemImage: type.symbolName,
-                                 isSelected: type == viewModel.draft.type,
-                                 identifier: AccessibilityIdentifiers.createEventType(type.wireName)) {
-                    pick(type)
-                }
-            }
+            WizardTypePicker(isSelected: { $0 == viewModel.draft.type }, pick: pick)
         }
     }
 
-    private func pick(_ type: EventType) {
+    /// `nil` never arrives: the picker offers no "Any" entry here.
+    private func pick(_ type: EventType?) {
+        guard let type else { return }
         viewModel.draft.type = type
         wizard.advance(from: Self.step)
     }

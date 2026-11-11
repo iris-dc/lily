@@ -28,6 +28,19 @@ extension EventDraftTests {
         #expect(dollars.eventPrice == Price(amount: 5, currencyCode: "USD"), "the price is in the draft's currency")
     }
 
+    /// The Details step's inline picker rewrites the draft's currency: the default stays the settings currency the
+    /// draft was seeded with, and a pick carries through to the event's own price and the payload.
+    @Test func theInlineCurrencyPickOverridesTheSeededDefault() throws {
+        var draft = Self.makeValidDraft()
+        draft.price = 5
+        #expect(draft.eventPrice?.currencyCode == EventDraft.testCurrencyCode, "the default is the seeded currency")
+
+        draft.currencyCode = "PLN"
+
+        #expect(draft.eventPrice == Price(amount: 5, currencyCode: "PLN"))
+        #expect(try #require(CreateEventPayload(draft: draft)).price == Price(amount: 5, currencyCode: "PLN"))
+    }
+
     @Test(arguments: acceptedPrices)
     func pricesWithinTheLimitsPass(text: String?) {
         var draft = Self.makeValidDraft()

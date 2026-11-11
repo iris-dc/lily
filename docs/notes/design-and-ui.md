@@ -253,3 +253,42 @@ the asset catalog.
   the step and the walk stays deterministic per attempt, never following the async groups reload; the page's
   explanation line now keys on the same loaded-and-empty read as its read-only row, the belt for a groups change
   mid-attempt. Pinned in `CreationStepsTests`, `CreationWizardPolicyTests` and `CreationWizardModelTests`.
+- **Creation wizard, third design round (2026-11-11, owner corrections after trying the flow).** (1) The kind page
+  is gone and the "+" menu is back (the plan's Alternative C, adopted after feel: the in-wizard kind transition was
+  not smooth); the menu's items open the wizard already seeded, so the first page is always the kind's Name step.
+  (2) Every step now carries one plain caption, the Name steps too; the captions were rewritten with no jargon
+  ("cap" went) and no semicolons — two sentences instead. (3) The step bar behind Next is transparent: the primary
+  capsule sits directly over the content and the aurora, superseding the 2026-11-10 opaque-bar pin (the owner read
+  the opaque bar as a dark grey slab). (4) The type step is lighter: a glass search capsule over a two-column grid
+  of compact type cards (`WizardTypePicker`, cards 44 pt tall on `Radius.md` glass), replacing the full-width choice
+  cards the 34-type list outgrew; auto-advance on tap stays. (5) The When step gained the optional finish time (an
+  add affordance, then a picker floored at the start with a clear button; the edit form composes the same control).
+  Both follow-ups landed the same day (2026-11-11): the UI suites walk the menu-seeded wizard in this round, and
+  the rendered pass is the round-3 captures in `groups-plan/creation-wizard-shots/round3/`.
+
+- **Wizard performance pass: one aurora for the whole flow (2026-11-11, the third design round's item 9, after the
+  owner's "feels laggy" report).** Every pushed step page drew its own `ContentScreen`, so a push composited two
+  full live auroras (mesh plus grain, each a 30 fps `TimelineView`) with glass over both. The aurora now lives once
+  in the wizard shell (`CreationWizardView` wraps the `NavigationStack` in `ContentScreen`) and the step scaffold
+  draws transparent content — which needs `.containerBackground(Color.clear, for: .navigation)` on the page: the
+  navigation hosting paints an opaque page background that otherwise hides the shell's aurora entirely (proven on
+  film: the first hoist attempt rendered the pages on plain black). Steady state is pixel-equivalent (one aurora at
+  content strength, stills compared by eye); mid-push the outgoing and incoming pages now share the one background.
+  Proof, recorded walks on the booted iPhone 17 Pro simulator with the aurora live (no `-freeze-aurora`), frames cut
+  at fps=30 scale=300 and hashed — a repeated consecutive frame while anything animates is a dropped frame: before,
+  the cover-open window ran 26/30 distinct frames with one 4-frame stall and the Name-to-Type push 25/30 with three
+  stalls (two more windows at 19/30 and 25/30 with stalls up to 6 frames); after, the whole wizard walk shows zero
+  repeated frames — two unbroken all-distinct runs of 434 and 1008 frames (14 s and 34 s) cover every push, every
+  window 30/30. `WizardEntrance` and `WizardProgressBar` were checked by reading: both animate animatable modifier
+  values (opacity, offset, frame width) off one `withAnimation`, so no body re-evaluates per frame; no page row
+  needed `Equatable` once the double aurora was gone. The old per-page `ContentScreen` sentence in the wizard
+  contracts is superseded by this entry.
+
+- **The map push was the one case the aurora hoist missed (2026-11-11, the round-3 review).** The wizard's three
+  map destinations pushed `LocationPickerView`, which drew its own `ContentScreen`, so exactly that push still
+  composited two live auroras. The picker now takes `drawsBackground` (default true, so the edit forms'
+  `PlacePickerRow` push keeps today's look) and the wizard passes false plus the step pages'
+  `.containerBackground(Color.clear, for: .navigation)`, so the shell's single aurora shows through the map page
+  too; still: `groups-plan/creation-wizard-shots/round3/map-page.png`. The same review inked the finish-time add
+  affordance (`EventFinishTimeControl` through `lilyTextButton`, the accent on the plus mark alone — body-size
+  accent text reads at about 3:1 over the aurora): `round3/when-finish.png`.

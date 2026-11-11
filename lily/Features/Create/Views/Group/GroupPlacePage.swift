@@ -31,14 +31,19 @@ struct GroupPlacePage<Model: GroupDraftEditing>: View {
     }
 
     private var nameField: some View {
-        PlaceNameField(name: $viewModel.draft.locationName,
-                       identifier: AccessibilityIdentifiers.createGroupLocationName,
-                       focus: $focusedField,
-                       equals: .name,
-                       suggestions: $suggestions,
-                       query: { viewModel.draft.placeSuggestionQuery },
-                       search: { await viewModel.placeSuggestions(for: $0) })
-            .lilyField()
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+            PlaceNameField(name: $viewModel.draft.locationName,
+                           identifier: AccessibilityIdentifiers.createGroupLocationName,
+                           focus: $focusedField,
+                           equals: .name,
+                           suggestions: $suggestions,
+                           query: { viewModel.draft.placeSuggestionQuery },
+                           search: { await viewModel.placeSuggestions(for: $0) })
+                .lilyField()
+            if viewModel.draft.visibility == .private {
+                OptionalMarker()
+            }
+        }
     }
 
     /// Picking a place fills the name and the spot at once and clears the rows; the shared rows keep their

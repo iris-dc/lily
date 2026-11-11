@@ -107,7 +107,7 @@ nonisolated extension AppBranding {
             }
         }
 
-        /// The wizard's tournament pages and the edit sheet; `title` is the kind page's tournament card.
+        /// The wizard's tournament pages and the edit sheet; `title` is the "+" menu's tournament item.
         enum Create {
             static var title: String { localized("New tournament") }
             static var editTitle: String { localized("Edit tournament") }

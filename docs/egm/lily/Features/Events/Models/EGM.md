@@ -17,7 +17,8 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 ## Interface
 
 - `SportEvent` (`lily/Features/Events/Models/SportEvent.swift`): `Identifiable, Hashable, Codable`. Stored: `id`,
-  `title`, `type: EventType`, `startsAt: Date`, `location: EventLocation`, `capacity: Int?`,
+  `title`, `type: EventType`, `startsAt: Date`, `endsAt: Date?` (the optional finish time, 2026-11-11; absent when
+  the host set none), `location: EventLocation`, `capacity: Int?`,
   `allowsExtraParticipants: Bool`, `participantCount: Int`, `hostName`, `deleted: Bool?` (the host's account was
   deleted — the deletion contract's tombstone, mapped by `Tombstone`; absent unless true), `hostUserId: String?`,
   `isJoined: Bool?`,
@@ -31,7 +32,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `events-upcoming`, `joinedEventsSnapshot` = `events-joined`, `groupEventsSnapshot(id)` = `events-group-<id>`).
 - `EventLocation` (`EventLocation.swift`): `name`, `coordinate: Coordinate`; `distance(from:)`.
   `EventParticipant` (`EventParticipant.swift`): `userId` (the `id`), `displayName`, `joinedAt`, `isHost`.
-- `EventType` (`EventType.swift`): `WireNamedKind` with 20 known cases (`football` ... `other`) plus
+- `EventType` (`EventType.swift`): `WireNamedKind` with 34 known cases (`football` ... `other`; 14 added
+  2026-11-11 — squash, golf, surfing, skateboarding, dance, boxing, rowing, sailing, chess, darts, bowling,
+  pickleball, handball, hockey, all single-word wire names, mirrored by Laurel's enum) plus
   `unknown(String)`; `known`, `wireName` (snake_case, e.g. `table_tennis`), `displayName`, `symbolName`, with
   `init(wireName:)` and `isUnknown` from `WireNamedKind`'s defaults. `SkillLevel` (`SkillLevel.swift`): `beginner`,
   `intermediate`, `advanced`,
@@ -39,15 +42,19 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - `Price` (`Price.swift`): `amount: Decimal`, `currencyCode`; `isFree`, `text`, `text(in:)`, `symbol(for:locale:)`,
   `name(for:locale:)`, `inputFormat`, `inputText(_:locale:)`, `parseAmount(_:locale:) -> Decimal?`.
 - `EventDraft` (`EventDraft.swift`): `let clientId`, `title`, `type` (default `.football`), `startsAt`,
+  `endsAt: Date?` (the optional finish, default `nil`; 2026-11-11),
   `locationName`, `coordinate: Coordinate?`, `spotPickedOnMap` (whether the user chose the spot; a chosen one is never
   overridden by the typed name, a proposed one is), `suggestedName` (the name whose geocoding produced `coordinate`, so
   it is not geocoded twice), `capacity` (default `AppConfig.Events.Creation.defaultCapacity` = 10),
   `playerLimit` (default `.maximum`), `description`, `lookingFor`, `skillLevel?`, `priceText`, `let locale`,
-  `let currencyCode`, `group: EventGroupRef?`. Inits `init(startsAt:currencyCode:locale:clientId:)` and
+  `currencyCode` (a `var` since 2026-11-11: seeded with the user's settings currency — the game's own on an edit —
+  and rewritten by the Details step's inline picker; the event keeps its own currency on the wire either way),
+  `group: EventGroupRef?`. Inits `init(startsAt:currencyCode:locale:clientId:)` and
   `init(editing: SportEvent, currencyCode:locale:)`. Nested `Rules` (`minimumLeadTime`, `minimumCapacity`;
   `.creation`, `.editing(participantCount:)`, `capacityRange(for:)`) and `Issue` (`CaseIterable` since 2026-11-10,
   iterated by the creation wizard's partition test; `titleMissing`, `titleTooLong`,
-  `startsAtTooSoon`, `placeMissing` (neither a name nor a spot; either is enough, the geocoder fills the other on
+  `startsAtTooSoon`, `endsBeforeStart` (a set finish at or before the start; 2026-11-11),
+  `placeMissing` (neither a name nor a spot; either is enough, the geocoder fills the other on
   submit), `locationNameTooLong`, `capacityOutOfRange`,
   `capacityBelowParticipants`, `descriptionTooLong`, `lookingForTooLong`, `priceUnreadable`, `priceOutOfRange`).
   Derived: `capacityIfLimited`, `allowsExtraParticipants`, `trimmedTitle`, `place: PlaceDraft`,
@@ -87,9 +94,11 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `nameTooLong`, `coordinateMissing`, `placeMissing`); `issues(maxLength:requiring: = .nameAndSpot)`, `location(at:)`. `PlayerLimit` (`PlayerLimit.swift`): `unlimited`,
   `maximum`, `minimum`; `init(capacity:allowsExtraParticipants:)`, `hasCapacity`, `allowsExtraParticipants`.
 - `CreateEventPayload` (`CreateEventPayload.swift`): `Encodable`; `clientEventId`, `title`, `type`, `startsAt`,
+  `endsAt?` (omitted when the host set no finish, never `null`; 2026-11-11),
   `location: Location` (`name`, `coordinate`), `capacity?`, `allowsExtraParticipants`, `description?`,
   `lookingFor?`, `skillLevel?`, `price?`, `groupId?`; `init?(draft:)`. `UpdateEventPayload`
-  (`UpdateEventPayload.swift`): the same minus `clientEventId` and `groupId`; `init?(draft:)`.
+  (`UpdateEventPayload.swift`): the same minus `clientEventId` and `groupId` (an absent `endsAt` clears it on the
+  backend); `init?(draft:)`.
 - `EventFilter` (`EventFilter.swift`): `types: Set<EventType>`, `maxDistanceMeters: Double?` (default
   `AppConfig.Events.defaultFilterRadiusMeters` = 10,000), `maxPrice: Decimal?`, `skillLevel?`,
   `dateWindow: DateWindow?`, `openSpotsOnly`; `everything`, `isActive`, `includes(_:)`,
@@ -109,7 +118,7 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 
 ## Invariants
 
-- Decoding (`SportEvent.init(from:)`): `capacity`, `deleted`, `hostUserId`, `isJoined`, `description`, `lookingFor`,
+- Decoding (`SportEvent.init(from:)`): `endsAt`, `capacity`, `deleted`, `hostUserId`, `isJoined`, `description`, `lookingFor`,
   `skillLevel`, `price`, `group` may be absent; a missing `allowsExtraParticipants` reads as `false`; the other keys
   are required. Encoding omits `nil` optionals (synthesized), never writes `null`.
 - Unknown wire values survive: `WireNamedKind`'s default `init(wireName:)` yields `.unknown(name)` for `EventType` and `SkillLevel`
@@ -125,6 +134,7 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - Draft validation (`EventDraft.issues`), in form order: `.titleMissing` / `.titleTooLong`
   (`trimmedTitle.wireLength > AppConfig.Events.Creation.titleMaxLength` = 80); `.startsAtTooSoon` when
   `startsAt < now + rules.minimumLeadTime` (creation 15 min, editing `AppConfig.Events.Editing.startMargin` = 60 s);
+  `.endsBeforeStart` when a set `endsAt` lies at or before `startsAt` (2026-11-11, the optional finish);
   place issues via `PlaceDraft.issues(maxLength: AppConfig.Events.Creation.locationNameMaxLength (120), requiring:
   .nameOrSpot)`, so one half of the place is enough; no capacity issue for
   `.unlimited`, `.capacityOutOfRange` outside `capacityRange` (2...200), `.capacityBelowParticipants` only for

@@ -25,10 +25,13 @@ struct GroupDraftForm: View {
             TextField(Copy.nameField, text: $draft.name, prompt: Text(Copy.namePlaceholder))
                 .textInputAutocapitalization(.words)
                 .accessibilityIdentifier(AccessibilityIdentifiers.createGroupName)
-            TextField(Copy.descriptionPlaceholder, text: $draft.description, axis: .vertical)
-                .textInputAutocapitalization(.sentences)
-                .lineLimit(DesignTokens.Layout.multilineFieldLines)
-                .accessibilityIdentifier(AccessibilityIdentifiers.createGroupDescription)
+            HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.sm) {
+                TextField(Copy.descriptionPlaceholder, text: $draft.description, axis: .vertical)
+                    .textInputAutocapitalization(.sentences)
+                    .lineLimit(DesignTokens.Layout.multilineFieldLines)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.createGroupDescription)
+                OptionalMarker()
+            }
             typeChips
         } header: {
             Text(Copy.groupSection)

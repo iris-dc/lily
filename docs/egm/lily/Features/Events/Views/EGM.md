@@ -43,7 +43,13 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `createPlayerLimit` and the capacity `Stepper` `createCapacity`, shown only while `draft.playerLimit.hasCapacity`,
   over `viewModel.capacityRange`) and `EventDetailsFields<Model: EventDraftEditing>` (`EventDetailsFields.swift`: the
   description and looking-for fields, `SkillLevelPicker` under `lilyMenuPicker()` and the price row over
-  `PriceAmountField`); headers and first-issue footers stay in the form. The form also carries a belt for the
+  `PriceAmountField` with the inline currency menu, `currencySelection: $draft.currencyCode`, 2026-11-11) and the shared optional finish-time control
+  (`EventFinishTimeControl.swift:EventFinishTimeControl`, 2026-11-11: the add affordance `create-ends-at-add` — an
+  ink `lilyTextButton` with the accent on its plus mark alone, per the small-accent-text rule (the round-3 review,
+  2026-11-11) — on a row wearing the shared `OptionalMarker`, the
+  "Finish time" picker `create-ends-at` floored at the start, the clear button `create-ends-at-remove`; the
+  wizard's When page composes the same control, so edit parity holds); headers and first-issue footers stay in the
+  form. The form also carries a belt for the
   extracted suggestion machinery: `.onChange(of: focusedField)` on the `Form` itself clears `suggestions` whenever
   the focused field is not `.locationName` — a `Form` culls off-viewport rows, so `PlaceNameField`'s row-level clear
   is not mounted then; the belt is idempotent with it. A still-focused name row scrolled off-viewport and back
@@ -53,9 +59,12 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `title`, `submitTitle`, `errorCenter`; wraps Core's `DraftSheet` around `EventDraftForm`. `EditEventSheet` (`EditEventSheet.swift`:
   `EditEventViewModel`, `ErrorCenter`) is its titled use — creating walks the wizard since slice 3 (2026-11-11), and
   `CreateEventSheet` is deleted.
-- `CreateButton` (`lily/Features/Events/Views/CreateButton.swift`): `action: () -> Void`; the floating "+", a
-  plain button since slice 3 (the menu is gone) whose one tap opens the wizard with an empty seed, under the
-  unchanged `events-create` identifier and `Events.Create.menu` VoiceOver label.
+- `CreateButton` (`lily/Features/Events/Views/CreateButton.swift`): `onCreate: (CreationKind) -> Void`; the
+  floating "+", a menu again since the owner's third design round (2026-11-11): one item per kind
+  `CreationWizardPolicy.kindsOffered(flags: .current)` leaves (the per-kind "New ..." titles with the
+  `addEvent`/`groups`/`tournament` symbols), each reporting its kind so the wizard opens seeded on that kind's Name
+  step; a single offered kind (Release) collapses it to a plain one-tap event button. The unchanged `events-create`
+  identifier and `Events.Create.menu` VoiceOver label stay on the control.
 - `EventDraftForm+Place.swift` (2026-11-06; recomposed 2026-11-10 from the extracted place parts, slice 1 of the
   creation-wizard plan): the Where section, split out for the form's file limit; the stored state (`suggestions`,
   `focusedField`) stays in `EventDraftForm.swift`. `whereSection` composes, in the pixel-pinned pre-extraction order,
@@ -114,7 +123,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   it a container), labelled `AppBranding.Events.openInMaps` (a Button, so one element with the button trait), the identifier
   `eventDetailMap` on that button.
 - `LocationPickerView` (`lily/Features/Events/Views/LocationPickerView.swift`):
-  `init(coordinate: Binding<Coordinate?>)`; a map under a fixed pin.
+  `init(coordinate: Binding<Coordinate?>, drawsBackground: Bool = true)`; a map under a fixed pin.
+  `drawsBackground: false` renders the same layout without the picker's own `ContentScreen`, for the creation
+  wizard, whose shell already draws the flow's one aurora (2026-11-11); the edit forms' `PlacePickerRow` keeps the
+  default and today's look.
 - `PlaceFields<Field: Hashable>` (`lily/Features/Events/Views/PlaceFields.swift`): `init(name:coordinate:
   placeholder: = AppBranding.Events.Create.locationNamePlaceholder, nameIdentifier:pickerIdentifier:
   focus: FocusState<Field?>.Binding, equals:)`, and `where Field == Never` the same without focus; the name row is
@@ -175,7 +187,7 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   the roster only when
   `showsParticipants`; `.task` calls `recordViewed()` then `loadParticipants()`.
 - Form (`EventDraftForm`): each section footer shows the first matching `viewModel.issue(for:)`: game
-  `.titleMissing` / `.titleTooLong` / `.startsAtTooSoon`, where `.locationNameMissing` / `.locationNameTooLong` /
+  `.titleMissing` / `.titleTooLong` / `.startsAtTooSoon` / `.endsBeforeStart`, where `.locationNameMissing` / `.locationNameTooLong` /
   `.coordinateMissing`, players `.capacityOutOfRange` / `.capacityBelowParticipants`, details
   `.descriptionTooLong` / `.lookingForTooLong` / `.priceUnreadable` / `.priceOutOfRange`. The date picker is
   bounded below by `viewModel.earliestStart`; the capacity `Stepper` appears only when
@@ -186,13 +198,19 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   default-styled `Picker` that a `Form` draws as a menu) is styled by `lilyMenuPicker()` the same way; the title's
   submit moves focus to the location name; the price is typed as `draft.priceText` through `PriceAmountField`.
 - `PriceAmountField` (`lily/Features/Events/Views/PriceAmountField.swift`): `init(text: Binding<String>, placeholder:,
-  currencyCode:, label:, identifier:, currencyIdentifier:, focus: FocusState<Bool>.Binding? = nil)`; an `HStack` of a
+  currencyCode:, label:, identifier:, currencyIdentifier:, currencySelection: Binding<String>? = nil,
+  focus: FocusState<Bool>.Binding? = nil)`; an `HStack` of a
   trailing `.decimalPad` `TextField` at `DesignTokens.Layout.priceFieldWidth` (focused through `focus` when given,
   with `label` as its accessibility label and `identifier`) and `Price.symbol(for: currencyCode)` in `.secondary`,
-  `fixedSize()`, under `currencyIdentifier`. The one decimal-pad price field: the form's price row (no focus binding)
-  and the filter sheet's cap (focused by the capsule's tap through `isPriceFocused`).
-- `CreateButton`: one plain button whatever the flags; which kinds the wizard offers is `CreationWizardPolicy`'s
-  call, not this view's.
+  `fixedSize()`, under `currencyIdentifier`. Given `currencySelection` (2026-11-11) the symbol becomes a compact
+  `Menu` under the same identifier — a `Picker` titled `AppBranding.Settings.currency` over
+  `AppConfig.Currency.offered` (led by the current code when an edited event carries one no longer offered), each
+  option `AppBranding.Settings.currencyChoice(code:name:)`, the label the symbol with an a11y-hidden
+  `DesignTokens.Symbols.currencyMenu` mark in `.secondary` — the wizard's Details page and the edit form pass
+  `$draft.currencyCode`, the filter's cap stays the read-only fact. The one decimal-pad price field: the form's
+  price row (no focus binding) and the filter sheet's cap (focused by the capsule's tap through `isPriceFocused`).
+- `CreateButton`: the menu's items come from `CreationWizardPolicy.kindsOffered` — never this view's own flag
+  logic beyond that call; one offered kind draws the plain one-tap button (2026-11-11).
 - Filter (`EventFilterSheet`): a `NavigationStack` over a `Form` (sections: type, distance, price; level, dates and
   open spots), title "Filters" inline, Done in `confirmationAction` (closes only; every change applies at once); every
   change goes through `viewModel.updateFilter`, `toggleType` or `clearFilter`;
@@ -244,8 +262,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `.onMapCameraChange(frequency: .onEnd)` and writes `coordinate` only when
   `PickerSettlePolicy.isAChoice(spot, current:, isFirstSettle:)`; a chosen spot opens at
   `AppConfig.Location.pickerRegionMeters` (1,500 m), none follows the user.
-- Components: `EventFactsCard` shows the price only when `!event.isFree` and the level only when
-  `event.skillLevel?.ifKnown` is set; `EventCard` adds a price chip when not free and a `GroupBadge` when hosted in
+- Components: `EventFactsCard` shows the price only when `!event.isFree`, the level only when
+  `event.skillLevel?.ifKnown` is set, and a secondary "Until …" line under the start when `event.endsAt` is set
+  (the time alone on the start's own day, the full date otherwise — `AppBranding.Events.until(_:)` over
+  `LilyTheme.DateStyles.time`/`dateTime`; 2026-11-11); `EventCard` adds a price chip when not free and a `GroupBadge` when hosted in
   a group; `EventPreviewCard` turns each of its two rows into a column at accessibility type sizes (lines up to
   `Layout.accessibilityPreviewLines`, one otherwise) and draws its `detail` (the distance) in `.secondary` like every
   other distance; `SkillLevelPicker` offers

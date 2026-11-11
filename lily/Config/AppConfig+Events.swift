@@ -15,3 +15,8 @@ nonisolated extension AppConfig.Events {
     /// a metro area, so a venue name resolves nearby. Only a hint, so a typed city name still lands on the city.
     static let placeSearchRegionMeters: Double = 100_000
 }
+
+nonisolated extension AppConfig.Events.Creation {
+    /// The finish time proposed when the host adds one: an hour past the start, a round default to edit from.
+    static let proposedDuration: TimeInterval = .hour
+}

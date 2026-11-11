@@ -26,7 +26,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   whose first spot lies within it), `mapStackDecimals` 4 (only names a stack: its first spot rounded),
   `placeSuggestionCount` 3, `placeSuggestionDebounce` 300 ms, `placeSuggestionMinimumQuery` 2,
   `placeSearchRegionMeters` 100,000 (the side of the region the geocoder and the suggestions favour around the draft's
-  spot or the user; a hint only, so a city name still lands on the city); 2026-11-06), `Build`, `FeatureFlags`,
+  spot or the user; a hint only, so a city name still lands on the city); 2026-11-06; plus `Creation.proposedDuration` = `.hour`, the finish time proposed when the host adds one, 2026-11-11), `Build`, `FeatureFlags`,
   `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push` (+ `Payload`), `Realtime`, `Tournaments`.
 - `API` (`lily/Config/AppConfig.swift:AppConfig.API`): `localBaseURL = http://localhost:8080`,
   `productionBaseURL = https://api.iskra.red`; `baseURL` is `localBaseURL` under `#if DEBUG && targetEnvironment(simulator)`,
@@ -70,7 +70,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `events-joined`, `tournaments-upcoming`, `tournaments-mine`, `groups-mine`, `groups-discover`, `profile`,
   `groupEventsSnapshot(_:)`, `groupTournamentsSnapshot(_:)`). `Location`: `mockCenter = Coordinate(52.5200, 13.4050)`,
   `fixTimeout = .seconds(8)`, `firstFixWait = .seconds(1.5)`, `fixTTL = .seconds(300)`, `failedFixTTL = .seconds(30)`.
-  `Statistics`: `batchSize = 10`, `flushDelay = .seconds(30)`, `maxBuffered = 100`, `maxFilterTypes = 32`.
+  `Statistics`: `batchSize = 10`, `flushDelay = .seconds(30)`, `maxBuffered = 100`, `maxFilterTypes = 48`.
 - `Chat` (`lily/Config/AppConfig+Chat.swift:AppConfig.Chat`): `messageMaxLength = 2000`, `historyPageSize = 50`,
   `catchUpPageSize = 200`, `maxCatchUpPages = 3`, `roomCacheLimit = 300`, `readMarkFlushInterval = 60`,
   `replyExcerptLength = 120`, `rateLimitCooldownFallback = 10`. `Chat.Attachments` (`lily/Config/AppConfig+Attachments.swift`):
@@ -113,7 +113,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   (reuses the "Done" key) and the five `%lld` plural lines `groupsTransferring(_:)`, `groupsDeleted(_:)`,
   `eventsCancelled(_:)`, `entriesWithdrawn(_:)`, `tournamentsCancelled(_:)`, one per non-zero count of the deletion
   plan), `Moderation`, `Forms` (`close`,
-  `back`, `cancel`), `People`, `Legal` (the shared `Section` and `Paragraph` structs of the legal reading screens and
+  `back`, `cancel`, `optional` — the shared one-word marker on every optional field, 2026-11-11), `People`, `Legal` (the shared `Section` and `Paragraph` structs of the legal reading screens and
   the shared `changesTitle`; 2026-11-08), `Privacy` and `Terms` (the data-driven policy and terms over `Legal`'s
   types; 2026-11-08), `Settings`, `Tournaments` (+ `Create`, `Schedule`, `Match`, `Standings`).
 - Representative functions: `Events.spotsLeft(_:)`, `Events.joined(_:of:)`, `Events.Create.capacity(_:needed:)`,
@@ -157,26 +157,28 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `AppConfig.Moderation.supportURL`; `AppConfig.API.Paths.meTerms`; `LaunchArguments.mockTermsPending`;
   `AccessibilityIdentifiers.termsAccept`, `termsSignOut`, `termsDeleteAccount`. The privacy `changes` paragraph reads
   agreement-by-use (changed together with laurel's page). `SignUpAgreementTests` pins the key in all seven languages.
-- The creation wizard's chrome (2026-11-10, `lily/Config/AppBranding+Create.swift`): `Create` — `kindTitle`
-  ("What are you creating?"), `kindEvent`/`kindGroup`/`kindTournament` (reusing the per-kind "New event" / "New group" /
-  "New tournament" keys), the one-idea event step titles (second design round, same day) `eventName` ("Name"),
-  `eventType` ("Type"), `eventWhen` ("When"), `eventGroup` ("Hosting group"), `eventPlace` ("Place"), `eventPlayers`
-  ("Players"), `eventDetails` ("Details") — Name/When/Place/Players reuse existing keys; "Basics" and
-  "Players and details" left the catalog with the regrouping — the step captions `eventGroupCaption`,
-  `eventPlaceCaption` (aliasing `Events.Create.whereHint`), `eventPlayersCaption`, `eventDetailsCaption` (one
-  secondary-ink line each, new keys in all seven languages), `next` ("Next"), `step(_:of:)` ("Step %lld of %lld",
+- The creation wizard's chrome (2026-11-10, reworked with the owner's third design round 2026-11-11;
+  `lily/Config/AppBranding+Create.swift`): `Create` — the one-idea step titles (`eventName` "Name", `eventType`
+  "Type", `eventWhen` "When", `eventGroup` "Hosting group", `eventPlace` "Place", `eventPlayers` "Players",
+  `eventDetails` "Details", `groupDescription` "Description", `groupPermissions` "Permissions",
+  `tournamentSchedule` "Schedule"; the group and tournament titles alias these and the kinds' existing keys), one
+  caption under every step title (the third round's correction: `eventNameCaption`, the shared `typeCaption`,
+  `eventWhenCaption` naming the optional finish, `eventGroupCaption`, `eventPlaceCaption` aliasing `whereHint`,
+  `eventPlayersCaption`, `eventDetailsCaption`, `groupNameCaption`, `groupDescriptionCaption`, `groupTypeCaption`,
+  `groupVisibilityCaption`, `groupPlaceCaption`, `groupPermissionsCaption`, `tournamentNameCaption`,
+  `tournamentFormatCaption`, `tournamentScheduleCaption`, `tournamentGroupCaption`, `tournamentPlaceCaption`,
+  `tournamentEntriesCaption`, `tournamentWhoCaption`, `tournamentDetailsCaption` — plain sentences in the app's
+  voice, no jargon and no semicolons, each in all seven languages), `tournamentFollowsGroup`, `typeSearch`, `typeSearchNoMatch`
+  ("Search types", the type grid's field), `next` ("Next"), `step(_:of:)` ("Step %lld of %lld",
   plain string units in every language — identical across plural categories by design, so xcstringstool's two-`%lld`
   pivot warning never fires; see `docs/notes/localization.md` 2026-11-10; since the second round the progress mark's
   accessibility label), and the discard confirmation
-  `discardTitle` ("Discard this draft?"), `discard`, `keepEditing`. Slice 3 (2026-11-11) adds the group and
-  tournament step titles — `groupName`, `groupType`, `groupPlace`, `tournamentName`, `tournamentType`,
-  `tournamentPlace`, `tournamentDetails`, `tournamentFormat`, `tournamentEntries`, `groupVisibility` and
-  `tournamentWho` alias existing keys; `groupDescription` ("Description"), `groupPermissions` ("Permissions") and
-  `tournamentSchedule` ("Schedule") are new — with the captions `groupDescriptionCaption`, `groupVisibilityCaption`
-  (the public-place rule), `tournamentScheduleCaption`, `tournamentGroupCaption`, `tournamentEntriesCaption`,
-  `tournamentWhoCaption`, `tournamentDetailsCaption` and the `tournamentFollowsGroup` line (with the three titles,
-  eleven new keys in all seven languages). The wizard's fields keep each kind's existing `Create` copy; the final
-  step reuses each kind's submit.
+  `discardTitle` ("Discard this draft?"), `discard`, `keepEditing`. The kind-page keys — `kindTitle` ("What are you
+  creating?") and the `kindEvent`/`kindGroup`/`kindTournament` aliases — left with the kind page (2026-11-11); the
+  wizard's fields keep each kind's existing `Create` copy and the final step reuses each kind's submit.
+  `Events.Create` gained the finish-time copy (`endsAt` "Finish time", `addEndsAt` "Add a finish time",
+  `removeEndsAt` "Remove the finish time") with `.endsBeforeStart` mapped in `message(for:)` ("Set the finish time
+  after the start"), and `Events.until(_:)` ("Until %@") is the facts card's finish line (2026-11-11).
 - The one helper every string goes through: `nonisolated func localized(_ key: String.LocalizationValue) -> String`
   (`lily/Core/Localization/Localized.swift:localized`); a `\(count)` interpolation becomes the catalog's `%lld` or `%@`.
 
@@ -219,8 +221,11 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `lily/Config/DesignTokens+Inbox.swift`): `Symbols.eventCancelled = "calendar.badge.exclamationmark"`. The creation
   wizard's chrome (2026-11-10, second design round, `lily/Config/DesignTokens+Create.swift`):
   `Layout.wizardProgressBarHeight` 4 and `Opacity.wizardProgressTrack` 0.25 (the progress mark's capsule and its
-  track), `Layout.wizardEntranceOffset` 12 (the step content's slide-up on entry), and `Symbols.anyType = "asterisk"`
-  (the group type page's "Any type" card; slice 3, 2026-11-11). In `DesignTokens.swift`,
+  track), `Layout.wizardEntranceOffset` 12 (the step content's slide-up on entry), `Symbols.anyType = "asterisk"`
+  (the group type page's "Any type" card; slice 3, 2026-11-11), and, with the third design round (2026-11-11),
+  `Layout.wizardTypeColumns` 2 with `Layout.wizardTypeCardHeight` 44 (the type grid's compact cards) and
+  `Symbols.removeFinishTime = "xmark.circle.fill"` (the finish time's clear button) and
+  `Symbols.currencyMenu = "chevron.up.chevron.down"` (the price field's currency-menu mark). In `DesignTokens.swift`,
   `Layout.mapCardListMaxHeight` is 400 (about three and a half of the two-row cards; 352, about five one-row cards,
   until 2026-11-06) beside `mapSelectedCardWidth 340` and `pressedCardScale 0.97`.
 - Non-scalar members: `Symbols.fileGlyphs: [(type: UTType, symbol: String)]` (8 entries),
@@ -241,12 +246,14 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   and terms screens, 2026-11-08), `legal-close` (Close on the legal sheets the sign-up footnote presents, 2026-11-08), and the
   delete flow's `settings-delete-account`,
   `delete-account-confirm`, `delete-account-cancel`, `delete-account-acknowledge`; 2026-11-07), +Currency, +Layout, +Landing (`intro-pager`), +Localization,
-  +Create (2026-11-10, the creation wizard: `create-kind-event`, `create-kind-group`, `create-kind-tournament` — the
-  kind page's choice cards — `create-next`, the bottom bar's Next, `createEventType(_ wireName:)`
-  (`create-type-<wireName>`, the type pages' choice cards), and `create-step`, a step page's
+  +Create (2026-11-10, the creation wizard: `create-next`, the bottom bar's Next, `createEventType(_ wireName:)`
+  (`create-type-<wireName>`, the type pages' cards), and `create-step`, a step page's
   container, a container element so children keep their own identifiers; slice 3 (2026-11-11) adds `create-type-any`,
   `createVisibility(_:)` (`create-visibility-<public|private>`) and `createFormat(_ wireName:)`
-  (`create-format-<wireName>`); the final step keeps its kind's submit identifier — `create-submit`,
+  (`create-format-<wireName>`); the third design round (2026-11-11) removes the kind page's `create-kind-*` cards
+  and adds `create-type-search`, the type grid's search field, while the optional finish time's
+  `create-ends-at-add` / `create-ends-at` / `create-ends-at-remove` join the create fields in the root file; the
+  final step keeps its kind's submit identifier — `create-submit`,
   `create-group-submit`, `tournament-submit`).
 - Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `createPlaceSuggestion(_ index: Int)`
   (`create-place-suggestion-<index>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
@@ -270,8 +277,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   next argument starts with `flagPrefix`: a prefixed argument is a flag, never a value.
 - Limits mirror Laurel's, counted in UTF-16 units, so a draft that passes here never earns a 400: `Events.Creation`,
   `Chat.Attachments` (every image leaves as JPEG, every video as `video/mp4` at 1280x720), `Chat.Polls`,
-  `Chat.replyExcerptLength = 120`, `Auth.emailLocalPartMaxLength = 64`, `Statistics.maxFilterTypes = 32` (Laurel's
-  `FilterSummaryDto.MAX_TYPES`); `Groups.locationNameMaxLength` aliases `Events.Creation`'s (`lily/Config/AppConfig+Groups.swift`).
+  `Chat.replyExcerptLength = 120`, `Auth.emailLocalPartMaxLength = 64`, `Statistics.maxFilterTypes = 48` (Laurel's
+  `FilterSummaryDto.MAX_TYPES`, raised from 32 with the 14 new types, 2026-11-11, so `EventType.known` (34) fits whole); `Groups.locationNameMaxLength` aliases `Events.Creation`'s (`lily/Config/AppConfig+Groups.swift`).
 - `Tournaments.entriesRange(for:)` is always `minEntries(for:)...maxEntries(for:)`: single elimination and an unknown
   format `2...64`, round robin `3...12` (`lily/Config/AppConfig+Tournaments.swift`). `Chat.tournamentStarted(format:)`
   answers the generic "The tournament started" for `nil` and for an unknown format; `Tournaments.Match.status(_:)`

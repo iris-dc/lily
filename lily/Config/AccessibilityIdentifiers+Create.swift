@@ -2,13 +2,12 @@ import Foundation
 
 /// Identifiers of the creation wizard; a UI test that reads one mirrors the literal by hand.
 nonisolated extension AccessibilityIdentifiers {
-    /// The kind page's choice cards, one per offered kind.
-    static let createKindEvent = "create-kind-event"
-    static let createKindGroup = "create-kind-group"
-    static let createKindTournament = "create-kind-tournament"
     /// The type pages' choice cards (event, group and tournament), one per known event type, by wire name
     /// ("create-type-table_tennis").
     static func createEventType(_ wireName: String) -> String { "create-type-\(wireName)" }
+
+    /// The type pages' search field, filtering the type grid by localized name as you type.
+    static let createTypeSearch = "create-type-search"
 
     /// The group type page's "Any type" card; the per-type cards reuse `createEventType(_:)`.
     static let createTypeAny = "create-type-any"

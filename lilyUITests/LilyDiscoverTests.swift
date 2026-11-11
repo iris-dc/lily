@@ -29,8 +29,7 @@ final class LilyDiscoverTests: LilyUITestCase {
     @MainActor
     func testCreatingAPublicGroupNeedsAPlaceThatTheDetailShows() {
         tapSignInWithApple()
-        tapCreateButton()
-        pickCreationKind("create-kind-group")
+        tapCreateMenuItem("New group")
 
         let name = "Thursday Runners"
         waitForWizardStep("Name")

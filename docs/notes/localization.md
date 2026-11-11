@@ -65,3 +65,16 @@ The app ships in English (the source language and the fallback), Russian, Spanis
   two positions, so every build warned "Cannot reliably infer argument number for plural variation" once per
   language, breaking the zero-`/lily/`-warnings gate. Plain units say the same thing with no warning; the byte-stable
   JSON round trip was proven before the edit and `scripts/l10n-check.py` stayed green.
+
+- 2026-11-11: the creation wizard's third design round. Removed: "What are you creating?" (the kind page left) and
+  the six semicolon captions the round rewrote. Added, in all seven languages: 14 event-type names (Squash …
+  Hockey), 13 caption sentences (every step title now carries one; plain sentences, no jargon, no semicolons), the
+  finish-time copy ("Finish time", "Add a finish time", "Remove the finish time", "Set the finish time after the
+  start", "Until %@") and "Search types". Net +26 keys (751 → 777), appended with the byte-stable round trip proven
+  before and after the edit; the translations are machine-written like the other recent keys — the native read
+  stays owed.
+
+- **"Optional" marker key (2026-11-11).** One new key, "Optional", behind `AppBranding.Forms.optional` for the
+  optional-field marker (`OptionalMarker`): ru «Необязательно», es «Opcional», fr «Facultatif», uk «Необов’язково»,
+  pl «Opcjonalnie», pt «Opcional». Appended with the byte-stable json round trip proven before and after the edit
+  (777 → 778 keys); `l10n-check.py` green.

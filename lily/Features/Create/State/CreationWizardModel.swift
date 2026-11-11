@@ -20,7 +20,7 @@ nonisolated enum CreationDraft: Equatable, Sendable {
     case tournament(TournamentDraft)
 }
 
-/// The wizard shell's state: the opening the policy decided, the kind entered once per attempt, the lazily created
+/// The wizard shell's state: the opening the policy decided, the kind fixed at init, the created
 /// view model of that kind (generic parameters, so the shell stays statically typed and only the composition root
 /// names concrete types; the pages read it through `CreationWizardControlling`), the navigation path of entered
 /// steps, the user-edit flag behind the discard confirmation and the submit lock the chrome reads. The draft's
@@ -31,15 +31,15 @@ final class CreationWizardModel<EventModel: EventDraftEditing,
                                 GroupModel: GroupDraftEditing,
                                 TournamentModel: TournamentDraftEditing> {
     let opening: CreationWizardPolicy.Opening
-    /// The kind this attempt makes, set once: by the seed at init, or by the kind page's pick. Never unset — back
-    /// stops at the kind's first step, so a mispick is corrected by cancelling and reopening.
-    private(set) var kind: CreationKind?
-    /// The entered kind's view model, made on kind entry; the other two stay `nil` for the attempt.
+    /// The kind this attempt makes, fixed by the normalized seed at init (the "+" menu and every other entry point
+    /// name one; the policy fills an empty seed). A mispick is corrected by cancelling and reopening from the menu.
+    let kind: CreationKind
+    /// The entered kind's view model, made at init; the other two stay `nil` for the attempt.
     private(set) var eventModel: EventModel?
     private(set) var groupModel: GroupModel?
     private(set) var tournamentModel: TournamentModel?
     /// The entries pushed beyond the stack's root, in order: steps, and a place step's map picker; the root
-    /// itself (the kind page, or the first step when the policy skips it) is never in here.
+    /// itself (the kind's first step) is never in here.
     var path: [CreationStep] = []
     /// Whether the user edited any field this attempt; a dirty wizard asks before discarding, a clean one closes
     /// silently. Latched by `noteDraftChanged()` on the first edit and never unlatched.
@@ -59,12 +59,9 @@ final class CreationWizardModel<EventModel: EventDraftEditing,
         self.opening = opening
         self.factories = factories
         self.logger = logger
-        if let kind = opening.seed.kind { enter(kind) }
-    }
-
-    /// Fixes the kind for this attempt and makes its view model; a second call is dropped (the pick is one-way).
-    func enter(_ kind: CreationKind) {
-        guard self.kind == nil else { return }
+        // The policy always names a kind (an empty seed normalizes to the first offered); the event fallback is
+        // the optional's tax, never taken.
+        let kind = opening.seed.kind ?? .event
         self.kind = kind
         switch kind {
         case .event:
@@ -80,7 +77,6 @@ final class CreationWizardModel<EventModel: EventDraftEditing,
             tournamentModel = model
             pristine = .tournament(model.draft)
         }
-        if opening.showsKindPage, let first = steps.first { path.append(first) }
         logger.info(.ui, "Creation wizard begun for \(name(of: kind))")
     }
 
@@ -110,7 +106,7 @@ final class CreationWizardModel<EventModel: EventDraftEditing,
     /// the belt behind it). Only the entry on top may advance: a double-tapped Next landing mid-transition, or a tap
     /// gone stale across a pop, pushes nothing and can never skip a step.
     func advance(from step: CreationStep) {
-        let top = path.last ?? (opening.showsKindPage ? nil : steps.first)
+        let top = path.last ?? steps.first
         guard top == step else { return }
         guard allowsNext(from: step) else {
             if let issue = firstBlockingIssue(on: step) {
@@ -122,11 +118,10 @@ final class CreationWizardModel<EventModel: EventDraftEditing,
         path.append(steps[index + 1])
     }
 
-    /// Pops back to `step`: the path becomes the steps entered up to it, minus the root when the first step is the root.
+    /// Pops back to `step`: the path becomes the steps entered up to it, minus the first step, which is the root.
     func pop(to step: CreationStep) {
         guard let index = steps.firstIndex(of: step) else { return }
-        let entered = steps.prefix(index + 1)
-        path = Array(opening.showsKindPage ? entered : entered.dropFirst())
+        path = Array(steps.prefix(index + 1).dropFirst())
     }
 
     /// Sends the draft through the kind's view model (idempotent by client id there); a call while one is in flight
@@ -134,7 +129,7 @@ final class CreationWizardModel<EventModel: EventDraftEditing,
     func submit() async {
         guard let model = active, !model.isSubmitting else { return }
         await model.submit()
-        if model.isDone, let kind { logger.info(.ui, "Creation wizard submitted \(name(of: kind))") }
+        if model.isDone { logger.info(.ui, "Creation wizard submitted \(name(of: kind))") }
     }
 
     /// The presenter reports the flow's one real dismissal (never a width-class re-host, which only moves the live
@@ -143,7 +138,7 @@ final class CreationWizardModel<EventModel: EventDraftEditing,
         guard !hasClosed else { return }
         hasClosed = true
         guard !isDone else { return }
-        logger.info(.ui, "Creation wizard abandoned (kind: \(kind.map(name(of:)) ?? "none"))")
+        logger.info(.ui, "Creation wizard abandoned (kind: \(name(of: kind)))")
     }
 
     private func name(of kind: CreationKind) -> String { String(describing: kind) }

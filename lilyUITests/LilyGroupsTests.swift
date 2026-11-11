@@ -78,15 +78,14 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Hosted in Kreuzberg Kickers"].waitForExistence(timeout: 5))
     }
 
-    /// From a group the wizard opens seeded: no kind page, straight on Name, and no Hosting group step on the walk
-    /// (the group is locked); a dirty Cancel asks to discard.
+    /// From a group the wizard opens seeded, straight on Name, and the walk has no Hosting group step (the group is
+    /// locked); a dirty Cancel asks to discard.
     @MainActor
-    func testCreatingAnEventInsideAGroupSkipsTheKindAndGroupSteps() {
+    func testCreatingAnEventInsideAGroupSkipsTheGroupStep() {
         tapSignInWithApple()
         openKickersDetail()
         app.buttons["group-create-event"].tap()
         waitForWizardStep("Name")
-        XCTAssertFalse(app.navigationBars[Self.wizardKindTitle].exists, "a seeded wizard skips the kind page")
 
         enter("Locked walk", into: app.textFields["create-title"])
         tapNext()
@@ -101,19 +100,17 @@ final class LilyGroupsTests: LilyUITestCase {
                       "a dirty wizard closes on the confirmed discard")
     }
 
-    /// From Explore the "+" asks the kind first; a clean Cancel on Name closes silently, and the wizard gives the
-    /// choice its own Hosting group step starting at "No group". A dirty Cancel asks to discard.
+    /// From Explore the "+" menu's "New event" opens the wizard on Name; a clean Cancel there closes silently, and
+    /// the wizard gives the choice its own Hosting group step starting at "No group". A dirty Cancel asks to discard.
     @MainActor
-    func testCreatingFromExploreAsksTheKindAndOffersTheGroupChoice() {
+    func testCreatingFromExploreOffersTheGroupChoice() {
         tapSignInWithApple()
-        tapCreateButton()
-        pickCreationKind("create-kind-event")
+        tapCreateMenuItem("New event")
         waitForWizardStep("Name")
         app.buttons["create-cancel"].tap()
         XCTAssertTrue(app.navigationBars["Name"].waitForNonExistence(timeout: 5), "a clean wizard closes silently")
 
-        tapCreateButton()
-        pickCreationKind("create-kind-event")
+        tapCreateMenuItem("New event")
         waitForWizardStep("Name")
         enter("Group pick", into: app.textFields["create-title"])
         tapNext()
@@ -124,7 +121,7 @@ final class LilyGroupsTests: LilyUITestCase {
         let picker = app.descendants(matching: .any)["create-group"]
         XCTAssertTrue(picker.waitForExistence(timeout: 5), "a member of groups gets the choice on its own step")
         XCTAssertTrue(text(of: picker).contains("No group"), "nothing is preselected from Explore: \(text(of: picker))")
-        XCTAssertTrue(app.staticTexts["A group event lives on that group's page; without one it's open to everyone."]
+        XCTAssertTrue(app.staticTexts["A group event lives on that group's page. Without one it's open to everyone."]
             .exists, "the step explains what the choice means")
         app.buttons["create-cancel"].tap()
         confirm("Discard")

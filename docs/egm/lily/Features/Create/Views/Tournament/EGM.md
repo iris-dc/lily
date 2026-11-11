@@ -15,7 +15,8 @@ field identifier is byte-identical to the edit form's.
 
 - `TournamentNamePage<Model>` (`lily/Features/Create/Views/Tournament/TournamentNamePage.swift:TournamentNamePage`):
   the name capsule (`tournament-name`) with the keyboard up on entry; owns `nameTooShort`/`nameTooLong`.
-- `TournamentTypePage<Model>` (`TournamentTypePage.swift:TournamentTypePage`): one `WizardChoiceCard` per
+- `TournamentTypePage<Model>` (`TournamentTypePage.swift:TournamentTypePage`): the shared `WizardTypePicker` (the
+  third design round, 2026-11-11) — a search field (`create-type-search`) over the compact grid, one card per
   `EventType.known` (reusing `createEventType(_:)`), auto-advancing; a tournament's type is non-optional and fixed
   once created. No issues.
 - `TournamentFormatPage<Model>` (`TournamentFormatPage.swift:TournamentFormatPage`): one card per
@@ -45,7 +46,7 @@ field identifier is byte-identical to the edit form's.
   `draft.effectiveVisibility` with the follows-group line (`AppBranding.Create.tournamentFollowsGroup`) under it.
   No issues.
 - `TournamentDetailsPage<Model>` (`TournamentDetailsPage.swift:TournamentDetailsPage`): the final step — the
-  multiline description capsule; the scaffold's bottom bar carries the create button (`tournament-submit`), gated
+  multiline description capsule over the shared `OptionalMarker` (2026-11-11); the scaffold's bottom bar carries the create button (`tournament-submit`), gated
   by the whole-draft rule. Owns `descriptionTooLong`.
 
 ## Invariants

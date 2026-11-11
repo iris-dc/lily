@@ -54,17 +54,17 @@ struct EventFilterTests {
     /// A type this build does not know draws as Other, but for the filter it is nobody's choice: no selection is no
     /// criterion, and any selection, Other's included, leaves such a game out.
     @Test func aFilterNeverMatchesAnUnknownType() {
-        let golf = SportEvent.fixture(type: .unknown("golf"))
+        let cricket = SportEvent.fixture(type: .unknown("cricket"))
         var filter = EventFilter()
-        #expect(matches(filter, golf), "no type selected is no criterion")
+        #expect(matches(filter, cricket), "no type selected is no criterion")
 
         filter.toggle(.tennis)
-        #expect(!matches(filter, golf))
+        #expect(!matches(filter, cricket))
 
         filter.toggle(.tennis)
         filter.toggle(.other)
-        #expect(!matches(filter, golf), "an unknown type draws as Other but is not Other for the filter")
-        #expect(!filter.includes(.unknown("golf")))
+        #expect(!matches(filter, cricket), "an unknown type draws as Other but is not Other for the filter")
+        #expect(!filter.includes(.unknown("cricket")))
     }
 
     @Test func togglingTwiceRemovesTheType() {

@@ -1,17 +1,25 @@
 import XCTest
 
-/// The creation wizard's walk, shared by every class that creates from the "+": the plain button opens the wizard
-/// on its kind page (one auto-advancing card per offered kind), each following step is one idea on the wizard's
+/// The creation wizard's walk, shared by every class that creates from the "+": the "+" is a menu naming each offered
+/// kind ("New event", "New group", "New tournament"), and picking an item opens the wizard seeded with that kind, so
+/// the flow starts on the kind's first step — there is no kind page. Each following step is one idea on the wizard's
 /// `NavigationStack`, titled with its name, and `create-next` pushes the following step. The event walk is Name,
-/// Type (whose cards auto-advance), When, Hosting group (only where nothing locked a group and the caller has
+/// Type (whose grid cards auto-advance), When, Hosting group (only where nothing locked a group and the caller has
 /// groups to host in), Place, Players, then Details with the submit button. The identifiers mirror
 /// `AccessibilityIdentifiers`. In its own file because the base file is at its length limit.
 extension LilyUITestCase {
     /// The event flow's final step title, what a submit or discard waits on to see the wizard gone.
     static let wizardFinalEventStep = "Details"
 
-    /// The kind page's navigation title, what tells it from a kind's first step.
-    static let wizardKindTitle = "What are you creating?"
+    /// Opens the "+" menu and picks the item `title` ("New event"): a signed-in user gets the wizard on the kind's
+    /// Name step, a guest the sign-in sheet.
+    @MainActor
+    func tapCreateMenuItem(_ title: String) {
+        tapCreateButton()
+        let item = app.buttons[title]
+        XCTAssertTrue(item.waitForExistence(timeout: 5), "the + menu offers \(title)")
+        item.tap()
+    }
 
     /// Waits for the wizard step titled `title`: each step's navigation title is its name.
     @MainActor
@@ -37,31 +45,41 @@ extension LilyUITestCase {
         card.tap()
     }
 
-    /// Picks a kind card on the wizard's kind page ("create-kind-event"); the pick fixes the kind one-way and
-    /// pushes the kind's first step itself.
-    @MainActor
-    func pickCreationKind(_ cardID: String) {
-        pickWizardCard(cardID, on: Self.wizardKindTitle)
-    }
-
-    /// Picks a type by its card on the Type step; the pick fixes the type and pushes the next step itself.
+    /// Picks a type by its card on the Type step's grid; the pick fixes the type and pushes the next step itself.
     @MainActor
     func pickWizardEventType(_ wireName: String = "football") {
         pickWizardCard("create-type-\(wireName)", on: "Type")
     }
 
     /// Walks from the Name step, its title already entered, to Place: a type card (whose tap advances), then Next
-    /// past When and the Hosting group step (present from Explore, where nothing locks a group and the mock user
-    /// has groups to host in).
+    /// past When (where `onWhen` runs first, for a check on that step) and the Hosting group step (present from
+    /// Explore, where nothing locks a group and the mock user has groups to host in).
     @MainActor
-    func walkWizardNameToPlace() {
+    func walkWizardNameToPlace(onWhen: (@MainActor () -> Void)? = nil) {
         tapNext()
         pickWizardEventType()
         waitForWizardStep("When")
+        onWhen?()
         tapNext()
         waitForWizardStep("Hosting group")
         tapNext()
         waitForWizardStep("Place")
+    }
+
+    /// On the When step: the optional finish time is addable (the picker comes up, proposed after the start) and
+    /// removable (the clear button returns the add affordance and the picker goes).
+    @MainActor
+    func assertFinishTimeAddsAndRemoves() {
+        let add = app.buttons["create-ends-at-add"]
+        XCTAssertTrue(add.waitForExistence(timeout: 5), "the When step offers adding a finish time")
+        add.tap()
+        let picker = app.descendants(matching: .any)["create-ends-at"].firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 5), "the add shows the finish-time picker")
+        let remove = app.buttons["create-ends-at-remove"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 5), "the set finish time offers its clear button")
+        remove.tap()
+        XCTAssertTrue(add.waitForExistence(timeout: 5), "the remove returns the add affordance")
+        XCTAssertTrue(picker.waitForNonExistence(timeout: 5), "the picker goes with the finish time")
     }
 
     /// Walks the event wizard to its Players step, where the player fields live: the title on Name, the middle

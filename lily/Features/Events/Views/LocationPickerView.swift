@@ -3,8 +3,12 @@ import SwiftUI
 
 /// Picks the spot of a new game: the map moves under a fixed pin, and wherever the map settles, the point under the
 /// pin is the spot. Pushed from the create form; both Done and the back button keep what the pin points at.
+/// Pushed from an edit form the picker draws its own `ContentScreen`; the creation wizard hosts it over the shell's
+/// one aurora instead (`drawsBackground: false`), so the map push never composites two live auroras.
 struct LocationPickerView: View {
     @Binding var coordinate: Coordinate?
+    /// Whether the picker draws the screen's aurora itself; false when the presenter already draws one.
+    private let drawsBackground: Bool
     @State private var position: MapCameraPosition
     /// The map's frame; the pin sits at its centre, and that point is what gets converted into a coordinate.
     @State private var mapSize: CGSize = .zero
@@ -14,8 +18,9 @@ struct LocationPickerView: View {
 
     private typealias Copy = AppBranding.Events.Create
 
-    init(coordinate: Binding<Coordinate?>) {
+    init(coordinate: Binding<Coordinate?>, drawsBackground: Bool = true) {
         _coordinate = coordinate
+        self.drawsBackground = drawsBackground
         _position = State(initialValue: Self.startPosition(for: coordinate.wrappedValue))
     }
 
@@ -29,19 +34,29 @@ struct LocationPickerView: View {
     }
 
     var body: some View {
-        ContentScreen {
-            // The footer takes real room instead of insetting the safe area: a `Map` draws under such insets like a
-            // scroll view, which put the hint over street names and the pin off the map's centre.
-            VStack(spacing: 0) {
-                ZStack {
-                    map
-                    pin
-                }
-                footer
-            }
+        screen
+            .navigationTitle(Copy.mapTitle)
+            .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder private var screen: some View {
+        if drawsBackground {
+            ContentScreen { layout }
+        } else {
+            layout
         }
-        .navigationTitle(Copy.mapTitle)
-        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var layout: some View {
+        // The footer takes real room instead of insetting the safe area: a `Map` draws under such insets like a
+        // scroll view, which put the hint over street names and the pin off the map's centre.
+        VStack(spacing: 0) {
+            ZStack {
+                map
+                pin
+            }
+            footer
+        }
     }
 
     private var map: some View {

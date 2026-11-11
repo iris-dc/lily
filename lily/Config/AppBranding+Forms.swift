@@ -6,6 +6,8 @@ nonisolated extension AppBranding {
         static var close: String { localized("Close") }
         static var back: String { localized("Back") }
         static var cancel: String { localized("Cancel") }
+        /// The subtle marker on every optional field, one word reused wherever a field may be left empty.
+        static var optional: String { localized("Optional") }
 
         /// The hints the event, group and tournament forms and the contact form share, each naming the limit the
         /// field was judged against.

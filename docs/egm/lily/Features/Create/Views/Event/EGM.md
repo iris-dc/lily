@@ -8,7 +8,8 @@ The event flow's seven one-idea pages (the owner's second design round, 2026-11-
 grouping): custom glass layouts over the aurora (never `Form`s — the substrate the owner picked from the 2026-11-10
 side-by-side prototype), composed from the slice-1 shared components, section contents in `GlassCard` containers and
 text fields in the `lilyField()` / `lilyMultilineField()` glass capsules. Every page renders inside
-`WizardStepScaffold` (progress mark, optional caption, entrance motion, bottom bar), binds to the view model
+`WizardStepScaffold` (progress mark, a caption under every title, entrance motion, transparent bottom bar — the
+third design round, 2026-11-11), binds to the view model
 through `EventDraftEditing` and reads the wizard through `CreationWizardControlling` (slice 3, 2026-11-11 — a page
 is generic over its own kind's view model alone); every create field identifier is byte-identical to the form's, so
 the UI tests only change navigation. The walk is Name / Type / When / Hosting group / Place / Players / Details, the hosting-group
@@ -19,12 +20,18 @@ page conditional on the opening (`CreationSteps.eventSteps(opening:)`).
 - `EventNamePage<Model>` (`lily/Features/Create/Views/Event/EventNamePage.swift:EventNamePage`): the title capsule
   (`create-title`) with the keyboard up on entry (`.onAppear` focuses the field; the scaffold's `scrollTarget`
   keeps it visible) and `WizardIssueHint` under it; the partition gives it `titleMissing`/`titleTooLong`.
-- `EventTypePage<Model>` (`EventTypePage.swift:EventTypePage`): one `WizardChoiceCard` per `EventType.known`
+- `EventTypePage<Model>` (`EventTypePage.swift:EventTypePage`): the shared `WizardTypePicker` — a search field
+  (`create-type-search`) over the compact two-column grid, one card per `EventType.known`
   (`create-type-<wireName>`, `AccessibilityIdentifiers.createEventType(_:)`), the accent check on the draft's
-  current type; picking writes `draft.type` and auto-advances through `wizard.advance(from:)` — the push animation
+  current type (the third design round, 2026-11-11: the full-width cards outgrew the longer type list); picking
+  writes `draft.type` and auto-advances through `wizard.advance(from:)` — the push animation
   is the stack's own — and re-entering shows the current choice, whose card advances again. No issues by design.
 - `EventWhenPage<Model>` (`EventWhenPage.swift:EventWhenPage`): the start `DatePicker` floored at
-  `viewModel.earliestStart` in a `GlassCard`; owns `startsAtTooSoon`.
+  `viewModel.earliestStart` and the shared optional finish control (`EventFinishTimeControl`: the add affordance
+  `create-ends-at-add`, an ink `lilyTextButton` with the accent on its plus mark alone (the round-3 review,
+  2026-11-11), on a row wearing the shared `OptionalMarker`, the picker `create-ends-at` floored at the
+  start, the clear `create-ends-at-remove`) in one
+  `GlassCard`; owns `startsAtTooSoon` and `endsBeforeStart` (2026-11-11).
 - `EventGroupPage<Model>` (`EventGroupPage.swift:EventGroupPage`): on the walk exactly when the opening offers the
   choice (groups flag on, no locked seed, a group to host in at opening — `Opening.hasEligibleGroups`); the shared
   `HostingGroupRow` behind an outer label (`create-group`, `labelsHidden()`), a `ProgressView` placeholder in the
@@ -46,8 +53,11 @@ page conditional on the opening (`CreationSteps.eventSteps(opening:)`).
   behind an outer label (`SkillLevelPicker`, `lilyMenuPicker`, `labelsHidden`); owns
   `capacityOutOfRange`/`capacityBelowParticipants`.
 - `EventDetailsPage<Model>` (`EventDetailsPage.swift:EventDetailsPage`): the final step, all of it optional (the
-  scaffold caption says so) — one card with the shared `PriceAmountField` (`create-price`, `create-price-currency`),
-  the description (`lilyMultilineField`) and looking-for (`lilyField`) capsules; `WizardIssueHint` closes the page
+  scaffold caption says so, and each field wears the shared `OptionalMarker`, 2026-11-11) — one card with the price
+  label over its marker and the shared `PriceAmountField` (`create-price`; `create-price-currency` is the inline
+  currency menu, `currencySelection: $draft.currencyCode`, defaulting to the settings currency the draft was seeded
+  with — the event keeps its own on the wire), the description (`lilyMultilineField`) and looking-for (`lilyField`)
+  capsules each over their marker; `WizardIssueHint` closes the page
   and the scaffold's bottom bar carries the submit button here (`create-submit`). Owns the remaining issues
   (`descriptionTooLong`, `lookingForTooLong`, `priceUnreadable`, `priceOutOfRange`).
 

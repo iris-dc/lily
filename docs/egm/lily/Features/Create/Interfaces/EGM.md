@@ -13,10 +13,11 @@ existential still track, because tracking is the concrete class's accessors, not
 ## Interface
 
 - `CreationWizardControlling` (`lily/Features/Create/Interfaces/CreationWizardControlling.swift`):
-  `AnyObject, Observable`. Read: `opening: CreationWizardPolicy.Opening`, `path: [CreationStep]` (read-only here;
-  the shell alone binds it), `steps: [CreationStep]`, `isSubmitting`, `canSubmit`. Act: `enter(_ kind:)`,
+  `AnyObject, Observable`. Read: `path: [CreationStep]` (read-only here;
+  the shell alone binds it), `steps: [CreationStep]`, `isSubmitting`, `canSubmit`. Act:
   `advance(from:)`, `pop(to:)`, `allowsNext(from:) -> Bool`, `blockingMessage(on:) -> String?`,
-  `blockedEarlierStep(before:) -> CreationStep?`, `submit() async`.
+  `blockedEarlierStep(before:) -> CreationStep?`, `submit() async`. (`opening` and `enter(_:)` left the protocol
+  with the kind page, 2026-11-11: every flow is seeded, so only the model's `init` enters a kind.)
 
 ## Invariants
 

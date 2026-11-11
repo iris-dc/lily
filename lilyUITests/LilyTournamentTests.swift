@@ -14,14 +14,13 @@ final class LilyTournamentTests: LilyUITestCase {
     /// index 3).
     let matchReminderID = "01J8MOCKNB0000000000000003"
 
-    /// The "+"'s Tournament card walks the wizard's nine steps (the spot comes from the mock location, the walk in
-    /// the helpers); the organiser lands on the new tournament's detail on Home, and Home lists it under
+    /// The "+" menu's "New tournament" walks the wizard's nine steps (the spot comes from the mock location, the
+    /// walk in the helpers); the organiser lands on the new tournament's detail on Home, and Home lists it under
     /// "Your tournaments".
     @MainActor
     func testCreatingATournamentFromExploreShowsItOnHome() {
         tapSignInWithApple()
-        tapCreateButton()
-        pickCreationKind("create-kind-tournament")
+        tapCreateMenuItem("New tournament")
 
         let name = "Canal Cup"
         walkTournamentWizard(name: name, place: "Canal Path")

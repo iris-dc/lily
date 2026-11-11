@@ -30,8 +30,7 @@ final class LilyProfileTests: LilyUITestCase {
 
         closeProfileSheet()
         openExploreTab()
-        tapCreateButton()
-        pickCreationKind("create-kind-event")
+        tapCreateMenuItem("New event")
         walkEventWizardToPlayers(title: "Price check", place: "Canal Path")
         continueToDetails()
         // The price card heads the Details step; the scroll keeps the read safe wherever the fold falls.
@@ -41,8 +40,9 @@ final class LilyProfileTests: LilyUITestCase {
         discardWizard()
 
         app.buttons["events-filter"].tap()
+        // The full type list pushes the price row below the fold, where it is not in the accessibility tree.
         let capSymbol = app.staticTexts["filter-price-currency"]
-        XCTAssertTrue(capSymbol.waitForExistence(timeout: 5))
+        scrollUntilHittable(capSymbol, "the price cap row scrolls into the filter sheet")
         XCTAssertTrue(Self.zlotySymbols.contains(capSymbol.label), "the price cap too: \(capSymbol.label)")
     }
 

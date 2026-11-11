@@ -259,3 +259,45 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   so the next appearance runs the kinds' idempotent prepares again (pinned in `CreationWizardModelTests`), and the
   three per-kind map pages collapsed into one generic page over `PlacePickingDraft`
   (`CreationWizardView.mapPage(for:draft:)`).
+- **Third design round on the creation wizard (2026-11-11): the menu returns, every step gets a caption, the type
+  list grows behind a searchable grid, and events gain an optional finish time.** The "+" is a menu again
+  (`CreateButton`): one item per kind `CreationWizardPolicy.kindsOffered` leaves, each opening the wizard seeded, so
+  the first page is always the kind's Name step; the in-wizard kind page, its `create-kind-*` cards and the
+  "What are you creating?" key are gone, `Opening.showsKindPage` with them (an empty or unoffered seed normalizes to
+  the event), and the one-way-kind rule is trivial — the kind's first step is the stack root. `EventType` grew 14
+  known cases (squash, golf, surfing, skateboarding, dance, boxing, rowing, sailing, chess, darts, bowling,
+  pickleball, handball, hockey — single-word wire names; Laurel's enum grows the same list in the sibling change),
+  which outgrew Laurel's `FilterSummaryDto.MAX_TYPES` (32): the stats summary now truncates a select-everything
+  filter to the cap (telemetry only, the device-side filter loses nothing; pinned in `InteractionTests`;
+  superseded 2026-11-11, same day: Laurel raised `MAX_TYPES` to 48, the pin moved with it, the full known list of 34
+  goes out whole again, and the truncation stays as the guard for unknown names), and "golf"
+  stopped being a valid unknown-type fixture (the tolerance tests use "cricket"). Events carry a new wire field
+  `endsAt` — an optional ISO-8601 instant on `SportEvent`, `CreateEventPayload` and `UpdateEventPayload`, omitted
+  when absent, never `null`, tolerated when missing in responses (the plan's "no backend change" non-goal is
+  superseded, dated, by the owner's round: Laurel stores and returns it). On device: `EventDraft.endsAt` (default
+  nil), the issue `.endsBeforeStart` owned by the When step, the shared `EventFinishTimeControl` (add affordance,
+  then a picker floored at the start with a clear button) on the wizard's When page and the edit form alike, and
+  the facts card's secondary "Until …" line. Gate: ci.sh lint, build (zero /lily/ warnings) and unit green. (The
+  UI suites migrated off the kind-page walks the same day, 2026-11-11 — the menu-seeded walk in
+  `LilyUITestCase+Wizard.swift` rode this round, superseding the follow-up sentence.)
+
+- **Currency picker at the price field, optional markers, and endsAt in the mock world (2026-11-11, the third
+  design round's items 7 and 8).** The event's price field now carries an inline currency menu: `PriceAmountField`
+  gained `currencySelection: Binding<String>?` — given, the symbol becomes a compact `Menu` (a `Picker` over
+  `AppConfig.Currency.offered`, options named by `AppBranding.Settings.currencyChoice`, the label the symbol with a
+  small `chevron.up.chevron.down` mark) under the unchanged `create-price-currency` identifier; without it the
+  symbol stays the read-only fact, which is what the filter's cap passes. The wizard's Details page and the edit
+  form pass `$draft.currencyCode`: `EventDraft.currencyCode` became a `var`, still seeded with the user's settings
+  currency (the game's own on an edit), and the event keeps its own currency on the wire exactly as before. Pinned:
+  the seeded default in `CreateEventViewModelTests.aNewDraftIsPricedInTheUsersCurrency` (pre-existing) and the
+  override in `EventDraftPriceTests.theInlineCurrencyPickOverridesTheSeededDefault`. Every optional field is now
+  visibly marked: one catalog key ("Optional", all seven languages) behind `AppBranding.Forms.optional`, drawn by
+  the shared `OptionalMarker` (caption font, secondary ink, never accent) — the event Details fields and price
+  label, the finish-time add row (the shared control, so the edit form inherits it), the group description (wizard
+  page and edit form row) and the private group's place (rendered exactly while the visibility choice makes the
+  place optional), and the tournament description. Not marked on purpose: the player limit, draws, deadline and
+  visibility controls (always-chosen choices, not leavable fields), the level picker (its "Any level" value already
+  says it), the event edit form's details section (its header already reads "Details (optional)") and the group
+  edit form's where section (its footer already reads "Optional for a private group."). Two mock fixtures (the
+  Hills ride, Sunrise yoga) now carry a finish time, so `endsAt` and the facts card's "Until ..." line are seen in
+  the mock world; neither fixture is pinned by a UI test.

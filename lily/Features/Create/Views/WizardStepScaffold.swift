@@ -1,12 +1,15 @@
 import SwiftUI
 
 /// The chrome every wizard step shares: the step title as the navigation title with the animated progress mark under
-/// it (the plural-safe "Step n of m" stays as the mark's accessibility label), one short caption on the steps whose
-/// purpose needs extra knowledge, the page's fields easing in over the aurora with a reader that brings the focused
-/// field into view, Cancel in the toolbar, and a bottom bar on an opaque background carrying the one primary button —
-/// Next, or the submit button on the final step — so the keyboard never overlaps bare content. On the final step a
+/// it (the plural-safe "Step n of m" stays as the mark's accessibility label), one short caption under every step
+/// title (the owner's third design round, 2026-11-11), the page's fields easing in over the aurora with a reader that
+/// brings the focused field into view, Cancel in the toolbar, and a transparent bottom bar carrying the one primary
+/// button — Next, or the submit button on the final step — its capsule sitting directly over the content and the
+/// aurora (the same round's supersession of the opaque-bar pin). On the final step a
 /// stale issue an earlier step owns is named in a hint that pops back to that step. Per-step copy and identifiers
-/// come from `WizardStepCopy.swift`.
+/// come from `WizardStepCopy.swift`. The scaffold draws transparent content only: the one aurora lives in the wizard
+/// shell (`CreationWizardView`), so a push composites one live aurora and grain instead of two full layers (the
+/// third round's performance pass).
 struct WizardStepScaffold<Content: View>: View {
     let wizard: any CreationWizardControlling
     let step: CreationStep
@@ -17,22 +20,23 @@ struct WizardStepScaffold<Content: View>: View {
     @Environment(\.motion) private var motion
 
     var body: some View {
-        ContentScreen {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
-                        WizardProgressBar(number: number, count: wizard.steps.count)
-                        enteringContent
-                    }
-                    .padding(DesignTokens.Layout.screenMargin)
-                    .readableColumn()
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+                    WizardProgressBar(number: number, count: wizard.steps.count)
+                    enteringContent
                 }
-                .onChange(of: scrollTarget) { reveal(scrollTarget, in: proxy) }
+                .padding(DesignTokens.Layout.screenMargin)
+                .readableColumn()
             }
+            .onChange(of: scrollTarget) { reveal(scrollTarget, in: proxy) }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AccessibilityIdentifiers.createStep)
         .safeAreaInset(edge: .bottom) { bottomBar }
+        // The navigation hosting paints an opaque page background that would hide the shell's aurora; cleared here,
+        // the page is truly transparent and the one aurora shows through every step.
+        .containerBackground(Color.clear, for: .navigation)
         .navigationTitle(step.wizardTitle)
         .navigationBarTitleDisplayMode(.large)
         .toolbar { WizardCancelItem(isDisabled: wizard.isSubmitting, action: onCancel) }
@@ -68,9 +72,6 @@ struct WizardStepScaffold<Content: View>: View {
         .padding(.horizontal, DesignTokens.Layout.screenMargin)
         .padding(.vertical, DesignTokens.Spacing.md)
         .frame(maxWidth: .infinity)
-        // The surface underlay keeps the aurora's brightest patch from bleeding through the bar material.
-        .background(.bar)
-        .background(Color.lilySurface)
     }
 
     @ViewBuilder private var primaryButton: some View {
@@ -115,8 +116,8 @@ struct WizardStepScaffold<Content: View>: View {
     }
 }
 
-/// The wizard's Cancel, shared by the kind page and every step: a plain toolbar text action under the existing
-/// identifier, disabled while a submit is in flight (the locked-while-busy contract).
+/// The wizard's Cancel, shared by every step: a plain toolbar text action under the existing identifier, disabled
+/// while a submit is in flight (the locked-while-busy contract).
 struct WizardCancelItem: ToolbarContent {
     let isDisabled: Bool
     let action: () -> Void

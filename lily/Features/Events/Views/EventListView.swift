@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The Explore screen: the upcoming games as a list, switchable to a map, narrowed through the filter sheet the
-/// toolbar opens, with the "+" floating over the content (a signed-in user gets the creation wizard, whose kind page
-/// asks what to make; a guest the sign-in sheet) and a header (the carousels) above the list. On a wide window
+/// toolbar opens, with the "+" floating over the content (its menu names the kind; a signed-in user gets the wizard
+/// seeded with it, a guest the sign-in sheet) and a header (the carousels) above the list. On a wide window
 /// (`LayoutMode.wide`) the map is not a mode but a pane: the content column on the left, the map always on the right,
 /// and the picker gone (`EventListLayout`).
 struct EventListView<Header: View>: View {
@@ -118,7 +118,7 @@ struct EventListView<Header: View>: View {
     private func withCreateButton(_ content: some View) -> some View {
         ZStack(alignment: .bottomTrailing) {
             content
-            CreateButton { presentForUser(.wizard(.empty)) }
+            CreateButton { kind in presentForUser(.wizard(CreationSeed(kind: kind))) }
                 .padding(DesignTokens.Spacing.lg)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

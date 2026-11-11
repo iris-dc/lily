@@ -96,14 +96,13 @@ final class LilyEventEditTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["1 joined"].waitForExistence(timeout: 5), "the count stands alone")
     }
 
-    /// Signs in, picks the Event card on the wizard's kind page and walks to its Players step (the spot comes from
-    /// the mock location), where the player fields live; Details follows with the submit button, and the edit tests
-    /// then reopen the created game through the edit form.
+    /// Signs in, opens the wizard through the "+" menu's "New event" and walks to its Players step (the spot comes
+    /// from the mock location), where the player fields live; Details follows with the submit button, and the edit
+    /// tests then reopen the created game through the edit form.
     @MainActor
     private func startCreating(_ title: String) {
         tapSignInWithApple()
-        tapCreateButton()
-        pickCreationKind("create-kind-event")
+        tapCreateMenuItem("New event")
         walkEventWizardToPlayers(title: title, place: "Canal Path")
     }
 

@@ -22,6 +22,8 @@ nonisolated struct CreateEventPayload: Encodable, Equatable, Sendable {
     let title: String
     let type: EventType
     let startsAt: Date
+    /// Omitted when the host set no finish time, never sent as `null`.
+    let endsAt: Date?
     let location: Location
     /// Omitted for a game without a limit.
     let capacity: Int?
@@ -40,6 +42,7 @@ nonisolated struct CreateEventPayload: Encodable, Equatable, Sendable {
         title = draft.trimmedTitle
         type = draft.type
         startsAt = draft.startsAt
+        endsAt = draft.endsAt
         location = Location(name: draft.trimmedLocationName, coordinate: coordinate)
         capacity = draft.capacityIfLimited
         allowsExtraParticipants = draft.allowsExtraParticipants

@@ -8,13 +8,14 @@ struct CreateEventPayloadTests {
     private static let requiredKeys: Set<String> = [
         "clientEventId", "title", "type", "startsAt", "location", "capacity", "allowsExtraParticipants",
     ]
-    private static let optionalKeys: Set<String> = ["description", "lookingFor", "skillLevel", "price", "groupId"]
+    private static let optionalKeys: Set<String> = ["endsAt", "description", "lookingFor", "skillLevel", "price", "groupId"]
     private static let kickers = EventGroupRef(id: "7b1c2d3e", name: "Kreuzberg Kickers", visibility: .public, isDeleted: false)
 
     /// A draft with every optional detail filled in.
     private static func makeFullDraft() -> EventDraft {
         var draft = EventDraft.fixture(now: now, clientId: "3f2504e0-4f89-11d3-9a0c-0305e82c3301")
         draft.type = .tennis
+        draft.endsAt = draft.startsAt.addingTimeInterval(.hour)
         draft.capacity = 4
         draft.playerLimit = .minimum
         draft.description = "Bring both colours"
@@ -36,6 +37,7 @@ struct CreateEventPayloadTests {
         #expect(json["title"] as? String == "Thursday five-a-side")
         #expect(json["type"] as? String == "tennis")
         #expect(json["startsAt"] as? String == "2027-01-16T08:00:00Z")
+        #expect(json["endsAt"] as? String == "2027-01-16T09:00:00Z", "an ISO-8601 instant like the start")
         #expect(json["capacity"] as? Int == 4)
         #expect(json["allowsExtraParticipants"] as? Bool == true)
         #expect(json["description"] as? String == "Bring both colours")
@@ -84,6 +86,14 @@ struct CreateEventPayloadTests {
 
         #expect(payload.capacity == nil && !payload.allowsExtraParticipants)
         #expect(json["capacity"] == nil && json["allowsExtraParticipants"] as? Bool == false)
+    }
+
+    /// A game without a finish time sends no `endsAt` at all: the backend reads absent as none, `null` as a failure.
+    @Test func aGameWithoutAFinishTimeSendsNoEndsAt() throws {
+        let payload = try #require(CreateEventPayload(draft: .fixture(now: Self.now)))
+
+        #expect(payload.endsAt == nil)
+        #expect(try ContractSamples.jsonObject(of: payload)["endsAt"] == nil)
     }
 
     /// A game of its own sends no `groupId` at all: the backend reads absent as ungrouped, `null` as a validation failure.

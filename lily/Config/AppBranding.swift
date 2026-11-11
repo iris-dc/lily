@@ -61,7 +61,7 @@ nonisolated enum AppBranding {
         static var eventsSection: String { localized("Events") }
         static var loadFailedMessage: String { localized("Pull down to try again.") }
 
-        /// The event form copy: the wizard's event pages and the edit sheet share it; `title` is the kind page's card.
+        /// The event form copy: the wizard's event pages and the edit sheet share it; `title` is the "+" menu's item.
         enum Create {
             /// VoiceOver label of the floating "+" that opens the creation wizard.
             static var menu: String { localized("Create") }
@@ -72,6 +72,10 @@ nonisolated enum AppBranding {
             static var titlePlaceholder: String { localized("Event name") }
             static var eventType: String { Filter.eventType }
             static var startsAt: String { localized("When") }
+            /// The optional finish time: the picker's label, the add affordance and the clear button's VoiceOver label.
+            static var endsAt: String { localized("Finish time") }
+            static var addEndsAt: String { localized("Add a finish time") }
+            static var removeEndsAt: String { localized("Remove the finish time") }
             static var whereSection: String { localized("Where") }
             /// The Where footer while nothing is wrong: either half is enough, the other is filled from it.
             static var whereHint: String { localized("A place name or a spot on the map is enough.") }
@@ -129,6 +133,7 @@ nonisolated enum AppBranding {
                 let limits = AppConfig.Events.Creation.self
                 return switch issue {
                 case .startsAtTooSoon: Forms.startTooSoon(minutes: limits.minimumLeadTimeMinutes)
+                case .endsBeforeStart: localized("Set the finish time after the start")
                 case .placeMissing: localized("Name the place or set the spot on the map")
                 case .capacityOutOfRange:
                     localized("Between \(limits.capacityRange.lowerBound) and \(limits.capacityRange.upperBound) players")
@@ -158,6 +163,11 @@ nonisolated enum AppBranding {
 
         static func perPerson(_ priceText: String) -> String {
             localized("\(priceText) per person")
+        }
+
+        /// The finish time under the start on the facts card; `timeText` is already formatted for the locale.
+        static func until(_ timeText: String) -> String {
+            localized("Until \(timeText)")
         }
 
         static func level(_ levelName: String) -> String {

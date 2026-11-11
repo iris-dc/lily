@@ -42,6 +42,7 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
                 .accessibilityIdentifier(AccessibilityIdentifiers.createTitle)
             typeChips
             DatePicker(Copy.startsAt, selection: $viewModel.draft.startsAt, in: viewModel.earliestStart...)
+            EventFinishTimeControl(viewModel: viewModel)
             if viewModel.showsGroupRow {
                 HostingGroupRow(lockedGroup: viewModel.lockedGroup,
                                 showsNoEligibleGroups: viewModel.explainsNoEligibleGroups,
@@ -52,7 +53,8 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
             Text(Copy.gameSection)
         } footer: {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-                viewModel.issue(for: .titleMissing, .titleTooLong, .startsAtTooSoon).map { Text(Copy.message(for: $0)) }
+                viewModel.issue(for: .titleMissing, .titleTooLong, .startsAtTooSoon, .endsBeforeStart)
+                    .map { Text(Copy.message(for: $0)) }
                 if viewModel.explainsNoEligibleGroups {
                     Text(Copy.noEligibleGroups)
                 }

@@ -2,30 +2,25 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The wizard shell over real create view models on fakes: the one-way kind, the lazy per-kind factory, prepare on
-/// kind entry, the user-edit dirty rule, the gating walk, the submit lock and the logged lines (pinned by count plus
-/// fragment).
+/// The wizard shell over real create view models on fakes: the kind fixed at init from the normalized seed, the
+/// per-kind factory, prepare on the first ask, the user-edit dirty rule, the gating walk, the submit lock and the
+/// logged lines (pinned by count plus fragment).
 @MainActor
 struct CreationWizardModelTests {
     private static let group = EventGroupRef(id: "group-1", name: "Mitte Kickers", visibility: .private, isDeleted: false)
 
     private typealias Harness = CreationWizardHarness
 
-    @Test func theKindIsEnteredOnceAndTheViewModelMadeLazily() {
+    /// An empty seed normalizes to the event flow, fixed at init; the kind is immutable, so the pick stays one-way
+    /// by type and only the entered kind's view model is ever made.
+    @Test func theKindIsFixedAtInitFromTheNormalizedSeed() {
         let harness = Harness()
-        #expect(harness.model.kind == nil && harness.model.eventModel == nil)
-        #expect(harness.factoryLockedGroups.values.isEmpty && harness.model.path.isEmpty)
 
-        harness.model.enter(.event)
         #expect(harness.model.kind == .event && harness.model.eventModel != nil)
-        #expect(harness.factoryLockedGroups.values.count == 1)
-        #expect(harness.model.path == [.event(.name)])
+        #expect(harness.model.groupModel == nil && harness.model.tournamentModel == nil,
+                "only the entered kind's model is made")
+        #expect(harness.factoryLockedGroups.values.count == 1 && harness.model.path.isEmpty)
         #expect(harness.logger.count(in: .ui, mentioning: "begun", "event") == 1)
-
-        harness.model.enter(.group)
-        #expect(harness.model.kind == .event)
-        #expect(harness.model.groupModel == nil, "the one-way pick never makes another kind's model")
-        #expect(harness.factoryLockedGroups.values.count == 1 && harness.model.path == [.event(.name)])
         #expect(harness.logger.count(in: .ui, mentioning: "begun") == 1)
     }
 
@@ -33,7 +28,6 @@ struct CreationWizardModelTests {
         let harness = Harness(seed: CreationSeed(kind: .event),
                               flags: CreationWizardPolicy.Flags(groups: false, tournaments: false))
 
-        #expect(!harness.model.opening.showsKindPage)
         #expect(harness.model.kind == .event && harness.model.eventModel != nil)
         #expect(harness.model.path.isEmpty, "the first step is the stack root, never a path entry")
         #expect(harness.model.steps == [.event(.name), .event(.type), .event(.when),
@@ -148,41 +142,27 @@ struct CreationWizardModelTests {
     }
 
     /// Only the entry on top advances: a double-tapped Next pushes once, and a tap gone stale across a pop neither
-    /// pushes nor skips a step — in both root shapes.
+    /// pushes nor skips a step.
     @Test func advanceRunsOnlyFromTheStepOnTop() {
-        let seeded = Harness(seed: CreationSeed(kind: .event))
-        seeded.viewModel.draft.title = "Thursday five-a-side"
-        seeded.model.advance(from: .event(.name))
-        seeded.model.advance(from: .event(.name))
-        #expect(seeded.model.path == [.event(.type)], "a double tap pushes once")
+        let harness = Harness(seed: CreationSeed(kind: .event))
+        harness.viewModel.draft.title = "Thursday five-a-side"
+        harness.model.advance(from: .event(.name))
+        harness.model.advance(from: .event(.name))
+        #expect(harness.model.path == [.event(.type)], "a double tap pushes once")
 
-        seeded.model.pop(to: .event(.name))
-        seeded.model.advance(from: .event(.type))
-        #expect(seeded.model.path.isEmpty, "a stale tap from a popped step pushes nothing")
-
-        let picked = Harness()
-        picked.model.enter(.event)
-        picked.viewModel.draft.title = "Thursday five-a-side"
-        picked.model.advance(from: .event(.name))
-        picked.model.advance(from: .event(.name))
-        #expect(picked.model.path == [.event(.name), .event(.type)], "one push under the kind-page root too")
+        harness.model.pop(to: .event(.name))
+        harness.model.advance(from: .event(.type))
+        #expect(harness.model.path.isEmpty, "a stale tap from a popped step pushes nothing")
     }
 
-    @Test func popReturnsToTheOwningStepInBothRootShapes() {
-        let seeded = Harness(seed: CreationSeed(kind: .event))
-        seeded.events.completeDraft()
-        seeded.model.advance(from: .event(.name))
-        seeded.model.advance(from: .event(.type))
-        #expect(seeded.model.path == [.event(.type), .event(.when)])
-        seeded.model.pop(to: .event(.name))
-        #expect(seeded.model.path.isEmpty, "the first step is the root when the kind page is skipped")
-
-        let picked = Harness()
-        picked.model.enter(.event)
-        picked.events.completeDraft()
-        picked.model.advance(from: .event(.name))
-        picked.model.pop(to: .event(.name))
-        #expect(picked.model.path == [.event(.name)], "the kind page stays the root under a picked kind")
+    @Test func popReturnsToTheOwningStepWithTheFirstStepAsTheRoot() {
+        let harness = Harness(seed: CreationSeed(kind: .event))
+        harness.events.completeDraft()
+        harness.model.advance(from: .event(.name))
+        harness.model.advance(from: .event(.type))
+        #expect(harness.model.path == [.event(.type), .event(.when)])
+        harness.model.pop(to: .event(.name))
+        #expect(harness.model.path.isEmpty, "the first step is the stack root, never a path entry")
     }
 
     /// An issue that aged on an earlier step blocks the final gate; the hint names that step to pop back to.
@@ -221,7 +201,6 @@ struct CreationWizardModelTests {
 
     @Test func closingWithoutCreatingLogsAbandonedOnce() {
         let harness = Harness()
-        harness.model.enter(.event)
 
         harness.model.noteClosed()
         harness.model.noteClosed()

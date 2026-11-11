@@ -12,13 +12,12 @@ extension LilyGroupsTests {
         XCTAssertTrue(app.buttons["group-create-event"].waitForExistence(timeout: 5), "a member may create games here")
     }
 
-    /// Walks the wizard opened from the group's detail — seeded with the kind and this group, so no kind page shows
-    /// and the Hosting group step is off the walk — and submits it (the spot comes from the mock location).
+    /// Walks the wizard opened from the group's detail — seeded with the kind and this group, so the Hosting group
+    /// step is off the walk — and submits it (the spot comes from the mock location).
     @MainActor
     func createGame(titled title: String) {
         app.buttons["group-create-event"].tap()
         waitForWizardStep("Name")
-        XCTAssertFalse(app.navigationBars[Self.wizardKindTitle].exists, "a seeded wizard skips the kind page")
         enter(title, into: app.textFields["create-title"])
         tapNext()
         pickWizardEventType()

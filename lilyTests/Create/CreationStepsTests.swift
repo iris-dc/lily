@@ -10,7 +10,7 @@ struct CreationStepsTests {
     /// and hosting-group pages own no issue by design.
     private static let partition: [EventDraft.Issue: CreationStep.EventStep] = [
         .titleMissing: .name, .titleTooLong: .name,
-        .startsAtTooSoon: .when,
+        .startsAtTooSoon: .when, .endsBeforeStart: .when,
         .placeMissing: .place, .locationNameTooLong: .place,
         .capacityOutOfRange: .players, .capacityBelowParticipants: .players,
         .descriptionTooLong: .details, .lookingForTooLong: .details,

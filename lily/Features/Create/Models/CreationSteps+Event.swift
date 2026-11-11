@@ -13,7 +13,7 @@ nonisolated extension CreationSteps {
         switch issue {
         case .titleMissing, .titleTooLong:
             .name
-        case .startsAtTooSoon:
+        case .startsAtTooSoon, .endsBeforeStart:
             .when
         case .placeMissing, .locationNameTooLong:
             .place

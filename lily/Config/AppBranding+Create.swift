@@ -1,16 +1,11 @@
 import Foundation
 
 nonisolated extension AppBranding {
-    /// The creation wizard's chrome: the kind page, the step titles with their captions and the progress mark's
-    /// counter, Next and the discard confirmation. The fields keep their copy from each kind's existing `Create`
-    /// namespace, and the final step's button reuses each kind's submit.
+    /// The creation wizard's chrome: the step titles with their captions and the progress mark's counter, Next and
+    /// the discard confirmation. The fields keep their copy from each kind's existing `Create` namespace, and the
+    /// final step's button reuses each kind's submit. Captions are plain sentences in the app's voice — no jargon,
+    /// no semicolons, one under every step title (the owner's third design round, 2026-11-11).
     enum Create {
-        /// The kind page's title; its choice cards reuse the per-kind "New ..." titles.
-        static var kindTitle: String { localized("What are you creating?") }
-        static var kindEvent: String { Events.Create.title }
-        static var kindGroup: String { Groups.Create.title }
-        static var kindTournament: String { Tournaments.Create.title }
-
         /// The event steps' navigation titles, one idea per page.
         static var eventName: String { localized("Name") }
         static var eventType: String { localized("Type") }
@@ -20,15 +15,20 @@ nonisolated extension AppBranding {
         static var eventPlayers: String { localized("Players") }
         static var eventDetails: String { localized("Details") }
 
-        /// The one short line under a step title whose purpose needs extra knowledge: secondary ink, never accent,
-        /// the app's plain voice. The plain steps (name, type, when) carry none.
+        /// The one short line under every step title: secondary ink, never accent, the app's plain voice.
+        static var eventNameCaption: String {
+            localized("The name people will see first when they find your event.")
+        }
+        /// Shared by the event and tournament type steps; the group's type caption names its own rule.
+        static var typeCaption: String { localized("The sport you'll play. People search and filter by it.") }
+        static var eventWhenCaption: String { localized("When it starts. Add a finish time if you know it.") }
         static var eventGroupCaption: String {
-            localized("A group event lives on that group's page; without one it's open to everyone.")
+            localized("A group event lives on that group's page. Without one it's open to everyone.")
         }
         /// The place caption is the Where rule the form already states: either half is enough.
         static var eventPlaceCaption: String { Events.Create.whereHint }
         static var eventPlayersCaption: String {
-            localized("A cap closes the event when full; a number needed lets more join.")
+            localized("A limit closes the event when it's full. A number needed lets more people join.")
         }
         static var eventDetailsCaption: String {
             localized("Price, what to expect, who you're looking for — all optional.")
@@ -42,16 +42,20 @@ nonisolated extension AppBranding {
         static var groupPlace: String { eventPlace }
         static var groupPermissions: String { localized("Permissions") }
 
+        static var groupNameCaption: String {
+            localized("The name people will see first when they find your group.")
+        }
         static var groupDescriptionCaption: String {
             localized("What the group is about, for people deciding to join — optional.")
         }
+        static var groupTypeCaption: String { localized("The sport the group plays, or any if it varies.") }
         /// The public-place rule, stated one page before the Place page applies it (Visibility precedes Place).
         static var groupVisibilityCaption: String {
             localized("A public group names the place it plays at, so people nearby can find it.")
         }
         /// The same rule where it bites: only a public group must name its place.
         static var groupPlaceCaption: String {
-            localized("A public group names the place it plays at; a private one may leave it out.")
+            localized("A public group names the place it plays at. A private one may leave it out.")
         }
         static var groupPermissionsCaption: String {
             localized("What members may do — organisers can always do both.")
@@ -68,27 +72,39 @@ nonisolated extension AppBranding {
         static var tournamentWho: String { Groups.Create.visibility }
         static var tournamentDetails: String { eventDetails }
 
+        static var tournamentNameCaption: String {
+            localized("The name people will see first when they find your tournament.")
+        }
+        static var tournamentFormatCaption: String {
+            localized("Single elimination knocks losers out. Round robin plays everyone against everyone.")
+        }
         static var tournamentScheduleCaption: String {
             localized("Entries close at the start, or earlier if you set a deadline.")
         }
         static var tournamentGroupCaption: String {
-            localized("A group tournament lives on that group's page; without one it's open to everyone.")
+            localized("A group tournament lives on that group's page. Without one it's open to everyone.")
         }
         /// Both halves are required here, unlike the event form's either-is-enough rule.
         static var tournamentPlaceCaption: String {
             localized("Tournaments need a named place and a spot on the map.")
         }
         static var tournamentEntriesCaption: String {
-            localized("Alone or in teams of a size you set; entries close at the cap.")
+            localized("Enter alone or in teams of a size you set. Entries close when the limit is reached.")
         }
         static var tournamentWhoCaption: String {
-            localized("Anyone can find and enter a public tournament; a private one is by invite.")
+            localized("Anyone can find and enter a public tournament. A private one is by invite.")
         }
         static var tournamentDetailsCaption: String { localized("What to expect — optional.") }
         /// Under the read-only who-may-join card once a hosting group is chosen.
         static var tournamentFollowsGroup: String {
             localized("A tournament in a group follows the group's visibility.")
         }
+
+        /// The type steps' search field, filtering the grid by localized name.
+        static var typeSearch: String { localized("Search types") }
+
+        /// The grid's one-line empty state when the search matches nothing.
+        static var typeSearchNoMatch: String { localized("No types match your search") }
 
         /// The bottom bar's primary button on every step but the last.
         static var next: String { localized("Next") }

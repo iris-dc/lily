@@ -35,7 +35,9 @@ the aurora's cell roles and per-cell intensities (see [Effects](../Effects/EGM.m
   `Date.FormatStyle(date: .abbreviated, time: .shortened, locale: locale)` ("15 Jan 2027 at 18:30"), the one style of
   the facts cards and match rows; `static var date: Date.FormatStyle` = `Date.FormatStyle(date: .abbreviated, time:
   .omitted, locale: AppLocale.locale)` ("15 Jan 2027"), the day alone for what is past or far (a profile's shared
-  history captions).
+  history captions); `static var time: Date.FormatStyle` = `Date.FormatStyle(date: .omitted, time: .shortened,
+  locale: AppLocale.locale)` ("18:30"), the time alone for a finish on the start's own day (the facts card's
+  "Until …" line, 2026-11-11).
 - `static var sportGradient: LinearGradient` [`lily/Core/UI/Components/SportFill.swift:LilyTheme.sportGradient`]:
   `.lilyAccentDeep` at the bottom-leading corner to `.lilyAccent` at the top-trailing one, the fill of every sport mark
   (`View.sportFill(in:)`, see [Components](../Components/EGM.md)); declared beside its one consumer, in `Components`.
@@ -58,8 +60,9 @@ the aurora's cell roles and per-cell intensities (see [Effects](../Effects/EGM.m
 - `auroraColors` returns `min(AuroraPalette.roles.count, intensities.count)` colors (`zip`); there is no guard on
   `intensities.count`, the caller passes the 16 values of `AuroraGeometry.cellIntensities(at:)`
   [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.auroraColors(intensities:)`].
-- `DateStyles.dateTime` is a computed `static var`, never a `static let`: a `let` would freeze the first language, the
-  `var` re-reads `AppLocale.locale` on every access [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.DateStyles.dateTime`].
+- `DateStyles.dateTime`, `date` and `time` are computed `static var`s, never `static let`s: a `let` would freeze
+  the first language, the `var` re-reads `AppLocale.locale` on every access
+  [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.DateStyles.dateTime`].
 - `DateStyles` is `nonisolated`, usable from non-main-actor formatting code; `LilyTheme`, `Fonts`, the selection
   helpers and `auroraColors` are main-actor isolated because they touch the generated asset colors
   [`lily/Core/UI/Theme/LilyTheme.swift:LilyTheme.DateStyles`].

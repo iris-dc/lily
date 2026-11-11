@@ -5,15 +5,16 @@ Source: `lily/Features/Create/Views/` (the step pages: [./Event/EGM.md](./Event/
 
 ## Overview
 
-The creation wizard's chrome: `CreationWizardView` owns the `NavigationStack` whose root is the kind page when the
-policy shows one and the kind's first step otherwise, with every Next pushing the next step; `CreationKindPage` is
-the glass kind choice; `WizardStepScaffold` is the chrome every step shares (title, the animated progress mark with
-the plural-safe counter as its accessibility label, the optional step caption, the entrance motion, Cancel, the
-bottom bar with the one primary button, the scroll reader and the final-gate hint), with `WizardCancelItem`,
-`WizardIssueHint`, `WizardProgressBar`, `WizardChoiceCard` and the `wizardEntrance()` modifier as its shared pieces.
+The creation wizard's chrome: `CreationWizardView` owns the `NavigationStack` whose root is the seeded kind's first
+step (the kind page left with the owner's third design round, 2026-11-11 — the "+" menu names the kind), with every
+Next pushing the next step; `WizardStepScaffold` is the chrome every step shares (title, the animated progress mark
+with the plural-safe counter as its accessibility label, one caption under every step title, the entrance motion,
+Cancel, the transparent bottom bar with the one primary button, the scroll reader and the final-gate hint), with
+`WizardCancelItem`, `WizardIssueHint`, `WizardProgressBar`, `WizardChoiceCard`, the searchable `WizardTypePicker`
+grid and the `wizardEntrance()` modifier as its shared pieces.
 Per-step copy and identifiers live in one map, `WizardStepCopy.swift` (computed switches on `CreationStep`, exempt
 from the complexity rule). The shell is generic over the three kind view-model types, mirroring
-[`../State/EGM.md`](../State/EGM.md); the kind page, the scaffold and the step pages read the wizard through
+[`../State/EGM.md`](../State/EGM.md); the scaffold and the step pages read the wizard through
 `CreationWizardControlling` ([`../Interfaces/EGM.md`](../Interfaces/EGM.md)) and bind their own kind's view model
 through its draft-editing protocol alone. The wizard view is presentation-agnostic — the presenting screen (Explore,
 and the group detail since slice 3) chooses full-screen cover or form sheet and injects the model through
@@ -24,22 +25,23 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
 - `CreationWizardView<EventModel: EventDraftEditing, GroupModel: GroupDraftEditing, TournamentModel: TournamentDraftEditing>`
   (`lily/Features/Create/Views/CreationWizardView.swift:CreationWizardView`):
   `init(model: CreationWizardModel<...>, errorCenter: ErrorCenter)` (call sites hold the `AppCreationWizardModel`
-  typealias); owns the model in `@State` and binds the stack's path to `model.path`; its
+  typealias); owns the model in `@State`, wraps the stack in the flow's one `ContentScreen` (the 2026-11-11
+  performance pass: one live aurora and grain for the whole flow) and binds the stack's path to `model.path`; its
   `navigationDestination(for: CreationStep.self)` renders the step pages and the place steps' map pickers
   (`.eventMap`/`.groupMap`/`.tournamentMap`: `LocationPickerView` writing through the kind draft's
-  `PlacePickingDraft.pickSpot`).
-- `CreationKindPage` (`lily/Features/Create/Views/CreationKindPage.swift:CreationKindPage`): takes
-  `model: any CreationWizardControlling`; one `GlassNavigationRow` per `opening.kindsOffered` under the
-  `AppBranding.Create.kindTitle` navigation title; titles reuse the per-kind "New ..." copy; symbols
-  `addEvent`/`groups`/`tournament`; identifiers `create-kind-event`, `create-kind-group`, `create-kind-tournament`;
-  a pick calls `model.enter(_:)`, which auto-advances by pushing the kind's first step.
+  `PlacePickingDraft.pickSpot`, hosted with `drawsBackground: false` under the step pages' clear navigation
+  container background, so the shell's one aurora shows through the map push too — the 2026-11-11 round-3 review's
+  double-aurora catch).
 - `WizardStepScaffold<Content>` (`lily/Features/Create/Views/WizardStepScaffold.swift:WizardStepScaffold`):
   `wizard: any CreationWizardControlling`, `step`, optional `scrollTarget: AnyHashable?`, `onCancel`,
   `@ViewBuilder content`. Renders the step title (`.navigationTitle`, large; `step.wizardTitle`) with
-  `WizardProgressBar` under it, one short `.subheadline` `.secondary` caption on the steps whose purpose needs
-  extra knowledge (`step.wizardCaption`), the caption and fields easing in together through `wizardEntrance()`, the
-  content scrolling over `ContentScreen` inside the readable column, and a bottom safe-area-inset bar on `.bar`
-  background over a `Color.lilySurface` underlay carrying the one primary button.
+  `WizardProgressBar` under it, one short `.subheadline` `.secondary` caption under every step title
+  (`step.wizardCaption`; the third design round, 2026-11-11), the caption and fields easing in together through
+  `wizardEntrance()`, the content scrolling transparently inside the readable column over the shell's aurora
+  (`.containerBackground(Color.clear, for: .navigation)` clears the navigation hosting's opaque page background,
+  which would otherwise hide it), and a transparent
+  bottom safe-area-inset bar carrying the one primary button, its capsule directly over the content and the aurora
+  (the same round's supersession of the opaque-bar pin).
 - `WizardStepCopy.swift` (`nonisolated extension CreationStep`): `wizardTitle`, `wizardCaption?`,
   `wizardSubmitTitle` (each kind's existing submit copy) and `wizardSubmitIdentifier` (`create-submit`,
   `create-group-submit`, `tournament-submit` — the wizard and the edit sheets agree); the map cases answer their
@@ -52,6 +54,14 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
 - `WizardChoiceCard` (`lily/Features/Create/Views/WizardChoiceCard.swift:WizardChoiceCard`): the single-choice glass
   card of the wizard's auto-advancing pages — the label, and the accent `chosen` check on the current choice (accent
   on the mark, never the words); whole-card tap target, `.isSelected` trait on the selection.
+- `WizardTypePicker` (`lily/Features/Create/Views/WizardTypePicker.swift:WizardTypePicker`): the type steps' picker
+  (the third design round, 2026-11-11) — a glass search capsule (`create-type-search`, filtering by localized name,
+  case-insensitively in the app's locale (`AppLocale`), as you type) over a `wizardTypeColumns`-column `LazyVGrid` of compact glass type cards
+  (its private `WizardTypeCard`: `Radius.md` glass at least `wizardTypeCardHeight` tall, symbol and name with the
+  accent `chosen` check on the current choice), optionally led by an "Any" entry (`anyTitle`, the group's nullable
+  choice; the query filters it like any card); a query no name
+  contains shows a one-line `.secondary` empty state (`AppBranding.Create.typeSearchNoMatch`, 2026-11-11) instead
+  of a bare grid; tapping calls `pick` and the pages auto-advance.
 - `wizardEntrance()` (`lily/Features/Create/Views/WizardEntrance.swift`): the step content's entrance — a fade with
   a `wizardEntranceOffset` slide-up over `Duration.fast`, the slide dropped under reduced motion, state reset on
   disappear so a pop-return eases in again.
@@ -62,10 +72,10 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
 
 ## Invariants
 
-- One-way kind, by mechanism: the kind page stays the stack root, and the kind's first step — pushed, or itself the
-  root — hides the system back button, which also disables the pop gesture
-  (`CreationWizardView.hidesBack(on:)`), so back stops at the first step and the kind page is never revisited.
-  While a submit is in flight the back button hides on every step — the locked-while-busy contract's third lock,
+- One-way kind, trivially: the kind's first step is the stack root (2026-11-11), so back stops there and no kind
+  choice exists inside the wizard to revisit — a mispick is corrected by cancelling and reopening from the menu.
+  While a submit is in flight the back button hides on every step (`CreationWizardView.hidesBack`), which also
+  disables the pop gesture — the locked-while-busy contract's third lock,
   beside the disabled Cancel and the refused interactive dismissal.
 - The step container rule: the scaffold marks its screen `.accessibilityElement(children: .contain)` *before*
   stamping `create-step`, so children keep their own identifiers; every pre-existing create field identifier is
@@ -87,12 +97,18 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
   (`model.noteClosed()` in Explore's and the group detail's `clearWizardAfterDismiss`), never on disappear, which a
   width-class re-host also fires. The error popup is mounted here (`.errorPopup`), the one mount of this presentation.
 - The scaffold's scroll reader brings `scrollTarget` (the page's focused field) into view, animated only when
-  `\.motion` allows movement; the bottom bar sits on an opaque `.bar` background over a `Color.lilySurface` underlay
-  (the aurora's brightest patch otherwise bleeds through the material; design-judge round, 2026-11-10) so the
-  keyboard never overlaps bare content.
+  `\.motion` allows movement; the bottom bar is transparent — the primary capsule sits directly over the content
+  and the aurora (the owner's third design round, 2026-11-11, superseding the 2026-11-10 opaque-bar pin, which the
+  owner read as a dark grey slab).
+- One live aurora per flow (the 2026-11-11 performance pass, after the owner's lag report): the shell's
+  `ContentScreen` is the only aurora in the wizard, a step page draws no background of its own, and a push
+  composites one live aurora instead of two full aurora-and-grain layers — the pushed map picker included
+  (`LocationPickerView(drawsBackground: false)` plus the cleared navigation container background; the round-3
+  review caught the map push still drawing its own `ContentScreen`, fixed 2026-11-11); the per-push film numbers
+  are in `docs/notes/design-and-ui.md`.
 - Every added motion reads `\.motion`, never raw reduce-motion: the progress fill and the entrance slide are
   movement and settle instantly under reduced motion (the entrance fade stays — a fade in place is allowed either
-  way); the auto-advancing pages (kind, type, format, visibility) push with the stack's own transition.
+  way); the auto-advancing pages (type, format, visibility) push with the stack's own transition.
 
 ## Side Effects
 

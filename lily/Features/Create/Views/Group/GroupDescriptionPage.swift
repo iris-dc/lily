@@ -27,12 +27,15 @@ struct GroupDescriptionPage<Model: GroupDraftEditing>: View {
     }
 
     private var descriptionField: some View {
-        TextField(Copy.descriptionPlaceholder, text: $viewModel.draft.description, axis: .vertical)
-            .textInputAutocapitalization(.sentences)
-            .lineLimit(DesignTokens.Layout.multilineFieldLines)
-            .focused($focusedField, equals: .description)
-            .accessibilityIdentifier(AccessibilityIdentifiers.createGroupDescription)
-            .lilyMultilineField()
-            .id(Field.description)
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+            TextField(Copy.descriptionPlaceholder, text: $viewModel.draft.description, axis: .vertical)
+                .textInputAutocapitalization(.sentences)
+                .lineLimit(DesignTokens.Layout.multilineFieldLines)
+                .focused($focusedField, equals: .description)
+                .accessibilityIdentifier(AccessibilityIdentifiers.createGroupDescription)
+                .lilyMultilineField()
+                .id(Field.description)
+            OptionalMarker()
+        }
     }
 }
