@@ -158,4 +158,18 @@ struct TournamentDraftTests {
         draft.allowsDraws = true
         #expect(draft.resolvedAllowsDraws, "the organiser's choice wins over the default")
     }
+    /// The shared place bookkeeping (`PlacePickingDraft`): a suggestion is a proposal, a map pick the organiser's
+    /// choice, and an edited tournament starts with its spot picked.
+    @Test func thePlaceBookkeepingMirrorsTheEventDrafts() {
+        var draft = TournamentDraft(startsAt: Self.now, clientId: "id")
+        let park = PlaceSuggestion(title: "Görlitzer Park", subtitle: nil, coordinate: AppConfig.Location.mockCenter)
+        draft.apply(park)
+        #expect(draft.locationName == "Görlitzer Park" && draft.coordinate == park.coordinate && !draft.spotPickedOnMap)
+        #expect(draft.placeSuggestionQuery == nil, "the name a suggestion just set is not asked about")
+
+        draft.pickSpot(Coordinate(latitude: 54.35, longitude: 18.65))
+        #expect(draft.spotPickedOnMap && draft.suggestedName == nil)
+
+        #expect(TournamentDraft(editing: .fixture()).spotPickedOnMap)
+    }
 }

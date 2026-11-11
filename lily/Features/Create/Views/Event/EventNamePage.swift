@@ -3,7 +3,7 @@ import SwiftUI
 /// The event flow's first step, one idea: what the event is called. The keyboard is up on entry so typing starts at
 /// once; the field and its identifier are the create form's.
 struct EventNamePage<Model: EventDraftEditing>: View {
-    let wizard: CreationWizardModel<Model>
+    let wizard: any CreationWizardControlling
     @Bindable var viewModel: Model
     let onCancel: () -> Void
     @FocusState private var focusedField: Field?
@@ -19,7 +19,7 @@ struct EventNamePage<Model: EventDraftEditing>: View {
                            scrollTarget: focusedField.map { AnyHashable($0) },
                            onCancel: onCancel) {
             titleField
-            WizardIssueHint(issue: wizard.firstBlockingIssue(on: Self.step))
+            WizardIssueHint(message: wizard.blockingMessage(on: Self.step))
         }
         // Focus drops the moment the stack moves (a write from a view already leaving the hierarchy is ignored),
         // so a pop-return never re-presents the keyboard over the bottom bar.

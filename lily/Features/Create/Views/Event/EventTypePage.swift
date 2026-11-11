@@ -4,7 +4,7 @@ import SwiftUI
 /// fixes the type and auto-advances with the push animation, and re-entering shows the current choice selected (the
 /// same card advances again). The step owns no issues: one type is always selected.
 struct EventTypePage<Model: EventDraftEditing>: View {
-    let wizard: CreationWizardModel<Model>
+    let wizard: any CreationWizardControlling
     @Bindable var viewModel: Model
     let onCancel: () -> Void
 

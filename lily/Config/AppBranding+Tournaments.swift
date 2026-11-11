@@ -107,20 +107,18 @@ nonisolated extension AppBranding {
             }
         }
 
-        /// The create and edit sheets; `title` doubles as the "+" menu's tournament item.
+        /// The wizard's tournament pages and the edit sheet; `title` is the kind page's tournament card.
         enum Create {
             static var title: String { localized("New tournament") }
             static var editTitle: String { localized("Edit tournament") }
-            /// The bar button: one word, so the inline title beside it is not squeezed to "New to…".
-            static var submit: String { Events.Create.menu }
-            /// The group detail's menu item.
-            static var menuItem: String { localized("Create tournament") }
+            /// The wizard's final-page create button; the group detail's menu item reuses it.
+            static var submit: String { localized("Create tournament") }
+            static var menuItem: String { submit }
             static var save: String { Groups.Create.save }
             static var tournamentSection: String { Tournaments.tournament }
             static var nameField: String { Groups.Create.nameField }
             static var namePlaceholder: String { localized("Kickers Cup") }
             static var descriptionPlaceholder: String { Events.Create.descriptionPlaceholder }
-            static var eventType: String { Events.Create.eventType }
             static var format: String { localized("Format") }
             static var teamSize: String { localized("Team size") }
             static var individuals: String { localized("Individuals") }

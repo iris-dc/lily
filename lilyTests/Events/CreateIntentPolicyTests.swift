@@ -5,13 +5,13 @@ struct CreateIntentPolicyTests {
     private typealias Decision = CreateIntentPolicy.Decision
 
     @Test(arguments: [
-        (CreateIntent.game, ExploreSheet.wizard(CreationSeed(kind: .event))),
-        (CreateIntent.group, ExploreSheet.createGroup),
-        (CreateIntent.tournament, ExploreSheet.createTournament)
+        (CreateIntent.game, CreationKind.event),
+        (CreateIntent.group, .group),
+        (CreateIntent.tournament, .tournament)
     ])
-    func aSignedInUsersIntentOpensTheMatchingSheet(intent: CreateIntent, sheet: ExploreSheet) {
+    func aSignedInUsersIntentOpensTheWizardSeededWithItsKind(intent: CreateIntent, kind: CreationKind) {
         let decision = CreateIntentPolicy.decide(intent: intent, presentedSheet: nil, isSignedIn: true)
-        #expect(decision == Decision(consumes: true, present: sheet))
+        #expect(decision == Decision(consumes: true, present: .wizard(CreationSeed(kind: kind))))
     }
 
     @Test(arguments: [CreateIntent.game, .group, .tournament])
@@ -26,18 +26,18 @@ struct CreateIntentPolicyTests {
         #expect(decision == Decision(consumes: true, present: nil))
     }
 
-    @Test(arguments: [nil, ExploreSheet.createGroup], [true, false])
+    @Test(arguments: [nil, ExploreSheet.wizard(CreationSeed())], [true, false])
     func noIntentChangesNothing(presentedSheet: ExploreSheet?, isSignedIn: Bool) {
         let decision = CreateIntentPolicy.decide(intent: nil, presentedSheet: presentedSheet, isSignedIn: isSignedIn)
         #expect(decision == Decision(consumes: false, present: nil))
     }
 
-    @Test func thePlusMenuSendsAGuestToSignIn() {
-        #expect(CreateIntentPolicy.sheet(for: .createGroup, isSignedIn: false) == .signIn)
+    @Test func thePlusSendsAGuestToSignIn() {
+        #expect(CreateIntentPolicy.sheet(for: .wizard(.empty), isSignedIn: false) == .signIn)
     }
 
-    @Test func thePlusMenuOpensTheWizardForAUser() {
-        let wizard = ExploreSheet.wizard(CreationSeed(kind: .event))
+    @Test func thePlusOpensTheWizardForAUser() {
+        let wizard = ExploreSheet.wizard(.empty)
         #expect(CreateIntentPolicy.sheet(for: wizard, isSignedIn: true) == wizard)
     }
 }

@@ -143,13 +143,16 @@ final class LilyIPadTests: LilyUITestCase {
         XCTAssertTrue(inbox.exists && app.buttons[MockIDs.kickersRow].exists, "the list stays beside it")
     }
 
-    /// A sheet that is a form is a centred form sheet on an iPad, not a page as wide as the screen; the "+" menu's
-    /// event item opens the creation wizard, whose first step's title field is what measures the sheet.
+    /// A sheet that is a form is a centred form sheet on an iPad, not a page as wide as the screen; the "+" opens
+    /// the wizard's kind page in it, and the Event card's first step carries the title field that measures the sheet.
     @MainActor
     func testCreateSheetIsAFormOnIPad() {
         tapSignInWithApple()
         openExploreTab()
         tapCreateButton()
+        XCTAssertTrue(app.navigationBars[Self.wizardKindTitle].waitForExistence(timeout: 10),
+                      "the kind page opens in the sheet")
+        pickCreationKind("create-kind-event")
         let title = app.textFields["create-title"]
         XCTAssertTrue(title.waitForExistence(timeout: 10), app.debugDescription)
         let window = app.windows.firstMatch.frame

@@ -65,10 +65,13 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   `@discardableResult ... async -> Bool` writes `report(_:scoreA:scoreB:)`, `confirm(_:)`, `dispute(_:)`,
   `walkover(_:winnerEntryID:)`, `schedule(_:_:)`.
 - `[lily/Features/Tournaments/ViewModels/CreateTournamentViewModel.swift:CreateTournamentViewModel.init]`:
-  `init(repository:, identity:, locationService:, groups: MyGroupsStore, reporter:, logger:, now: @escaping () -> Date =
+  `init(repository:, identity:, locationService:, geocoder: any GeocodingService = MockGeocodingService(),
+  groups: MyGroupsStore, reporter:, logger:, now: @escaping () -> Date =
   { .now }, pushOptIn:, lockedGroup: EventGroupRef? = nil, tryAgainDelay: Duration =
   AppConfig.API.tryAgainDelay, onCreated: @MainActor (TournamentDetail) -> Void)`; builds a `CreateFlow<TournamentDetail>` keyed on the draft's client id. State `draft`, `isSubmitting`,
-  `created`, `eligibleGroups`, `belongsToGroups`, `lockedGroup`; the `TournamentDraftEditing` members
+  `created`, `eligibleGroups`, `belongsToGroups`, `hasLoadedGroups` (set by `prepare()`; the wizard's group page
+  shows a placeholder until then) and `lockedGroup`, with `placeSuggestions(for:)` (the geocoder's places biased to
+  the draft's spot, else the position `prepare()` read; slice 3, 2026-11-11); the `TournamentDraftEditing` members
   (`issues`, `canSubmit`, `isDone`, `earliestStart`, `proposedDeadline()`, `entriesRange`, `isLocked = false`,
   `allowsStructureChanges = true`, `showsGroupRow`, `explainsNoEligibleGroups`); `prepare() async`, `submit() async`.
 - `[lily/Features/Tournaments/ViewModels/EditTournamentViewModel.swift:EditTournamentViewModel.init]`:

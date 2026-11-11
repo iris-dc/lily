@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The Explore screen: the upcoming games as a list, switchable to a map, narrowed through the filter sheet the
-/// toolbar opens, with the "+" menu floating over the content (a signed-in user gets the creation wizard for a game,
-/// the group or tournament form for the rest, a guest the sign-in sheet) and a header (the carousels) above the list. On a wide window
+/// toolbar opens, with the "+" floating over the content (a signed-in user gets the creation wizard, whose kind page
+/// asks what to make; a guest the sign-in sheet) and a header (the carousels) above the list. On a wide window
 /// (`LayoutMode.wide`) the map is not a mode but a pane: the content column on the left, the map always on the right,
 /// and the picker gone (`EventListLayout`).
 struct EventListView<Header: View>: View {
@@ -18,7 +18,7 @@ struct EventListView<Header: View>: View {
     @State var presentedSheet: ExploreSheet?
     /// The wizard behind `presentedSheet`'s wizard case, made once per presentation in `present(_:)` and owned above
     /// both presenters, so a mid-flow width-class change re-hosts the same flow instead of destroying it.
-    @State var wizardModel: CreationWizardModel<CreateEventViewModel>?
+    @State var wizardModel: AppCreationWizardModel?
     /// The header's measured height: a spinner or empty state is centred in what the screen leaves under it.
     @State var headerHeight: CGFloat = 0
     @Environment(\.scenePhase) private var scenePhase
@@ -118,9 +118,7 @@ struct EventListView<Header: View>: View {
     private func withCreateButton(_ content: some View) -> some View {
         ZStack(alignment: .bottomTrailing) {
             content
-            CreateMenuButton(onCreateGame: { presentForUser(.wizard(CreationSeed(kind: .event))) },
-                             onCreateGroup: { presentForUser(.createGroup) },
-                             onCreateTournament: { presentForUser(.createTournament) })
+            CreateButton { presentForUser(.wizard(.empty)) }
                 .padding(DesignTokens.Spacing.lg)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

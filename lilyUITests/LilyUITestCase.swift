@@ -158,21 +158,13 @@ class LilyUITestCase: XCTestCase {
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
     }
 
-    /// Opens the floating "+" menu on Explore (AccessibilityIdentifiers.eventsCreate) and picks "New event".
+    /// Taps the floating "+" on Explore (AccessibilityIdentifiers.eventsCreate): one plain tap that opens the
+    /// creation wizard's kind page for a signed-in user and the sign-in sheet for a guest.
     @MainActor
     func tapCreateButton() {
-        tapCreateMenuItem("New event")
-    }
-
-    /// Opens the floating "+" menu on Explore and picks one of its items by title ("New event", "New group").
-    @MainActor
-    func tapCreateMenuItem(_ title: String) {
         let create = app.buttons["events-create"]
         XCTAssertTrue(create.waitForExistence(timeout: 10))
         create.tap()
-        let item = app.buttons[title]
-        XCTAssertTrue(item.waitForExistence(timeout: 5), "the create menu must offer \(title)")
-        item.tap()
     }
 
     /// Focuses a text field and types into it. A field that already has keyboard focus is not tapped first:

@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// Every field of a group, for the create and edit sheets: name and description, the event type, where it plays (a
-/// public group must say, a private one may), who can join (fixed once created, so the edit sheet leaves it out) and
-/// what members may do. Under each section the first thing still wrong with it.
+/// Every field of a group the edit sheet offers: name and description, the event type, where it plays (a public
+/// group must say, a private one may) and what members may do. Who can join is fixed once created, so only the
+/// wizard's visibility page ever offers it. Under each section the first thing still wrong with it.
 struct GroupDraftForm: View {
     @Binding var draft: GroupDraft
     let issues: [GroupDraft.Issue]
-    let allowsVisibilityChoice: Bool
 
     private typealias Copy = AppBranding.Groups.Create
 
@@ -14,9 +13,6 @@ struct GroupDraftForm: View {
         Form {
             groupSection
             whereSection
-            if allowsVisibilityChoice {
-                visibilitySection
-            }
             permissionsSection
         }
         .scrollContentBackground(.hidden)
@@ -65,16 +61,6 @@ struct GroupDraftForm: View {
         }
     }
 
-    private var visibilitySection: some View {
-        Section {
-            GroupVisibilityChoice(visibility: $draft.visibility)
-        } header: {
-            Text(Copy.visibility)
-        } footer: {
-            Text(draft.visibility == .public ? AppBranding.Groups.publicFooter : AppBranding.Groups.privateFooter)
-        }
-    }
-
     private var permissionsSection: some View {
         Section {
             GroupPermissionToggles(membersCanCreateEvents: $draft.membersCanCreateEvents,
@@ -89,7 +75,7 @@ struct GroupDraftForm: View {
     @Previewable @State var draft = GroupDraft()
     NavigationStack {
         ContentScreen {
-            GroupDraftForm(draft: $draft, issues: draft.issues, allowsVisibilityChoice: true)
+            GroupDraftForm(draft: $draft, issues: draft.issues)
         }
     }
 }

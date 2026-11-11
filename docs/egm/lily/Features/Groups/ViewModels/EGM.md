@@ -18,9 +18,12 @@ them are in [Views](../Views/EGM.md).
 ## Interface
 
 - `CreateGroupViewModel: GroupDraftEditing`: `draft`, `private(set) isSubmitting`, `private(set) createdGroup:
-  SportGroup?`, `issues`, `canSubmit`, `isDone` (`createdGroup != nil`), `prepare() async`, `submit() async`;
+  SportGroup?`, `issues`, `canSubmit`, `isDone` (`createdGroup != nil`), `prepare() async`, `submit() async`, and
+  `placeSuggestions(for:) async` (the geocoder's places biased to the draft's spot, else the position `prepare()`
+  read — the wizard place page's seam; slice 3, 2026-11-11);
   `init(repository: any GroupRepository, identity: any IdentityProvider, store: MyGroupsStore,
-  locationService: any LocationService, errorCenter: ErrorCenter, logger: any Logging, tryAgainDelay: Duration =
+  locationService: any LocationService, geocoder: any GeocodingService = MockGeocodingService(),
+  errorCenter: ErrorCenter, logger: any Logging, tryAgainDelay: Duration =
   AppConfig.API.tryAgainDelay, onCreated: @escaping @MainActor (SportGroup) -> Void)`; owns a private
   `CreateFlow<SportGroup>` [`lily/Features/Groups/ViewModels/CreateGroupViewModel.swift`:`CreateGroupViewModel.init`].
 - `EditGroupViewModel: GroupDraftEditing`: `draft`, `private(set) isSubmitting`, `private(set) updatedGroup`, `issues`,
@@ -155,8 +158,9 @@ them are in [Views](../Views/EGM.md).
 - Store writes: `store.add(group)` after a create; `store.add`/`replace` after a detail action and `store.remove(id:)`
   when the group is gone (each bumps the `ChangeTracker`); the `onCreated`/`onChange` callbacks after a create, an
   edit, a remove or a ban [`lily/Features/Groups/ViewModels/GroupDetailViewModel.swift`:`GroupDetailViewModel.apply`].
-- Location: `locationService.currentLocation()` from `CreateGroupViewModel.prepare()` and
-  `DiscoverGroupsViewModel.loadUserLocation()` [`lily/Features/Groups/ViewModels/CreateGroupViewModel.swift`:`CreateGroupViewModel.prepare`].
+- Location: `locationService.currentLocation()` from `CreateGroupViewModel.prepare()` (which also keeps the
+  position as the suggestion bias) and `DiscoverGroupsViewModel.loadUserLocation()`;
+  `geocoder.suggestions(for:near:)` from `CreateGroupViewModel.placeSuggestions(for:)` (2026-11-11) [`lily/Features/Groups/ViewModels/CreateGroupViewModel.swift`:`CreateGroupViewModel.prepare`].
 - Statistics: `recorder.record(.groupSearchPerformed(hasQuery:resultCount:at:))` after a Discover answer and
   `recorder.record(.groupViewed(group, at:))` from `recordViewed()`
   [`lily/Features/Groups/ViewModels/DiscoverGroupsViewModel.swift`:`DiscoverGroupsViewModel.performSearch`].

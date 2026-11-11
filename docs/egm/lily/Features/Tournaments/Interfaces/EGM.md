@@ -55,13 +55,16 @@ var lockedGroup: EventGroupRef? { get }       // the group shown read-only when 
 var showsGroupRow: Bool { get }
 var eligibleGroups: [EventGroupRef] { get }
 var explainsNoEligibleGroups: Bool { get }
+var hasLoadedGroups: Bool { get }             // the wizard's group page shows a placeholder until the read lands
+func placeSuggestions(for query: String) async -> [PlaceSuggestion]
 ```
 
 - `[lily/Features/Tournaments/Interfaces/TournamentDraftEditing.swift:extension TournamentDraftEditing]`: default
-  implementations `eligibleGroups` returning `[]` and `explainsNoEligibleGroups` returning `false`, so only a create
-  view model overrides them.
+  implementations `eligibleGroups` returning `[]`, `explainsNoEligibleGroups` returning `false`, `hasLoadedGroups`
+  returning `true` and `placeSuggestions(for:)` returning `[]` (slice 3, 2026-11-11), so only a create view model
+  overrides them.
 - `[lily/Features/Tournaments/Models/TournamentDraft.swift:TournamentDraft.Issue]`: the pinned issue type,
-  `enum Issue: Hashable, Sendable` with cases `nameTooShort`, `nameTooLong`, `locationNameMissing`,
+  `enum Issue: CaseIterable, Hashable, Sendable` with cases `nameTooShort`, `nameTooLong`, `locationNameMissing`,
   `locationNameTooLong`, `coordinateMissing`, `startsAtTooSoon`, `registrationClosesAfterStart`,
   `teamSizeOutOfRange`, `maxEntriesOutOfRange`, `maxEntriesBelowEntries`, `descriptionTooLong`.
 - Conformers in this feature: `RemoteTournamentRepository` and `MockTournamentRepository`

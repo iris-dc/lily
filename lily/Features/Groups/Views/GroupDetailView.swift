@@ -7,23 +7,30 @@ struct GroupDetailView: View {
     @State private var viewModel: GroupDetailViewModel
     @State private var section: GroupDetailSection = .events
     /// The group's upcoming games; a game created from here lands in it through `add`.
-    @State private var events: EventListViewModel
+    @State var events: EventListViewModel
     /// The group's tournaments; one created from here lands in it the same way.
-    @State private var tournaments: TournamentListViewModel
+    @State var tournaments: TournamentListViewModel
     /// Built for whoever may see the roster and rebuilt when the caller's access changes (a role, a sign-in), since
     /// its menus follow it; a change to the group itself reaches it through `update(group:)`.
     @State private var members: MembersViewModel?
-    @State private var presentedSheet: DetailSheet?
+    @State var presentedSheet: DetailSheet?
+    /// The wizard behind the two create cases, made once per presentation in `presentWizard(_:kind:)` and owned
+    /// above both presenters, so a mid-flow width-class change re-hosts the same flow (`GroupDetailView+Create`).
+    @State var wizardModel: AppCreationWizardModel?
     @State private var confirmation: GroupConfirmation?
-    private let dependencies: AppDependencies
+    let dependencies: AppDependencies
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.layoutMode) var layoutMode
 
     private typealias Copy = AppBranding.Groups
 
-    private enum DetailSheet: String, Identifiable {
+    enum DetailSheet: String, Identifiable {
         case invite, edit, createEvent, createTournament, signIn, report
 
         var id: String { rawValue }
+
+        /// The two cases the creation wizard hosts, seeded with the kind and this group locked.
+        var isWizard: Bool { self == .createEvent || self == .createTournament }
     }
 
     /// Where Mine stands: a reload bumps `loads`, a sibling's write `changes`; either moves the detail's refresh.
@@ -39,7 +46,7 @@ struct GroupDetailView: View {
         self.dependencies = dependencies
     }
 
-    private var group: SportGroup { viewModel.group }
+    var group: SportGroup { viewModel.group }
     /// What the picker offers this caller; one segment alone needs no picker.
     private var sections: [GroupDetailSection] { GroupDetailSection.available(for: viewModel.access, in: group) }
 
@@ -51,7 +58,7 @@ struct GroupDetailView: View {
                     GroupActionRow(viewModel: viewModel,
                                    onOpenChat: { dependencies.navigation.open(chat: group) },
                                    onInvite: { presentedSheet = .invite },
-                                   onCreateEvent: { presentedSheet = .createEvent },
+                                   onCreateEvent: { presentCreateEvent() },
                                    onSignIn: { presentedSheet = .signIn })
                     if sections.count > 1 {
                         sectionPicker
@@ -93,7 +100,7 @@ struct GroupDetailView: View {
         .onChange(of: viewModel.isGone) {
             if viewModel.isGone { dismiss() }
         }
-        .sheet(item: $presentedSheet) { sheet in
+        .sheet(item: sheetItem, onDismiss: clearWizardAfterDismiss) { sheet in
             switch sheet {
             case .invite:
                 InvitePeopleSheet(viewModel: dependencies.makeInvitePeopleViewModel(for: group),
@@ -101,15 +108,10 @@ struct GroupDetailView: View {
             case .edit:
                 EditGroupSheet(viewModel: dependencies.makeEditGroupViewModel(for: group, onChange: viewModel.accept),
                                errorCenter: dependencies.errorCenter)
-            case .createEvent:
-                // The game is hosted in this group, and lands in the segment behind the sheet at once.
-                CreateEventSheet(viewModel: dependencies.makeCreateEventViewModel(onCreated: events.add, lockedGroup: group.ref),
-                                 errorCenter: dependencies.errorCenter)
-            case .createTournament:
-                // The tournament is hosted in this group, and lands in the segment behind the sheet at once.
-                CreateTournamentSheet(viewModel: dependencies.makeCreateTournamentViewModel(lockedGroup: group.ref) {
-                    tournaments.add($0.tournament)
-                }, errorCenter: dependencies.errorCenter)
+            case .createEvent, .createTournament:
+                // The wizard, seeded with the kind and this group locked (the kind page never shows here); on a
+                // regular width it is this form sheet, on compact the full-screen cover below claims it.
+                wizardContent.lilyFormSheet()
             case .signIn:
                 SignInSheet(session: dependencies.sessionController,
                             errorCenter: dependencies.errorCenter,
@@ -119,6 +121,9 @@ struct GroupDetailView: View {
                             errorCenter: dependencies.errorCenter)
             }
         }
+        // The wizard rides a full-screen cover on a compact width; both presenters share `presentedSheet`, so a
+        // width-class change mid-flow re-hosts the flow rather than losing the draft (`GroupDetailView+Create`).
+        .fullScreenCover(item: wizardCoverItem, onDismiss: clearWizardAfterDismiss) { _ in wizardContent }
         .confirmationDialog(item: $confirmation,
                             title: { $0.title(groupName: group.name) },
                             actions: { confirmationButton(for: $0) })
@@ -156,7 +161,7 @@ struct GroupDetailView: View {
     private var menu: some View {
         GroupDetailMenu(viewModel: viewModel,
                         onInvite: { presentedSheet = .invite },
-                        onCreateTournament: { presentedSheet = .createTournament },
+                        onCreateTournament: { presentCreateTournament() },
                         onEdit: { presentedSheet = .edit },
                         onLeave: { confirmation = .leave },
                         onReport: { presentedSheet = .report },

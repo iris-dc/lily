@@ -11,7 +11,7 @@ are `WireNamedKind` enums that tolerate unknown values. `EventDraft` is the crea
 list and `Rules`; `EventFilter`, `PersistedEventFilter` and `DateWindow` are the on-device filter; the rest are small
 decision types the view models and views switch on (`EventScope`, `EventListScreenState`, `Participation`,
 `PlayerLimit`, `CreateIntentPolicy`, `PickerSettlePolicy`, `MapFraming`, `EventListLayout`, `EventsPresentation`,
-`ExploreSheet`, `PlaceDraft`, `EventMapStack`, `MapCardListEdges`). Limits come from `AppConfig.Events`, copy from
+`ExploreSheet`, `PlaceDraft`, `PlacePickingDraft`, `EventMapStack`, `MapCardListEdges`). Limits come from `AppConfig.Events`, copy from
 `AppBranding.Events`.
 
 ## Interface
@@ -54,7 +54,8 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `trimmedLocationName`, `trimmedDescription?`, `trimmedLookingFor?`, `isFree`, `hasUnreadablePrice`,
   `price: Decimal? { get set }`, `eventPrice: Price?`; `earliestStart(now:rules:)`, `issues(now:rules:)` (the one
   validity rule; `issues(...).isEmpty` is what the forms read), `makeEvent(hostUserId:hostName:coordinate:)`.
-  Place bookkeeping (2026-11-06, moved out of the form): `placeSuggestionQuery: String?` (the trimmed name when it has
+  Place bookkeeping (2026-11-06, moved out of the form; carried by the shared `PlacePickingDraft` since slice 3 of
+  the creation-wizard plan, 2026-11-11): `placeSuggestionQuery: String?` (the trimmed name when it has
   at least `AppConfig.Events.placeSuggestionMinimumQuery` code points and is not `suggestedName`, else `nil`: when the
   form asks for suggestions); `mutating func apply(_ suggestion: PlaceSuggestion)` (sets `locationName` and
   `suggestedName` to the title, `coordinate` to its spot and `spotPickedOnMap = false`, so the spot stays a proposal);
@@ -76,6 +77,11 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `init(offset:contentHeight:containerHeight:)` (`offset` how far the content's top has scrolled past the list's top);
   `static func cardsBelow<ID: Equatable>(in ids: [ID], visible: [ID]) -> Int`. What the map's card list fades and its
   "+N more" pill show (see [Views](../Views/EGM.md)).
+- `PlacePickingDraft` (`PlacePickingDraft.swift`, 2026-11-11): the place bookkeeping every create draft shares —
+  requirements `locationName`, `coordinate`, `spotPickedOnMap`, `suggestedName`; extension members
+  `placeSuggestionQuery`, `apply(_ suggestion:)`, `pickSpot(_:)` (the rules `EventDraft` carried, written once);
+  `EventDraft`, `GroupDraft` and `TournamentDraft` conform, so the wizard's place pages and dirty rule read every
+  kind the same way.
 - `PlaceDraft` (`PlaceDraft.swift`): `name`, `coordinate?`; `Requirement` (`nameAndSpot` for the tournament form,
   `nameOrSpot` for the event form, whose missing half the geocoder fills on submit); `Issue` (`nameMissing`,
   `nameTooLong`, `coordinateMissing`, `placeMissing`); `issues(maxLength:requiring: = .nameAndSpot)`, `location(at:)`. `PlayerLimit` (`PlayerLimit.swift`): `unlimited`,
@@ -97,10 +103,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `PickerSettlePolicy.isAChoice(_:current:isFirstSettle:minimumMoveMeters:)`,
   `MapFraming.initialRegion(userLocation:radiusMeters:) -> MKCoordinateRegion?`, `EventListLayout`
   (`switchable`, `sideBySide`; `resolve(mode: LayoutMode)`), `EventsPresentation` (`list`, `map`; `title`,
-  `symbolName`, `wireValue`), `ExploreSheet` (`wizard(CreationSeed)`, `createGroup`, `createTournament`, `signIn`;
-  `Identifiable` by an explicit `id` string now that a case carries a payload; `init(_ intent: CreateIntent)` — the
-  game intent becomes `.wizard(CreationSeed(kind: .event))`, the slice-2 bridge of the creation-wizard plan, while
-  group and tournament keep their forms until slice 3).
+  `symbolName`, `wireValue`), `ExploreSheet` (`wizard(CreationSeed)`, `signIn` — the create-form cases left with slice 3, 2026-11-11;
+  `Identifiable` by an explicit `id` string now that a case carries a payload; `init(_ intent: CreateIntent)` maps
+  every intent onto a wizard seeded with its kind).
 
 ## Invariants
 

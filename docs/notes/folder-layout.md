@@ -148,13 +148,14 @@ lily/
                  Create/UpdateEventPayloads, EventScope with its group case (and the scopes' wire names), EventParticipant, EventLocation
                  (the one distance rule of events, groups and tournaments), PlaceDraft (the shared place validation of the event and
                  tournament drafts), EventListScreenState (Explore's loading / failed / empty / filtered-out / list ladder),
-                 CreateIntentPolicy + ExploreSheet (which sheet a create request or a shortcut opens; sign-in for a guest); SportEvent and
+                 CreateIntentPolicy + ExploreSheet (the wizard, seeded per request or shortcut, or sign-in for a guest; the
+                 create-form cases left with slice 3, 2026-11-11); SportEvent and
                  EventDraft carry an optional EventGroupRef), Interfaces (EventRepository, EventFilterStore, EventDraftEditing),
                  Implementations (remote and mock repositories, MockEventFixtures with the mock's participant names in MockEventFixtures+Participants),
                  ViewModels (list with its filter and freshness extensions, detail with who is in, create, edit), Views (cards, EventCardList (the
                  bare card list), list screen, map, detail with the host's Edit button, ParticipantRow, preview card, EventMapCardList (the
                  selected map stack's scrolling cards, in one glass panel with its header for several, and the "+N more" pill;
-                 2026-11-06), filter button and sheet (EventFilterSheet, the full-screen form, 2026-11-05; over SkillLevelPicker, the one level picker), create button, the Create/Edit sheets (thin wrappers over
+                 2026-11-06), filter button and sheet (EventFilterSheet, the full-screen form, 2026-11-05; over SkillLevelPicker, the one level picker), CreateButton (the floating "+", one tap into the wizard since slice 3, 2026-11-11), the Edit sheet (a thin wrapper over
                  EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm, whose +Place file holds the Where
                  section and whose section contents are standalone views it recomposes: HostingGroupRow (the one group row of the
                  event and tournament forms), EventPlayersFields and EventDetailsFields (2026-11-10)), PlaceNameField (the place name
@@ -166,12 +167,17 @@ lily/
                  spot, 2026-11-05)), Services (EventOpener: fetch a game by id and push its detail, shared
                  by the inbox's reminder card and a tapped notification; PlaceResolver: fills the missing half of a draft's
                  place through the geocoder on submit, 2026-11-05)
-    Create/      The paged creation wizard over the existing create view models (slice 2 of the creation-wizard plan, 2026-11-10):
-                 Models (CreationKind, CreationSeed + CreationWizardPolicy (the flags-by-context opening matrix), CreationStep (+ the
-                 eventMap path element, the place step's map picker) + CreationSteps (+Event: the issue partition and the Next gating)),
-                 State (CreationWizardModel + CreationWizardFactories, the shell's observable state behind the chrome),
-                 Views (CreationWizardView (the NavigationStack shell), CreationKindPage, WizardStepScaffold (+ WizardCancelItem and
-                 WizardIssueHint)), Views/Event (EventBasicsPage, EventPlacePage, EventPlayersPage, the event flow's three glass pages)
+    Create/      The paged creation wizard over the existing create view models, the one create flow for every kind (slices 2-3
+                 of the creation-wizard plan, 2026-11-10/11): Models (CreationKind, CreationSeed + CreationWizardPolicy (the
+                 flags-by-context opening matrix), CreationStep (+ the per-kind map path elements, the place steps' map picker) +
+                 CreationSteps (+Event/+Group/+Tournament: the exhaustive issue partitions and the Next gating, with
+                 offersGroupChoice shared by the event and tournament walks), CreationIssue (the per-kind issue under one roof)),
+                 Interfaces (CreationWizardControlling, what the pages read so each stays generic over its own kind alone),
+                 State (CreationWizardModel (+Gating) + CreationWizardFactories + CreationDraft, the shell's observable state behind
+                 the chrome), Views (CreationWizardView (the NavigationStack shell), CreationKindPage, WizardStepScaffold (+
+                 WizardCancelItem and WizardIssueHint), WizardStepCopy (per-step titles, captions, submit copy and identifiers),
+                 WizardChoiceCard, WizardProgressBar, WizardEntrance), Views/Event, Views/Group and Views/Tournament (the event,
+                 group and tournament flows' 7 + 6 + 9 one-idea glass pages)
     Profile/     Guest and signed-in profile; Interfaces (ProfileRepository: GET and PUT /api/profile, the name or the bio;
                  ProfileFieldDraft, what the two editors' drafts share), remote and mock implementations, Models (Profile with
                  its bio, ProfileUpdateRequest with one field per request, DisplayNameDraft and AboutDraft with their issues),
@@ -205,10 +211,11 @@ lily/
                  CreateGroup, EditGroup, Members, InvitePeople (over an InviteTarget), Report), Views (GroupCarousel, GroupTile, DiscoverGroupsView, DiscoverGroupList, GroupRowList,
                  GroupRow (with GroupRowContent, the row from its fields), GroupCard, GroupBadge,
                  GroupDetailView with GroupHeader, HostedInLine (the "Hosted in" line of the event and tournament title blocks),
-                 GroupActionRow, GroupDetailMenu, GroupEventsSegment, MembersList, MemberRow, GroupLoaderView, the Create/Edit sheets
-                 (thin wrappers over GroupDraftSheet over the shared DraftSheet around GroupDraftForm, whose visibility and
-                 permissions section contents are the standalone GroupVisibilityChoice (title and identifier parameterized, shared
-                 with the tournament form) and GroupPermissionToggles; 2026-11-10), InvitePeopleSheet over
+                 GroupActionRow, GroupDetailMenu, GroupEventsSegment, MembersList, MemberRow, GroupLoaderView, the Edit sheet (creating walks the
+                 wizard since slice 3, 2026-11-11, presented by GroupDetailView+Create: a cover on compact, a form sheet otherwise;
+                 a thin wrapper over GroupDraftSheet over the shared DraftSheet around GroupDraftForm, whose permissions
+                 section content is the standalone GroupPermissionToggles (2026-11-10; the visibility section and
+                 GroupVisibilityChoice deleted 2026-11-11 — the wizard's cards own the create pick), InvitePeopleSheet over
                  InviteCandidateRow, ReportSheet (a reason, a comment, Send, thanks; a group, a tournament or a message), GroupDestinations)
     Chat/        Interfaces (ChatRepository, ChatHistoryCache, AttachmentUploader, AttachmentCache, MediaPreparer, GalleryItem, FrameClock), Models (ChatMessage,
                  MessageKind (text, event_created, the four tournament notes; an unknown kind decodes as `unknown(name)` and the
@@ -280,10 +287,11 @@ lily/
                  GroupTournamentsSegment, TournamentDetailView with TournamentHeader + TournamentFacts, TournamentEntriesSegment +
                  EntryRow, TournamentResultsSegment over BracketView, StandingsTable and MatchList (all drawing MatchCell), MatchSheet
                  + MatchScheduleView (the organiser's time and place), TournamentParticipationControl + TournamentMenu, TeamNameSheet,
-                 the Create/Edit sheets over TournamentDraftSheet and TournamentDraftForm (+ Schedule), whose sections recompose
-                 the standalone TournamentBasicsControls, TournamentScheduleFields, TournamentEntriesFields and
-                 TournamentWhoMayJoinControls (its group row and visibility picker the shared HostingGroupRow and
-                 GroupVisibilityChoice; 2026-11-10))
+                 the Edit sheet over TournamentDraftSheet and TournamentDraftForm (+ Schedule; creating walks the wizard since
+                 slice 3, 2026-11-11), whose sections recompose
+                 the standalone TournamentScheduleFields and TournamentEntriesFields (2026-11-10; the create-only
+                 TournamentBasicsControls and TournamentWhoMayJoinControls deleted 2026-11-11 — the group row is the
+                 shared HostingGroupRow, read-only on an edit))
     Inbox/       Models (InboxItem with InboxItemKind, InviteStatus, InvitePayload and TournamentInvitePayload (both over the shared
                  InviteAnswer), ReminderPayload, MatchReminderPayload, DeletionNoticePayloads (EventCancelledPayload,
                  GroupOwnershipTransferredPayload) and the captions; InboxPage; InviteAcceptance (a group or a
@@ -297,11 +305,11 @@ lily/
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ included;
                  Profile/ holds ProfileStoreTests and ProfileStoreBioTests, DisplayNameViewModelTests, AboutViewModelTests,
-                 DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01, and MapCardListEdgesTests since 2026-11-06, with CreateEventPlaceTests, EditEventPlaceTests and EventDraftPlaceTests from the 2026-11-06 pre-merge review; Location/ holds PlaceSuggestionTests since then; Create/ holds CreationStepsTests, CreationWizardPolicyTests and CreationWizardModelTests (the creation wizard, 2026-11-10)); Support/ holds fakes
+                 DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01, and MapCardListEdgesTests since 2026-11-06, with CreateEventPlaceTests, EditEventPlaceTests and EventDraftPlaceTests from the 2026-11-06 pre-merge review; Location/ holds PlaceSuggestionTests since then; Create/ holds CreationStepsTests, CreationStepsGroupTests, CreationStepsTournamentTests, CreationWizardPolicyTests, CreationWizardModelTests and CreationWizardModelKindsTests (the creation wizard, 2026-11-10/11)); Support/ holds fakes
                  (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, ShellDoubles,
                  StatisticsDoubles, GroupDoubles (with FakeInviteRepository), GroupViewModelDoubles with the shared GroupHarness and the
                  TermsCountingReporter every harness uses, InboxDoubles, PeopleDoubles, LocationDoubles, PushDoubles, FeedbackDoubles,
-                 ProfileDoubles (FakeProfileRepository and the Profile fixture), AttachmentDoubles, CreateEventHarness, EventDetailHarness,
+                 ProfileDoubles (FakeProfileRepository and the Profile fixture), AttachmentDoubles, CreateEventHarness, CreationWizardHarness, EventDetailHarness,
                  FakeTournamentRepository (+ Matches), TournamentHarness, PollFixtures and ChatPollDoubles (the poll samples and fakes; 2026-10-24)), the
                  shared test tools (RequestHold with the HoldsRequests protocol, Recorded, ScriptedAttempt, SpyLogger, TestFixtureFiles,
                  ImageFiles) and fixtures (TestFixtures,
@@ -337,4 +345,6 @@ recompose (GlassNavigationRow under Core/UI/Components; PlaceNameField, PlaceSug
 EventPlayersFields, EventDetailsFields under Events; GroupVisibilityChoice, GroupPermissionToggles under Groups;
 TournamentBasicsControls, TournamentScheduleFields, TournamentEntriesFields, TournamentWhoMayJoinControls under
 Tournaments), each added to its line above; the slice review deduplicated the tournament form's group row and
-visibility picker into the shared HostingGroupRow and GroupVisibilityChoice.
+visibility picker into the shared HostingGroupRow and GroupVisibilityChoice. (2026-11-11: the create-only
+GroupVisibilityChoice, TournamentBasicsControls and TournamentWhoMayJoinControls were deleted with the review sweep
+after slice 3 — the wizard's cards own those choices; see groups.md and tournaments.md, 2026-11-11.)

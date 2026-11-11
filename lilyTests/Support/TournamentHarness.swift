@@ -95,11 +95,13 @@ final class TournamentHarness: LoadsGroups {
     }
 
     func makeCreateViewModel(locationService: (any LocationService)? = nil,
+                             geocoder: (any GeocodingService)? = nil,
                              lockedGroup: EventGroupRef? = nil,
                              pushOptIn: (any PushOptIn)? = nil) -> CreateTournamentViewModel {
         CreateTournamentViewModel(repository: repository,
                                   identity: identity,
                                   locationService: locationService ?? MockLocationService(),
+                                  geocoder: geocoder ?? MockGeocodingService(),
                                   groups: groups,
                                   errorCenter: errorCenter,
                                   logger: logger,

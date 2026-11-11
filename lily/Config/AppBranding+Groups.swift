@@ -1,7 +1,7 @@
 import Foundation
 
 nonisolated extension AppBranding {
-    /// Copy of the groups screens, the group detail, the create sheet and the invite sheet.
+    /// Copy of the groups screens, the group detail, the group form and the invite sheet.
     enum Groups {
         static var title: String { localized("Groups") }
         static var discover: String { localized("Discover") }
@@ -94,7 +94,7 @@ nonisolated extension AppBranding {
         }
 
         enum Create {
-            /// The create sheet's title; the "+" menu on Explore names its group item after it.
+            /// The kind page's group card; the edit sheet titles with `editTitle`.
             static var title: String { localized("New group") }
             static var editTitle: String { localized("Edit group") }
             static var submit: String { localized("Create group") }

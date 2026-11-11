@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Team size (fixed once created), the entries cap (fixed after the start) and whether a match may end level.
+/// Team size (fixed once created), the entries cap (fixed after the start) and, outside a knockout, whether a match
+/// may end level.
 struct TournamentEntriesFields<Model: TournamentDraftEditing>: View {
     @Bindable var viewModel: Model
 
@@ -18,14 +19,17 @@ struct TournamentEntriesFields<Model: TournamentDraftEditing>: View {
         }
         .disabled(viewModel.isLocked)
         .accessibilityIdentifier(AccessibilityIdentifiers.tournamentMaxEntries)
-        CaptionedControl(Copy.draws) {
-            Picker(Copy.draws, selection: allowsDraws) {
-                Text(Copy.drawsAllowed).tag(true)
-                Text(Copy.drawsNotAllowed).tag(false)
+        // A knockout match always needs a winner (`Tournament.permitsDraws`), so the choice would be dead weight.
+        if viewModel.draft.format != .singleElimination {
+            CaptionedControl(Copy.draws) {
+                Picker(Copy.draws, selection: allowsDraws) {
+                    Text(Copy.drawsAllowed).tag(true)
+                    Text(Copy.drawsNotAllowed).tag(false)
+                }
+                .pickerStyle(.segmented)
+                .disabled(viewModel.isLocked)
+                .accessibilityIdentifier(AccessibilityIdentifiers.tournamentDraws)
             }
-            .pickerStyle(.segmented)
-            .disabled(viewModel.isLocked)
-            .accessibilityIdentifier(AccessibilityIdentifiers.tournamentDraws)
         }
     }
 

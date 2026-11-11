@@ -6,7 +6,7 @@ import SwiftUI
 /// `navigationDestination` renders the picker). The scaffold's caption states the either-half-is-enough rule; the
 /// hint line under the fields carries the step's first live issue.
 struct EventPlacePage<Model: EventDraftEditing>: View {
-    let wizard: CreationWizardModel<Model>
+    let wizard: any CreationWizardControlling
     @Bindable var viewModel: Model
     let onCancel: () -> Void
     /// The geocoder's places for the typed name, filled by `PlaceNameField`'s debounced machinery.
@@ -23,7 +23,7 @@ struct EventPlacePage<Model: EventDraftEditing>: View {
             nameField
             if !suggestions.isEmpty { suggestionCard }
             mapRow
-            WizardIssueHint(issue: wizard.firstBlockingIssue(on: Self.step))
+            WizardIssueHint(message: wizard.blockingMessage(on: Self.step))
         }
         // Focus drops the moment the stack moves (a write from a view already leaving the hierarchy is ignored),
         // so a pop-return never re-presents the keyboard over the bottom bar.

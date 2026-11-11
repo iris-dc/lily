@@ -59,10 +59,14 @@ nothing here performs I/O or touches shared state. Limits come from
   `contains(entryID:)`; copy-returning `placing`, `reporting`, `recording`, `confirming`, `disputing`, `walkover`,
   `scheduling`, `replacingUser`. Same file: `MatchSchedule(scheduledAt?, location?)` with `isEmpty` and
   `proposal(for:in:now:calendar:)`; `TournamentStanding` (rank, played, won, drawn, lost, scored, conceded, points).
-- `[lily/Features/Tournaments/Models/TournamentDraft.swift:TournamentDraft]`: `Equatable, Sendable`, not Codable:
+- `[lily/Features/Tournaments/Models/TournamentDraft.swift:TournamentDraft]`: `Equatable, Sendable,
+  PlacePickingDraft`, not Codable:
   `clientId`, `name`, `description`, `type`, `format`, `teamSize`, `maxEntries`, `allowsDraws: Bool?`, `startsAt`,
-  `registrationClosesAt?`, `locationName`, `coordinate?`, `group?`, `visibility`; `init(startsAt:clientId:)`,
-  `init(editing:)`; nested `Rules` and `Issue` (eleven cases); `issues(now:rules:)` (the one validity rule: empty means
+  `registrationClosesAt?`, `locationName`, `coordinate?`, `group?`, `visibility`, and the shared place bookkeeping
+  `spotPickedOnMap`/`suggestedName` with `placeSuggestionQuery`, `apply(_:)` and `pickSpot(_:)` through
+  `PlacePickingDraft` (`lily/Features/Events/Models/PlacePickingDraft.swift`; slice 3 of the creation-wizard plan,
+  2026-11-11); `init(startsAt:clientId:)`,
+  `init(editing:)` (starts spot-picked); nested `Rules` and `Issue` (`CaseIterable`, eleven cases); `issues(now:rules:)` (the one validity rule: empty means
   it can go, the view models judge `issues.isEmpty`, there is no `isValid`),
   `select(format:)`, `earliestStart(now:rules:)`, `proposedDeadline(before:now:)`, `makeTournament(...)`;
   `EventType.allowsDrawsByDefault`.

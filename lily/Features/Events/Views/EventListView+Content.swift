@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// The sheets Explore presents (the creation wizard, the create forms and sign-in) and the content states of the
-/// list, apart from the screen's composition in `EventListView.swift`, so the type body stays under SwiftLint's
-/// 200-line limit (the two together are over it).
+/// The sheets Explore presents (the creation wizard and sign-in) and the content states of the list, apart from the
+/// screen's composition in `EventListView.swift`, so the type body stays under SwiftLint's 200-line limit (the two
+/// together are over it).
 extension EventListView {
     /// The sheet for one `ExploreSheet` case.
     @ViewBuilder
@@ -12,18 +12,6 @@ extension EventListView {
             // On a regular width the wizard is this sheet, sized like every form; a compact width never reaches this
             // branch (the full-screen cover claims it). The model was made when it was presented.
             wizardContent.lilyFormSheet()
-        case .createGroup:
-            // The founder lands in the new group (on Home, where groups live); the carousel and Home learn of it
-            // through `groupChanges` and the store.
-            CreateGroupSheet(viewModel: dependencies.makeCreateGroupViewModel { dependencies.navigation.open(group: $0) },
-                             errorCenter: dependencies.errorCenter)
-        case .createTournament:
-            // The organiser lands in the new tournament (on Home, where theirs live); the carousel and Home learn
-            // of it through `tournamentChanges`.
-            CreateTournamentSheet(viewModel: dependencies.makeCreateTournamentViewModel { detail in
-                dependencies.tournamentChanges.recordChange()
-                dependencies.navigation.open(tournament: detail.tournament.destination)
-            }, errorCenter: dependencies.errorCenter)
         case .signIn:
             SignInSheet(session: dependencies.sessionController,
                         errorCenter: dependencies.errorCenter,
@@ -66,7 +54,7 @@ extension EventListView {
         }
     }
 
-    /// The "+" menu's request: the wizard (a game) or the form for a signed-in user, sign-in for a guest.
+    /// The "+"'s request: the wizard for a signed-in user, sign-in for a guest.
     func presentForUser(_ requested: ExploreSheet) {
         present(CreateIntentPolicy.sheet(for: requested, isSignedIn: dependencies.sessionController.state.isSignedIn))
     }
@@ -76,7 +64,16 @@ extension EventListView {
     /// view seeds it into `@State`).
     private func present(_ sheet: ExploreSheet) {
         if case .wizard(let seed) = sheet {
-            wizardModel = dependencies.makeCreationWizardModel(seed: seed, onCreatedEvent: viewModel.add)
+            wizardModel = dependencies.makeCreationWizardModel(
+                seed: seed,
+                // A created game lands in this list at once; a new group or tournament lives on Home, so the founder
+                // is taken there (the carousels learn of it through the store and `tournamentChanges`).
+                onCreatedEvent: viewModel.add,
+                onCreatedGroup: { [dependencies] in dependencies.navigation.open(group: $0) },
+                onCreatedTournament: { [dependencies] detail in
+                    dependencies.tournamentChanges.recordChange()
+                    dependencies.navigation.open(tournament: detail.tournament.destination)
+                })
         }
         if sheet == .signIn {
             dependencies.logger.info(.auth, "Guest asked to create from Explore; showing sign-in")

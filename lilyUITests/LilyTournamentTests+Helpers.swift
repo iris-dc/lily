@@ -57,6 +57,40 @@ extension LilyTournamentTests {
         XCTAssertTrue(app.buttons["tournament-leave"].waitForExistence(timeout: 10), "the accept entered the caller")
     }
 
+    /// Walks the tournament wizard from its Name step to Details: the name, the Type and Format cards (which
+    /// auto-advance), Next past Schedule, the Hosting group choice (present from Explore), the place name (the spot
+    /// comes from the mock location), then Entries and Who can join on their defaults.
+    @MainActor
+    func walkTournamentWizard(name: String, place: String) {
+        waitForWizardStep("Name")
+        enter(name, into: app.textFields["tournament-name"])
+        tapNext()
+        pickWizardCard("create-type-football", on: "Type")
+        pickWizardCard("create-format-single_elimination", on: "Format")
+        waitForWizardStep("Schedule")
+        tapNext()
+        waitForWizardStep("Hosting group")
+        tapNext()
+        waitForWizardStep("Place")
+        enter(place, into: app.textFields["tournament-location-name"])
+        tapNext()
+        waitForWizardStep("Entries")
+        tapNext()
+        waitForWizardStep("Who can join")
+        tapNext()
+        waitForWizardStep("Details")
+    }
+
+    /// Submits the walked tournament wizard from its Details step and waits for it to close on the answer.
+    @MainActor
+    func submitTournamentWizard() {
+        let submit = app.buttons["tournament-submit"]
+        XCTAssertTrue(submit.waitForExistence(timeout: 5))
+        assertBecomesEnabled(submit, "the walked draft must be complete")
+        submit.tap()
+        XCTAssertTrue(app.navigationBars["Details"].waitForNonExistence(timeout: 10), "the wizard must close once created")
+    }
+
     /// Picks a segment of the detail's picker, scrolling back to it when the segment's content pushed it off screen.
     @MainActor
     func pickSection(_ title: String) {

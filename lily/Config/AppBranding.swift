@@ -61,9 +61,9 @@ nonisolated enum AppBranding {
         static var eventsSection: String { localized("Events") }
         static var loadFailedMessage: String { localized("Pull down to try again.") }
 
-        /// The create sheet, opened from the floating "+" on Explore; `title` doubles as the "+" menu's game item.
+        /// The event form copy: the wizard's event pages and the edit sheet share it; `title` is the kind page's card.
         enum Create {
-            /// VoiceOver label of the floating "+", a menu with a game and a group.
+            /// VoiceOver label of the floating "+" that opens the creation wizard.
             static var menu: String { localized("Create") }
             static var title: String { localized("New event") }
             static var submit: String { localized("Create event") }

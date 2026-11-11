@@ -15,7 +15,10 @@ final class CreateGroupViewModel {
     private let identity: any IdentityProvider
     private let store: MyGroupsStore
     private let locationService: any LocationService
+    private let geocoder: any GeocodingService
     private let logger: any Logging
+    /// The user's position as `prepare()` read it: the place lookups' bias once the draft has no spot of its own.
+    private var position: Coordinate?
     /// A `.network` or `.groupCreationFailed` (which also covers an id another user owns) leaves the outcome unknown;
     /// the group is ours when the caller owns what the backend holds under the draft's id; a `.createIdReused` sends
     /// the draft as an update under that id.
@@ -26,6 +29,7 @@ final class CreateGroupViewModel {
          identity: any IdentityProvider,
          store: MyGroupsStore,
          locationService: any LocationService,
+         geocoder: any GeocodingService = MockGeocodingService(),
          errorCenter: ErrorCenter,
          logger: any Logging,
          tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
@@ -34,6 +38,7 @@ final class CreateGroupViewModel {
         self.identity = identity
         self.store = store
         self.locationService = locationService
+        self.geocoder = geocoder
         self.logger = logger
         self.onCreated = onCreated
         flow = CreateFlow(noun: "group",
@@ -52,9 +57,15 @@ final class CreateGroupViewModel {
     func prepare() async {
         guard draft.coordinate == nil else { return }
         let position = await locationService.currentLocation()
+        self.position = position
         if draft.coordinate == nil { draft.coordinate = position }
         logger.debug(.location, position == nil ? "No position for the new group; the spot is set on the map"
                                                 : "New group proposed at the user's position")
+    }
+
+    /// Biased to the draft's spot, else the user's position, so a venue name finds the one nearby.
+    func placeSuggestions(for query: String) async -> [PlaceSuggestion] {
+        await geocoder.suggestions(for: query, near: draft.coordinate ?? position)
     }
 
     var issues: [GroupDraft.Issue] { draft.issues }

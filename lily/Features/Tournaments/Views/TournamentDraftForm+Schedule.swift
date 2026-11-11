@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// When (the start, and a deadline before it), where (place and spot), who can join (the group and the visibility) and
-/// the description. Every stored property lives in the main file.
+/// When (the start, and a deadline before it), where (place and spot), the hosting group and the description.
+/// Every stored property lives in the main file.
 extension TournamentDraftForm {
     var whenSection: some View {
         Section {
@@ -30,18 +30,15 @@ extension TournamentDraftForm {
         }
     }
 
-    /// Which group hosts the tournament (its visibility then follows the group's), or who can join a standalone one.
+    /// The group hosting the tournament, read-only: the group cannot change on an edit, and the visibility follows it.
     var whoSection: some View {
         Section {
-            TournamentWhoMayJoinControls(viewModel: viewModel)
+            HostingGroupRow(lockedGroup: viewModel.lockedGroup,
+                            showsNoEligibleGroups: viewModel.explainsNoEligibleGroups,
+                            eligibleGroups: viewModel.eligibleGroups,
+                            selection: $viewModel.draft.group)
         } header: {
             Text(Copy.visibility)
-        } footer: {
-            if viewModel.explainsNoEligibleGroups {
-                Text(AppBranding.Events.Create.noEligibleGroups)
-            } else if viewModel.draft.group == nil, viewModel.allowsStructureChanges {
-                Text(viewModel.draft.visibility == .public ? AppBranding.Groups.publicFooter : AppBranding.Groups.privateFooter)
-            }
         }
     }
 

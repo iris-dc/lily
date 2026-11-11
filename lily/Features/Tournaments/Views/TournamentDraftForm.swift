@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// Every field of a tournament, new or the organiser's own, grouped the way an organiser thinks: the tournament, where,
-/// when, the entries, who can join, and the optional description. Under each group the first thing still wrong with it.
-/// Segmented pickers throughout, never a toggle. Section contents are standalone `Tournament*Controls`/`*Fields`
-/// views the sections recompose. The Where, When and Who sections are in the `+Schedule` file. Where
+/// Every editable field of the organiser's own tournament (creating walks the wizard): the tournament, where, when,
+/// the entries, the hosting group when there is one, and the description. Under each group the first thing still
+/// wrong with it. Section contents are standalone `Tournament*Fields` views the wizard's pages recompose. The
+/// Where, When and Who sections are in the `+Schedule` file. Where
 /// follows the first section as on the event form: a `Form` instantiates rows only near the viewport, and the UI tests
 /// (and a user with the keyboard up) reach the place field without a scroll this way.
 struct TournamentDraftForm<Model: TournamentDraftEditing>: View {
@@ -20,7 +20,7 @@ struct TournamentDraftForm<Model: TournamentDraftEditing>: View {
             whereSection
             whenSection
             entriesSection
-            if viewModel.showsGroupRow || viewModel.allowsStructureChanges {
+            if viewModel.showsGroupRow {
                 whoSection
             }
             detailsSection
@@ -38,9 +38,6 @@ struct TournamentDraftForm<Model: TournamentDraftEditing>: View {
                 .submitLabel(.next)
                 .onSubmit { focusedField = .locationName }
                 .accessibilityIdentifier(AccessibilityIdentifiers.tournamentName)
-            if viewModel.allowsStructureChanges {
-                TournamentBasicsControls(viewModel: viewModel)
-            }
         } header: {
             Text(Copy.tournamentSection)
         } footer: {
@@ -66,7 +63,8 @@ struct TournamentDraftForm<Model: TournamentDraftEditing>: View {
     let dependencies = AppDependencies.makeMock()
     NavigationStack {
         ContentScreen {
-            TournamentDraftForm(viewModel: dependencies.makeCreateTournamentViewModel { _ in })
+            TournamentDraftForm(viewModel: dependencies.makeEditTournamentViewModel(
+                for: MockTournamentFixtures.make(now: .now)[0].tournament) { _ in })
         }
     }
 }

@@ -32,7 +32,9 @@ in [ViewModels](../ViewModels/EGM.md). Failures surface as `AppError`.
 - `RoomActivityRecorder: AnyObject`: one synchronous, non-throwing requirement
   `noteMessage(_ message: ChatMessage, in groupID: String)`
   [`lily/Features/Groups/Interfaces/RoomActivityRecorder.swift`:`RoomActivityRecorder`].
-- `GroupDraftEditing: DraftSubmitting where Issue == GroupDraft.Issue`, adding `var draft: GroupDraft { get set }`;
+- `GroupDraftEditing: DraftSubmitting where Issue == GroupDraft.Issue`, adding `var draft: GroupDraft { get set }`
+  and `func placeSuggestions(for:) async -> [PlaceSuggestion]` (defaulted to `[]`: only a create offers suggestions
+  — the wizard's place page — while the edit form keeps the plain fields; slice 3, 2026-11-11);
   through `DraftSubmitting` (`lily/Core/UI/Interfaces/DraftSubmitting.swift`) it is class-bound and `Observable`
   and carries `issues: [Issue]`, `isSubmitting`, `canSubmit`, `isDone`, `prepare() async`, `submit() async`
   [`lily/Features/Groups/Interfaces/GroupDraftEditing.swift`:`GroupDraftEditing`].

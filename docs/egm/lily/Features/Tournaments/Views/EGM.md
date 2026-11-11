@@ -12,10 +12,12 @@ reading a `TournamentListViewModel`. The detail: `TournamentDetailView` composes
 standings or matches), `TournamentParticipationControl` and the `TournamentMenu`, hosting the edit, team-name, match,
 invite and report sheets and the confirmation dialogs, around a `TournamentDetailViewModel`. Writes: `MatchSheet`
 with its pushed `MatchScheduleView`, and `TeamNameSheet`. The draft form `TournamentDraftForm<Model:
-TournamentDraftEditing>` (+Schedule) recomposes its standalone section contents (`TournamentBasicsControls`,
-`TournamentScheduleFields`, `TournamentEntriesFields`, `TournamentWhoMayJoinControls`, extracted 2026-11-10 for the
-creation wizard's pages) and sits in `TournamentDraftSheet`, wrapped by `CreateTournamentSheet` and
-`EditTournamentSheet`. View models are in [`../ViewModels/EGM.md`](../ViewModels/EGM.md); layout math and
+TournamentDraftEditing>` (+Schedule) recomposes its standalone section contents (`TournamentScheduleFields` and
+`TournamentEntriesFields`, extracted 2026-11-10 for the creation wizard's pages; the create-only
+`TournamentBasicsControls` and `TournamentWhoMayJoinControls` deleted 2026-11-11 — the wizard's cards own type,
+format and who-may-join, and the edit shows the hosting group read-only through the shared `HostingGroupRow`) and
+sits in `TournamentDraftSheet`, wrapped by `EditTournamentSheet` (creating walks the
+wizard since slice 3, 2026-11-11; the create wrapper is gone). View models are in [`../ViewModels/EGM.md`](../ViewModels/EGM.md); layout math and
 validation come from the models ([`../Models/EGM.md`](../Models/EGM.md): `BracketLayout`, `MatchScoreDraft`,
 `MatchScheduleDraft`, `TeamNameIssue`). No file here branches on `LayoutMode` or `AppConfig.FeatureFlags`; wide
 screens are handled with `readableColumn()`, `inReadableColumn()` and the bracket inset.
@@ -94,23 +96,22 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `DraftSubmitButton` (`tournamentTeamSubmit`).
 - `[lily/Features/Tournaments/Views/TournamentDraftForm.swift:TournamentDraftForm]`: `struct
   TournamentDraftForm<Model: TournamentDraftEditing>` with `@Bindable viewModel`; sections tournament (name
-  `tournamentName`, `EventTypeChips`, format `tournamentFormat`), where (`PlaceFields`, `tournamentLocationName`,
+  `tournamentName`), where (`PlaceFields`, `tournamentLocationName`,
   `createPickOnMap`), when (start, deadline `tournamentDeadline`, registration close), entries (`tournamentTeamSize`,
-  `tournamentMaxEntries`, draws `tournamentDraws`), who (`createGroup`, visibility `tournamentVisibility`), details;
+  `tournamentMaxEntries`, draws `tournamentDraws`), who (the hosting group read-only through the shared
+  `HostingGroupRow`, `createGroup`, shown only when `showsGroupRow`), details;
   the where, when, who and details sections are in
   `[lily/Features/Tournaments/Views/TournamentDraftForm+Schedule.swift:TournamentDraftForm.whenSection]`. The section
   contents the sections recompose are standalone `<Model: TournamentDraftEditing>` views:
-  `[lily/Features/Tournaments/Views/TournamentBasicsControls.swift:TournamentBasicsControls]` (type chips and the
-  segmented format picker, `tournamentFormat`),
   `[lily/Features/Tournaments/Views/TournamentScheduleFields.swift:TournamentScheduleFields]` (start, the deadline
-  segments `tournamentDeadline`, the close date),
+  segments `tournamentDeadline`, the close date) and
   `[lily/Features/Tournaments/Views/TournamentEntriesFields.swift:TournamentEntriesFields]` (team size
-  `tournamentTeamSize`, max entries `tournamentMaxEntries`, draws `tournamentDraws`) and
-  `[lily/Features/Tournaments/Views/TournamentWhoMayJoinControls.swift:TournamentWhoMayJoinControls]` (the group row
-  `createGroup` and the visibility segments `tournamentVisibility`, both shared since 2026-11-10: the row is Events'
-  `HostingGroupRow`, the segments Groups' `GroupVisibilityChoice` with the tournament's title and identifier); the
+  `tournamentTeamSize`, max entries `tournamentMaxEntries`, draws `tournamentDraws`, hidden for single elimination
+  where `Tournament.permitsDraws` can never be true, 2026-11-11). The create-only `TournamentBasicsControls` and
+  `TournamentWhoMayJoinControls` deleted 2026-11-11 with the `tournamentFormat` and `tournamentVisibility`
+  identifiers: the wizard's cards own type, format and who-may-join; the
   sections keep the headers and the first-issue footers. `TournamentDraftSheet<Model>` wraps it in the shared `DraftSheet` (`tournamentFormCancel`, `tournamentSubmit`);
-  `CreateTournamentSheet` and `EditTournamentSheet` fix the view-model type and the titles.
+  `EditTournamentSheet` fixes the view-model type and the titles (the create wrapper left with slice 3, 2026-11-11).
 
 ## Invariants
 
@@ -153,23 +154,20 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `TeamNameIssue.issue(in:) == nil`; the sheet dismisses through `createTeam(named:onEntered:)`'s `onEntered`, as soon
   as the team exists and before the reminders are offered, and as a fallback once `tournament.hasEntered`.
 - `[lily/Features/Tournaments/Views/TournamentDraftForm.swift:TournamentDraftForm.body]`: section order is fixed
-  (tournament, where, when, entries, who, details); type and format
-  (`[lily/Features/Tournaments/Views/TournamentBasicsControls.swift:TournamentBasicsControls]`) and team size show
-  only when `allowsStructureChanges`; max entries, draws and the dates are disabled when `isLocked`
+  (tournament, where, when, entries, who, details); team size shows
+  only when `allowsStructureChanges`; the draws picker only outside single elimination (a knockout never permits a
+  draw, 2026-11-11); max entries, draws and the dates are disabled when `isLocked`
   (`[lily/Features/Tournaments/Views/TournamentEntriesFields.swift:TournamentEntriesFields]`,
-  `[lily/Features/Tournaments/Views/TournamentScheduleFields.swift:TournamentScheduleFields]`); the format is written
-  only through `draft.select(format:)`; every footer stays in the form and shows the first matching
-  `viewModel.issue(for:)`; format, deadline, draws and visibility are segmented pickers (the format over
-  `TournamentFormat.known`), the type is `EventTypeChips`, team size and max entries are `Stepper`s; no toggles.
+  `[lily/Features/Tournaments/Views/TournamentScheduleFields.swift:TournamentScheduleFields]`); every footer stays
+  in the form and shows the first matching
+  `viewModel.issue(for:)`; deadline and draws are segmented pickers, team size and max entries are `Stepper`s; no toggles.
 - `[lily/Features/Tournaments/Views/TournamentScheduleFields.swift:TournamentScheduleFields.body]`: start is
   bounded by `earliestStart...`, the close date by `...startsAt` and shown only when set; "at start" clears the
   deadline, "earlier" proposes `proposedDeadline()`.
-  `[lily/Features/Tournaments/Views/TournamentWhoMayJoinControls.swift:TournamentWhoMayJoinControls.body]`: the
-  visibility picker shows only for a standalone tournament with structure changes allowed and is the shared
-  `GroupVisibilityChoice` (`lily/Features/Groups/Views`) with the tournament's title and `tournamentVisibility`; the
-  group row is the shared `HostingGroupRow` (`lily/Features/Events/Views`): read-only for a locked group or with no
-  eligible group, else a `Picker` styled by `lilyMenuPicker()` (its value and chevron in `.secondary`, not the
-  form's accent tint).
+  `[lily/Features/Tournaments/Views/TournamentDraftForm+Schedule.swift:TournamentDraftForm.whoSection]`: the group
+  row is the shared `HostingGroupRow` (`lily/Features/Events/Views`), read-only on an edit (the group cannot
+  change); the form offers no visibility choice since 2026-11-11 — who-may-join is fixed on create by the wizard's
+  cards, and a group tournament follows its group's visibility.
 - `[lily/Features/Tournaments/Views/TournamentParticipationControl.swift:TournamentMenu]`: menu items are gated by
   `permissions` (`canOpenChat`, `canInvite`, `showsStart` with Start disabled unless `canStart` and subtitled by
   `startBlockedReason`, `canEdit`, `canCancel`, `canReport`); the control is chosen by `participation` alone.

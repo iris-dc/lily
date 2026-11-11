@@ -3,7 +3,7 @@ import Foundation
 /// What an organiser fills in to create a tournament, or changes on one they run. Validated on device against the limits
 /// the backend enforces (`AppConfig.Tournaments`, text lengths in UTF-16 units as the backend counts them), so a draft
 /// that passes never earns a 400; `issues(now:rules:)` names what is still wrong.
-nonisolated struct TournamentDraft: Equatable, Sendable {
+nonisolated struct TournamentDraft: Equatable, Sendable, PlacePickingDraft {
     /// Chosen once per draft and sent with every attempt: the backend uses it as the tournament id, so a create
     /// repeated after a lost answer finds its tournament instead of making a second one. Lower-case, as stored.
     let clientId: String
@@ -21,6 +21,11 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
     var locationName = ""
     /// Starts from the user's position and is moved on the map; required.
     var coordinate: Coordinate?
+    /// Whether the user chose `coordinate` on the map (or edits a stored tournament): a chosen spot is the user's
+    /// own, never prepare's proposal (`PlacePickingDraft`; the wizard's dirty rule reads it).
+    var spotPickedOnMap = false
+    /// The name whose suggestion produced `coordinate` (`PlacePickingDraft`); never on the wire.
+    var suggestedName: String?
     /// The group to host the tournament in; `nil` for one of its own. A hosted tournament takes the group's visibility.
     var group: EventGroupRef?
     var visibility: GroupVisibility = .public
@@ -44,6 +49,8 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
         registrationClosesAt = tournament.registrationClosesAt
         locationName = tournament.locationName
         coordinate = tournament.location.coordinate
+        // The stored spot is the organiser's choice: an edited name alone must not move the tournament on the map.
+        spotPickedOnMap = true
         group = tournament.group
         visibility = tournament.visibility
     }
@@ -78,7 +85,7 @@ nonisolated struct TournamentDraft: Equatable, Sendable {
 
     /// One reason a draft cannot be sent, in the order the form lays its sections out: the Tournament section (the
     /// name), Where, When, Entries, Details.
-    enum Issue: Hashable, Sendable {
+    enum Issue: CaseIterable, Hashable, Sendable {
         case nameTooShort
         case nameTooLong
         case locationNameMissing

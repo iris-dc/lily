@@ -78,29 +78,42 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Hosted in Kreuzberg Kickers"].waitForExistence(timeout: 5))
     }
 
-    /// From a group the form shows the group read-only; from Explore the wizard gives the choice its own Hosting
-    /// group step starting at "No group". A clean Cancel on Name closes silently; a dirty one asks to discard.
+    /// From a group the wizard opens seeded: no kind page, straight on Name, and no Hosting group step on the walk
+    /// (the group is locked); a dirty Cancel asks to discard.
     @MainActor
-    func testCreatingAnEventInsideAGroupPresetsTheGroup() {
+    func testCreatingAnEventInsideAGroupSkipsTheKindAndGroupSteps() {
         tapSignInWithApple()
         openKickersDetail()
         app.buttons["group-create-event"].tap()
-        XCTAssertTrue(app.navigationBars["New event"].waitForExistence(timeout: 5))
+        waitForWizardStep("Name")
+        XCTAssertFalse(app.navigationBars[Self.wizardKindTitle].exists, "a seeded wizard skips the kind page")
 
-        let locked = app.descendants(matching: .any)["create-group"]
-        XCTAssertTrue(locked.waitForExistence(timeout: 5))
-        XCTAssertTrue(text(of: locked).contains("Kreuzberg Kickers"), "the group must be preset: \(text(of: locked))")
+        enter("Locked walk", into: app.textFields["create-title"])
+        tapNext()
+        pickWizardEventType()
+        waitForWizardStep("When")
+        tapNext()
+        waitForWizardStep("Place")
+        XCTAssertFalse(app.navigationBars["Hosting group"].exists, "the locked group leaves no group step")
         app.buttons["create-cancel"].tap()
-        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 5))
+        confirm("Discard")
+        XCTAssertTrue(app.navigationBars["Place"].waitForNonExistence(timeout: 5),
+                      "a dirty wizard closes on the confirmed discard")
+    }
 
-        app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))
+    /// From Explore the "+" asks the kind first; a clean Cancel on Name closes silently, and the wizard gives the
+    /// choice its own Hosting group step starting at "No group". A dirty Cancel asks to discard.
+    @MainActor
+    func testCreatingFromExploreAsksTheKindAndOffersTheGroupChoice() {
+        tapSignInWithApple()
         tapCreateButton()
+        pickCreationKind("create-kind-event")
         waitForWizardStep("Name")
         app.buttons["create-cancel"].tap()
         XCTAssertTrue(app.navigationBars["Name"].waitForNonExistence(timeout: 5), "a clean wizard closes silently")
 
         tapCreateButton()
+        pickCreationKind("create-kind-event")
         waitForWizardStep("Name")
         enter("Group pick", into: app.textFields["create-title"])
         tapNext()

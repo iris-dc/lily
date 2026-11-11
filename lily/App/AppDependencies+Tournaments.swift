@@ -44,6 +44,7 @@ extension AppDependencies {
         CreateTournamentViewModel(repository: tournamentRepository,
                                   identity: identity,
                                   locationService: locationService,
+                                  geocoder: geocoder,
                                   groups: myGroups,
                                   errorCenter: errorCenter,
                                   logger: logger,

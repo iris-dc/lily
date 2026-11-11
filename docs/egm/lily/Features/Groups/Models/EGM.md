@@ -46,9 +46,13 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   `unknown(String)` (`known`, `wireName`) and `endsMembership`
   [`lily/Features/Groups/Models/MembershipChange.swift`:`MembershipChange`]; `RoomSubscription { groupID, epoch }`
   with `init(group:)` [`lily/Features/Groups/Models/RoomSubscription.swift`:`RoomSubscription`].
-- `GroupDraft: Equatable, Sendable`: `clientId` (let), `name`, `description`, `visibility` (default `.public`),
-  `type`, `membersCanCreateEvents`, `membersCanInvite`, `locationName`, `coordinate: Coordinate?`;
-  `init(clientId:)`, `init(editing: SportGroup)`; `enum Issue` (`nameTooShort`, `nameTooLong`, `descriptionTooLong`,
+- `GroupDraft: Equatable, Sendable, PlacePickingDraft`: `clientId` (let), `name`, `description`, `visibility`
+  (default `.public`), `type`, `membersCanCreateEvents`, `membersCanInvite`, `locationName`,
+  `coordinate: Coordinate?`, and the shared place bookkeeping `spotPickedOnMap`/`suggestedName` with
+  `placeSuggestionQuery`, `apply(_:)` and `pickSpot(_:)` through `PlacePickingDraft`
+  (`lily/Features/Events/Models/PlacePickingDraft.swift`; slice 3 of the creation-wizard plan, 2026-11-11);
+  `init(clientId:)`, `init(editing: SportGroup)` (starts spot-picked: an edited name alone must not move the group);
+  `enum Issue: CaseIterable` (`nameTooShort`, `nameTooLong`, `descriptionTooLong`,
   `locationNameMissing`, `locationNameTooLong`, `coordinateMissing`); `trimmedName`, `trimmedLocationName`,
   `trimmedDescription: String?`, `issues: [Issue]`, `isValid`, `location: EventLocation?`,
   `makeGroup(ownerName:now:) -> SportGroup` [`lily/Features/Groups/Models/GroupDraft.swift`:`GroupDraft`].

@@ -12,16 +12,24 @@ extension LilyGroupsTests {
         XCTAssertTrue(app.buttons["group-create-event"].waitForExistence(timeout: 5), "a member may create games here")
     }
 
-    /// Fills the form opened from the group detail (the spot comes from the mock location) and submits it.
+    /// Walks the wizard opened from the group's detail — seeded with the kind and this group, so no kind page shows
+    /// and the Hosting group step is off the walk — and submits it (the spot comes from the mock location).
     @MainActor
     func createGame(titled title: String) {
         app.buttons["group-create-event"].tap()
-        XCTAssertTrue(app.navigationBars["New event"].waitForExistence(timeout: 5))
+        waitForWizardStep("Name")
+        XCTAssertFalse(app.navigationBars[Self.wizardKindTitle].exists, "a seeded wizard skips the kind page")
         enter(title, into: app.textFields["create-title"])
+        tapNext()
+        pickWizardEventType()
+        waitForWizardStep("When")
+        tapNext()
+        waitForWizardStep("Place")
+        XCTAssertFalse(app.navigationBars["Hosting group"].exists, "the locked group leaves no group step")
         enter("Görli Pitch", into: app.textFields["create-location-name"])
-        let submit = app.buttons["create-submit"]
-        assertBecomesEnabled(submit, "title, place and the mock position complete the draft")
-        submit.tap()
-        XCTAssertTrue(app.navigationBars["New event"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        tapNext()
+        waitForWizardStep("Players")
+        continueToDetails()
+        submitWizard()
     }
 }

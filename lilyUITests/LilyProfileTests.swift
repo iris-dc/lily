@@ -31,6 +31,7 @@ final class LilyProfileTests: LilyUITestCase {
         closeProfileSheet()
         openExploreTab()
         tapCreateButton()
+        pickCreationKind("create-kind-event")
         walkEventWizardToPlayers(title: "Price check", place: "Canal Path")
         continueToDetails()
         // The price card heads the Details step; the scroll keeps the read safe wherever the fold falls.

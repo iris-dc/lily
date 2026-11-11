@@ -5,7 +5,8 @@ Source: `lily/Features/Events/Views/`
 ## Overview
 
 The SwiftUI screens and components of the Events feature: the Explore screen (`EventListView` with its `+Content`
-extension), the event detail, the shared create/edit form and its sheets, the filter button and sheet, the events
+extension), the event detail, the shared event form and its edit sheet (creating walks the wizard since slice 3 of
+the creation-wizard plan, 2026-11-11), the filter button and sheet, the events
 map and the location picker, and the cards and rows other features reuse (`EventCard`, `EventCardList`,
 `EventPreviewCard`, `EventMapCardList`,
 `EventFactsCard`, `EventLocationMap`, `ParticipantRow`, `PlaceFields`, `PlaceNameField`, `PlaceSuggestionRows`,
@@ -21,7 +22,7 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `EventListView+Content.swift`): `init(listTitle: String?, viewModel: EventListViewModel,
   dependencies: AppDependencies, refreshHeader: @escaping () async -> Void, @ViewBuilder header:)`. State:
   `presentation: EventsPresentation`, `presentedSheet: ExploreSheet?`,
-  `wizardModel: CreationWizardModel<CreateEventViewModel>?` (made once per presentation in `present(_:)`, owned above
+  `wizardModel: AppCreationWizardModel?` (made once per presentation in `present(_:)`, owned above
   both presenters so a mid-flow width-class change re-hosts the wizard), `headerHeight`. Members: `showsMapAlone`,
   `sheetContent(for:)`, `wizardContent`, `clearWizardAfterDismiss()`, `consumePendingCreate()`, `presentForUser(_:)`,
   `presentationPicker`, `content`, `listContent`, `eventList`, `filteredOutState`, `loadFailedState`,
@@ -49,11 +50,12 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   restarts `.task(id: name)` with an unchanged name (one duplicate geocoder search per remount), accepted as a
   bounded cost (`docs/notes/events.md`, 2026-11-10).
 - `EventDraftSheet<Model: EventDraftEditing>` (`lily/Features/Events/Views/EventDraftSheet.swift`): `viewModel`,
-  `title`, `submitTitle`, `errorCenter`; wraps Core's `DraftSheet` around `EventDraftForm`. `CreateEventSheet`
-  (`CreateEventSheet.swift`: `CreateEventViewModel`, `ErrorCenter`) and `EditEventSheet` (`EditEventSheet.swift`:
-  `EditEventViewModel`, `ErrorCenter`) are its two titled uses.
-- `CreateMenuButton` (`lily/Features/Events/Views/CreateMenuButton.swift`): `onCreateGame`, `onCreateGroup`,
-  `onCreateTournament: () -> Void = {}`; the floating "+".
+  `title`, `submitTitle`, `errorCenter`; wraps Core's `DraftSheet` around `EventDraftForm`. `EditEventSheet` (`EditEventSheet.swift`:
+  `EditEventViewModel`, `ErrorCenter`) is its titled use — creating walks the wizard since slice 3 (2026-11-11), and
+  `CreateEventSheet` is deleted.
+- `CreateButton` (`lily/Features/Events/Views/CreateButton.swift`): `action: () -> Void`; the floating "+", a
+  plain button since slice 3 (the menu is gone) whose one tap opens the wizard with an empty seed, under the
+  unchanged `events-create` identifier and `Events.Create.menu` VoiceOver label.
 - `EventDraftForm+Place.swift` (2026-11-06; recomposed 2026-11-10 from the extracted place parts, slice 1 of the
   creation-wizard plan): the Where section, split out for the form's file limit; the stored state (`suggestions`,
   `focusedField`) stays in `EventDraftForm.swift`. `whereSection` composes, in the pixel-pinned pre-extraction order,
@@ -156,10 +158,12 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `scenePhase` becoming `.active` → `refreshUserLocation()`; `presentation` change → `presentationChanged(to:)`;
   `navigation.pendingCreate` (with `initial: true`) → `consumePendingCreate()`, which applies
   `CreateIntentPolicy.decide` and clears `pendingCreate` when consumed.
-- `presentForUser` routes the "+" choice through `CreateIntentPolicy.sheet(for:isSignedIn:)`: a guest gets `.signIn`,
-  logged at info under `.auth`. The wizard case (2026-11-10, creation-wizard slice 2: the "+" menu's event item and
-  the game intent) presents `CreationWizardView` over
-  `dependencies.makeCreationWizardModel(seed:onCreatedEvent: viewModel.add)`: a full-screen cover on a compact width,
+- `presentForUser` routes the "+"'s request through `CreateIntentPolicy.sheet(for:isSignedIn:)`: a guest gets
+  `.signIn`, logged at info under `.auth`. The wizard case (2026-11-10, creation-wizard slice 2; every kind since
+  slice 3, 2026-11-11) presents `CreationWizardView` over
+  `dependencies.makeCreationWizardModel(seed:onCreatedEvent:onCreatedGroup:onCreatedTournament:)` — a created game
+  lands in the list (`viewModel.add`), a created group opens through `navigation.open(group:)`, a created tournament
+  records `tournamentChanges` and opens: a full-screen cover on a compact width,
   a `lilyFormSheet()` sheet otherwise, split by two item bindings over the one `presentedSheet` so a width-class
   change mid-flow re-hosts the flow; the model is cleared only after a real dismissal (`clearWizardAfterDismiss`:
   `presentedSheet` is nil then, not on a re-host), which also books the flow's close (`noteClosed()`, the abandoned
@@ -187,8 +191,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   with `label` as its accessibility label and `identifier`) and `Price.symbol(for: currencyCode)` in `.secondary`,
   `fixedSize()`, under `currencyIdentifier`. The one decimal-pad price field: the form's price row (no focus binding)
   and the filter sheet's cap (focused by the capsule's tap through `isPriceFocused`).
-- `CreateMenuButton`: a `Menu` with game, group and (when `AppConfig.FeatureFlags.tournaments`) tournament while
-  `AppConfig.FeatureFlags.groups` is on; a single game button otherwise.
+- `CreateButton`: one plain button whatever the flags; which kinds the wizard offers is `CreationWizardPolicy`'s
+  call, not this view's.
 - Filter (`EventFilterSheet`): a `NavigationStack` over a `Form` (sections: type, distance, price; level, dates and
   open spots), title "Filters" inline, Done in `confirmationAction` (closes only; every change applies at once); every
   change goes through `viewModel.updateFilter`, `toggleType` or `clearFilter`;
@@ -260,10 +264,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `.groupDestinations(dependencies:)`; `PlacePickerRow` pushes `LocationPickerView`;
   `dependencies.navigation.open(group:)` / `open(tournament:)` after a create from Explore;
   `navigation.pendingCreate = nil` when consumed; `LocationPickerView` calls `dismiss()` on Done.
-- Sheets and covers: `CreationWizardView` (the wizard case: a full-screen cover on compact, a form sheet otherwise),
-  `CreateGroupSheet`, `CreateTournamentSheet`, `SignInSheet` (through `ExploreSheet`) and `EditEventSheet`;
-  `CreateEventSheet` left Explore with the slice-2 bridge and remains the group screen's create sheet until slice 3;
-  `EventDraftSheet` hands `errorCenter` to Core's `DraftSheet`.
+- Sheets and covers: `CreationWizardView` (the wizard case: a full-screen cover on compact, a form sheet
+  otherwise), `SignInSheet` (through `ExploreSheet`) and `EditEventSheet` (`CreateEventSheet`, `CreateGroupSheet`
+  and the `CreateTournamentSheet` wrapper left with slice 3, 2026-11-11); `EventDraftSheet` hands `errorCenter` to
+  Core's `DraftSheet`.
 - `dependencies.tournamentChanges.recordChange()` after a tournament is created from Explore.
 - Logging: `.ui` debug when a create shortcut is dropped because a sheet is up; `.auth` info when a guest is sent
   to sign in.

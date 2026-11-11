@@ -82,12 +82,16 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `makeShellLists()` (`lily/App/AppDependencies+Shell.swift:AppDependencies.makeShellLists`).
 - View-model factories, one per screen: `makeEventListViewModel(scope:snapshots:)`, `makeLandingViewModel`, `makeEventDetailViewModel`,
   `makeEditEventViewModel`, `makeCreateEventViewModel(onCreated:lockedGroup:)` (`+Events.swift`);
-  `makeCreationWizardModel(seed:onCreatedEvent:)` (`lily/App/AppDependencies+Create.swift`, 2026-11-10: builds
-  `CreationWizardModel<CreateEventViewModel>` over `CreationWizardPolicy.opening(for:flags:hasEligibleGroups:)`
-  (`.current` flags; the eligible-groups fact read once from `myGroups.eligibleForEvents`, so the event walk never
+  `makeCreationWizardModel(seed:onCreatedEvent:onCreatedGroup:onCreatedTournament:)`
+  (`lily/App/AppDependencies+Create.swift`, 2026-11-10; all three kinds since slice 3, 2026-11-11: builds
+  `AppCreationWizardModel` — the file's typealias for
+  `CreationWizardModel<CreateEventViewModel, CreateGroupViewModel, CreateTournamentViewModel>`, what call sites
+  holding a model name — over `CreationWizardPolicy.opening(for:flags:hasEligibleGroups:)`
+  (`.current` flags; the eligible-groups fact read once from `myGroups.eligibleForEvents`, so no walk ever
   follows a groups reload) and
-  `CreationWizardFactories`, whose event factory closes over `makeCreateEventViewModel` with the caller's
-  `onCreatedEvent` and the seed's locked group — a strong capture, the root outlives every wizard); `makeDiscoverGroupsViewModel`,
+  `CreationWizardFactories`, whose per-kind factories close over `makeCreateEventViewModel`,
+  `makeCreateGroupViewModel` and `makeCreateTournamentViewModel` with the caller's created-callbacks and the seed's
+  locked group — strong captures, the root outlives every wizard); `makeDiscoverGroupsViewModel`,
   `makeGroupDetailViewModel`, `makeGroupLoaderViewModel`, `makeCreateGroupViewModel`, `makeEditGroupViewModel`, `makeMembersViewModel`,
   `makeInvitePeopleViewModel`, `makeTournamentInvitePeopleViewModel`, `makeReportViewModel` (`+Groups.swift`); `makeChatViewModel`,
   `makeAttachmentComposer`, `makeChatHistoryClearer`, `myGroupsDidChange()`, `myGroupsDidLoad()` (`+Chat.swift`);

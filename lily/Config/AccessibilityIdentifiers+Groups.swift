@@ -31,10 +31,10 @@ nonisolated extension AccessibilityIdentifiers {
     /// The composer's reply preview (a container; its children keep their own identifiers) and the X that drops it.
     static let chatReplyPreview = "chat-reply-preview"
     static let chatReplyCancel = "chat-reply-cancel"
-    /// Fields and actions of the create-group sheet; `createGroup` is the event form's group row.
+    /// Fields and actions of the group form, shared by the wizard's group pages and the edit sheet; `createGroup`
+    /// is the event form's group row.
     static let createGroupName = "create-group-name"
     static let createGroupDescription = "create-group-description"
-    static let createGroupVisibility = "create-group-visibility"
     /// The group form's place: its name field and the row that opens the map.
     static let createGroupLocationName = "create-group-location-name"
     static let createGroupPickOnMap = "create-group-pick-on-map"

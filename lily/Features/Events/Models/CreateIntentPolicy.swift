@@ -1,6 +1,6 @@
 import Foundation
 
-/// The rules behind Explore's create presentations: which sheet or wizard a request opens for whom, and what a
+/// The rules behind Explore's create presentations: whether a request opens the wizard or sign-in, and what a
 /// keyboard shortcut's parked intent earns when Explore comes to consume it. Everything auth-aware lives here alone:
 /// the guest substitution and the consume-without-presenting invariant are this policy's property, never the wizard's.
 nonisolated enum CreateIntentPolicy {
@@ -16,8 +16,8 @@ nonisolated enum CreateIntentPolicy {
     }
 
     /// No intent changes nothing. An intent over a sheet already up is consumed without presenting: ⌘N inside the
-    /// wizard or a create form must not replace it and lose what was typed, and the intent is still cleared so it cannot pop
-    /// later. Otherwise the intent's sheet for a user, sign-in for a guest.
+    /// wizard must not replace it and lose what was typed, and the intent is still cleared so it cannot pop later.
+    /// Otherwise the intent's seeded wizard for a user, sign-in for a guest.
     static func decide(intent: CreateIntent?, presentedSheet: ExploreSheet?, isSignedIn: Bool) -> Decision {
         guard let intent else { return Decision(consumes: false, present: nil) }
         guard presentedSheet == nil else { return Decision(consumes: true, present: nil) }

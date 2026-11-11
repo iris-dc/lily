@@ -3,7 +3,7 @@ import Foundation
 /// What a host fills in to create an event, or changes on one they host. Validated on device against the limits the
 /// backend enforces (`AppConfig.Events.Creation`, text lengths in UTF-16 units as the backend counts them), so a draft
 /// that passes never earns a 400; `issues(now:rules:)` names what is still wrong.
-nonisolated struct EventDraft: Equatable, Sendable {
+nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
     /// Chosen once per draft and sent with every attempt: a create repeated after a lost answer finds its event on
     /// the backend instead of making a second one, because the backend uses it as the event id. Lower-case, as the
     /// backend stores and returns it, so the mock and the real answer carry the same id.
@@ -135,29 +135,6 @@ nonisolated struct EventDraft: Equatable, Sendable {
     var isFree: Bool { (price ?? 0) <= 0 }
     /// Something typed that the parser cannot read in the draft's locale; blank is empty, not unreadable.
     var hasUnreadablePrice: Bool { price == nil && !priceText.trimmed.isEmpty }
-
-    /// The typed name worth asking for suggestions: trimmed, at least `AppConfig.Events.placeSuggestionMinimumQuery`
-    /// code points, and not the name a tapped suggestion just set; `nil` asks for nothing.
-    var placeSuggestionQuery: String? {
-        let query = locationName.trimmed
-        guard query.codePointCount >= AppConfig.Events.placeSuggestionMinimumQuery, query != suggestedName else { return nil }
-        return query
-    }
-
-    /// A tapped suggestion fills the name and the spot at once. The spot stays a proposal, so a later reworded name
-    /// moves it again, and the name it set is not geocoded twice.
-    mutating func apply(_ suggestion: PlaceSuggestion) {
-        (locationName, coordinate) = (suggestion.title, suggestion.coordinate)
-        (suggestedName, spotPickedOnMap) = (suggestion.title, false)
-    }
-
-    /// A spot from the map picker is the user's choice: the typed name never overrides it (`PlaceResolver`), and a
-    /// suggestion the name produced earlier no longer describes it. Clearing the spot changes nothing else.
-    mutating func pickSpot(_ spot: Coordinate?) {
-        coordinate = spot
-        guard spot != nil else { return }
-        (spotPickedOnMap, suggestedName) = (true, nil)
-    }
 
     /// Equal but for the place bookkeeping (`spotPickedOnMap`, `suggestedName`), which never reaches the wire: an edit
     /// brought back to the stored game has nothing to save.

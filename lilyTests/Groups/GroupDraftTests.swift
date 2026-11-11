@@ -147,4 +147,27 @@ struct GroupDraftTests {
         #expect(AppBranding.Groups.Create.message(for: .locationNameTooLong).contains("\(Self.limits.locationNameMaxLength)"))
         #expect(AppBranding.Groups.Create.message(for: .coordinateMissing) == AppBranding.Events.Create.pickOnMap)
     }
+    /// The shared place bookkeeping (`PlacePickingDraft`): when suggestions are asked, what a tapped suggestion and
+    /// a map pick change, and that an edited group starts with its spot picked.
+    @Test func thePlaceBookkeepingMirrorsTheEventDrafts() {
+        var draft = GroupDraft()
+        draft.locationName = " G "
+        #expect(draft.placeSuggestionQuery == nil)
+        draft.locationName = " Görlitzer "
+        #expect(draft.placeSuggestionQuery == "Görlitzer")
+
+        let park = PlaceSuggestion(title: "Görlitzer Park", subtitle: "Berlin", coordinate: AppConfig.Location.mockCenter)
+        draft.apply(park)
+        #expect(draft.locationName == "Görlitzer Park" && draft.coordinate == park.coordinate)
+        #expect(draft.suggestedName == "Görlitzer Park" && !draft.spotPickedOnMap)
+        #expect(draft.placeSuggestionQuery == nil, "the name a suggestion just set is not asked about")
+
+        draft.pickSpot(Coordinate(latitude: 54.35, longitude: 18.65))
+        #expect(draft.spotPickedOnMap && draft.suggestedName == nil)
+    }
+
+    @Test func anEditedGroupStartsWithItsSpotPicked() {
+        let edited = GroupDraft(editing: .fixture())
+        #expect(edited.spotPickedOnMap && edited.suggestedName == nil)
+    }
 }

@@ -3,7 +3,7 @@ import Foundation
 /// What a user fills in to create or edit a group. Validated on device against the limits the backend enforces
 /// (`AppConfig.Groups`, text lengths in UTF-16 units as the backend counts them), so a draft that passes never earns
 /// a 400 for its lengths; the word filter and link policy stay the backend's (`contentRejected`).
-nonisolated struct GroupDraft: Equatable, Sendable {
+nonisolated struct GroupDraft: Equatable, Sendable, PlacePickingDraft {
     /// Chosen once per draft and sent with every attempt: the backend uses it as the group id, so a create repeated
     /// after a lost answer finds its group instead of making a second one. Lower-case, as the backend stores it.
     let clientId: String
@@ -18,6 +18,11 @@ nonisolated struct GroupDraft: Equatable, Sendable {
     var locationName = ""
     /// Prefilled from the device's position when the sheet opens, else set on the map.
     var coordinate: Coordinate?
+    /// Whether the user chose `coordinate` on the map (or edits a stored group): a chosen spot is the user's own,
+    /// never prepare's proposal (`PlacePickingDraft`; the wizard's dirty rule reads it).
+    var spotPickedOnMap = false
+    /// The name whose suggestion produced `coordinate` (`PlacePickingDraft`); never on the wire.
+    var suggestedName: String?
 
     init(clientId: String = UUID().uuidString.lowercased()) {
         self.clientId = clientId
@@ -34,10 +39,12 @@ nonisolated struct GroupDraft: Equatable, Sendable {
         membersCanInvite = group.membersCanInvite
         locationName = group.location?.name ?? ""
         coordinate = group.location?.coordinate
+        // The stored spot is the owner's choice: an edited name alone must not move the group on the map.
+        spotPickedOnMap = true
     }
 
     /// One reason a draft cannot be sent, in the order the form shows its fields.
-    enum Issue: Hashable, Sendable {
+    enum Issue: CaseIterable, Hashable, Sendable {
         case nameTooShort
         case nameTooLong
         case descriptionTooLong

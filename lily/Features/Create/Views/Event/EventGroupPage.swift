@@ -5,7 +5,7 @@ import SwiftUI
 /// shows as a disabled placeholder until it lands, and No group keeps the event open. The step owns no issues: an
 /// optional choice has nothing to refuse.
 struct EventGroupPage<Model: EventDraftEditing>: View {
-    let wizard: CreationWizardModel<Model>
+    let wizard: any CreationWizardControlling
     @Bindable var viewModel: Model
     let onCancel: () -> Void
 

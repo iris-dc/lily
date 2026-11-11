@@ -14,23 +14,19 @@ final class LilyTournamentTests: LilyUITestCase {
     /// index 3).
     let matchReminderID = "01J8MOCKNB0000000000000003"
 
-    /// "New tournament" on Explore's "+" opens the form; a name and a place complete it (the spot comes from the mock
-    /// location); the organiser lands on the new tournament's detail on Home, and Home lists it under "Your tournaments".
+    /// The "+"'s Tournament card walks the wizard's nine steps (the spot comes from the mock location, the walk in
+    /// the helpers); the organiser lands on the new tournament's detail on Home, and Home lists it under
+    /// "Your tournaments".
     @MainActor
     func testCreatingATournamentFromExploreShowsItOnHome() {
         tapSignInWithApple()
-        tapCreateMenuItem("New tournament")
-        XCTAssertTrue(app.navigationBars["New tournament"].waitForExistence(timeout: 5))
+        tapCreateButton()
+        pickCreationKind("create-kind-tournament")
 
         let name = "Canal Cup"
-        enter(name, into: app.textFields["tournament-name"])
-        enter("Canal Path", into: app.textFields["tournament-location-name"])
-        let submit = app.buttons["tournament-submit"]
-        XCTAssertTrue(submit.waitForExistence(timeout: 5))
-        assertBecomesEnabled(submit, "a name and a place complete the draft")
-        submit.tap()
+        walkTournamentWizard(name: name, place: "Canal Path")
+        submitTournamentWizard()
 
-        XCTAssertTrue(app.navigationBars["New tournament"].waitForNonExistence(timeout: 10), "the sheet must close once created")
         XCTAssertTrue(app.navigationBars[name].waitForExistence(timeout: 10), "the organiser lands on the new tournament")
         XCTAssertTrue(app.staticTexts["You organise this tournament"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["tournament-join"].exists, "an individual tournament offers Join to its organiser too")
@@ -169,9 +165,14 @@ final class LilyTournamentTests: LilyUITestCase {
         XCTAssertTrue(app.buttons["match-report"].waitForExistence(timeout: 5),
                       "the caller's scheduled match takes a result")
         XCTAssertFalse(app.buttons["Done"].exists, "the sheet has no Done; a swipe closes it")
-        sheetBar.swipeDown()
-        // A swipe the simulator reads late leaves the sheet up; one more closes it, as the viewer test repeats its flick.
-        if !sheetBar.waitForNonExistence(timeout: 5) { sheetBar.swipeDown() }
+        // A swipe the simulator reads late (or as a scroll) leaves the sheet up; it is repeated, bounded, as the
+        // context-menu primitive repeats its press — two were not always enough on this Mac.
+        var swipes = 0
+        while sheetBar.exists && swipes < 3 {
+            sheetBar.swipeDown()
+            _ = sheetBar.waitForNonExistence(timeout: 5)
+            swipes += 1
+        }
         XCTAssertTrue(sheetBar.waitForNonExistence(timeout: 5), "the swipe closed the sheet")
         XCTAssertTrue(app.navigationBars["Tuesday Table Tennis"].waitForExistence(timeout: 5),
                       "the detail is the reminder's tournament")

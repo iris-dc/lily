@@ -2,43 +2,14 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The wizard shell over a real event view model on fakes: the one-way kind, the lazy factory, prepare on kind
-/// entry, the user-edit dirty rule, the gating walk, the submit lock and the logged lines (pinned by count plus
+/// The wizard shell over real create view models on fakes: the one-way kind, the lazy per-kind factory, prepare on
+/// kind entry, the user-edit dirty rule, the gating walk, the submit lock and the logged lines (pinned by count plus
 /// fragment).
 @MainActor
 struct CreationWizardModelTests {
-    nonisolated private static let everythingOn = CreationWizardPolicy.Flags(groups: true, tournaments: true)
     private static let group = EventGroupRef(id: "group-1", name: "Mitte Kickers", visibility: .private, isDeleted: false)
 
-    @MainActor
-    private final class Harness {
-        let events: CreateEventHarness
-        let logger: SpyLogger
-        /// The locked group each factory call carried, recording that the factory ran at all.
-        let factoryLockedGroups: Recorded<EventGroupRef?>
-        let model: CreationWizardModel<CreateEventViewModel>
-
-        init(seed: CreationSeed = .empty,
-             flags: CreationWizardPolicy.Flags = CreationWizardModelTests.everythingOn,
-             hasEligibleGroups: Bool = true,
-             locationService: (any LocationService)? = nil,
-             lockedGroup: EventGroupRef? = nil) {
-            let events = CreateEventHarness(locationService: locationService, lockedGroup: lockedGroup)
-            let logger = SpyLogger()
-            let recorded = Recorded<EventGroupRef?>()
-            self.events = events
-            self.logger = logger
-            factoryLockedGroups = recorded
-            let factories = CreationWizardFactories(event: { locked in
-                recorded.record(locked)
-                return events.viewModel
-            })
-            let opening = CreationWizardPolicy.opening(for: seed, flags: flags, hasEligibleGroups: hasEligibleGroups)
-            model = CreationWizardModel(opening: opening, factories: factories, logger: logger)
-        }
-
-        var viewModel: CreateEventViewModel { events.viewModel }
-    }
+    private typealias Harness = CreationWizardHarness
 
     @Test func theKindIsEnteredOnceAndTheViewModelMadeLazily() {
         let harness = Harness()
@@ -53,19 +24,9 @@ struct CreationWizardModelTests {
 
         harness.model.enter(.group)
         #expect(harness.model.kind == .event)
+        #expect(harness.model.groupModel == nil, "the one-way pick never makes another kind's model")
         #expect(harness.factoryLockedGroups.values.count == 1 && harness.model.path == [.event(.name)])
         #expect(harness.logger.count(in: .ui, mentioning: "begun") == 1)
-    }
-
-    /// Group and tournament pages land in slice 3; until then the wizard refuses the kind instead of locking onto it.
-    @Test func aKindWhosePagesHaveNotLandedIsRefusedBeforeTheKindIsFixed() {
-        let harness = Harness()
-
-        harness.model.enter(.tournament)
-
-        #expect(harness.model.kind == nil && harness.model.path.isEmpty)
-        #expect(harness.factoryLockedGroups.values.isEmpty)
-        #expect(harness.logger.count(in: .ui, at: .warning, mentioning: "no pages", "tournament") == 1)
     }
 
     @Test func aSeededKindEntersAtInitAndTheFirstStepIsTheRoot() {
@@ -113,6 +74,26 @@ struct CreationWizardModelTests {
         await harness.model.prepare()
 
         #expect(service.callCount == 1)
+        #expect(harness.viewModel.draft.coordinate == AppConfig.Location.mockCenter)
+    }
+
+    /// A prepare whose task died mid-await (the page's `.task` cancels with the page) is not burnt: the next ask
+    /// runs the kind's idempotent prepare again, so a re-entered walk still proposes the position.
+    @Test func aCancelledPrepareRunsAgainOnTheNextAsk() async {
+        let service = FakeLocationService()
+        service.result = AppConfig.Location.mockCenter
+        service.holdsRequests = true
+        let harness = Harness(seed: CreationSeed(kind: .event), locationService: service)
+
+        let prepare = Task { await harness.model.prepare() }
+        await settle(until: { service.isHolding })
+        prepare.cancel()
+        service.releaseRequests()
+        await prepare.value
+        #expect(harness.viewModel.draft.coordinate == nil, "a cancelled location read proposes nothing")
+
+        await harness.model.prepare()
+        #expect(service.callCount == 2, "the cancelled run does not count as prepared")
         #expect(harness.viewModel.draft.coordinate == AppConfig.Location.mockCenter)
     }
 
@@ -216,7 +197,7 @@ struct CreationWizardModelTests {
 
         #expect(!harness.model.canSubmit)
         #expect(harness.model.blockedEarlierStep(before: .event(.details)) == .event(.name))
-        #expect(harness.model.firstBlockingIssue(on: .event(.name)) == .titleMissing)
+        #expect(harness.model.firstBlockingIssue(on: .event(.name)) == .event(.titleMissing))
     }
 
     @Test func submitLocksCreatesOnceAndSignalsDone() async {

@@ -5,17 +5,16 @@ import SwiftUI
 /// purpose needs extra knowledge, the page's fields easing in over the aurora with a reader that brings the focused
 /// field into view, Cancel in the toolbar, and a bottom bar on an opaque background carrying the one primary button —
 /// Next, or the submit button on the final step — so the keyboard never overlaps bare content. On the final step a
-/// stale issue an earlier step owns is named in a hint that pops back to that step.
-struct WizardStepScaffold<Model: EventDraftEditing, Content: View>: View {
-    let wizard: CreationWizardModel<Model>
+/// stale issue an earlier step owns is named in a hint that pops back to that step. Per-step copy and identifiers
+/// come from `WizardStepCopy.swift`.
+struct WizardStepScaffold<Content: View>: View {
+    let wizard: any CreationWizardControlling
     let step: CreationStep
     /// The focused field's scroll anchor; the page passes its focus value and marks the field with `.id`.
     var scrollTarget: AnyHashable?
     let onCancel: () -> Void
     @ViewBuilder var content: () -> Content
     @Environment(\.motion) private var motion
-
-    private typealias Copy = AppBranding.Create
 
     var body: some View {
         ContentScreen {
@@ -34,7 +33,7 @@ struct WizardStepScaffold<Model: EventDraftEditing, Content: View>: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AccessibilityIdentifiers.createStep)
         .safeAreaInset(edge: .bottom) { bottomBar }
-        .navigationTitle(title(for: step))
+        .navigationTitle(step.wizardTitle)
         .navigationBarTitleDisplayMode(.large)
         .toolbar { WizardCancelItem(isDisabled: wizard.isSubmitting, action: onCancel) }
     }
@@ -43,7 +42,7 @@ struct WizardStepScaffold<Model: EventDraftEditing, Content: View>: View {
     /// animates its fill instead.
     private var enteringContent: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
-            if let caption = caption(for: step) {
+            if let caption = step.wizardCaption {
                 Text(caption)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -61,8 +60,8 @@ struct WizardStepScaffold<Model: EventDraftEditing, Content: View>: View {
     private var bottomBar: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
             if isLast, let blocked = wizard.blockedEarlierStep(before: step),
-               let issue = wizard.firstBlockingIssue(on: blocked) {
-                blockedHint(step: blocked, issue: issue)
+               let message = wizard.blockingMessage(on: blocked) {
+                blockedHint(step: blocked, message: message)
             }
             primaryButton
         }
@@ -76,14 +75,14 @@ struct WizardStepScaffold<Model: EventDraftEditing, Content: View>: View {
 
     @ViewBuilder private var primaryButton: some View {
         if isLast {
-            DraftSubmitButton(title: submitTitle,
+            DraftSubmitButton(title: step.wizardSubmitTitle,
                               isSubmitting: wizard.isSubmitting,
                               isEnabled: wizard.canSubmit,
                               sizing: .flexible,
                               controlSize: .large) { await wizard.submit() }
-                .accessibilityIdentifier(AccessibilityIdentifiers.createSubmit)
+                .accessibilityIdentifier(step.wizardSubmitIdentifier)
         } else {
-            Button(Copy.next) { wizard.advance(from: step) }
+            Button(AppBranding.Create.next) { wizard.advance(from: step) }
                 .lilyProminentButton()
                 .disabled(!wizard.allowsNext(from: step))
                 .accessibilityIdentifier(AccessibilityIdentifiers.createNext)
@@ -91,50 +90,19 @@ struct WizardStepScaffold<Model: EventDraftEditing, Content: View>: View {
     }
 
     /// The earlier step's stale issue in the shared hint look, the step's own name under it; tapping pops back there.
-    private func blockedHint(step blocked: CreationStep, issue: EventDraft.Issue) -> some View {
+    private func blockedHint(step blocked: CreationStep, message: String) -> some View {
         Button {
             wizard.pop(to: blocked)
         } label: {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-                ValidationHint(AppBranding.Events.Create.message(for: issue))
+                ValidationHint(message)
                 HStack(spacing: DesignTokens.Spacing.xs) {
                     Image(systemName: DesignTokens.Symbols.back)
-                    Text(title(for: blocked))
+                    Text(blocked.wizardTitle)
                 }
             }
         }
         .lilyTextButton(font: LilyTheme.Fonts.caption)
-    }
-
-    private var submitTitle: String {
-        switch step {
-        case .event, .eventMap: AppBranding.Events.Create.submit
-        }
-    }
-
-    private func title(for step: CreationStep) -> String {
-        switch step {
-        case .event(.name): Copy.eventName
-        case .event(.type): Copy.eventType
-        case .event(.when): Copy.eventWhen
-        case .event(.group): Copy.eventGroup
-        case .event(.place): Copy.eventPlace
-        case .event(.players): Copy.eventPlayers
-        case .event(.details): Copy.eventDetails
-        // Never scaffolded: the map picker draws its own screen; the place title satisfies exhaustiveness.
-        case .eventMap: Copy.eventPlace
-        }
-    }
-
-    /// The one short line under a step title whose purpose needs extra knowledge; the plain steps carry none.
-    private func caption(for step: CreationStep) -> String? {
-        switch step {
-        case .event(.group): Copy.eventGroupCaption
-        case .event(.place): Copy.eventPlaceCaption
-        case .event(.players): Copy.eventPlayersCaption
-        case .event(.details): Copy.eventDetailsCaption
-        case .event, .eventMap: nil
-        }
     }
 
     private func reveal(_ target: AnyHashable?, in proxy: ScrollViewProxy) {
@@ -165,11 +133,11 @@ struct WizardCancelItem: ToolbarContent {
 
 /// The first live issue a step owns, under its fields in the shared hint look; nothing when the page is clean.
 struct WizardIssueHint: View {
-    let issue: EventDraft.Issue?
+    let message: String?
 
     var body: some View {
-        if let issue {
-            ValidationHint(AppBranding.Events.Create.message(for: issue))
+        if let message {
+            ValidationHint(message)
                 .font(LilyTheme.Fonts.caption)
         }
     }

@@ -3,8 +3,8 @@ import SwiftUI
 /// The wizard's first page when context offers a real choice: one glass choice card per offered kind, reusing the
 /// per-kind "New ..." titles, auto-advancing on pick (the model fixes the kind and pushes its first step). Stays the
 /// stack root for the whole attempt; the pick is one-way, so it is never navigated back to.
-struct CreationKindPage<Model: EventDraftEditing>: View {
-    let model: CreationWizardModel<Model>
+struct CreationKindPage: View {
+    let model: any CreationWizardControlling
     let onCancel: () -> Void
 
     private typealias Copy = AppBranding.Create
@@ -60,6 +60,10 @@ struct CreationKindPage<Model: EventDraftEditing>: View {
 #Preview {
     let dependencies = AppDependencies.makeMock()
     NavigationStack {
-        CreationKindPage(model: dependencies.makeCreationWizardModel(seed: .empty) { _ in }, onCancel: {})
+        CreationKindPage(model: dependencies.makeCreationWizardModel(seed: .empty,
+                                                                     onCreatedEvent: { _ in },
+                                                                     onCreatedGroup: { _ in },
+                                                                     onCreatedTournament: { _ in }),
+                         onCancel: {})
     }
 }

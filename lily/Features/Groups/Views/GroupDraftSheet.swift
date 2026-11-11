@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// The group form in the shared draft sheet; the visibility is chosen on a create and fixed on an edit.
+/// The group form in the shared draft sheet; only the edit uses it since creating walks the wizard.
 struct GroupDraftSheet<Model: GroupDraftEditing>: View {
     let viewModel: Model
     let title: String
     let submitTitle: String
-    let allowsVisibilityChoice: Bool
     let errorCenter: ErrorCenter
 
     var body: some View {
@@ -16,7 +15,7 @@ struct GroupDraftSheet<Model: GroupDraftEditing>: View {
                    submitIdentifier: AccessibilityIdentifiers.createGroupSubmit,
                    errorCenter: errorCenter) { model in
             @Bindable var model = model
-            GroupDraftForm(draft: $model.draft, issues: model.issues, allowsVisibilityChoice: allowsVisibilityChoice)
+            GroupDraftForm(draft: $model.draft, issues: model.issues)
         }
     }
 }

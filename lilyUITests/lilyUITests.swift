@@ -152,7 +152,7 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)["Pickup at the Cage"].firstMatch.waitForExistence(timeout: 10))
     }
 
-    /// Creating needs an account: a guest's "+" opens the sign-in sheet, not the form.
+    /// Creating needs an account: a guest's "+" goes straight to the sign-in sheet, never the wizard.
     @MainActor
     func testGuestPlusOpensSignIn() {
         relaunchAsGuest()
@@ -160,28 +160,31 @@ final class LilySmokeTests: LilyUITestCase {
         tapCreateButton()
 
         XCTAssertTrue(app.buttons["Continue with Apple"].waitForExistence(timeout: 5), "a guest must be asked to sign in first")
-        XCTAssertFalse(app.navigationBars["Name"].exists, "the wizard must not open for a guest")
+        XCTAssertFalse(app.navigationBars[Self.wizardKindTitle].exists, "the wizard must not open for a guest")
     }
 
+    /// The guest's "+" offers no kind choice either: none of the kind page's cards shows, only sign-in.
     @MainActor
-    func testGuestPlusGroupItemOpensSignIn() {
+    func testGuestPlusShowsNoKindCards() {
         relaunchAsGuest()
 
-        tapCreateMenuItem("New group")
+        tapCreateButton()
 
         XCTAssertTrue(app.buttons["Continue with Apple"].waitForExistence(timeout: 5), "a guest must be asked to sign in first")
-        XCTAssertFalse(app.navigationBars["New group"].exists, "the form must not open for a guest")
+        XCTAssertFalse(app.buttons["create-kind-group"].exists, "no kind card shows for a guest")
+        XCTAssertFalse(app.navigationBars[Self.wizardKindTitle].exists, "the kind page must not open for a guest")
     }
 
-    /// The "+" menu's event item opens the creation wizard on Name; the mock location fills the spot, so the title
-    /// and the place name walk it to the end. On the way the pick-on-map row must push the picker, and back must keep
-    /// the typed title (the plan's pinned wizard behaviours). The new game must show under Home without a manual
-    /// refresh, and its detail must know the caller hosts it. Nothing scrolls before the tab tap: a scrolled list
-    /// minimises the tab bar, and a minimised tab bar swallows tab taps.
+    /// The "+" opens the wizard on its kind page, whose Event card opens Name; the mock location fills the spot, so
+    /// the title and the place name walk it to the end. On the way the pick-on-map row must push the picker, and back
+    /// must keep the typed title (the plan's pinned wizard behaviours). The new game must show under Home without a
+    /// manual refresh, and its detail must know the caller hosts it. Nothing scrolls before the tab tap: a scrolled
+    /// list minimises the tab bar, and a minimised tab bar swallows tab taps.
     @MainActor
     func testCreatingAGameShowsItOnHome() {
         tapSignInWithApple()
         tapCreateButton()
+        pickCreationKind("create-kind-event")
 
         let title = "Thursday five-a-side"
         waitForWizardStep("Name")

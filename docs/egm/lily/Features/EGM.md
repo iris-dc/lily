@@ -35,12 +35,13 @@ feature runs without a backend behind its mocks, and every feature has a unit-te
 - Events: [`./Events/EGM.md`](./Events/EGM.md) - finding sport events near the user, joining and leaving them, creating
   and editing one's own, over `/api/events`; `EventListViewModel` owns a list and its freshness, `EventDetailViewModel`
   the join and leave rules.
-- Create: [`./Create/EGM.md`](./Create/EGM.md) - the paged creation wizard (slice 2 of the creation-wizard plan,
-  2026-11-10): `CreationKind` and the seed, the flags-by-context opening matrix (`CreationWizardPolicy`, pure, no
-  auth input) and the per-kind step lists with the event issue partition and Next gating (`CreationSteps`); the
-  wizard shell model (`CreationWizardModel`, `State/`) and the chrome with the event flow's three glass pages
-  (`Views/`, `Views/Event/`). Slice 2's bridge wires the event entry: Explore's "+" event item and the ⌘N intent
-  walk the wizard; the group and tournament entries keep their form sheets until slice 3.
+- Create: [`./Create/EGM.md`](./Create/EGM.md) - the paged creation wizard, the one create flow for events,
+  groups and tournaments (slice 3 of the creation-wizard plan, 2026-11-11): `CreationKind` and the seed, the
+  flags-by-context opening matrix (`CreationWizardPolicy`, pure, no auth input), the per-kind step lists with their
+  exhaustive issue partitions and Next gating (`CreationSteps`); the page-facing protocol (`Interfaces/`), the
+  wizard shell model (`CreationWizardModel`, `State/`) and the chrome with the per-kind one-idea glass pages
+  (`Views/`, `Views/Event|Group|Tournament/`). Every create entry — Explore's "+", the ⌘ shortcuts, a group
+  screen's buttons — walks it; the single-page forms stay for edit.
 - Groups: [`./Groups/EGM.md`](./Groups/EGM.md) - communities a user founds, discovers, joins and runs, plus the two
   other things the backend keeps as groups of another kind, direct conversations (`direct`) and tournament rooms
   (`tournament`); `MyGroupsStore` is the one source of the caller's groups; every screen reports failures to the shared

@@ -46,14 +46,6 @@ struct CreationStepsTests {
                     == withoutGroupStep)
     }
 
-    @Test func kindsWhosePagesHaveNotLandedHaveNoSteps() {
-        let opening = CreationWizardPolicy.opening(for: .empty,
-                                                   flags: Flags(groups: true, tournaments: true),
-                                                   hasEligibleGroups: true)
-        #expect(CreationSteps.steps(for: .group, opening: opening).isEmpty)
-        #expect(CreationSteps.steps(for: .tournament, opening: opening).isEmpty)
-    }
-
     @Test func everyEventIssueCaseIsInThePinnedPartition() {
         #expect(EventDraft.Issue.allCases.count == Self.partition.count)
     }

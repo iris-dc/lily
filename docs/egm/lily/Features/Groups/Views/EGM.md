@@ -6,8 +6,9 @@ Source: `lily/Features/Groups/Views/`
 
 Twenty-seven SwiftUI files: the Discover screen with its card list, carousel and tiles; the group detail (header,
 access-driven action row and toolbar menu, Events, Tournaments and Members segments, its sheets and one confirmation
-dialog); the shared create/edit draft form and sheet with its standalone visibility and permission section contents
-(extracted 2026-11-10 for the creation wizard's pages); the invite and report sheets; roster, group and conversation
+dialog); the edit draft form and sheet with its standalone visibility and permission section contents
+(extracted 2026-11-10 for the creation wizard's pages; creating walks the wizard since slice 3, 2026-11-11, seeded
+from the detail's create affordances); the invite and report sheets; roster, group and conversation
 rows; and `groupDestinations`, the `View` modifier that registers every typed navigation destination a stack needs
 for groups. Views own or receive the view models of [ViewModels](../ViewModels/EGM.md) through `AppDependencies` and
 call them from `task`, `refreshable`, `onChange` and button actions; role gating comes from `GroupAccess` and
@@ -19,7 +20,9 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
 - `GroupDetailView(viewModel: GroupDetailViewModel, dependencies: AppDependencies)`: owns `@State` `viewModel`,
   `events: EventListViewModel` (scope `.group(id:)`), `tournaments: TournamentListViewModel`, `members:
   MembersViewModel?`, `section: GroupDetailSection`, `presentedSheet: DetailSheet?` (`invite`, `edit`, `createEvent`,
-  `createTournament`, `signIn`, `report`), `confirmation: GroupConfirmation?`; reads `@Environment(\.dismiss)`;
+  `createTournament`, `signIn`, `report`; `isWizard` marks the two create cases), `wizardModel:
+  AppCreationWizardModel?` (made once per presentation in `GroupDetailView+Create.swift`'s `presentWizard`, owned
+  above both presenters), `confirmation: GroupConfirmation?`; reads `@Environment(\.dismiss)` and `\.layoutMode`;
   stamps `AccessibilityIdentifiers.groupSection` [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
 - `GroupActionRow(viewModel:, onOpenChat:, onInvite:, onCreateEvent:, onSignIn:)` (identifiers `groupJoin`,
   `groupOpenChat`, `groupInvite`, `groupCreateEvent`) [`lily/Features/Groups/Views/GroupActionRow.swift`:`GroupActionRow`];
@@ -40,21 +43,19 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   [`lily/Features/Groups/Views/GroupBadge.swift`:`GroupBadge`]; `HostedInLine(group: EventGroupRef)`
   [`lily/Features/Groups/Views/HostedInLine.swift`:`HostedInLine`], a `ChevronLink` (`lily/Core/UI/Components`) when
   the group is linkable, the same label in `.secondary` otherwise.
-- `GroupDraftSheet<Model: GroupDraftEditing>(viewModel:, title:, submitTitle:, allowsVisibilityChoice:, errorCenter:)`
+- `GroupDraftSheet<Model: GroupDraftEditing>(viewModel:, title:, submitTitle:, errorCenter:)`
   over the shared `DraftSheet` (identifiers `createGroupCancel`, `createGroupSubmit`)
   [`lily/Features/Groups/Views/GroupDraftSheet.swift`:`GroupDraftSheet`]; `GroupDraftForm(draft: Binding<GroupDraft>,
-  issues:, allowsVisibilityChoice:)` (identifiers `createGroupName`, `createGroupDescription`,
-  `createGroupLocationName`, `createGroupPickOnMap`, `createGroupVisibility`)
-  [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`]; `GroupVisibilityChoice(visibility:
-  Binding<GroupVisibility>, title: String = AppBranding.Groups.Create.visibility, identifier: String =
-  AccessibilityIdentifiers.createGroupVisibility)`, the segmented public/private picker (the defaults keep the group
-  form's call site unchanged; the tournament form passes its own title and `tournamentVisibility`, 2026-11-10)
-  [`lily/Features/Groups/Views/GroupVisibilityChoice.swift`:`GroupVisibilityChoice`], and
+  issues:)` (identifiers `createGroupName`, `createGroupDescription`, `createGroupLocationName`,
+  `createGroupPickOnMap`)
+  [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`], and
   `GroupPermissionToggles(membersCanCreateEvents:, membersCanInvite:)`, the two member-permission toggles
-  [`lily/Features/Groups/Views/GroupPermissionToggles.swift`:`GroupPermissionToggles`] — the form's visibility and
-  permissions section contents, standalone since 2026-11-10; `CreateGroupSheet(viewModel:, errorCenter:)`
-  and `EditGroupSheet(viewModel:, errorCenter:)` [`lily/Features/Groups/Views/CreateGroupSheet.swift`:`CreateGroupSheet`]
-  [`lily/Features/Groups/Views/EditGroupSheet.swift`:`EditGroupSheet`].
+  [`lily/Features/Groups/Views/GroupPermissionToggles.swift`:`GroupPermissionToggles`] — the permissions section
+  content, standalone since 2026-11-10; `EditGroupSheet(viewModel:, errorCenter:)`
+  [`lily/Features/Groups/Views/EditGroupSheet.swift`:`EditGroupSheet`] (creating walks the wizard; `CreateGroupSheet`
+  deleted with slice 3, 2026-11-11; the visibility section, `GroupVisibilityChoice`, `allowsVisibilityChoice` and the
+  `createGroupVisibility` identifier deleted 2026-11-11 — the visibility is fixed once created and the wizard's
+  visibility page owns the create pick as cards, so the form never offers it).
 - `InvitePeopleSheet(viewModel:, errorCenter:)` (identifier `inviteSearch`; Done is `lilyToolbarTextButton()`) and
   `InviteCandidateRow(candidate:, isSending:, onInvite:)` (identifiers `inviteCandidate(id)`, `inviteSend(id)`)
   [`lily/Features/Groups/Views/InvitePeopleSheet.swift`:`InvitePeopleSheet`]
@@ -106,10 +107,10 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   `UserProfileView`, `isTournamentRoom` to `TournamentDetailView`; a `SportGroup` push is `.standalone`, a
   `GroupInfoDestination` push `.fromChat`; a nil `onTournamentChange` defaults to
   `dependencies.tournamentChanges.recordChange()` [`lily/Features/Groups/Views/GroupDestinations.swift`:`GroupDestinations`].
-- `GroupDraftForm` shows the visibility section only when `allowsVisibilityChoice` (create true, edit false); the
-  visibility and permissions section contents are `GroupVisibilityChoice` and `GroupPermissionToggles`, recomposed
-  with no visual change; each section's footer stays in the form and shows the first matching `GroupDraft.Issue`
-  (name and description issues under the group section, the three location issues under "where"); the form uses
+- `GroupDraftForm` offers no visibility choice (fixed once created; the wizard's visibility page owns the create
+  pick, 2026-11-11); the permissions section content is `GroupPermissionToggles`; each section's footer stays in the
+  form and shows the first matching `GroupDraft.Issue` (name and description issues under the group section, the
+  three location issues under "where"); the form uses
   `readableColumn()` [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`].
 - `DiscoverGroupList` shows a `ProgressView` while `isInitialLoad`, an `EmptyStateView` in a refreshable scroll when
   `nothingMatched`, else an `AdaptiveCardGrid`; `loadMore` fires only when the appearing card is the last and
@@ -155,9 +156,14 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   `makeChatViewModel`, `makeUserProfileViewModel`, `makeTournamentDetailViewModel`)
   [`lily/Features/Groups/Views/GroupDestinations.swift`:`GroupDestinations`].
 - Sheets presented from the detail: `InvitePeopleSheet`, `EditGroupSheet` (`onChange: viewModel.accept`),
-  `CreateEventSheet` (`onCreated: events.add`, `lockedGroup: group.ref`), `CreateTournamentSheet`, `SignInSheet`,
-  `ReportSheet`, each with `dependencies.errorCenter`; `dismiss()` from the sheets' Done/Cancel and when the group is
-  gone [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
+  `SignInSheet`, `ReportSheet`, each with `dependencies.errorCenter`, and the creation wizard for the two create
+  cases — seeded `CreationSeed(kind:, lockedGroup: group.ref)` with `onCreatedEvent: events.add` and
+  `onCreatedTournament: tournaments.add`, a full-screen cover on compact and a `lilyFormSheet()` otherwise, the two
+  presenters split over one `presentedSheet` so a width-class change re-hosts the flow, and
+  `clearWizardAfterDismiss` booking the close only on a real dismissal
+  [`lily/Features/Groups/Views/GroupDetailView+Create.swift`:`GroupDetailView.presentWizard`]; `dismiss()` from the
+  sheets' Done/Cancel and when the group is gone
+  [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
 - Bindings written: `viewModel.query` and `typeFilter` on Discover; `draft.*` fields through `GroupDraftForm`;
   `viewModel.query` on the invite sheet; `reason` and `comment` on the report sheet
   [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`].

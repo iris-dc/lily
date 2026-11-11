@@ -1,6 +1,11 @@
 import SwiftUI
 
-/// The creation wizard's chrome: the step progress mark and the step content's entrance.
+/// The creation wizard's chrome: the step progress mark, the step content's entrance and the choice-card symbols.
+nonisolated extension DesignTokens.Symbols {
+    /// The group type page's "Any type" choice card.
+    static let anyType = "asterisk"
+}
+
 nonisolated extension DesignTokens.Layout {
     /// The progress mark's capsule height.
     static let wizardProgressBarHeight: CGFloat = 4

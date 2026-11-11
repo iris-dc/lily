@@ -3,7 +3,7 @@ import SwiftUI
 /// The event flow's final step, all of it optional: the price, what to expect and who the host is looking for. The
 /// scaffold's bottom bar carries the create button here; the step's first live issue reads under the fields.
 struct EventDetailsPage<Model: EventDraftEditing>: View {
-    let wizard: CreationWizardModel<Model>
+    let wizard: any CreationWizardControlling
     @Bindable var viewModel: Model
     let onCancel: () -> Void
     @FocusState private var focusedField: Field?
@@ -21,7 +21,7 @@ struct EventDetailsPage<Model: EventDraftEditing>: View {
             priceCard
             descriptionField
             lookingForField
-            WizardIssueHint(issue: wizard.firstBlockingIssue(on: Self.step))
+            WizardIssueHint(message: wizard.blockingMessage(on: Self.step))
         }
         // Focus drops the moment the stack moves (a write from a view already leaving the hierarchy is ignored),
         // so a pop-return never re-presents the keyboard over the bottom bar.

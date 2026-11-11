@@ -16,7 +16,8 @@ concrete repositories and mocks in `Implementations`, one navigation service in 
 (`lily/Features/Shell/Views/ExploreTab.swift`, `HomeView.swift`, `HomeOverview.swift`,
 `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Groups/Views/GroupDetailView.swift`,
 `GroupDetailMenu.swift`, `lily/Features/Groups/Models/GroupDetailSection.swift`,
-`lily/Features/Events/Views/CreateMenuButton.swift`, `lily/Features/Landing/Models/IntroSlide.swift`,
+`CreationWizardPolicy.Flags.current` (`lily/Features/Create/Models/CreationWizardPolicy.swift`, read at the
+composition root in `lily/App/AppDependencies+Create.swift`), `lily/Features/Landing/Models/IntroSlide.swift`,
 `lily/App/ShellCommands.swift`), never inside these files (the one flag read here is `TournamentDetailViewModel`
 reading `AppConfig.FeatureFlags.chat`). Unit tests live under `lilyTests/Tournaments` (42 suite files); the dated engineering notes are in
 `docs/notes/tournaments.md`.

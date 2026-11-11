@@ -9,7 +9,6 @@ struct EditGroupSheet: View {
         GroupDraftSheet(viewModel: viewModel,
                         title: AppBranding.Groups.Create.editTitle,
                         submitTitle: AppBranding.Groups.Create.save,
-                        allowsVisibilityChoice: false,
                         errorCenter: errorCenter)
     }
 }

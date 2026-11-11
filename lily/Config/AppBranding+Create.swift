@@ -34,6 +34,62 @@ nonisolated extension AppBranding {
             localized("Price, what to expect, who you're looking for — all optional.")
         }
 
+        /// The group steps' navigation titles; the names shared with the event flow reuse its copy.
+        static var groupName: String { eventName }
+        static var groupDescription: String { localized("Description") }
+        static var groupType: String { eventType }
+        static var groupVisibility: String { Groups.Create.visibility }
+        static var groupPlace: String { eventPlace }
+        static var groupPermissions: String { localized("Permissions") }
+
+        static var groupDescriptionCaption: String {
+            localized("What the group is about, for people deciding to join — optional.")
+        }
+        /// The public-place rule, stated one page before the Place page applies it (Visibility precedes Place).
+        static var groupVisibilityCaption: String {
+            localized("A public group names the place it plays at, so people nearby can find it.")
+        }
+        /// The same rule where it bites: only a public group must name its place.
+        static var groupPlaceCaption: String {
+            localized("A public group names the place it plays at; a private one may leave it out.")
+        }
+        static var groupPermissionsCaption: String {
+            localized("What members may do — organisers can always do both.")
+        }
+
+        /// The tournament steps' navigation titles; the names shared with other flows reuse their copy.
+        static var tournamentName: String { eventName }
+        static var tournamentType: String { eventType }
+        static var tournamentFormat: String { Tournaments.Create.format }
+        static var tournamentSchedule: String { localized("Schedule") }
+        static var tournamentGroup: String { eventGroup }
+        static var tournamentPlace: String { eventPlace }
+        static var tournamentEntries: String { Tournaments.Create.entries }
+        static var tournamentWho: String { Groups.Create.visibility }
+        static var tournamentDetails: String { eventDetails }
+
+        static var tournamentScheduleCaption: String {
+            localized("Entries close at the start, or earlier if you set a deadline.")
+        }
+        static var tournamentGroupCaption: String {
+            localized("A group tournament lives on that group's page; without one it's open to everyone.")
+        }
+        /// Both halves are required here, unlike the event form's either-is-enough rule.
+        static var tournamentPlaceCaption: String {
+            localized("Tournaments need a named place and a spot on the map.")
+        }
+        static var tournamentEntriesCaption: String {
+            localized("Alone or in teams of a size you set; entries close at the cap.")
+        }
+        static var tournamentWhoCaption: String {
+            localized("Anyone can find and enter a public tournament; a private one is by invite.")
+        }
+        static var tournamentDetailsCaption: String { localized("What to expect — optional.") }
+        /// Under the read-only who-may-join card once a hosting group is chosen.
+        static var tournamentFollowsGroup: String {
+            localized("A tournament in a group follows the group's visibility.")
+        }
+
         /// The bottom bar's primary button on every step but the last.
         static var next: String { localized("Next") }
 

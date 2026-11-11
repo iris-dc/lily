@@ -3,7 +3,7 @@ import SwiftUI
 /// The event flow's players step, one idea: how many play, and at what level. The limit keeps the create form's
 /// segmented control and stepper with the per-limit explanation under them; the step owns the capacity issues.
 struct EventPlayersPage<Model: EventDraftEditing>: View {
-    let wizard: CreationWizardModel<Model>
+    let wizard: any CreationWizardControlling
     @Bindable var viewModel: Model
     let onCancel: () -> Void
 
@@ -14,7 +14,7 @@ struct EventPlayersPage<Model: EventDraftEditing>: View {
         WizardStepScaffold(wizard: wizard, step: Self.step, onCancel: onCancel) {
             playersCard
             levelCard
-            WizardIssueHint(issue: wizard.firstBlockingIssue(on: Self.step))
+            WizardIssueHint(message: wizard.blockingMessage(on: Self.step))
         }
     }
 

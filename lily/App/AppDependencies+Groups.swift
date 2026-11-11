@@ -244,6 +244,7 @@ extension AppDependencies {
                              identity: identity,
                              store: myGroups,
                              locationService: locationService,
+                             geocoder: geocoder,
                              errorCenter: errorCenter,
                              logger: logger,
                              onCreated: onCreated)

@@ -33584,6 +33584,566 @@
           }
         }
       }
+    },
+    "Description": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Описание"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descripción"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Description"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Опис"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opis"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descrição"
+          }
+        }
+      }
+    },
+    "Permissions": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешения"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permisos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autorisations"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дозволи"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uprawnienia"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissões"
+          }
+        }
+      }
+    },
+    "Schedule": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расписание"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendario"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendrier"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Розклад"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harmonogram"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendário"
+          }
+        }
+      }
+    },
+    "What the group is about, for people deciding to join — optional.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "О чём группа — для тех, кто решает, вступать ли. Необязательно."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De qué va el grupo, para quien decide unirse: opcional."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De quoi parle le groupe, pour qui décide de rejoindre — facultatif."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Про що група — для тих, хто вирішує, чи приєднуватися. Необов’язково."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O czym jest grupa — dla tych, którzy decydują, czy dołączyć. Opcjonalnie."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sobre o que é o grupo, para quem decide entrar — opcional."
+          }
+        }
+      }
+    },
+    "A public group names the place it plays at, so people nearby can find it.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Публичная группа указывает место, где играет, — так её находят люди поблизости."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un grupo público indica el lugar donde juega, para que la gente cercana lo encuentre."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un groupe public indique le lieu où il joue, pour que les gens à proximité le trouvent."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Публічна група вказує місце, де грає, — так її знаходять люди поруч."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grupa publiczna podaje miejsce, w którym gra — dzięki temu znajdują ją osoby w pobliżu."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um grupo público indica o lugar onde joga, para que as pessoas por perto o encontrem."
+          }
+        }
+      }
+    },
+    "Entries close at the start, or earlier if you set a deadline.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заявки закрываются к началу — или раньше, если задать срок."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Las inscripciones se cierran al comenzar, o antes si fijas un plazo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les inscriptions ferment au début, ou plus tôt si vous fixez une échéance."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заявки закриваються до початку — або раніше, якщо задати кінцевий термін."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zgłoszenia zamykają się przed startem — albo wcześniej, jeśli ustawisz termin."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As inscrições fecham no início — ou antes, se definir um prazo."
+          }
+        }
+      }
+    },
+    "A group tournament lives on that group's page; without one it's open to everyone.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Турнир в группе появляется на её странице; без группы он открыт для всех."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un torneo en un grupo aparece en la página del grupo; sin grupo queda abierto a todos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un tournoi dans un groupe apparaît sur la page du groupe ; sans groupe, il est ouvert à tous."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Турнір у групі з’являється на її сторінці; без групи він відкритий для всіх."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turniej w grupie pojawia się na jej stronie; bez grupy jest otwarty dla wszystkich."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um torneio num grupo aparece na página do grupo; sem grupo fica aberto a todos."
+          }
+        }
+      }
+    },
+    "Alone or in teams of a size you set; entries close at the cap.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поодиночке или командами заданного размера; заявки закрываются по достижении лимита."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solos o en equipos del tamaño que fijes; las inscripciones se cierran al llegar al tope."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seul ou en équipes de la taille choisie ; les inscriptions ferment une fois la limite atteinte."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поодинці або командами заданого розміру; заявки закриваються, коли досягнуто ліміту."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pojedynczo lub w drużynach o ustalonym rozmiarze; zgłoszenia zamykają się po osiągnięciu limitu."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sozinho ou em equipas do tamanho que definir; as inscrições fecham ao atingir o limite."
+          }
+        }
+      }
+    },
+    "Anyone can find and enter a public tournament; a private one is by invite.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Публичный турнир любой может найти и сыграть в нём; приватный — только по приглашению."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cualquiera puede encontrar y entrar en un torneo público; uno privado es solo por invitación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout le monde peut trouver et rejoindre un tournoi public ; un tournoi privé est sur invitation."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Публічний турнір може знайти й приєднатися будь-хто; приватний — лише за запрошенням."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Każdy może znaleźć turniej publiczny i do niego dołączyć; prywatny jest tylko na zaproszenie."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qualquer pessoa pode encontrar e entrar num torneio público; um privado é só por convite."
+          }
+        }
+      }
+    },
+    "What to expect — optional.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чего ожидать — по желанию."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué esperar: opcional."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À quoi s’attendre — facultatif."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Що очікувати — необов’язково."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Czego się spodziewać — opcjonalnie."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O que esperar — opcional."
+          }
+        }
+      }
+    },
+    "A tournament in a group follows the group's visibility.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Турнир в группе наследует видимость группы."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un torneo en un grupo sigue la visibilidad del grupo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un tournoi dans un groupe suit la visibilité du groupe."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Турнір у групі успадковує видимість групи."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turniej w grupie przejmuje widoczność grupy."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um torneio num grupo segue a visibilidade do grupo."
+          }
+        }
+      }
+    },
+    "A public group names the place it plays at; a private one may leave it out.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Публичная группа указывает место, где играет; приватная может его не указывать."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un grupo público indica el lugar donde juega; uno privado puede dejarlo vacío."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un groupe public indique le lieu où il joue ; un groupe privé peut ne pas l'indiquer."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Публічна група вказує місце, де грає; приватна може його не вказувати."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grupa publiczna podaje miejsce, w którym gra; prywatna może je pominąć."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um grupo público indica o lugar onde joga; um privado pode deixá-lo em branco."
+          }
+        }
+      }
+    },
+    "What members may do — organisers can always do both.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что могут участники — организаторы всегда могут и то, и другое."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué pueden hacer los miembros — los organizadores siempre pueden ambas cosas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce que les membres peuvent faire — les organisateurs peuvent toujours faire les deux."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Що можуть учасники — організатори завжди можуть і те, й інше."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Co mogą robić członkowie — organizatorzy zawsze mogą jedno i drugie."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O que os membros podem fazer — os organizadores sempre podem as duas coisas."
+          }
+        }
+      }
+    },
+    "Tournaments need a named place and a spot on the map.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Турниру нужны название места и точка на карте."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un torneo necesita un lugar con nombre y un punto en el mapa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un tournoi a besoin d'un lieu nommé et d'un point sur la carte."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Турніру потрібні назва місця і точка на карті."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turniej potrzebuje nazwy miejsca i punktu na mapie."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um torneio precisa de um lugar com nome e um ponto no mapa."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

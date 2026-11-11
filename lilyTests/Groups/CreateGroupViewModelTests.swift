@@ -228,4 +228,30 @@ struct CreateGroupViewModelTests {
         #expect(harness.store.groups.isEmpty && harness.changed.isEmpty && harness.presentedError == nil)
         #expect(harness.logger.count(in: .cache, at: .debug, mentioning: "Create answer for a previous caller dropped") == 1)
     }
+    /// The wizard's place page asks through the view model: the geocoder's answer, biased to the draft's spot, else
+    /// the position prepare read.
+    @Test func placeSuggestionsComeFromTheGeocoderBiasedToTheSpot() async {
+        let geocoder = FakeGeocodingService()
+        geocoder.suggestionsResult = [PlaceSuggestion(title: "Górki Zachodnie",
+                                                      subtitle: nil,
+                                                      coordinate: AppConfig.Location.mockCenter)]
+        harness.location.result = AppConfig.Location.mockCenter
+        let viewModel = CreateGroupViewModel(repository: harness.repository,
+                                             identity: harness.identity,
+                                             store: harness.store,
+                                             locationService: harness.location,
+                                             geocoder: geocoder,
+                                             errorCenter: harness.errorCenter,
+                                             logger: harness.logger,
+                                             tryAgainDelay: .zero,
+                                             onCreated: harness.sink.record)
+        await viewModel.prepare()
+        let spot = Coordinate(latitude: 54.35, longitude: 18.65)
+        viewModel.draft.pickSpot(spot)
+
+        let found = await viewModel.placeSuggestions(for: "Gór")
+
+        #expect(found.map(\.title) == ["Górki Zachodnie"])
+        #expect(geocoder.suggestionQueries == ["Gór"] && geocoder.suggestionBiases == [spot])
+    }
 }

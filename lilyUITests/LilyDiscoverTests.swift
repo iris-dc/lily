@@ -22,27 +22,40 @@ final class LilyDiscoverTests: LilyUITestCase {
         XCTAssertTrue(app.buttons[MockIDs.kickersRow].exists, "every public group is on Discover")
     }
 
-    /// A public group needs a place: Create stays off until one is named (the spot comes from the mock position), and
-    /// the detail and Home then show the new group with its place.
+    /// A public group walks the wizard's six steps — Name, the optional Description, Type and Who can join as
+    /// auto-advancing cards, Place, then Permissions with the create button. A public group needs a place: Next on
+    /// Place stays off until one is named (the spot comes from the mock position), and the detail and Home then show
+    /// the new group with its place.
     @MainActor
     func testCreatingAPublicGroupNeedsAPlaceThatTheDetailShows() {
         tapSignInWithApple()
-        tapCreateMenuItem("New group")
-        XCTAssertTrue(app.navigationBars["New group"].waitForExistence(timeout: 5))
+        tapCreateButton()
+        pickCreationKind("create-kind-group")
 
         let name = "Thursday Runners"
+        waitForWizardStep("Name")
         enter(name, into: app.textFields["create-group-name"])
-        let submit = app.buttons["create-group-submit"]
-        XCTAssertFalse(submit.isEnabled, "a public group without a place cannot be created")
-        // The Where section sits under the type chips, below the fold; a Form row off screen is not in the tree.
-        dragUpUntilExists(app.staticTexts["Name the place where the group plays"])
+        tapNext()
+        waitForWizardStep("Description")
+        tapNext()
+        pickWizardCard("create-type-any", on: "Type")
+        pickWizardCard("create-visibility-public", on: "Who can join")
+        waitForWizardStep("Place")
+        let next = app.buttons["create-next"]
+        XCTAssertTrue(next.waitForExistence(timeout: 5))
+        XCTAssertFalse(next.isEnabled, "a public group without a place cannot advance")
 
         let place = "Görli Clubhouse"
         enter(place, into: app.textFields["create-group-location-name"])
-        assertBecomesEnabled(submit, "name, place and the mock position complete the draft")
+        assertBecomesEnabled(next, "name, place and the mock position complete the page")
+        next.tap()
+        waitForWizardStep("Permissions")
+        let submit = app.buttons["create-group-submit"]
+        XCTAssertTrue(submit.waitForExistence(timeout: 5))
+        assertBecomesEnabled(submit, "the walked draft must be complete")
         submit.tap()
 
-        XCTAssertTrue(app.navigationBars["New group"].waitForNonExistence(timeout: 10), "the sheet must close once created")
+        XCTAssertTrue(app.navigationBars["Permissions"].waitForNonExistence(timeout: 10), "the wizard must close once created")
         XCTAssertTrue(app.buttons["group-open-chat"].waitForExistence(timeout: 10), "the founder must land in the new group")
         XCTAssertTrue(labelled(name).waitForExistence(timeout: 5), "the detail must be the new group's")
         XCTAssertTrue(labelled(place).waitForExistence(timeout: 5), "the detail must show where the group plays")

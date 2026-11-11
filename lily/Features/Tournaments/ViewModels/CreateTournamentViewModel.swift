@@ -12,12 +12,17 @@ final class CreateTournamentViewModel {
     /// The groups the caller may host a tournament in, read from the store on `prepare()`.
     private(set) var eligibleGroups: [EventGroupRef] = []
     private(set) var belongsToGroups = false
+    /// Whether `prepare()` has read the groups store; the wizard's hosting-group page shows a placeholder until then.
+    private(set) var hasLoadedGroups = false
     /// Set when the sheet opened from a group's Tournaments segment: the draft is stamped with it, read-only.
     let lockedGroup: EventGroupRef?
 
     private let repository: any TournamentRepository
     private let locationService: any LocationService
+    private let geocoder: any GeocodingService
     private let groups: MyGroupsStore
+    /// The user's position as `prepare()` read it: the place lookups' bias once the draft has no spot of its own.
+    private var position: Coordinate?
     private let logger: any Logging
     private let now: () -> Date
     private let pushOptIn: any PushOptIn
@@ -27,6 +32,7 @@ final class CreateTournamentViewModel {
     init(repository: any TournamentRepository,
          identity: any IdentityProvider,
          locationService: any LocationService,
+         geocoder: any GeocodingService = MockGeocodingService(),
          groups: MyGroupsStore,
          errorCenter: ErrorCenter,
          logger: any Logging,
@@ -37,6 +43,7 @@ final class CreateTournamentViewModel {
          onCreated: @escaping @MainActor (TournamentDetail) -> Void) {
         self.repository = repository
         self.locationService = locationService
+        self.geocoder = geocoder
         self.groups = groups
         self.logger = logger
         self.now = now
@@ -72,11 +79,18 @@ final class CreateTournamentViewModel {
     func prepare() async {
         eligibleGroups = groups.eligibleForEvents.map(\.ref)
         belongsToGroups = !groups.communities.isEmpty
+        hasLoadedGroups = true
         guard draft.coordinate == nil else { return }
         let position = await locationService.currentLocation()
+        self.position = position
         if draft.coordinate == nil { draft.coordinate = position }
         logger.debug(.location, position == nil ? "No position for the new tournament; the spot is set on the map"
                                                 : "New tournament proposed at the user's position")
+    }
+
+    /// Biased to the draft's spot, else the user's position, so a venue name finds the one nearby.
+    func placeSuggestions(for query: String) async -> [PlaceSuggestion] {
+        await geocoder.suggestions(for: query, near: draft.coordinate ?? position)
     }
 
     /// Sends the draft. A call while one is in flight is dropped; a dismissed sheet stays quiet; a failure goes to the

@@ -43,14 +43,12 @@ nonisolated extension AccessibilityIdentifiers {
     /// The team-name sheet: its one field and its submit.
     static let tournamentTeamName = "tournament-team-name"
     static let tournamentTeamSubmit = "tournament-team-submit"
-    /// The create and edit form; the group row is the event form's `createGroup`.
+    /// The edit form and the wizard's tournament pages; the group row is the event form's `createGroup`.
     static let tournamentName = "tournament-name"
-    static let tournamentFormat = "tournament-format"
     static let tournamentTeamSize = "tournament-team-size"
     static let tournamentMaxEntries = "tournament-max-entries"
     static let tournamentDraws = "tournament-draws"
     static let tournamentDeadline = "tournament-deadline"
-    static let tournamentVisibility = "tournament-visibility"
     static let tournamentLocationName = "tournament-location-name"
     static let tournamentSubmit = "tournament-submit"
     static let tournamentFormCancel = "tournament-form-cancel"

@@ -8,9 +8,10 @@ The event flow's seven one-idea pages (the owner's second design round, 2026-11-
 grouping): custom glass layouts over the aurora (never `Form`s — the substrate the owner picked from the 2026-11-10
 side-by-side prototype), composed from the slice-1 shared components, section contents in `GlassCard` containers and
 text fields in the `lilyField()` / `lilyMultilineField()` glass capsules. Every page renders inside
-`WizardStepScaffold` (progress mark, optional caption, entrance motion, bottom bar) and binds to the view model
-through `EventDraftEditing`; every create field identifier is byte-identical to the form's, so the UI tests only
-change navigation. The walk is Name / Type / When / Hosting group / Place / Players / Details, the hosting-group
+`WizardStepScaffold` (progress mark, optional caption, entrance motion, bottom bar), binds to the view model
+through `EventDraftEditing` and reads the wizard through `CreationWizardControlling` (slice 3, 2026-11-11 — a page
+is generic over its own kind's view model alone); every create field identifier is byte-identical to the form's, so
+the UI tests only change navigation. The walk is Name / Type / When / Hosting group / Place / Players / Details, the hosting-group
 page conditional on the opening (`CreationSteps.eventSteps(opening:)`).
 
 ## Interface
@@ -52,9 +53,9 @@ page conditional on the opening (`CreationSteps.eventSteps(opening:)`).
 
 ## Invariants
 
-- The issue partition renders where it gates: each page shows only `wizard.firstBlockingIssue(on:)` for its own
-  step, through the shared `ValidationHint` copy (`AppBranding.Events.Create.message(for:)`); per-page gating
-  refreshes on every render, the final gate stays authoritative in the scaffold.
+- The issue partition renders where it gates: each page shows only `wizard.blockingMessage(on:)` for its own
+  step (the model maps the copy through `AppBranding.Events.Create.message(for:)`), in the shared `ValidationHint`
+  look; per-page gating refreshes on every render, the final gate stays authoritative in the scaffold.
 - Focus and keyboard: the name and details pages pass their focused field as the scaffold's `scrollTarget` and mark
   the fields with `.id`; identifiers are stamped on the fields themselves, before the capsule modifiers, so the
   XCUI queries keep finding the text fields. Every page with a field clears its focus when the wizard's path changes
