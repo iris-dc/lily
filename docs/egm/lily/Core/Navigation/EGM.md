@@ -19,7 +19,8 @@ sign-out resets every per-user path.
   `var isProfilePresented = false` (the profile sheet `MainTabView` presents; the corner button on every tab root sets
   it, 2026-11-07), `private(set) var shellGeneration = 0` [`lily/Core/Navigation/AppNavigation.swift:AppNavigation`].
 - Opening: `openInHome(_ destination: some Hashable)`, `openInChat(_ destination: some Hashable)`,
-  `open(group: SportGroup)`, `open(tournament: TournamentDestination)`, `open(chat group: SportGroup)`,
+  `open(group: SportGroup)`, `open(event: SportEvent)` (2026-11-11, a created game's landing),
+  `open(tournament: TournamentDestination)`, `open(chat group: SportGroup)`,
   `openInbox()`, `openFromNotification(_ destination: some Hashable)`, `requestCreate(_ intent: CreateIntent)`
   [`AppNavigation.swift:AppNavigation`].
 - Resetting: `popHomeToRoot()`, `popChatToRoot()` [`AppNavigation.swift:AppNavigation.popHomeToRoot()`].
@@ -30,7 +31,7 @@ sign-out resets every per-user path.
 ## Invariants
 
 - `openInHome` sets `selectedTab = .home` then appends to `homePath`; `openInChat` sets `.chat` then appends to
-  `chatPath`; `open(group:)` and `open(tournament:)` go through `openInHome`
+  `chatPath`; `open(group:)`, `open(event:)` and `open(tournament:)` go through `openInHome`
   [`AppNavigation.swift:AppNavigation.openInHome(_:)`, `AppNavigation.swift:AppNavigation.openInChat(_:)`].
 - `open(chat:)`: with `AppConfig.FeatureFlags.chat` off it opens the group on Home instead; with `usesSplitChats` it
   selects `.room(id: group.id)` in the split view's detail; otherwise it pushes `ChatDestination(group:)` on Chats

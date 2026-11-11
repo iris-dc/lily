@@ -24,20 +24,19 @@ struct EventGroupPage<Model: EventDraftEditing>: View {
         }
     }
 
-    /// The shared group row behind an outer label, since a menu picker outside a `Form` draws no label of its own;
-    /// until the groups read lands the row is a bare placeholder, so the choice never flickers into place.
+    /// The shared group row, which draws its own title and opens on a tap anywhere across it (the owner's fourth
+    /// round); until the groups read lands the row is a bare placeholder, so the choice never flickers into place.
     private var groupCard: some View {
         GlassCard {
-            HStack(spacing: DesignTokens.Spacing.md) {
-                Text(Copy.group)
-                Spacer()
-                if viewModel.hasLoadedGroups {
-                    HostingGroupRow(lockedGroup: viewModel.lockedGroup,
-                                    showsNoEligibleGroups: viewModel.eligibleGroups.isEmpty,
-                                    eligibleGroups: viewModel.eligibleGroups,
-                                    selection: $viewModel.draft.group)
-                        .labelsHidden()
-                } else {
+            if viewModel.hasLoadedGroups {
+                HostingGroupRow(lockedGroup: viewModel.lockedGroup,
+                                showsNoEligibleGroups: viewModel.eligibleGroups.isEmpty,
+                                eligibleGroups: viewModel.eligibleGroups,
+                                selection: $viewModel.draft.group)
+            } else {
+                HStack(spacing: DesignTokens.Spacing.md) {
+                    Text(Copy.group)
+                    Spacer()
                     ProgressView()
                 }
             }

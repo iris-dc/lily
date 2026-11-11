@@ -37,8 +37,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   standalone views the sections recompose (2026-11-10, creation-wizard slice 1):
   `HostingGroupRow(lockedGroup:showsNoEligibleGroups:eligibleGroups:selection:)`
   (`lily/Features/Events/Views/HostingGroupRow.swift:HostingGroupRow`, the one group row of the event and tournament
-  forms: a read-only `LabeledContent` for a locked group or no eligible group, else a `lilyMenuPicker()` `Picker`
-  over the eligible groups, every shape under `AccessibilityIdentifiers.createGroup`),
+  forms: a read-only `LabeledContent` for a locked group or no eligible group, else a `Menu` over a `Picker` of the
+  eligible groups whose label is the whole row — a `LabeledContent` title in ink with the value and `menuChevron`
+  mark in `.secondary` — so a tap anywhere across the row opens the choice (the owner's fourth round, 2026-11-11);
+  every shape under `AccessibilityIdentifiers.createGroup`),
   `EventPlayersFields<Model: EventDraftEditing>` (`EventPlayersFields.swift`: the segmented `PlayerLimit` picker
   `createPlayerLimit` and the capacity `Stepper` `createCapacity`, shown only while `draft.playerLimit.hasCapacity`,
   over `viewModel.capacityRange`) and `EventDetailsFields<Model: EventDraftEditing>` (`EventDetailsFields.swift`: the
@@ -174,7 +176,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `.signIn`, logged at info under `.auth`. The wizard case (2026-11-10, creation-wizard slice 2; every kind since
   slice 3, 2026-11-11) presents `CreationWizardView` over
   `dependencies.makeCreationWizardModel(seed:onCreatedEvent:onCreatedGroup:onCreatedTournament:)` — a created game
-  lands in the list (`viewModel.add`), a created group opens through `navigation.open(group:)`, a created tournament
+  lands in the list (`viewModel.add`) and opens through `navigation.open(event:)` (the fourth round, 2026-11-11),
+  a created group opens through `navigation.open(group:)`, a created tournament
   records `tournamentChanges` and opens: a full-screen cover on a compact width,
   a `lilyFormSheet()` sheet otherwise, split by two item bindings over the one `presentedSheet` so a width-class
   change mid-flow re-hosts the flow; the model is cleared only after a real dismissal (`clearWizardAfterDismiss`:
@@ -193,8 +196,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   bounded below by `viewModel.earliestStart`; the capacity `Stepper` appears only when
   `draft.playerLimit.hasCapacity`, over `viewModel.capacityRange` (both in `EventPlayersFields`); the group row shows
   when `showsGroupRow`, rendered by the shared `HostingGroupRow` (the read-only `lockedGroup`, read-only "No group"
-  when `explainsNoEligibleGroups`, else a `Picker` over `eligibleGroups` styled by `lilyMenuPicker()`, value and
-  chevron in `.secondary`, not the form's accent tint), and `EventDetailsFields`' `SkillLevelPicker` (a
+  when `explainsNoEligibleGroups`, else the full-width `Menu` row over `eligibleGroups`, value and
+  chevron in `.secondary` and the whole row the tap target — the fourth round, 2026-11-11), and `EventDetailsFields`' `SkillLevelPicker` (a
   default-styled `Picker` that a `Form` draws as a menu) is styled by `lilyMenuPicker()` the same way; the title's
   submit moves focus to the location name; the price is typed as `draft.priceText` through `PriceAmountField`.
 - `PriceAmountField` (`lily/Features/Events/Views/PriceAmountField.swift`): `init(text: Binding<String>, placeholder:,
@@ -282,7 +285,7 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `accept`; the form writes `viewModel.draft` through bindings.
 - Navigation: `navigationDestination(for: SportEvent.self)` pushes `EventDetailView`;
   `.groupDestinations(dependencies:)`; `PlacePickerRow` pushes `LocationPickerView`;
-  `dependencies.navigation.open(group:)` / `open(tournament:)` after a create from Explore;
+  `dependencies.navigation.open(group:)` / `open(event:)` / `open(tournament:)` after a create from Explore;
   `navigation.pendingCreate = nil` when consumed; `LocationPickerView` calls `dismiss()` on Done.
 - Sheets and covers: `CreationWizardView` (the wizard case: a full-screen cover on compact, a form sheet
   otherwise), `SignInSheet` (through `ExploreSheet`) and `EditEventSheet` (`CreateEventSheet`, `CreateGroupSheet`

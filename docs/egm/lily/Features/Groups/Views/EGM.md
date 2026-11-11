@@ -158,7 +158,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   [`lily/Features/Groups/Views/GroupDestinations.swift`:`GroupDestinations`].
 - Sheets presented from the detail: `InvitePeopleSheet`, `EditGroupSheet` (`onChange: viewModel.accept`),
   `SignInSheet`, `ReportSheet`, each with `dependencies.errorCenter`, and the creation wizard for the two create
-  cases — seeded `CreationSeed(kind:, lockedGroup: group.ref)` with `onCreatedEvent: events.add` and
+  cases — seeded `CreationSeed(kind:, lockedGroup: group.ref)` with `onCreatedEvent` adding to `events` then
+  opening the game's detail through `dependencies.navigation.open(event:)` (the fourth round, 2026-11-11) and
   `onCreatedTournament: tournaments.add`, a full-screen cover on compact and a `lilyFormSheet()` otherwise, the two
   presenters split over one `presentedSheet` so a width-class change re-hosts the flow, and
   `clearWizardAfterDismiss` booking the close only on a real dismissal

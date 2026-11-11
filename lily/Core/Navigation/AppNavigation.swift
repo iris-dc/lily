@@ -43,6 +43,11 @@ final class AppNavigation: SessionObserver {
         openInHome(group)
     }
 
+    /// An event's detail, on Home: a created game lands on its own page, like a new group or tournament does.
+    func open(event: SportEvent) {
+        openInHome(event)
+    }
+
     /// A tournament's detail, on Home: entries and plans live there like a group's.
     func open(tournament destination: TournamentDestination) {
         openInHome(destination)

@@ -49,6 +49,10 @@ struct CreationWizardView<EventModel: EventDraftEditing,
             // button, which would leave the destructive Discard as the only visible way out.
             Button(Copy.keepEditing) {}
         }
+        // The dialog paints its plain action from the tint it inherits, and the accent reads as red as the
+        // destructive Discard beside it (the owner's fourth round): ink keeps the safe way out visibly the plain
+        // one. Inside the wizard the inner accent tint still wins.
+        .tint(Color.lilyInk)
     }
 
     @ViewBuilder private var root: some View {

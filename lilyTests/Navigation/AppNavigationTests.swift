@@ -46,6 +46,15 @@ struct AppNavigationTests {
         #expect(navigation.selectedTab == .chat && navigation.chatPath.count == 1 && navigation.homePath.count == 1)
     }
 
+    /// A created game opens its detail on Home, the same landing a new group or tournament gets.
+    @Test func anEventOpensItsDetailOnHome() {
+        let navigation = AppNavigation()
+
+        navigation.open(event: .fixture(id: "e1"))
+
+        #expect(navigation.selectedTab == .home && navigation.homePath.count == 1)
+    }
+
     @Test func tabsAreInBarOrder() {
         #expect(AppTab.allCases == [.home, .explore, .chat], "the profile is no tab; the corner button presents it")
         #expect(AppTab.shown == AppTab.allCases, "debug builds have chat on, so every tab is drawn")

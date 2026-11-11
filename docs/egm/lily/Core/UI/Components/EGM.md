@@ -34,7 +34,9 @@ use the generated `Color.lily*` asset symbols.
   `lilyProminentButton(sizing: ButtonSizing = .flexible, controlSize: ControlSize? = .large)` (`.glassProminent`,
   `Color.lilyAccent`); `lilyGlassButton(sizing: ButtonSizing = .flexible, controlSize: ControlSize? = .large, labelColor: Color? = nil)`
   (`.glass`); `lilyIconButton(controlSize: ControlSize = .large)` and `lilyGlassIconButton()` (always `.large`)
-  (glass circles); `lilyFloatingActionButton()` = `lilyIconButton(controlSize: .extraLarge)`;
+  (glass circles); `lilyFloatingActionButton()` = `lilyIconButton(controlSize: .extraLarge)` scaled by
+  `DesignTokens.Layout.floatingButtonScale` (the drawn circle and its hit area grow together — the owner's fourth
+  round, 2026-11-11);
   `lilyTextButton(font: Font = LilyTheme.Fonts.button, color: Color = .lilyInk, minHeight: CGFloat = DesignTokens.Layout.controlHeight)`
   applies `LilyTextButtonStyle(font:color:minHeight:)`, a `ButtonStyle` for text-only actions ("See all", Reset, the
   sign-in form's text actions, the terms' links and Sign out, Settings' Sign out, a poll's footer); `lilyToolbarTextButton()` is

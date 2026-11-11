@@ -114,12 +114,14 @@ struct EventListView<Header: View>: View {
         }
     }
 
-    /// The button floats inside the safe area, so it sits above the floating tab bar rather than under it.
+    /// The button floats inside the safe area, so it sits above the floating tab bar rather than under it; the corner
+    /// paddings carry the fourth design round's down-left nudge.
     private func withCreateButton(_ content: some View) -> some View {
         ZStack(alignment: .bottomTrailing) {
             content
             CreateButton { kind in presentForUser(.wizard(CreationSeed(kind: kind))) }
-                .padding(DesignTokens.Spacing.lg)
+                .padding(.trailing, DesignTokens.Layout.floatingButtonTrailingPadding)
+                .padding(.bottom, DesignTokens.Layout.floatingButtonBottomPadding)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

@@ -3,15 +3,15 @@ import XCTest
 /// The host's edit of their game against the mock repositories: Edit shows for the host alone, and a saved change
 /// reaches the detail and the list behind it. Identifiers mirror `AccessibilityIdentifiers`.
 final class LilyEventEditTests: LilyUITestCase {
-    /// Creates a game (the mock location fills the spot), opens it from Home, renames it through Edit and finds the new
-    /// title on the detail and on Home.
+    /// Creates a game (the mock location fills the spot) — the create lands on its detail — renames it through Edit
+    /// and finds the new title on the detail and on Home.
     @MainActor
     func testHostEditsTheirGameFromTheDetail() {
         startCreating("Thursday five-a-side")
         continueToDetails()
         submitWizard()
 
-        openFromHome("Thursday five-a-side")
+        assertCreateLandedOnDetail("Thursday five-a-side")
         openEditSheet()
         let save = app.buttons["create-submit"]
         XCTAssertTrue(save.waitForExistence(timeout: 5))
@@ -36,7 +36,7 @@ final class LilyEventEditTests: LilyUITestCase {
         startCreating("Map check")
         continueToDetails()
         submitWizard()
-        openFromHome("Map check")
+        assertCreateLandedOnDetail("Map check")
         openEditSheet()
         let save = app.buttons["create-submit"]
         XCTAssertTrue(save.waitForExistence(timeout: 5))
@@ -77,7 +77,7 @@ final class LilyEventEditTests: LilyUITestCase {
         continueToDetails()
         submitWizard()
 
-        openFromHome("Open run")
+        assertCreateLandedOnDetail("Open run")
         XCTAssertTrue(app.staticTexts["1 joined · 10 needed"].waitForExistence(timeout: 5), "the bar counts towards the number")
     }
 
@@ -92,7 +92,7 @@ final class LilyEventEditTests: LilyUITestCase {
         continueToDetails()
         submitWizard()
 
-        openFromHome("Open walk")
+        assertCreateLandedOnDetail("Open walk")
         XCTAssertTrue(app.staticTexts["1 joined"].waitForExistence(timeout: 5), "the count stands alone")
     }
 
@@ -104,6 +104,13 @@ final class LilyEventEditTests: LilyUITestCase {
         tapSignInWithApple()
         tapCreateMenuItem("New event")
         walkEventWizardToPlayers(title: title, place: "Canal Path")
+    }
+
+    /// A create lands straight on the new game's detail (the owner's fourth round), so the walks assert the landing
+    /// instead of opening the game from Home.
+    @MainActor
+    private func assertCreateLandedOnDetail(_ title: String) {
+        XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "the create must land on the game's detail")
     }
 
     /// Taps a segment of the Players picker, scrolling it into view first; a segmented picker's segments are buttons.

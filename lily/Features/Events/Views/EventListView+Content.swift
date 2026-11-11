@@ -66,9 +66,13 @@ extension EventListView {
         if case .wizard(let seed) = sheet {
             wizardModel = dependencies.makeCreationWizardModel(
                 seed: seed,
-                // A created game lands in this list at once; a new group or tournament lives on Home, so the founder
-                // is taken there (the carousels learn of it through the store and `tournamentChanges`).
-                onCreatedEvent: viewModel.add,
+                // A created game lands in this list at once and opens on its own detail (the owner's fourth round);
+                // a new group or tournament lives on Home, so the founder is taken there (the carousels learn of it
+                // through the store and `tournamentChanges`).
+                onCreatedEvent: { [dependencies, viewModel] event in
+                    viewModel.add(event)
+                    dependencies.navigation.open(event: event)
+                },
                 onCreatedGroup: { [dependencies] in dependencies.navigation.open(group: $0) },
                 onCreatedTournament: { [dependencies] detail in
                     dependencies.tournamentChanges.recordChange()

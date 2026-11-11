@@ -58,14 +58,23 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(app.buttons[MockIDs.basketballRow].waitForExistence(timeout: 10), "the joined group must be listed on Home")
     }
 
-    /// A game created from a group's detail lands in its Events segment and, being a public group's game, in the
-    /// Explore list behind it with the group's badge on its card, without a manual refresh.
+    /// A game created from a group's detail lands straight on its own detail, hosted in the group (the owner's
+    /// fourth round); behind it the group's Events segment lists it and, being a public group's game, the Explore
+    /// list carries its card with the group's badge, without a manual refresh.
     @MainActor
     func testGroupEventCreatedFromGroupShowsBadgeOnExplore() {
         tapSignInWithApple()
         openKickersDetail()
         let title = "Kickers Friday night"
         createGame(titled: title)
+        XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "the create must land on the new game's detail")
+        XCTAssertTrue(app.staticTexts["Hosted in Kreuzberg Kickers"].waitForExistence(timeout: 5),
+                      "the detail must name the hosting group")
+
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5), "the detail was pushed on Home")
+
+        selectTab("Explore")
         XCTAssertTrue(labelled(title).waitForExistence(timeout: 10), "the group's Events segment must list the new game")
 
         app.navigationBars.buttons.firstMatch.tap()

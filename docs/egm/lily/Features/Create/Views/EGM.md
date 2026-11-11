@@ -87,7 +87,9 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
   (`WizardStepScaffold.blockedHint(step:message:)` over `wizard.pop(to:)`).
 - Abandon: Cancel asks through a `confirmationDialog` (`AppBranding.Create.discardTitle`/`discard`/`keepEditing`;
   `keepEditing` is a plain-role button, since the centered iOS 26 dialog adds no automatic Cancel and swallows a
-  `.cancel`-role action — the design-judge round's render proved it, 2026-11-10)
+  `.cancel`-role action — the design-judge round's render proved it, 2026-11-10; the dialog mounts under an outer
+  `.tint(Color.lilyInk)`, because it paints its plain action from the inherited tint and the accent read as red as
+  Discard — the fourth round, 2026-11-11, `round4/discard-dialog.png`)
   only when `model.isDirty`, closing silently otherwise; interactive dismissal is refused while a submit is in
   flight *or* the draft is dirty, so a dirty draft is never swiped away silently and a write's outcome is never
   unknown (`CreationWizardView.body`); Cancel is disabled while submitting.

@@ -292,3 +292,18 @@ the asset catalog.
   too; still: `groups-plan/creation-wizard-shots/round3/map-page.png`. The same review inked the finish-time add
   affordance (`EventFinishTimeControl` through `lilyTextButton`, the accent on the plus mark alone — body-size
   accent text reads at about 3:1 over the aurora): `round3/when-finish.png`.
+
+- **The fourth design round's by-eye corrections (2026-11-11, from the phone).** The floating "+" grows a tenth
+  and nudges down-left: `lilyFloatingActionButton()` scales the extra-large glass circle by
+  `DesignTokens.Layout.floatingButtonScale` (1.1 — the 52 pt circle reads about 57 pt, drawn and hit-tested
+  together) and Explore places it with `floatingButtonTrailingPadding` 24 / `floatingButtonBottomPadding` 14
+  (visible gaps about 21 pt trailing and 11 pt bottom — about 5 pt left and 5 pt down from the old `Spacing.lg`
+  corner), with `floatingButtonFootprint` 85 and `floatingButtonClearance` 82 recomputed to match; evidence
+  `groups-plan/creation-wizard-shots/round4/plus-before.png` against `plus-after.png`. The wizard's discard dialog
+  paints its plain action from the tint it inherits, so "Keep editing" read as red as Discard: `CreationWizardView`
+  mounts the dialog under an outer `.tint(Color.lilyInk)` (the inner accent tint still wins inside the wizard);
+  `round4/discard-dialog.png` shows Discard red and Keep editing white. The Hosting group row answers across its
+  full width: `HostingGroupRow`'s choice branch became a `Menu` whose label is the whole `LabeledContent` row
+  (title ink, value and `menuChevron` mark secondary), visually unchanged (`round4/group-row.png`; the menu open
+  from a title-side tap in `round4/group-row-menu.png`); the wizard group pages dropped their outer label, and the
+  edit forms inherit the full-width row.

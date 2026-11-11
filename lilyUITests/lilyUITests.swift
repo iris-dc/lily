@@ -184,11 +184,10 @@ final class LilySmokeTests: LilyUITestCase {
     /// The "+" menu's "New event" opens the wizard seeded, straight on Name; the mock location fills the spot, so
     /// the title and the place name walk it to the end. On the way the When step's optional finish time must add and
     /// remove, the pick-on-map row must push the picker, and back must keep the typed title (the plan's pinned wizard
-    /// behaviours). The new game must show under Home without a manual refresh, and its detail must know the caller
-    /// hosts it. Nothing scrolls before the tab tap: a scrolled list minimises the tab bar, and a minimised tab bar
-    /// swallows tab taps.
+    /// behaviours). The create lands straight on the new game's detail (the owner's fourth round), which must know
+    /// the caller hosts it, and the game must list under Home behind it without a manual refresh.
     @MainActor
-    func testCreatingAGameShowsItOnHome() {
+    func testCreatingAGameOpensItsDetailAndShowsItOnHome() {
         tapSignInWithApple()
         tapCreateMenuItem("New event")
 
@@ -205,8 +204,12 @@ final class LilySmokeTests: LilyUITestCase {
         continueToDetails()
         submitWizard()
 
-        openFromHome(title)
+        XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "the create must land on the new game's detail")
         XCTAssertTrue(app.staticTexts["You host this event"].waitForExistence(timeout: 5), "the host must see the hosting notice")
+
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5), "the detail was pushed on Home")
+        XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 5), "the new game must list on Home without a refresh")
     }
 
     /// The pick-on-map row pushes the picker on the wizard's own stack; Done returns to the Place step.

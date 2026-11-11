@@ -301,3 +301,12 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   edit form's where section (its footer already reads "Optional for a private group."). Two mock fixtures (the
   Hills ride, Sunrise yoga) now carry a finish time, so `endsAt` and the facts card's "Until ..." line are seen in
   the mock world; neither fixture is pinned by a UI test.
+
+- **A created game opens on its own detail (2026-11-11, the owner's fourth round).** `AppNavigation.open(event:)`
+  (through `openInHome`, like `open(group:)` and `open(tournament:)`) is the landing both wizard entry points call
+  from `onCreatedEvent`, after the existing add-to-list (`viewModel.add` on Explore, `events.add` in a group), so
+  the feed and the group segment behave as before behind the pushed detail. Pinned by
+  `AppNavigationTests.anEventOpensItsDetailOnHome`; walked by
+  `LilySmokeTests.testCreatingAGameOpensItsDetailAndShowsItOnHome`,
+  `LilyGroupsTests.testGroupEventCreatedFromGroupShowsBadgeOnExplore` and the `LilyEventEditTests` walks
+  (`assertCreateLandedOnDetail`); still `groups-plan/creation-wizard-shots/round4/created-redirect.png`.
