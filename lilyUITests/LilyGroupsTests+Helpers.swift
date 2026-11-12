@@ -13,7 +13,7 @@ extension LilyGroupsTests {
     }
 
     /// Walks the wizard opened from the group's detail — seeded with the kind and this group, so the Hosting group
-    /// step is off the walk — and submits it (the spot comes from the mock location).
+    /// step is off the walk — and submits it (the place is picked from its suggestion, round 5).
     @MainActor
     func createGame(titled title: String) {
         app.buttons["group-create-event"].tap()
@@ -25,7 +25,7 @@ extension LilyGroupsTests {
         tapNext()
         waitForWizardStep("Place")
         XCTAssertFalse(app.navigationBars["Hosting group"].exists, "the locked group leaves no group step")
-        enter("Görli Pitch", into: app.textFields["create-location-name"])
+        enterPlaceAndPickSuggestion("Görli Pitch", into: app.textFields["create-location-name"])
         tapNext()
         waitForWizardStep("Players")
         continueToDetails()

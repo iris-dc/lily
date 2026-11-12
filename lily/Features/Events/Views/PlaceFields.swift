@@ -9,14 +9,27 @@ struct PlaceFields<Field: Hashable>: View {
     let placeholder: String
     let nameIdentifier: String
     let pickerIdentifier: String
+    /// The optional detail line between the name and the map row; `nil` keeps the form without one (the match
+    /// schedule has no detail to store).
+    let detail: Detail?
+    /// Whether the draft's place really was chosen; the map row reads as the explicit alternative until it is.
+    let placeChosen: Bool
     let focus: FocusState<Field?>.Binding?
     let focusValue: Field?
+
+    /// The detail line's binding and identifier, one argument so the inits stay within the parameter rule.
+    struct Detail {
+        let text: Binding<String>
+        let identifier: String
+    }
 
     init(name: Binding<String>,
          coordinate: Binding<Coordinate?>,
          placeholder: String = AppBranding.Events.Create.locationNamePlaceholder,
          nameIdentifier: String,
          pickerIdentifier: String,
+         detail: Detail? = nil,
+         placeChosen: Bool = true,
          focus: FocusState<Field?>.Binding,
          equals focusValue: Field) {
         _name = name
@@ -24,13 +37,21 @@ struct PlaceFields<Field: Hashable>: View {
         self.placeholder = placeholder
         self.nameIdentifier = nameIdentifier
         self.pickerIdentifier = pickerIdentifier
+        self.detail = detail
+        self.placeChosen = placeChosen
         self.focus = focus
         self.focusValue = focusValue
     }
 
     var body: some View {
         nameField
-        PlacePickerRow(coordinate: $coordinate)
+        if let detail {
+            HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.sm) {
+                PlaceDetailField(detail: detail.text, identifier: detail.identifier)
+                OptionalMarker()
+            }
+        }
+        PlacePickerRow(coordinate: $coordinate, placeChosen: placeChosen)
             .accessibilityIdentifier(pickerIdentifier)
     }
 
@@ -54,12 +75,16 @@ extension PlaceFields where Field == Never {
          coordinate: Binding<Coordinate?>,
          placeholder: String = AppBranding.Events.Create.locationNamePlaceholder,
          nameIdentifier: String,
-         pickerIdentifier: String) {
+         pickerIdentifier: String,
+         detail: Detail? = nil,
+         placeChosen: Bool = true) {
         _name = name
         _coordinate = coordinate
         self.placeholder = placeholder
         self.nameIdentifier = nameIdentifier
         self.pickerIdentifier = pickerIdentifier
+        self.detail = detail
+        self.placeChosen = placeChosen
         focus = nil
         focusValue = nil
     }

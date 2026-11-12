@@ -16,13 +16,24 @@ extension EventDraftForm {
                            suggestions: $suggestions,
                            query: { viewModel.draft.placeSuggestionQuery },
                            search: { await viewModel.placeSuggestions(for: $0) })
-            PlacePickerRow(coordinate: pickedCoordinate)
+            detailRow
+            PlacePickerRow(coordinate: pickedCoordinate, placeChosen: viewModel.draft.placeChosen)
                 .accessibilityIdentifier(AccessibilityIdentifiers.createPickOnMap)
             suggestionRows
         } header: {
             Text(Copy.whereSection)
         } footer: {
-            Text(viewModel.issue(for: .placeMissing, .locationNameTooLong).map(Copy.message(for:)) ?? Copy.whereHint)
+            Text(viewModel.issue(for: .placeMissing, .placeNotChosen, .locationNameTooLong)
+                .map(Copy.message(for:)) ?? Copy.whereHint)
+        }
+    }
+
+    /// The optional detail line the stored name carries after the address (apartment, floor, entrance).
+    var detailRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.sm) {
+            PlaceDetailField(detail: $viewModel.draft.locationDetail,
+                             identifier: AccessibilityIdentifiers.createLocationDetail)
+            OptionalMarker()
         }
     }
 

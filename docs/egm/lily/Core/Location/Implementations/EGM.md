@@ -58,9 +58,17 @@ upstream request and a recent result is reused; `CoreLocationUpdateSource` reduc
 - `CoreLocationGeocoder` `[lily/Core/Location/Implementations/CoreLocationGeocoder.swift:CoreLocationGeocoder]`:
   `init(logger:)`; forward through `MKGeocodingRequest(addressString:)`, reverse through
   `MKReverseGeocodingRequest(location:)`, the first map item's `location.coordinate` / non-blank `name`; the
-  `CLGeocoder` routes are deprecated on iOS 26; `suggestions(for:near:)` through `MKLocalSearch` (addresses and points
-  of interest, duplicates by `PlaceSuggestion.id` dropped, then the first `AppConfig.Events.placeSuggestionCount`,
-  subtitles from `MKAddress.shortAddress`). A bias sets the request's `region` to an `MKCoordinateRegion`
+  `CLGeocoder` routes are deprecated on iOS 26. `suggestions(for:near:)` goes through `MKLocalSearchCompleter`,
+  MapKit's type-ahead API (2026-11-12; `MKLocalSearch` on a fragment fuzzy-matched famous names worldwide regardless
+  of the region — "Gda" answered Jeddah from Gdansk): one private `PlaceCompletionSession` per ask bridges the
+  delegate to async (results or a failure resume it; an `AppConfig.Events.placeSuggestionTimeout` deadline settles
+  with whatever has arrived, so a callback that never comes cannot hold the field's task), completions are addresses
+  and points of interest only, and completions are resolved to full places through a completion-scoped
+  `MKLocalSearch` (subtitles from `MKAddress.shortAddress`) until `AppConfig.Events.placeSuggestionCount` distinct
+  ones answer (a duplicate by `PlaceSuggestion.id` pulls the next completion instead of thinning the rows), the
+  answer ordered `nearestFirst(to:)` the bias. A cancelled ask bails with `[]` after the completions await and
+  between resolves, instead of waiting out the deadline and every resolve. A bias sets the request's (and the
+  completer's) `region` to an `MKCoordinateRegion`
   `AppConfig.Events.placeSearchRegionMeters` on a side around it (`region(around:)`); since the region is only a hint,
   the forward lookup takes the first match `PlaceMatchPolicy.isUsable` accepts (a point of interest far from the bias
   is skipped, a city or an address never is; `isUsable(_:near:)`). The forward lookup tells "no

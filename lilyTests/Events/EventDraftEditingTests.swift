@@ -176,7 +176,7 @@ struct EventDraftEditingTests {
 
     @Test func everyIssueHasCopy() {
         let issues: [EventDraft.Issue] = [
-            .titleMissing, .titleTooLong, .startsAtTooSoon, .placeMissing, .locationNameTooLong,
+            .titleMissing, .titleTooLong, .startsAtTooSoon, .placeMissing, .placeNotChosen, .locationNameTooLong,
             .capacityOutOfRange, .capacityBelowParticipants, .descriptionTooLong, .lookingForTooLong, .priceUnreadable,
             .priceOutOfRange,
         ]

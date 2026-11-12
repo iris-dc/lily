@@ -23,9 +23,9 @@ final class LilyDiscoverTests: LilyUITestCase {
     }
 
     /// A public group walks the wizard's six steps — Name, the optional Description, Type and Who can join as
-    /// auto-advancing cards, Place, then Permissions with the create button. A public group needs a place: Next on
-    /// Place stays off until one is named (the spot comes from the mock position), and the detail and Home then show
-    /// the new group with its place.
+    /// auto-advancing cards, Place, then Permissions with the create button. A public group needs a place, and a
+    /// typed name alone is no place (round 5): Next stays off with the pick-a-suggestion hint until a suggestion is
+    /// tapped, and the detail and Home then show the new group with its place.
     @MainActor
     func testCreatingAPublicGroupNeedsAPlaceThatTheDetailShows() {
         tapSignInWithApple()
@@ -46,7 +46,13 @@ final class LilyDiscoverTests: LilyUITestCase {
 
         let place = "Görli Clubhouse"
         enter(place, into: app.textFields["create-group-location-name"])
-        assertBecomesEnabled(next, "name, place and the mock position complete the page")
+        let suggestion = app.buttons["create-place-suggestion-0"]
+        XCTAssertTrue(suggestion.waitForExistence(timeout: 5), "the typed place must offer a suggestion")
+        XCTAssertFalse(next.isEnabled, "free text alone must not enable Next")
+        XCTAssertTrue(app.staticTexts["Pick a suggested place or set the spot on the map"].exists,
+                      "the hint must say to pick a suggestion or set the spot")
+        suggestion.tap()
+        assertBecomesEnabled(next, "the picked suggestion completes the page")
         next.tap()
         waitForWizardStep("Permissions")
         let submit = app.buttons["create-group-submit"]

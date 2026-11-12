@@ -58,8 +58,8 @@ extension LilyTournamentTests {
     }
 
     /// Walks the tournament wizard from its Name step to Details: the name, the Type and Format cards (which
-    /// auto-advance), Next past Schedule, the Hosting group choice (present from Explore), the place name (the spot
-    /// comes from the mock location), then Entries and Who can join on their defaults.
+    /// auto-advance), Next past Schedule, the Hosting group choice (present from Explore), the place picked from
+    /// its suggestion (typed text alone is no place since round 5), then Entries and Who can join on their defaults.
     @MainActor
     func walkTournamentWizard(name: String, place: String) {
         waitForWizardStep("Name")
@@ -72,7 +72,7 @@ extension LilyTournamentTests {
         waitForWizardStep("Hosting group")
         tapNext()
         waitForWizardStep("Place")
-        enter(place, into: app.textFields["tournament-location-name"])
+        enterPlaceAndPickSuggestion(place, into: app.textFields["tournament-location-name"])
         tapNext()
         waitForWizardStep("Entries")
         tapNext()

@@ -17,7 +17,7 @@ nonisolated extension CreationSteps {
             .name
         case .descriptionTooLong:
             .description
-        case .locationNameMissing, .locationNameTooLong, .coordinateMissing:
+        case .locationNameMissing, .locationNameTooLong, .coordinateMissing, .placeNotChosen:
             .place
         }
     }

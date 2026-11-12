@@ -10,7 +10,7 @@ struct CreationStepsGroupTests {
     private static let partition: [GroupDraft.Issue: CreationStep.GroupStep] = [
         .nameTooShort: .name, .nameTooLong: .name,
         .descriptionTooLong: .description,
-        .locationNameMissing: .place, .locationNameTooLong: .place, .coordinateMissing: .place
+        .locationNameMissing: .place, .locationNameTooLong: .place, .coordinateMissing: .place, .placeNotChosen: .place
     ]
 
     private static let opening = CreationWizardPolicy.opening(

@@ -10,7 +10,7 @@ protocol GeocodingService {
     func coordinate(for name: String, near bias: Coordinate?) async throws -> Coordinate?
     /// What the place around the spot is called, or `nil` when nothing is known there.
     func placeName(for coordinate: Coordinate) async -> String?
-    /// Places answering to a partial query, best first, distinct by id, at most
+    /// Places answering to a partial query, nearest the bias first, distinct by id, at most
     /// `AppConfig.Events.placeSuggestionCount`; empty when nothing does or the geocoder could not be asked.
     func suggestions(for query: String, near bias: Coordinate?) async -> [PlaceSuggestion]
 }

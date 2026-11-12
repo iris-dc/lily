@@ -20,12 +20,15 @@ extension TournamentDraftForm {
                         coordinate: $viewModel.draft.coordinate,
                         nameIdentifier: AccessibilityIdentifiers.tournamentLocationName,
                         pickerIdentifier: AccessibilityIdentifiers.createPickOnMap,
+                        detail: .init(text: $viewModel.draft.locationDetail,
+                                      identifier: AccessibilityIdentifiers.tournamentLocationDetail),
+                        placeChosen: viewModel.draft.placeChosen,
                         focus: $focusedField,
                         equals: .locationName)
         } header: {
             Text(Copy.whereSection)
         } footer: {
-            viewModel.issue(for: .locationNameMissing, .locationNameTooLong, .coordinateMissing)
+            viewModel.issue(for: .locationNameMissing, .locationNameTooLong, .coordinateMissing, .placeNotChosen)
                 .map { Text(Copy.message(for: $0, format: viewModel.draft.format)) }
         }
     }

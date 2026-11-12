@@ -1,10 +1,12 @@
 import SwiftUI
 
 /// The event flow's place step: the shared place name field in the glass capsule with the geocoder's suggestions in
-/// one glass card directly under it, then the pick-on-map row pushing the map picker on the wizard's own stack as
-/// the path element `CreationStep.eventMap` (the typed path disables a link carrying any other value; the shell's
-/// `navigationDestination` renders the picker). The scaffold's caption states the either-half-is-enough rule; the
-/// hint line under the fields carries the step's first live issue.
+/// one glass card directly under it, the optional detail line (apartment, floor, entrance) that joins the stored
+/// name, then the pick-on-map row pushing the map picker on the wizard's own stack as the path element
+/// `CreationStep.eventMap` (the typed path disables a link carrying any other value; the shell's
+/// `navigationDestination` renders the picker). The scaffold's caption states the round-5 rule — a place is a tapped
+/// suggestion or a spot set on the map, typed text alone counts for nothing — and the hint line under the fields
+/// carries the step's first live issue.
 struct EventPlacePage<Model: EventDraftEditing>: View {
     let wizard: any CreationWizardControlling
     @Bindable var viewModel: Model
@@ -19,15 +21,23 @@ struct EventPlacePage<Model: EventDraftEditing>: View {
     private static var step: CreationStep { .event(.place) }
 
     var body: some View {
-        WizardStepScaffold(wizard: wizard, step: Self.step, onCancel: onCancel) {
+        WizardStepScaffold(wizard: wizard, step: Self.step, scrollTarget: scrollTarget, onCancel: onCancel) {
             nameField
             if !suggestions.isEmpty { suggestionCard }
+            detailField
             mapRow
             WizardIssueHint(message: wizard.blockingMessage(on: Self.step))
         }
         // Focus drops the moment the stack moves (a write from a view already leaving the hierarchy is ignored),
         // so a pop-return never re-presents the keyboard over the bottom bar.
         .onChange(of: wizard.path) { focusedField = nil }
+    }
+
+    /// While places are offered the reveal centers the detail line — the middle of the place cluster — so the typed
+    /// field stays visible above it and the map row and hint sit clear of the bottom bar's capsule below it, instead
+    /// of compositing under the Next label with the keyboard up; otherwise the focused field, like every field page.
+    private var scrollTarget: AnyHashable? {
+        suggestions.isEmpty ? focusedField.map { AnyHashable($0) } : AnyHashable(PlaceDetailField.revealMark)
     }
 
     private var nameField: some View {
@@ -39,6 +49,7 @@ struct EventPlacePage<Model: EventDraftEditing>: View {
                        query: { viewModel.draft.placeSuggestionQuery },
                        search: { await viewModel.placeSuggestions(for: $0) })
             .lilyField()
+            .id(Field.name)
     }
 
     /// Picking a place fills the name and the spot at once and clears the rows; the shared rows keep their
@@ -54,11 +65,20 @@ struct EventPlacePage<Model: EventDraftEditing>: View {
         }
     }
 
-    private var mapRow: some View {
-        GlassNavigationRow(value: CreationStep.eventMap, identifier: AccessibilityIdentifiers.createPickOnMap) {
-            LabeledContent(Copy.pickOnMap) {
-                Text(viewModel.draft.coordinate == nil ? Copy.spotNotSet : Copy.spotSet)
-            }
+    /// The optional detail line the stored name carries after the address (apartment, floor, entrance).
+    private var detailField: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+            PlaceDetailField(detail: $viewModel.draft.locationDetail,
+                             identifier: AccessibilityIdentifiers.createLocationDetail)
+                .lilyField()
+            OptionalMarker()
         }
+    }
+
+    private var mapRow: some View {
+        WizardPlaceMapRow(mapStep: .eventMap,
+                          identifier: AccessibilityIdentifiers.createPickOnMap,
+                          placeChosen: viewModel.draft.placeChosen,
+                          hasSpot: viewModel.draft.coordinate != nil)
     }
 }

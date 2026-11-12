@@ -62,11 +62,12 @@ nothing here performs I/O or touches shared state. Limits come from
 - `[lily/Features/Tournaments/Models/TournamentDraft.swift:TournamentDraft]`: `Equatable, Sendable,
   PlacePickingDraft`, not Codable:
   `clientId`, `name`, `description`, `type`, `format`, `teamSize`, `maxEntries`, `allowsDraws: Bool?`, `startsAt`,
-  `registrationClosesAt?`, `locationName`, `coordinate?`, `group?`, `visibility`, and the shared place bookkeeping
+  `registrationClosesAt?`, `locationName`, `locationDetail` (2026-11-12), `coordinate?`, `group?`, `visibility`, and the shared place bookkeeping
   `spotPickedOnMap`/`suggestedName` with `placeSuggestionQuery`, `apply(_:)` and `pickSpot(_:)` through
   `PlacePickingDraft` (`lily/Features/Events/Models/PlacePickingDraft.swift`; slice 3 of the creation-wizard plan,
   2026-11-11); `init(startsAt:clientId:)`,
-  `init(editing:)` (starts spot-picked); nested `Rules` and `Issue` (`CaseIterable`, eleven cases); `issues(now:rules:)` (the one validity rule: empty means
+  `init(editing:)` (starts spot-picked); nested `Rules` and `Issue` (`CaseIterable`, twelve cases since
+  `placeNotChosen`, round 5 2026-11-12); `issues(now:rules:)` (the one validity rule: empty means
   it can go, the view models judge `issues.isEmpty`, there is no `isValid`),
   `select(format:)`, `earliestStart(now:rules:)`, `proposedDeadline(before:now:)`, `makeTournament(...)`;
   `EventType.allowsDrawsByDefault`.
@@ -126,7 +127,9 @@ nothing here performs I/O or touches shared state. Limits come from
   access.
 - `[lily/Features/Tournaments/Models/TournamentDraft.swift:TournamentDraft.issues]`: `nameIssues + placeIssues +
   scheduleIssues + entriesIssues + detailIssues`, in form order. Name `3...60` (`AppConfig.Tournaments.nameLength`),
-  description `<= 1000`, place name `<= 120` (`AppConfig.Events.Creation.locationNameMaxLength`), team size `1...11`,
+  description `<= 1000`, the composed place name (address plus the optional detail line) `<= 120`
+  (`AppConfig.Events.Creation.locationNameMaxLength`), a typed name really chosen (`placeNotChosen` otherwise, which
+  stands in for `coordinateMissing` while unchosen; round 5, 2026-11-12), team size `1...11`,
   `maxEntries` within `format.entriesRange` (`2...64` single elimination, `3...12` round robin) and `>=
   rules.minimumEntries`; lengths are `wireLength` (UTF-16). The schedule is judged only when `rules.judgesSchedule`; a
   deadline must be strictly before the start.

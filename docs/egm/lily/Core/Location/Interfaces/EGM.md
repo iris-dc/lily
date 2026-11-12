@@ -39,7 +39,8 @@ logic can be tested against a scripted source.
   `func coordinate(for name: String, near bias: Coordinate?) async throws -> Coordinate?` (the spot a typed place
   names), `func placeName(for coordinate: Coordinate) async -> String?` (what the place around the spot is called) and
   `func suggestions(for query: String, near bias: Coordinate?) async -> [PlaceSuggestion]` (places answering to a
-  partial query, best first, distinct by `id`, at most `AppConfig.Events.placeSuggestionCount`).
+  partial query, nearest the bias first since 2026-11-12, distinct by `id`, at most
+  `AppConfig.Events.placeSuggestionCount`).
 - `bias` (the draft's spot, else the user's position or an edited game's stored spot) favours places around it in a
   region `AppConfig.Events.placeSearchRegionMeters` on a side; it is only a hint, so a typed city name still lands on
   the city.

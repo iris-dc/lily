@@ -33,9 +33,12 @@ to the edit form's.
 - `GroupPlacePage<Model>` (`GroupPlacePage.swift:GroupPlacePage`): the shared `PlaceNameField` in the glass capsule
   (`create-group-location-name`) owning the debounce and stale-drop rules over
   `viewModel.placeSuggestions(for:)`/`draft.placeSuggestionQuery`, its `PlaceSuggestionRows` in one `GlassCard`
-  directly under the field (a pick applies the suggestion and clears the rows), then the pick-on-map
-  `GlassNavigationRow` (`create-group-pick-on-map`, value `spotSet`/`spotNotSet`) pushing `LocationPickerView` as
-  the path element `CreationStep.groupMap`. Owns `locationNameMissing`/`locationNameTooLong`/`coordinateMissing`,
+  directly under the field (a pick applies the suggestion and clears the rows), the optional detail line
+  (`PlaceDetailField`, `create-group-location-detail`, `OptionalMarker` under the capsule; 2026-11-12), then the
+  shared `WizardPlaceMapRow` (`create-group-pick-on-map`) pushing `LocationPickerView` as
+  the path element `CreationStep.groupMap`. Owns
+  `locationNameMissing`/`locationNameTooLong`/`coordinateMissing`/`placeNotChosen` (round 5, 2026-11-12: a typed
+  name must be a tapped suggestion or come with a set spot),
   conditional on the visibility choice; the caption states that rule (`groupPlaceCaption`, 2026-11-11). A private
   draft also wears the shared `OptionalMarker` under the name field, so the marker renders exactly while the place
   is optional.

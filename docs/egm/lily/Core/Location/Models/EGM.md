@@ -21,7 +21,8 @@ road-style distance text.
 - `LocationFix` (`lily/Core/Location/Models/LocationFix.swift:LocationFix`): `nonisolated struct: Equatable, Sendable`;
   `coordinate: Coordinate?` (`nil` for updates that only carry status), `isDenied: Bool`.
 - `PlaceSuggestion` (`lily/Core/Location/Models/PlaceSuggestion.swift:PlaceSuggestion`): `nonisolated struct:
-  Identifiable, Equatable, Sendable`; `title`, `subtitle: String?`, `coordinate`; `id: String`.
+  Identifiable, Equatable, Sendable`; `title`, `subtitle: String?`, `coordinate`; `id: String`;
+  `[PlaceSuggestion].nearestFirst(to: Coordinate?)` (same file, 2026-11-12): the same places nearest the spot first.
 - `PlaceMatchPolicy` (`lily/Core/Location/Models/PlaceMatchPolicy.swift:PlaceMatchPolicy`): `nonisolated enum`;
   `static func isUsable(isPointOfInterest: Bool, distanceMeters: Double?) -> Bool`, which geocoded match may stand for
   a typed place (2026-11-06).
@@ -37,6 +38,9 @@ road-style distance text.
 - `PlaceSuggestion.id` is title, subtitle and the coordinate, so two namesakes with the same short address (two
   branches of one chain) still get distinct ids, which the form's suggestion `ForEach` keys its rows by
   (`PlaceSuggestion.swift:id`).
+- `nearestFirst(to:)` sorts by haversine `distance(to:)` with Swift's stable sort, so ties keep the geocoder's order,
+  and a `nil` bias keeps the order given (`PlaceSuggestion.swift:nearestFirst`,
+  `PlaceSuggestionTests.nearestFirstOrdersByDistanceToTheBias`).
 - `PlaceMatchPolicy.isUsable` keeps a city or an address wherever it lies and a point of interest only within half of
   `AppConfig.Events.placeSearchRegionMeters` of the bias (any when there is no bias): MapKit's region is a hint, so a
   generic venue name could otherwise move a game to another country unseen; `CoreLocationGeocoder.coordinate(for:near:)`

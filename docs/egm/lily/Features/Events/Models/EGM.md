@@ -43,7 +43,8 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `name(for:locale:)`, `inputFormat`, `inputText(_:locale:)`, `parseAmount(_:locale:) -> Decimal?`.
 - `EventDraft` (`EventDraft.swift`): `let clientId`, `title`, `type` (default `.football`), `startsAt`,
   `endsAt: Date?` (the optional finish, default `nil`; 2026-11-11),
-  `locationName`, `coordinate: Coordinate?`, `spotPickedOnMap` (whether the user chose the spot; a chosen one is never
+  `locationName`, `locationDetail` (the optional second address line, appended to the stored name on the wire;
+  2026-11-12), `coordinate: Coordinate?`, `spotPickedOnMap` (whether the user chose the spot; a chosen one is never
   overridden by the typed name, a proposed one is), `suggestedName` (the name whose geocoding produced `coordinate`, so
   it is not geocoded twice), `capacity` (default `AppConfig.Events.Creation.defaultCapacity` = 10),
   `playerLimit` (default `.maximum`), `description`, `lookingFor`, `skillLevel?`, `priceText`, `let locale`,
@@ -55,10 +56,14 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   iterated by the creation wizard's partition test; `titleMissing`, `titleTooLong`,
   `startsAtTooSoon`, `endsBeforeStart` (a set finish at or before the start; 2026-11-11),
   `placeMissing` (neither a name nor a spot; either is enough, the geocoder fills the other on
-  submit), `locationNameTooLong`, `capacityOutOfRange`,
+  submit), `placeNotChosen` (a typed or proposed place never chosen: no tapped suggestion still naming the field and
+  no spot set on the map — free text alone creates nothing; round 5, 2026-11-12), `locationNameTooLong` (judged on
+  the composed name, plus the detail-reserve rule when only the spot is given), `capacityOutOfRange`,
   `capacityBelowParticipants`, `descriptionTooLong`, `lookingForTooLong`, `priceUnreadable`, `priceOutOfRange`).
-  Derived: `capacityIfLimited`, `allowsExtraParticipants`, `trimmedTitle`, `place: PlaceDraft`,
-  `trimmedLocationName`, `trimmedDescription?`, `trimmedLookingFor?`, `isFree`, `hasUnreadablePrice`,
+  Derived: `capacityIfLimited`, `allowsExtraParticipants`, `trimmedTitle`, `place: PlaceDraft` (over
+  `composedLocationName` since 2026-11-12, so the missing rules read the raw name while the length rule and the wire
+  read the composed one), `trimmedLocationName` (the typed address alone), `trimmedDescription?`,
+  `trimmedLookingFor?`, `isFree`, `hasUnreadablePrice`,
   `price: Decimal? { get set }`, `eventPrice: Price?`; `earliestStart(now:rules:)`, `issues(now:rules:)` (the one
   validity rule; `issues(...).isEmpty` is what the forms read), `makeEvent(hostUserId:hostName:coordinate:)`.
   Place bookkeeping (2026-11-06, moved out of the form; carried by the shared `PlacePickingDraft` since slice 3 of
@@ -67,7 +72,8 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   form asks for suggestions); `mutating func apply(_ suggestion: PlaceSuggestion)` (sets `locationName` and
   `suggestedName` to the title, `coordinate` to its spot and `spotPickedOnMap = false`, so the spot stays a proposal);
   `mutating func pickSpot(_ spot: Coordinate?)` (sets `coordinate`; a non-nil spot also sets `spotPickedOnMap = true`
-  and `suggestedName = nil`, `nil` changes nothing else); `func hasSameContent(as other: EventDraft) -> Bool`
+  and `suggestedName = nil`; `nil` also clears `spotPickedOnMap` — nothing cannot be a chosen spot — and keeps
+  `suggestedName`); `func hasSameContent(as other: EventDraft) -> Bool`
   (equality ignoring `spotPickedOnMap` and `suggestedName`, bookkeeping that never reaches the wire;
   `EditEventViewModel.hasChanges` uses it).
 - `EventMapStack` (`EventMapStack.swift`, 2026-11-06): the events standing on one spot of the map, drawn as one pin
@@ -85,10 +91,14 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `static func cardsBelow<ID: Equatable>(in ids: [ID], visible: [ID]) -> Int`. What the map's card list fades and its
   "+N more" pill show (see [Views](../Views/EGM.md)).
 - `PlacePickingDraft` (`PlacePickingDraft.swift`, 2026-11-11): the place bookkeeping every create draft shares —
-  requirements `locationName`, `coordinate`, `spotPickedOnMap`, `suggestedName`; extension members
-  `placeSuggestionQuery`, `apply(_ suggestion:)`, `pickSpot(_:)` (the rules `EventDraft` carried, written once);
-  `EventDraft`, `GroupDraft` and `TournamentDraft` conform, so the wizard's place pages and dirty rule read every
-  kind the same way.
+  requirements `locationName`, `locationDetail` (2026-11-12), `coordinate`, `spotPickedOnMap`, `suggestedName`;
+  extension members `placeSuggestionQuery`, `apply(_ suggestion:)`, `pickSpot(_:)` (the rules `EventDraft` carried,
+  written once) and, since round 5 (2026-11-12), `placeChosen` (a spot set on the map, or a tapped suggestion whose
+  name still reads in the field; typed text alone never counts, and editing the name after a pick drops the choice),
+  `composedLocationName` (the address, then the detail line after a comma; the detail never stands alone) and
+  `locationDetailReserve` (the wire units the detail appends — what a reverse-geocoded address must leave room for);
+  `EventDraft`, `GroupDraft` and `TournamentDraft` conform, so the wizard's place pages, the edit forms and the
+  dirty rule read every kind the same way.
 - `PlaceDraft` (`PlaceDraft.swift`): `name`, `coordinate?`; `Requirement` (`nameAndSpot` for the tournament form,
   `nameOrSpot` for the event form, whose missing half the geocoder fills on submit); `Issue` (`nameMissing`,
   `nameTooLong`, `coordinateMissing`, `placeMissing`); `issues(maxLength:requiring: = .nameAndSpot)`, `location(at:)`. `PlayerLimit` (`PlayerLimit.swift`): `unlimited`,

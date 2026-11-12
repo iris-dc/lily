@@ -69,6 +69,8 @@ struct CreationWizardModelKindsTests {
         harness.groupViewModel.draft.name = "Kreuzberg Kickers"
         harness.groupViewModel.draft.locationName = "Görlitzer Park"
         harness.groupViewModel.draft.coordinate = AppConfig.Location.mockCenter
+        // The spot counts as picked, so the round-5 choice rule is satisfied like a user's own pick.
+        harness.groupViewModel.draft.spotPickedOnMap = true
 
         await harness.model.submit()
 

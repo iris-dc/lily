@@ -5,7 +5,8 @@ import XCTest
 /// the flow starts on the kind's first step — there is no kind page. Each following step is one idea on the wizard's
 /// `NavigationStack`, titled with its name, and `create-next` pushes the following step. The event walk is Name,
 /// Type (whose grid cards auto-advance), When, Hosting group (only where nothing locked a group and the caller has
-/// groups to host in), Place, Players, then Details with the submit button. The identifiers mirror
+/// groups to host in), Place (where the typed name's suggestion is tapped: free text alone is no place since
+/// round 5), Players, then Details with the submit button. The identifiers mirror
 /// `AccessibilityIdentifiers`. In its own file because the base file is at its length limit.
 extension LilyUITestCase {
     /// The event flow's final step title, what a submit or discard waits on to see the wizard gone.
@@ -82,14 +83,24 @@ extension LilyUITestCase {
         XCTAssertTrue(picker.waitForNonExistence(timeout: 5), "the picker goes with the finish time")
     }
 
+    /// Types the place and taps its first suggestion: a typed name alone is no place since round 5, so every walk
+    /// chooses the suggestion the mock geocoder offers for it (the pick fills the name and the spot at once).
+    @MainActor
+    func enterPlaceAndPickSuggestion(_ place: String, into field: XCUIElement) {
+        enter(place, into: field)
+        let suggestion = app.buttons["create-place-suggestion-0"]
+        XCTAssertTrue(suggestion.waitForExistence(timeout: 5), "the typed place must offer a suggestion")
+        suggestion.tap()
+    }
+
     /// Walks the event wizard to its Players step, where the player fields live: the title on Name, the middle
-    /// steps, the place name on Place. The spot comes from the mock location, so these two texts complete the draft.
+    /// steps, the place picked from its suggestion on Place (typed text alone is no place since round 5).
     @MainActor
     func walkEventWizardToPlayers(title: String, place: String) {
         waitForWizardStep("Name")
         enter(title, into: app.textFields["create-title"])
         walkWizardNameToPlace()
-        enter(place, into: app.textFields["create-location-name"])
+        enterPlaceAndPickSuggestion(place, into: app.textFields["create-location-name"])
         tapNext()
         waitForWizardStep("Players")
     }

@@ -29949,46 +29949,6 @@
         }
       }
     },
-    "A place name or a spot on the map is enough.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Достаточно названия места или точки на карте."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Basta con el nombre del lugar o un punto en el mapa."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le nom du lieu ou un point sur la carte suffit."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Достатньо назви місця або точки на карті."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wystarczy nazwa miejsca albo punkt na mapie."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Basta o nome do lugar ou um ponto no mapa."
-          }
-        }
-      }
-    },
     "Couldn't find this place": {
       "localizations": {
         "ru": {
@@ -35261,6 +35221,166 @@
           "stringUnit": {
             "state": "translated",
             "value": "Opcional"
+          }
+        }
+      }
+    },
+    "Pick a suggested place or set the spot on the map": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите место из подсказок или отметьте точку на карте"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige un lugar sugerido o marca el punto en el mapa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez un lieu suggéré ou placez le point sur la carte"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Виберіть місце з підказок або позначте точку на карті"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wybierz miejsce z podpowiedzi albo zaznacz punkt na mapie"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escolha um lugar sugerido ou marque o ponto no mapa"
+          }
+        }
+      }
+    },
+    "Pick a suggested place or set the spot on the map.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите место из подсказок или отметьте точку на карте."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elige un lugar sugerido o marca el punto en el mapa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez un lieu suggéré ou placez le point sur la carte."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Виберіть місце з підказок або позначте точку на карті."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wybierz miejsce z podpowiedzi albo zaznacz punkt na mapie."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escolha um lugar sugerido ou marque o ponto no mapa."
+          }
+        }
+      }
+    },
+    "Or set the spot on the map": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Или укажите место на карте"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O marca el lugar en el mapa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ou placez le lieu sur la carte"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Або укажіть місце на карті"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Albo wskaż miejsce na mapie"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ou marque o local no mapa"
+          }
+        }
+      }
+    },
+    "Apartment, floor or entrance": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Квартира, этаж или вход"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apartamento, piso o entrada"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appartement, étage ou entrée"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Квартира, поверх або вхід"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mieszkanie, piętro albo wejście"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apartamento, andar ou entrada"
           }
         }
       }

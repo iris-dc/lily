@@ -45,13 +45,15 @@ extension SportGroup {
 
 extension GroupDraft {
     /// A public draft that passes validation: a name and a place at the demo centre; `coordinate: nil` exercises the
-    /// missing-spot path.
+    /// missing-spot path. The spot counts as picked on the map, satisfying the round-5 choice rule like a user's
+    /// own pick.
     static func fixture(clientId: String = "3f2504e0-4f89-11d3-9a0c-0305e82c3302",
                         coordinate: Coordinate? = AppConfig.Location.mockCenter) -> GroupDraft {
         var draft = GroupDraft(clientId: clientId)
         draft.name = "Kreuzberg Kickers"
         draft.locationName = "Görlitzer Park"
         draft.coordinate = coordinate
+        draft.spotPickedOnMap = true
         return draft
     }
 }

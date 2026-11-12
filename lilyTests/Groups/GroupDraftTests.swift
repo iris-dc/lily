@@ -146,6 +146,7 @@ struct GroupDraftTests {
         #expect(AppBranding.Groups.Create.message(for: .descriptionTooLong).contains("\(Self.limits.descriptionMaxLength)"))
         #expect(AppBranding.Groups.Create.message(for: .locationNameTooLong).contains("\(Self.limits.locationNameMaxLength)"))
         #expect(AppBranding.Groups.Create.message(for: .coordinateMissing) == AppBranding.Events.Create.pickOnMap)
+        #expect(AppBranding.Groups.Create.message(for: .placeNotChosen) == AppBranding.Events.Create.placeNotChosen)
     }
     /// The shared place bookkeeping (`PlacePickingDraft`): when suggestions are asked, what a tapped suggestion and
     /// a map pick change, and that an edited group starts with its spot picked.
@@ -169,5 +170,33 @@ struct GroupDraftTests {
     @Test func anEditedGroupStartsWithItsSpotPicked() {
         let edited = GroupDraft(editing: .fixture())
         #expect(edited.spotPickedOnMap && edited.suggestedName == nil)
+    }
+
+    /// Round 5: a typed name alone is no place, whatever the visibility; a tapped suggestion or a set spot is.
+    @Test func aTypedPlaceMustBeChosen() {
+        var draft = GroupDraft.fixture()
+        draft.spotPickedOnMap = false
+        #expect(draft.issues == [.placeNotChosen])
+
+        draft.apply(PlaceSuggestion(title: "Görlitzer Park", subtitle: nil, coordinate: AppConfig.Location.mockCenter))
+        #expect(draft.issues.isEmpty)
+
+        draft.locationName = "Görli"
+        #expect(draft.issues == [.placeNotChosen], "editing the name after a pick drops the choice")
+
+        draft.visibility = .private
+        #expect(draft.issues == [.placeNotChosen], "a private group providing a place must choose it too")
+    }
+
+    /// The detail line joins the stored place name on the wire and never stands alone.
+    @Test func theDetailLineJoinsTheGroupsPlace() {
+        var draft = GroupDraft.fixture()
+        draft.locationDetail = " hall 2 "
+        #expect(draft.location == EventLocation(name: "Görlitzer Park, hall 2", coordinate: AppConfig.Location.mockCenter))
+        #expect(draft.issues.isEmpty, "the detail never affects whether the place is there")
+
+        draft.locationName = ""
+        draft.visibility = .private
+        #expect(draft.location == nil, "the detail never stands alone")
     }
 }

@@ -41,11 +41,18 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
   (`.containerBackground(Color.clear, for: .navigation)` clears the navigation hosting's opaque page background,
   which would otherwise hide it), and a transparent
   bottom safe-area-inset bar carrying the one primary button, its capsule directly over the content and the aurora
-  (the same round's supersession of the opaque-bar pin).
+  (the same round's supersession of the opaque-bar pin); the scroll content pads its own bottom by
+  `DesignTokens.Layout.wizardBarClearance`, because the keyboard's safe area swallows the bar's inset and the last
+  rows must stay able to scroll clear of the transparent capsule (round-5 fix pass, 2026-11-12).
 - `WizardStepCopy.swift` (`nonisolated extension CreationStep`): `wizardTitle`, `wizardCaption?`,
   `wizardSubmitTitle` (each kind's existing submit copy) and `wizardSubmitIdentifier` (`create-submit`,
   `create-group-submit`, `tournament-submit` — the wizard and the edit sheets agree); the map cases answer their
   place step's title for exhaustiveness alone.
+- `WizardPlaceMapRow(mapStep:identifier:placeChosen:hasSpot:)`
+  (`lily/Features/Create/Views/WizardPlaceMapRow.swift:WizardPlaceMapRow`, 2026-11-12): the place pages' shared
+  pick-on-map `GlassNavigationRow`; until `placeChosen` the label is the explicit alternative (`orPickOnMap`, "Or
+  set the spot on the map") and the value stays "Not set" — a proposed spot never counts as a choice (round 5) —
+  then `pickOnMap` with "Spot set".
 - `WizardProgressBar` (`lily/Features/Create/Views/WizardProgressBar.swift:WizardProgressBar`): `number` (from one),
   `count`; a `wizardProgressBarHeight` capsule track (`lilyInk` at `wizardProgressTrack`) whose accent fill grows to
   `number/count` of the width on appear, starting from the previous step's share so entering a step is seen filling
@@ -101,7 +108,11 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
 - The scaffold's scroll reader brings `scrollTarget` (the page's focused field) into view, animated only when
   `\.motion` allows movement; the bottom bar is transparent — the primary capsule sits directly over the content
   and the aurora (the owner's third design round, 2026-11-11, superseding the 2026-11-10 opaque-bar pin, which the
-  owner read as a dark grey slab).
+  owner read as a dark grey slab); the step content's `wizardBarClearance` bottom padding keeps the last rows able
+  to scroll clear of the capsule with the keyboard up, and the place pages' `scrollTarget` becomes the detail line
+  (`PlaceDetailField.revealMark`) while suggestions are shown, so the typed field stays visible above the centred
+  detail line and the map row and hint sit clear of the capsule below it, instead of compositing under the Next
+  label (2026-11-12).
 - One live aurora per flow (the 2026-11-11 performance pass, after the owner's lag report): the shell's
   `ContentScreen` is the only aurora in the wizard, a step page draws no background of its own, and a push
   composites one live aurora instead of two full aurora-and-grain layers — the pushed map picker included

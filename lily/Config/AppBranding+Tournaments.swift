@@ -162,6 +162,7 @@ nonisolated extension AppBranding {
                 case .nameTooLong: Forms.nameTooLong(limit: limits.nameLength.upperBound)
                 case .descriptionTooLong: Forms.descriptionTooLong(limit: limits.descriptionMaxLength)
                 case .locationNameMissing: Forms.placeNameMissing
+                case .placeNotChosen: Events.Create.placeNotChosen
                 case .locationNameTooLong: Forms.placeNameTooLong(limit: AppConfig.Events.Creation.locationNameMaxLength)
                 default: nil
                 }

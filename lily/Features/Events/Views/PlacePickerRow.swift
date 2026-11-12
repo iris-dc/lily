@@ -5,6 +5,10 @@ import SwiftUI
 /// coordinates stay on the picker screen. The caller sets the identifier.
 struct PlacePickerRow: View {
     @Binding var coordinate: Coordinate?
+    /// Whether the draft's place really was chosen (a tapped suggestion or a set spot): until then the label reads
+    /// as the explicit alternative and the value stays "Not set", a proposed spot never counting as a choice
+    /// (round 5). A form without the choice rule (the match schedule) keeps the default.
+    var placeChosen = true
 
     private typealias Copy = AppBranding.Events.Create
 
@@ -12,8 +16,8 @@ struct PlacePickerRow: View {
         NavigationLink {
             LocationPickerView(coordinate: $coordinate)
         } label: {
-            LabeledContent(Copy.pickOnMap) {
-                Text(coordinate == nil ? Copy.spotNotSet : Copy.spotSet)
+            LabeledContent(placeChosen ? Copy.pickOnMap : Copy.orPickOnMap) {
+                Text(placeChosen && coordinate != nil ? Copy.spotSet : Copy.spotNotSet)
             }
         }
     }

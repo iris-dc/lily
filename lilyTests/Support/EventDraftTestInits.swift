@@ -16,11 +16,12 @@ extension EventDraft {
     }
 
     /// Fills in what a valid draft needs beyond the defaults; `nil` exercises the missing-coordinate paths. The spot
-    /// counts as picked on the map, so the resolver leaves it alone like a user's own choice.
+    /// counts as picked on the map whatever the coordinate, so the round-5 choice rule is satisfied like a user's
+    /// own pick and the resolver leaves the spot alone like a user's own choice.
     mutating func fillRequired(coordinate: Coordinate? = AppConfig.Location.mockCenter) {
         title = "Thursday five-a-side"
         locationName = "Test Park"
         self.coordinate = coordinate
-        spotPickedOnMap = coordinate != nil
+        spotPickedOnMap = true
     }
 }

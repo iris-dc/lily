@@ -52,11 +52,14 @@ struct GroupDraftForm: View {
             PlaceFields(name: $draft.locationName,
                         coordinate: $draft.coordinate,
                         nameIdentifier: AccessibilityIdentifiers.createGroupLocationName,
-                        pickerIdentifier: AccessibilityIdentifiers.createGroupPickOnMap)
+                        pickerIdentifier: AccessibilityIdentifiers.createGroupPickOnMap,
+                        detail: .init(text: $draft.locationDetail,
+                                      identifier: AccessibilityIdentifiers.createGroupLocationDetail),
+                        placeChosen: draft.placeChosen)
         } header: {
             Text(AppBranding.Events.Create.whereSection)
         } footer: {
-            if let issue = issues.first(of: .locationNameMissing, .locationNameTooLong, .coordinateMissing) {
+            if let issue = issues.first(of: .locationNameMissing, .locationNameTooLong, .coordinateMissing, .placeNotChosen) {
                 Text(Copy.message(for: issue))
             } else {
                 Text(draft.visibility == .public ? Copy.placePublicFooter : Copy.placePrivateFooter)

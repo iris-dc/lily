@@ -181,8 +181,8 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertFalse(app.navigationBars["Name"].exists, "the group wizard must not open for a guest")
     }
 
-    /// The "+" menu's "New event" opens the wizard seeded, straight on Name; the mock location fills the spot, so
-    /// the title and the place name walk it to the end. On the way the When step's optional finish time must add and
+    /// The "+" menu's "New event" opens the wizard seeded, straight on Name; the title and the place picked from
+    /// its suggestion walk it to the end (typed text alone is no place since round 5). On the way the When step's optional finish time must add and
     /// remove, the pick-on-map row must push the picker, and back must keep the typed title (the plan's pinned wizard
     /// behaviours). The create lands straight on the new game's detail (the owner's fourth round), which must know
     /// the caller hosts it, and the game must list under Home behind it without a manual refresh.
@@ -198,7 +198,7 @@ final class LilySmokeTests: LilyUITestCase {
         openWizardMapAndReturn()
         assertBackToNameKeeps(title)
         walkWizardNameToPlace()
-        enter("Test Park", into: app.textFields["create-location-name"])
+        enterPlaceAndPickSuggestion("Test Park", into: app.textFields["create-location-name"])
         tapNext()
         waitForWizardStep("Players")
         continueToDetails()

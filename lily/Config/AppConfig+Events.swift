@@ -14,9 +14,16 @@ nonisolated extension AppConfig.Events {
     /// Side of the area, in metres, the geocoder and the suggestions favour around the draft's spot or the user: about
     /// a metro area, so a venue name resolves nearby. Only a hint, so a typed city name still lands on the city.
     static let placeSearchRegionMeters: Double = 100_000
+    /// How long a type-ahead ask may wait for MapKit's completer before answering with whatever has arrived, so a
+    /// delegate callback that never comes cannot hold the field's task forever.
+    static let placeSuggestionTimeout: Duration = .seconds(8)
 }
 
 nonisolated extension AppConfig.Events.Creation {
     /// The finish time proposed when the host adds one: an hour past the start, a round default to edit from.
     static let proposedDuration: TimeInterval = .hour
+    /// Wire room kept out of `locationNameMaxLength` for the address when only the spot is given and a detail line
+    /// is typed: the reverse-geocoded name is capped to what the detail leaves, and the coordinates fallback
+    /// (`AppBranding.Events.Create.coordinateFormat`) always fits this.
+    static let locationNameSpotReserve = 24
 }

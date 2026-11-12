@@ -9,7 +9,8 @@ extension), the event detail, the shared event form and its edit sheet (creating
 the creation-wizard plan, 2026-11-11), the filter button and sheet, the events
 map and the location picker, and the cards and rows other features reuse (`EventCard`, `EventCardList`,
 `EventPreviewCard`, `EventMapCardList`,
-`EventFactsCard`, `EventLocationMap`, `ParticipantRow`, `PlaceFields`, `PlaceNameField`, `PlaceSuggestionRows`,
+`EventFactsCard`, `EventLocationMap`, `ParticipantRow`, `PlaceFields`, `PlaceNameField`, `PlaceDetailField`,
+`PlaceSuggestionRows`,
 `HostingGroupRow`, `PlacePickerRow`, `PriceAmountField`,
 `SkillLevelPicker`). Views
 draw what the [ViewModels](../ViewModels/EGM.md) decide and call back into them; copy comes from `AppBranding`,
@@ -72,7 +73,9 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `focusedField`) stays in `EventDraftForm.swift`. `whereSection` composes, in the pixel-pinned pre-extraction order,
   `PlaceNameField` (the suggesting init, wired `focus: $focusedField, equals: .locationName`,
   `query: { viewModel.draft.placeSuggestionQuery }`, `search: { await viewModel.placeSuggestions(for: $0) }`),
-  `PlacePickerRow` under `AccessibilityIdentifiers.createPickOnMap`, then `suggestionRows`. `pickedCoordinate` is the
+  the optional `detailRow` (`PlaceDetailField` beside `OptionalMarker`, `create-location-detail`; 2026-11-12),
+  `PlacePickerRow` under `AccessibilityIdentifiers.createPickOnMap` (handed `draft.placeChosen`), then
+  `suggestionRows`; the footer surfaces `.placeMissing`/`.placeNotChosen`/`.locationNameTooLong`, else `whereHint`. `pickedCoordinate` is the
   map row's binding, its setter `viewModel.draft.pickSpot($0)` (a non-nil spot becomes the user's: `spotPickedOnMap`,
   `suggestedName = nil`); `suggestionRows` is `PlaceSuggestionRows(suggestions:pick:)`, the pick
   `viewModel.draft.apply(suggestion)` (name, spot and `suggestedName` at once) then clearing the rows and the focus.
@@ -84,7 +87,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `query: () -> String?` and `search: (String) async -> [PlaceSuggestion]` and own the machinery: a debounced
   `.task(id: name)` (`AppConfig.Events.placeSuggestionDebounce`, 300 ms) asks only while the field is focused and
   `query()` is non-nil (clearing the rows otherwise), and after the await drops the answer unless the task is live,
-  the field is still focused and `query()` still equals the query asked (`MKLocalSearch` ignores cancellation, so a
+  the field is still focused and `query()` still equals the query asked (the geocoder's completer and searches ignore
+  cancellation, so a
   late answer would otherwise put rows back under a left field or right after a pick); an `onChange` of the focus
   clears the rows when the field is left. Focus crosses views only as a `FocusState<Field?>.Binding` plus `equals:`
   (never a plain `Binding`); given none the field owns a private `@FocusState`. The suggestions array is the
@@ -95,6 +99,17 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   list diff, see `docs/notes/events.md` 2026-11-06; identifiers `AccessibilityIdentifiers.createPlaceSuggestion(index)`;
   the `ForEach` keys by `PlaceSuggestion.id`, which includes the coordinate). What a pick does stays with the caller,
   who owns the suggestions and the focus.
+- `PlaceDetailField(detail: Binding<String>, identifier:)` (`PlaceDetailField.swift`, 2026-11-12): the optional
+  detail line under the address (apartment, floor, entrance; placeholder
+  `AppBranding.Events.Create.locationDetailPlaceholder`), the bare field — callers add `OptionalMarker` in their own
+  layout. Its text joins the stored name through `PlacePickingDraft.composedLocationName` and is never judged as the
+  place itself. Carries `.id(PlaceDetailField.revealMark)`, the scroll mark the wizard's place pages reveal while
+  suggestions are shown — centering the cluster's middle keeps the typed field visible and the map row clear of the
+  wizard's bottom-bar capsule; inert in the edit forms (round-5 fix pass, 2026-11-12). `PlaceFields` gains `detail: Detail?` (binding plus identifier; `nil` keeps a form without the line,
+  the match schedule) and `placeChosen: Bool = true`, passed through to `PlaceDetailField` and `PlacePickerRow`;
+  `PlacePickerRow(coordinate:placeChosen: = true)` carries the round-5 label rule — `orPickOnMap` ("Or set the spot
+  on the map") with "Not set" until `placeChosen`, `pickOnMap` with "Spot set" after — so a proposed spot never
+  reads as a choice (2026-11-12).
 - `EventFilterButton` (`lily/Features/Events/Views/EventFilterButton.swift`): `viewModel: EventListViewModel`; a
   toolbar button presenting `EventFilterSheet` (`EventFilterSheet.swift`: `viewModel`, `onDone`) as a `lilyFormSheet()`
   (full screen on the iPhone, like the create forms; a dropdown popover before 2026-11-05), the filled/outline glyph and

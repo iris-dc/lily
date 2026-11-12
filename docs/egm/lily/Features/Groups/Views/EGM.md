@@ -47,7 +47,7 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   over the shared `DraftSheet` (identifiers `createGroupCancel`, `createGroupSubmit`)
   [`lily/Features/Groups/Views/GroupDraftSheet.swift`:`GroupDraftSheet`]; `GroupDraftForm(draft: Binding<GroupDraft>,
   issues:)` (identifiers `createGroupName`, `createGroupDescription`, `createGroupLocationName`,
-  `createGroupPickOnMap`; the description row wears the shared `OptionalMarker`, 2026-11-11 — the where section's
+  `createGroupLocationDetail` — the optional detail line, 2026-11-12 — `createGroupPickOnMap`; the description row wears the shared `OptionalMarker`, 2026-11-11 — the where section's
   footer already says "Optional for a private group.")
   [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`], and
   `GroupPermissionToggles(membersCanCreateEvents:, membersCanInvite:)`, the two member-permission toggles
@@ -111,7 +111,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
 - `GroupDraftForm` offers no visibility choice (fixed once created; the wizard's visibility page owns the create
   pick, 2026-11-11); the permissions section content is `GroupPermissionToggles`; each section's footer stays in the
   form and shows the first matching `GroupDraft.Issue` (name and description issues under the group section, the
-  three location issues under "where"); the form uses
+  four location issues under "where", `placeNotChosen` among them since round 5, 2026-11-12; the where section
+  hands `draft.placeChosen` and the detail binding to `PlaceFields`); the form uses
   `readableColumn()` [`lily/Features/Groups/Views/GroupDraftForm.swift`:`GroupDraftForm`].
 - `DiscoverGroupList` shows a `ProgressView` while `isInitialLoad`, an `EmptyStateView` in a refreshable scroll when
   `nothingMatched`, else an `AdaptiveCardGrid`; `loadMore` fires only when the appearing card is the last and

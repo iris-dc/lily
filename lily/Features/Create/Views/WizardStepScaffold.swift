@@ -27,6 +27,9 @@ struct WizardStepScaffold<Content: View>: View {
                     enteringContent
                 }
                 .padding(DesignTokens.Layout.screenMargin)
+                // With the keyboard up its safe area swallows the bottom bar's inset, so the content carries the
+                // bar's clearance itself and the last rows scroll clear of the transparent capsule.
+                .padding(.bottom, DesignTokens.Layout.wizardBarClearance)
                 .readableColumn()
             }
             .onChange(of: scrollTarget) { reveal(scrollTarget, in: proxy) }

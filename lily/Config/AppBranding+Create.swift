@@ -25,7 +25,8 @@ nonisolated extension AppBranding {
         static var eventGroupCaption: String {
             localized("A group event lives on that group's page. Without one it's open to everyone.")
         }
-        /// The place caption is the Where rule the form already states: either half is enough.
+        /// The place caption is the Where rule the form already states: pick a suggested place or set the spot
+        /// on the map (round 5, 2026-11-12).
         static var eventPlaceCaption: String { Events.Create.whereHint }
         static var eventPlayersCaption: String {
             localized("A limit closes the event when it's full. A number needed lets more people join.")

@@ -41,13 +41,16 @@ page conditional on the opening (`CreationSteps.eventSteps(opening:)`).
   event open. No issues: an optional choice has nothing to refuse.
 - `EventPlacePage<Model>` (`EventPlacePage.swift:EventPlacePage`): the shared `PlaceNameField` in the glass capsule
   (`create-location-name`) owning the debounce and stale-drop rules, its `PlaceSuggestionRows` in one `GlassCard`
-  directly under the field (a pick applies the suggestion and clears the rows), then the pick-on-map
-  `GlassNavigationRow` (`create-pick-on-map`), its value `spotSet`/`spotNotSet` (human copy, never raw coordinates;
-  design-judge round, 2026-11-10), pushing `LocationPickerView` as the path element `CreationStep.eventMap` — the
+  directly under the field (a pick applies the suggestion and clears the rows), the optional detail line
+  (`PlaceDetailField`, `create-location-detail`, `OptionalMarker` under the capsule; 2026-11-12), then the shared
+  `WizardPlaceMapRow` (`create-pick-on-map`; "Or set the spot on the map" and "Not set" until the place is chosen —
+  human copy, never raw coordinates) pushing `LocationPickerView` as the path element `CreationStep.eventMap` — the
   wizard's stack is bound to the typed `[CreationStep]` path, which disables a link carrying any other value, and
-  the shell's `navigationDestination` renders the picker. The either-half-is-enough line is the scaffold caption
-  (`eventPlaceCaption`, aliasing `whereHint`); the hint slot carries the step's issues alone
-  (`placeMissing`/`locationNameTooLong`). A map spot goes through `EventDraft.pickSpot` (the user's choice).
+  the shell's `navigationDestination` renders the picker. The round-5 rule is the scaffold caption
+  (`eventPlaceCaption`, aliasing the reworded `whereHint`): a place is a tapped suggestion or a spot set on the map,
+  typed text alone counts for nothing; the hint slot carries the step's issues alone
+  (`placeMissing`/`placeNotChosen`/`locationNameTooLong`). A map spot goes through `EventDraft.pickSpot` (the
+  user's choice).
 - `EventPlayersPage<Model>` (`EventPlayersPage.swift:EventPlayersPage`): the shared `EventPlayersFields` (segmented
   limit `create-player-limit`, stepper `create-capacity`) in a card with the per-limit hint under it, and the level
   behind an outer label (`SkillLevelPicker`, `lilyMenuPicker`, `labelsHidden`); owns

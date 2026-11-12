@@ -31,19 +31,23 @@ final class CoreLocationGeocoder: GeocodingService {
         return Coordinate(item.location.coordinate)
     }
 
+    /// Type-ahead through MapKit's completer: `MKLocalSearch` on a fragment fuzzy-matches famous names worldwide
+    /// regardless of the region ("Gda" answered Jeddah from Gdansk), while the completer matches what is still being
+    /// typed around the bias. Completions are resolved to places until `placeSuggestionCount` distinct ones answer,
+    /// nearest the bias first; a cancelled ask stops instead of waiting out the completer and the resolves.
     func suggestions(for query: String, near bias: Coordinate?) async -> [PlaceSuggestion] {
         guard let trimmed = query.nonBlankTrimmed else { return [] }
-        let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = trimmed
-        request.resultTypes = [.address, .pointOfInterest]
-        if let bias { request.region = Self.region(around: bias) }
-        guard let items = try? await MKLocalSearch(request: request).start().mapItems else {
-            logger.debug(.location, "The place query suggested nothing")
-            return []
-        }
+        let completions = await PlaceCompletionSession().completions(for: trimmed, near: bias.map(Self.region(around:)))
+        guard !Task.isCancelled else { return [] }
         var seen = Set<PlaceSuggestion.ID>()
-        let distinct = items.compactMap(Self.suggestion(from:)).filter { seen.insert($0.id).inserted }
-        let suggestions = Array(distinct.prefix(AppConfig.Events.placeSuggestionCount))
+        var resolved: [PlaceSuggestion] = []
+        for completion in completions where resolved.count < AppConfig.Events.placeSuggestionCount {
+            guard !Task.isCancelled else { return [] }
+            guard let suggestion = await Self.suggestion(resolving: completion, near: bias),
+                  seen.insert(suggestion.id).inserted else { continue }
+            resolved.append(suggestion)
+        }
+        let suggestions = resolved.nearestFirst(to: bias)
         logger.debug(.location, "The place query suggested \(suggestions.count) places")
         return suggestions
     }
@@ -93,5 +97,56 @@ final class CoreLocationGeocoder: GeocodingService {
         return PlaceSuggestion(title: name,
                                subtitle: item.address?.shortAddress.nonBlankTrimmed,
                                coordinate: Coordinate(item.location.coordinate))
+    }
+
+    /// The place a completion names: the search scoped to the completion answers the full map item, so a picked row
+    /// fills the draft's name and spot at once.
+    private static func suggestion(resolving completion: MKLocalSearchCompletion,
+                                   near bias: Coordinate?) async -> PlaceSuggestion? {
+        let request = MKLocalSearch.Request(completion: completion)
+        if let bias { request.region = region(around: bias) }
+        guard let item = try? await MKLocalSearch(request: request).start().mapItems.first else { return nil }
+        return suggestion(from: item)
+    }
+}
+
+/// One type-ahead ask of `MKLocalSearchCompleter` (delegate-driven), bridged to async: the delegate's answer, results
+/// or a failure, resumes the continuation, and a deadline settles with whatever has arrived so no caller can wait
+/// forever on a callback that never comes. One session per ask: a cancelled ask can still be parked on its
+/// continuation while the next keystroke's session runs, so the completer is never shared between asks; a late
+/// answer is dropped by the field's stale-drop rules.
+private final class PlaceCompletionSession: NSObject, @MainActor MKLocalSearchCompleterDelegate {
+    private let completer = MKLocalSearchCompleter()
+    private var continuation: CheckedContinuation<[MKLocalSearchCompletion], Never>?
+    private var deadline: Task<Void, Never>?
+
+    func completions(for query: String, near region: MKCoordinateRegion?) async -> [MKLocalSearchCompletion] {
+        completer.delegate = self
+        completer.resultTypes = [.address, .pointOfInterest]
+        if let region { completer.region = region }
+        return await withCheckedContinuation { continuation in
+            self.continuation = continuation
+            deadline = Task { [weak self] in
+                try? await Task.sleep(for: AppConfig.Events.placeSuggestionTimeout)
+                guard let self, !Task.isCancelled else { return }
+                settle(with: completer.results)
+            }
+            completer.queryFragment = query
+        }
+    }
+
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        settle(with: completer.results)
+    }
+
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: any Error) {
+        settle(with: [])
+    }
+
+    private func settle(with results: [MKLocalSearchCompletion]) {
+        deadline?.cancel()
+        deadline = nil
+        continuation?.resume(returning: results)
+        continuation = nil
     }
 }

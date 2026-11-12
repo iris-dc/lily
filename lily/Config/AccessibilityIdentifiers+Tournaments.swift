@@ -50,6 +50,8 @@ nonisolated extension AccessibilityIdentifiers {
     static let tournamentDraws = "tournament-draws"
     static let tournamentDeadline = "tournament-deadline"
     static let tournamentLocationName = "tournament-location-name"
+    /// The optional detail line under the tournament's address.
+    static let tournamentLocationDetail = "tournament-location-detail"
     static let tournamentSubmit = "tournament-submit"
     static let tournamentFormCancel = "tournament-form-cancel"
 

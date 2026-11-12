@@ -21,12 +21,14 @@ struct CreateGroupViewModelTests {
                                          onCreated: harness.sink.record)
     }
 
-    /// A complete public draft: the name and a place with its spot, as the sheet's `prepare()` would have proposed.
+    /// A complete public draft: the name and a place with its spot; the spot counts as picked on the map, so the
+    /// round-5 choice rule is satisfied like a user's own pick.
     private func fillDraft(of viewModel: CreateGroupViewModel? = nil) {
         let viewModel = viewModel ?? self.viewModel
         viewModel.draft.name = "Kreuzberg Kickers"
         viewModel.draft.locationName = "Görlitzer Park"
         viewModel.draft.coordinate = AppConfig.Location.mockCenter
+        viewModel.draft.spotPickedOnMap = true
     }
 
     @Test func aNewDraftIsPublicAndNotYetSubmittable() {
@@ -46,7 +48,13 @@ struct CreateGroupViewModelTests {
         #expect(viewModel.issues == [.locationNameMissing] && !viewModel.canSubmit)
 
         viewModel.draft.locationName = "Görlitzer Park"
-        #expect(viewModel.canSubmit)
+        #expect(viewModel.issues == [.placeNotChosen] && !viewModel.canSubmit,
+                "a typed name over the proposal is not a chosen place")
+
+        viewModel.draft.apply(PlaceSuggestion(title: "Görlitzer Park",
+                                              subtitle: nil,
+                                              coordinate: AppConfig.Location.mockCenter))
+        #expect(viewModel.canSubmit, "a tapped suggestion is")
 
         let chosen = Coordinate(latitude: 1, longitude: 2)
         viewModel.draft.coordinate = chosen
@@ -64,7 +72,8 @@ struct CreateGroupViewModelTests {
         unpositioned.draft.name = "Kreuzberg Kickers"
         unpositioned.draft.locationName = "Görlitzer Park"
         await unpositioned.prepare()
-        #expect(unpositioned.draft.coordinate == nil && unpositioned.issues == [.coordinateMissing])
+        #expect(unpositioned.draft.coordinate == nil && unpositioned.issues == [.placeNotChosen],
+                "unchosen text stays unchosen whether or not a spot was proposed")
     }
 
     @Test func submitCreatesTheGroupPutsItIntoMineAndHandsItOn() async {

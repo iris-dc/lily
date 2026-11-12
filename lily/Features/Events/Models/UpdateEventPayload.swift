@@ -25,7 +25,7 @@ nonisolated struct UpdateEventPayload: Encodable, Equatable, Sendable {
         type = draft.type
         startsAt = draft.startsAt
         endsAt = draft.endsAt
-        location = CreateEventPayload.Location(name: draft.trimmedLocationName, coordinate: coordinate)
+        location = CreateEventPayload.Location(name: draft.composedLocationName, coordinate: coordinate)
         capacity = draft.capacityIfLimited
         allowsExtraParticipants = draft.allowsExtraParticipants
         description = draft.trimmedDescription

@@ -23,6 +23,7 @@ struct EventDraftTests {
         Breakage(issue: .startsAtTooSoon) { $0.startsAt = EventDraft.earliestStart(now: now).addingTimeInterval(-1) },
         Breakage(issue: .endsBeforeStart) { $0.endsAt = $0.startsAt },
         Breakage(issue: .placeMissing) { $0.locationName = ""; $0.coordinate = nil },
+        Breakage(issue: .placeNotChosen) { $0.spotPickedOnMap = false },
         Breakage(issue: .locationNameTooLong) { $0.locationName = text(limits.locationNameMaxLength + 1) },
         Breakage(issue: .capacityOutOfRange) { $0.capacity = limits.capacityRange.upperBound + 1 },
         Breakage(issue: .descriptionTooLong) { $0.description = text(limits.descriptionMaxLength + 1) },

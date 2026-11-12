@@ -26,7 +26,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   whose first spot lies within it), `mapStackDecimals` 4 (only names a stack: its first spot rounded),
   `placeSuggestionCount` 3, `placeSuggestionDebounce` 300 ms, `placeSuggestionMinimumQuery` 2,
   `placeSearchRegionMeters` 100,000 (the side of the region the geocoder and the suggestions favour around the draft's
-  spot or the user; a hint only, so a city name still lands on the city); 2026-11-06; plus `Creation.proposedDuration` = `.hour`, the finish time proposed when the host adds one, 2026-11-11), `Build`, `FeatureFlags`,
+  spot or the user; a hint only, so a city name still lands on the city); 2026-11-06;
+  `placeSuggestionTimeout` 8 s (how long a type-ahead ask may wait for MapKit's completer, 2026-11-12); plus `Creation.proposedDuration` = `.hour`, the finish time proposed when the host adds one, 2026-11-11), `Build`, `FeatureFlags`,
   `Feedback`, `Groups`, `Inbox`, `Moderation`, `People`, `Push` (+ `Payload`), `Realtime`, `Tournaments`.
 - `API` (`lily/Config/AppConfig.swift:AppConfig.API`): `localBaseURL = http://localhost:8080`,
   `productionBaseURL = https://api.iskra.red`; `baseURL` is `localBaseURL` under `#if DEBUG && targetEnvironment(simulator)`,
@@ -63,7 +64,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `CFBundleShortVersionString`, `CFBundleVersion`. `Launch.animationsResumeFallback = 3`. `ErrorPopup.autoDismissDelay = .seconds(4)`.
 - `Events`: `filterRadiiMeters = [2_000, 5_000, 10_000, 25_000]`, `defaultFilterRadiusMeters = 10_000`,
   `defaultFilterDateSpanDays = 7`, `positionPrecision = 2`, `nearlyFullRatio = 0.75`. `Creation`: `titleMaxLength = 80`,
-  `locationNameMaxLength = 120`, `descriptionMaxLength = 1000`, `lookingForMaxLength = 300`, `capacityRange = 2...200`,
+  `locationNameMaxLength = 120` (judged on the composed name: the address plus the optional detail line, 2026-11-12),
+  `locationNameSpotReserve = 24` (the room the detail must leave for the reverse-geocoded address when only the spot
+  is given, 2026-11-12), `descriptionMaxLength = 1000`, `lookingForMaxLength = 300`, `capacityRange = 2...200`,
   `minimumLeadTimeMinutes = 15`, `priceLimitExclusive = 10_000_000`. `Editing`: `startMargin = 60`, `minimumLeadTime = 0`.
 - `Lists`: `staleAfter = 60`, `retryAfterFailure = 10`, `snapshotDirectoryName = "ListSnapshots"`, `snapshotFormat = 2`,
   `snapshotFormatFileName = "format"`, `guestSnapshotName = "guest"`, the snapshot names (`events-upcoming`,
@@ -225,7 +228,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   (the group type page's "Any type" card; slice 3, 2026-11-11), and, with the third design round (2026-11-11),
   `Layout.wizardTypeColumns` 2 with `Layout.wizardTypeCardHeight` 44 (the type grid's compact cards) and
   `Symbols.removeFinishTime = "xmark.circle.fill"` (the finish time's clear button) and
-  `Symbols.currencyMenu = "chevron.up.chevron.down"` (the price field's currency-menu mark). In `DesignTokens.swift`,
+  `Symbols.currencyMenu = "chevron.up.chevron.down"` (the price field's currency-menu mark), and, with the round-5
+  fix pass (2026-11-12), `Layout.wizardBarClearance` 76 (the step content's own bottom clearance for the transparent
+  bottom bar, whose inset the keyboard's safe area swallows). In `DesignTokens.swift`,
   `Layout.mapCardListMaxHeight` is 400 (about three and a half of the two-row cards; 352, about five one-row cards,
   until 2026-11-06) beside `mapSelectedCardWidth 340` and `pressedCardScale 0.97`.
 - Non-scalar members: `Symbols.fileGlyphs: [(type: UTType, symbol: String)]` (8 entries),
@@ -255,6 +260,12 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `create-ends-at-add` / `create-ends-at` / `create-ends-at-remove` join the create fields in the root file; the
   final step keeps its kind's submit identifier — `create-submit`,
   `create-group-submit`, `tournament-submit`).
+- Round 5 (2026-11-12, `Events.Create`): `whereHint` reworded to "Pick a suggested place or set the spot on the
+  map." (the old either-half sentence left the catalog); `placeNotChosen`, the same sentence without the period (the
+  three kinds' issue messages share it); `orPickOnMap` "Or set the spot on the map" (the map row's label while
+  nothing is chosen yet); `locationDetailPlaceholder` "Apartment, floor or entrance" (the optional detail line's
+  caption). Identifiers `createLocationDetail`, `createGroupLocationDetail` and `tournamentLocationDetail` join the
+  create fields.
 - Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `createPlaceSuggestion(_ index: Int)`
   (`create-place-suggestion-<index>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
   `message(clientID:)` (`message-client-<id>`), `message(id:)`, `messageQuote(id:)`, `memberRow(_:)`, `inviteCandidate(_:)`,

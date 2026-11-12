@@ -78,3 +78,9 @@ The app ships in English (the source language and the fallback), Russian, Spanis
   optional-field marker (`OptionalMarker`): ru «Необязательно», es «Opcional», fr «Facultatif», uk «Необов’язково»,
   pl «Opcjonalnie», pt «Opcional». Appended with the byte-stable json round trip proven before and after the edit
   (778 → 779 keys); `l10n-check.py` green.
+- **Round-5 place keys (2026-11-12).** Removed "A place name or a spot on the map is enough." (the rule it stated
+  is gone); added, in all seven languages: "Pick a suggested place or set the spot on the map" (the `placeNotChosen`
+  refusal), the same sentence with a period (the reworded `whereHint` footer and wizard place caption), "Or set the
+  spot on the map" (the map row's label before anything is chosen) and "Apartment, floor or entrance" (the optional
+  detail line under the address). Net +3 keys (779 → 782), with the byte-stable json round trip proven after the
+  edit; machine-written like the other recent keys — the native read stays owed.

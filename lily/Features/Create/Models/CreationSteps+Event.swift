@@ -15,7 +15,7 @@ nonisolated extension CreationSteps {
             .name
         case .startsAtTooSoon, .endsBeforeStart:
             .when
-        case .placeMissing, .locationNameTooLong:
+        case .placeMissing, .placeNotChosen, .locationNameTooLong:
             .place
         case .capacityOutOfRange, .capacityBelowParticipants:
             .players

@@ -7,10 +7,12 @@ struct CreateTournamentViewModelTests {
     nonisolated private static let now = TournamentHarness.now
     private let harness = TournamentHarness()
 
+    /// The spot counts as picked on the map, so the round-5 choice rule is satisfied like a user's own pick.
     private func completeDraft(_ viewModel: CreateTournamentViewModel) {
         viewModel.draft.name = "Kickers Cup"
         viewModel.draft.locationName = "Görlitzer Park pitch"
         viewModel.draft.coordinate = AppConfig.Location.mockCenter
+        viewModel.draft.spotPickedOnMap = true
     }
 
     @Test func aNewDraftStartsOnTheHourAWeekAheadWithoutADeadline() {

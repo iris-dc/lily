@@ -19,6 +19,9 @@ nonisolated struct TournamentDraft: Equatable, Sendable, PlacePickingDraft {
     /// `nil` closes registration at the start.
     var registrationClosesAt: Date?
     var locationName = ""
+    /// The optional second line of the address (apartment, floor, entrance), appended to the stored name on the wire
+    /// (`composedLocationName`); it never affects whether the place is there.
+    var locationDetail = ""
     /// Starts from the user's position and is moved on the map; required.
     var coordinate: Coordinate?
     /// Whether the user chose `coordinate` on the map (or edits a stored tournament): a chosen spot is the user's
@@ -47,6 +50,7 @@ nonisolated struct TournamentDraft: Equatable, Sendable, PlacePickingDraft {
         allowsDraws = tournament.allowsDraws
         startsAt = tournament.startsAt
         registrationClosesAt = tournament.registrationClosesAt
+        // A stored name that carries an old detail suffix stays the address whole; the detail line starts empty.
         locationName = tournament.locationName
         coordinate = tournament.location.coordinate
         // The stored spot is the organiser's choice: an edited name alone must not move the tournament on the map.
@@ -91,6 +95,9 @@ nonisolated struct TournamentDraft: Equatable, Sendable, PlacePickingDraft {
         case locationNameMissing
         case locationNameTooLong
         case coordinateMissing
+        /// A typed name that was never chosen: no tapped suggestion still naming the field and no spot set on the
+        /// map. Free text alone creates nothing (round 5).
+        case placeNotChosen
         case startsAtTooSoon
         case registrationClosesAfterStart
         case teamSizeOutOfRange
@@ -101,9 +108,11 @@ nonisolated struct TournamentDraft: Equatable, Sendable, PlacePickingDraft {
     }
 
     var trimmedName: String { name.trimmed }
-    /// The Where section as the shared rule judges it: the name typed and the spot picked.
-    var place: PlaceDraft { PlaceDraft(name: locationName, coordinate: coordinate) }
-    var trimmedLocationName: String { place.trimmedName }
+    /// The Where section as the shared rule judges it and the wire carries it: the composed name (the address plus
+    /// the detail line) at the spot picked.
+    var place: PlaceDraft { PlaceDraft(name: composedLocationName, coordinate: coordinate) }
+    /// The typed address alone; the wire carries `composedLocationName`.
+    var trimmedLocationName: String { locationName.trimmed }
     /// `nil` when nothing was written, so the payload omits the field.
     var trimmedDescription: String? { description.nonBlankTrimmed }
     var isTeam: Bool { teamSize > 1 }
@@ -143,9 +152,14 @@ nonisolated struct TournamentDraft: Equatable, Sendable, PlacePickingDraft {
         return []
     }
 
-    /// Where: the place name and the spot.
+    /// Where: the place name and the spot, both required; a typed name must also really be chosen — a tapped
+    /// suggestion or a spot set on the map — so free text alone cannot stand for the place (round 5).
     private func placeIssues() -> [Issue] {
-        place.issues(maxLength: AppConfig.Events.Creation.locationNameMaxLength).map(Issue.init)
+        var issues = place.issues(maxLength: AppConfig.Events.Creation.locationNameMaxLength).map(Issue.init)
+        guard !trimmedLocationName.isEmpty, !placeChosen else { return issues }
+        issues.removeAll { $0 == .coordinateMissing }
+        issues.append(.placeNotChosen)
+        return issues
     }
 
     /// When: the start and the deadline before it.

@@ -5,7 +5,7 @@
 ## Reference (from the README)
 
 - Event detail with join and leave for signed-in users: the button follows the caller's relation to the event (Join, Leave, "Event is full", "You host this game" (renamed "You host this event" 2026-10-18); nothing for guests; a game that allows extra players or sets no limit is never full), the count and capacity bar update from the server's answer, and the list behind it reflects the change on the way back. The host also gets Edit in the toolbar (since 2026-09-30): the game's form, prefilled, titled "Edit game" with Save, where every field but the group can change (the group a game is hosted in stays, shown read-only); the spots cannot drop below the people already in (and a game past 200 players still opens, the stepper clamped at the maximum), the start only has to lie a minute ahead (`AppConfig.Events.Editing.startMargin`, 60 s for the request's round trip; no 15-minute margin, so a host can fix the place of a game about to start), Save is enabled once something differs, and the saved game replaces the detail and the list behind it at once.
-- Creating a game from Explore: the floating "+" over the list and the map is a menu, New game or New group; New game opens a form sheet with a title, the event type, when, a place name or the spot on a map, either is enough (the spot starts from your position; typing a place offers real places to pick (autocomplete, suggestions under the field), and a typed name alone is geocoded into the spot on Create, so a "Gdansk" game lands near Gdansk, and a bare pin is named after its spot), the number of players, and the optional description, "looking for", level and price per person (the price is read strictly as one number in the user's locale, no grouping; text that is no number holds Create with "Enter the price as a number" rather than making the game free). The draft is checked on the device against the same limits the backend enforces (text lengths counted in UTF-16 units, as the backend counts them, so an emoji counts two), so the Create button is enabled exactly when the backend would accept it; the new game appears in the Explore list when the active filter matches it, and always on Home, which lists hosted games alongside joined ones, and its detail says "You host this game". When the answer to a create is lost, the app asks the backend whether the game exists before showing a failure, so a game that did land is never reported as missing. A guest picking either item of the "+" menu gets the sign-in sheet instead. (superseded 2026-11-11: the "+" menu's New event, New group and New tournament items open the creation wizard seeded with the kind — no kind page — then one page per idea; the fields, the device-side checks and the lost-answer rule are unchanged. See the slice-3 and third-round entries in the dated notes.)
+- Creating a game from Explore: the floating "+" over the list and the map is a menu, New game or New group; New game opens a form sheet with a title, the event type, when, a place name or the spot on a map, either is enough (the spot starts from your position; typing a place offers real places to pick (autocomplete, suggestions under the field), and a typed name alone is geocoded into the spot on Create, so a "Gdansk" game lands near Gdansk, and a bare pin is named after its spot), the number of players, and the optional description, "looking for", level and price per person (the price is read strictly as one number in the user's locale, no grouping; text that is no number holds Create with "Enter the price as a number" rather than making the game free). The draft is checked on the device against the same limits the backend enforces (text lengths counted in UTF-16 units, as the backend counts them, so an emoji counts two), so the Create button is enabled exactly when the backend would accept it; the new game appears in the Explore list when the active filter matches it, and always on Home, which lists hosted games alongside joined ones, and its detail says "You host this game". When the answer to a create is lost, the app asks the backend whether the game exists before showing a failure, so a game that did land is never reported as missing. A guest picking either item of the "+" menu gets the sign-in sheet instead. (superseded 2026-11-11: the "+" menu's New event, New group and New tournament items open the creation wizard seeded with the kind — no kind page — then one page per idea; the fields, the device-side checks and the lost-answer rule are unchanged. See the slice-3 and third-round entries in the dated notes.) (superseded 2026-11-12, round 5: a typed name alone is no longer enough — the place must be a tapped suggestion or a spot set on the map, with an optional detail line; see the round-5 note at the end.)
 - Currency (2026-10-09): prices are typed in the user's currency, the device region's (złoty in Poland, euro in Spain, dollars in the US) or one fixed in a Currency row on Profile; every game keeps and shows the currency it was created in, and the filter's price cap is judged in the user's, leaving games priced in another currency out while it is set. See [Currency](#currency).
 
 ### Currency
@@ -84,7 +84,7 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   `PlaceResolverTests`, `CreateEventViewModelTests` (geocoded submit, `placeNotFound`, the reverse-named spot and its
   fallback), the updated issue lists; UI: `LilyEventEditTests.testANonHostSeesNoEditButton` asserts the detail's map,
   the create and filter flows pass unchanged. Screenshots 11 to 14 under `reviews/2026-11-05-about-and-history/`
-  (the card beside the "+", the undimmed card after Back, the detail map, the Where hint).
+  (the card beside the "+", the undimmed card after Back, the detail map, the Where hint). (Both sentences superseded 2026-11-12, round 5: the footer and the hint now read the pick-a-suggestion rule.)
 - **Stacked pins, the detail map opens Apple Maps, and the typed place wins over the proposal (2026-11-06, on the
   user's "when I create two events in the exact same location I'm not able to select the one I need", "I can't open and
   expand the map while being in the event menu — maybe it should redirect to the map app?" and "still when user writes
@@ -96,7 +96,7 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   each opening its own detail (before, the pin behind could never be selected). (2) The detail's map card is a Button
   handing the spot to Apple Maps (`MKMapItem(location:address:)` named after the place) with an "Open in Maps" chip,
   since the inline map stays non-interactive on purpose. (3) The create form's Where section offers the geocoder's
-  places while the name is typed (`GeocodingService.suggestions(for:)`: MKLocalSearch live, the demo cities in the
+  places while the name is typed (`GeocodingService.suggestions(for:)`: MKLocalSearch live (superseded 2026-11-12: MapKit's completer, see below), the demo cities in the
   mock; debounced 300 ms, two code points up, only while the field is focused), and picking one fills the name and the spot at once; the draft knows whether its spot was picked on the map
   (`spotPickedOnMap`, set by the map row's binding; an edit starts picked so a reworded name never moves a game under
   its players) and which name produced it (`suggestedName`), and `PlaceResolver` now also overrides a never-picked
@@ -313,3 +313,48 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
 - **Merge review, accepted cosmetic debt (2026-11-12).** The three similar optional description field builders in
   the wizard pages (`EventDetailsPage`, `GroupDescriptionPage`, `TournamentDetailsPage`) stay as they are — the
   smallest-change call before the merge.
+- **The place type-ahead moves to MapKit's completer (2026-11-12, round-5 item 15: typing "Gdansk" offered "Jeddah",
+  "Gda"/"Gdan" offered "Ghana").** Diagnosis by a throwaway network probe on the simulator (the real
+  `CoreLocationGeocoder`, bias 54.35, 18.65): `MKLocalSearch.naturalLanguageQuery` is a full-text search, not a
+  type-ahead — on a fragment it answers one worldwide fuzzy "did you mean" match and the region hint does not temper
+  it ("Gda" answered Jeddah and "Gdan" Ghana even with the 100 km Gdansk region set; only the complete "Gdansk"
+  landed right). `suggestions(for:near:)` now asks `MKLocalSearchCompleter` (addresses and points of interest, the
+  region around the draft's spot else the user's position, as before), resolves completions to full
+  places through a completion-scoped `MKLocalSearch` until `placeSuggestionCount` distinct ones answer (a duplicate
+  pulls the next completion instead of thinning the rows; a cancelled ask stops resolving), and orders the answer
+  nearest the bias first (`[PlaceSuggestion].nearestFirst(to:)`); a private `PlaceCompletionSession` bridges the delegate to async
+  with an `AppConfig.Events.placeSuggestionTimeout` (8 s) deadline, so a callback that never comes cannot hold the
+  field's task. The debounce, focus and stale-drop rules in `PlaceNameField`, the `GeocodingService` interface and
+  the mock's deterministic suggestions are unchanged. After the fix the same probe answers "Gda", "Gdan" and
+  "Gdansk" with Gdańsk, Old City of Gdańsk / Gdańsk Główny and Pruszcz Gdański, and "Parkowa" with the Parkowa
+  streets in Jankowo Gdańskie, Sopot and Gdynia (unbiased it still prefix-matches real Polish places, no Jeddah).
+  Tests: `PlaceSuggestionTests.nearestFirstOrdersByDistanceToTheBias`; the probe file was deleted after the runs.
+- **A place must be chosen (2026-11-12, round-5 item 14).** Free text alone can no longer create anything: a place
+  is provided only by a tapped suggestion (the pick stores the name and the coordinate, so the map row reads "Spot
+  set" and every map reflects the address) or a spot set on the map — the GPS proposal under an untouched field no
+  longer passes either. `PlacePickingDraft.placeChosen` carries the rule for all three kinds; the new issue
+  `placeNotChosen` belongs to the Place steps (exhaustive switches and pinned partitions updated) with the copy
+  "Pick a suggested place or set the spot on the map" (seven languages, no semicolons); `whereHint` is reworded to
+  the same rule and the map row reads "Or set the spot on the map" until something is chosen
+  (`WizardPlaceMapRow`, `PlacePickerRow(placeChosen:)`). Editing the name after a pick drops the choice (the name no
+  longer equals `suggestedName`); a map pick survives retyping (the stored spot is the user's, as before).
+  Grandfathering: the editing inits start `spotPickedOnMap`, so stored events, groups and tournaments stay valid
+  as-is; a stored name that may carry an old detail suffix stays the address whole (no split — commas in real
+  addresses make it unreliable) and the detail line starts empty, so an untouched edit round-trips byte for byte.
+  New optional detail line under the address (apartment, floor, entrance; `PlaceDetailField` with `OptionalMarker`,
+  ids `create-location-detail` / `create-group-location-detail` / `tournament-location-detail`, in the wizard pages
+  and the edit forms): it appends to the stored `locationName` as ", detail" (`composedLocationName`; the wire is
+  unchanged, still `location {name, coordinate}`, Laurel untouched), never stands alone and never decides validity.
+  The composed name is judged against the 120 cap, and a map-only draft keeps the detail within
+  `locationNameSpotReserve` (24) of it, so `PlaceResolver`'s reverse name (now `placeName(for:leaving:)`) plus the
+  detail always fits the cap. The resolver's proposal-override branch is gated off for submits (an unchosen name
+  cannot pass `canSubmit`) and stays as defence in depth. UI walks now type and tap `create-place-suggestion-0`
+  (`enterPlaceAndPickSuggestion` in `LilyUITestCase+Wizard`); the Discover group walk pins that free text alone
+  leaves Next disabled with the new hint. Tests: `EventDraftPlaceTests` (the chosen rules, the detail line, the cap,
+  the grandfathered edit), `GroupDraftTests.aTypedPlaceMustBeChosen`,
+  `TournamentDraftTests.aTypedPlaceMustBeChosenAndTheDetailJoinsTheName`, the three `CreationSteps*` partition
+  suites, `PlaceResolverTests.theReverseNameLeavesRoomForTheDetailLine`.
+- **Edit-form grandfathering accepted as-is (2026-11-12, round-5 fix pass).** In the edit forms a retyped free-text
+  name is still accepted anchored at the stored spot: the editing inits start `spotPickedOnMap`, so the
+  chosen-address rule binds creates only. And the stored composed name shows whole with an empty detail field on
+  edit (no split on commas). Both accepted as the grandfathering's price.

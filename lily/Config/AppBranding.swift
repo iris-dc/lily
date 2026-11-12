@@ -77,10 +77,18 @@ nonisolated enum AppBranding {
             static var addEndsAt: String { localized("Add a finish time") }
             static var removeEndsAt: String { localized("Remove the finish time") }
             static var whereSection: String { localized("Where") }
-            /// The Where footer while nothing is wrong: either half is enough, the other is filled from it.
-            static var whereHint: String { localized("A place name or a spot on the map is enough.") }
+            /// The Where footer while nothing is wrong, and the wizard's place caption: the round-5 rule, a chosen
+            /// suggestion or a spot set on the map.
+            static var whereHint: String { localized("Pick a suggested place or set the spot on the map.") }
             static var locationNamePlaceholder: String { localized("Place name") }
+            /// The optional detail line under the address; the placeholder is its caption.
+            static var locationDetailPlaceholder: String { localized("Apartment, floor or entrance") }
+            /// The refusal when a typed place was never chosen: a suggestion must be tapped or the spot set
+            /// (round 5); shared by the three kinds' messages.
+            static var placeNotChosen: String { localized("Pick a suggested place or set the spot on the map") }
             static var pickOnMap: String { localized("Set the spot on the map") }
+            /// The map row's label while nothing is chosen yet: the explicit alternative to picking a suggestion.
+            static var orPickOnMap: String { localized("Or set the spot on the map") }
             /// Value of the map row while the draft has no coordinate yet.
             static var spotNotSet: String { localized("Not set") }
             /// Value of the map row once a spot is set; the exact coordinates stay on the picker screen.
@@ -121,6 +129,7 @@ nonisolated enum AppBranding {
                 return switch issue {
                 case .titleMissing: localized("Give the event a title")
                 case .titleTooLong: localized("Keep the title under \(limits.titleMaxLength) characters")
+                case .placeNotChosen: placeNotChosen
                 case .locationNameTooLong: Forms.placeNameTooLong(limit: limits.locationNameMaxLength)
                 case .descriptionTooLong: Forms.descriptionTooLong(limit: limits.descriptionMaxLength)
                 case .lookingForTooLong: Forms.tooLong(limit: limits.lookingForMaxLength)

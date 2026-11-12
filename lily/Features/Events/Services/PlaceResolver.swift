@@ -21,7 +21,7 @@ struct PlaceResolver {
             (resolved.coordinate, resolved.suggestedName) = (found, name)
             logger.info(.location, "The draft's spot was geocoded from its place name")
         } else if name.isEmpty, let coordinate = draft.coordinate {
-            resolved.locationName = await placeName(for: coordinate)
+            resolved.locationName = await placeName(for: coordinate, leaving: draft.locationDetailReserve)
             logger.info(.location, "The draft's place was named after its spot")
         } else if !draft.spotPickedOnMap, !name.isEmpty, name != draft.suggestedName, let proposal = draft.coordinate,
                   let moved = try await override(proposal, by: name) {
@@ -69,10 +69,11 @@ struct PlaceResolver {
         return found
     }
 
-    /// The geocoder's name when it fits the backend's cap, else the coordinates as the map row shows them: always
-    /// non-blank, so the payload never earns a 400.
-    private func placeName(for coordinate: Coordinate) async -> String {
-        let limit = AppConfig.Events.Creation.locationNameMaxLength
+    /// The geocoder's name when it fits what the draft's detail line leaves of the backend's cap, else the
+    /// coordinates as the map row shows them: always non-blank, and never past the cap once the detail is appended
+    /// (the draft keeps the detail within `locationNameSpotReserve` of the cap).
+    private func placeName(for coordinate: Coordinate, leaving reserve: Int) async -> String {
+        let limit = AppConfig.Events.Creation.locationNameMaxLength - reserve
         if let name = await geocoder.placeName(for: coordinate)?.nonBlankTrimmed, name.wireLength <= limit {
             return name
         }

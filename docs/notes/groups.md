@@ -67,3 +67,11 @@ Groups are communities around a sport (or "Any type"): a chat room, a member lis
   then `navigation.open(tournament: $0.tournament.destination)` (`GroupDetailView+Create.swift`). No UI walk covers
   in-group tournament creation (the Explore walk `testCreatingATournamentFromExploreShowsItOnHome` pins the
   landing there); `LilyGroupsTests` exercises the group screen's create wiring.
+- **A group's place must be chosen too (2026-11-12, round-5 item 14).** The shared rule lands in `GroupDraft`: a
+  typed name alone raises `placeNotChosen` whatever the visibility (the private-optional rule still means a private
+  group may provide no place at all), a tapped suggestion or a set spot satisfies it, and only a chosen place can
+  still be `coordinateMissing`. The optional detail line (`create-group-location-detail`) joins `location.name` as
+  ", detail" on the wire. The full record is in `events.md` (2026-11-12).
+- **A detail under an empty name on a private group is dropped, accepted (2026-11-12, round-5 fix pass).** A detail
+  line typed under an empty name goes out with the whole location: a private group may submit no location at all,
+  and the detail never stands alone (`composedLocationName`).

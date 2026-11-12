@@ -19,14 +19,18 @@ class carries no `nonisolated` marker and so runs on the main actor by the targe
   game's stored spot), so a venue name resolves nearby. A missing spot is geocoded from the trimmed name
   (`AppError.placeNotFound` when nothing answers; the geocoder's `AppError.network` when it could not be asked, logged
   at warning "reporting a network error" and rethrown, never "Couldn't find this place"; the draft kept for a
-  correction either way); a missing name comes from the geocoder when it fits the backend's cap and falls back to
-  `AppBranding.Events.Create.coordinateText` otherwise, so the payload never goes out blank; a spot the user never
+  correction either way); a missing name comes from the geocoder when it fits what the draft's detail line leaves of
+  the backend's cap (`placeName(for:leaving: draft.locationDetailReserve)`, 2026-11-12; the draft keeps the detail
+  within `AppConfig.Events.Creation.locationNameSpotReserve` of the cap) and falls back to
+  `AppBranding.Events.Create.coordinateText` otherwise, so the composed payload never goes out blank or over the cap; a spot the user never
   picked (`!spotPickedOnMap`, the GPS proposal) is overridden by a typed name the geocoder knows, unless the name is
   the one already resolved (`suggestedName`), and a failed override (no match, or the geocoder could not be asked)
   keeps the proposal with a warning ("the proposed spot stands") rather than blocking a venue the geocoder has never
   heard of; a successful override logs at info whether it landed "within" or "beyond" the search region
   (`AppConfig.Events.placeSearchRegionMeters / 2` from the proposal), the one sign of a far-off namesake. A picked
-  spot passes untouched. A cancellation passes through unlogged. Logs outcomes under `.location`, never the text.
+  spot passes untouched. A cancellation passes through unlogged. Since round 5 (2026-11-12) the create and edit
+  gates refuse an unchosen typed name (`placeNotChosen`), so the proposal-override branch is defence in depth: no
+  submitting draft reaches it. Logs outcomes under `.location`, never the text.
   - `init(events: any EventRepository, navigation: AppNavigation, errorCenter: ErrorCenter, logger: any Logging)`:
     stores the four dependencies and does nothing else.
   - `@discardableResult func open(eventID: String, from source: String) async -> Bool`: `true` once the event was

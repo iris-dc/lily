@@ -12,7 +12,7 @@ struct CreationStepsTournamentTests {
     private static let partition: [TournamentDraft.Issue: CreationStep.TournamentStep] = [
         .nameTooShort: .name, .nameTooLong: .name,
         .startsAtTooSoon: .schedule, .registrationClosesAfterStart: .schedule,
-        .locationNameMissing: .place, .locationNameTooLong: .place, .coordinateMissing: .place,
+        .locationNameMissing: .place, .locationNameTooLong: .place, .coordinateMissing: .place, .placeNotChosen: .place,
         .teamSizeOutOfRange: .entries, .maxEntriesOutOfRange: .entries, .maxEntriesBelowEntries: .entries,
         .descriptionTooLong: .details
     ]

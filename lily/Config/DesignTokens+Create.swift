@@ -19,6 +19,10 @@ nonisolated extension DesignTokens.Layout {
     /// The type steps' grid: columns of compact cards, each at least the 44 pt hit target tall.
     static let wizardTypeColumns = 2
     static let wizardTypeCardHeight: CGFloat = 44
+    /// Bottom clearance a wizard step's scroll content keeps for the bottom bar: the large primary capsule (about
+    /// 50 pt) plus the bar's vertical padding. With the keyboard up its safe area swallows the bar's inset, so the
+    /// content carries the clearance itself and the last rows scroll clear of the transparent capsule.
+    static let wizardBarClearance: CGFloat = 76
 }
 
 nonisolated extension DesignTokens.Opacity {

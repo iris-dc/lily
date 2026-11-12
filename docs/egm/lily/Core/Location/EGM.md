@@ -21,6 +21,7 @@ directly in this directory.
 - Implementations: [./Implementations/EGM.md](./Implementations/EGM.md) - `CoreLocationService` (first fix or timeout in
   one structured race), `CachedLocationService` (one shared upstream request, a TTL per outcome),
   `CoreLocationUpdateSource` (`CLLocationUpdate.liveUpdates()`), `MockLocationService`, `CoreLocationGeocoder`
-  (MapKit's `MKGeocodingRequest`/`MKReverseGeocodingRequest`; the `CLGeocoder` routes are deprecated on iOS 26; logs
+  (MapKit's `MKGeocodingRequest`/`MKReverseGeocodingRequest`, type-ahead through `MKLocalSearchCompleter`; the
+  `CLGeocoder` routes are deprecated on iOS 26; logs
   outcomes only, never the text) and `MockGeocodingService` (a non-blank name lands deterministically in the fixtures'
   neighbourhood through `Coordinate.aroundMockCenter`, every spot is called "Berlin").

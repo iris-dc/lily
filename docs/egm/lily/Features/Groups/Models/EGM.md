@@ -47,13 +47,14 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   [`lily/Features/Groups/Models/MembershipChange.swift`:`MembershipChange`]; `RoomSubscription { groupID, epoch }`
   with `init(group:)` [`lily/Features/Groups/Models/RoomSubscription.swift`:`RoomSubscription`].
 - `GroupDraft: Equatable, Sendable, PlacePickingDraft`: `clientId` (let), `name`, `description`, `visibility`
-  (default `.public`), `type`, `membersCanCreateEvents`, `membersCanInvite`, `locationName`,
-  `coordinate: Coordinate?`, and the shared place bookkeeping `spotPickedOnMap`/`suggestedName` with
-  `placeSuggestionQuery`, `apply(_:)` and `pickSpot(_:)` through `PlacePickingDraft`
+  (default `.public`), `type`, `membersCanCreateEvents`, `membersCanInvite`, `locationName`, `locationDetail`
+  (2026-11-12), `coordinate: Coordinate?`, and the shared place bookkeeping `spotPickedOnMap`/`suggestedName` with
+  `placeSuggestionQuery`, `apply(_:)`, `pickSpot(_:)`, `placeChosen` and `composedLocationName` through `PlacePickingDraft`
   (`lily/Features/Events/Models/PlacePickingDraft.swift`; slice 3 of the creation-wizard plan, 2026-11-11);
   `init(clientId:)`, `init(editing: SportGroup)` (starts spot-picked: an edited name alone must not move the group);
   `enum Issue: CaseIterable` (`nameTooShort`, `nameTooLong`, `descriptionTooLong`,
-  `locationNameMissing`, `locationNameTooLong`, `coordinateMissing`); `trimmedName`, `trimmedLocationName`,
+  `locationNameMissing`, `locationNameTooLong`, `coordinateMissing`, `placeNotChosen` — round 5, 2026-11-12);
+  `trimmedName`, `trimmedLocationName`,
   `trimmedDescription: String?`, `issues: [Issue]`, `isValid`, `location: EventLocation?`,
   `makeGroup(ownerName:now:) -> SportGroup` [`lily/Features/Groups/Models/GroupDraft.swift`:`GroupDraft`].
 - Request bodies: `CreateGroupPayload(draft:)` { `clientGroupId`, `name`, `description?`, `visibility`, `type?`,
@@ -125,10 +126,11 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   `kind = .group` [`lily/Features/Groups/Models/SportGroup.swift`:`SportGroup.init`]
   [`lily/Config/AppConfig+Groups.swift`:`AppConfig.Groups.maxMembers`].
 - `GroupDraft.issues`, in form order, against `AppConfig.Groups` in UTF-16 units (`wireLength`): name within
-  `3...60`, description at most 500, a place name required only when `visibility == .public`, at most
-  `locationNameMaxLength` (= `AppConfig.Events.Creation.locationNameMaxLength`), and `coordinateMissing` when a place
-  is named without a coordinate; `isValid` is `issues.isEmpty`; `location` is `nil` unless both name and coordinate are
-  set [`lily/Features/Groups/Models/GroupDraft.swift`:`GroupDraft.issues`]
+  `3...60`, description at most 500, a place name required only when `visibility == .public`, the composed name
+  (address plus detail) at most `locationNameMaxLength` (= `AppConfig.Events.Creation.locationNameMaxLength`); a
+  named place must really be chosen — `placeNotChosen` when neither a tapped suggestion still names the field nor a
+  spot was set (round 5, 2026-11-12) — and `coordinateMissing` when a chosen place still has no spot; `isValid` is
+  `issues.isEmpty`; `location` is `nil` unless both name and coordinate are set, and carries `composedLocationName` [`lily/Features/Groups/Models/GroupDraft.swift`:`GroupDraft.issues`]
   [`lily/Config/AppConfig+Groups.swift`:`AppConfig.Groups.nameLength`].
 - `GroupDraft.clientId` is chosen once per draft (a lower-cased `UUID`) and becomes the group's id: `makeGroup` uses it
   and `CreateGroupPayload.clientGroupId` sends it, so a repeated create finds its group; `init(editing:)` reuses the

@@ -110,19 +110,18 @@ struct CreateEventViewModelTests {
         #expect(harness.viewModel.canSubmit, "the draft stays for a correction")
     }
 
-    /// The GPS proposal is not the host's word: a typed name moves it on submit, so the game lands where the name
-    /// says; a spot picked on the map stays whatever is typed.
-    @Test func aTypedNameMovesTheProposedSpotButNeverAPickedOne() async throws {
+    /// Round 5 gates the old proposal-override off: a typed name that was never chosen cannot be sent at all, and a
+    /// spot picked on the map stays whatever is typed.
+    @Test func anUnchosenTypedNameIsRefusedAndAPickedSpotStays() async throws {
         let harness = CreateEventHarness()
         harness.completeDraft()
         harness.viewModel.draft.spotPickedOnMap = false
         let gdansk = Coordinate(latitude: 54.352, longitude: 18.6466)
         harness.geocoder.coordinateResult = gdansk
 
+        #expect(harness.viewModel.issues == [.placeNotChosen] && !harness.viewModel.canSubmit)
         await harness.viewModel.submit()
-
-        let sent = try #require(harness.repository.createdDrafts.first)
-        #expect(sent.coordinate == gdansk && harness.geocoder.geocodedNames == ["Test Park"])
+        #expect(harness.repository.createdDrafts.isEmpty && harness.geocoder.geocodedNames.isEmpty)
 
         let picked = CreateEventHarness()
         picked.completeDraft()

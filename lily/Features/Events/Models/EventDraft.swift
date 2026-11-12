@@ -14,6 +14,9 @@ nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
     /// The optional finish time; `nil` when the host set none. A set one must lie after the start (`.endsBeforeStart`).
     var endsAt: Date?
     var locationName = ""
+    /// The optional second line of the address (apartment, floor, entrance), appended to the stored name on the wire
+    /// (`composedLocationName`); it never affects whether the place is there.
+    var locationDetail = ""
     /// Starts from the user's position, is moved on the map, or is geocoded from the typed name; one half of the
     /// place is required (`PlaceDraft.Requirement.nameOrSpot`).
     var coordinate: Coordinate?
@@ -66,6 +69,7 @@ nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
         type = event.type
         startsAt = event.startsAt
         endsAt = event.endsAt
+        // A stored name that carries an old detail suffix stays the address whole; the detail line starts empty.
         locationName = event.locationName
         coordinate = event.location.coordinate
         // The stored spot is the host's choice: an edited name alone must not move the game under its players.
@@ -116,6 +120,9 @@ nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
         case endsBeforeStart
         /// Neither a place name nor a spot; either is enough, the geocoder fills the other on submit.
         case placeMissing
+        /// A typed name that was never chosen: no tapped suggestion still naming the field and no spot set on the
+        /// map. Free text alone creates nothing (round 5).
+        case placeNotChosen
         case locationNameTooLong
         case capacityOutOfRange
         /// An edit asked for fewer spots than people already in the game.
@@ -132,9 +139,11 @@ nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
     var capacityIfLimited: Int? { playerLimit.hasCapacity ? capacity : nil }
     var allowsExtraParticipants: Bool { playerLimit.allowsExtraParticipants }
     var trimmedTitle: String { title.trimmed }
-    /// The Where section as the shared rule judges it: the name typed and the spot picked.
-    var place: PlaceDraft { PlaceDraft(name: locationName, coordinate: coordinate) }
-    var trimmedLocationName: String { place.trimmedName }
+    /// The Where section as the shared rule judges it and the wire carries it: the composed name (the address plus
+    /// the detail line) at the spot picked.
+    var place: PlaceDraft { PlaceDraft(name: composedLocationName, coordinate: coordinate) }
+    /// The typed address alone; the wire carries `composedLocationName`.
+    var trimmedLocationName: String { locationName.trimmed }
     /// `nil` when the host wrote nothing, so the payload omits the field.
     var trimmedDescription: String? { description.nonBlankTrimmed }
     var trimmedLookingFor: String? { lookingFor.nonBlankTrimmed }
@@ -171,7 +180,24 @@ nonisolated struct EventDraft: Equatable, Sendable, PlacePickingDraft {
         if startsAt < Self.earliestStart(now: now, rules: rules) { issues.append(.startsAtTooSoon) }
         if let endsAt, endsAt <= startsAt { issues.append(.endsBeforeStart) }
         issues += place.issues(maxLength: limits.locationNameMaxLength, requiring: .nameOrSpot).map(Issue.init)
+        if let choice = placeChoiceIssue { issues.append(choice) }
+        if !detailLeavesRoomForTheAddress { issues.append(.locationNameTooLong) }
         return issues
+    }
+
+    /// `.placeMissing` is the nothing-at-all case; this is the typed-or-proposed-but-never-chosen one: the user must
+    /// tap a suggestion or set the spot on the map before the place can count (round 5).
+    private var placeChoiceIssue: Issue? {
+        guard !placeChosen, !trimmedLocationName.isEmpty || coordinate != nil else { return nil }
+        return .placeNotChosen
+    }
+
+    /// Only the spot is given: the reverse-geocoded address joins the detail on submit (`PlaceResolver`), so the
+    /// detail must leave it `locationNameSpotReserve` of the wire cap.
+    private var detailLeavesRoomForTheAddress: Bool {
+        guard trimmedLocationName.isEmpty, locationDetailReserve > 0 else { return true }
+        let limits = AppConfig.Events.Creation.self
+        return locationDetailReserve <= limits.locationNameMaxLength - limits.locationNameSpotReserve
     }
 
     /// Nothing without a limit. Outside the backend's range first; within it, a cap below the people already in (an

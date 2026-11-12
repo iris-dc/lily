@@ -15,6 +15,8 @@ struct CreateTournamentOutcomeTests {
         viewModel.draft.name = "Kickers Cup"
         viewModel.draft.locationName = "Görlitzer Park pitch"
         viewModel.draft.coordinate = AppConfig.Location.mockCenter
+        // The spot counts as picked, so the round-5 choice rule is satisfied like a user's own pick.
+        viewModel.draft.spotPickedOnMap = true
         return viewModel
     }
 

@@ -16,6 +16,9 @@ nonisolated struct GroupDraft: Equatable, Sendable, PlacePickingDraft {
     var membersCanInvite = true
     /// Where the group plays. A public group needs one (Discover orders by it); a private group may leave it out.
     var locationName = ""
+    /// The optional second line of the address (apartment, floor, entrance), appended to the stored name on the wire
+    /// (`composedLocationName`); it never affects whether the place is there.
+    var locationDetail = ""
     /// Prefilled from the device's position when the sheet opens, else set on the map.
     var coordinate: Coordinate?
     /// Whether the user chose `coordinate` on the map (or edits a stored group): a chosen spot is the user's own,
@@ -37,6 +40,7 @@ nonisolated struct GroupDraft: Equatable, Sendable, PlacePickingDraft {
         type = group.type
         membersCanCreateEvents = group.membersCanCreateEvents
         membersCanInvite = group.membersCanInvite
+        // A stored name that carries an old detail suffix stays the address whole; the detail line starts empty.
         locationName = group.location?.name ?? ""
         coordinate = group.location?.coordinate
         // The stored spot is the owner's choice: an edited name alone must not move the group on the map.
@@ -53,6 +57,9 @@ nonisolated struct GroupDraft: Equatable, Sendable, PlacePickingDraft {
         case locationNameTooLong
         /// A place was named but its spot not set (the device had no position and the map was never opened).
         case coordinateMissing
+        /// A typed name that was never chosen: no tapped suggestion still naming the field and no spot set on the
+        /// map. Free text alone creates nothing (round 5).
+        case placeNotChosen
     }
 
     var trimmedName: String { name.trimmed }
@@ -72,24 +79,29 @@ nonisolated struct GroupDraft: Equatable, Sendable, PlacePickingDraft {
     }
 
     /// The place is judged like the event form's, except that only a public group must have one: a private group is
-    /// reached by invite, a public one is found by where it plays.
+    /// reached by invite, a public one is found by where it plays. A place being provided must really be chosen —
+    /// a tapped suggestion or a spot set on the map — so free text alone sends nothing (round 5).
     private var locationIssues: [Issue] {
-        var issues: [Issue] = []
         if trimmedLocationName.isEmpty {
-            if visibility == .public { issues.append(.locationNameMissing) }
-            return issues
+            return visibility == .public ? [.locationNameMissing] : []
         }
-        if trimmedLocationName.wireLength > AppConfig.Groups.locationNameMaxLength { issues.append(.locationNameTooLong) }
-        if coordinate == nil { issues.append(.coordinateMissing) }
+        var issues: [Issue] = []
+        if composedLocationName.wireLength > AppConfig.Groups.locationNameMaxLength { issues.append(.locationNameTooLong) }
+        if !placeChosen {
+            issues.append(.placeNotChosen)
+        } else if coordinate == nil {
+            issues.append(.coordinateMissing)
+        }
         return issues
     }
 
     var isValid: Bool { issues.isEmpty }
 
-    /// The place as the payload and the stored group carry it; `nil` when none was named or its spot is not set.
+    /// The place as the payload and the stored group carry it (the composed name: the address plus the detail
+    /// line); `nil` when none was named or its spot is not set.
     var location: EventLocation? {
         guard !trimmedLocationName.isEmpty, let coordinate else { return nil }
-        return EventLocation(name: trimmedLocationName, coordinate: coordinate)
+        return EventLocation(name: composedLocationName, coordinate: coordinate)
     }
 
     /// The group this draft becomes once stored: the caller owns it and is its first member. What the mock

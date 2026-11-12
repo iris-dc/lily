@@ -20,6 +20,8 @@ nonisolated enum AccessibilityIdentifiers {
     /// Fields and actions of the create sheet.
     static let createTitle = "create-title"
     static let createLocationName = "create-location-name"
+    /// The optional detail line under the address (apartment, floor, entrance).
+    static let createLocationDetail = "create-location-detail"
     static let createPickOnMap = "create-pick-on-map"
     /// The optional finish time: the add affordance, the picker and its clear button.
     static let createEndsAtAdd = "create-ends-at-add"

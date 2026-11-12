@@ -31,10 +31,12 @@ field identifier is byte-identical to the edit form's.
   (`create-group`, `labelsHidden()`), a `ProgressView` placeholder until `viewModel.hasLoadedGroups`, and the
   no-eligible-groups explanation under the card; the caption says what hosting in a group means. No issues.
 - `TournamentPlacePage<Model>` (`TournamentPlacePage.swift:TournamentPlacePage`): the shared `PlaceNameField`
-  (`tournament-location-name`) with its suggestions card, then the pick-on-map `GlassNavigationRow`
+  (`tournament-location-name`) with its suggestions card, the optional detail line (`PlaceDetailField`,
+  `tournament-location-detail`; 2026-11-12), then the shared `WizardPlaceMapRow`
   (`create-pick-on-map`, the id the tournament form already shared with the event's) pushing the path element
-  `CreationStep.tournamentMap`. Owns the three place issues (a tournament needs both halves; the caption says
-  so, `tournamentPlaceCaption`, 2026-11-11).
+  `CreationStep.tournamentMap`. Owns the four place issues — `placeNotChosen` among them since round 5
+  (2026-11-12): a tournament needs both halves and the typed name really chosen (the caption says so,
+  `tournamentPlaceCaption`, 2026-11-11).
 - `TournamentEntriesPage<Model>` (`TournamentEntriesPage.swift:TournamentEntriesPage`): the shared
   `TournamentEntriesFields` (team size `tournament-team-size`, cap `tournament-max-entries`, draws
   `tournament-draws`, hidden for single elimination where draws are never permitted, 2026-11-11) in one

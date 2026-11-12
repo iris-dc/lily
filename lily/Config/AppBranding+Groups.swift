@@ -126,6 +126,7 @@ nonisolated extension AppBranding {
                 case .locationNameMissing: localized("Name the place where the group plays")
                 case .locationNameTooLong: Forms.placeNameTooLong(limit: limits.locationNameMaxLength)
                 case .coordinateMissing: AppBranding.Events.Create.pickOnMap
+                case .placeNotChosen: AppBranding.Events.Create.placeNotChosen
                 }
             }
         }

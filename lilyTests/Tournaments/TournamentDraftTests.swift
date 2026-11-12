@@ -148,6 +148,25 @@ struct TournamentDraftTests {
         #expect(TournamentDraft.proposedDeadline(before: far, now: Self.now) == far.addingTimeInterval(-lead))
     }
 
+    /// Round 5: a typed name alone is no place — the organiser picks a suggestion or sets the spot; the detail line
+    /// joins the stored name on the wire.
+    @Test func aTypedPlaceMustBeChosenAndTheDetailJoinsTheName() {
+        var draft = TournamentDraft.fixture(now: Self.now)
+        draft.spotPickedOnMap = false
+        #expect(draft.issues(now: Self.now) == [.placeNotChosen])
+
+        draft.apply(PlaceSuggestion(title: "Görlitzer Park pitch", subtitle: nil, coordinate: AppConfig.Location.mockCenter))
+        draft.locationDetail = "pitch 2"
+        #expect(draft.issues(now: Self.now).isEmpty, "the detail never affects whether the place is there")
+        let made = draft.makeTournament(organizerUserId: "u-1",
+                                        organizerName: "You",
+                                        coordinate: AppConfig.Location.mockCenter,
+                                        now: Self.now)
+        #expect(made.locationName == "Görlitzer Park pitch, pitch 2")
+        #expect(AppBranding.Tournaments.Create.message(for: .placeNotChosen, format: draft.format)
+                    == AppBranding.Events.Create.placeNotChosen)
+    }
+
     @Test func drawsDefaultPerType() {
         #expect(EventType.football.allowsDrawsByDefault && EventType.basketball.allowsDrawsByDefault)
         #expect(!EventType.tennis.allowsDrawsByDefault && !EventType.esports.allowsDrawsByDefault)

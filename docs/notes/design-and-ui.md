@@ -228,7 +228,7 @@ the asset catalog.
   the counter string stays as its accessibility label), and each page's caption and fields ease in with a short
   slide-up and fade (`wizardEntrance()`, 12 pt over `Duration.fast`; reduced motion keeps the fade and a settled
   fill). Steps whose purpose needs extra knowledge carry one `.subheadline` `.secondary` caption under the title
-  (owner addition): Hosting group, Place (the either-half-is-enough line, moved up from the hint slot), Players and
+  (owner addition): Hosting group, Place (the either-half-is-enough line, moved up from the hint slot; reworded 2026-11-12, round 5, to the pick-a-suggestion rule), Players and
   Details, in all seven languages; Name, Type and When carry none (superseded 2026-11-11, the third round below). Pinned behaviours unchanged: opaque bottom bar,
   scroll-to-focus, the final-gate hint popping back, submit lock, one-way kind, the dirty rule. Rendered judging of
   the captions' tone and the motion is the follow-up design-judge round.
@@ -307,3 +307,11 @@ the asset catalog.
   (title ink, value and `menuChevron` mark secondary), visually unchanged (`round4/group-row.png`; the menu open
   from a title-side tap in `round4/group-row-menu.png`); the wizard group pages dropped their outer label, and the
   edit forms inherit the full-width row.
+- **The wizard's Place tail no longer composites under the Next capsule (2026-11-12, round-5 fix pass).** With the
+  keyboard up the keyboard's safe area swallows the bottom bar's inset, so the Place step's map row sat under the
+  transparent disabled capsule, two texts mashed. Two-part cure, the bar staying transparent: every step's scroll
+  content pads its bottom by `DesignTokens.Layout.wizardBarClearance` (76, the capsule plus the bar's padding), and
+  the place pages' `scrollTarget` becomes the detail line (`PlaceDetailField.revealMark`) while suggestions are
+  shown, so the scaffold centers the cluster's middle — the typed field stays visible above, the map row and hint
+  sit clear below. Centering the map row itself was tried and scrolled the typed field off screen. Evidence: the
+  re-shot `place-typed-unchosen` / `place-suggestions` stills in `groups-plan/creation-wizard-shots/round5/`.

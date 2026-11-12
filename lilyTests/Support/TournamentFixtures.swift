@@ -80,7 +80,8 @@ extension TournamentDetail {
 extension TournamentDraft {
     /// A draft that passes validation: the required fields set, starting `defaultStartOffset` after `now`, at the demo
     /// centre unless told otherwise (`nil` exercises the missing-coordinate paths). The id is a lower-case UUID like a
-    /// real draft's, so the bodies the contract tests assert are ones the backend accepts.
+    /// real draft's, so the bodies the contract tests assert are ones the backend accepts. The spot counts as picked
+    /// on the map, satisfying the round-5 choice rule like a user's own pick.
     static func fixture(now: Date = .now,
                         clientId: String = "3f2504e0-4f89-11d3-9a0c-0305e82c3303",
                         coordinate: Coordinate? = AppConfig.Location.mockCenter) -> TournamentDraft {
@@ -89,6 +90,7 @@ extension TournamentDraft {
         draft.name = "Kickers Cup"
         draft.locationName = "Görlitzer Park pitch"
         draft.coordinate = coordinate
+        draft.spotPickedOnMap = true
         return draft
     }
 }

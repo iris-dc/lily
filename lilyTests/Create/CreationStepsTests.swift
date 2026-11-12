@@ -11,7 +11,7 @@ struct CreationStepsTests {
     private static let partition: [EventDraft.Issue: CreationStep.EventStep] = [
         .titleMissing: .name, .titleTooLong: .name,
         .startsAtTooSoon: .when, .endsBeforeStart: .when,
-        .placeMissing: .place, .locationNameTooLong: .place,
+        .placeMissing: .place, .placeNotChosen: .place, .locationNameTooLong: .place,
         .capacityOutOfRange: .players, .capacityBelowParticipants: .players,
         .descriptionTooLong: .details, .lookingForTooLong: .details,
         .priceUnreadable: .details, .priceOutOfRange: .details

@@ -73,14 +73,15 @@ here: `CreateIntentPolicy` (Events) alone substitutes sign-in, so this policy on
   `TournamentStep.allCases` with `group` present iff `offersGroupChoice`.
 - Issue partitions (exhaustive switches — a new issue case fails compilation until placed). Event: `name` owns
   `titleMissing`, `titleTooLong`; `when` owns `startsAtTooSoon` and `endsBeforeStart` (the optional finish time,
-  2026-11-11); `place` owns `placeMissing`, `locationNameTooLong`;
+  2026-11-11); `place` owns `placeMissing`, `placeNotChosen` (round 5, 2026-11-12), `locationNameTooLong`;
   `players` owns `capacityOutOfRange`, `capacityBelowParticipants`; `details` owns `descriptionTooLong`,
   `lookingForTooLong`, `priceUnreadable`, `priceOutOfRange`; `type` and `group` own none. Group: `name` owns
   `nameTooShort`, `nameTooLong`; `description` owns `descriptionTooLong`; `place` owns `locationNameMissing`,
-  `locationNameTooLong`, `coordinateMissing` (conditional on the visibility choice exactly as `GroupDraft.issues`
-  computes them); `type`, `visibility` and `permissions` own none. Tournament: `name` owns `nameTooShort`,
+  `locationNameTooLong`, `coordinateMissing`, `placeNotChosen` (round 5, 2026-11-12; conditional on the visibility
+  choice exactly as `GroupDraft.issues` computes them); `type`, `visibility` and `permissions` own none. Tournament: `name` owns `nameTooShort`,
   `nameTooLong`; `schedule` owns `startsAtTooSoon`, `registrationClosesAfterStart`; `place` owns
-  `locationNameMissing`, `locationNameTooLong`, `coordinateMissing`; `entries` owns `teamSizeOutOfRange`,
+  `locationNameMissing`, `locationNameTooLong`, `coordinateMissing`, `placeNotChosen` (round 5, 2026-11-12);
+  `entries` owns `teamSizeOutOfRange`,
   `maxEntriesOutOfRange`, `maxEntriesBelowEntries`; `details` owns `descriptionTooLong`; `type`, `format`, `group`
   and `whoMayJoin` own none — the choice pages have nothing to refuse.
 - `allowsNext(from:issues:)` (per kind) is true exactly when the step owns none of `issues`. Each partition is

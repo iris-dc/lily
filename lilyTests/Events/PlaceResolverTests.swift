@@ -77,6 +77,19 @@ struct PlaceResolverTests {
         #expect(capped.trimmedLocationName == AppBranding.Events.Create.coordinateText(spot))
     }
 
+    /// The reverse name is capped to what the detail line leaves of the cap, so the composed name never passes it.
+    @Test func theReverseNameLeavesRoomForTheDetailLine() async throws {
+        var spotOnly = draft(name: "", coordinate: spot)
+        spotOnly.locationDetail = "apt 4"
+        geocoder.nameResult = String(repeating: "x", count: AppConfig.Events.Creation.locationNameMaxLength - 3)
+
+        let resolved = try await resolver.resolve(spotOnly)
+
+        #expect(resolved.trimmedLocationName == AppBranding.Events.Create.coordinateText(spot),
+                "a name that fits the cap but not the detail's budget falls back to the coordinates")
+        #expect(resolved.composedLocationName.wireLength <= AppConfig.Events.Creation.locationNameMaxLength)
+    }
+
     /// Every lookup favours the draft's own spot, else the position the caller passes, so a venue name resolves nearby.
     @Test func theLookupIsBiasedToTheDraftsSpotElseThePosition() async throws {
         let position = Coordinate(latitude: 54.352, longitude: 18.6466)

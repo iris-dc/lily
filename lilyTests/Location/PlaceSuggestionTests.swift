@@ -23,6 +23,15 @@ struct PlaceSuggestionTests {
         #expect(geocoded != nil && suggestions.first?.coordinate == geocoded)
     }
 
+    /// The geocoder's rows favour what is close: nearest the bias first, the given order without one.
+    @Test func nearestFirstOrdersByDistanceToTheBias() {
+        let gdansk = Coordinate(latitude: 54.35, longitude: 18.65)
+        let near = PlaceSuggestion(title: "Gdansk", subtitle: nil, coordinate: .init(latitude: 54.35, longitude: 18.65))
+        let far = PlaceSuggestion(title: "Jeddah", subtitle: nil, coordinate: .init(latitude: 21.49, longitude: 39.18))
+        #expect([far, near].nearestFirst(to: gdansk) == [near, far])
+        #expect([far, near].nearestFirst(to: nil) == [far, near])
+    }
+
     /// A query no demo city starts is offered as a place of its own; a blank one asks for nothing.
     @Test func theMockOffersTheQueryItselfAndNothingForBlank() async {
         #expect(await mock.suggestions(for: "Dave's backyard", near: nil).map(\.title) == ["Dave's backyard"])

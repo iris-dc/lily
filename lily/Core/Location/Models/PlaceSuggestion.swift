@@ -11,3 +11,12 @@ nonisolated struct PlaceSuggestion: Identifiable, Equatable, Sendable {
     /// rows need distinct ids.
     var id: String { "\(title)|\(subtitle ?? "")|\(coordinate.latitude),\(coordinate.longitude)" }
 }
+
+nonisolated extension [PlaceSuggestion] {
+    /// The same places nearest the spot first (the sort is stable, so ties keep the geocoder's order); without a
+    /// spot the order given stands.
+    func nearestFirst(to bias: Coordinate?) -> [PlaceSuggestion] {
+        guard let bias else { return self }
+        return sorted { $0.coordinate.distance(to: bias) < $1.coordinate.distance(to: bias) }
+    }
+}

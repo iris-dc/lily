@@ -30,7 +30,7 @@ nonisolated struct CreateTournamentPayload: Encodable, Equatable, Sendable {
         allowsDraws = draft.resolvedAllowsDraws
         startsAt = draft.startsAt
         registrationClosesAt = draft.registrationClosesAt
-        location = CreateEventPayload.Location(name: draft.trimmedLocationName, coordinate: coordinate)
+        location = CreateEventPayload.Location(name: draft.composedLocationName, coordinate: coordinate)
         groupId = draft.group?.id
         visibility = draft.group == nil ? draft.visibility : nil
     }
@@ -54,7 +54,7 @@ nonisolated struct UpdateTournamentPayload: Encodable, Equatable, Sendable {
         description = draft.trimmedDescription
         startsAt = draft.startsAt
         registrationClosesAt = draft.registrationClosesAt
-        location = CreateEventPayload.Location(name: draft.trimmedLocationName, coordinate: coordinate)
+        location = CreateEventPayload.Location(name: draft.composedLocationName, coordinate: coordinate)
         allowsDraws = draft.resolvedAllowsDraws
         maxEntries = draft.maxEntries
     }

@@ -16,7 +16,7 @@ nonisolated extension CreationSteps {
             .name
         case .startsAtTooSoon, .registrationClosesAfterStart:
             .schedule
-        case .locationNameMissing, .locationNameTooLong, .coordinateMissing:
+        case .locationNameMissing, .locationNameTooLong, .coordinateMissing, .placeNotChosen:
             .place
         case .teamSizeOutOfRange, .maxEntriesOutOfRange, .maxEntriesBelowEntries:
             .entries

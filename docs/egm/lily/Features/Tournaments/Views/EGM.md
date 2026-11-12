@@ -96,8 +96,9 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `DraftSubmitButton` (`tournamentTeamSubmit`).
 - `[lily/Features/Tournaments/Views/TournamentDraftForm.swift:TournamentDraftForm]`: `struct
   TournamentDraftForm<Model: TournamentDraftEditing>` with `@Bindable viewModel`; sections tournament (name
-  `tournamentName`), where (`PlaceFields`, `tournamentLocationName`,
-  `createPickOnMap`), when (start, deadline `tournamentDeadline`, registration close), entries (`tournamentTeamSize`,
+  `tournamentName`), where (`PlaceFields` with the optional detail line `tournamentLocationDetail` and
+  `draft.placeChosen`, round 5 2026-11-12; `tournamentLocationName`,
+  `createPickOnMap`; the footer adds `placeNotChosen`), when (start, deadline `tournamentDeadline`, registration close), entries (`tournamentTeamSize`,
   `tournamentMaxEntries`, draws `tournamentDraws`), who (the hosting group read-only through the shared
   `HostingGroupRow`, `createGroup`, shown only when `showsGroupRow`), details;
   the where, when, who and details sections are in

@@ -69,3 +69,8 @@ A tournament (slice L1 of the tournaments plan, 2026-10-04; debug builds, behind
 - **The "+" menu returned, the kind page went (2026-11-11, the third design round).** New tournament on the menu
   opens the wizard seeded with the kind, so the flow starts on its Name step. The round's full record is in
   `events.md` and `design-and-ui.md`.
+- **A tournament's place must be chosen (2026-11-12, round-5 item 14).** `TournamentDraft` raises `placeNotChosen`
+  for a typed name that is neither a tapped suggestion nor backed by a set spot (while unchosen it stands in for
+  `coordinateMissing`); the optional detail line (`tournament-location-detail`) joins the stored name on the wire.
+  `walkTournamentWizard` now types the place and taps its first suggestion. The full record is in `events.md`
+  (2026-11-12).
