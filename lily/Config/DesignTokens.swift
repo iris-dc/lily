@@ -66,19 +66,21 @@ nonisolated enum DesignTokens {
         /// The floating "+" grows a tenth over the extra-large control (the owner asked for a slightly larger mark,
         /// fourth design round 2026-11-11): the 52 pt glass circle draws and hit-tests at about 57 pt.
         static let floatingButtonScale: CGFloat = 1.1
-        /// The "+"'s layout distance from the trailing edge: `Spacing.lg` plus the owner's 11 pt leftward nudge,
+        /// The "+"'s layout distance from the trailing edge: `Spacing.lg` plus the owner's 23 pt leftward nudge,
         /// plus the ~3 pt the scale grows the control beyond its layout box on each side.
-        static let floatingButtonTrailingPadding: CGFloat = 30
-        /// The "+"'s layout distance from the bottom safe area: `Spacing.lg` minus the owner's 11 pt downward nudge,
-        /// plus the scale's ~3 pt growth, so the visible gap under the circle reads about 5 pt.
-        static let floatingButtonBottomPadding: CGFloat = 8
+        static let floatingButtonTrailingPadding: CGFloat = 42
+        /// The "+"'s layout distance from the bottom safe area: the owner's downward nudges used up all of
+        /// `Spacing.lg`, so the scaled circle's visible edge now grazes the safe-area line (the scale's ~3 pt growth
+        /// dips just below it, still clear of the floating tab bar).
+        static let floatingButtonBottomPadding: CGFloat = 0
         /// Room the floating create button's glass circle takes at the bottom-trailing corner: the scaled ~57 pt
-        /// circle's visible edge sits about 91 pt in from the trailing edge. The map's selected card ends here,
-        /// clear of the circle.
-        static let floatingButtonFootprint: CGFloat = 91
-        /// Bottom clearance of the event list: the scaled "+" control (about 70 pt) plus its visible bottom gap,
-        /// so the last card scrolls clear of it. Not `floatingButtonFootprint`, which stops at the circle's edge.
-        static let floatingButtonClearance: CGFloat = 76
+        /// circle's visible edge sits about 103 pt in from the trailing edge (trailing padding plus the 32 pt
+        /// control-box half plus the ~29 pt scaled radius). The map's selected card ends here, clear of the circle.
+        static let floatingButtonFootprint: CGFloat = 103
+        /// Bottom clearance of the event list: the scaled "+" control (about 70 pt) plus its visible bottom gap
+        /// (~-3 pt now that the bottom padding is gone), so the last card scrolls clear of it. Not
+        /// `floatingButtonFootprint`, which stops at the circle's edge.
+        static let floatingButtonClearance: CGFloat = 68
         /// Crosshair pin drawn over the centre of the location picker's map.
         static let locationPickerPinSize: CGFloat = 44
         /// How far a growing text field (the create form's description) stretches before it scrolls inside.

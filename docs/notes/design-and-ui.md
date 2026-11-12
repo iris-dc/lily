@@ -319,7 +319,8 @@ the asset catalog.
 - **The sixth round's phone corrections (2026-11-12).** The floating "+" steps further down-left:
   `floatingButtonTrailingPadding` 24 → 30 and `floatingButtonBottomPadding` 14 → 8 (visible gaps now about 27 pt
   trailing and 5 pt bottom), with `floatingButtonFootprint` 91 and `floatingButtonClearance` 76 recomputed the
-  round-4 way; evidence `groups-plan/creation-wizard-shots/round6/plus-button.png`. The ask to pull the Chats tab's
+  round-4 way; evidence `groups-plan/creation-wizard-shots/round6/plus-button.png` (the 6 pt step superseded the same
+  day: the owner could not see it on the phone, see the bullet below). The ask to pull the Chats tab's
   unread badge toward its glyph found no supported seam: SwiftUI's `.badge` has no position, and the iOS 26 floating
   bar ignores `UITabBarAppearance.badgePositionAdjustment` on `standardAppearance` and `scrollEdgeAppearance` alike —
   probed at −20 pt with zero movement (`round6/badge.png` against `badge-probe-20.png` and `badge-probe2-20.png`) —
@@ -331,3 +332,14 @@ the asset catalog.
   to the focused field like every other step, `PlaceDetailField` loses `revealMark`, and the map row is scrolled
   clear of the transparent capsule by hand in the room `wizardBarClearance` keeps; `round6/place-top.png` shows the
   typed name and its suggestions still at the top with the keyboard up.
+
+- **The sixth round's nudge made clearly visible (2026-11-12, the same day).** The owner could not see the 6 pt
+  step on the phone — measured on the capture rig, round 4 → round 6 moved the "+" capsule's center exactly
+  (−18, +18) px at 3x — so the "+" takes a full stride down-left instead: `floatingButtonTrailingPadding` 30 → 42
+  and `floatingButtonBottomPadding` 8 → 0 (the owner's nudges used up all of `Spacing.lg`; the scaled circle's visible
+  edge now grazes the bottom safe-area line, dipping ~3 pt below it, still a measured ~19 pt clear of the floating
+  tab bar's glass capsule and ~19 pt left of the map's selected card), with `floatingButtonFootprint` 103 and
+  `floatingButtonClearance` 68 recomputed the round-4 way. The capsule's center moved a further (−36, +24) px at
+  3x — 12 pt left, 8 pt down; 18 pt left and 14 pt down from round 4 in total. Evidence
+  `groups-plan/creation-wizard-shots/round6/plus-button-v2.png` (the Explore list) and `round6/plus-map-v2.png`
+  (map mode with a selected pin's card: no collision with the bar and the card's gap kept).
