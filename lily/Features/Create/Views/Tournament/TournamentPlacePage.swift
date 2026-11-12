@@ -18,7 +18,13 @@ struct TournamentPlacePage<Model: TournamentDraftEditing>: View {
     private static var step: CreationStep { .tournament(.place) }
 
     var body: some View {
-        WizardStepScaffold(wizard: wizard, step: Self.step, scrollTarget: scrollTarget, onCancel: onCancel) {
+        // Only the focused field is a scroll target, like every field page: suggestions must not pull the page down —
+        // the typed name and its card stay at the top, and the map row scrolls clear of the bottom bar by hand
+        // (the step content's `wizardBarClearance` keeps the room).
+        WizardStepScaffold(wizard: wizard,
+                           step: Self.step,
+                           scrollTarget: focusedField.map { AnyHashable($0) },
+                           onCancel: onCancel) {
             nameField
             if !suggestions.isEmpty { suggestionCard }
             detailField
@@ -28,13 +34,6 @@ struct TournamentPlacePage<Model: TournamentDraftEditing>: View {
         // Focus drops the moment the stack moves (a write from a view already leaving the hierarchy is ignored),
         // so a pop-return never re-presents the keyboard over the bottom bar.
         .onChange(of: wizard.path) { focusedField = nil }
-    }
-
-    /// While places are offered the reveal centers the detail line — the middle of the place cluster — so the typed
-    /// field stays visible above it and the map row and hint sit clear of the bottom bar's capsule below it, instead
-    /// of compositing under the Next label with the keyboard up; otherwise the focused field, like every field page.
-    private var scrollTarget: AnyHashable? {
-        suggestions.isEmpty ? focusedField.map { AnyHashable($0) } : AnyHashable(PlaceDetailField.revealMark)
     }
 
     private var nameField: some View {

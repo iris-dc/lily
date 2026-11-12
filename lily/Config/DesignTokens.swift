@@ -66,19 +66,19 @@ nonisolated enum DesignTokens {
         /// The floating "+" grows a tenth over the extra-large control (the owner asked for a slightly larger mark,
         /// fourth design round 2026-11-11): the 52 pt glass circle draws and hit-tests at about 57 pt.
         static let floatingButtonScale: CGFloat = 1.1
-        /// The "+"'s layout distance from the trailing edge: `Spacing.lg` plus the same round's 5 pt leftward nudge,
+        /// The "+"'s layout distance from the trailing edge: `Spacing.lg` plus the owner's 11 pt leftward nudge,
         /// plus the ~3 pt the scale grows the control beyond its layout box on each side.
-        static let floatingButtonTrailingPadding: CGFloat = 24
-        /// The "+"'s layout distance from the bottom safe area: `Spacing.lg` minus the 5 pt downward nudge, plus the
-        /// scale's ~3 pt growth, so the visible gap under the circle reads about 11 pt.
-        static let floatingButtonBottomPadding: CGFloat = 14
+        static let floatingButtonTrailingPadding: CGFloat = 30
+        /// The "+"'s layout distance from the bottom safe area: `Spacing.lg` minus the owner's 11 pt downward nudge,
+        /// plus the scale's ~3 pt growth, so the visible gap under the circle reads about 5 pt.
+        static let floatingButtonBottomPadding: CGFloat = 8
         /// Room the floating create button's glass circle takes at the bottom-trailing corner: the scaled ~57 pt
-        /// circle's visible edge sits about 85 pt in from the trailing edge. The map's selected card ends here,
+        /// circle's visible edge sits about 91 pt in from the trailing edge. The map's selected card ends here,
         /// clear of the circle.
-        static let floatingButtonFootprint: CGFloat = 85
+        static let floatingButtonFootprint: CGFloat = 91
         /// Bottom clearance of the event list: the scaled "+" control (about 70 pt) plus its visible bottom gap,
         /// so the last card scrolls clear of it. Not `floatingButtonFootprint`, which stops at the circle's edge.
-        static let floatingButtonClearance: CGFloat = 82
+        static let floatingButtonClearance: CGFloat = 76
         /// Crosshair pin drawn over the centre of the location picker's map.
         static let locationPickerPinSize: CGFloat = 44
         /// How far a growing text field (the create form's description) stretches before it scrolls inside.

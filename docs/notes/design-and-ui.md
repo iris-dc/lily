@@ -313,5 +313,21 @@ the asset catalog.
   content pads its bottom by `DesignTokens.Layout.wizardBarClearance` (76, the capsule plus the bar's padding), and
   the place pages' `scrollTarget` becomes the detail line (`PlaceDetailField.revealMark`) while suggestions are
   shown, so the scaffold centers the cluster's middle — the typed field stays visible above, the map row and hint
-  sit clear below. Centering the map row itself was tried and scrolled the typed field off screen. Evidence: the
+  sit clear below (the reveal removed 2026-11-12, sixth round: the owner read the scroll as a jump to the bottom;
+  the clearance stays). Centering the map row itself was tried and scrolled the typed field off screen. Evidence: the
   re-shot `place-typed-unchosen` / `place-suggestions` stills in `groups-plan/creation-wizard-shots/round5/`.
+- **The sixth round's phone corrections (2026-11-12).** The floating "+" steps further down-left:
+  `floatingButtonTrailingPadding` 24 → 30 and `floatingButtonBottomPadding` 14 → 8 (visible gaps now about 27 pt
+  trailing and 5 pt bottom), with `floatingButtonFootprint` 91 and `floatingButtonClearance` 76 recomputed the
+  round-4 way; evidence `groups-plan/creation-wizard-shots/round6/plus-button.png`. The ask to pull the Chats tab's
+  unread badge toward its glyph found no supported seam: SwiftUI's `.badge` has no position, and the iOS 26 floating
+  bar ignores `UITabBarAppearance.badgePositionAdjustment` on `standardAppearance` and `scrollEdgeAppearance` alike —
+  probed at −20 pt with zero movement (`round6/badge.png` against `badge-probe-20.png` and `badge-probe2-20.png`) —
+  so the badge stays where the system draws it, already touching the glyph's top-right corner; a hand-rolled badge
+  in the `Tab` label is no route either, since the bar honours only the label's title and `UIImage` (the
+  symbol-weight lesson above). And the place pages stay at the top while
+  suggestions show: the round-5 reveal of the detail line scrolled the whole cluster the moment suggestions
+  appeared, which the owner read as the view jumping to the bottom, so the reveal is gone — the pages scroll only
+  to the focused field like every other step, `PlaceDetailField` loses `revealMark`, and the map row is scrolled
+  clear of the transparent capsule by hand in the room `wizardBarClearance` keeps; `round6/place-top.png` shows the
+  typed name and its suggestions still at the top with the keyboard up.

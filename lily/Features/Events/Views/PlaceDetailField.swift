@@ -7,16 +7,10 @@ struct PlaceDetailField: View {
     @Binding var detail: String
     let identifier: String
 
-    /// The scroll mark the wizard's place pages reveal while suggestions are shown: centering the detail line — the
-    /// middle of the place cluster — keeps the typed field visible above it and the map row and hint clear of the
-    /// bottom bar's capsule below it. Inert in the edit forms, which scroll as plain forms.
-    static let revealMark = "place-detail-field"
-
     var body: some View {
         TextField(AppBranding.Events.Create.locationDetailPlaceholder, text: $detail)
             .textInputAutocapitalization(.sentences)
             .accessibilityIdentifier(identifier)
-            .id(Self.revealMark)
     }
 }
 

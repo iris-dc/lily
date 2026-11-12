@@ -103,9 +103,9 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   detail line under the address (apartment, floor, entrance; placeholder
   `AppBranding.Events.Create.locationDetailPlaceholder`), the bare field — callers add `OptionalMarker` in their own
   layout. Its text joins the stored name through `PlacePickingDraft.composedLocationName` and is never judged as the
-  place itself. Carries `.id(PlaceDetailField.revealMark)`, the scroll mark the wizard's place pages reveal while
-  suggestions are shown — centering the cluster's middle keeps the typed field visible and the map row clear of the
-  wizard's bottom-bar capsule; inert in the edit forms (round-5 fix pass, 2026-11-12). `PlaceFields` gains `detail: Detail?` (binding plus identifier; `nil` keeps a form without the line,
+  place itself. The round-5 scroll mark (`revealMark`, 2026-11-12) was removed the same day, sixth round: the
+  wizard's place pages no longer scroll when suggestions appear, so the field carries no `.id` of its own.
+  `PlaceFields` gains `detail: Detail?` (binding plus identifier; `nil` keeps a form without the line,
   the match schedule) and `placeChosen: Bool = true`, passed through to `PlaceDetailField` and `PlacePickerRow`;
   `PlacePickerRow(coordinate:placeChosen: = true)` carries the round-5 label rule — `orPickOnMap` ("Or set the spot
   on the map") with "Not set" until `placeChosen`, `pickOnMap` with "Spot set" after — so a proposed spot never

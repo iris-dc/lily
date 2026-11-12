@@ -109,10 +109,10 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
   `\.motion` allows movement; the bottom bar is transparent — the primary capsule sits directly over the content
   and the aurora (the owner's third design round, 2026-11-11, superseding the 2026-11-10 opaque-bar pin, which the
   owner read as a dark grey slab); the step content's `wizardBarClearance` bottom padding keeps the last rows able
-  to scroll clear of the capsule with the keyboard up, and the place pages' `scrollTarget` becomes the detail line
-  (`PlaceDetailField.revealMark`) while suggestions are shown, so the typed field stays visible above the centred
-  detail line and the map row and hint sit clear of the capsule below it, instead of compositing under the Next
-  label (2026-11-12).
+  to scroll clear of the capsule with the keyboard up. The place pages pass the focused field like every other
+  page: the round-5 reveal of the detail line while suggestions showed (2026-11-12) was removed the same day (the
+  sixth round — the owner read the scroll as a jump to the bottom), so the typed name and its suggestion card stay
+  at the top and the map row scrolls clear of the capsule by hand in the clearance's room.
 - One live aurora per flow (the 2026-11-11 performance pass, after the owner's lag report): the shell's
   `ContentScreen` is the only aurora in the wizard, a step page draws no background of its own, and a push
   composites one live aurora instead of two full aurora-and-grain layers — the pushed map picker included

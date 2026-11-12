@@ -23,7 +23,9 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
 
 - `[MainTabView.swift:MainTabView]`: `dependencies: AppDependencies`, `showsContent: Bool`; reads `\.layoutMode`.
   `TabView(selection: $navigation.selectedTab)` of `Tab(value: .home)` (`HomeTab`), `.explore` (`ExploreTab`) and `.chat`
-  (`ChatTab`, with `.badge(unreadChats)`); every tab's tree carries `.id(language)` where
+  (`ChatTab`, with `.badge(unreadChats)`; the badge sits where the system draws it — the iOS 26 bar ignored
+  `UITabBarAppearance.badgePositionAdjustment` in a 2026-11-12 probe, see `docs/notes/design-and-ui.md`); every tab's
+  tree carries `.id(language)` where
   `language = dependencies.language.language`. The profile sheet mounts on the `TabView` (2026-11-07):
   `.sheet(isPresented: $navigation.isProfilePresented) { ProfileView(dependencies:language:) }` — above each tab's
   `.id(language)` (a language pick rebuilds the tabs while the sheet re-renders in place) and inside the root's
