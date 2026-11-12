@@ -4,14 +4,17 @@ Source: `lily/Features/Shell/Services/`
 
 ## Overview
 
-Two app-lifetime services behind the shell. `ShellLists` owns the Home and Explore list view models so a tab never opens
+Two app-lifetime services and one renderer behind the shell. `ShellLists` owns the Home and Explore list view models so a tab never opens
 empty (each starts from its disk snapshot) and clears them when the session ends. `ShellSync` runs the per-user work
 once per scene phase and user in a load-bearing order: the session check against the pool, the account, the realtime
 connection, the caller's groups, the inbox, the block list, then the push offer and registration, with Explore's loads
 alongside. Both classes are main-actor isolated by the app target's default and depend on collaborators injected by
-`AppDependencies`.
+`AppDependencies`. `TabBadgeRenderer` (2026-11-12) draws the Chats tab's unread count into its glyph image for
+`MainTabView` — the iOS 26 floating bar honours only a label's title and `UIImage` and never moves its own badge —
+caching one composite per count and colour.
 
-Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Services/ShellSync.swift`.
+Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Services/ShellSync.swift`,
+`lily/Features/Shell/Services/TabBadgeRenderer.swift`.
 
 ## Interface
 
@@ -30,6 +33,11 @@ Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Ser
   lists: ShellLists)`.
 - `[ShellSync.swift:ShellSync.restore]`: `func restore() async` awaits `session.restore()` then `push.openPendingTap()`.
 - `[ShellSync.swift:ShellSync.run]`: `func run(active: Bool, user: AuthUser?) async`, the per-phase sync chain.
+- `[TabBadgeRenderer.swift:TabBadgeRenderer]`: `final class`. `static func label(for count: Int) -> String` — the
+  count, or "99+" above `DesignTokens.TabBar.badgeCountCap`. `func icon(symbol: String, count: Int, glyphColor:
+  UIColor, badgeColor: UIColor) -> UIImage?` — the symbol's glyph (built at `DesignTokens.TabBar.badgeGlyphPointSize`
+  and `symbolWeight`, tinted `glyphColor`) with the count's capsule over its top-right corner
+  (`DesignTokens.TabBar.badgeCenterOffset`), or `nil` at a count of zero or less.
 
 ## Invariants
 
@@ -54,6 +62,11 @@ Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Ser
   after `session.restore()`, so a signed-out visitor on the landing loads nothing and asks for no position.
 - `[ShellSync.swift:ShellSync.run]`: every run first joins `session.restore()`, so nothing loads for a user the pool
   has not confirmed.
+- `[TabBadgeRenderer.swift:TabBadgeRenderer.icon]`: `nil` for `count <= 0` (the caller keeps the plain template
+  label); the capsule is `badgeHeight` tall and never narrower than it is tall, so a single digit reads as a circle;
+  the canvas grows by one symmetric inset around the glyph, so the bar, centring the image, keeps the glyph where
+  the template one sits; the composite is `.alwaysOriginal` (a template would tint the badge with the glyph); one
+  image per `(symbol, text, colours)` is rendered, then answered from the cache, which the count cap bounds.
 
 ## Side Effects
 
@@ -66,9 +79,12 @@ Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Ser
 - `[ShellLists.swift:ShellLists.loadExploreIfStale]`: `loadIfStaleNearTheUser()` on the three Explore view models (each
   asks for the position and may hit the backend when its content is stale).
 - `[ShellLists.swift:ShellLists.sessionDidEnd]`: mutates the five view models (`clear()`); any snapshot writes are theirs.
-- No logging is done in these two files.
+- `[TabBadgeRenderer.swift:TabBadgeRenderer.composite]`: UIKit drawing only (`UIGraphicsImageRenderer`,
+  `UIImage(systemName:)`); no network, disk or `UserDefaults` access.
+- No logging is done in these files.
 
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (from the repository root; the matching suites are `lilyTests/Shell/ShellListsTests.swift`,
-  `lilyTests/Shell/ShellSyncTests.swift` and `lilyTests/Shell/ShellSyncExploreTests.swift`).
+  `lilyTests/Shell/ShellSyncTests.swift`, `lilyTests/Shell/ShellSyncExploreTests.swift` and
+  `lilyTests/Shell/TabBadgeRendererTests.swift`).

@@ -196,7 +196,10 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `revealDuration 3.5`, `driftPeriods [19, 23, 29, 37]`, `driftWeights [0.5, 0.3, 0.2]`, `grainSeed 0x4C69_6C79`),
   `Typography` (`headlineSize 44`, `headlineTracking -1.8`, `titleTracking -0.5`), `Symbols` (SF Symbol names:
   `home = "house"`, `explore = "binoculars"`, `game = "calendar"`, `profile = "person"`, `groups = "person.3"`,
-  `tournament = "trophy"`, ...), `MessageArrival` (`+Groups.swift`), `TabBar.symbolWeight: UIImage.SymbolWeight = .light`
+  `tournament = "trophy"`, ...), `MessageArrival` (`+Groups.swift`), `TabBar.symbolWeight: UIImage.SymbolWeight = .light` plus the drawn
+  Chats-badge metrics (2026-11-12: `badgeCenterOffset` (−1, +9) from the glyph's top-right corner,
+  `badgeGlyphPointSize` 23, `badgeHeight` 20, `badgeFontSize` 13, `badgeHorizontalPadding` 5, `badgeCountCap` 99,
+  `badgeTextColor` white, `unselectedGlyphColor` white),
   and `Layout.profileCornerSize` 36 (the corner profile button's circle, 2026-11-07) with
   `Layout.profileCornerCapsuleInset` 10 (the hidden capsule's content inset the circle backs out of, owner
   correction 2026-11-08), all in `lily/Config/DesignTokens+Shell.swift`.
@@ -325,7 +328,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - `DesignTokens` aliases keep one source: `Layout.tournamentTileWidth = groupTileWidth`, `Symbols.currency = Symbols.price`. `Symbols.fileGlyphs` is ordered,
   first match wins, `Symbols.file` for the rest. `Aurora.driftPeriods` are pairwise incommensurate, `driftWeights` sum
   to one, `grainSeed` is deterministic so every launch and test sees the same grain (`lily/Config/DesignTokens.swift:DesignTokens.Aurora`).
-  `TabBar.symbolWeight` exists because the iOS 26 tab bar ignores `symbolVariants` and `fontWeight`.
+  `TabBar.symbolWeight` exists because the iOS 26 tab bar ignores `symbolVariants` and `fontWeight`; the `TabBar` badge constants (2026-11-12) exist because the bar also never moves its own badge (`badgePositionAdjustment` probed at zero effect), so the Chats count is drawn into the glyph image (`TabBadgeRenderer`), and a drawn bitmap must name its own symbol size and colours (`badgeGlyphPointSize`, `unselectedGlyphColor`) since the bar neither resizes nor tints it.
 - A UI test that reads an `AccessibilityIdentifiers` literal mirrors it by hand in `lilyUITests` (as it does the launch arguments): a rename
   here must be repeated there (`lily/Config/AccessibilityIdentifiers.swift:AccessibilityIdentifiers`). Only `introPager`
   is mirrored from +Landing; the report sheet's reason rows and the feedback kind picker carry no identifiers and are
@@ -340,7 +343,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - Every `AppBranding` member performs a catalog lookup at access time: `localized(_:)` reads the process-global
   `AppLocale.current` and calls `String(localized:bundle:locale:)` (`lily/Core/Localization/Localized.swift:localized`).
   No file in the directory touches `Locale`, `UserDefaults`, `FileManager`, `ProcessInfo`, `CommandLine`, `Date()` or a formatter.
-- `DesignTokens` and `AccessibilityIdentifiers`: none; `TabBar.symbolWeight` is an enum case, not a built `UIImage`.
+- `DesignTokens` and `AccessibilityIdentifiers`: none; `TabBar.symbolWeight` and the badge constants are plain values, not built `UIImage`s (building is `TabBadgeRenderer`'s).
   `#if DEBUG`, `#if DEBUG && targetEnvironment(simulator)`, `#if DEBUG || STAGING` and `Build`'s
   `#if DEBUG` / `#elseif STAGING` / `#else` select values at build time only.
 

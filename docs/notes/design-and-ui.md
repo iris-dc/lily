@@ -324,7 +324,7 @@ the asset catalog.
   unread badge toward its glyph found no supported seam: SwiftUI's `.badge` has no position, and the iOS 26 floating
   bar ignores `UITabBarAppearance.badgePositionAdjustment` on `standardAppearance` and `scrollEdgeAppearance` alike —
   probed at −20 pt with zero movement (`round6/badge.png` against `badge-probe-20.png` and `badge-probe2-20.png`) —
-  so the badge stays where the system draws it, already touching the glyph's top-right corner; a hand-rolled badge
+  so the badge stays where the system draws it, already touching the glyph's top-right corner (superseded 2026-11-12, the same day: the owner reaffirmed the ask, so the count is now drawn into the glyph image itself, see the badge bullet below); a hand-rolled badge
   in the `Tab` label is no route either, since the bar honours only the label's title and `UIImage` (the
   symbol-weight lesson above). And the place pages stay at the top while
   suggestions show: the round-5 reveal of the detail line scrolled the whole cluster the moment suggestions
@@ -338,8 +338,30 @@ the asset catalog.
   (−18, +18) px at 3x — so the "+" takes a full stride down-left instead: `floatingButtonTrailingPadding` 30 → 42
   and `floatingButtonBottomPadding` 8 → 0 (the owner's nudges used up all of `Spacing.lg`; the scaled circle's visible
   edge now grazes the bottom safe-area line, dipping ~3 pt below it, still a measured ~19 pt clear of the floating
-  tab bar's glass capsule and ~19 pt left of the map's selected card), with `floatingButtonFootprint` 103 and
+  tab bar's glass capsule and ~19 pt left of the map's selected card; the dip removed 2026-11-12, the same
+  day — on a home-button phone it grazed the bar's capsule, so the bottom padding became the dip, see the
+  badge-and-clamp bullet below), with `floatingButtonFootprint` 103 and
   `floatingButtonClearance` 68 recomputed the round-4 way. The capsule's center moved a further (−36, +24) px at
   3x — 12 pt left, 8 pt down; 18 pt left and 14 pt down from round 4 in total. Evidence
   `groups-plan/creation-wizard-shots/round6/plus-button-v2.png` (the Explore list) and `round6/plus-map-v2.png`
   (map mode with a selected pin's card: no collision with the bar and the card's gap kept).
+- **The Chats badge becomes ours, and the "+" clears the bar on the smallest phone (2026-11-12, after the sixth
+  round).** The owner reaffirmed the badge ask over the recorded negative finding: the system badge is indeed
+  immovable on the iOS 26 floating bar, so the count is now drawn into the Chats tab's `UIImage` itself
+  (`TabBadgeRenderer` in `Features/Shell/Services`, metrics in `DesignTokens.TabBar`) — a `LilyAccent` capsule,
+  20 pt tall like the system's measured 19.7 pt, the count in white 13 pt SF Rounded, capped at "99+", its centre
+  `badgeCenterOffset` (−1, +9) from the glyph's top-right corner where the system drew it at about (+13, +3). On
+  the capture rig the capsule's centre moved (−35.5, +13.5) px at 3x — 11.8 pt left, 4.5 pt down — and now plainly
+  intersects the bubble (`round6/badge-v2.png` against `round6/badge.png`). The composite draws `.alwaysOriginal`
+  (the bar neither tints nor resizes a bitmap), so the glyph is built at the bar's own symbol size
+  (`badgeGlyphPointSize` 23, matched against the template neighbours: ink 64 px tall at 3x with the same left
+  edge) and its colour follows the selection in `MainTabView`; at zero the plain template label returns. The
+  `.badge` modifier is gone; the tab's accessibility value (`AppBranding.Chats.unreadChats`) stays the VoiceOver
+  and test seam (`LilyChatTests.expectBadge`). And the floating "+" is now guaranteed clear of the bar on every
+  phone: its anchor was always the bottom safe area (never a bar height), but on a home-button phone (iPhone SE
+  3rd generation, the smallest iOS 26 iPhone) the bar capsule's top sits essentially on the safe-area line and the
+  scaled circle's ~3 pt dip grazed it, so `floatingButtonBottomPadding` becomes the dip itself (0 → 3, with
+  `floatingButtonClearance` 68 → 71 recomputed): the visible edge sits on the safe-area line, the capsule stays
+  below that line on every device, and the big phones lift the same 3 pt and change nothing else. Evidence:
+  `round6/plus-small-phone.png` (the SE's Explore, a clear seam between the circle and the bar) and the "+" in
+  `round6/badge-v2.png` (the 17 Pro after the lift).

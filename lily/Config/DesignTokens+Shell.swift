@@ -7,6 +7,25 @@ nonisolated extension DesignTokens {
     /// labels from one at this weight.
     enum TabBar {
         static let symbolWeight: UIImage.SymbolWeight = .light
+        /// The Chats tab's unread count, drawn into the glyph image (`TabBadgeRenderer`): the bar never moves its own
+        /// badge (`badgePositionAdjustment` probed at zero effect), so the count sits where the owner wants it — its
+        /// centre this far from the glyph's top-right corner (x into the glyph, y below its top; the system badge sat
+        /// at about (+13, +3) on the same glyph), clearly further left and down.
+        static let badgeCenterOffset = CGPoint(x: -1, y: 9)
+        /// The composite draws its own glyph (the bar re-renders template symbols at its own size but draws a bitmap
+        /// as-is), so the symbol is built at the size the bar gives the template neighbours, measured against them.
+        static let badgeGlyphPointSize: CGFloat = 23
+        /// The capsule matches the system badge (~19.7 pt measured on the iOS 26 bar), the count in white SF Rounded;
+        /// a single digit reads as a circle (the capsule is never narrower than it is tall).
+        static let badgeHeight: CGFloat = 20
+        static let badgeFontSize: CGFloat = 13
+        static let badgeHorizontalPadding: CGFloat = 5
+        /// Counts above this read "99+", like the system badge.
+        static let badgeCountCap = 99
+        static let badgeTextColor: UIColor = .white
+        /// The composite draws as `.alwaysOriginal` (a template would tint the badge with the glyph), so the glyph's
+        /// colour is drawn in: this unselected, matching the bar's own template tint, the accent while selected.
+        static let unselectedGlyphColor: UIColor = .white
     }
 }
 

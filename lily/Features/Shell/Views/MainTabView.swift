@@ -14,6 +14,8 @@ struct MainTabView: View {
     let dependencies: AppDependencies
     let showsContent: Bool
     @Environment(\.layoutMode) private var layoutMode
+    /// Kept across body runs, so each count's composite is rendered once, never per frame.
+    @State private var badgeRenderer = TabBadgeRenderer()
 
     private var language: AppLanguage { dependencies.language.language }
 
@@ -39,10 +41,10 @@ struct MainTabView: View {
                 Tab(value: .chat) {
                     content { ChatTab(dependencies: dependencies).id(language) }
                 } label: {
-                    tabLabel(for: .chat, symbol: DesignTokens.Symbols.chat)
+                    chatTabLabel(count: unreadChats, selected: navigation.selectedTab == .chat)
                 }
-                .badge(unreadChats)
-                // A tab badge is not in the accessibility tree; the value says what it means and lets tests see it.
+                // The drawn badge is not in the accessibility tree (neither was the system one); the value says what
+                // it means for VoiceOver and lets tests see it.
                 .accessibilityValue(Text(AppBranding.Chats.unreadChats(unreadChats)), isEnabled: unreadChats > 0)
             }
         }
@@ -84,6 +86,27 @@ struct MainTabView: View {
         } icon: {
             Image(uiImage: UIImage(systemName: symbol, withConfiguration: configuration) ?? UIImage())
                 .renderingMode(.template)
+        }
+    }
+
+    /// The Chats label with the unread count drawn into the glyph (`TabBadgeRenderer`): the system badge cannot move
+    /// and the bar honours only the label's title and `UIImage`, so the count rides the image itself. The composite
+    /// is `.alwaysOriginal`, which the bar does not tint, so the glyph's colour follows the selection here; at zero
+    /// the plain template label stands, tinted by the bar like every other tab.
+    @ViewBuilder
+    private func chatTabLabel(count: Int, selected: Bool) -> some View {
+        let glyphColor = selected ? UIColor(Color.lilyAccent) : DesignTokens.TabBar.unselectedGlyphColor
+        if let image = badgeRenderer.icon(symbol: DesignTokens.Symbols.chat,
+                                          count: count,
+                                          glyphColor: glyphColor,
+                                          badgeColor: UIColor(Color.lilyAccent)) {
+            Label {
+                Text(AppTab.chat.title)
+            } icon: {
+                Image(uiImage: image)
+            }
+        } else {
+            tabLabel(for: .chat, symbol: DesignTokens.Symbols.chat)
         }
     }
 }

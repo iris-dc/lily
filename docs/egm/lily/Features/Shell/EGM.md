@@ -7,10 +7,11 @@ Source: `lily/Features/Shell/`
 The main shell around the signed-in and guest experience: the `TabView` of Home, Explore and Chats (behind
 `AppConfig.FeatureFlags.chat`), the corner control and the profile sheet mount (the profile is no tab since
 2026-11-07, the relocation contract), the Home root and its overview, the Explore and Chats tab wrappers, and the
-two app-lifetime services behind them. The feature has no direct source files. `Models` holds the tab list, the create
+app-lifetime services behind them. The feature has no direct source files. `Models` holds the tab list, the create
 intent and the pure state rules Home draws from; `Services` holds `ShellLists` (the Home and Explore list view models,
-owned for the app's lifetime and cleared with the session) and `ShellSync` (the ordered per-user sync chain run for every
-scene phase and user); `Views` draws the tabs and screens from `dependencies.lists` and `dependencies.navigation`. The
+owned for the app's lifetime and cleared with the session), `ShellSync` (the ordered per-user sync chain run for every
+scene phase and user) and `TabBadgeRenderer` (the Chats tab's unread count drawn into its glyph image, cached per
+count and colour; 2026-11-12); `Views` draws the tabs and screens from `dependencies.lists` and `dependencies.navigation`. The
 screens inside the tabs and the sheet (`ProfileView`, `ChatsView`, `ChatsSplitView`, `EventListView`,
 `EventDetailView`, the carousels) belong to other features.
 
@@ -26,9 +27,12 @@ screens inside the tabs and the sheet (`ProfileView`, `ChatsView`, `ChatsSplitVi
   concurrently behind their flags; `sessionDidEnd()` clears all five) and `ShellSync` (`restore()` = session check then
   `push.openPendingTap()`; `run(active:user:)` = session check, account, realtime `setDesired`, groups, inbox, block
   list, push offer and sync, with Explore's loads alongside, a cancellation guard between every step and nothing loaded
-  for a signed-out visitor or an inactive phase).
+  for a signed-out visitor or an inactive phase), and `TabBadgeRenderer` (the badged Chats glyph:
+  `icon(symbol:count:glyphColor:badgeColor:)`, `nil` at zero, "99+" cap, one cached composite per count and colour;
+  2026-11-12).
 - Views: [./Views/EGM.md](./Views/EGM.md) - `MainTabView` (the `TabView` bound to `AppNavigation.selectedTab`, empty
-  with the bar hidden while `!showsContent`, chat badge from `unreadCenter` and `inbox.hasUnread`, outline glyphs via
+  with the bar hidden while `!showsContent`, chat badge from `unreadCenter` and `inbox.hasUnread` drawn into the glyph image
+  (`TabBadgeRenderer`, 2026-11-12: the system badge is immovable on the iOS 26 bar), outline glyphs via
   `UIImage.SymbolConfiguration`, `usesSplitChats` from `LayoutMode`; mounts the profile sheet above the per-tab
   language identity), `ProfileCornerButton` (the shared `.topBarLeading` control at
   the four stack roots, initials or the person glyph, raising `AppNavigation.isProfilePresented`; 2026-11-07),
