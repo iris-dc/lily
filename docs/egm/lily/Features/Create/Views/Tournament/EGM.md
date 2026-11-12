@@ -72,5 +72,6 @@ field identifier is byte-identical to the edit form's.
 - Run: `./scripts/ci.sh build` (zero `/lily/` warnings); the model and partition behind the pages:
   `./scripts/ci.sh unit` (`lilyTests/Create/CreationStepsTournamentTests.swift`,
   `CreationWizardModelKindsTests.swift`; the preparation seams in
-  `lilyTests/Tournaments/CreateTournamentPreparationTests.swift`). The rendered pass and the UI-suite migration run
-  with the slice's follow-up.
+  `lilyTests/Tournaments/CreateTournamentPreparationTests.swift`). The rendered pass ran with the third design
+  round's capture set; the tournament walk is pinned on a simulator by
+  `LilyTournamentTests.testCreatingATournamentFromExploreShowsItOnHome`.

@@ -41,7 +41,7 @@ without a token, and a bad token on a public route is still a 401.
 
 - lily (the app target): [`./docs/egm/lily/EGM.md`](./docs/egm/lily/EGM.md) - the whole app: `App` (composition
   root, the only place that knows concrete types), `Config` (every constant and string), `Core` (eighteen shared
-  areas) and `Features` (thirteen features split by layer). Child contracts: [`App`](./docs/egm/lily/App/EGM.md),
+  areas) and `Features` (twelve features split by layer). Child contracts: [`App`](./docs/egm/lily/App/EGM.md),
   [`Config`](./docs/egm/lily/Config/EGM.md), [`Core`](./docs/egm/lily/Core/EGM.md),
   [`Features`](./docs/egm/lily/Features/EGM.md).
 - scripts: [`./scripts/EGM.md`](./scripts/EGM.md) - `ci.sh` (the local and CI entry point: lint, build-for-testing,

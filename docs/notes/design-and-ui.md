@@ -197,7 +197,7 @@ the asset catalog.
   indicator), Cancel in the toolbar, and a bottom safe-area bar on `.bar` background carrying exactly one primary
   button — Next as the full-width prominent capsule, or the final step's submit through `DraftSubmitButton` grown to
   `.flexible`/`.large` — so the keyboard never overlaps bare content; the final-gate hint names the earlier step
-  whose stale issue blocks and pops back on tap. The kind page is glass choice cards, one per offered kind. The
+  whose stale issue blocks and pops back on tap. The kind page is glass choice cards, one per offered kind (superseded 2026-11-11, the third round below). The
   scaffold's scroll reader brings the focused capsule into view, animated only when `\.motion` allows movement. The
   bar's exact look over the keyboard and a possible counter glyph stay open for the rendered design round, per the
   plan's one open question.
@@ -229,7 +229,7 @@ the asset catalog.
   slide-up and fade (`wizardEntrance()`, 12 pt over `Duration.fast`; reduced motion keeps the fade and a settled
   fill). Steps whose purpose needs extra knowledge carry one `.subheadline` `.secondary` caption under the title
   (owner addition): Hosting group, Place (the either-half-is-enough line, moved up from the hint slot), Players and
-  Details, in all seven languages; Name, Type and When carry none. Pinned behaviours unchanged: opaque bottom bar,
+  Details, in all seven languages; Name, Type and When carry none (superseded 2026-11-11, the third round below). Pinned behaviours unchanged: opaque bottom bar,
   scroll-to-focus, the final-gate hint popping back, submit lock, one-way kind, the dirty rule. Rendered judging of
   the captions' tone and the motion is the follow-up design-judge round.
 - **Wizard caption round applied (2026-11-10, after the one-idea-per-page round).** Two caption findings against the

@@ -11,7 +11,7 @@ ship every other file inside the app bundle, which is why these contracts live
 under `docs/egm/` and not beside the code. Four top-level folders: `App` is the composition root and the only place
 that knows concrete types; `Config` holds every constant, string, token and identifier as `nonisolated` enum
 namespaces; `Core` is the shared machinery (auth, networking, realtime, changes and freshness, localisation, UI
-components); `Features` holds the thirteen user-facing features, each split by layer; the eight that own a data layer
+components); `Features` holds the twelve user-facing features, each split by layer; the eight that own a data layer
 keep protocols in `Interfaces/` and concrete types in `Implementations/` (Landing, Shell and SignIn have
 neither).
 

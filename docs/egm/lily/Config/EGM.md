@@ -5,7 +5,7 @@ Source: `lily/Config/`
 ## Overview
 
 Four `nonisolated enum` namespaces, each a root file plus `+Area.swift` files that are `nonisolated extension`s of the
-root or of one of its nested enums (74 files, about 3,800 lines). `AppConfig` is the non-visual configuration: API
+root or of one of its nested enums (75 files, about 3,990 lines). `AppConfig` is the non-visual configuration: API
 paths and base URLs, limits mirrored from the Laurel backend, launch-argument literals, feature flags, Cognito ids.
 `AppBranding` holds every user-facing string as a computed `static var` or `static func` whose body is
 `localized("English text")`, so the English text is the catalog key. `DesignTokens` holds the visual constants and
@@ -265,8 +265,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 ## Invariants
 
-- Every top-level declaration in all 74 files is `nonisolated`: the four root enums and every `extension`
-  (`grep -c nonisolated` is 34 across the 13 `DesignTokens*` files and 1 in each `AccessibilityIdentifiers*` file;
+- Every top-level declaration in all 75 files is `nonisolated`: the four root enums and every `extension`
+  (`grep -c nonisolated` is 42 across the 15 `DesignTokens*` files and 1 in each `AccessibilityIdentifiers*` file;
   `grep "^extension\|^enum\|^struct" lily/Config/AppBranding*.swift` returns nothing). No `Sendable`, `@MainActor` or
   other isolation annotation appears in the directory.
 - `AppConfig` is only `static let` constants and pure `static func` builders (`lily/Config/AppConfig.swift:AppConfig`).

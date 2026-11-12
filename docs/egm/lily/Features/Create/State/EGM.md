@@ -83,7 +83,7 @@ kind's view model; this type only routes its issues through `CreationSteps` and 
 - Run: `./scripts/ci.sh unit` (`lilyTests/Create/CreationWizardModelTests.swift` — the init-fixed kind, the
   opening-decided event walk, lazy factory invocation and the locked-group pass-through, prepare once per entry, the
   dirty rule including an edit during a held prepare, the gating walk with the refused-Next debug line, the
-  top-of-the-path advance guard, `pop(to:)` in both root shapes, the stale-earlier-issue final gate, the submit lock
+  top-of-the-path advance guard, `pop(to:)`, the stale-earlier-issue final gate, the submit lock
   over a held repository, dismissal signal on done, and the abandoned-once rule;
   `lilyTests/Create/CreationWizardModelKindsTests.swift` — the group walk and gating, the tournament walk under the
   opening, the group dirty rule and submit — both over `lilyTests/Support/CreationWizardHarness.swift`; log lines

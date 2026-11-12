@@ -56,7 +56,7 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
   on the mark, never the words); whole-card tap target, `.isSelected` trait on the selection.
 - `WizardTypePicker` (`lily/Features/Create/Views/WizardTypePicker.swift:WizardTypePicker`): the type steps' picker
   (the third design round, 2026-11-11) — a glass search capsule (`create-type-search`, filtering by localized name,
-  case-insensitively in the app's locale (`AppLocale`), as you type) over a `wizardTypeColumns`-column `LazyVGrid` of compact glass type cards
+  case- and diacritic-insensitively in the app's locale (`AppLocale`), as you type) over a `wizardTypeColumns`-column `LazyVGrid` of compact glass type cards
   (its private `WizardTypeCard`: `Radius.md` glass at least `wizardTypeCardHeight` tall, symbol and name with the
   accent `chosen` check on the current choice), optionally led by an "Any" entry (`anyTitle`, the group's nullable
   choice; the query filters it like any card); a query no name
@@ -120,6 +120,7 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
 ## Verification
 
 - Run: `./scripts/ci.sh build` (zero `/lily/` warnings) and `./scripts/ci.sh unit` (the model behind every control:
-  `lilyTests/Create/`). The wizard is reached through Explore's "+", the parked create intents and the group
-  screen's create buttons; the rendered walk and screenshot pass run against that wiring per the plan's
-  verification section, and the UI suites migrate with the slice's follow-up.
+  `lilyTests/Create/`). The wizard is reached through the "+" menu's items, the parked create intents and the group
+  screen's create buttons; the walks are pinned on a simulator by `LilySmokeTests`, `LilyGroupsTests`,
+  `LilyEventEditTests`, `LilyProfileTests`, `LilyDiscoverTests`, `LilyTournamentTests` and `LilyIPadTests`
+  (the seven UI classes of the third round's gate).

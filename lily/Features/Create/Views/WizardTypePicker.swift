@@ -3,8 +3,8 @@ import SwiftUI
 /// The type steps' picker (the owner's third design round, 2026-11-11): a search field over a compact two-column
 /// grid of glass type cards, lighter than the full-width choice cards the longer type list outgrew. Tapping picks
 /// and the page auto-advances; re-entering shows the current choice selected. Filtering is by localized name,
-/// case-insensitive in the app's locale, so it matches what the cards say in the app's language; a query no name
-/// contains shows a one-line empty state instead of a bare grid.
+/// case- and diacritic-insensitive in the app's locale, so it matches what the cards say in the app's language; a
+/// query no name contains shows a one-line empty state instead of a bare grid.
 struct WizardTypePicker: View {
     /// The leading "Any type" entry of a nullable choice (the group's); the per-type entries are always offered.
     var anyTitle: String?
@@ -58,11 +58,13 @@ struct WizardTypePicker: View {
         EventType.known.filter { matches($0.displayName) }
     }
 
-    /// An empty query shows everything; otherwise the localized name must contain it, case-insensitively, folded by
-    /// the app's locale (`AppLocale`), not the system's, so the fold matches the language the cards read in.
+    /// An empty query shows everything; otherwise the localized name must contain it, case- and diacritic-insensitive
+    /// ("Futbol" finds "Fútbol"), folded by the app's locale (`AppLocale`), not the system's, so the fold matches the
+    /// language the cards read in.
     private func matches(_ title: String) -> Bool {
         let query = query.trimmed
-        return query.isEmpty || title.range(of: query, options: .caseInsensitive, locale: AppLocale.locale) != nil
+        guard !query.isEmpty else { return true }
+        return title.range(of: query, options: [.caseInsensitive, .diacriticInsensitive], locale: AppLocale.locale) != nil
     }
 }
 

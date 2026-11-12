@@ -66,4 +66,5 @@ to the edit form's.
 - Run: `./scripts/ci.sh build` (zero `/lily/` warnings); the model and partition behind the pages:
   `./scripts/ci.sh unit` (`lilyTests/Create/CreationStepsGroupTests.swift`,
   `CreationWizardModelKindsTests.swift`; the suggestion seam in `lilyTests/Groups/CreateGroupViewModelTests.swift`).
-  The rendered pass and the UI-suite migration run with the slice's follow-up.
+  The rendered pass ran with the third design round's capture set; the group walk is pinned on a simulator by
+  `LilyDiscoverTests.testCreatingAPublicGroupNeedsAPlaceThatTheDetailShows`.

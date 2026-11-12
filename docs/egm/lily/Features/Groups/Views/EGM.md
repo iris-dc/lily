@@ -160,7 +160,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   `SignInSheet`, `ReportSheet`, each with `dependencies.errorCenter`, and the creation wizard for the two create
   cases — seeded `CreationSeed(kind:, lockedGroup: group.ref)` with `onCreatedEvent` adding to `events` then
   opening the game's detail through `dependencies.navigation.open(event:)` (the fourth round, 2026-11-11) and
-  `onCreatedTournament: tournaments.add`, a full-screen cover on compact and a `lilyFormSheet()` otherwise, the two
+  `onCreatedTournament` adding to `tournaments` then opening the tournament's detail through
+  `dependencies.navigation.open(tournament:)` (the merge review, 2026-11-12), a full-screen cover on compact and a `lilyFormSheet()` otherwise, the two
   presenters split over one `presentedSheet` so a width-class change re-hosts the flow, and
   `clearWizardAfterDismiss` booking the close only on a real dismissal
   [`lily/Features/Groups/Views/GroupDetailView+Create.swift`:`GroupDetailView.presentWizard`]; `dismiss()` from the

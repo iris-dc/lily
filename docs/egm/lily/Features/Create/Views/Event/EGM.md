@@ -89,5 +89,5 @@ page conditional on the opening (`CreationSteps.eventSteps(opening:)`).
 - Run: `./scripts/ci.sh build` (zero `/lily/` warnings); the model and partition behind the pages:
   `./scripts/ci.sh unit` (`lilyTests/Create/`). The rendered pass (compact and regular, keyboard up, accessibility
   sizes) runs with the Explore wiring per the plan's verification section; the smoke walk
-  (`LilySmokeTests.testCreatingAGameShowsItOnHome`) taps `create-pick-on-map` and asserts the picker's bar on a
-  simulator.
+  (`LilySmokeTests.testCreatingAGameOpensItsDetailAndShowsItOnHome`) asserts the created game's detail landing,
+  then Home, and still taps `create-pick-on-map` and asserts the picker's bar on a simulator.

@@ -4,7 +4,7 @@ Source: `lily/Features/`
 
 ## Overview
 
-The thirteen user-facing features of iskra, one folder each, every folder split by layer
+The twelve user-facing features of iskra, one folder each, every folder split by layer
 (`Models`, `Interfaces`, `Implementations`, `ViewModels`, `Views`, and where needed `State` and `Services`).
 This folder holds no source files of its own. Within a feature, data flows Views -> ViewModels -> Interfaces ->
 Implementations -> Laurel, with Models shared by every layer; callers depend on the protocols in `Interfaces`, and

@@ -33,7 +33,7 @@ extension GroupDetailView {
         presentWizard(.createEvent, kind: .event)
     }
 
-    /// The tournament is hosted in this group, and lands in the segment behind the wizard at once.
+    /// The tournament is hosted in this group; it lands in the segment behind the wizard and opens on its own detail.
     func presentCreateTournament() {
         presentWizard(.createTournament, kind: .tournament)
     }
@@ -56,7 +56,10 @@ extension GroupDetailView {
             },
             // Unreachable from a seeded flow (the kind pick is one-way); the factories still need every kind's landing.
             onCreatedGroup: { [dependencies] in dependencies.navigation.open(group: $0) },
-            onCreatedTournament: { tournaments.add($0.tournament) })
+            onCreatedTournament: { [dependencies, tournaments] detail in
+                tournaments.add(detail.tournament)
+                dependencies.navigation.open(tournament: detail.tournament.destination)
+            })
         presentedSheet = sheet
     }
 }
