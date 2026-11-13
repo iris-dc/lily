@@ -99,3 +99,10 @@ To run on the mock auth service, launch with `-mock-auth`; add `-mock-auth-fail`
   the result from the still, not the prefs: crop the spacebar badge (`crop=1206:620:0:ih-620`) and read EN, no
   squiggles.
 - **The Release simulator build joins the gate (2026-11-13, production plan phase 3).** `./scripts/ci.sh release-build` builds the Release configuration unsigned for `generic/platform=iOS Simulator` through `run_logged` (the log at `build/results/release-build.log`, the same console greps, `CODE_SIGNING_ALLOWED=NO`; the generic destination needs no simulator runtime), so a `#if DEBUG`-only symbol reached from release code fails the gate instead of the next device archive — the feature flags are plain `true` in every configuration since this day, so Release compiles the whole app, groups, chat and tournaments included. It runs inside `all` (after unit, before the UI hours, so a release-only compile failure surfaces early) and as its own step in CI's first job (`.github/workflows/ci.yml`, after `build-and-unit`). First run on this Mac: clean, zero `/lily/` warnings.
+
+**2026-11-13, verifying against production on a simulator.** Two lessons from the realtime device verification:
+`CODE_SIGNING_ALLOWED=NO` breaks real Cognito sign-in (Amplify's KeychainStore fails with `-34018` and the app shows
+the auth-failed popup) — a run against the real backend must build signed (drop that flag; the local ad-hoc signing
+is enough). And `-reset-session` does not clear the Amplify keychain session: a signed build can restore the previous
+account and skip the landing; reset it per run with `xcrun simctl keychain <udid> reset` (which signs every stored
+account out of that simulator).
