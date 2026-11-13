@@ -100,7 +100,8 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `draft.placeChosen`, round 5 2026-11-12; `tournamentLocationName`,
   `createPickOnMap`; the footer adds `placeNotChosen`), when (start, deadline `tournamentDeadline`, registration close), entries (`tournamentTeamSize`,
   `tournamentMaxEntries`, draws `tournamentDraws`), who (the hosting group read-only through the shared
-  `HostingGroupRow`, `createGroup`, shown only when `showsGroupRow`), details;
+  `HostingGroupRow`, `createGroup`, shown only when `showsGroupRow`), details (the description over the shared
+  `OptionalMarker`, 2026-11-13, the seventh round — wizard and edit form alike);
   the where, when, who and details sections are in
   `[lily/Features/Tournaments/Views/TournamentDraftForm+Schedule.swift:TournamentDraftForm.whenSection]`. The section
   contents the sections recompose are standalone `<Model: TournamentDraftEditing>` views:

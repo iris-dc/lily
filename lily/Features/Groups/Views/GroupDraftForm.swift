@@ -25,7 +25,7 @@ struct GroupDraftForm: View {
             TextField(Copy.nameField, text: $draft.name, prompt: Text(Copy.namePlaceholder))
                 .textInputAutocapitalization(.words)
                 .accessibilityIdentifier(AccessibilityIdentifiers.createGroupName)
-            HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.sm) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                 TextField(Copy.descriptionPlaceholder, text: $draft.description, axis: .vertical)
                     .textInputAutocapitalization(.sentences)
                     .lineLimit(DesignTokens.Layout.multilineFieldLines)
@@ -55,7 +55,8 @@ struct GroupDraftForm: View {
                         pickerIdentifier: AccessibilityIdentifiers.createGroupPickOnMap,
                         detail: .init(text: $draft.locationDetail,
                                       identifier: AccessibilityIdentifiers.createGroupLocationDetail),
-                        placeChosen: draft.placeChosen)
+                        placeChosen: draft.placeChosen,
+                        nameMarked: draft.visibility == .private)
         } header: {
             Text(AppBranding.Events.Create.whereSection)
         } footer: {

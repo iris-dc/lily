@@ -46,10 +46,12 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `createPlayerLimit` and the capacity `Stepper` `createCapacity`, shown only while `draft.playerLimit.hasCapacity`,
   over `viewModel.capacityRange`) and `EventDetailsFields<Model: EventDraftEditing>` (`EventDetailsFields.swift`: the
   description and looking-for fields, `SkillLevelPicker` under `lilyMenuPicker()` and the price row over
-  `PriceAmountField` with the inline currency menu, `currencySelection: $draft.currencyCode`, 2026-11-11) and the shared optional finish-time control
+  `PriceAmountField` with the inline currency menu, `currencySelection: $draft.currencyCode`, 2026-11-11; each
+  leavable field wears the shared `OptionalMarker` below it since 2026-11-13, the seventh round — the level picker
+  stays unmarked, its "Any level" value already says it) and the shared optional finish-time control
   (`EventFinishTimeControl.swift:EventFinishTimeControl`, 2026-11-11: the add affordance `create-ends-at-add` — an
   ink `lilyTextButton` with the accent on its plus mark alone, per the small-accent-text rule (the round-3 review,
-  2026-11-11) — on a row wearing the shared `OptionalMarker`, the
+  2026-11-11) — the shared `OptionalMarker` below the add row (2026-11-13, the seventh round), the
   "Finish time" picker `create-ends-at` floored at the start, the clear button `create-ends-at-remove`; the
   wizard's When page composes the same control, so edit parity holds); headers and first-issue footers stay in the
   form. The form also carries a belt for the
@@ -73,7 +75,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `focusedField`) stays in `EventDraftForm.swift`. `whereSection` composes, in the pixel-pinned pre-extraction order,
   `PlaceNameField` (the suggesting init, wired `focus: $focusedField, equals: .locationName`,
   `query: { viewModel.draft.placeSuggestionQuery }`, `search: { await viewModel.placeSuggestions(for: $0) }`),
-  the optional `detailRow` (`PlaceDetailField` beside `OptionalMarker`, `create-location-detail`; 2026-11-12),
+  the optional `detailRow` (`PlaceDetailField` over `OptionalMarker` — below the field since 2026-11-13 —
+  `create-location-detail`; 2026-11-12),
   `PlacePickerRow` under `AccessibilityIdentifiers.createPickOnMap` (handed `draft.placeChosen`), then
   `suggestionRows`; the footer surfaces `.placeMissing`/`.placeNotChosen`/`.locationNameTooLong`, else `whereHint`. `pickedCoordinate` is the
   map row's binding, its setter `viewModel.draft.pickSpot($0)` (a non-nil spot becomes the user's: `spotPickedOnMap`,
@@ -101,12 +104,15 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   who owns the suggestions and the focus.
 - `PlaceDetailField(detail: Binding<String>, identifier:)` (`PlaceDetailField.swift`, 2026-11-12): the optional
   detail line under the address (apartment, floor, entrance; placeholder
-  `AppBranding.Events.Create.locationDetailPlaceholder`), the bare field — callers add `OptionalMarker` in their own
-  layout. Its text joins the stored name through `PlacePickingDraft.composedLocationName` and is never judged as the
+  `AppBranding.Events.Create.locationDetailPlaceholder`), the bare field — callers stack `OptionalMarker` below it
+  (one placement everywhere since 2026-11-13, the seventh round). Its text joins the stored name through
+  `PlacePickingDraft.composedLocationName` and is never judged as the
   place itself. The round-5 scroll mark (`revealMark`, 2026-11-12) was removed the same day, sixth round: the
   wizard's place pages no longer scroll when suggestions appear, so the field carries no `.id` of its own.
   `PlaceFields` gains `detail: Detail?` (binding plus identifier; `nil` keeps a form without the line,
-  the match schedule) and `placeChosen: Bool = true`, passed through to `PlaceDetailField` and `PlacePickerRow`;
+  the match schedule), `placeChosen: Bool = true` and `nameMarked: Bool = false` (the shared marker below the name
+  field exactly while the caller's rules make the place optional — the group form's private visibility, 2026-11-13),
+  passed through to `PlaceDetailField` and `PlacePickerRow`;
   `PlacePickerRow(coordinate:placeChosen: = true)` carries the round-5 label rule — `orPickOnMap` ("Or set the spot
   on the map") with "Not set" until `placeChosen`, `pickOnMap` with "Spot set" after — so a proposed spot never
   reads as a choice (2026-11-12).

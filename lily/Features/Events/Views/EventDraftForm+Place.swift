@@ -30,7 +30,7 @@ extension EventDraftForm {
 
     /// The optional detail line the stored name carries after the address (apartment, floor, entrance).
     var detailRow: some View {
-        HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.sm) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
             PlaceDetailField(detail: $viewModel.draft.locationDetail,
                              identifier: AccessibilityIdentifiers.createLocationDetail)
             OptionalMarker()

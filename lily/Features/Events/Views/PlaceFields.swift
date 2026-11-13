@@ -14,6 +14,9 @@ struct PlaceFields<Field: Hashable>: View {
     let detail: Detail?
     /// Whether the draft's place really was chosen; the map row reads as the explicit alternative until it is.
     let placeChosen: Bool
+    /// The shared marker under the name field, exactly while the caller's rules make the place optional (the group
+    /// form's private visibility, like the wizard's group place page).
+    let nameMarked: Bool
     let focus: FocusState<Field?>.Binding?
     let focusValue: Field?
 
@@ -30,6 +33,7 @@ struct PlaceFields<Field: Hashable>: View {
          pickerIdentifier: String,
          detail: Detail? = nil,
          placeChosen: Bool = true,
+         nameMarked: Bool = false,
          focus: FocusState<Field?>.Binding,
          equals focusValue: Field) {
         _name = name
@@ -39,20 +43,33 @@ struct PlaceFields<Field: Hashable>: View {
         self.pickerIdentifier = pickerIdentifier
         self.detail = detail
         self.placeChosen = placeChosen
+        self.nameMarked = nameMarked
         self.focus = focus
         self.focusValue = focusValue
     }
 
     var body: some View {
-        nameField
+        nameRow
         if let detail {
-            HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.sm) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                 PlaceDetailField(detail: detail.text, identifier: detail.identifier)
                 OptionalMarker()
             }
         }
         PlacePickerRow(coordinate: $coordinate, placeChosen: placeChosen)
             .accessibilityIdentifier(pickerIdentifier)
+    }
+
+    /// The name capsule, wearing the shared marker below it while the place is optional.
+    @ViewBuilder private var nameRow: some View {
+        if nameMarked {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                nameField
+                OptionalMarker()
+            }
+        } else {
+            nameField
+        }
     }
 
     @ViewBuilder
@@ -77,7 +94,8 @@ extension PlaceFields where Field == Never {
          nameIdentifier: String,
          pickerIdentifier: String,
          detail: Detail? = nil,
-         placeChosen: Bool = true) {
+         placeChosen: Bool = true,
+         nameMarked: Bool = false) {
         _name = name
         _coordinate = coordinate
         self.placeholder = placeholder
@@ -85,6 +103,7 @@ extension PlaceFields where Field == Never {
         self.pickerIdentifier = pickerIdentifier
         self.detail = detail
         self.placeChosen = placeChosen
+        self.nameMarked = nameMarked
         focus = nil
         focusValue = nil
     }

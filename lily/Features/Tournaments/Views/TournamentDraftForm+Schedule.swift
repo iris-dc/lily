@@ -47,9 +47,12 @@ extension TournamentDraftForm {
 
     var detailsSection: some View {
         Section {
-            TextField(Copy.descriptionPlaceholder, text: $viewModel.draft.description, axis: .vertical)
-                .textInputAutocapitalization(.sentences)
-                .lineLimit(DesignTokens.Layout.multilineFieldLines)
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                TextField(Copy.descriptionPlaceholder, text: $viewModel.draft.description, axis: .vertical)
+                    .textInputAutocapitalization(.sentences)
+                    .lineLimit(DesignTokens.Layout.multilineFieldLines)
+                OptionalMarker()
+            }
         } header: {
             Text(Copy.detailsSection)
         } footer: {

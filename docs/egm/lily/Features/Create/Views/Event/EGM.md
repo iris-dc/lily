@@ -29,7 +29,8 @@ page conditional on the opening (`CreationSteps.eventSteps(opening:)`).
 - `EventWhenPage<Model>` (`EventWhenPage.swift:EventWhenPage`): the start `DatePicker` floored at
   `viewModel.earliestStart` and the shared optional finish control (`EventFinishTimeControl`: the add affordance
   `create-ends-at-add`, an ink `lilyTextButton` with the accent on its plus mark alone (the round-3 review,
-  2026-11-11), on a row wearing the shared `OptionalMarker`, the picker `create-ends-at` floored at the
+  2026-11-11), the shared `OptionalMarker` below the add row (2026-11-13, the seventh round: one placement — below
+  the control — everywhere), the picker `create-ends-at` floored at the
   start, the clear `create-ends-at-remove`) in one
   `GlassCard`; owns `startsAtTooSoon` and `endsBeforeStart` (2026-11-11).
 - `EventGroupPage<Model>` (`EventGroupPage.swift:EventGroupPage`): on the walk exactly when the opening offers the
@@ -56,8 +57,9 @@ page conditional on the opening (`CreationSteps.eventSteps(opening:)`).
   behind an outer label (`SkillLevelPicker`, `lilyMenuPicker`, `labelsHidden`); owns
   `capacityOutOfRange`/`capacityBelowParticipants`.
 - `EventDetailsPage<Model>` (`EventDetailsPage.swift:EventDetailsPage`): the final step, all of it optional (the
-  scaffold caption says so, and each field wears the shared `OptionalMarker`, 2026-11-11) — one card with the price
-  label over its marker and the shared `PriceAmountField` (`create-price`; `create-price-currency` is the inline
+  scaffold caption says so, and each field wears the shared `OptionalMarker` below it, 2026-11-11; the price marker
+  moved out of the card 2026-11-13, the seventh round) — one card with the price label and the shared
+  `PriceAmountField`, the marker under the card (`create-price`; `create-price-currency` is the inline
   currency menu, `currencySelection: $draft.currencyCode`, defaulting to the settings currency the draft was seeded
   with — the event keeps its own on the wire), the description (`lilyMultilineField`) and looking-for (`lilyField`)
   capsules each over their marker; `WizardIssueHint` closes the page

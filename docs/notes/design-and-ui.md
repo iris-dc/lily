@@ -350,7 +350,8 @@ the asset catalog.
   immovable on the iOS 26 floating bar, so the count is now drawn into the Chats tab's `UIImage` itself
   (`TabBadgeRenderer` in `Features/Shell/Services`, metrics in `DesignTokens.TabBar`) — a `LilyAccent` capsule,
   20 pt tall like the system's measured 19.7 pt, the count in white 13 pt SF Rounded, capped at "99+", its centre
-  `badgeCenterOffset` (−1, +9) from the glyph's top-right corner where the system drew it at about (+13, +3). On
+  `badgeCenterOffset` (−1, +9) from the glyph's top-right corner where the system drew it at about (+13, +3) (the
+  y superseded 2026-11-13, the seventh round: 9 → 6, see the round-7 bullet below). On
   the capture rig the capsule's centre moved (−35.5, +13.5) px at 3x — 11.8 pt left, 4.5 pt down — and now plainly
   intersects the bubble (`round6/badge-v2.png` against `round6/badge.png`). The composite draws `.alwaysOriginal`
   (the bar neither tints nor resizes a bitmap), so the glyph is built at the bar's own symbol size
@@ -365,3 +366,22 @@ the asset catalog.
   below that line on every device, and the big phones lift the same 3 pt and change nothing else. Evidence:
   `round6/plus-small-phone.png` (the SE's Explore, a clear seam between the circle and the bar) and the "+" in
   `round6/badge-v2.png` (the 17 Pro after the lift).
+- **The seventh round's two corrections (2026-11-13).** The Chats badge sits a touch higher: `badgeCenterOffset`
+  (−1, +9) → (−1, +6), the capsule's centre 3 pt up with the left overlap kept, so the count rides the bubble's
+  top-right arc rather than hanging off it; evidence `groups-plan/creation-wizard-shots/round7/badge-v3.png` against
+  `round6/badge-v2.png`. And the Optional marker has exactly one placement — below the control, wizard and edit
+  forms alike. The owner read the event Details step as unstandardized ("Price per person" held the marker inside
+  its card while "What to expect" wore it below the capsule), so: the price card's marker moved below the card
+  (`EventDetailsPage`), the beside-the-field markers moved below the field (the finish-time add row in
+  `EventFinishTimeControl`, the detail rows in `PlaceFields` and `EventDraftForm+Place`, the description row in
+  `GroupDraftForm`), and the edit forms' leavable fields wear the marker now too, superseding the round-3
+  exceptions: the event edit form's details section (description, looking-for, price in `EventDetailsFields`), the
+  tournament edit form's description, and a private group's place name in the group edit form
+  (`PlaceFields.nameMarked`, rendered exactly while the visibility makes the place optional, like the wizard's
+  page). Still unmarked on purpose: always-chosen choices (player limit, draws, deadline, visibility), the level
+  picker (its "Any level" value already says it) and a set finish time (its clear button says it); the
+  "Details (optional)" section header and the "Optional for a private group." footer keep their catalog keys, and
+  the feedback and report forms (not wizards, not the three edit forms) are untouched. Evidence
+  `round7/details-step.png` (uniform markers under price, what-to-expect and looking-for), `round7/when-step.png`
+  (the add row's marker below it) and `round7/edit-event-details.png` (the edit form's details section marked the
+  same way).

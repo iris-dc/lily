@@ -3,8 +3,8 @@ import SwiftUI
 /// The optional finish time of a game, shared by the wizard's When page and the edit form: an add affordance while
 /// none is set, and the picker with a clear button once one is. The picker is floored at the start, and a start moved
 /// past a set finish is the `endsBeforeStart` issue, so the control never silently rewrites either half. The add
-/// affordance is a text button in ink with the accent on its plus mark alone: body-size accent text reads at about
-/// 3:1 over the aurora.
+/// affordance is a text button in ink with the accent on its plus mark alone (body-size accent text reads at about
+/// 3:1 over the aurora), the shared marker below it; a set finish shows its clear button instead of a marker.
 struct EventFinishTimeControl<Model: EventDraftEditing>: View {
     @Bindable var viewModel: Model
 
@@ -12,7 +12,7 @@ struct EventFinishTimeControl<Model: EventDraftEditing>: View {
 
     var body: some View {
         if viewModel.draft.endsAt == nil {
-            HStack(spacing: DesignTokens.Spacing.sm) {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
                 Button {
                     viewModel.draft.endsAt = viewModel.draft.startsAt
                         .addingTimeInterval(AppConfig.Events.Creation.proposedDuration)
@@ -25,7 +25,6 @@ struct EventFinishTimeControl<Model: EventDraftEditing>: View {
                 }
                 .lilyTextButton()
                 .accessibilityIdentifier(AccessibilityIdentifiers.createEndsAtAdd)
-                Spacer()
                 OptionalMarker()
             }
         } else {

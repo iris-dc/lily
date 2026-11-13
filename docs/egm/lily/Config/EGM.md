@@ -197,7 +197,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Typography` (`headlineSize 44`, `headlineTracking -1.8`, `titleTracking -0.5`), `Symbols` (SF Symbol names:
   `home = "house"`, `explore = "binoculars"`, `game = "calendar"`, `profile = "person"`, `groups = "person.3"`,
   `tournament = "trophy"`, ...), `MessageArrival` (`+Groups.swift`), `TabBar.symbolWeight: UIImage.SymbolWeight = .light` plus the drawn
-  Chats-badge metrics (2026-11-12: `badgeCenterOffset` (−1, +9) from the glyph's top-right corner,
+  Chats-badge metrics (2026-11-12: `badgeCenterOffset` (−1, +6) from the glyph's top-right corner — y 9 → 6 on
+  2026-11-13, the seventh round: the capsule 3 pt higher, the left overlap kept —,
   `badgeGlyphPointSize` 23, `badgeHeight` 20, `badgeFontSize` 13, `badgeHorizontalPadding` 5, `badgeCountCap` 99,
   `badgeTextColor` white, `unselectedGlyphColor` white),
   and `Layout.profileCornerSize` 36 (the corner profile button's circle, 2026-11-07) with

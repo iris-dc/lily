@@ -30,22 +30,23 @@ struct EventDetailsPage<Model: EventDraftEditing>: View {
 
     /// The price in the shared trailing field, empty or zero meaning free; the symbol is the inline currency menu,
     /// seeded with the user's settings currency and written straight into the draft (the event keeps its own).
+    /// The shared marker sits below the card, like below every optional control, never inside it.
     private var priceCard: some View {
-        GlassCard {
-            HStack(spacing: DesignTokens.Spacing.xs) {
-                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+            GlassCard {
+                HStack(spacing: DesignTokens.Spacing.xs) {
                     Text(Copy.price)
-                    OptionalMarker()
+                    Spacer()
+                    PriceAmountField(text: $viewModel.draft.priceText,
+                                     placeholder: Copy.pricePlaceholder,
+                                     currencyCode: viewModel.draft.currencyCode,
+                                     label: Copy.price,
+                                     identifier: AccessibilityIdentifiers.createPrice,
+                                     currencyIdentifier: AccessibilityIdentifiers.createPriceCurrency,
+                                     currencySelection: $viewModel.draft.currencyCode)
                 }
-                Spacer()
-                PriceAmountField(text: $viewModel.draft.priceText,
-                                 placeholder: Copy.pricePlaceholder,
-                                 currencyCode: viewModel.draft.currencyCode,
-                                 label: Copy.price,
-                                 identifier: AccessibilityIdentifiers.createPrice,
-                                 currencyIdentifier: AccessibilityIdentifiers.createPriceCurrency,
-                                 currencySelection: $viewModel.draft.currencyCode)
             }
+            OptionalMarker()
         }
     }
 

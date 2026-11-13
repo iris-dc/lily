@@ -94,7 +94,8 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/CaptionedControl.swift:CaptionedControl`];
   `OptionalMarker()` [`lily/Core/UI/Components/OptionalMarker.swift:OptionalMarker`], the one-word
   `AppBranding.Forms.optional` tag in `LilyTheme.Fonts.caption` and `.secondary` (never accent) that marks an
-  optional field in the creation wizard's pages and the edit forms (2026-11-11);
+  optional field in the creation wizard's pages and the edit forms (2026-11-11), always below the control it marks
+  (2026-11-13, the seventh round: the inside-the-card and beside-the-field placements standardized away);
   `PlaceLine(name:, distance: String? = nil, font: Font = .subheadline)` [`lily/Core/UI/Components/PlaceLine.swift:PlaceLine`].
 - Marks and rows: `AvatarCircle(initials:, systemImage: String? = nil, size: CGFloat = DesignTokens.Layout.avatarSize, tint: Tint = .accent)`,
   a glyph-only `init(systemImage:, size:, tint:)`, `enum Tint { case accent, secondary,

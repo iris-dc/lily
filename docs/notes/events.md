@@ -295,10 +295,14 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   the shared `OptionalMarker` (caption font, secondary ink, never accent) — the event Details fields and price
   label, the finish-time add row (the shared control, so the edit form inherits it), the group description (wizard
   page and edit form row) and the private group's place (rendered exactly while the visibility choice makes the
-  place optional), and the tournament description. Not marked on purpose: the player limit, draws, deadline and
+  place optional), and the tournament description (the beside-the-label and inside-the-card placements superseded
+  2026-11-13, the seventh round: the marker sits below the control everywhere, see `design-and-ui.md`). Not marked
+  on purpose: the player limit, draws, deadline and
   visibility controls (always-chosen choices, not leavable fields), the level picker (its "Any level" value already
   says it), the event edit form's details section (its header already reads "Details (optional)") and the group
-  edit form's where section (its footer already reads "Optional for a private group."). Two mock fixtures (the
+  edit form's where section (its footer already reads "Optional for a private group.") (both edit-form exceptions
+  superseded 2026-11-13, the seventh round: the leavable fields there wear the marker below the control too, the
+  header and footer copy unchanged). Two mock fixtures (the
   Hills ride, Sunrise yoga) now carry a finish time, so `endsAt` and the facts card's "Until ..." line are seen in
   the mock world; neither fixture is pinned by a UI test.
 
