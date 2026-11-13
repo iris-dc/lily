@@ -32,6 +32,7 @@ struct Repositories {
                             groups: .remote(client: client,
                                             realtimeEndpoint: realtimeEndpoint,
                                             identity: identity,
+                                            tokenProvider: tokenProvider,
                                             logger: logger),
                             devices: RemoteDeviceRepository(client: client),
                             pushRegistrar: SystemPushRegistrar(logger: logger))

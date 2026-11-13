@@ -58,6 +58,10 @@ jobs:
       - name: Lint, build for testing, unit tests
         run: ./scripts/ci.sh build-and-unit
 
+      # Release paths must compile too: a `#if DEBUG`-only symbol used from release code fails here, not in an archive.
+      - name: Release build
+        run: ./scripts/ci.sh release-build
+
       - name: Archive the build products for the UI shards
         run: ./scripts/ci.sh archive-products
 

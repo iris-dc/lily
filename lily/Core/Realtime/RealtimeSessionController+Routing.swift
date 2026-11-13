@@ -54,6 +54,15 @@ extension RealtimeSessionController {
         if case .room(let groupID, let epoch) = channel, subscribedRooms[groupID] == epoch {
             subscribedRooms[groupID] = nil
         }
+        if (error as? RealtimeTransportError) == .unavailable {
+            // The API refuses the channel outright (the kill switch flipped under the open socket): no resubscribe
+            // would be accepted, so the connection stops and the next foreground asks again.
+            logger.warning(.chat, "Stream ended on \(channel.path): refused by the API; catch-up only")
+            await close(reason: "realtime refused")
+            state = .unavailable
+            await catchUpOpenRoomWithoutConnection()
+            return
+        }
         guard (error as? RealtimeTransportError) == .subscribeRefused else {
             // Only the first stream to end logs: the close clears every other subscription before it can.
             let cause = error.map { String(describing: $0) } ?? "finished"

@@ -54,12 +54,8 @@ nonisolated extension AppConfig {
 }
 
 nonisolated extension AppConfig.FeatureFlags {
-    #if DEBUG || STAGING
     /// Tournaments: the carousel on Explore, the Home section, the group segment, the "+" item and the destinations.
     static let tournaments = true
-    #else
-    static let tournaments = false
-    #endif
 }
 
 nonisolated extension AppConfig.API.Paths {

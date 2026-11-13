@@ -14,9 +14,10 @@ chat, enter or set up a tournament. iOS 26+, SwiftUI, Liquid Glass, dark only fo
 and bundle id (`iris.lily`) keep the code name `lily`. Design: modern
 and minimalistic, reusable SwiftUI components, consistent spacing and typography, no visual clutter.
 
-Feature flags (`AppConfig.FeatureFlags`): groups, chat and tournaments are on in debug builds and in the Staging
-configuration (Release's optimised build with these flags, for trying the app on a phone as it will run; the scheme
-that runs it is made locally, see `docs/notes/build-test-and-simulator.md`); off in Release.
+Feature flags (`AppConfig.FeatureFlags`): groups, chat and tournaments are on in every configuration since the AppSync
+realtime transport landed (2026-11-13); the flags stay as named switches so a feature can be pulled from a build in one
+line. The Staging configuration (`STAGING`, its scheme made locally, see `docs/notes/build-test-and-simulator.md`)
+remains Release's optimised build for trying the app on a phone.
 
 ## Repositories and backend
 
@@ -38,10 +39,11 @@ that runs it is made locally, see `docs/notes/build-test-and-simulator.md`); off
 ./scripts/ci.sh lint            # SwiftLint (strict), the l10n check, the UI-shard check, the test-gate self-check
 ./scripts/ci.sh build           # xcodebuild build, the app alone; build-and-unit and all build for testing
 ./scripts/ci.sh unit            # lilyTests (Swift Testing; about 2,150 tests in seconds)
+./scripts/ci.sh release-build   # the Release configuration for the simulator platform, unsigned (release paths compile)
 ./scripts/ci.sh ui              # lilyUITests on an iPhone simulator (about 30 minutes on a Mac)
 ./scripts/ci.sh ui-ipad         # LilyIPadTests on an iPad simulator
-./scripts/ci.sh all             # what CI runs: lint, build, unit, ui, ui-ipad
-./scripts/ci.sh build-and-unit  # CI's first job: lint, build for testing, unit (the workflow then runs archive-products)
+./scripts/ci.sh all             # what CI runs: lint, build, unit, release-build, ui, ui-ipad
+./scripts/ci.sh build-and-unit  # CI's first job: lint, build for testing, unit (the workflow then runs release-build and archive-products)
 ./scripts/ci.sh ui-shard 2      # one CI UI shard (1..4 or ipad) from archived products, no rebuild
 ./scripts/ci.sh release-archive <n>  # Release archive for a device, build number n (a workflow's run number, or git rev-list --count HEAD)
 ```

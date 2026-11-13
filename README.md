@@ -10,19 +10,19 @@ module and bundle id (`iris.lily`) keep it; the home screen says iskra.
   the public groups to discover above them.
 - **Events**: create one from the "+" (sport, time, place on a map, how many players, optional price and level), join
   or leave, edit your own. Signed-in users see who is in.
-- **Groups and chat** (debug builds): public or invite-only groups for a sport or a place, each with a chat room
+- **Groups and chat**: public or invite-only groups for a sport or a place, each with a chat room
   (replies, pictures, videos and files, polls, pinned messages), a roster with roles, direct invites, and events hosted
   inside the group.
-- **Tournaments** (debug builds): single elimination or round robin, players or teams, self-reported results that the
+- **Tournaments**: single elimination or round robin, players or teams, self-reported results that the
   other side confirms, schedules and reminders.
 - **People**: profiles with a display name you choose on Profile (a new account starts as "Player") and a few words
   about yourself, showing another player what you share with them (groups, games, tournaments); direct conversations,
   an inbox for invites, reminders and account notices, push notifications once the Apple Developer account exists.
 - **Seven languages** (en, ru, es, fr, uk, pl, pt), prices in your currency, iPhone and iPad layouts.
 
-Release builds ship Explore, events, people's profiles and your own profile behind the top-left corner button (the
-bar is Home and Explore); groups, chat (with conversations and the inbox) and tournaments are behind feature flags for
-now, on in debug builds and in the Staging configuration (a release build for trying the app on a phone).
+Every configuration ships the full set: groups, chat (with conversations and the inbox) and tournaments are on in
+Release too, now that live delivery has a client. CI builds the Release configuration for the simulator on every run,
+so the release paths stay compiling.
 
 ## How it fits together
 
@@ -38,7 +38,7 @@ now, on in debug builds and in the Staging configuration (a release build for tr
  ┌───────────────────────────┐     ┌──────────┐     ┌─────────────────┐
  │  Laurel  (iris-dc/laurel) │────▶│ DynamoDB │     │ S3 attachments  │◀─ ─ the app uploads and
  │  Spring Boot on Fargate   │     └──────────┘     └─────────────────┘     downloads straight to S3
- │  https://api.iskra.red    │────▶ presigned S3 URLs · AppSync Events (not yet: Laurel logs each publish) · APNs · SNS
+ │  https://api.iskra.red    │────▶ presigned S3 URLs · AppSync Events (live updates; awaiting deploy) · APNs · SNS
  └───────────────────────────┘
        infrastructure as CDK:  rose  (iris-dc/rose, eu-central-1)
 ```
@@ -52,11 +52,11 @@ behind; pictures and files are cached on disk.
 ## Status
 
 Early days. Sign-in, events, groups, chat, tournaments, the inbox, languages and the iPad layouts work end to end
-against the live backend; groups, chat and tournaments are behind feature flags in debug builds. Live message
-delivery over AppSync Events is not built on any side yet: the backend only logs what it would publish, the
-infrastructure for it exists as undeployed code, and the app catches up over REST when a room opens or comes back to
-the foreground. Push reminders are built on every side but cannot deliver until the Apple Developer Program account
-exists (the steps are in `docs/notes/inbox-people-and-push.md`).
+against the live backend. Live message delivery over AppSync Events is built on every side (the app's transport, the
+backend's publisher, the CDK stack) but the realtime stack is not deployed yet, so until then the app catches up over
+REST when a room opens or comes back to the foreground — and keeps doing so whenever the socket is unavailable. Push
+reminders are built on every side but cannot deliver until the Apple Developer Program account exists (the steps are
+in `docs/notes/inbox-people-and-push.md`).
 
 ## Run it
 
@@ -90,7 +90,7 @@ http://<mac-name>.local:8080` points a phone at a Laurel running on your Mac. A 
 ./scripts/ci.sh unit      # unit tests, seconds
 ./scripts/ci.sh ui        # UI tests on an iPhone simulator, about half an hour
 ./scripts/ci.sh ui-ipad   # the iPad layout tests
-./scripts/ci.sh all       # everything CI runs: lint, build, unit, ui, ui-ipad
+./scripts/ci.sh all       # everything CI runs: lint, build, unit, release-build, ui, ui-ipad
 ```
 
 Lint is SwiftLint in strict mode (`brew install swiftlint`) plus a check that every line of copy has a translation.

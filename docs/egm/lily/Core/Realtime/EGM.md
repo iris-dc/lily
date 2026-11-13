@@ -16,10 +16,11 @@ arrives on them).
 
 ## Interface
 
-- Children: [Interfaces](./Interfaces/EGM.md) (`RealtimeTransport`, `RealtimeEndpointProvider`),
+- Children: [Interfaces](./Interfaces/EGM.md) (`RealtimeTransport`, `RealtimeEndpointProvider`, `EventsSocket`),
   [Models](./Models/EGM.md) (`RealtimeEnvelope`, `RealtimeChannel`, `RealtimeConnectionState`,
-  `RealtimeTransportError`, `Backoff`, `RenewalDelay`), [Implementations](./Implementations/EGM.md) (mock and
-  no-op transports, endpoint providers).
+  `RealtimeTransportError`, `Backoff`, `RenewalDelay`, and the AppSync wire: `EventsIncomingFrame`,
+  `EventsOutgoingFrame`, `AppSyncEndpoints`, `EventsSocketFailure`), [Implementations](./Implementations/EGM.md)
+  (the production `AppSyncRealtimeTransport` over `URLSessionEventsSocket`, the mock bus, endpoint providers).
 - `final class RealtimeSessionController: SessionObserver` (main-actor; not `@Observable`: no view reads it; its holders call its
   methods, and the one property read outside (`ChatViewModel+History`'s `realtime.openRoom`) is a plain read in an
   async method). State: `var state: RealtimeConnectionState` (starts `.disconnected`), `var subscribedRooms: [String: Int]` (the
@@ -98,7 +99,10 @@ arrives on them).
 - `reconcileSubscriptions()` is a no-op unless `.connected`; it unsubscribes rooms no longer desired and subscribes
   rooms whose epoch differs, except a room whose jittered resubscribe is pending keeps its old subscription
   [`+Routing.swift:RealtimeSessionController.reconcileSubscriptions()`].
-- A stream that ends counts only if it is still the one held for its channel (`Subscription.id`). `subscribeRefused`
+- A stream that ends counts only if it is still the one held for its channel (`Subscription.id`). A stream ending
+  `.unavailable` (the API refuses the channel outright: the kill switch flipped under the open socket) closes
+  ("realtime refused"), settles `state = .unavailable`, catches up the open room over REST and arms no reconnect, so
+  the connection falls to catch-up until the next foreground; it never resubscribes. `subscribeRefused`
   on a room costs one `groupRepository.group(id:)` read: not a member or deleted drops the group locally; an epoch not
   newer than the refused one is not retried; a newer one resubscribes and catches that room up. `groupNotFound` drops
   the group. A refused user channel is only logged. Any other end closes ("connection lost") and schedules a reconnect
@@ -146,7 +150,8 @@ arrives on them).
   opened to <host>", "Chat connection closed (<reason>)", "Chat reconnecting in <N>s (<reason>)"), "Realtime disabled;
   catch-up only", "Subscribed to <path>", "Epoch changed for group <id>: <old> -> <new>", "Group <id> dropped
   (<reason>)"; warning for every failure the screen does not show ("Chat connection failed", "No access token for the
-  realtime connection", "Realtime connection refused the token", "Stream ended on <path>", "Dropped an envelope of
+  realtime connection", "Realtime connection refused the token", "Stream ended on <path>" ("... refused by the API;
+  catch-up only" for the `.unavailable` end), "Dropped an envelope of
   another group", "Subscribe refused for group <id> at the current epoch", the stale-token and inside-margin renewals);
   debug for renewal scheduling, unsubscribes, jittered resubscribes, ignored and superseded events. Tests pin these as
   count plus fragment [`RealtimeSessionController+Connection.swift`, `RealtimeSessionController+Routing.swift`].

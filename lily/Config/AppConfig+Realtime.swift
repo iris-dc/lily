@@ -24,6 +24,29 @@ nonisolated extension AppConfig {
         static let usersNamespace = "users"
         /// What the mock endpoint provider answers; the in-memory transport never connects anywhere.
         static let mockEndpoint = URL(string: "mock://realtime")!
+        /// How long a connect waits for the server's `connection_ack` before giving up as a lost connection.
+        static let connectTimeout: TimeInterval = 15
+        /// The keep-alive window when the ack names none; the server names five minutes today.
+        static let defaultKeepAliveTimeout: TimeInterval = 300
+        /// A subscribe whose server-side membership check failed is retried along `reconnectBackoffSeconds` this many
+        /// times before its stream gives the connection up.
+        static let subscribeRetryLimit = 6
+        /// The `subscribe_error` type retried with backoff: the backend's handlers answer it when their read failed.
+        static let retriedSubscribeError = "SubscriptionCheckFailed"
+        /// The `subscribe_error` family that means the caller may not have the channel (a stale epoch, not a member).
+        static let unauthorizedSubscribeError = "Unauthorized"
+        /// The WebSocket upgrade carries the protocol name and the base64url authorization in this header.
+        static let subprotocolHeaderField = "Sec-WebSocket-Protocol"
+        static let subprotocolName = "aws-appsync-event-ws"
+        static let subprotocolHeaderPrefix = "header-"
+        /// An AWS-domain endpoint derives its socket host by swapping these fragments; a custom domain keeps its own.
+        static let awsDomainSuffix = "amazonaws.com"
+        static let httpHostFragment = "appsync-api"
+        static let socketHostFragment = "appsync-realtime-api"
+        static let socketScheme = "wss"
+        static let socketPath = "/event/realtime"
+        /// What a WebSocket upgrade answers when it succeeds; any other status on the task is a refusal.
+        static let switchingProtocolsStatus = 101
     }
 }
 

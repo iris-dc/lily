@@ -6,7 +6,9 @@ Source: `scripts/`
 
 Three standalone scripts and the unittest of one of them, with no package manifest. `ci.sh` (bash) is the one entry point for local runs and GitHub
 Actions: lint, build, unit, UI and iPad UI stages over the `lily` scheme, with the UI test classes split into four
-shards that CI runs from archived build-for-testing products, and the Release archive for a device
+shards that CI runs from archived build-for-testing products, an unsigned Release build for the simulator platform
+(`release-build`, inside `all` and CI's first job, so a `#if DEBUG`-only symbol used from release code fails the gate
+instead of an archive) and the Release archive for a device
 (`release-archive`). Every xcodebuild run logs under `build/results/`, and a test stage fails unless the log proves a
 test ran. `l10n-check.py` (Python, read-only) validates the two string
 catalogs against every `localized("...")` call site under `lily/` and the project's usage-description settings.
@@ -31,8 +33,9 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
 | `archive-products` | `tar -czf "$PRODUCTS_ARCHIVE"` of `$PRODUCTS_DIR/Debug-iphonesimulator` and `*.xctestrun` (`COPYFILE_DISABLE=1`) |
 | `restore-products` | `mkdir -p "$PRODUCTS_DIR"`, `tar -xzf "$PRODUCTS_ARCHIVE" -C "$PRODUCTS_DIR"` |
 | `ui-shard <1..4 or ipad>` | `use_software_keyboard`, then `run_prebuilt_tests` on the shard's classes, or on `LilyIPadTests` for `ipad` |
+| `release-build` | `run_release_build`: `build -configuration Release -destination 'generic/platform=iOS Simulator'` through `run_logged` (unsigned; no simulator runtime needed) |
 | `release-archive <build-number>` | `run_release_archive`: refuses a missing or non-integer argument (usage line, `exit 2`); `xcodebuild archive -scheme lily -configuration Release -destination 'generic/platform=iOS' -archivePath "$ARCHIVE_PATH" -derivedDataPath "$DERIVED_DATA" -allowProvisioningUpdates CURRENT_PROJECT_VERSION=<n>` through `xcodebuild_logged` (no `CODE_SIGNING_ALLOWED=NO`); fails unless the archive's `CFBundleVersion` equals `<n>` |
-| `all` | `run_lint`, build-for-testing, then unit, ui and ui-ipad as `test-without-building` |
+| `all` | `run_lint`, build-for-testing, then unit as `test-without-building`, `run_release_build`, then ui and ui-ipad as `test-without-building` |
 | other | usage line to stderr, `exit 2` |
 
 - Environment variables (`scripts/ci.sh:RESULTS_DIR`): `RESULTS_DIR` (default `build/results`), `DERIVED_DATA`
@@ -55,7 +58,7 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
   `device_name <udid>`, `destination_udid <destination>`, `show_xcode_version`, `resolve_iphone_destination`
   (prefers `iPhone 17 Pro (`), `resolve_ipad_destination` (prefers `iPad Pro 13-inch`), `warm_up_simulator <udid>`,
   `xcodebuild_logged <label> [xcodebuild args]` (one invocation: log, console filter, tail on failure),
-  `run_logged <label> <action> [args]`, `run_release_archive <build-number>`, `check_app_folder`,
+  `run_logged <label> <action> [args]`, `run_release_archive <build-number>`, `run_release_build`, `check_app_folder`,
   `report_retried_tests <label> <log>`, `run_xcodebuild <label> <action> [args]`,
   `require_executed_tests <label> <log>`, `check_executed_tests_gate`,
   `run_prebuilt_tests <label> <destination> <warm_up_test> [args]`, `warm_up_test_session`, `check_warm_up_tests`,
@@ -141,7 +144,7 @@ catalogs against every `localized("...")` call site under `lily/` and the projec
 ## Side Effects
 
 - `cd "$(dirname "$0")/.."` then `mkdir -p "$RESULTS_DIR"` for every stage, `lint` included (`scripts/ci.sh:cd`).
-- Writes `$RESULTS_DIR/<label>.log` for labels `build`, `unit-tests`, `ui-tests`, `ui-ipad-tests`, `ui-shard-<N>`;
+- Writes `$RESULTS_DIR/<label>.log` for labels `build`, `unit-tests`, `release-build`, `ui-tests`, `ui-ipad-tests`, `ui-shard-<N>`;
   for test actions `rm -rf` then writes `$RESULTS_DIR/<label>.xcresult`; `warm_up_test_session` writes
   `$RESULTS_DIR/<label>-warm-up.log`; derived data goes under `$DERIVED_DATA`; `archive-products` writes
   `$PRODUCTS_ARCHIVE` (`scripts/ci.sh:run_logged`, `scripts/ci.sh:archive-products`); `release-archive` removes and

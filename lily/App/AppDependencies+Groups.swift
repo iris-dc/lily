@@ -24,11 +24,13 @@ struct GroupRepositories {
     /// Downloads attachment bytes from their presigned links; the mock one resolves the mock store's `mock://` URLs.
     let attachmentSession: URLSession
 
-    /// The remote set over the app's one API client. The transport is `NoRealtimeTransport` until the AppSync client
-    /// is added; the endpoint provider already discovers the endpoint, so that swap is one line here.
+    /// The remote set over the app's one API client. The transport is the AppSync Events client over its own socket,
+    /// reading the token afresh from the same provider the API client sends; the endpoint provider answers what
+    /// `GET /api/me` named (or the debug `-realtime-endpoint` override).
     static func remote(client: any APIClient,
                        realtimeEndpoint: URL?,
                        identity: any IdentityProvider,
+                       tokenProvider: (any AuthTokenProvider)?,
                        logger: any Logging) -> GroupRepositories {
         GroupRepositories(groups: RemoteGroupRepository(client: client, identity: identity),
                           invites: RemoteInviteRepository(client: client),
@@ -39,7 +41,9 @@ struct GroupRepositories {
                           users: RemoteUserRepository(client: client),
                           tournaments: RemoteTournamentRepository(client: client),
                           tournamentInvites: RemoteTournamentInviteRepository(client: client),
-                          realtimeTransport: NoRealtimeTransport(),
+                          realtimeTransport: AppSyncRealtimeTransport(socket: URLSessionEventsSocket(),
+                                                                      tokenProvider: tokenProvider,
+                                                                      logger: logger),
                           makeRealtimeEndpointProvider: { me in
                               RemoteRealtimeEndpointProvider(override: realtimeEndpoint, me: me)
                           },

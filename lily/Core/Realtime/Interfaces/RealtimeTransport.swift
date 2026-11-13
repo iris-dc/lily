@@ -1,11 +1,13 @@
 import Foundation
 
 /// The socket to the realtime API. Nothing flows up it: every write is REST, the socket carries only what the backend
-/// committed. One connection; a subscription is a stream that ends when the channel is refused (`subscribeRefused`),
-/// the connection drops (`connectionLost`) or the consumer stops reading.
+/// committed. One connection; a subscription is a stream that ends when the channel is refused (`subscribeRefused`:
+/// the controller refetches the group), the API refuses it outright (`unavailable`: the controller stops and falls to
+/// catch-up, never resubscribes), the connection drops (`connectionLost`) or the consumer stops reading.
 protocol RealtimeTransport {
     /// Throws `RealtimeTransportError.unauthorized` when the token is refused and `.unavailable` when this transport
-    /// never connects; anything else is a transient failure worth a backoff. Must honour cancellation (throw
+    /// cannot connect by design (the kill switch answering the upgrade with a non-401 4xx, or no token to offer);
+    /// anything else is a transient failure worth a backoff. Must honour cancellation (throw
     /// `CancellationError` promptly): `close()` cancels a connect in flight and every later connect waits for it.
     /// The token is read from the `AuthTokenProvider` afresh here and on every subscribe; the controller refreshes it
     /// before each reconnect, so the read sees the fresh one. A handshake that completes after the cancellation is

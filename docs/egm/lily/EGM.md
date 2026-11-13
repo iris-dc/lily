@@ -17,8 +17,8 @@ neither).
 
 The target compiles with default `@MainActor` isolation; plain data types are `nonisolated` so they stay `Sendable`,
 and every `extension AppConfig/AppBranding/DesignTokens/AccessibilityIdentifiers/ErrorMessageMapper/String` in its
-own file is a `nonisolated extension`. Groups, chat and tournaments are behind `AppConfig.FeatureFlags` (on in debug
-and Staging, off in Release). Everything runs without AWS credentials behind the mock set that
+own file is a `nonisolated extension`. Groups, chat and tournaments keep named switches in `AppConfig.FeatureFlags`,
+plain `true` in every configuration since the AppSync transport landed. Everything runs without AWS credentials behind the mock set that
 `-mock-auth -mock-events` selects. Unit suites: `lilyTests/` (`./scripts/ci.sh unit`); end-to-end: `lilyUITests/`
 (`./scripts/ci.sh ui`, `ui-ipad`).
 

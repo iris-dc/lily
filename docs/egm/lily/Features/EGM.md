@@ -13,7 +13,8 @@ the concrete `Remote*` and `Mock*` types are wired only in `lily/App/AppDependen
 and freshness, UI components) lives in `lily/Core` ([`../Core/EGM.md`](../Core/EGM.md)); copy, limits, tokens and
 identifiers in `lily/Config` ([`../Config/EGM.md`](../Config/EGM.md)).
 
-Three features are behind `AppConfig.FeatureFlags` (on in debug and Staging, off in Release): Groups, Chat (with
+Three features keep named switches in `AppConfig.FeatureFlags` (plain `true` in every configuration since the AppSync
+transport landed): Groups, Chat (with
 conversations and the inbox) and Tournaments. The flags are read by the callers that show or route to a gated
 feature (Shell, Events, Create (`CreationWizardPolicy.Flags.current`), the Landing intro slides, `ShellCommands`
 and `AppNavigation` outside this folder); inside the

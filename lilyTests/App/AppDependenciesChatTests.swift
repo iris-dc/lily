@@ -17,7 +17,9 @@ struct AppDependenciesChatTests {
 
         let remote = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
         #expect(remote.chatRepository is RemoteChatRepository)
-        #expect(remote.realtime.transport is NoRealtimeTransport)
+        let transport = remote.realtime.transport as? AppSyncRealtimeTransport
+        #expect(transport?.socket is URLSessionEventsSocket)
+        #expect(transport?.tokenProvider is CognitoAuthService, "the socket reads the same tokens as the API client")
         #expect(remote.realtime.endpointProvider is RemoteRealtimeEndpointProvider)
         #expect(await remote.realtime.endpointProvider.endpoint() == nil, "no endpoint until /api/me or the argument names one")
     }

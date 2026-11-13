@@ -5,8 +5,10 @@ Source: `lily/Core/Realtime/Models/`
 ## Overview
 
 Plain values of the realtime layer: channel names, connection states, the decoded event envelope, the transport
-errors, and the two pieces of timing arithmetic (reconnect backoff and token renewal). Every type is `nonisolated` and
-`Sendable`; none performs I/O. Thresholds come from `AppConfig.Realtime` (`lily/Config/`) and are cited by name.
+errors, the two pieces of timing arithmetic (reconnect backoff and token renewal), and the AppSync Events wire (the
+frames of the documented WebSocket protocol, the endpoint derivation and the socket's handshake failure). Every type
+is `nonisolated`; none performs I/O. Thresholds and protocol literals come from `AppConfig.Realtime` (`lily/Config/`)
+and are cited by name; the frame key names are the service's, kept in the wire types as everywhere.
 
 ## Interface
 
@@ -32,6 +34,23 @@ errors, and the two pieces of timing arithmetic (reconnect backoff and token ren
   `let bound: TimeInterval`, `let reason: Reason`; `init(expiry: Date?, lastExpiry: Date?, now: Date, fresh: Bool)`;
   `func seconds(backingOff backoff: inout Backoff, random: (ClosedRange<Double>) -> Double) -> TimeInterval`
   [`lily/Core/Realtime/Models/RenewalDelay.swift:RenewalDelay`].
+- `nonisolated struct AppSyncEndpoints: Hashable, Sendable`: `init?(endpoint: URL)`, `socketURL` and `httpHost`; on an
+  `amazonaws.com` host the socket host swaps `AppConfig.Realtime.httpHostFragment` for `socketHostFragment` (either
+  form may arrive), a custom domain keeps its host; scheme `socketScheme`, path `socketPath`, query dropped
+  [`lily/Core/Realtime/Models/AppSyncEndpoints.swift:AppSyncEndpoints`].
+- `nonisolated enum EventsSocketFailure: Error, Hashable, Sendable`: `.handshakeRefused(status: Int)`,
+  `.notConnected` [`lily/Core/Realtime/Models/EventsSocketFailure.swift:EventsSocketFailure`].
+- `nonisolated struct EventsIncomingFrame: Decodable`: `type` (required), `id?`, `event?` (a stringified JSON the
+  envelope decodes from), `errors? [{errorType?, message?}]`, `payload?.connectionTimeoutMs` /
+  `connectionTimeoutMs?`; `var kind: Kind?` over the wire names (`connection_ack`, `ka`, `subscribe_success`,
+  `subscribe_error`, `data`, `broadcast_error`, `unsubscribe_success`, `unsubscribe_error`, `error`); `var
+  keepAliveTimeout: TimeInterval?` (milliseconds to seconds, wherever the ack put it)
+  [`lily/Core/Realtime/Models/EventsFrame.swift:EventsIncomingFrame`].
+- `nonisolated enum EventsOutgoingFrame`: `connectionInit()`, `subscribe(id:channel:httpHost:token:)` (the Cognito
+  authorization object `{host, Authorization}`), `unsubscribe(id:)`, and
+  `handshakeProtocols(httpHost:token:)` (`subprotocolName`, a comma, `subprotocolHeaderPrefix` + base64url of the
+  authorization). Encoding (`withoutEscapingSlashes`, `sortedKeys`) cannot fail for these shapes; synthesized
+  `Encodable` omits a `nil` id [`lily/Core/Realtime/Models/EventsFrame.swift:EventsOutgoingFrame`].
 
 ## Invariants
 

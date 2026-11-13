@@ -26,15 +26,15 @@ without a token, and a bad token on a public route is still a 401.
  LilyApp (@main) -> AppDependencies (composition root, lily/App)
    |- Config: AppConfig, AppBranding, DesignTokens, AccessibilityIdentifiers   (constants, no state)
    |- Core:   SessionController (Cognito via Amplify) . URLSessionAPIClient -> Laurel (HTTPS, Bearer)
-   |          RealtimeSessionController over RealtimeTransport (NoRealtimeTransport in production until the
-   |            AppSync Events client lands; the mock bus in debug) . PushCoordinator (APNs)
+   |          RealtimeSessionController over RealtimeTransport (AppSyncRealtimeTransport in production, the
+   |            documented Events WebSocket protocol over URLSessionEventsSocket; the mock bus in debug) . PushCoordinator (APNs)
    |          ErrorCenter / AppError . ContentFreshness / ChangeTracker / ListSnapshotStore (Caches/)
    |          AppLocale / localized(_:) . AppNavigation . LayoutMode and the shared SwiftUI components
    '- Features: Landing, SignIn, Shell -> Events, Create, Groups, Chat, Inbox, People, Tournaments, Profile,
                 Feedback   (Views -> ViewModels -> Interfaces -> Implementations -> Laurel)
- scripts/ci.sh: lint, build, unit, ui, ui-ipad, all, build-and-unit, archive-products, restore-products,
-                ui-shard N|ipad   (GitHub Actions: build-and-unit, archive-products, then restore-products
-                and ui-shard in every shard job)
+ scripts/ci.sh: lint, build, unit, release-build, ui, ui-ipad, all, build-and-unit, archive-products,
+                restore-products, ui-shard N|ipad, release-archive N   (GitHub Actions: build-and-unit,
+                release-build, archive-products, then restore-products and ui-shard in every shard job)
 ```
 
 ## Subdirectories & System Boundaries
@@ -91,8 +91,8 @@ without a token, and a bad token on a public route is still a 401.
 - **Copy and constants.** Every string is read through `localized(...)` in `AppBranding` or `ErrorMessageMapper`
   (seven languages: en, ru, es, fr, uk, pl, pt; keys are the English text); numbers live in `AppConfig` and
   `DesignTokens`; identifiers in `AccessibilityIdentifiers`, mirrored by hand in the UI tests.
-- **Feature flags and launch arguments.** Groups, chat and tournaments are on in debug and Staging, off in Release
-  (`AppConfig.FeatureFlags`), read by the callers that show or route to them (Shell, Groups, Events, the Landing
+- **Feature flags and launch arguments.** Groups, chat and tournaments are plain `true` in every configuration
+  (`AppConfig.FeatureFlags`, named switches kept so a feature can be pulled in one line), read by the callers that show or route to them (Shell, Groups, Events, the Landing
   intro slides, `ShellCommands`, `AppNavigation`) and, for the chat flag, by `TournamentDetailViewModel`; launch arguments
   (`AppConfig.LaunchArguments`) are read in debug builds only.
 - **Folder hygiene.** `lily/` holds only Swift sources, `Assets.xcassets`, the two string catalogs and
@@ -105,8 +105,10 @@ without a token, and a bad token on a public route is still a 401.
   `https://api.iskra.red` otherwise) through one `URLSessionAPIClient`; Cognito through Amplify
   (`CognitoAuthService` over `AmplifyCognitoClient`, the only file importing Amplify); attachment bytes PUT to and GET from presigned S3 URLs
   (`URLSessionAttachmentUploader`, `AttachmentLoader`); the realtime seam (`RealtimeSessionController` over
-  `RealtimeTransport`: production binds `NoRealtimeTransport()` until the AppSync Events client lands,
-  `AppConfig.Realtime.productionEndpoint` is `nil`; the mock bus runs in debug); usage statistics posted in batches
+  `RealtimeTransport`: production binds `AppSyncRealtimeTransport` over `URLSessionEventsSocket`, a WebSocket to the
+  AppSync Events API whose endpoint `GET /api/me` names — `AppConfig.Realtime.productionEndpoint` stays `nil` until the
+  rose stack is deployed, so the socket only opens once the backend answers an endpoint; the mock bus runs in debug);
+  usage statistics posted in batches
   (`RemoteInteractionRecorder`, flushed when the scene goes to the background).
 - **Device.** Caches under `Caches/` (`FileListSnapshotStore` list snapshots, `DiskAttachmentCache` within a byte
   limit, both cleared with the session); UserDefaults for the session cache and the Profile choices

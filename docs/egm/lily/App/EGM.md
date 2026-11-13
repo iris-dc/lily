@@ -56,8 +56,9 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
 - `GroupRepositories` (`lily/App/AppDependencies+Groups.swift:GroupRepositories`): `groups`, `invites`, `inbox`, `me`,
   `moderation`, `chat`, `users`, `tournaments`, `tournamentInvites`, `realtimeTransport`,
   `makeRealtimeEndpointProvider: @MainActor (MeStore) -> any RealtimeEndpointProvider`, `attachmentUploader`,
-  `mediaPreparer`, `attachmentSession: URLSession`. `remote(client:realtimeEndpoint:identity:logger:)` binds the
-  `Remote*Repository` set, `NoRealtimeTransport()`, `RemoteRealtimeEndpointProvider(override:me:)`, `URLSessionAttachmentUploader`,
+  `mediaPreparer`, `attachmentSession: URLSession`. `remote(client:realtimeEndpoint:identity:tokenProvider:logger:)` binds the
+  `Remote*Repository` set, `AppSyncRealtimeTransport(socket: URLSessionEventsSocket(), tokenProvider:, logger:)`,
+  `RemoteRealtimeEndpointProvider(override:me:)`, `URLSessionAttachmentUploader`,
   `DeviceMediaPreparer`, `URLSession(configuration: .default)`;
   `mock(identity:logger:events:profiles:autoReplies:mockPicker:deletedFixtures:)` (the Bools default to
   false; `deletedFixtures` adds the deleted-flagged chat, tournament and inbox fixtures, 2026-11-08)
@@ -146,7 +147,8 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   (`lily/App/AppDependencies+Repositories.swift:Repositories.mock`); `-mock-events` forces `NoOpListSnapshotStore()`
   (`lily/App/AppDependencies+Shell.swift:AppDependencies.makeListSnapshotStore`); the mock group set shares one
   `MockGroupRepository`, `MockTournamentRepository`, `MockRealtimeTransport` and `MockAttachmentStore`, and production
-  binds `NoRealtimeTransport()` (`lily/App/AppDependencies+Groups.swift:GroupRepositories.mock`, `GroupRepositories.remote`);
+  binds `AppSyncRealtimeTransport` over `URLSessionEventsSocket`, its tokens the same `AuthTokenProvider` the API
+  client sends (`lily/App/AppDependencies+Groups.swift:GroupRepositories.mock`, `GroupRepositories.remote`);
   `Repositories.mock` builds the event and profile mocks first and hands them to `GroupRepositories.mock(identity:logger:events:profiles:...)`,
   whose `MockUserRepository` reads them for a profile's shared games and the caller's own bio.
 - Mock-auth precedence is `-mock-auth-fail`, `-mock-auth-confirm`, then `-mock-auth`; `-mock-user-id` counts only with

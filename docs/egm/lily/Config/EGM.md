@@ -52,7 +52,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `-app-language`, `-realtime-endpoint`. `static func value(following: String, in: [String]) -> String?`;
   `static func appLanguage(from: [String]) -> AppLanguage?` (`lily/Config/AppConfig+Localization.swift`).
 - `FeatureFlags` (`lily/Config/AppConfig+FeatureFlags.swift:AppConfig.FeatureFlags`): `groups`, `chat`, and
-  `tournaments` (`lily/Config/AppConfig+Tournaments.swift`) are `true` under `#if DEBUG || STAGING`, else `false`.
+  `tournaments` (`lily/Config/AppConfig+Tournaments.swift`) are plain `true` in every configuration (since 2026-11-13,
+  with the AppSync transport); kept as named switches so a feature can be pulled from a build in one line.
 - `Build` (`lily/Config/AppConfig+Build.swift:AppConfig.Build`): `enum Configuration: Sendable { debug, staging, release }`;
   `static let configuration` is `.debug` under `#if DEBUG`, `.staging` under `#elseif STAGING`, else `.release`: the one
   place that names the kind of build (Debug and Staging run from Xcode development-signed, Release alone is archived).
@@ -98,7 +99,14 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `offered`, 14 codes); `Push` (`reregisterInterval = 24 * 60 * 60`, `tokenTimeout = .seconds(10)`, `platform = "ios"`,
   `redactedToken = "<token>"`, `Payload` keys `kind`, `eventId`, `event_reminder`, `match_reminder`, `tournamentId`,
   `matchId`); `Realtime` (`productionEndpoint: URL? = nil`, `reconnectBackoffSeconds = [1, 2, 4, 8, 16, 30]`,
-  `maxReconnectsWithoutToken = 8`, `maxRoomSubscriptions = 10`, `maxConnectionAge = 21_600`, `mockEndpoint = mock://realtime`).
+  `maxReconnectsWithoutToken = 8`, `maxRoomSubscriptions = 10`, `maxConnectionAge = 21_600`, `mockEndpoint = mock://realtime`,
+  and the AppSync socket's knobs and literals, 2026-11-13: `connectTimeout = 15`, `defaultKeepAliveTimeout = 300`,
+  `subscribeRetryLimit = 6`, `retriedSubscribeError = "SubscriptionCheckFailed"`,
+  `unauthorizedSubscribeError = "Unauthorized"`, `subprotocolHeaderField = "Sec-WebSocket-Protocol"`,
+  `subprotocolName = "aws-appsync-event-ws"`, `subprotocolHeaderPrefix = "header-"`,
+  `awsDomainSuffix = "amazonaws.com"`, `httpHostFragment = "appsync-api"`,
+  `socketHostFragment = "appsync-realtime-api"`, `socketScheme = "wss"`, `socketPath = "/event/realtime"`,
+  `switchingProtocolsStatus = 101`).
 
 ### `AppBranding` (`lily/Config/AppBranding.swift:AppBranding`)
 
@@ -286,8 +294,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   other isolation annotation appears in the directory.
 - `AppConfig` is only `static let` constants and pure `static func` builders (`lily/Config/AppConfig.swift:AppConfig`).
   `baseURL` is local only under `#if DEBUG && targetEnvironment(simulator)`; `sendsLocalUserHeader` and
-  `LaunchArguments.isHonored` are `true` only under `#if DEBUG`; the three `FeatureFlags` are `true` only under
-  `#if DEBUG || STAGING`; `Build.configuration` is `.release` only when neither `DEBUG` nor `STAGING` is set.
+  `LaunchArguments.isHonored` are `true` only under `#if DEBUG`; the three `FeatureFlags` are plain `true` in every
+  configuration; `Build.configuration` is `.release` only when neither `DEBUG` nor `STAGING` is set.
   `LaunchArguments.value(following:in:)` returns `nil` when the flag is absent, is last, or the
   next argument starts with `flagPrefix`: a prefixed argument is a flag, never a value.
 - Limits mirror Laurel's, counted in UTF-16 units, so a draft that passes here never earns a 400: `Events.Creation`,

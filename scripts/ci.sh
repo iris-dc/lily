@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds Lily and runs unit + UI tests on an iPhone simulator, and the iPad UI tests on an iPad simulator.
-# Locally: ./scripts/ci.sh [lint|build|unit|ui|ui-ipad|all]; ./scripts/ci.sh release-archive <build-number> archives
-# Release for a device under that build number (the only signed run).
+# Locally: ./scripts/ci.sh [lint|build|unit|release-build|ui|ui-ipad|all]; ./scripts/ci.sh release-archive
+# <build-number> archives Release for a device under that build number (the only signed run).
 # GitHub Actions: ./scripts/ci.sh build-and-unit on one runner, then ./scripts/ci.sh ui-shard <1..N|ipad> on one
 # runner per shard, each from the build products the first one archived (see .github/workflows/ci.yml).
 set -euo pipefail
@@ -210,6 +210,14 @@ run_release_archive() {
     exit 1
   fi
   echo "==> archived $(plutil -extract CFBundleShortVersionString raw "$plist") (${archived}) -> $ARCHIVE_PATH"
+}
+
+# The Release configuration built for the simulator platform, unsigned: proves the release paths compile (a
+# `#if DEBUG`-only symbol used from release code fails here instead of in the device archive). A generic destination,
+# so it needs no simulator runtime and runs in CI's first job.
+run_release_build() {
+  run_logged release-build build -scheme "$SCHEME" -configuration Release \
+    -destination 'generic/platform=iOS Simulator' -derivedDataPath "$DERIVED_DATA"
 }
 
 # Every file under lily/ ships, so a stray one (a note, a script, a plist that is not the manifest) is a lint failure;
@@ -528,6 +536,10 @@ case "$STAGE" in
     mkdir -p "$PRODUCTS_DIR"
     tar -xzf "$PRODUCTS_ARCHIVE" -C "$PRODUCTS_DIR"
     ;;
+  # The unsigned Release build for the simulator platform (see run_release_build).
+  release-build)
+    run_release_build
+    ;;
   # A device archive of Release under the given build number (see run_release_archive).
   release-archive)
     run_release_archive "${2:-}"
@@ -550,12 +562,14 @@ case "$STAGE" in
     run_lint
     run_xcodebuild build build-for-testing
     run_unit_tests test-without-building
+    # Before the UI hours: a release-only compile failure should surface here, not in an archive days later.
+    run_release_build
     run_ui_tests test-without-building
     # The iPhone build's simulator products are arm64 like the iPad's, so the iPad stage runs them without a rebuild.
     run_ipad_ui_tests test-without-building
     ;;
   *)
-    echo "Usage: $0 [lint|build|unit|ui|ui-ipad|all|build-and-unit|ui-shard <1..${#UI_SHARDS[@]}|ipad>|release-archive <build-number>]" >&2
+    echo "Usage: $0 [lint|build|unit|release-build|ui|ui-ipad|all|build-and-unit|ui-shard <1..${#UI_SHARDS[@]}|ipad>|release-archive <build-number>]" >&2
     exit 2
     ;;
 esac
