@@ -85,7 +85,8 @@ device; the mode is the only switch. Widths, counts and durations come from `Des
   forms of SwiftUI's presenters.
 - `enum KeyboardDismissal` [`lily/Core/UI/Layout/KeyboardDismissal.swift:KeyboardDismissal`], main-actor:
   `static func dismissAndWait(atMost timeout: Duration) async`, ends editing on the key window and, if a hide began,
-  waits for `keyboardDidHideNotification` bounded by `Deadline.within` (`lily/Core/Concurrency`).
+  waits for `keyboardDidHideNotification` bounded by `Deadline.within` (`lily/Core/Concurrency`); `static func
+  dismiss()` (2026-11-13) ends editing at once with no wait, the chat transcript's tap-to-dismiss.
 
 ## Invariants
 

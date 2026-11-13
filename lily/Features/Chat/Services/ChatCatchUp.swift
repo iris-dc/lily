@@ -4,15 +4,26 @@ import Foundation
 /// for the first time, `newer` pages for one already held. Shared by the open chat and the realtime controller, so
 /// the resume protocol and the chat screen recover a room the same way, into the same cache. A page naming a later poll
 /// revision than the room holds is followed by one refresh of the polls held, the only way others' votes reach them.
-final class ChatCatchUp {
+/// A `SessionObserver` only for its warm-up bookkeeping; the rooms themselves are the cache's to clear.
+final class ChatCatchUp: SessionObserver {
     private let repository: any ChatRepository
     private let cache: any ChatHistoryCache
     private let logger: any Logging
+    private let now: () -> Date
+    /// The rooms being warmed for the Chats list, so a list that reappears while one runs asks nothing twice.
+    private var preloading: Set<String> = []
+    /// When each room's last warm-up failed, so a dead backend costs one request per room per
+    /// `AppConfig.Chat.preloadRetryInterval`, not one per tab visit.
+    private var failedPreloads: [String: Date] = [:]
 
-    init(repository: any ChatRepository, cache: any ChatHistoryCache, logger: any Logging) {
+    init(repository: any ChatRepository,
+         cache: any ChatHistoryCache,
+         logger: any Logging,
+         now: @escaping () -> Date = { .now }) {
         self.repository = repository
         self.cache = cache
         self.logger = logger
+        self.now = now
     }
 
     /// The newest page of a room, merged into the cached room. A room not held yet is cached as a stub before the
@@ -69,6 +80,54 @@ final class ChatCatchUp {
             for await _ in tasks {
                 if let next = pending.popFirst() { tasks.addTask { await self.catchUpQuietly(next) } }
             }
+        }
+    }
+
+    /// Warms the first `limit` of the rooms the Chats list shows (most recently active first, as Mine orders them)
+    /// that hold no history yet, `maxConcurrent` at a time, so a room opens on its rows instead of a spinner. A room
+    /// already cached costs nothing, one being warmed is not asked twice, and one whose warm-up failed waits out
+    /// `preloadRetryInterval`; at most `limit` requests per call, and never a poll.
+    func preloadRooms(_ groups: [SportGroup], limit: Int, maxConcurrent: Int) async {
+        let due = groups.filter { isDueForPreload($0.id) }.prefix(limit).map { (id: $0.id, epoch: $0.channelEpoch) }
+        guard !due.isEmpty else { return }
+        for room in due { preloading.insert(room.id) }
+        logger.debug(.cache, "Warming \(due.count) rooms for the Chats list")
+        await withTaskGroup(of: Void.self) { tasks in
+            var pending = due[...]
+            for _ in 0..<min(maxConcurrent, pending.count) {
+                if let next = pending.popFirst() { tasks.addTask { await self.preloadQuietly(next.id, epoch: next.epoch) } }
+            }
+            for await _ in tasks {
+                if let next = pending.popFirst() { tasks.addTask { await self.preloadQuietly(next.id, epoch: next.epoch) } }
+            }
+        }
+    }
+
+    /// No history cached, not already being warmed, and no failure within the retry interval.
+    private func isDueForPreload(_ groupID: String) -> Bool {
+        guard cache.room(for: groupID)?.hasHistory != true, !preloading.contains(groupID) else { return false }
+        guard let failedAt = failedPreloads[groupID] else { return true }
+        return now().timeIntervalSince(failedAt) >= AppConfig.Chat.preloadRetryInterval
+    }
+
+    /// The warm-up bookkeeping is the signed-out user's: a stale failure stamp must not delay the next account's
+    /// shared room, and the stamps have no business outliving the session.
+    func sessionDidEnd() {
+        preloading.removeAll()
+        failedPreloads.removeAll()
+    }
+
+    /// A cancellation (the list left) stays quiet and costs no retry wait; a failure is a warning, never a popup.
+    private func preloadQuietly(_ groupID: String, epoch: Int) async {
+        defer { preloading.remove(groupID) }
+        do {
+            try await loadNewest(groupID: groupID, epoch: epoch)
+            failedPreloads[groupID] = nil
+            logger.debug(.chat, "Warmed room \(groupID)")
+        } catch {
+            guard !AppError.isCancellation(error) else { return }
+            failedPreloads[groupID] = now()
+            logger.warning(.chat, "Warm-up failed for room \(groupID): \(error)")
         }
     }
 

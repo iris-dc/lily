@@ -14,6 +14,13 @@ nonisolated extension AppConfig {
         static let catchUpPageSize = 200
         static let maxCatchUpPages = 3
         static let maxConcurrentCatchUps = 3
+        /// How many rooms the Chats list warms with their first page when it appears — the first of Mine's order
+        /// that hold no cached history — so a room opens on its rows instead of a spinner; a warmed or opened room
+        /// costs nothing on later appearances. Kept at the resume budget's scale above.
+        static let preloadedRoomCount = 5
+        /// A room whose warm-up failed is not asked again before this has passed: one request per room per interval
+        /// against a dead backend, not one per tab visit.
+        static let preloadRetryInterval: TimeInterval = 60
         /// Newest messages kept per room in memory.
         static let roomCacheLimit = 300
         /// One sender's messages within this window are drawn as one run.

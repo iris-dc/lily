@@ -47,4 +47,14 @@ extension Animation {
 
     /// The spinner, the rows and the empty state of a room's first page cross on this one curve.
     nonisolated static var firstPageFade: Animation { .easeOut(duration: DesignTokens.Duration.fast) }
+
+    /// The spring UIKit drives the keyboard with, for the transcript's ride to the bottom when the inset moves, so
+    /// the rows and the keyboard travel as one; none under Reduce Motion (the change lands at once).
+    nonisolated static func keyboardGlide(_ motion: MotionPreference) -> Animation? {
+        guard motion.allowsMovement else { return nil }
+        return .interpolatingSpring(mass: DesignTokens.KeyboardSpring.mass,
+                                    stiffness: DesignTokens.KeyboardSpring.stiffness,
+                                    damping: DesignTokens.KeyboardSpring.damping,
+                                    initialVelocity: 0)
+    }
 }

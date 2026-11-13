@@ -43,7 +43,8 @@ the unit suites live under `lilyTests/Chat` (`./scripts/ci.sh unit`).
   `URLSessionAttachmentUploader`) with its mocks; `DisplayLinkFrameClock`.
 - Services: [`./Services/EGM.md`](./Services/EGM.md) - `AttachmentLoader` (bytes through the cache with presigned-link
   refresh and single-flight downloads, `PreviewFiles` for QuickLook copies), `ChatCatchUp` (pages cached rooms
-  forward from their watermark and refreshes polls), `ChatHistoryClearer` (the caller-only clear), `ReadMarkerFlusher`
+  forward from their watermark, refreshes polls, and warms the Chats list's top rooms so they open on their rows),
+  `ChatHistoryClearer` (the caller-only clear), `ReadMarkerFlusher`
   (coalesced read-marker pushes), `ImageFile` (a picture file decoded at the side a view needs, refused unread when
   its header declares more pixels than the cap).
 - State: [`./State/EGM.md`](./State/EGM.md) - `ChatOutbox` (unsent and failed messages per room) and `UnreadCenter`

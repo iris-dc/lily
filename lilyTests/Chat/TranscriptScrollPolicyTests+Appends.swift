@@ -37,7 +37,7 @@ extension TranscriptScrollPolicyTests {
         var resized = midLayout
         resized.visibleHeight = 500
         #expect(policy.geometryChanged(from: midLayout, to: resized, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .scrollToBottom, "a window resized")
+                == .glideToBottom, "a window resized is chrome motion, ridden like the keyboard")
     }
 
     /// Any scroll that rests away from the bottom ends following, a tapped quote's or VoiceOver's as much as the
@@ -130,7 +130,7 @@ extension TranscriptScrollPolicyTests {
     }
 
     /// A pin after a shrink lowers the offset too (a tombstone, the lazy stack's correction), and so does the keyboard
-    /// going with its inset: the reader keeps following and is pinned.
+    /// going with its inset: the reader keeps following, pinned or gliding.
     @Test func aLowerOffsetWithAShrinkOrAnInsetChangeIsNotAScroll() {
         var policy = settled()
         let atBottom = snapshot(offsetY: 1_200)
@@ -139,7 +139,7 @@ extension TranscriptScrollPolicyTests {
                 == .scrollToBottom)
         let keyboardGone = snapshot(offsetY: 1_070, contentHeight: 1_950, bottomInset: 0)
         #expect(policy.geometryChanged(from: shrunk, to: keyboardGone, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .scrollToBottom)
+                == .glideToBottom)
         #expect(policy.isFollowing)
     }
 
@@ -187,12 +187,12 @@ extension TranscriptScrollPolicyTests {
         #expect(policy.isFollowing, "a rest at the bottom resumes following")
     }
 
-    /// The keyboard rises after a send: the reader who follows is pinned; one who reads older messages is not.
-    @Test func aGrownInsetPinsTheReaderWhoFollows() {
+    /// The keyboard rises after a send: the reader who follows rides with it; one who reads older messages is not moved.
+    @Test func aGrownInsetGlidesTheReaderWhoFollows() {
         var policy = settled()
         let keyboardUp = snapshot(bottomInset: 417, isAtBottom: false)
         #expect(policy.geometryChanged(from: snapshot(), to: keyboardUp, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .scrollToBottom)
+                == .glideToBottom)
         var reader = reading()
         let readingBefore = snapshot(offsetY: 300, isAtBottom: false)
         let readingKeyboard = snapshot(offsetY: 300, bottomInset: 417, isAtBottom: false)
@@ -201,6 +201,61 @@ extension TranscriptScrollPolicyTests {
                                        hasRows: true,
                                        canLoadOlder: true,
                                        oldestID: oldest) == .none)
+    }
+
+    /// The glide's own animation frames lower the offset on the keyboard's way down: they end nothing, the rest at
+    /// the bottom resumes the exact pin, and the reader's touch takes over as ever.
+    @Test func aGlidesOwnFramesDoNotEndFollowing() {
+        var policy = settled()
+        let keyboardGoing = snapshot(offsetY: 1_200, bottomInset: 0)
+        let before = snapshot(offsetY: 1_200)
+        #expect(policy.geometryChanged(from: before, to: keyboardGoing, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .glideToBottom)
+        let glideFrame = snapshot(offsetY: 1_150, bottomInset: 0)
+        #expect(policy.geometryChanged(from: keyboardGoing, to: glideFrame, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        #expect(policy.isFollowing, "the glide's frames are not the reader's scroll")
+        // A deep lazy room re-estimates unmeasured rows while the keyboard resizes it: mid-ride content motion
+        // re-aims the glide rather than pinning, which cut the ride to a jump.
+        let reEstimated = snapshot(offsetY: 1_150, contentHeight: 2_075, bottomInset: 0)
+        #expect(policy.geometryChanged(from: glideFrame, to: reEstimated, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .glideToBottom)
+        #expect(policy.scrollPhaseChanged(to: .resting, at: snapshot(bottomInset: 0)) == .scrollToBottom)
+        #expect(policy.isFollowing)
+        var touched = settled()
+        let keyboardUp = snapshot(bottomInset: 380)
+        _ = touched.geometryChanged(from: snapshot(), to: keyboardUp, hasRows: true, canLoadOlder: true, oldestID: oldest)
+        touched.scrollPhaseChanged(to: .touched, at: keyboardUp)
+        touched.scrollPhaseChanged(to: .resting, at: snapshot(offsetY: 400, bottomInset: 380, isAtBottom: false))
+        #expect(!touched.isFollowing, "the reader's touch during the glide takes over")
+    }
+
+    /// Under Reduce Motion the glide is applied as an instant pin and the policy hears it: the ride's flag does not
+    /// wait for a rest that never comes, the landing is exempt like any pin's, and a later scroll up is the reader's.
+    @Test func aGlideLandedAtOnceLeavesNoRideBehind() {
+        var policy = settled()
+        let keyboardUp = snapshot(offsetY: 1_200, bottomInset: 380)
+        let keyboardGone = snapshot(offsetY: 1_200)
+        #expect(policy.geometryChanged(from: keyboardUp, to: keyboardGone, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .glideToBottom)
+        policy.glideLandedAtOnce()
+        let landing = snapshot(offsetY: 900)
+        #expect(policy.geometryChanged(from: keyboardGone, to: landing, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        #expect(policy.isFollowing, "the instant pin's landing is ours")
+        let scrolledUp = snapshot(offsetY: 700)
+        #expect(policy.geometryChanged(from: landing, to: scrolledUp, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .none)
+        #expect(!policy.isFollowing, "a scroll up after the landing is the reader's")
+    }
+
+    /// A report that moves the content and the chrome together (a send whose answer shrinks the composer) pins at
+    /// once: only a chrome-only change rides the keyboard's spring.
+    @Test func anInsetChangeWithAContentChangePinsAtOnce() {
+        var policy = settled()
+        let both = snapshot(contentHeight: 2_050, bottomInset: 380)
+        #expect(policy.geometryChanged(from: snapshot(), to: both, hasRows: true, canLoadOlder: true, oldestID: oldest)
+                == .scrollToBottom)
     }
 
     /// Before the first settle there is no reader to follow or fetch.

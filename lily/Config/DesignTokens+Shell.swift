@@ -11,7 +11,7 @@ nonisolated extension DesignTokens {
         /// badge (`badgePositionAdjustment` probed at zero effect), so the count sits where the owner wants it — its
         /// centre this far from the glyph's top-right corner (x into the glyph, y below its top; the system badge sat
         /// at about (+13, +3) on the same glyph), clearly further left and down.
-        static let badgeCenterOffset = CGPoint(x: -1, y: 6)
+        static let badgeCenterOffset = CGPoint(x: -1, y: 4)
         /// The composite draws its own glyph (the bar re-renders template symbols at its own size but draws a bitmap
         /// as-is), so the symbol is built at the size the bar gives the template neighbours, measured against them.
         static let badgeGlyphPointSize: CGFloat = 23

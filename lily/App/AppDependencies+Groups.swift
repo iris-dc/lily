@@ -201,7 +201,7 @@ struct GroupDependencies {
     /// Everything here that holds state for the signed-in user; `SessionController` tells them when the session ends,
     /// awaiting `sessionWillEnd` in this order: the loader ends its downloads before the cache sweeps.
     var sessionObservers: [any SessionObserver] {
-        [myGroups, me, inbox, blocks, chatHistory, outbox, unreadCenter, attachments.loader, attachments.cache, realtime]
+        [myGroups, me, inbox, blocks, chatHistory, catchUp, outbox, unreadCenter, attachments.loader, attachments.cache, realtime]
     }
 }
 

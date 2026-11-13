@@ -84,6 +84,14 @@ extension AppDependencies {
                                 logger: logger)
     }
 
+    /// Warms the Chats list's top rooms with their first pages, so they open on their rows instead of a spinner;
+    /// the list's load task calls it after Mine, and `ChatCatchUp` holds the budget and debounce rules.
+    func preloadTopRooms() async {
+        await groups.catchUp.preloadRooms(myGroups.groups,
+                                          limit: AppConfig.Chat.preloadedRoomCount,
+                                          maxConcurrent: AppConfig.Chat.maxConcurrentCatchUps)
+    }
+
     /// Clears a room for the caller alone; the chat's menu and a Chats row's context menu both go through one.
     func makeChatHistoryClearer() -> ChatHistoryClearer {
         ChatHistoryClearer(repository: chatRepository,

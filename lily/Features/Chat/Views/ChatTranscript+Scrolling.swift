@@ -89,6 +89,18 @@ extension ChatTranscript {
             Task {
                 withAnimation(.messageArrival(motion)) { position.scrollTo(id: Self.endMarkerID, anchor: .bottom) }
             }
+        case .glideToBottom:
+            // Deferred a turn for the same reason; the keyboard's own spring, so the rows travel with the keyboard.
+            // Under Reduce Motion there is no ride: the pin lands at once and the policy hears it, or its slide flag
+            // would wait for a rest that never comes.
+            if let glide = Animation.keyboardGlide(motion) {
+                Task {
+                    withAnimation(glide) { position.scrollTo(id: Self.endMarkerID, anchor: .bottom) }
+                }
+            } else {
+                tracker.policy.glideLandedAtOnce()
+                position.scrollTo(id: Self.endMarkerID, anchor: .bottom)
+            }
         case .scrollTo(let y):
             position.scrollTo(y: y)
         case .loadOlder:

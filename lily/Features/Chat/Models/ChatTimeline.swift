@@ -5,7 +5,7 @@ import Foundation
 /// caller's unsent messages at the end, their first one continuing the caller's run and one on a new day behind its
 /// day divider. Pure, so the rules are tested without a view.
 nonisolated enum ChatTimeline {
-    struct Input {
+    struct Input: Equatable {
         var messages: [ChatMessage]
         var pending: [PendingMessage] = []
         var blockedUserIDs: Set<String> = []
@@ -14,6 +14,24 @@ nonisolated enum ChatTimeline {
         var currentUserID: String?
         var groupingWindow: TimeInterval = AppConfig.Chat.groupingWindow
         var calendar = Calendar.autoupdatingCurrent
+    }
+
+    /// One room's rows, kept until their inputs change: the transcript's body runs once a frame while a row arrives
+    /// (every pin writes its scroll position), and rebuilding an unchanged timeline each time was the chat's one
+    /// avoidable per-frame cost (2026-11-13: 136 builds over an open-send-keyboard pass, a handful with the memo).
+    struct Memo {
+        private var input: Input?
+        private var cached: [ChatRow] = []
+        /// How many times the rows were actually built, pinned by the memo's tests.
+        private(set) var builds = 0
+
+        mutating func rows(for input: Input) -> [ChatRow] {
+            if input == self.input { return cached }
+            self.input = input
+            cached = ChatTimeline.rows(input)
+            builds += 1
+            return cached
+        }
     }
 
     static func rows(_ input: Input) -> [ChatRow] {

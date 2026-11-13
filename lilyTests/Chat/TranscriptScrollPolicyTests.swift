@@ -57,23 +57,23 @@ struct TranscriptScrollPolicyTests {
                 == .loadOlder)
     }
 
-    /// The keyboard or a growing composer changes the bottom inset; a reader following the bottom stays at it, both
-    /// ways, and a reader of older messages is left alone.
+    /// The keyboard or a growing composer changes the bottom inset; a reader following the bottom rides to it on the
+    /// keyboard's spring, both ways, and a reader of older messages is left alone.
     @Test func followsAnInsetChangeOnlyWhileFollowing() {
         var policy = settled()
         let before = snapshot(bottomInset: 80)
         let keyboardUp = snapshot(bottomInset: 380)
         #expect(policy.geometryChanged(from: before, to: keyboardUp, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .scrollToBottom)
+                == .glideToBottom)
         var reader = reading()
         let readingBefore = snapshot(offsetY: 500, isAtBottom: false)
         let readingAfter = snapshot(offsetY: 500, bottomInset: 380, isAtBottom: false)
         #expect(reader.geometryChanged(from: readingBefore, to: readingAfter, hasRows: true, canLoadOlder: true, oldestID: oldest)
                 == .none)
-        // A shrinking inset (the keyboard going, the composer back to one line) moves the bottom too: a pin holds its
-        // offset, so nothing else settles it.
+        // A shrinking inset (the keyboard going, the composer back to one line) moves the bottom too: the glide takes
+        // the rows there with the keyboard, so nothing else settles it.
         #expect(policy.geometryChanged(from: keyboardUp, to: before, hasRows: true, canLoadOlder: true, oldestID: oldest)
-                == .scrollToBottom)
+                == .glideToBottom)
     }
 
     /// A block hiding rows, or a tombstone shorter than its bubble, shrinks the content.

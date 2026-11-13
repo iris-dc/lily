@@ -120,12 +120,16 @@ final class ChatViewModel {
     /// block made in any room re-renders this transcript.
     var blockedUserIDs: Set<String> { blocks.blockedUserIDs }
 
+    /// The timeline rows, rebuilt only when their inputs change (`ChatTimeline.Memo`): the transcript's body runs
+    /// once a frame while a row arrives, and reading the inputs here still registers the same observations.
+    @ObservationIgnored private var timeline = ChatTimeline.Memo()
+
     var rows: [ChatRow] {
-        ChatTimeline.rows(ChatTimeline.Input(messages: room.messages,
-                                             pending: pending,
-                                             blockedUserIDs: blockedUserIDs,
-                                             members: members,
-                                             currentUserID: identity.currentUserID))
+        timeline.rows(for: ChatTimeline.Input(messages: room.messages,
+                                              pending: pending,
+                                              blockedUserIDs: blockedUserIDs,
+                                              members: members,
+                                              currentUserID: identity.currentUserID))
     }
 
     var hasOlder: Bool { room.hasOlder }

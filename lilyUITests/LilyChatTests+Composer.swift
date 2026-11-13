@@ -28,4 +28,24 @@ extension LilyChatTests {
         waitUntilHittableAndStill(composer)
         XCTAssertLessThanOrEqual(composer.frame.maxY, keyboard.frame.minY, "the composer sits above the keyboard")
     }
+
+    /// A tap anywhere on the transcript gives the keyboard up, as messaging apps do; the field brings it back.
+    @objc @MainActor
+    func testTappingTheTranscriptDismissesTheKeyboard() {
+        tapSignInWithApple()
+        openRoom(MockIDs.kickersRow, titled: "Kreuzberg Kickers")
+        let composer = app.descendants(matching: .any)["chat-composer"]
+        XCTAssertTrue(composer.waitForExistence(timeout: 10))
+        composer.tap()
+        XCTAssertTrue(waitForKeyboardFocus(composer))
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+
+        let list = app.descendants(matching: .any)["chat-list"].firstMatch
+        list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)).tap()
+        XCTAssertTrue(keyboard.waitForNonExistence(timeout: 5), "a tap on the transcript sends the keyboard down")
+
+        composer.tap()
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5), "the field still brings it back")
+    }
 }

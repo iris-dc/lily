@@ -53,7 +53,8 @@ extension View {
             }
     }
 
-    /// Loads the rooms and the inbox for a signed-in caller once per caller and group change; a guest asks for nothing.
+    /// Loads the rooms and the inbox for a signed-in caller once per caller and group change, then warms the top
+    /// rooms' first chat pages; a guest asks for nothing.
     func conversationLoads(dependencies: AppDependencies) -> some View {
         let key = ConversationLoadKey(userID: dependencies.sessionController.state.user?.id,
                                       groupsVersion: dependencies.groupChanges.version)
@@ -63,6 +64,8 @@ extension View {
             guard !Task.isCancelled, HomeContent(for: dependencies.sessionController.state) == .overview else { return }
             await dependencies.myGroups.loadIfStale()
             await dependencies.inbox.loadIfStale()
+            // So a room opens on its rows instead of a spinner; a warmed or opened room costs nothing here again.
+            await dependencies.preloadTopRooms()
         }
     }
 }

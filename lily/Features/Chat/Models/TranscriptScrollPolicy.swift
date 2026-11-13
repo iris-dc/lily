@@ -5,10 +5,11 @@ import Foundation
 /// starts with the first page's pin, any scroll that comes to rest away from the bottom ends it (the reader's, a tapped
 /// quote's, VoiceOver's), so does a scroll the scroll view makes on its own from its first frame (UIKit's scroll to the
 /// top on a tap of the status bar, which SwiftUI reports no phase for), and any rest at the bottom resumes it. While
-/// the reader follows, every change of the content's height, of the bottom inset or of the visible height pins the
-/// bottom (a row growing in on the arrival clock, a lazy stack correcting its estimates, a picture loading, the
-/// keyboard, a window resized), so the newest row stays on the composer frame by frame and the rows above glide up with
-/// a row growing in. A report taken mid-layout, between a
+/// the reader follows, every change of the content's height pins the bottom (a row growing in on the arrival clock, a
+/// lazy stack correcting its estimates, a picture loading), so the newest row stays on the composer frame by frame and
+/// the rows above glide up with a row growing in; a change of the bottom inset or of the visible height alone (the
+/// keyboard, the composer growing a line, a window resized) rides to the bottom on the keyboard's own spring instead
+/// (`glideToBottom`), so the rows travel with the chrome rather than jumping under it. A report taken mid-layout, between a
 /// safe-area change and the inset that follows it, may read as away from the bottom; it changes nothing, since only a
 /// rest moves the state. A reader of older messages is left where they are, an older page keeps what was on screen
 /// where it was, and the page before is requested only once the reader has scrolled near the top after the first
@@ -71,6 +72,10 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
         case scrollToBottom
         /// Slide to the bottom with the arrival's animation: the caller's own row fetches a reader of older messages.
         case animateToBottom
+        /// Ride to the bottom on the keyboard's spring: the bottom inset or the visible height moved while the
+        /// content stayed (the keyboard, the composer growing a line), so the rows travel with the chrome instead of
+        /// jumping under it.
+        case glideToBottom
         case scrollTo(y: CGFloat)
         case loadOlder
     }
@@ -80,7 +85,8 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     private(set) var isFollowing = false
     /// The caller's own row arrived while they read older messages: the growth that lays it out is followed.
     private var followsNextGrowth = false
-    /// The slide that fetches the reader is under way: its rest is the bottom, wherever the row's growth left it.
+    /// A slide (the own row fetching a reader of older messages) or a glide (the inset ride) is under way: its rest
+    /// is the bottom, wherever the motion left it.
     private var isSliding = false
     /// The older page being prepended; cleared when the taller content has been laid out or the page brought nothing.
     private(set) var pendingRestore: PendingRestore?
@@ -124,6 +130,13 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
         guard isFollowing else { return .none }
         lastActionWasPin = true
         return .scrollToBottom
+    }
+
+    /// The transcript applied a glide as an instant pin (Reduce Motion animates nothing): there is no ride to rest,
+    /// so the flag goes now and the landing report is exempt like any pin's.
+    mutating func glideLandedAtOnce() {
+        isSliding = false
+        lastActionWasPin = true
     }
 
     mutating func geometryChanged(from previous: Snapshot,
@@ -188,11 +201,12 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
         // rows and has already left the bottom.
         let isPinLanding = lastActionWasPin
             && (current.contentHeight == previous.contentHeight || current.isAtBottom)
-        if isFollowing, !isPinLanding, current.wasScrolledUp(from: previous) {
+        // A glide's own frames lower the offset on the keyboard's way down; only the reader's touch or rest ends it.
+        if isFollowing, !isPinLanding, !isSliding, current.wasScrolledUp(from: previous) {
             isFollowing = false
         }
         if isFollowing, current.movesTheBottom(from: previous) {
-            return .scrollToBottom
+            return bottomMoved(from: previous, to: current)
         }
         if isRestoreLanding {
             guard current.offsetY != previous.offsetY else { return .none }
@@ -207,6 +221,17 @@ nonisolated struct TranscriptScrollPolicy: Equatable, Sendable {
     private mutating func follow() {
         isFollowing = true
         followsNextGrowth = false
+    }
+
+    /// Content motion is pinned at once, frame by frame; chrome motion alone (the bottom inset, the visible height)
+    /// rides to the bottom on the keyboard's spring, and its rest is the bottom like a slide's. While the ride runs,
+    /// content motion re-aims it instead of pinning: in a deep lazy room the keyboard's resize makes the stack
+    /// re-estimate unmeasured rows over the next frames, and a pin there cut the ride to a jump (seen 2026-11-13).
+    private mutating func bottomMoved(from previous: Snapshot, to current: Snapshot) -> Action {
+        if isSliding { return .glideToBottom }
+        guard current.contentHeight == previous.contentHeight else { return .scrollToBottom }
+        isSliding = true
+        return .glideToBottom
     }
 
     /// While an older page is pending: growth with the same oldest message is below the reader and becomes the new

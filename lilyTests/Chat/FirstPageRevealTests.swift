@@ -35,6 +35,14 @@ struct FirstPageRevealTests {
         #expect(sleep.requested.isEmpty && settled.value == 0)
     }
 
+    /// A cached room's rows stay shown through the silent catch-up: no spinner while the history refreshes.
+    @Test func aCachedRoomKeepsItsRowsAndShowsNoSpinnerDuringTheCatchUp() {
+        let subject = makeSubject(isShown: true)
+
+        #expect(!subject.showsSpinner(hasRows: true, isAwaitingHistory: true))
+        #expect(subject.isShown)
+    }
+
     @Test func aLayoutWithoutRowsStartsNoWait() async {
         let subject = makeSubject()
         let settled = Counter()

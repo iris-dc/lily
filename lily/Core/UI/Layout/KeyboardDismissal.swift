@@ -5,6 +5,11 @@ import UIKit
 /// at all, answers at once: no keyboard goes, so no wait. A cover presented over a field only hides its keyboard, and
 /// UIKit gives it back as the cover goes; a field that gave it up first has nothing to get back.
 enum KeyboardDismissal {
+    /// Ends editing at once, without the wait: the chat's tap-to-dismiss, where nothing opens next.
+    static func dismiss() {
+        keyWindow?.endEditing(true)
+    }
+
     static func dismissAndWait(atMost timeout: Duration) async {
         let center = NotificationCenter.default
         let seen = KeyboardGoing()

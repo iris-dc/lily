@@ -26,8 +26,10 @@ composed, each going from preparing to uploading to uploaded or failed on its ow
   `private(set) members: [GroupMember]`, `isLoadingHistory`, `historyLoadsFinished`, `hasLoadedHistory`,
   `historyLoadFailed`, `olderPageTask: Task<Bool, Never>?`, `cooldownUntil: Date?`, `isGone`, `liveTask`,
   `subscribedEpoch`, `hasRecordedOpen`. Derived: `room: ChatRoomState` (the cache's or an empty stub),
-  `pending: [PendingMessage]` (get and set on the outbox), `blockedUserIDs`, `rows: [ChatRow]` (through
-  `ChatTimeline.rows`), `hasOlder`, `isCoolingDown`, `cooldownSeconds: Int?`, `canSend`.
+  `pending: [PendingMessage]` (get and set on the outbox), `blockedUserIDs`, `rows: [ChatRow]` (through an
+  `@ObservationIgnored` `ChatTimeline.Memo`, rebuilt only when the inputs change; the inputs are still read on every
+  access, so the observations that re-run a body are unchanged, 2026-11-13), `hasOlder`, `isCoolingDown`,
+  `cooldownSeconds: Int?`, `canSend`.
 - `[ChatViewModel.swift:ChatViewModel]` Lifecycle: `appear() async`, `cancel() async`,
   `sceneDidEnterBackground() async`, `noteRead()`, `mutateRoom(_ change:) -> ChatRoomState?`,
   `report(_ error:, during step:)`.

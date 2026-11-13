@@ -85,4 +85,13 @@ nonisolated extension DesignTokens {
         static let bounce: Double = 0.25
         static let scale: CGFloat = 0.8
     }
+
+    /// The spring UIKit drives the keyboard with (mass 3, stiffness 1000, damping 500, its documented constants):
+    /// the transcript's glide to the bottom runs on the same curve, so the rows travel with the keyboard instead of
+    /// jumping under it.
+    enum KeyboardSpring {
+        static let mass: Double = 3
+        static let stiffness: Double = 1_000
+        static let damping: Double = 500
+    }
 }

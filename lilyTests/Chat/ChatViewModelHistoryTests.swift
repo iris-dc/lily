@@ -121,4 +121,24 @@ struct ChatViewModelHistoryTests {
         #expect(harness.chat.olderRequests.map(\.before) == ["m5", "m4"])
         #expect(viewModel.room.messages.map(\.id) == ["m3", "m4", "m5"] && !viewModel.isLoadingOlder)
     }
+
+    /// A room the cache holds renders its rows at once and refreshes silently: the rows are there before any request,
+    /// and the open asks `newer` from the watermark, never the newest page again.
+    @Test func aCachedRoomShowsItsRowsAtOnceAndCatchesUpSilently() async {
+        var cached = ChatRoomState(groupID: "g", channelEpoch: 1)
+        cached.applyNewest(.fixture(messages(1...3), hasMore: false))
+        let harness = RealtimeHarness()
+        harness.groups.result = .success([group])
+        harness.cache.store(cached, for: "g")
+        await harness.connect()
+        let viewModel = harness.makeChatViewModel(for: group)
+        #expect(!viewModel.rows.isEmpty, "the cached rows are the first frame, before any request")
+
+        harness.chat.newerPages = [.fixture([.fixture(id: "m0004")], hasMore: false)]
+        await viewModel.appear()
+
+        #expect(harness.chat.newestGroupIDs.isEmpty, "a cached room never reloads the newest page")
+        #expect(harness.chat.newerRequests.map(\.after) == ["m0003"])
+        #expect(viewModel.rows.contains { $0.id == "m0004" } && viewModel.hasLoadedHistory)
+    }
 }

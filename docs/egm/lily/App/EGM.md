@@ -68,7 +68,7 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   builds `MyGroupsStore` (the one reader of `snapshots`, which is not stored), `MeStore`, `InboxStore`, `BlockListStore`, `InMemoryChatHistoryCache`,
   `ChatOutbox`, `UnreadCenter`, `ChatCatchUp`, `AttachmentDependencies`, `RealtimeSessionController`; stores `repositories: GroupRepositories`
   (the root's repository pass-throughs read `groups.repositories.<name>`; it has no forwarders of its own); `pasteboard: any Pasteboard = SystemPasteboard()`;
-  `sessionObservers` is `[myGroups, me, inbox, blocks, chatHistory, outbox, unreadCenter, attachments.loader,
+  `sessionObservers` is `[myGroups, me, inbox, blocks, chatHistory, catchUp, outbox, unreadCenter, attachments.loader,
   attachments.cache, realtime]` (the loader drains its downloads before the cache sweeps).
 - `AttachmentDependencies` (`lily/App/AppDependencies+Chat.swift:AttachmentDependencies`): `cache: DiskAttachmentCache`,
   `loader: AttachmentLoader`, `uploader`, `preparer`. `PushDependencies` (`lily/App/AppDependencies+Push.swift:PushDependencies`):
@@ -95,7 +95,9 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   locked group — strong captures, the root outlives every wizard); `makeDiscoverGroupsViewModel`,
   `makeGroupDetailViewModel`, `makeGroupLoaderViewModel`, `makeCreateGroupViewModel`, `makeEditGroupViewModel`, `makeMembersViewModel`,
   `makeInvitePeopleViewModel`, `makeTournamentInvitePeopleViewModel`, `makeReportViewModel` (`+Groups.swift`); `makeChatViewModel`,
-  `makeAttachmentComposer`, `makeChatHistoryClearer`, `myGroupsDidChange()`, `myGroupsDidLoad()` (`+Chat.swift`);
+  `makeAttachmentComposer`, `makeChatHistoryClearer`, `preloadTopRooms()` (warms the Chats list's top rooms through
+  `ChatCatchUp.preloadRooms` under `AppConfig.Chat.preloadedRoomCount` and `maxConcurrentCatchUps`, 2026-11-13),
+  `myGroupsDidChange()`, `myGroupsDidLoad()` (`+Chat.swift`);
   `makeTournamentListViewModel(scope:snapshots:)`, `makeTournamentDetailViewModel`, `makeCreateTournamentViewModel`,
   `makeEditTournamentViewModel` (`+Tournaments.swift`); `makeInboxViewModel`, `makeUserProfileViewModel`,
   `makeFeedbackViewModel`, `makeDisplayNameViewModel`, `makeAboutViewModel`, `makeDeleteAccountViewModel`

@@ -65,7 +65,9 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - `[TranscriptWidth.swift:EnvironmentValues.transcriptWidth]` `@Entry CGFloat?`; `View.transcriptFraction
   (_:alignment:)`, `View.measuringTranscriptWidth(_:)`. `[MessageArrival.swift:MessageRemovalTransition]`
   `init(for row:, motion: MotionPreference)`, `nonisolated static func leavingScale(motion:) -> CGFloat`;
-  `ChatRow.arrivalCorner`; `nonisolated static func Animation.messageArrival(_ motion: MotionPreference) -> Animation?`.
+  `ChatRow.arrivalCorner`; `nonisolated static func Animation.messageArrival(_ motion: MotionPreference) -> Animation?`;
+  `nonisolated static func Animation.keyboardGlide(_ motion: MotionPreference) -> Animation?` (the keyboard's spring,
+  `nil` under Reduce Motion, 2026-11-13).
   `[RowReveal.swift:RowReveal]` a `Layout`.
 
 ### Bubbles, quotes and polls
@@ -131,7 +133,9 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 ## Invariants
 
 - `[ChatsView.swift:View.conversationLoads]` `sessionController.restore()` first; loads only when not cancelled and
-  `HomeContent(for:) == .overview`, `myGroups.loadIfStale()` before `inbox.loadIfStale()`.
+  `HomeContent(for:) == .overview`, `myGroups.loadIfStale()` before `inbox.loadIfStale()`, then
+  `AppDependencies.preloadTopRooms()` (2026-11-13: the top rooms' first pages, so a room opens on its rows; budget and
+  debounce in `ChatCatchUp.preloadRooms`, `../Services/EGM.md`).
 - `[ChatsSplitView.swift:ChatsSplitView]` A selected room not `isAvailable(in: myGroups.groups)` clears
   `navigation.selectedConversation`; each room's `ChatView` is `.id(id)`, so `appear()` and `cancel()` run per room.
 - `[ConversationList.swift:ConversationList]` Clear/Delete only from a Chats row's context menu, only when
@@ -141,7 +145,9 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   tournament, else the group, one `chat-title` identifier on the `Group` around the three.
 - `[ChatTranscript.swift:ChatTranscript]` The end marker is a zero-height view outside the `LazyVStack`, never lazy;
   the position and both default anchors are `.bottom`; rows are invisible until `firstPageReveal.isShown`, true from
-  the start only when `room.hasHistory`. `[ChatTranscript.swift:ScrollTracker]` is a reference type so geometry
+  the start only when `room.hasHistory`; the scroll view carries `scrollDismissesKeyboard(.interactively)` and a tap
+  anywhere on it runs `KeyboardDismissal.dismiss()` (2026-11-13: the rows' own controls are descendants and win the
+  tap, long-press menus and the composer are untouched). `[ChatTranscript.swift:ScrollTracker]` is a reference type so geometry
   reports never re-run `body`; `endIsOnComposer` is `endMarkerY <= composerLine +
   DesignTokens.Layout.atBottomThreshold`; `watch` accepts only a new, non-nil row id.
 - `[ChatTranscript.swift:TranscriptScrollPolicy.Snapshot.init]` `isAtBottom` is always false from raw geometry
@@ -150,7 +156,10 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - `[ChatTranscript+Scrolling.swift:ChatTranscript.geometryChanged]` Compares against the last report the policy saw;
   `canLoadOlder = hasOlder && !isLoadingOlder`; `.loadOlder` calls `policy.willLoadOlder` before loading;
   `.animateToBottom` defers the scroll into a task under `withAnimation(.messageArrival(motion))`, `nil` and so
-  instant under Reduce Motion. `Phase.init`:
+  instant under Reduce Motion; `.glideToBottom` (2026-11-13) the same a turn later under
+  `withAnimation(.keyboardGlide(motion))`, the keyboard's own spring (`DesignTokens.KeyboardSpring`), so the rows
+  travel with the keyboard — except under Reduce Motion, where it lands as an instant pin and tells the policy
+  (`glideLandedAtOnce`), since a ride that never moves earns no rest. `Phase.init`:
   `.interacting` is `.touched`, `.idle` is `.resting`, else `.moving`.
 - `[ChatTranscript+Scrolling.swift:ChatTranscript.reveal]` Keeps its task in `revealing` (an earlier one cancelled),
   scrolls and highlights only when `viewModel.revealQuoted(id:)` answers true and the task was not cancelled while the

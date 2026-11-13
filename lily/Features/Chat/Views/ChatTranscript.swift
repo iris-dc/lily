@@ -127,6 +127,10 @@ struct ChatTranscript: View {
             revealing?.cancel()
         }
         .scrollDismissesKeyboard(.interactively)
+        // A tap anywhere on the transcript gives the keyboard up, as messaging apps do: the rows' own controls
+        // (quote taps, tiles, poll pills, system-row links) are descendants and win the tap, and a long press
+        // keeps its menu.
+        .onTapGesture { KeyboardDismissal.dismiss() }
         .accessibilityIdentifier(AccessibilityIdentifiers.chatList)
         // Outside the list's identifier, which would be stamped on the bar's buttons too; a bar, so the rows scrolling
         // under it blur as they do under the toolbar.

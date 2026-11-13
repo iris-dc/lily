@@ -368,7 +368,8 @@ the asset catalog.
   `round6/badge-v2.png` (the 17 Pro after the lift).
 - **The seventh round's two corrections (2026-11-13).** The Chats badge sits a touch higher: `badgeCenterOffset`
   (−1, +9) → (−1, +6), the capsule's centre 3 pt up with the left overlap kept, so the count rides the bubble's
-  top-right arc rather than hanging off it; evidence `groups-plan/creation-wizard-shots/round7/badge-v3.png` against
+  top-right arc rather than hanging off it (the y superseded the same day by the chat-corrections round: 6 → 4, see
+  the bullet below); evidence `groups-plan/creation-wizard-shots/round7/badge-v3.png` against
   `round6/badge-v2.png`. And the Optional marker has exactly one placement — below the control, wizard and edit
   forms alike. The owner read the event Details step as unstandardized ("Price per person" held the marker inside
   its card while "What to expect" wore it below the capsule), so: the price card's marker moved below the card
@@ -385,3 +386,7 @@ the asset catalog.
   `round7/details-step.png` (uniform markers under price, what-to-expect and looking-for), `round7/when-step.png`
   (the add row's marker below it) and `round7/edit-event-details.png` (the edit form's details section marked the
   same way).
+- **The badge a touch higher still (2026-11-13, the owner's chat-corrections round).** `badgeCenterOffset`
+  (−1, +6) → (−1, +4): the capsule's centre 2 pt further up, its bottom kissing the bubble's top-right arc instead of
+  riding into it, the left overlap kept. Evidence `groups-plan/chat-fixes-2026-11-13/new-badge-crop.png` against
+  `old-badge-crop.png` (round 7's `badge-v3` at the same 1:1 crop of the Chats tab).

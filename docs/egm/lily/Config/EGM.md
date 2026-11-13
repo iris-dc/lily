@@ -76,7 +76,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `fixTimeout = .seconds(8)`, `firstFixWait = .seconds(1.5)`, `fixTTL = .seconds(300)`, `failedFixTTL = .seconds(30)`.
   `Statistics`: `batchSize = 10`, `flushDelay = .seconds(30)`, `maxBuffered = 100`, `maxFilterTypes = 48`.
 - `Chat` (`lily/Config/AppConfig+Chat.swift:AppConfig.Chat`): `messageMaxLength = 2000`, `historyPageSize = 50`,
-  `catchUpPageSize = 200`, `maxCatchUpPages = 3`, `roomCacheLimit = 300`, `readMarkFlushInterval = 60`,
+  `catchUpPageSize = 200`, `maxCatchUpPages = 3`, `preloadedRoomCount = 5` and `preloadRetryInterval: TimeInterval =
+  60` (the Chats list's room warm-up, 2026-11-13), `roomCacheLimit = 300`, `readMarkFlushInterval = 60`,
   `replyExcerptLength = 120`, `rateLimitCooldownFallback = 10`. `Chat.Attachments` (`lily/Config/AppConfig+Attachments.swift`):
   `maxPerMessage = 10`, `imageMaxBytes = 10 MiB`, `imageMaxDimension = 2048`, `imageMaxDeclaredPixels = 16_000_000` (a
   stored picture whose header declares more is not decoded), `imageContentType = "image/jpeg"`,
@@ -205,8 +206,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Typography` (`headlineSize 44`, `headlineTracking -1.8`, `titleTracking -0.5`), `Symbols` (SF Symbol names:
   `home = "house"`, `explore = "binoculars"`, `game = "calendar"`, `profile = "person"`, `groups = "person.3"`,
   `tournament = "trophy"`, ...), `MessageArrival` (`+Groups.swift`), `TabBar.symbolWeight: UIImage.SymbolWeight = .light` plus the drawn
-  Chats-badge metrics (2026-11-12: `badgeCenterOffset` (−1, +6) from the glyph's top-right corner — y 9 → 6 on
-  2026-11-13, the seventh round: the capsule 3 pt higher, the left overlap kept —,
+  Chats-badge metrics (2026-11-12: `badgeCenterOffset` (−1, +4) from the glyph's top-right corner — y 9 → 6 and then
+  6 → 4 on 2026-11-13, the seventh round and the chat-corrections round after it: the capsule 3 pt and then 2 pt
+  higher, the left overlap kept —,
   `badgeGlyphPointSize` 23, `badgeHeight` 20, `badgeFontSize` 13, `badgeHorizontalPadding` 5, `badgeCountCap` 99,
   `badgeTextColor` white, `unselectedGlyphColor` white),
   and `Layout.profileCornerSize` 36 (the corner profile button's circle, 2026-11-07) with
