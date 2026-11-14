@@ -1,117 +1,123 @@
 import SwiftUI
 
-/// The signed-in Home content: a "Your groups" section of rows and a "Your games" section of cards, one scroll with
-/// pull-to-refresh over both, and one state for the whole screen while nothing has loaded yet or nothing is there.
-/// With groups switched off only the cards remain, without a heading of their own.
+/// The signed-in Home content: a segmented picker (Events | Tournaments | Groups) under the title showing one of the
+/// caller's lists at a time, a prominent full-width create button at the top of every segment seeding the wizard with
+/// the segment's kind, a subtle count line over the list, and pull-to-refresh reloading the visible segment alone. An
+/// empty segment keeps the create button and shows a friendly hint.
 struct HomeOverview: View {
     let groups: MyGroupsStore
     let events: EventListViewModel
     let tournaments: TournamentListViewModel
     let dependencies: AppDependencies
+    /// The create button's choice, handed up so the screen decides how the wizard is presented.
+    let onCreate: (CreationKind) -> Void
+    @State private var segment: HomeSegment = .events
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.motion) private var motion
 
     private typealias Copy = AppBranding.Home
 
-    private var showsGroups: Bool { AppConfig.FeatureFlags.groups }
-
-    /// A list behind a flag that is off is left out, so the screen never waits for it.
-    private var state: HomeOverviewState {
-        .resolve(events: HomeListSnapshot(isEmpty: events.visibleEvents.isEmpty,
-                                          hasAnswered: !events.isInitialLoad,
-                                          loadFailed: events.loadFailed),
-                 groups: showsGroups ? HomeListSnapshot(isEmpty: groups.communities.isEmpty,
-                                                        hasAnswered: groups.hasLoaded || groups.loadFailed,
-                                                        loadFailed: groups.loadFailed) : nil,
-                 tournaments: AppConfig.FeatureFlags.tournaments
-                     ? HomeListSnapshot(isEmpty: tournaments.visibleTournaments.isEmpty,
-                                        hasAnswered: !tournaments.isInitialLoad,
-                                        loadFailed: tournaments.loadFailed)
-                     : nil)
-    }
-
     var body: some View {
-        switch state {
-        case .loading:
-            ProgressView()
-        case .empty(let loadFailed):
-            // Scrollable so the "pull to refresh" the failed state promises is possible from here.
-            refreshableScroll { (loadFailed ? loadFailedState : emptyState).readableColumn().containerRelativeFrame(.vertical) }
-        case .sections(let groupsState, let tournamentsState, let gamesState):
-            refreshableScroll { sections(groups: groupsState, tournaments: tournamentsState, games: gamesState) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
+                picker
+                createButton
+                segmentContent
+            }
+            .padding(.top, DesignTokens.Spacing.sm)
+            .padding(.bottom, DesignTokens.Spacing.xxl)
+            // A segment switch is not the user's own drag, so the move is judged by the motion preference.
+            .animation(motion.allowsMovement ? .snappy(duration: DesignTokens.Duration.fast) : nil, value: segment)
         }
+        .refreshable { await refreshVisible() }
     }
 
-    private func sections(groups: HomeSectionState?, tournaments: HomeSectionState?, games: HomeSectionState) -> some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-            if let groups {
-                section(Copy.groupsSection) { groupsContent(groups) }
-                if let tournaments {
-                    section(AppBranding.Tournaments.mineSection) { tournamentsContent(tournaments) }
-                }
-                section(Copy.gamesSection) { gamesContent(games) }
-            } else {
-                gamesContent(games)
+    private var picker: some View {
+        Picker(Copy.segmentPicker, selection: $segment) {
+            ForEach(HomeSegment.offered(), id: \.self) { segment in
+                Text(segment.title).tag(segment)
             }
         }
-        .padding(.vertical, DesignTokens.Spacing.md)
-        .padding(.bottom, DesignTokens.Spacing.xxl)
+        .pickerStyle(.segmented)
+        .accessibilityIdentifier(AccessibilityIdentifiers.homeSegment)
+        .padding(.horizontal, DesignTokens.Layout.screenMargin)
+        .readableColumn()
     }
 
-    /// A row (a tile in the regular-width grid) opens the group's detail, the place to manage a membership; its chat
-    /// lives on the Chats tab.
-    @ViewBuilder private func groupsContent(_ state: HomeSectionState) -> some View {
-        switch state {
-        case .content where sizeClass == .regular:
-            GroupTileGrid(groups: groups.communities, distance: groupDistance)
-        case .content:
-            GroupRowList(groups: groups.communities) { dependencies.navigation.open(group: $0) }
-        case .loading:
-            loading
-        case .failed:
-            note(Copy.groupsLoadFailed)
-        case .empty:
-            note(Copy.noGroups)
+    /// The label reads as ink and the accent stays on the plus, the mark beside it, as everywhere below headline size.
+    private var createButton: some View {
+        Button {
+            onCreate(segment.creationKind)
+        } label: {
+            Label {
+                Text(segment.createTitle)
+            } icon: {
+                Image(systemName: DesignTokens.Symbols.create)
+                    .foregroundStyle(Color.lilyAccent)
+            }
+        }
+        .lilyGlassButton(labelColor: .lilyInk)
+        .accessibilityIdentifier(AccessibilityIdentifiers.homeCreate)
+        .padding(.horizontal, DesignTokens.Layout.screenMargin)
+        .readableColumn()
+    }
+
+    @ViewBuilder private var segmentContent: some View {
+        switch segment {
+        case .events:
+            slot(state: events.listState, count: events.visibleEvents.count) {
+                EventCardList(events: events.visibleEvents, distance: events.distanceText)
+            }
+        case .tournaments:
+            slot(state: tournaments.listState, count: tournaments.visibleTournaments.count) {
+                TournamentCardList(tournaments: tournaments.visibleTournaments, distance: tournaments.distanceText)
+            }
+        case .groups:
+            slot(state: groups.listState, count: groups.communities.count) {
+                groupsList
+            }
         }
     }
 
-    /// The tiles take the position the games section loads (`HomeView.loadIfStale` asks for it); Mine holds none.
+    /// A row (a tile in the regular-width grid) opens the group's detail, the place to manage a membership.
+    @ViewBuilder private var groupsList: some View {
+        if sizeClass == .regular {
+            GroupTileGrid(groups: groups.communities, distance: groupDistance)
+        } else {
+            GroupRowList(groups: groups.communities) { dependencies.navigation.open(group: $0) }
+        }
+    }
+
+    /// The tiles take the position the events list loads (`HomeView.loadIfStale` asks for it).
     private func groupDistance(_ group: SportGroup) -> String? {
         group.distance(from: events.userLocation)?.roadText()
     }
 
-    /// A card opens the tournament's detail, where entries are made and the organiser runs it.
-    @ViewBuilder private func tournamentsContent(_ state: HomeSectionState) -> some View {
-        if state == .failed {
-            note(AppBranding.Tournaments.mineLoadFailed)
-        } else {
-            TournamentCardList(tournaments: tournaments.visibleTournaments, distance: tournaments.distanceText)
-        }
-    }
-
-    @ViewBuilder private func gamesContent(_ state: HomeSectionState) -> some View {
+    /// One segment's pane under the create button: the list with its count line, or the segment's own state.
+    @ViewBuilder
+    private func slot(state: ListState, count: Int, @ViewBuilder content: () -> some View) -> some View {
         switch state {
         case .content:
-            EventCardList(events: events.visibleEvents, distance: events.distanceText)
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+                Text(segment.countLine(count))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, DesignTokens.Layout.screenMargin)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .readableColumn()
+                content()
+            }
         case .loading:
-            loading
+            ProgressView()
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, DesignTokens.Spacing.xxl)
         case .failed:
-            note(Copy.gamesLoadFailed)
+            note(segment.failedMessage)
         case .empty:
-            note(Copy.noGames)
+            EmptyStateView(symbolName: segment.symbolName, title: segment.emptyTitle, message: segment.emptyMessage)
+                .readableColumn()
+                .padding(.top, DesignTokens.Spacing.xl)
         }
-    }
-
-    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-            SectionTitle(text: title)
-            content()
-        }
-    }
-
-    private var loading: some View {
-        ProgressView()
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, DesignTokens.Spacing.lg)
     }
 
     private func note(_ text: String) -> some View {
@@ -119,30 +125,18 @@ struct HomeOverview: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .padding(.horizontal, DesignTokens.Layout.screenMargin)
+            .padding(.top, DesignTokens.Spacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .readableColumn()
     }
 
-    private var emptyState: EmptyStateView {
-        EmptyStateView(symbolName: DesignTokens.Symbols.home,
-                       title: Copy.emptyTitle,
-                       message: Copy.emptyMessage,
-                       actionTitle: Copy.exploreAction) {
-            dependencies.navigation.selectedTab = .explore
+    /// Pull-to-refresh reloads the visible segment alone.
+    private func refreshVisible() async {
+        switch segment {
+        case .events: await events.load()
+        case .tournaments: await tournaments.load()
+        case .groups: await groups.reload()
         }
-    }
-
-    private var loadFailedState: EmptyStateView {
-        EmptyStateView.loadFailed(title: Copy.loadFailedTitle,
-                                  message: AppBranding.Events.loadFailedMessage)
-    }
-
-    /// Pull-to-refresh reloads both sections.
-    private func refreshableScroll(@ViewBuilder _ content: @escaping () -> some View) -> some View {
-        ScrollView { content() }
-            .refreshable {
-                if showsGroups { await groups.reload() }
-                if AppConfig.FeatureFlags.tournaments { await tournaments.load() }
-                await events.load()
-            }
     }
 }
 
@@ -153,7 +147,8 @@ struct HomeOverview: View {
             HomeOverview(groups: dependencies.myGroups,
                          events: dependencies.lists.homeEvents,
                          tournaments: dependencies.lists.homeTournaments,
-                         dependencies: dependencies)
+                         dependencies: dependencies,
+                         onCreate: { _ in })
         }
     }
 }

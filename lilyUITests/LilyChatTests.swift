@@ -66,6 +66,7 @@ final class LilyChatTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 5))
 
         openHomeTab()
+        selectHomeSegment("Groups")
         XCTAssertTrue(app.buttons[MockIDs.climbingRow].waitForExistence(timeout: 10), "Home lists the new group")
     }
 

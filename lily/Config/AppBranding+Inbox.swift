@@ -36,7 +36,7 @@ nonisolated extension AppBranding {
         static var openTournament: String { localized("Open tournament") }
         /// VoiceOver name of the ownership notice's chevron.
         static var openGroup: String { localized("Open group") }
-        static var emptyTitle: String { Home.emptyTitle }
+        static var emptyTitle: String { localized("Nothing here yet") }
         static var emptyMessage: String { localized("Invites and reminders for your events show up here.") }
         static var loadFailedTitle: String { localized("Couldn't load your notifications") }
         static var loadEarlier: String { localized("Load earlier") }

@@ -92,7 +92,8 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   follows a groups reload) and
   `CreationWizardFactories`, whose per-kind factories close over `makeCreateEventViewModel`,
   `makeCreateGroupViewModel` and `makeCreateTournamentViewModel` with the caller's created-callbacks and the seed's
-  locked group — strong captures, the root outlives every wizard); `makeDiscoverGroupsViewModel`,
+  locked group — strong captures, the root outlives every wizard; call sites: Explore's `EventListView`, the group
+  detail and, since 2026-11-14, `HomeView`'s per-segment create button); `makeDiscoverGroupsViewModel`,
   `makeGroupDetailViewModel`, `makeGroupLoaderViewModel`, `makeCreateGroupViewModel`, `makeEditGroupViewModel`, `makeMembersViewModel`,
   `makeInvitePeopleViewModel`, `makeTournamentInvitePeopleViewModel`, `makeReportViewModel` (`+Groups.swift`); `makeChatViewModel`,
   `makeAttachmentComposer`, `makeChatHistoryClearer`, `preloadTopRooms()` (warms the Chats list's top rooms through

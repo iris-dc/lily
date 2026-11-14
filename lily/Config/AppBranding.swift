@@ -246,16 +246,9 @@ nonisolated enum AppBranding {
     static var exploreEmptyTitle: String { localized("Nothing yet") }
     static var exploreEmptyMessage: String { localized("New events show up here as people create them.") }
 
-    /// The Home tab: the caller's groups and games, and the states around them.
+    /// The Home tab's guest, empty and failure copy; the segments' copy is in `AppBranding+HomeSegments.swift`.
     enum Home {
-        static var groupsSection: String { localized("Your groups") }
-        static var gamesSection: String { localized("Your events") }
-        static var noGroups: String { localized("No groups yet. Find one on Explore, or create your own.") }
         static var noGames: String { localized("Events you join or host will appear here.") }
-        static var emptyTitle: String { localized("Nothing here yet") }
-        static var emptyMessage: String { localized("Events you join or host and groups you belong to appear here.") }
-        static var exploreAction: String { AppBranding.exploreTitle }
-        static var loadFailedTitle: String { localized("Couldn't load your groups and events") }
         static var guestMessage: String { localized("Sign in to see your groups and the events you join or host.") }
         static var groupsLoadFailed: String { localized("Couldn't load your groups. Pull down to try again.") }
         static var gamesLoadFailed: String { localized("Couldn't load your events. Pull down to try again.") }

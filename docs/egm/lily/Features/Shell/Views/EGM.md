@@ -7,7 +7,8 @@ Source: `lily/Features/Shell/Views/`
 The signed-in and guest shell: a `TabView` of Home, Explore and Chats (flag-gated), kept by the root for the
 app's lifetime and empty while the landing covers it; the profile as a sheet, presented once from the shell root over
 the corner control every tab root carries (`ProfileCornerButton`; the Profile tab was removed 2026-11-07, the
-relocation contract); the Home root with its guest prompt or the three-section overview;
+relocation contract); the Home root with its guest prompt or the segmented overview (one of the caller's lists at a time behind the
+Events | Tournaments | Groups picker, each segment with its own create button seeding the creation wizard; 2026-11-14);
 the Explore tab wrapping the shared `EventListView` with the group and tournament carousels; and the Chats tab choosing
 between a stack and the iPad split view. Lists are read from `dependencies.lists` (`ShellLists`), navigation from
 `dependencies.navigation` (`AppNavigation`), and the screens shown inside (`ProfileView`, `ChatsView`, `ChatsSplitView`,
@@ -57,22 +58,39 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `.animatesTabBar(depth: navigation.homePath.count)`.
 - `[HomeView.swift:HomeView]`: `dependencies`; `events = dependencies.lists.homeEvents`, `tournaments =
   dependencies.lists.homeTournaments`; `content = HomeContent(for: dependencies.sessionController.state)`; a private
-  `LoadKey: Hashable { userID: String?; eventsVersion: Int; tournamentsVersion: Int }`. Body: `ContentScreen` showing
+  `LoadKey: Hashable { userID: String?; eventsVersion: Int; tournamentsVersion: Int }`; `@State wizardModel:
+  AppCreationWizardModel?` and `@State presentedSheet: WizardOnlySheet?` (2026-11-14: the create button's wizard,
+  made once per presentation in `presentCreate(_:)` and owned above both presenters, so a mid-flow width-class
+  change re-hosts the same flow instead of destroying it). Body: `ContentScreen` showing
   `GuestSignInPrompt(symbolName: DesignTokens.Symbols.home, message: AppBranding.Home.guestMessage, dependencies:)` or
-  `HomeOverview(groups: dependencies.myGroups, events:, tournaments:, dependencies:)`; `.navigationTitle(AppBranding.homeTitle)`;
+  `HomeOverview(groups: dependencies.myGroups, events:, tournaments:, dependencies:, onCreate: presentCreate)`;
+  `.navigationTitle(AppBranding.homeTitle)`;
   `.toolbar { ProfileCornerButton(dependencies:) }`;
   `.groupDestinations(dependencies:onTournamentChange: tournaments.replace)`; `.navigationDestination(for:
   SportEvent.self)` pushing `EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for:onChange:
-  events.replace), dependencies:)`; `.task(id: loadKey) { await loadIfStale() }`.
-- `[HomeOverview.swift:HomeOverview]`: `groups: MyGroupsStore`, `events: EventListViewModel`, `tournaments:
-  TournamentListViewModel`, `dependencies`; reads `\.horizontalSizeClass`; `state: HomeOverviewState` from
-  `HomeOverviewState.resolve`. Renders `ProgressView()`, or a refreshable scroll of `EmptyStateView` (`emptyState`
-  with `AppBranding.Home.emptyTitle`/`emptyMessage`/`exploreAction`, `loadFailedState` with
-  `AppBranding.Home.loadFailedTitle` and `AppBranding.Events.loadFailedMessage`), or the sections: `SectionTitle`
-  headings `AppBranding.Home.groupsSection`, `AppBranding.Tournaments.mineSection`, `AppBranding.Home.gamesSection`;
-  `GroupTileGrid(groups:distance:)` or `GroupRowList(groups:)`, `TournamentCardList(tournaments:distance:)`,
-  `EventCardList(events:distance:)`; notes `AppBranding.Home.groupsLoadFailed`/`noGroups`/`gamesLoadFailed`/`noGames`
-  and `AppBranding.Tournaments.mineLoadFailed`.
+  events.replace), dependencies:)`; `.creationWizardPresenter(item: $presentedSheet, model: wizardModel,
+  errorCenter:, onDismissed: wizardDismissed)` — the shared host
+  ([`../../Create/Views/EGM.md`](../../Create/Views/EGM.md)): a full-screen cover on a compact width, a
+  `lilyFormSheet()` sheet otherwise, exactly as Explore presents the wizard; `.task(id: loadKey) { await
+  loadIfStale() }`. `presentCreate(_ kind: CreationKind)` builds the model through
+  `dependencies.makeCreationWizardModel(seed: CreationSeed(kind:), onCreatedEvent:onCreatedGroup:onCreatedTournament:)`
+  and sets `presentedSheet = .wizard`; `wizardDismissed()` books the flow's close (`wizardModel?.noteClosed()`, once
+  and never after a create) and drops the model.
+- `[HomeOverview.swift:HomeOverview]` (segmented 2026-11-14, the owner's variant-C choice): `groups: MyGroupsStore`,
+  `events: EventListViewModel`, `tournaments: TournamentListViewModel`, `dependencies`, `onCreate: (CreationKind) ->
+  Void`; `@State segment: HomeSegment = .events`; reads `\.horizontalSizeClass` and `\.motion`. Renders a refreshable
+  scroll of: the segmented `Picker` over `HomeSegment.offered()` (label `AppBranding.Home.segmentPicker`, identifier
+  `AccessibilityIdentifiers.homeSegment`, `.readableColumn()`); the full-width create button (`segment.createTitle`
+  under `lilyGlassButton(labelColor: .lilyInk)` with the accent on the `DesignTokens.Symbols.create` glyph alone,
+  identifier `AccessibilityIdentifiers.homeCreate`) calling `onCreate(segment.creationKind)`; and `segmentContent` —
+  one `slot(state:count:content:)` per segment over `events.listState` / `events.visibleEvents`,
+  `tournaments.listState` / `tournaments.visibleTournaments` or `groups.listState` / `groups.communities`,
+  drawing `EventCardList(events:distance:)`, `TournamentCardList(tournaments:distance:)` or `groupsList`. A
+  `.content` slot puts the `.footnote` `.secondary` count line (`segment.countLine(_:)`) over the list; `.loading` a
+  `ProgressView`; `.failed` the quiet `segment.failedMessage` note; `.empty` an `EmptyStateView(symbolName:
+  segment.symbolName, title: segment.emptyTitle, message: segment.emptyMessage)` — the copy all carried by
+  `HomeSegment` ([`../Models/EGM.md`](../Models/EGM.md)). The segment switch animates
+  `.snappy(DesignTokens.Duration.fast)` only while `motion.allowsMovement`.
 - `[ExploreTab.swift:ExploreTab]`: `dependencies`; `discover = dependencies.lists.discover`, `tournaments =
   dependencies.lists.exploreTournaments`; body is `EventListView(listTitle:, viewModel: dependencies.lists.exploreEvents,
   dependencies:, refreshHeader: refreshCarousels, header: carousels)` with `listTitle = AppBranding.Events.eventsSection`
@@ -102,14 +120,17 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   pool confirmed the cached user. The three loads (`events.loadIfStale()`, `myGroups.loadIfStale()` behind
   `AppConfig.FeatureFlags.groups`, `tournaments.loadIfStale()` behind `AppConfig.FeatureFlags.tournaments`) run as
   `async let` children; the position is asked for after them. The `.task(id: loadKey)` restarts on a new user id or a
-  bump of `dependencies.eventChanges.version` / `dependencies.tournamentChanges.version`.
-- `[HomeOverview.swift:HomeOverview.state]`: the groups snapshot is passed only when `AppConfig.FeatureFlags.groups`,
-  the tournaments snapshot only when `AppConfig.FeatureFlags.tournaments`; `hasAnswered` is `!events.isInitialLoad`,
-  `groups.hasLoaded || groups.loadFailed`, `!tournaments.isInitialLoad`.
-- `[HomeOverview.swift:HomeOverview.sections]`: with groups off only `gamesContent` is drawn, without a heading; the
-  tournaments section appears only inside the groups branch and only when its state is non-`nil`.
-- `[HomeOverview.swift:HomeOverview.groupsContent]`: `.content where sizeClass == .regular` draws the tile grid, any
-  other `.content` the row list.
+  bump of `dependencies.eventChanges.version` / `dependencies.tournamentChanges.version`. All three lists load
+  although one segment shows (deliberate, 2026-11-14: a segment switch answers from memory at once).
+- `[HomeOverview.swift:HomeOverview.body]` (2026-11-14): the picker offers only `HomeSegment.offered()`, so a feature
+  flag that is off removes its segment (events always ship); every segment keeps the create button, the empty and
+  failed states included.
+- `[HomeOverview.swift:HomeOverview.segmentContent]`: the per-segment pane state is the shared `ListState` rule
+  (`lily/Core/Changes/ListState.swift:ListState`) — every pane reads its owner's own `listState` resolver
+  (`events.listState`, `tournaments.listState`, `groups.listState`; the store's fold is contracted in
+  [`../../Groups/State/EGM.md`](../../Groups/State/EGM.md)); nothing here re-implements or re-derives the rule.
+- `[HomeOverview.swift:HomeOverview.groupsList]`: `sizeClass == .regular` draws the tile grid, any other width the
+  row list.
 - `[ExploreTab.swift:ExploreTab.showsGroups]`: `AppConfig.FeatureFlags.groups && !discover.groups.isEmpty`;
   `showsTournaments` likewise with `tournaments.visibleTournaments`.
 - `[ChatTab.swift:ChatTab.showsSplitView]`: `layoutMode.isRegular && HomeContent(for:
@@ -124,10 +145,10 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `.task(id: dependencies.groupChanges.version)` → `discover.loadIfStaleNearTheUser()` and `.task(id:
   dependencies.tournamentChanges.version)` → `tournaments.loadIfStaleNearTheUser()`; `refreshCarousels` calls
   `discover.search()` and `tournaments.load()`.
-- `[HomeOverview.swift:HomeOverview.refreshableScroll]`: pull-to-refresh awaits `groups.reload()` (flag),
-  `tournaments.load()` (flag) and `events.load()`.
-- Navigation writes: `[HomeOverview.swift:HomeOverview.groupsContent]` `dependencies.navigation.open(group:)`;
-  `[HomeOverview.swift:HomeOverview.emptyState]` `dependencies.navigation.selectedTab = .explore`;
+- `[HomeOverview.swift:HomeOverview.refreshVisible]`: pull-to-refresh reloads the visible segment alone —
+  `events.load()`, `tournaments.load()` or `groups.reload()` (2026-11-14; all three until then).
+- Navigation writes: `[HomeOverview.swift:HomeOverview.groupsList]` `dependencies.navigation.open(group:)` (the
+  whole-screen empty state and its Explore jump were removed 2026-11-14 with the segmented redesign);
   `[MainTabView.swift:MainTabView.body]` binds `selectedTab` and `isProfilePresented` (presenting `ProfileView` as the
   profile sheet, which mounts its own `.errorPopup`), sets `usesSplitChats`; `[ProfileCornerButton.swift:ProfileCornerButton]` sets `isProfilePresented = true`;
   `[HomeTab.swift:HomeTab]` and `[ChatTab.swift:ChatTab]` bind `homePath` and `chatPath`.
@@ -135,10 +156,15 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
 - `[GuestSignInPrompt.swift:GuestSignInPrompt]`: presents `SignInSheet`, which mounts its own `.errorPopup`.
 - `[HomeView.swift:HomeView.body]`: `tournaments.replace` and `events.replace` are handed to the destinations as change
   callbacks that mutate the Home lists.
+- `[HomeView.swift:HomeView.presentCreate]` (2026-11-14): builds the wizard model — `onCreatedEvent` runs
+  `events.add` then `navigation.open(event:)`, `onCreatedGroup` `navigation.open(group:)`, `onCreatedTournament`
+  `tournaments.add` (inserted, not refetched: the by-user index is eventually consistent and could answer without
+  the new tournament; `add` still invalidates the sibling lists) then `navigation.open(tournament:)` — and
+  `[HomeView.swift:HomeView.wizardDismissed]` books `noteClosed()` on a real dismissal alone, never on a re-host.
 - No logging, disk or `UserDefaults` access is made directly by these views.
 
 ## Verification
 
-- Run: `./scripts/ci.sh unit` (from the repository root; the state rules these views draw are pinned in
-  `lilyTests/Shell`; the screens themselves are exercised by the UI tests, `./scripts/ci.sh ui` and
-  `./scripts/ci.sh ui-ipad`).
+- Run: `./scripts/ci.sh unit` (from the repository root; the segment model these views draw is pinned in
+  `lilyTests/Shell/HomeSegmentTests.swift` and the pane rule in `lilyTests/Changes/ListStateTests.swift`; the screens
+  themselves are exercised by the UI tests, `./scripts/ci.sh ui` and `./scripts/ci.sh ui-ipad`).

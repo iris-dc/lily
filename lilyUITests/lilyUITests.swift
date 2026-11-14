@@ -49,6 +49,33 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["apple@example.com"].waitForExistence(timeout: 5), "the sheet shows the account")
     }
 
+    /// Home's create button seeds the wizard with the visible segment's kind: the default Events segment opens the
+    /// event flow on its Name step, the Tournaments segment the tournament flow; a clean Cancel closes silently
+    /// either way.
+    @MainActor
+    func testHomeCreateSeedsTheVisibleSegmentsKind() {
+        tapSignInWithApple()
+        openHomeTab()
+
+        let create = app.buttons[HomeIDs.create]
+        XCTAssertTrue(create.waitForExistence(timeout: 10), "the create button heads the default segment")
+        create.tap()
+        waitForWizardStep("Name")
+        XCTAssertTrue(app.textFields["create-title"].waitForExistence(timeout: 5),
+                      "the Events segment seeds the event flow")
+        app.buttons["create-cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Name"].waitForNonExistence(timeout: 5), "a clean wizard closes silently")
+
+        selectHomeSegment("Tournaments")
+        XCTAssertTrue(create.waitForExistence(timeout: 10), "every segment keeps the create button")
+        create.tap()
+        waitForWizardStep("Name")
+        XCTAssertTrue(app.textFields["tournament-name"].waitForExistence(timeout: 5),
+                      "the Tournaments segment seeds the tournament flow")
+        app.buttons["create-cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Name"].waitForNonExistence(timeout: 5), "a clean wizard closes silently")
+    }
+
     @MainActor
     func testMapSelectedCardStaysAboveTheTabBar() {
         relaunchAsGuest()

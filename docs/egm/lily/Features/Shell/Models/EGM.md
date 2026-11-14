@@ -5,11 +5,13 @@ Source: `lily/Features/Shell/Models/`
 ## Overview
 
 The shell's plain data: the tab list, the create intent a keyboard shortcut parks on the navigation model, what Home and
-Chats show for a session state, and the pure rule that turns a snapshot of Home's three lists into one screen state. All
-types are `nonisolated`, `Equatable`/`Hashable` and `Sendable`; the screen reads these instead of a store's flags.
+Chats show for a session state, and the segmented Home's pane list (`HomeSegment`, 2026-11-14 — the whole-screen
+`HomeOverviewState` rule was deleted with the segmented redesign; a pane's state is the shared `ListState`,
+`lily/Core/Changes/ListState.swift:ListState`, which the two list view models and `MyGroupsStore.listState` all feed).
+All types are `nonisolated`, `Equatable`/`Hashable` and `Sendable`; the screen reads these instead of a store's flags.
 
 Files: `lily/Features/Shell/Models/AppTab.swift`, `lily/Features/Shell/Models/CreateIntent.swift`,
-`lily/Features/Shell/Models/HomeContent.swift`, `lily/Features/Shell/Models/HomeOverviewState.swift`.
+`lily/Features/Shell/Models/HomeContent.swift`, `lily/Features/Shell/Models/HomeSegment.swift`.
 
 ## Interface
 
@@ -21,14 +23,17 @@ Files: `lily/Features/Shell/Models/AppTab.swift`, `lily/Features/Shell/Models/Cr
   `tournament`; a marker with no members.
 - `[HomeContent.swift:HomeContent]`: `nonisolated enum HomeContent: Equatable, Sendable` with cases `signInPrompt`,
   `overview`; `init(for state: SessionState)` sets `self = state.isSignedIn ? .overview : .signInPrompt`.
-- `[HomeOverviewState.swift:HomeListSnapshot]`: `nonisolated struct HomeListSnapshot: Equatable, Sendable` with
-  `let isEmpty: Bool`, `let hasAnswered: Bool`, `let loadFailed: Bool`.
-- `[HomeOverviewState.swift:HomeSectionState]`: `nonisolated enum HomeSectionState: Equatable, Sendable` with cases
-  `loading`, `failed`, `empty`, `content`.
-- `[HomeOverviewState.swift:HomeOverviewState]`: `nonisolated enum HomeOverviewState: Equatable, Sendable` with cases
-  `loading`, `empty(loadFailed: Bool)`, `sections(groups: HomeSectionState?, tournaments: HomeSectionState?, games:
-  HomeSectionState)`; `static func resolve(events: HomeListSnapshot, groups: HomeListSnapshot?, tournaments:
-  HomeListSnapshot?) -> HomeOverviewState`; private helpers `sectionState(of:)` and `tournamentsSectionState(of:)`.
+- `[HomeSegment.swift:HomeSegment]` (2026-11-14): `nonisolated enum HomeSegment: CaseIterable, Hashable, Sendable`
+  with cases `events`, `tournaments`, `groups` in the picker's order; `static func offered(groups: Bool =
+  AppConfig.FeatureFlags.groups, tournaments: Bool = AppConfig.FeatureFlags.tournaments) -> [HomeSegment]` filters
+  `allCases` by the flags, events always kept; per segment `title`, `createTitle` (the create button's words),
+  `creationKind: CreationKind` (what the button seeds the wizard with), `symbolName` (the empty hint's glyph, from
+  `DesignTokens.Symbols`), `emptyTitle`, `emptyMessage`, `failedMessage` and `countLine(_ count: Int)` (the
+  catalog's `%lld` plural keys), all mapping to `AppBranding.Home` — most in
+  `lily/Config/AppBranding+HomeSegments.swift`, while the root `lily/Config/AppBranding.swift` keeps `noGames`
+  (`.events`' `emptyMessage`) and `gamesLoadFailed` / `groupsLoadFailed` (`.events`' and `.groups`' `failedMessage`),
+  the split the Config contract records — plus `AppBranding.Tournaments.mineLoadFailed`
+  (`lily/Config/AppBranding+Tournaments.swift`, `.tournaments`' `failedMessage`).
 
 ## Invariants
 
@@ -37,25 +42,23 @@ Files: `lily/Features/Shell/Models/AppTab.swift`, `lily/Features/Shell/Models/Cr
   `index + 1`, so Release, with chat off, is ⌘1 Home, ⌘2 Explore).
 - `[HomeContent.swift:HomeContent.init]`: only `SessionState.isSignedIn` yields `.overview`; a guest or a signed-out
   state yields `.signInPrompt`.
-- `[HomeOverviewState.swift:HomeOverviewState.resolve]`: a `nil` list (a feature flag off) is dropped by `compactMap`
-  and never waited for. The rule is ordered: (1) if any present list is non-empty, or `tournaments?.loadFailed == true`,
-  return `.sections`; (2) else if any present list has `!hasAnswered`, return `.loading`; (3) else return
-  `.empty(loadFailed: events.loadFailed || groups?.loadFailed == true)`. So the screen never says "nothing" while a
-  list it waits for is still out.
-- `[HomeOverviewState.swift:HomeOverviewState.sectionState]`: `.content` if non-empty, else `.loading` if not answered,
-  else `.failed` or `.empty` by `loadFailed`.
-- `[HomeOverviewState.swift:HomeOverviewState.tournamentsSectionState]`: `.content` if non-empty, `.failed` if the load
-  failed, otherwise `nil` (the section is hidden; it is never `.loading` or `.empty`).
+- `[HomeSegment.swift:HomeSegment.offered]`: keeps `allCases` order, drops `.tournaments` and `.groups` only when
+  their flag is off, and always contains `.events`, so the offer is never empty; the parameters default to the
+  build's `AppConfig.FeatureFlags` and are injected only by tests.
+- `[HomeSegment.swift:HomeSegment]`: every case carries its own copy — no two segments share a `title`, `createTitle`
+  or hint — so the picker, the create button and the empty and failed states always name the visible segment.
 - `[AppTab.swift:AppTab]`, `[CreateIntent.swift:CreateIntent]`, `[HomeContent.swift:HomeContent]`,
-  `[HomeOverviewState.swift:HomeOverviewState]`: `nonisolated` value types, so they are `Sendable` and testable off the
+  `[HomeSegment.swift:HomeSegment]`: `nonisolated` value types, so they are `Sendable` and testable off the
   main actor.
 
 ## Side Effects
 
-- None. `[HomeOverviewState.swift:HomeOverviewState.resolve]` and `[HomeContent.swift:HomeContent.init]` are pure
-  functions of their inputs; `[AppTab.swift:AppTab.shown]` only reads a compile-time feature flag.
+- None beyond reads: `[HomeContent.swift:HomeContent.init]` is a pure function of its input;
+  `[AppTab.swift:AppTab.shown]` and `[HomeSegment.swift:HomeSegment.offered]` only read compile-time feature flags;
+  `HomeSegment`'s copy members perform catalog lookups through `AppBranding` at access time.
 
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (from the repository root; the matching suites are `lilyTests/Shell/HomeContentTests.swift`
-  and `lilyTests/Shell/HomeOverviewStateTests.swift`).
+  and `lilyTests/Shell/HomeSegmentTests.swift`; the pane rule the segments draw is pinned in
+  `lilyTests/Changes/ListStateTests.swift`).

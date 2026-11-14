@@ -390,3 +390,13 @@ the asset catalog.
   (−1, +6) → (−1, +4): the capsule's centre 2 pt further up, its bottom kissing the bubble's top-right arc instead of
   riding into it, the left overlap kept. Evidence `groups-plan/chat-fixes-2026-11-13/new-badge-crop.png` against
   `old-badge-crop.png` (round 7's `badge-v3` at the same 1:1 crop of the Chats tab).
+- **The segmented Home, variant C (2026-11-14).** The owner chose the segmented Home from three rendered prototypes
+  (evidence under `~/.claude/projects/-Users-makshr-lily/groups-plan/home-redesign-2026-11-14/`: variant-a,
+  variant-b, variant-c, downscaled copies in small/): a segmented Events | Tournaments | Groups picker directly
+  under the large title, a full-width glass create button under it, one of the caller's lists at a time, and a
+  `.footnote` `.secondary` count line over the list — quiet enough not to read as a heading. The create button sets
+  the precedent for a glass button carrying an accent mark: the label reads as ink
+  (`lilyGlassButton(labelColor: .lilyInk)`) and the accent sits on the plus glyph alone, per the rule that the
+  accent never colours text below headline size; the by-eye render check of the productionized screen (the accent
+  glyph under glass, the segment switch, mid-refresh states) rides this round's simulator gate. The segment switch
+  moves with `.snappy(Duration.fast)` only while `\.motion` allows movement.

@@ -80,12 +80,13 @@ final class LilyIPadTests: LilyUITestCase {
         XCTAssertNotEqual(first.frame.minX, second.frame.minX)
     }
 
-    /// Home on a regular width draws the caller's groups as tiles, each captioned with its place and the distance from
-    /// the mock position.
+    /// Home's Groups segment on a regular width draws the caller's groups as tiles, each captioned with its place and
+    /// the distance from the mock position.
     @MainActor
     func testHomeTilesShowTheDistanceToEachGroup() {
         tapSignInWithApple()
         openHomeTab()
+        selectHomeSegment("Groups")
         let tile = app.buttons[MockIDs.kickersRow]
         XCTAssertTrue(tile.waitForExistence(timeout: 10), app.debugDescription)
         XCTAssertTrue(tile.label.contains(" km") || tile.label.contains(" m"),
@@ -150,6 +151,23 @@ final class LilyIPadTests: LilyUITestCase {
         tapSignInWithApple()
         openExploreTab()
         tapCreateMenuItem("New event")
+        XCTAssertTrue(app.navigationBars["Name"].waitForExistence(timeout: 10), "the wizard opens on its Name step")
+        let title = app.textFields["create-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 10), app.debugDescription)
+        let window = app.windows.firstMatch.frame
+        XCTAssertLessThan(title.frame.width, window.width - 200, "the field spans a form sheet, not the window")
+        XCTAssertGreaterThan(title.frame.minX, 100, "the sheet is centred")
+    }
+
+    /// Home's create button on a regular width presents the wizard as a centred form sheet too, never the compact
+    /// cover; the default Events segment seeds the event flow, whose Name step's title field measures the sheet.
+    @MainActor
+    func testHomeCreateOpensAFormSheetOnIPad() {
+        tapSignInWithApple()
+        openHomeTab()
+        let create = app.buttons[HomeIDs.create]
+        XCTAssertTrue(create.waitForExistence(timeout: 10), "the create button heads the segment")
+        create.tap()
         XCTAssertTrue(app.navigationBars["Name"].waitForExistence(timeout: 10), "the wizard opens on its Name step")
         let title = app.textFields["create-title"]
         XCTAssertTrue(title.waitForExistence(timeout: 10), app.debugDescription)

@@ -5,7 +5,7 @@ Source: `lily/Config/`
 ## Overview
 
 Four `nonisolated enum` namespaces, each a root file plus `+Area.swift` files that are `nonisolated extension`s of the
-root or of one of its nested enums (75 files, about 3,990 lines). `AppConfig` is the non-visual configuration: API
+root or of one of its nested enums (77 files, about 4,100 lines). `AppConfig` is the non-visual configuration: API
 paths and base URLs, limits mirrored from the Laurel backend, launch-argument literals, feature flags, Cognito ids.
 `AppBranding` holds every user-facing string as a computed `static var` or `static func` whose body is
 `localized("English text")`, so the English text is the catalog key. `DesignTokens` holds the visual constants and
@@ -115,7 +115,14 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   event-detail strings (`landingPrimaryAction`, `signInAction`, `homeTitle`, `exploreTitle`, `profileTitle`, `joinAction`,
   ...); `signInButtonTitle(for:)`, `passwordHint(minimumLength:)`, `confirmEmailSubtitle(email:)`, `hostedByTitle(for:)`;
   `chatsTitle` lives in `AppBranding+Inbox.swift`.
-- Nested namespaces: `Home`, `Events` (+ `Filter`, `Create`, `Edit`), `Chat` (+ `Attachments`, `Pins`, `Polls`),
+- Nested namespaces: `Home` (the root file keeps `noGames`, `guestMessage`, `groupsLoadFailed` and
+  `gamesLoadFailed`; the segmented Home's copy — `segmentPicker`, `eventsSegment`/`tournamentsSegment`/`groupsSegment`,
+  `createEvent`/`createTournament`/`createGroup`, `noEventsTitle`/`noTournamentsTitle`/`noGroupsTitle`,
+  `noTournaments`, `findGroups` and the `%lld` plural `eventCount(_:)`/`tournamentCount(_:)`/`groupCount(_:)` — is
+  `lily/Config/AppBranding+HomeSegments.swift`, 2026-11-14; the old section headings and whole-screen empty copy
+  (`groupsSection`, `gamesSection`, `noGroups`, `emptyTitle`, `emptyMessage`, `exploreAction`, `loadFailedTitle` and
+  `Tournaments.mineSection`) were deleted the same day, `Inbox.emptyTitle` now holding its "Nothing here yet" key
+  directly), `Events` (+ `Filter`, `Create`, `Edit`), `Chat` (+ `Attachments`, `Pins`, `Polls`),
   `Groups` (+ `Create`, `Invite`), `Chats`, `Inbox`, `Intro` (+ `Chat`), `Feedback`, `DisplayName`, `About`
   (`lily/Config/AppBranding+Profile.swift`: `title`, `subtitle`, `defaultSubtitle`, `placeholder`, `footer`, `save`,
   `tooLong(limit:)`), `DeletedUser` (same file, 2026-11-07: `name`, the localized "Deleted user" the `Tombstone`
@@ -257,7 +264,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 - Kebab-case, area-prefixed `static let` literals: root (`events-filter`, `create-submit`, `auth-email`, ...),
   +Groups (`chat-list`, `chat-composer`, `create-group`, ...), +Tournaments (45 literals and 6 builders, e.g. `match-score-a`), +Polls,
-  +Attachments, +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
+  +Attachments, +Home (`home-segment` and `home-create` — the segmented Home's picker and its per-segment create
+  button; 2026-11-14), +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
   +Profile (`profile-corner` and `profile-sheet` — the corner control on every tab root and the profile sheet's root
   container, 2026-11-07 — `profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
   `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-settings`, `settings-sign-out`,
@@ -290,7 +298,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 ## Invariants
 
-- Every top-level declaration in all 75 files is `nonisolated`: the four root enums and every `extension`
+- Every top-level declaration in all 77 files is `nonisolated`: the four root enums and every `extension`
   (`grep -c nonisolated` is 42 across the 15 `DesignTokens*` files and 1 in each `AccessibilityIdentifiers*` file;
   `grep "^extension\|^enum\|^struct" lily/Config/AppBranding*.swift` returns nothing). No `Sendable`, `@MainActor` or
   other isolation annotation appears in the directory.
@@ -342,7 +350,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `TabBar.symbolWeight` exists because the iOS 26 tab bar ignores `symbolVariants` and `fontWeight`; the `TabBar` badge constants (2026-11-12) exist because the bar also never moves its own badge (`badgePositionAdjustment` probed at zero effect), so the Chats count is drawn into the glyph image (`TabBadgeRenderer`), and a drawn bitmap must name its own symbol size and colours (`badgeGlyphPointSize`, `unselectedGlyphColor`) since the bar neither resizes nor tints it.
 - A UI test that reads an `AccessibilityIdentifiers` literal mirrors it by hand in `lilyUITests` (as it does the launch arguments): a rename
   here must be repeated there (`lily/Config/AccessibilityIdentifiers.swift:AccessibilityIdentifiers`). Only `introPager`
-  is mirrored from +Landing; the report sheet's reason rows and the feedback kind picker carry no identifiers and are
+  is mirrored from +Landing, plus the segmented Home's `home-segment` and `home-create` from +Home (the Home walks
+  switch the segment and open the wizard by them; 2026-11-14); the report sheet's reason rows and the feedback kind picker carry no identifiers and are
   found by label; the inbox's "Load earlier" button, the profile's shared-group rows container and the owner line of an
   event's and a tournament's title carry none either (no test read them); the event Edit sheet reuses the create identifiers; `createGroup` is the group row of both the event
   and the tournament form; `message(clientID:)` is stable across the optimistic-to-stored swap.

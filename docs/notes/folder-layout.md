@@ -31,7 +31,8 @@ lily/
                  +Shell / +Localization / +Settings / +FeatureFlags / +Build (the kind of build: debug, staging, release; 2026-11-01) / +Tournaments / +TournamentResults / +TournamentInvites /
                  +ChatTournaments / +Profile (the display name's limits, copy and identifiers; 2026-10-31) / +Events (map stacking and the place
                  suggestions, 2026-11-06) / +SportMarks (the sport marks' and the map cards' tokens; 2026-11-06) / +EventsMap
-                 (the map list's "N events here" header and "+N more" pill; 2026-11-06) / +Polls, +ChatPolls and +ChatPins
+                 (the map list's "N events here" header and "+N more" pill; 2026-11-06) / +HomeSegments and +Home (the segmented
+                 Home's copy and identifiers; 2026-11-14) / +Polls, +ChatPolls and +ChatPins
                  (the polls' and pins' constants, copy, tokens and identifiers; 2026-10-24) and one `+Area` file per feature beyond these
                  (`ls lily/Config` is the list; 2026-11-02) extension files so SwiftLint's type_body_length never trips on the four main types
   Core/
@@ -136,10 +137,11 @@ lily/
     Shell/       MainTabView (TabView(selection:) over AppTab: Home, Explore, Chats; the unread badge on Chats; mounts the profile
                  sheet above the per-tab language identity; 2026-11-07), ProfileCornerButton (the
                  top-left corner control on every tab root — initials or the person glyph — opening the profile sheet; 2026-11-07), HomeTab (the
-                 Home stack), HomeView, HomeOverview (your groups above your games), HomeContent (guest prompt or overview, shared
-                 with Chats), GuestSignInPrompt, ExploreTab (Explore with the groups and tournaments carousels), ChatTab (the Chats stack);
-                 Models (HomeOverviewState + HomeListSnapshot + HomeSectionState: Home's spinner / empty / sections rule while its three
-                 loads run; CreateIntent, the keyboard shortcuts' request), Services (ShellSync: the restore (the tab follows through the session observers)
+                 Home stack), HomeView (hosts the create button's wizard through the shared presenter), HomeOverview (the segmented
+                 Events | Tournaments | Groups panes, one at a time, with the per-segment create button; 2026-11-14), HomeContent
+                 (guest prompt or overview, shared with Chats), GuestSignInPrompt, ExploreTab (Explore with the groups and tournaments carousels), ChatTab (the Chats stack);
+                 Models (HomeSegment: the segmented Home's panes with their flags, copy and wizard seeds (2026-11-14; the pane states ride
+                 the shared ListState in Core/Changes); CreateIntent, the keyboard shortcuts' request), Services (ShellSync: the restore (the tab follows through the session observers)
                  and opens a pending notification tap, and the per-user run: account, realtime, Mine, inbox, block list, push, in order,
                  with Explore's lists loading alongside; ShellLists: the Home and Explore list view models the root owns for the app's
                  lifetime, each seeded from its snapshot)
@@ -179,7 +181,8 @@ lily/
                  Interfaces (CreationWizardControlling, what the pages read so each stays generic over its own kind alone),
                  State (CreationWizardModel (+Gating) + CreationWizardFactories + CreationDraft, the shell's observable state behind
                  the chrome), Views (CreationWizardView (the NavigationStack shell; the kind page left with the third design
-                 round, 2026-11-11 — every entry is seeded), WizardStepScaffold (+
+                 round, 2026-11-11 — every entry is seeded), CreationWizardPresenter (the shared cover-or-sheet host and
+                 real-dismissal guard every wizard presenter mounts or reuses; 2026-11-14), WizardStepScaffold (+
                  WizardCancelItem and WizardIssueHint), WizardStepCopy (per-step titles, captions, submit copy and identifiers),
                  WizardChoiceCard, WizardTypePicker (the searchable compact type grid, 2026-11-11), WizardProgressBar, WizardEntrance), Views/Event, Views/Group and Views/Tournament (the event,
                  group and tournament flows' 7 + 6 + 9 one-idea glass pages)

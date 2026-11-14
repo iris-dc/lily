@@ -28,22 +28,6 @@ struct EventListView<Header: View>: View {
     /// Whether the map is the whole content right now: the switchable layout with the picker on "Map".
     var showsMapAlone: Bool { layout == .switchable && presentation == .map }
 
-    /// Whether the wizard is up and rides the full-screen cover: only on a compact width; any other width keeps it a
-    /// sheet, sized like every form.
-    private var presentsWizardAsCover: Bool {
-        guard case .wizard = presentedSheet else { return false }
-        return layoutMode == .compact
-    }
-
-    /// The two presenters split `presentedSheet` between them: each shows it only while the other does not claim it.
-    private var sheetItem: Binding<ExploreSheet?> {
-        Binding(get: { presentsWizardAsCover ? nil : presentedSheet }, set: { presentedSheet = $0 })
-    }
-
-    private var wizardCoverItem: Binding<ExploreSheet?> {
-        Binding(get: { presentsWizardAsCover ? presentedSheet : nil }, set: { presentedSheet = $0 })
-    }
-
     init(listTitle: String?,
          viewModel: EventListViewModel,
          dependencies: AppDependencies,
@@ -92,10 +76,10 @@ struct EventListView<Header: View>: View {
         // A shortcut's create waits on the navigation until Explore is on screen; `initial` catches one that arrived
         // while another tab was showing.
         .onChange(of: dependencies.navigation.pendingCreate, initial: true) { consumePendingCreate() }
-        .sheet(item: sheetItem, onDismiss: clearWizardAfterDismiss) { sheet in sheetContent(for: sheet) }
-        // The wizard rides a full-screen cover on a compact width and a form sheet elsewhere; both presenters share
-        // `presentedSheet`, so a width-class change mid-flow re-hosts the wizard rather than losing the draft.
-        .fullScreenCover(item: wizardCoverItem, onDismiss: clearWizardAfterDismiss) { _ in wizardContent }
+        .creationWizardPresenter(item: $presentedSheet,
+                                 model: wizardModel,
+                                 errorCenter: dependencies.errorCenter,
+                                 onDismissed: wizardDismissed) { sheet in sheetContent(for: sheet) }
     }
 
     /// One column with the list or the map, or, side by side, the content column (with the "+" over its corner) and
@@ -131,5 +115,12 @@ struct EventListView<Header: View>: View {
         EventsMapView(viewModel: viewModel)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(AccessibilityIdentifiers.exploreMapPane)
+    }
+}
+
+/// The wizard case splits between the shared presenter's two hosts; sign-in stays a plain sheet.
+extension ExploreSheet: WizardPresentable {
+    var isWizard: Bool {
+        if case .wizard = self { true } else { false }
     }
 }

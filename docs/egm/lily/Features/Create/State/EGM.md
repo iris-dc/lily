@@ -67,7 +67,8 @@ kind's view model; this type only routes its issues through `CreationSteps` and 
   across a pop neither pushes nor skips a step. The map cases gate nothing (`allowsNext` false, no issue).
 - `submit()` drops a call while one is in flight and otherwise delegates to the active view model, where the
   idempotent create flow lives; `isDone` is the view model's. `noteClosed()` logs abandoned at most once and never
-  after a create succeeded; the presenter calls it on the flow's real dismissal (Explore's and the group detail's
+  after a create succeeded; the presenter calls it on the flow's real dismissal (Explore's and Home's
+  `wizardDismissed`, run by the shared `creationWizardPresenter`'s guard since 2026-11-14, and the group detail's
   `clearWizardAfterDismiss`), never on a width-class re-host.
 - Logging is `.ui`, ids and kinds only, never user text: "Creation wizard begun for <kind>" (info, at init),
   "Creation wizard submitted <kind>" (info), "Creation wizard abandoned (kind: <kind>)" (info),

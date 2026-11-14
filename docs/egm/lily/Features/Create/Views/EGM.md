@@ -16,9 +16,11 @@ Per-step copy and identifiers live in one map, `WizardStepCopy.swift` (computed 
 from the complexity rule). The shell is generic over the three kind view-model types, mirroring
 [`../State/EGM.md`](../State/EGM.md); the scaffold and the step pages read the wizard through
 `CreationWizardControlling` ([`../Interfaces/EGM.md`](../Interfaces/EGM.md)) and bind their own kind's view model
-through its draft-editing protocol alone. The wizard view is presentation-agnostic — the presenting screen (Explore,
-and the group detail since slice 3) chooses full-screen cover or form sheet and injects the model through
-`AppDependencies.makeCreationWizardModel`.
+through its draft-editing protocol alone. The wizard view is presentation-agnostic — the presenting screen (Explore, the group detail since slice 3, and
+Home since 2026-11-14) injects the model through `AppDependencies.makeCreationWizardModel`; since 2026-11-14 the
+cover-or-sheet choice itself is owned by the shared `creationWizardPresenter` modifier
+(`CreationWizardPresenter.swift`), which Explore and Home mount (the group detail shares its cover rule but keeps
+its own presenters over its six-case sheet enum, `GroupDetailView+Create.swift`).
 
 ## Interface
 
@@ -32,6 +34,19 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
   `PlacePickingDraft.pickSpot`, hosted with `drawsBackground: false` under the step pages' clear navigation
   container background, so the shell's one aurora shows through the map push too — the 2026-11-11 round-3 review's
   double-aurora catch).
+- `CreationWizardPresenter.swift` (2026-11-14): `WizardPresentable` (`Identifiable` plus `isWizard`;
+  `presentsAsCover(on: LayoutMode)` is true exactly for the wizard on a compact width), `WizardOnlySheet` (the
+  one-case item of a screen whose only sheet is the wizard) and
+  `View.creationWizardPresenter(item:model:errorCenter:onDismissed:sheetContent:)` with a `WizardOnlySheet`
+  convenience without `sheetContent`
+  (`lily/Features/Create/Views/CreationWizardPresenter.swift:creationWizardPresenter`): the private modifier reads
+  `\.layoutMode` and splits the one `item` between a `.fullScreenCover(item:)` and a `.sheet(item:)` whose bindings
+  each show it only while the other does not claim it; the sheet side hosts `CreationWizardView(model:errorCenter:)`
+  under `lilyFormSheet()`, the cover hosts it bare, any non-wizard item goes to `sheetContent`, and `onDismissed`
+  fires from either presenter's `onDismiss` only when the item is already `nil` — a real dismissal, never a
+  width-class re-host. Callers: Explore's `EventListView` (`ExploreSheet: WizardPresentable`, sign-in through
+  `sheetContent`) and `HomeView` (`WizardOnlySheet`); the group detail conforms its `DetailSheet` and reuses
+  `presentsAsCover(on:)` as `presentsWizardAsCover` but mounts its own presenters.
 - `WizardStepScaffold<Content>` (`lily/Features/Create/Views/WizardStepScaffold.swift:WizardStepScaffold`):
   `wizard: any CreationWizardControlling`, `step`, optional `scrollTarget: AnyHashable?`, `onCancel`,
   `@ViewBuilder content`. Renders the step title (`.navigationTitle`, large; `step.wizardTitle`) with
@@ -103,7 +118,8 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
 - Lifecycle: `.task(id: model.kind)` runs `model.prepare()` when a kind is entered; `.onChange(of: model.draft)`
   (one `CreationDraft` value for every kind) reports edits to `model.noteDraftChanged()`; the view dismisses itself
   when `model.isDone` turns true. The flow's close is booked by the presenter after the real dismissal
-  (`model.noteClosed()` in Explore's and the group detail's `clearWizardAfterDismiss`), never on disappear, which a
+  (`model.noteClosed()` in Explore's and Home's `wizardDismissed`, run by the shared presenter's real-dismissal
+  guard, and in the group detail's `clearWizardAfterDismiss`), never on disappear, which a
   width-class re-host also fires. The error popup is mounted here (`.errorPopup`), the one mount of this presentation.
 - The scaffold's scroll reader brings `scrollTarget` (the page's focused field) into view, animated only when
   `\.motion` allows movement; the bottom bar is transparent — the primary capsule sits directly over the content
@@ -131,7 +147,7 @@ and the group detail since slice 3) chooses full-screen cover or form sheet and 
 ## Verification
 
 - Run: `./scripts/ci.sh build` (zero `/lily/` warnings) and `./scripts/ci.sh unit` (the model behind every control:
-  `lilyTests/Create/`). The wizard is reached through the "+" menu's items, the parked create intents and the group
-  screen's create buttons; the walks are pinned on a simulator by `LilySmokeTests`, `LilyGroupsTests`,
+  `lilyTests/Create/`). The wizard is reached through the "+" menu's items, the parked create intents, the group
+  screen's create buttons and Home's per-segment create button (2026-11-14); the walks are pinned on a simulator by `LilySmokeTests`, `LilyGroupsTests`,
   `LilyEventEditTests`, `LilyProfileTests`, `LilyDiscoverTests`, `LilyTournamentTests` and `LilyIPadTests`
   (the seven UI classes of the third round's gate).

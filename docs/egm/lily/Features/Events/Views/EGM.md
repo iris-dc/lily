@@ -25,7 +25,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `presentation: EventsPresentation`, `presentedSheet: ExploreSheet?`,
   `wizardModel: AppCreationWizardModel?` (made once per presentation in `present(_:)`, owned above
   both presenters so a mid-flow width-class change re-hosts the wizard), `headerHeight`. Members: `showsMapAlone`,
-  `sheetContent(for:)`, `wizardContent`, `clearWizardAfterDismiss()`, `consumePendingCreate()`, `presentForUser(_:)`,
+  `sheetContent(for:)` (sign-in only since 2026-11-14 — the shared presenter hosts the wizard itself),
+  `wizardDismissed()`, `consumePendingCreate()`, `presentForUser(_:)`,
   `presentationPicker`, `content`, `listContent`, `eventList`, `filteredOutState`, `loadFailedState`,
   `emptyState`, `stateSlot`, `refreshableScroll`.
 - `EventDetailView` (`lily/Features/Events/Views/EventDetailView.swift`): `init(viewModel: EventDetailViewModel,
@@ -199,12 +200,13 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `dependencies.makeCreationWizardModel(seed:onCreatedEvent:onCreatedGroup:onCreatedTournament:)` — a created game
   lands in the list (`viewModel.add`) and opens through `navigation.open(event:)` (the fourth round, 2026-11-11),
   a created group opens through `navigation.open(group:)`, a created tournament
-  records `tournamentChanges` and opens: a full-screen cover on a compact width,
-  a `lilyFormSheet()` sheet otherwise, split by two item bindings over the one `presentedSheet` so a width-class
-  change mid-flow re-hosts the flow; the model is cleared only after a real dismissal (`clearWizardAfterDismiss`:
-  `presentedSheet` is nil then, not on a re-host), which also books the flow's close (`noteClosed()`, the abandoned
-  log, before the model is dropped), and the wizard mounts its own popup and dismissal rules, so the presenters add
-  sizing only. The detail destination is built with `onChange: viewModel.replace`.
+  records `tournamentChanges` and opens: hosted by the shared `creationWizardPresenter` modifier since 2026-11-14
+  (`lily/Features/Create/Views/CreationWizardPresenter.swift`; `ExploreSheet: WizardPresentable`) — a full-screen
+  cover on a compact width, a `lilyFormSheet()` sheet otherwise, over the one `presentedSheet` so a width-class
+  change mid-flow re-hosts the flow; the model is cleared only after a real dismissal (the presenter's guard runs
+  `wizardDismissed()` only when `presentedSheet` is nil, never on a re-host), which also books the flow's close
+  (`noteClosed()`, the abandoned log, before the model is dropped), and the wizard mounts its own popup and
+  dismissal rules, so the presenter adds sizing only. The detail destination is built with `onChange: viewModel.replace`.
 - Detail (`EventDetailView.participationControl`) switches on `viewModel.participation`: `.hidden` nothing, `.join` a
   prominent `BusyButton` → `join()`, `.leave` a glass `BusyButton` → `leave()`, `.full` a prominent `BusyButton`
   with no action, `.hosting` a caption. The Edit toolbar item (`lilyToolbarTextButton()`) shows only when `canEdit`;
@@ -308,8 +310,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `.groupDestinations(dependencies:)`; `PlacePickerRow` pushes `LocationPickerView`;
   `dependencies.navigation.open(group:)` / `open(event:)` / `open(tournament:)` after a create from Explore;
   `navigation.pendingCreate = nil` when consumed; `LocationPickerView` calls `dismiss()` on Done.
-- Sheets and covers: `CreationWizardView` (the wizard case: a full-screen cover on compact, a form sheet
-  otherwise), `SignInSheet` (through `ExploreSheet`) and `EditEventSheet` (`CreateEventSheet`, `CreateGroupSheet`
+- Sheets and covers: `CreationWizardView` (the wizard case, hosted by the shared `creationWizardPresenter`: a
+  full-screen cover on compact, a form sheet otherwise), `SignInSheet` (through `ExploreSheet`'s `sheetContent`) and `EditEventSheet` (`CreateEventSheet`, `CreateGroupSheet`
   and the `CreateTournamentSheet` wrapper left with slice 3, 2026-11-11); `EventDraftSheet` hands `errorCenter` to
   Core's `DraftSheet`.
 - `dependencies.tournamentChanges.recordChange()` after a tournament is created from Explore.

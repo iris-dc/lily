@@ -19,8 +19,8 @@ title and entrance motion, the searchable type grid and the per-step copy map �
 the kinds' one-idea glass pages
 (7, 6 and 9). Every create entry walks the wizard: Explore's "+" (a menu of the offered kinds, a plain one-tap event
 button when the flags leave only events), the
-⌘N/⌘⇧N/⌘⇧T intents, and a group screen's create-game and create-tournament affordances (seeded with the kind and the
-locked group). The three create view models, their drafts, their validation issues and the
+⌘N/⌘⇧N/⌘⇧T intents, a group screen's create-game and create-tournament affordances (seeded with the kind and the
+locked group), and Home's per-segment create button (seeded with the visible segment's kind; 2026-11-14). The three create view models, their drafts, their validation issues and the
 idempotent submit path are reused unchanged by design; this folder owns presentation-side decisions only and never
 reads auth — the guest substitution stays with `CreateIntentPolicy` in Events (see
 [`../Events/EGM.md`](../Events/EGM.md)).
@@ -41,6 +41,8 @@ reads auth — the guest substitution stays with `CreateIntentPolicy` in Events 
   bookkeeping, the submit lock and the wizard's log lines; built only by `AppDependencies.makeCreationWizardModel`
   ([`../../App/EGM.md`](../../App/EGM.md)).
 - Views: [./Views/EGM.md](./Views/EGM.md) - `CreationWizardView` (the `NavigationStack` shell, presentation-agnostic),
+  the shared `creationWizardPresenter` host (`CreationWizardPresenter.swift`, 2026-11-14: the cover-on-compact /
+  form-sheet-otherwise split and the real-dismissal guard every presenting screen shares),
   `WizardStepScaffold` with its shared pieces, the searchable `WizardTypePicker` grid and the per-step copy map
   (`WizardStepCopy.swift`);
   the step pages under [./Views/Event/EGM.md](./Views/Event/EGM.md), [./Views/Group/EGM.md](./Views/Group/EGM.md)

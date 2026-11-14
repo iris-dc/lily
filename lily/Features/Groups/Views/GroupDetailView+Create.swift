@@ -5,10 +5,10 @@ import SwiftUI
 /// a full-screen cover on a compact width, a form sheet otherwise, both over the one `presentedSheet`, with the
 /// model owned above the presenters so a width-class change mid-flow re-hosts the flow instead of destroying it.
 extension GroupDetailView {
-    /// Whether the wizard is up and rides the full-screen cover: only on a compact width.
+    /// Whether the wizard is up and rides the full-screen cover: the shared presenter's rule; the split bindings stay
+    /// here because the detail mounts both presenters on its own sheet switch.
     var presentsWizardAsCover: Bool {
-        guard let presentedSheet, presentedSheet.isWizard else { return false }
-        return layoutMode == .compact
+        presentedSheet?.presentsAsCover(on: layoutMode) ?? false
     }
 
     /// The two presenters split `presentedSheet` between them: each shows it only while the other does not claim it.
@@ -63,3 +63,5 @@ extension GroupDetailView {
         presentedSheet = sheet
     }
 }
+
+extension GroupDetailView.DetailSheet: WizardPresentable {}

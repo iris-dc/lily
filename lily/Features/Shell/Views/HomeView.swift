@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// The Home root: the caller's groups as rows (each opening the group's detail) and the games they joined or host as
-/// cards. Creating lives under the "+" on Explore, chats on the Chats tab. A guest is asked to sign in instead, and
-/// nothing is requested for them; the loads run again for whoever signs in from here.
+/// The Home root: the caller's events, tournaments and groups behind a segmented picker, with a prominent create
+/// button opening the creation wizard seeded with the visible segment's kind (a full-screen cover on a compact width,
+/// a form sheet elsewhere, as Explore presents it). A guest is asked to sign in instead, and nothing is requested for
+/// them; the loads run again for whoever signs in from here.
 struct HomeView: View {
     let dependencies: AppDependencies
 
@@ -12,6 +13,11 @@ struct HomeView: View {
     /// the loads below run.
     private var events: EventListViewModel { dependencies.lists.homeEvents }
     private var tournaments: TournamentListViewModel { dependencies.lists.homeTournaments }
+
+    /// The wizard behind the create button, made once per presentation and owned above both presenters, so a mid-flow
+    /// width-class change re-hosts the same flow instead of destroying it.
+    @State private var wizardModel: AppCreationWizardModel?
+    @State private var presentedSheet: WizardOnlySheet?
 
     /// What one run of the loads is for; a new caller or a game changed elsewhere starts another.
     private struct LoadKey: Hashable {
@@ -39,7 +45,8 @@ struct HomeView: View {
                 HomeOverview(groups: dependencies.myGroups,
                              events: events,
                              tournaments: tournaments,
-                             dependencies: dependencies)
+                             dependencies: dependencies,
+                             onCreate: presentCreate)
             }
         }
         .navigationTitle(AppBranding.homeTitle)
@@ -50,7 +57,40 @@ struct HomeView: View {
             EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event, onChange: events.replace),
                             dependencies: dependencies)
         }
+        .creationWizardPresenter(item: $presentedSheet,
+                                 model: wizardModel,
+                                 errorCenter: dependencies.errorCenter,
+                                 onDismissed: wizardDismissed)
         .task(id: loadKey) { await loadIfStale() }
+    }
+
+    /// The create button's wizard, seeded with the visible segment's kind. The created thing lands where it lives:
+    /// a game or a tournament in Home's own list and on its detail, a group on its detail (Home's list learns of it
+    /// through the store).
+    private func presentCreate(_ kind: CreationKind) {
+        let navigation = dependencies.navigation
+        let events = events
+        let tournaments = tournaments
+        wizardModel = dependencies.makeCreationWizardModel(
+            seed: CreationSeed(kind: kind),
+            onCreatedEvent: { event in
+                events.add(event)
+                navigation.open(event: event)
+            },
+            onCreatedGroup: { navigation.open(group: $0) },
+            onCreatedTournament: { detail in
+                // Inserted, not refetched: the by-user index is eventually consistent and could answer without the
+                // new tournament; `add` still invalidates the sibling lists.
+                tournaments.add(detail.tournament)
+                navigation.open(tournament: detail.tournament.destination)
+            })
+        presentedSheet = .wizard
+    }
+
+    /// A real dismissal is where the flow's close is booked: the abandoned log, once and never after a create.
+    private func wizardDismissed() {
+        wizardModel?.noteClosed()
+        wizardModel = nil
     }
 
     /// The caller's games and groups are theirs alone, so a guest asks for nothing, and nothing is asked before the pool

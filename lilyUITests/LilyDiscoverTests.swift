@@ -66,6 +66,7 @@ final class LilyDiscoverTests: LilyUITestCase {
         XCTAssertTrue(labelled(place).waitForExistence(timeout: 5), "the detail must show where the group plays")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
+        selectHomeSegment("Groups")
         XCTAssertTrue(labelled(name).waitForExistence(timeout: 10), "the new group must be listed on Home")
     }
 }

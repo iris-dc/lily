@@ -4,17 +4,28 @@ import XCTest
 /// and Discover on Explore, joining, creating, games hosted in a group, and the chat. Identifiers mirror
 /// `AccessibilityIdentifiers(+Groups)`; the mock ids mirror `MockGroupFixtures`.
 final class LilyGroupsTests: LilyUITestCase {
+    /// Home's Groups segment lists the caller's communities with the count line; the default Events segment lists
+    /// their joined games. One segment shows at a time: each list's rows leave with its segment.
     @MainActor
     func testHomeListsMockGroupsAndGames() {
         tapSignInWithApple()
         openHomeTab()
+        selectHomeSegment("Groups")
 
         XCTAssertTrue(app.buttons[MockIDs.kickersRow].waitForExistence(timeout: 10))
         XCTAssertTrue(labelled("Kreuzberg Kickers").exists)
         XCTAssertTrue(labelled("Tempelhof Runners").exists)
         XCTAssertTrue(labelled("Sunday Padel Crew").exists)
         XCTAssertFalse(app.buttons[MockIDs.basketballRow].exists, "Home lists the caller's groups only")
-        XCTAssertTrue(app.staticTexts["Your events"].waitForExistence(timeout: 5), "the caller's games follow their groups")
+        XCTAssertTrue(app.staticTexts["3 groups"].waitForExistence(timeout: 5), "the count line sums the caller's groups")
+        XCTAssertTrue(app.staticTexts["Sunset 5-a-side"].waitForNonExistence(timeout: 5),
+                      "the Groups segment shows no event card")
+
+        selectHomeSegment("Events")
+        XCTAssertTrue(app.staticTexts["Sunset 5-a-side"].waitForExistence(timeout: 10),
+                      "the Events segment lists the caller's games")
+        XCTAssertTrue(app.buttons[MockIDs.kickersRow].waitForNonExistence(timeout: 5),
+                      "the group rows leave with their segment")
     }
 
     @MainActor
@@ -55,6 +66,7 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(openChat.waitForExistence(timeout: 10), "a join must turn the actions into a member's")
 
         openHomeTab()
+        selectHomeSegment("Groups")
         XCTAssertTrue(app.buttons[MockIDs.basketballRow].waitForExistence(timeout: 10), "the joined group must be listed on Home")
     }
 
@@ -144,6 +156,7 @@ final class LilyGroupsTests: LilyUITestCase {
     func testInvitingAPersonFromTheGroupMarksThemInvited() {
         tapSignInWithApple()
         openHomeTab()
+        selectHomeSegment("Groups")
         let padel = app.buttons[MockIDs.padelRow]
         XCTAssertTrue(padel.waitForExistence(timeout: 10))
         padel.tap()

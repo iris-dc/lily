@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Heading of a section inside a scrolling screen (Home's "Your groups", Explore's "Groups"), at the screen margin,
+/// Heading of a section inside a scrolling screen (Explore's "Events" heading, the "Groups" carousel), at the screen margin,
 /// with an optional trailing action such as "See all".
 struct SectionTitle<Trailing: View>: View {
     let text: String
@@ -25,7 +25,7 @@ extension SectionTitle where Trailing == EmptyView {
 #Preview {
     ContentScreen {
         VStack {
-            SectionTitle(text: "Your groups")
+            SectionTitle(text: "Events")
             SectionTitle(text: "Groups") { Button("See all") {} }
         }
     }

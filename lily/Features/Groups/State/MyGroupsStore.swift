@@ -17,6 +17,8 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
     /// Counts the loads that answered. The unread set follows this, not `groups`: a local `add` or `replace` carries
     /// membership flags read before the rooms were, and would bring a read room's dot back; a snapshot is no load either.
     private(set) var loadVersion = 0
+    /// Whether `groups` was seeded from a stored snapshot; folded into `isInitialLoad` like the list view models'.
+    @ObservationIgnored private var startedFromSnapshot = false
     private let loader: StoreLoader
 
     private let repository: any GroupRepository
@@ -47,7 +49,9 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
                              now: now,
                              version: { changes.version })
         // A hint for the first frame, not a load: the loader still says "never loaded" and `loadVersion` stays.
-        groups = snapshots.load([SportGroup].self, for: Self.snapshotKey(for: identity.currentUserID)) ?? []
+        let snapshot = snapshots.load([SportGroup].self, for: Self.snapshotKey(for: identity.currentUserID))
+        groups = snapshot ?? []
+        startedFromSnapshot = snapshot != nil
     }
 
     /// Mine is the caller's, so the snapshot is kept under the caller it shows to; a guest has none, so the clearing
@@ -66,6 +70,16 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
     /// An answer landed at least once since the last reset; `loadFailed` is the other way a load ends.
     var hasLoaded: Bool { loader.hasLoaded }
     var isLoading: Bool { loader.isLoading }
+
+    /// Nothing to show yet: no snapshot and no answer, success or failure, so the screen spins rather than saying
+    /// "nothing yet" before Mine was asked; a snapshot, empty or not, is an answer the screen can show meanwhile
+    /// (the two list view models' rule).
+    var isInitialLoad: Bool { !startedFromSnapshot && !hasLoaded && !loadFailed }
+
+    /// What Home's Groups segment shows now; the pane draws `communities`, so emptiness is judged on them.
+    var listState: ListState {
+        ListState(isInitialLoad: isInitialLoad, isEmpty: communities.isEmpty, loadFailed: loadFailed)
+    }
 
     /// The communities in Mine (kind `group`): what "your groups" means on Home, in the event form and anywhere else a
     /// group is a community; conversations and rooms of a kind this build does not know stay out. `groups` (everything)
@@ -190,6 +204,7 @@ final class MyGroupsStore: SessionObserver, RoomActivityRecorder {
 
     private func clear() {
         groups = []
+        startedFromSnapshot = false
         loader.reset()
     }
 }

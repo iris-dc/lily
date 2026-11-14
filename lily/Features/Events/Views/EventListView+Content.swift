@@ -1,40 +1,20 @@
 import SwiftUI
 
-/// The sheets Explore presents (the creation wizard and sign-in) and the content states of the list, apart from the
-/// screen's composition in `EventListView.swift`, so the type body stays under SwiftLint's 200-line limit (the two
-/// together are over it).
+/// The sign-in sheet, the create intents and the content states of the list, apart from the screen's composition in
+/// `EventListView.swift`, so the type body stays under SwiftLint's 200-line limit (the two together are over it).
 extension EventListView {
-    /// The sheet for one `ExploreSheet` case.
+    /// The sheet for a non-wizard item; the shared presenter hosts the wizard itself.
     @ViewBuilder
     func sheetContent(for sheet: ExploreSheet) -> some View {
-        switch sheet {
-        case .wizard:
-            // On a regular width the wizard is this sheet, sized like every form; a compact width never reaches this
-            // branch (the full-screen cover claims it). The model was made when it was presented.
-            wizardContent.lilyFormSheet()
-        case .signIn:
+        if sheet == .signIn {
             SignInSheet(session: dependencies.sessionController,
                         errorCenter: dependencies.errorCenter,
                         language: dependencies.language.language)
         }
     }
 
-    /// The wizard the cover (compact) and the form sheet (regular) both host: `wizardModel` was made in `present(_:)`
-    /// and the created event lands in this list at once through `viewModel.add`, handed to the wizard's event factory.
-    /// The wizard mounts its own popup and dismissal rules, so the presenters add sizing only.
-    @ViewBuilder
-    var wizardContent: some View {
-        if let wizardModel {
-            CreationWizardView(model: wizardModel, errorCenter: dependencies.errorCenter)
-        }
-    }
-
-    /// A real dismissal cleared `presentedSheet` through the presenter's item binding; a re-host (the other presenter
-    /// taking the wizard over on a width-class change) did not, and the flow keeps its model. The real dismissal is
-    /// also where the flow's close is booked (the abandoned log, once and never after a create) — the wizard view's
-    /// own `onDisappear` would fire on a re-host too and falsify it.
-    func clearWizardAfterDismiss() {
-        guard presentedSheet == nil else { return }
+    /// A real dismissal is where the flow's close is booked: the abandoned log, once and never after a create.
+    func wizardDismissed() {
         wizardModel?.noteClosed()
         wizardModel = nil
     }

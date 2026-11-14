@@ -309,7 +309,9 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
 - **A created game opens on its own detail (2026-11-11, the owner's fourth round).** `AppNavigation.open(event:)`
   (through `openInHome`, like `open(group:)` and `open(tournament:)`) is the landing both wizard entry points call
   from `onCreatedEvent`, after the existing add-to-list (`viewModel.add` on Explore, `events.add` in a group), so
-  the feed and the group segment behave as before behind the pushed detail. Pinned by
+  the feed and the group segment behave as before behind the pushed detail. (A third entry joined 2026-11-14 —
+  Home's per-segment create button — and lands the same way: `HomeView.presentCreate` runs `events.add` then
+  `navigation.open(event:)`.) Pinned by
   `AppNavigationTests.anEventOpensItsDetailOnHome`; walked by
   `LilySmokeTests.testCreatingAGameOpensItsDetailAndShowsItOnHome`,
   `LilyGroupsTests.testGroupEventCreatedFromGroupShowsBadgeOnExplore` and the `LilyEventEditTests` walks

@@ -112,6 +112,19 @@ struct LocalizedCatalogTests {
         #expect(russian.contains("1 турнира"))
     }
 
+    /// The segmented Home's count lines are catalog plurals: Russian needs its few and many forms, and 21 takes the
+    /// one form again — exactly what a hand-rolled `count == 1` check would miss.
+    @Test func theHomeCountLinesCarryTheirPluralForms() {
+        #expect(Self.text("\(1) events", in: .russian) == "1 событие")
+        #expect(Self.text("\(2) events", in: .russian) == "2 события")
+        #expect(Self.text("\(5) events", in: .russian) == "5 событий")
+        #expect(Self.text("\(21) events", in: .russian) == "21 событие")
+        #expect(Self.text("\(2) tournaments", in: .russian) == "2 турнира")
+        #expect(Self.text("\(5) tournaments", in: .russian) == "5 турниров")
+        #expect(Self.text("\(2) groups", in: .russian) == "2 группы")
+        #expect(Self.text("\(5) groups", in: .russian) == "5 групп")
+    }
+
     /// "Between %lld and %lld entries" (64 and 12), "Between %lld and %lld players" (200), "Between %lld and %lld players
     /// per team" (11) and "Pictures can be up to ... %lld minutes ..." (3) stay flat: ru, uk and pl put the noun after the
     /// last number in the genitive, which is right for every value except 1 and, in ru/uk, 21/31/... A limit that

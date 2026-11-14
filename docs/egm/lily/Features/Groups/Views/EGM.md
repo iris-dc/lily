@@ -20,7 +20,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
 - `GroupDetailView(viewModel: GroupDetailViewModel, dependencies: AppDependencies)`: owns `@State` `viewModel`,
   `events: EventListViewModel` (scope `.group(id:)`), `tournaments: TournamentListViewModel`, `members:
   MembersViewModel?`, `section: GroupDetailSection`, `presentedSheet: DetailSheet?` (`invite`, `edit`, `createEvent`,
-  `createTournament`, `signIn`, `report`; `isWizard` marks the two create cases), `wizardModel:
+  `createTournament`, `signIn`, `report`; `isWizard` marks the two create cases — `WizardPresentable` since
+  2026-11-14, so the cover rule is the shared `presentsAsCover(on:)`, read as `presentsWizardAsCover`), `wizardModel:
   AppCreationWizardModel?` (made once per presentation in `GroupDetailView+Create.swift`'s `presentWizard`, owned
   above both presenters), `confirmation: GroupConfirmation?`; reads `@Environment(\.dismiss)` and `\.layoutMode`;
   stamps `AccessibilityIdentifiers.groupSection` [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
@@ -164,7 +165,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   cases — seeded `CreationSeed(kind:, lockedGroup: group.ref)` with `onCreatedEvent` adding to `events` then
   opening the game's detail through `dependencies.navigation.open(event:)` (the fourth round, 2026-11-11) and
   `onCreatedTournament` adding to `tournaments` then opening the tournament's detail through
-  `dependencies.navigation.open(tournament:)` (the merge review, 2026-11-12), a full-screen cover on compact and a `lilyFormSheet()` otherwise, the two
+  `dependencies.navigation.open(tournament:)` (the merge review, 2026-11-12), a full-screen cover on compact and a `lilyFormSheet()` otherwise (the cover claim through the shared
+  `WizardPresentable.presentsAsCover(on:)` since 2026-11-14), the two
   presenters split over one `presentedSheet` so a width-class change re-hosts the flow, and
   `clearWizardAfterDismiss` booking the close only on a real dismissal
   [`lily/Features/Groups/Views/GroupDetailView+Create.swift`:`GroupDetailView.presentWizard`]; `dismiss()` from the

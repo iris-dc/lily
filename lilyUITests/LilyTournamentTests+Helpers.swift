@@ -2,7 +2,7 @@ import XCTest
 
 /// Helpers of `LilyTournamentTests`, in their own file so the test class stays under the type-body limit.
 extension LilyTournamentTests {
-    /// Opens the Kickers Cup from Home's "Your tournaments" section; the caller organises it.
+    /// Opens the Kickers Cup from Home's Tournaments segment; the caller organises it.
     @MainActor
     func openKickersCup() {
         openTournament(row: MockIDs.kickersCupRow, titled: "Kickers Cup")
@@ -108,10 +108,10 @@ extension LilyTournamentTests {
         XCTAssertTrue(app.navigationBars["Match"].waitForExistence(timeout: 5), "the match sheet opens")
     }
 
-    /// Opens a tournament's detail from the card `row` under Home's "Your tournaments".
+    /// Opens a tournament's detail from the card `row` on Home's Tournaments segment.
     @MainActor
     private func openTournament(row: String, titled title: String) {
-        openFromHome(app.buttons[row])
+        openFromHome(app.buttons[row], segment: "Tournaments")
         XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 10))
     }
 }

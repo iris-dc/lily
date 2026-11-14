@@ -15,8 +15,8 @@ final class LilyTournamentTests: LilyUITestCase {
     let matchReminderID = "01J8MOCKNB0000000000000003"
 
     /// The "+" menu's "New tournament" walks the wizard's nine steps (the spot comes from the mock location, the
-    /// walk in the helpers); the organiser lands on the new tournament's detail on Home, and Home lists it under
-    /// "Your tournaments".
+    /// walk in the helpers); the organiser lands on the new tournament's detail on Home, and Home's Tournaments
+    /// segment lists it.
     @MainActor
     func testCreatingATournamentFromExploreShowsItOnHome() {
         tapSignInWithApple()
@@ -32,7 +32,7 @@ final class LilyTournamentTests: LilyUITestCase {
 
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Your tournaments"].waitForExistence(timeout: 10))
+        selectHomeSegment("Tournaments")
         XCTAssertTrue(labelled(name).waitForExistence(timeout: 10), "the new tournament must be listed on Home")
     }
 
@@ -229,6 +229,7 @@ final class LilyTournamentTests: LilyUITestCase {
     func testGroupDetailListsItsTournaments() {
         tapSignInWithApple()
         openHomeTab()
+        selectHomeSegment("Groups")
         let kickers = app.buttons[MockIDs.kickersRow]
         XCTAssertTrue(kickers.waitForExistence(timeout: 10))
         kickers.tap()

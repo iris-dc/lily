@@ -84,3 +84,24 @@ The app ships in English (the source language and the fallback), Russian, Spanis
   spot on the map" (the map row's label before anything is chosen) and "Apartment, floor or entrance" (the optional
   detail line under the address). Net +3 keys (779 → 782), with the byte-stable json round trip proven after the
   edit; machine-written like the other recent keys — the native read stays owed.
+- **Segmented Home copy (2026-11-14).** The Home tab's segmented redesign re-keys its copy: +10 keys (7 flat + 3
+  plural), −6, 782 → 786. New flat keys, in all seven languages: "Section" (the picker's VoiceOver label), "Create an
+  event" / "Create a tournament" / "Create a group" — the offer buttons get their own keys because the English
+  texts differ from the wizard submit keys ("Create event" / "Create tournament" / "Create group", and keys are
+  the English text); in French the tournament and group submits say "Créer le ..." where the offers take the
+  indefinite article (Créer un tournoi / un groupe), while "Create event" is already "Créer un événement",
+  identical to the new offer key's value —
+  "No groups yet" (modelled on "No events yet"), "Tournaments you enter or organise will appear here." (the style
+  sibling of "Events you join or host will appear here.") and "Find a group on Explore, or create your own." (its
+  translations start from the removed combined key's). New plural keys "%lld events", "%lld tournaments" and
+  "%lld groups" in the "%lld members" shape (en/es/fr/pt one+other, ru/uk/pl one/few/many/other), replacing
+  hand-rolled `count == 1` branches in `AppBranding+HomeSegments.swift` that were wrong for ru/uk 21/31/41. Removed
+  with their orphaned members (`AppBranding.Home.groupsSection`, `gamesSection`, `noGroups`, `emptyMessage`,
+  `exploreAction`, `loadFailedTitle`; `AppBranding.Tournaments.mineSection`): "Your groups", "Your events",
+  "No groups yet. Find one on Explore, or create your own.", "Events you join or host and groups you belong to
+  appear here.", "Couldn't load your groups and events", "Your tournaments". "Nothing here yet" stays with its one
+  literal moved to `AppBranding.Inbox.emptyTitle` (`Home.emptyTitle` deleted). The segments reuse the existing keys
+  "Events", "Tournaments" and "Groups" and the empty titles "No events yet" / "No tournaments yet" — the same
+  grammatical role (nominative-plural nouns, empty-state titles) in all seven languages, so no role keys. Appended
+  with the byte-stable json round trip proven before and after the edit; the new translations are machine-written
+  like the other recent keys — the native read stays owed.

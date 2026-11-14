@@ -11,7 +11,7 @@ final class LilyRosterTests: LilyUITestCase {
     @MainActor
     func testLeavingAGroupFromTheDetailRemovesItFromHome() {
         tapSignInWithApple()
-        openFromHome(app.buttons[MockIDs.kickersRow])
+        openFromHome(app.buttons[MockIDs.kickersRow], segment: "Groups")
         let more = app.buttons["group-more"]
         XCTAssertTrue(more.waitForExistence(timeout: 10))
         more.tap()
@@ -31,7 +31,7 @@ final class LilyRosterTests: LilyUITestCase {
     @MainActor
     func testAnOwnerPromotesAMemberFromTheRosterMenu() {
         tapSignInWithApple()
-        openFromHome(app.buttons[MockIDs.padelRow])
+        openFromHome(app.buttons[MockIDs.padelRow], segment: "Groups")
         openMembers()
         let makeAdmin = app.buttons["Make admin"]
         openContextMenu(on: app.buttons[MockIDs.inesMemberRow], until: makeAdmin)
@@ -46,7 +46,7 @@ final class LilyRosterTests: LilyUITestCase {
     @MainActor
     func testAnOwnerRemovesAMemberAfterConfirming() {
         tapSignInWithApple()
-        openFromHome(app.buttons[MockIDs.padelRow])
+        openFromHome(app.buttons[MockIDs.padelRow], segment: "Groups")
         XCTAssertTrue(labelled("6 members").waitForExistence(timeout: 10), "the header counts the roster before the removal")
         openMembers()
         let luca = app.buttons[MockIDs.lucaMemberRow]
@@ -65,7 +65,7 @@ final class LilyRosterTests: LilyUITestCase {
     @MainActor
     func testAPlainMemberGetsNoActionsOnTheRoster() {
         tapSignInWithApple()
-        openFromHome(app.buttons[MockIDs.kickersRow])
+        openFromHome(app.buttons[MockIDs.kickersRow], segment: "Groups")
         openMembers()
         let dev = app.buttons[MockIDs.devMemberRow]
         scrollUntilHittable(dev)
@@ -102,7 +102,7 @@ final class LilyRosterTests: LilyUITestCase {
     @MainActor
     func testReportingAGroupThanksTheUser() {
         tapSignInWithApple()
-        openFromHome(app.buttons[MockIDs.kickersRow])
+        openFromHome(app.buttons[MockIDs.kickersRow], segment: "Groups")
         let more = app.buttons["group-more"]
         XCTAssertTrue(more.waitForExistence(timeout: 10))
         more.tap()

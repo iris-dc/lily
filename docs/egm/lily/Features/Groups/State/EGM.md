@@ -21,6 +21,7 @@ caller and drop an answer whose caller has changed. Protocols: [Interfaces](../I
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.init`].
 - `MyGroupsStore` state: `private(set) var groups: [SportGroup]` (`didSet` saves the snapshot), `private(set) var
   loadVersion: Int`; computed `changesVersion`, `loadFailed`, `hasLoaded`, `isLoading` (from the loader),
+  `isInitialLoad` and `listState: ListState` (what Home's Groups segment shows, 2026-11-14),
   `communities` (`groups.filter(\.isCommunity)`), `eligibleForEvents` (communities where
   `GroupAccess(group:userID:).canCreateEvents(in:)`); no `rooms` or `conversations` view is defined here
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.communities`].
@@ -45,6 +46,11 @@ caller and drop an answer whose caller has changed. Protocols: [Interfaces](../I
 - `MyGroupsStore.groups` has no default value, so the seeding assignment in `init` does not fire `didSet` and writes
   nothing back; a seeded snapshot is not a load (`loadVersion` stays 0, the loader stays never-loaded)
   [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.init`].
+- `listState` folds the snapshot seed into the shared rule exactly as the two list view models do (`isInitialLoad =
+  !startedFromSnapshot && !hasLoaded && !loadFailed`), with emptiness judged on `communities` because that is what
+  Home's Groups pane draws: an empty stored snapshot is the empty hint from the first frame and a failed first load
+  answers `.failed`, never a spinner that cannot end; `clear()` resets the flag with the loader
+  [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.listState`].
 - Snapshots are keyed per caller: `ListSnapshotKey(list: AppConfig.Lists.mineGroupsSnapshot, userID:)` with
   `mineGroupsSnapshot = "groups-mine"`; `saveSnapshot` is skipped when there is no current user, so a signed-out clear
   writes nothing [`lily/Features/Groups/State/MyGroupsStore.swift`:`MyGroupsStore.snapshotKey`]
@@ -120,4 +126,4 @@ caller and drop an answer whose caller has changed. Protocols: [Interfaces](../I
 
 - Run: `./scripts/ci.sh unit` (from the repository root; the matching suites live under `lilyTests/Groups`, for
   example `MyGroupsStoreTests`, `MyGroupsStoreOrderTests`, `MyGroupsStoreCallerTests`, `MyGroupsStoreSnapshotTests`,
-  `MeStoreTests`, `MeStoreTermsTests`, `BlockListStoreTests`).
+  `MyGroupsStoreListStateTests`, `MeStoreTests`, `MeStoreTermsTests`, `BlockListStoreTests`).

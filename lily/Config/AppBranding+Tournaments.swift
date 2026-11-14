@@ -5,8 +5,6 @@ nonisolated extension AppBranding {
     /// bracket, the standings and the matches are in `AppBranding+TournamentResults.swift`.
     enum Tournaments {
         static var title: String { localized("Tournaments") }
-        /// The Home section, between the groups and the games.
-        static var mineSection: String { localized("Your tournaments") }
         static var discoverTitle: String { localized("Discover tournaments") }
         static var tournament: String { localized("Tournament") }
         static var emptyTitle: String { localized("No tournaments yet") }

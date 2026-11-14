@@ -1,5 +1,12 @@
 import XCTest
 
+/// The segmented Home's identifiers, mirrored by hand from `AccessibilityIdentifiers+Home.swift` like `MockIDs`
+/// (the test target cannot import the app): a rename there must be mirrored here.
+enum HomeIDs {
+    static let segment = "home-segment"
+    static let create = "home-create"
+}
+
 /// How the tests reach the screens behind the tabs (the inbox, a room, a card on Home or Explore) and the sign-in sheet
 /// with its email form. The base file holds the launch and the gesture primitives; the helpers here are built on them
 /// and shared by every test class.
@@ -32,17 +39,28 @@ extension LilyUITestCase {
         XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 10), "the row opens the room")
     }
 
-    /// Opens `element` from Home. Home's games and tournaments are lazy rows under the groups section, so a card can
-    /// sit outside the accessibility tree until a scroll instantiates it; the swipes come after the tab tap because a
-    /// scrolled list minimises the tab bar.
+    /// Picks the segment `title` (Events | Tournaments | Groups) of Home's picker, scrolling back up to it when the
+    /// segment's content pushed it off screen: the picker scrolls with the content, like the detail pickers.
     @MainActor
-    func openFromHome(_ element: XCUIElement) {
+    func selectHomeSegment(_ title: String) {
+        let picker = app.segmentedControls[HomeIDs.segment]
+        XCTAssertTrue(picker.waitForExistence(timeout: 10), "Home shows its segment picker")
+        scrollUntilHittable(picker, direction: .down, maxSwipes: 4)
+        picker.buttons[title].tap()
+    }
+
+    /// Opens `element` from Home, picking `segment` first where the element lives off the default Events segment:
+    /// Home shows one segment's list at a time. A card below the fold is not in the accessibility tree until a
+    /// scroll instantiates it, and the swipes come after the tab tap because a scrolled list minimises the tab bar.
+    @MainActor
+    func openFromHome(_ element: XCUIElement, segment: String? = nil) {
         openHomeTab()
+        if let segment { selectHomeSegment(segment) }
         tapAfterScrolling(element)
     }
 
-    /// Opens the card titled `title` from Home. `@nonobjc`: the two overloads would otherwise share the Objective-C
-    /// selector `openFromHome:`, and a helper needs no selector.
+    /// Opens the event card titled `title` from Home's default Events segment. `@nonobjc`: a helper needs no
+    /// Objective-C selector, and the overloads must not share one.
     @MainActor
     @nonobjc
     func openFromHome(_ title: String) {

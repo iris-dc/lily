@@ -88,7 +88,7 @@ final class LilyPeopleTests: LilyUITestCase {
 
     /// The fixtures hold a conversation with Marta: the Chats tab lists her as a person row captioned "Direct message",
     /// the row opens a chat titled with her name whose info button leads to her profile (without "Message": the chat is
-    /// one Back away), and Home never lists her.
+    /// one Back away), and Home's Groups segment never lists her.
     @MainActor
     func testChatsTabListsTheConversationWithMarta() {
         tapSignInWithApple()
@@ -109,6 +109,7 @@ final class LilyPeopleTests: LilyUITestCase {
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 5))
         openHomeTab()
+        selectHomeSegment("Groups")
         XCTAssertTrue(app.buttons[MockIDs.kickersRow].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons[MockIDs.martaConversationRow].exists, "Home lists communities only")
     }

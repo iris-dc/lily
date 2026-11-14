@@ -42,7 +42,7 @@ feature runs without a backend behind its mocks, and every feature has a unit-te
   exhaustive issue partitions and Next gating (`CreationSteps`); the page-facing protocol (`Interfaces/`), the
   wizard shell model (`CreationWizardModel`, `State/`) and the chrome with the per-kind one-idea glass pages
   (`Views/`, `Views/Event|Group|Tournament/`). Every create entry — Explore's "+", the ⌘ shortcuts, a group
-  screen's buttons — walks it; the single-page forms stay for edit.
+  screen's buttons and Home's per-segment create button (2026-11-14) — walks it; the single-page forms stay for edit.
 - Groups: [`./Groups/EGM.md`](./Groups/EGM.md) - communities a user founds, discovers, joins and runs, plus the two
   other things the backend keeps as groups of another kind, direct conversations (`direct`) and tournament rooms
   (`tournament`); `MyGroupsStore` is the one source of the caller's groups; every screen reports failures to the shared

@@ -8,8 +8,8 @@ module and bundle id (`iris.lily`) keep it; the home screen says iskra.
 
 - **Explore**: upcoming events near you, as a list or a map, filtered by sport, distance, price, level and date, with
   the public groups to discover above them.
-- **Events**: create one from the "+" (sport, time, place on a map, how many players, optional price and level), join
-  or leave, edit your own. Signed-in users see who is in.
+- **Events**: create one from the "+" on Explore or the create button on Home (sport, time, place on a map, how many
+  players, optional price and level), join or leave, edit your own. Signed-in users see who is in.
 - **Groups and chat**: public or invite-only groups for a sport or a place, each with a chat room
   (replies, pictures, videos and files, polls, pinned messages), a roster with roles, direct invites, and events hosted
   inside the group.
