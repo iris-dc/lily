@@ -51,12 +51,13 @@ struct GroupDetailView: View {
     private var sections: [GroupDetailSection] { GroupDetailSection.available(for: viewModel.access, in: group) }
 
     var body: some View {
-        ContentScreen {
+        @Bindable var viewModel = viewModel
+        return ContentScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     GroupHeader(group: group, distance: group.distance(from: events.userLocation)?.roadText())
                     GroupActionRow(viewModel: viewModel,
-                                   onOpenChat: { dependencies.navigation.open(chat: group) },
+                                   onOpenChat: { viewModel.openChat() },
                                    onInvite: { presentedSheet = .invite },
                                    onCreateEvent: { presentCreateEvent() },
                                    onSignIn: { presentedSheet = .signIn })
@@ -71,6 +72,7 @@ struct GroupDetailView: View {
             .refreshable { await refresh() }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .chatDestination(item: $viewModel.openedChat, dependencies: dependencies)
         .toolbar {
             if viewModel.showsMenu {
                 ToolbarItem(placement: .topBarTrailing) { menu }
@@ -110,8 +112,10 @@ struct GroupDetailView: View {
                                errorCenter: dependencies.errorCenter)
             case .createEvent, .createTournament:
                 // The wizard, seeded with the kind and this group locked (the flow opens on its first step); on a
-                // regular width it is this form sheet, on compact the full-screen cover below claims it.
+                // regular width it is this form sheet, on compact the full-screen cover below claims it. The grabber
+                // is hidden because the wizard's dirty-draft lock is not transient.
                 wizardContent.lilyFormSheet()
+                    .presentationDragIndicator(.hidden)
             case .signIn:
                 SignInSheet(session: dependencies.sessionController,
                             errorCenter: dependencies.errorCenter,

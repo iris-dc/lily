@@ -14,7 +14,7 @@ entry or match write whose outcome is unknown (entries also after the refusals a
 conformers ([`../Interfaces/EGM.md`](../Interfaces/EGM.md)) behind the draft sheets. Every dependency is a protocol
 (`TournamentRepository`, `IdentityProvider`, `LocationService`, `ListSnapshotStore`, `Logging`, `PushOptIn`,
 `GroupRepository`, `InteractionRecorder`) or a shared store (`ChangeTracker`, `ErrorCenter`,
-`MyGroupsStore`, `AppNavigation`); the models they manipulate are in [`../Models/EGM.md`](../Models/EGM.md). None
+`MyGroupsStore`); the models they manipulate are in [`../Models/EGM.md`](../Models/EGM.md). None
 of the seven files sends invites; the invite sheet is the shared one built by `AppDependencies`.
 
 ## Interface
@@ -35,13 +35,15 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   `distanceText(for:) -> String?`.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.init]`:
   `init(destination: TournamentDestination, repository:, groupRepository: any GroupRepository, myGroups:
-  MyGroupsStore, identity:, navigation: AppNavigation, changes: ChangeTracker, errorCenter: ErrorCenter,
+  MyGroupsStore, identity:, changes: ChangeTracker, errorCenter: ErrorCenter,
   recorder: any InteractionRecorder, logger:, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay, now: @escaping
   () -> Date = { .now }, pushOptIn: any PushOptIn = NoPushOptIn(), onChange: @MainActor (Tournament) -> Void)`; builds a
   `WriteGate(category: .tournaments, ..., isExpected: { $0.isTournamentRefusal })`.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel.swift:TournamentDetailViewModel.State]`:
   `enum State: Equatable { loading, previewing(Tournament), loaded(TournamentDetail), notFound, failed }`; state
-  `destination`, `private(set) state`, `previewLoadFailed`, `isBusy`, `isGone`, `linkedMatchToShow: String?`;
+  `destination`, `private(set) state`, `previewLoadFailed`, `isBusy`, `isGone`, `linkedMatchToShow: String?`,
+  `openedRoom: SportGroup?` (plain `var`: the room whose chat the view pushes in place; SwiftUI clears it on Back,
+  2026-11-15);
   computed `detail`, `preview`, `tournament`, `shownDetail`, `isPreviewing`, `name`, `role: TournamentRole`,
   `participation: TournamentParticipation`, `permissions: TournamentPermissions` (with `chatEnabled:
   AppConfig.FeatureFlags.chat`), `reportTarget`, `winnerName`, `isSelf(_:)`.
@@ -53,10 +55,11 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   `perform(_ action: String, settling: (any Error) async -> Bool, _ work: () async throws -> Void) async -> Bool`
   overload; `extension AppError { var isTournamentRefusal: Bool; var leavesTournamentWriteOutcomeUnknown: Bool }` is
   internal, the second shared by the `+Entries` and `+Matches` files; `repository`, `myGroups`, `identity`, `logger`
-  and `pushOptIn` are internal `let`s for the `+Actions`, `+Entries` and `+Matches` files, `groupRepository` and
-  `navigation` for the `+Actions` file; `reporter`, `now`, `onChange`, `recorder`, `gate` and `changes` are private.
+  and `pushOptIn` are internal `let`s for the `+Actions`, `+Entries` and `+Matches` files, `groupRepository` for the
+  `+Actions` file (`AppNavigation` left the dependencies 2026-11-15: the chat opens in place); `reporter`, `now`, `onChange`, `recorder`, `gate` and `changes` are private.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Actions.swift:TournamentDetailViewModel.openChat]`:
-  `openChat() async`, `cancel() async`, the menu actions that write no entry and no match.
+  `openChat() async` (guarded by `permissions.canOpenChat`; sets `openedRoom`), `cancel() async`: the actions shared
+  by the menu and the in-body action row that write no entry and no match.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Entries.swift:TournamentDetailViewModel.join]`:
   `canJoin(_ entry:) -> Bool`, `join() async`, `@discardableResult createTeam(named:onEntered: () -> Void = {}) async -> Bool`,
   `joinTeam(_ entry:) async`, `leave() async`, `removeEntry(_ entry:) async`.
@@ -186,8 +189,9 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   warning on a failed refetch after a write, and `LostAnswer`'s "<action> for tournament <id> outcome unknown",
   "Reading back after", "landed despite", "Could not read back after".
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Actions.swift:TournamentDetailViewModel.openChat]`:
-  `groupRepository.group(id:)`, `myGroups.add(room)` when a member, and the navigation mutation
-  `navigation.open(chat: room)`; `cancel` calls `repository.cancel(id:)` and logs "Tournament ... cancelled".
+  `groupRepository.group(id:)`, `myGroups.add(room)` when a member, then `openedRoom = room` — the view's
+  `navigationDestination(item:)` pushes the chat on the detail's own stack, so Back returns here; no `AppNavigation`
+  mutation since 2026-11-15; `cancel` calls `repository.cancel(id:)` and logs "Tournament ... cancelled".
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Entries.swift:TournamentDetailViewModel.enter]`:
   `repository.join`, `joinTeam`, `leave`, `removeEntry`; `myGroups.reload()`; `pushOptIn.offerReminders()`; info
   logs "joined as entry", "left (entry ...)", "entry ... removed".

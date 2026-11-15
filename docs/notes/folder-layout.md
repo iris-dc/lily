@@ -254,7 +254,7 @@ lily/
                  (ChatViewModel + History + Send + Live + Events + Conversation + Clear + Reply + Attachments + Moderation + Pins + Polls, AttachmentComposerModel
                  (+ Picking: the items picked for one message and every way in; + Upload: AttachmentWork, one item's prepare, ticket and
                  PUTs, holding the model weakly so a closed room cancels and cleans up)), Views (ChatsView (the Chats root:
-                 the inbox row over the rooms), ChatView over ChatTranscript (the anchored list) over ChatRowView (one row, drawing its arrival) + MessageArrival (a row's removal transition), MessageBubble + PendingMessageBubble over
+                 the inbox row over the rooms), ChatDestinations (the shared in-place room push from a group's, tournament's or profile's detail), ChatView over ChatTranscript (the anchored list) over ChatRowView (one row, drawing its arrival) + MessageArrival (a row's removal transition), MessageBubble + PendingMessageBubble over
                  BubbleContent (quote, gallery and words on the fill), QuoteBlock + QuoteBar + QuoteStack (the quote inside a bubble and
                  the layout that keeps the bubble hugging its words), ReplyPreviewBar (the composer's reply preview), AttachmentMenuButton
                  + CameraPicker, AttachmentStrip (the picked items above the field), AttachmentGallery + DraftGallery + GalleryGrid,
@@ -286,14 +286,14 @@ lily/
                  heights), RoundRobinStandings (the table, Laurel's tie-breaks); TournamentDetail also carries starting(at:) and
                  settling(_:at:), the start and the settle as the backend's transactions make them, which the mock and the fake both call;
                  TournamentDetailSection, TournamentConfirmation), Interfaces (TournamentRepository, TournamentDraftEditing), Implementations
-                 (RemoteTournamentRepository, MockTournamentRepository (+ Entries, + Matches) + MockTournamentFixtures (+ PadelOpen,
+                 (RemoteTournamentRepository, MockTournamentRepository (+ Entries, + Matches) + MockTournamentFixtures (+ PadelOpen, + BadmintonOpen,
                  + Rooms), RemoteTournamentInviteRepository + MockTournamentInviteRepository (the InviteRepository seam over the
                  tournament routes)), Services (TournamentOpener: fetch a tournament by id and push its detail with a match named,
                  behind a tapped match reminder), ViewModels
                  (TournamentList, TournamentDetail (+ Actions, + Entries, + Matches), CreateTournament, EditTournament), Views (TournamentCard +
                  TournamentStatusChip + TournamentCardList, TournamentTile + TournamentCarousel, DiscoverTournamentsView,
-                 GroupTournamentsSegment, TournamentDetailView with TournamentHeader + TournamentFacts, TournamentEntriesSegment +
-                 EntryRow, TournamentResultsSegment over BracketView, StandingsTable and MatchList (all drawing MatchCell), MatchSheet
+                 GroupTournamentsSegment, TournamentDetailView with TournamentHeader + TournamentFacts, TournamentActionRow (2026-11-15),
+                 TournamentEntriesSegment + EntryRow + TournamentSegmentSlot, TournamentResultsSegment over BracketView, StandingsTable and MatchList (all drawing MatchCell), MatchSheet
                  + MatchScheduleView (the organiser's time and place), TournamentParticipationControl + TournamentMenu, TeamNameSheet,
                  the Edit sheet over TournamentDraftSheet and TournamentDraftForm (+ Schedule; creating walks the wizard since
                  slice 3, 2026-11-11), whose sections recompose
@@ -331,7 +331,7 @@ lilyUITests/     LilyUITestCase (launch + the primitives) + LilyUITestCase+Scree
                  + LilyUITestCase+Wizard (the creation wizard's walk: step waits, Next, submit, discard; 2026-11-10)
                  + MockIDs (the fixture row ids, 2026-11-02), LilySmokeTests, LilySignInTests,
                  LilyGroupsTests (+ Helpers), LilyChatTests (+ Attachments, + Composer, + Polls, + Rows, + Viewer), LilyPeopleTests, LilyEventEditTests, LilyLanguageTests,
-                 LilyTournamentTests (+ Helpers), LilyDiscoverTests, LilyProfileTests, LilySettingsTests, LilyRosterTests, LilyStateTests, LilyIPadTests: end-to-end
+                 LilyTournamentTests (+ Helpers, + ActionRow), LilyDiscoverTests, LilyProfileTests, LilySettingsTests, LilyRosterTests, LilyStateTests, LilyIPadTests: end-to-end
                  walks against the real app in a simulator
 scripts/         ci.sh, the single entry point for lint, build and tests; l10n-check.py, the catalog-against-code and InfoPlist check it runs,
                  and test_l10n_check.py, that checker's unittest suite, run first; make-app-icon.swift, the icon renderer

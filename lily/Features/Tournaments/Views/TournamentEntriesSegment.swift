@@ -12,9 +12,11 @@ struct TournamentEntriesSegment: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
             if detail.registeredEntries.isEmpty {
-                Text(Copy.noEntries)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                TournamentSegmentSlot(alignment: .leading) {
+                    Text(Copy.noEntries)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             ForEach(detail.registeredEntries) { entry in
                 EntryRow(entry: entry, viewModel: viewModel, teamSize: detail.tournament.teamSize)
@@ -95,5 +97,29 @@ struct EntryRow: View {
         BusyButton(Copy.joinTeam, isBusy: viewModel.isBusy) { await viewModel.joinTeam(entry) }
             .lilyGlassButton(sizing: .fitted, controlSize: .regular, labelColor: .lilyInk)
             .accessibilityIdentifier(AccessibilityIdentifiers.tournamentJoinTeam(entry.id))
+    }
+}
+
+/// One vertical footprint for whatever stands in the segment's slot: the preview's spinner and the empty entries line
+/// share it, so the participation control below keeps its place when the fetch answers with nobody in.
+struct TournamentSegmentSlot<Content: View>: View {
+    var alignment: Alignment = .center
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        ZStack(alignment: alignment) {
+            // Hidden copies of the slot's occupants fix one floor; the failed preview's Try again measures tallest.
+            ProgressView()
+                .hidden()
+            Text(AppBranding.Tournaments.noEntries)
+                .font(.subheadline)
+                .hidden()
+            Button(AppBranding.Groups.tryAgain) {}
+                .lilyGlassButton(sizing: .fitted)
+                .hidden()
+            content
+        }
+        .frame(maxWidth: .infinity, alignment: alignment)
+        .padding(.vertical, DesignTokens.Spacing.xl)
     }
 }

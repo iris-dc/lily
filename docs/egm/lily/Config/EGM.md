@@ -188,7 +188,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `tournamentFormatCaption`, `tournamentScheduleCaption`, `tournamentGroupCaption`, `tournamentPlaceCaption`,
   `tournamentEntriesCaption`, `tournamentWhoCaption`, `tournamentDetailsCaption` — plain sentences in the app's
   voice, no jargon and no semicolons, each in all seven languages), `tournamentFollowsGroup`, `typeSearch`, `typeSearchNoMatch`
-  ("Search types", the type grid's field), `next` ("Next"), `step(_:of:)` ("Step %lld of %lld",
+  ("Search types", the type grid's field; the edit form's expander chip reads `Groups.seeAll` directly — its
+  `typeShowAll` wrapper, a duplicate of the same key, removed 2026-11-15), `next` ("Next"), `step(_:of:)` ("Step %lld of %lld",
   plain string units in every language — identical across plural categories by design, so xcstringstool's two-`%lld`
   pivot warning never fires; see `docs/notes/localization.md` 2026-11-10; since the second round the progress mark's
   accessibility label), and the discard confirmation
@@ -263,7 +264,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 ### `AccessibilityIdentifiers` (`lily/Config/AccessibilityIdentifiers.swift:AccessibilityIdentifiers`)
 
 - Kebab-case, area-prefixed `static let` literals: root (`events-filter`, `create-submit`, `auth-email`, ...),
-  +Groups (`chat-list`, `chat-composer`, `create-group`, ...), +Tournaments (45 literals and 6 builders, e.g. `match-score-a`), +Polls,
+  +Groups (`chat-list`, `chat-composer`, `create-group`, ...), +Tournaments (47 literals and 6 builders, e.g. `match-score-a`; `tournament-action-chat` and
+  `tournament-action-invite`, the detail's in-body action row, 2026-11-15), +Polls,
   +Attachments, +Home (`home-segment` and `home-create` — the segmented Home's picker and its per-segment create
   button; 2026-11-14), +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
   +Profile (`profile-corner` and `profile-sheet` — the corner control on every tab root and the profile sheet's root
@@ -280,6 +282,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   (`create-format-<wireName>`); the third design round (2026-11-11) removes the kind page's `create-kind-*` cards
   and adds `create-type-search`, the type grid's search field, while the optional finish time's
   `create-ends-at-add` / `create-ends-at` / `create-ends-at-remove` join the create fields in the root file; the
+  edit form's compact type picker adds `draft-type-search`, `draft-type-expand` and `draftType(_: EventType)`
+  (`draft-type-<wireName>`) to the root file (2026-11-15); the
   final step keeps its kind's submit identifier — `create-submit`,
   `create-group-submit`, `tournament-submit`).
 - Round 5 (2026-11-12, `Events.Create`): `whereHint` reworded to "Pick a suggested place or set the spot on the
@@ -288,7 +292,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   nothing is chosen yet); `locationDetailPlaceholder` "Apartment, floor or entrance" (the optional detail line's
   caption). Identifiers `createLocationDetail`, `createGroupLocationDetail` and `tournamentLocationDetail` join the
   create fields.
-- Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `createPlaceSuggestion(_ index: Int)`
+- Builders: `filterType(_: EventType)` (`filter-type-<wireName>`), `draftType(_: EventType)` (`draft-type-<wireName>`), `createPlaceSuggestion(_ index: Int)`
   (`create-place-suggestion-<index>`), `introSlide(_: IntroSlide)`, `groupRow(_:)`,
   `message(clientID:)` (`message-client-<id>`), `message(id:)`, `messageQuote(id:)`, `memberRow(_:)`, `inviteCandidate(_:)`,
   `inviteSend(_:)`, `inboxItem(_:)`, `inboxAccept(_:)`, `inboxDecline(_:)`, `participantRow(_:)`, `pollOptionField(_: Int)`,
@@ -353,7 +357,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   is mirrored from +Landing, plus the segmented Home's `home-segment` and `home-create` from +Home (the Home walks
   switch the segment and open the wizard by them; 2026-11-14); the report sheet's reason rows and the feedback kind picker carry no identifiers and are
   found by label; the inbox's "Load earlier" button, the profile's shared-group rows container and the owner line of an
-  event's and a tournament's title carry none either (no test read them); the event Edit sheet reuses the create identifiers; `createGroup` is the group row of both the event
+  event's and a tournament's title carry none either (no test read them); the event Edit sheet reuses the create identifiers and mirrors its compact type picker's `draft-type-*` ids in `LilyEventEditTests` (2026-11-15); `createGroup` is the group row of both the event
   and the tournament form; `message(clientID:)` is stable across the optimistic-to-stored swap.
 
 ## Side Effects

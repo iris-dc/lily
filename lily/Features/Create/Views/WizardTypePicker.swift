@@ -2,9 +2,9 @@ import SwiftUI
 
 /// The type steps' picker (the owner's third design round, 2026-11-11): a search field over a compact two-column
 /// grid of glass type cards, lighter than the full-width choice cards the longer type list outgrew. Tapping picks
-/// and the page auto-advances; re-entering shows the current choice selected. Filtering is by localized name,
-/// case- and diacritic-insensitive in the app's locale, so it matches what the cards say in the app's language; a
-/// query no name contains shows a one-line empty state instead of a bare grid.
+/// and the page auto-advances; re-entering shows the current choice selected. Filtering is `String.matchesSearch`,
+/// the type pickers' one match rule (case- and diacritic-insensitive in the app's locale, so it matches what the
+/// cards say in the app's language); a query no name contains shows a one-line empty state instead of a bare grid.
 struct WizardTypePicker: View {
     /// The leading "Any type" entry of a nullable choice (the group's); the per-type entries are always offered.
     var anyTitle: String?
@@ -18,7 +18,7 @@ struct WizardTypePicker: View {
     }
 
     var body: some View {
-        searchField
+        TypeSearchField(query: $query, identifier: AccessibilityIdentifiers.createTypeSearch)
         if showsAnyEntry || !visibleTypes.isEmpty {
             LazyVGrid(columns: columns, spacing: DesignTokens.Spacing.sm) {
                 if showsAnyEntry, let anyTitle {
@@ -41,30 +41,10 @@ struct WizardTypePicker: View {
         }
     }
 
-    private var showsAnyEntry: Bool { anyTitle.map(matches) ?? false }
-
-    private var searchField: some View {
-        HStack(spacing: DesignTokens.Spacing.sm) {
-            Image(systemName: DesignTokens.Symbols.search)
-                .foregroundStyle(.secondary)
-            TextField(AppBranding.Create.typeSearch, text: $query)
-                .autocorrectionDisabled()
-                .accessibilityIdentifier(AccessibilityIdentifiers.createTypeSearch)
-        }
-        .lilyField()
-    }
+    private var showsAnyEntry: Bool { anyTitle?.matchesSearch(query) ?? false }
 
     private var visibleTypes: [EventType] {
-        EventType.known.filter { matches($0.displayName) }
-    }
-
-    /// An empty query shows everything; otherwise the localized name must contain it, case- and diacritic-insensitive
-    /// ("Futbol" finds "Fútbol"), folded by the app's locale (`AppLocale`), not the system's, so the fold matches the
-    /// language the cards read in.
-    private func matches(_ title: String) -> Bool {
-        let query = query.trimmed
-        guard !query.isEmpty else { return true }
-        return title.range(of: query, options: [.caseInsensitive, .diacriticInsensitive], locale: AppLocale.locale) != nil
+        EventType.known.filter { $0.displayName.matchesSearch(query) }
     }
 }
 

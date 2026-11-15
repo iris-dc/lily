@@ -101,6 +101,11 @@ nonisolated enum MockChatFixtures {
         messageID(groupID: groupID, index: rowCount(for: groupID) - 1)
     }
 
+    /// The room's `lastMessageId` as a group fixture stamps it: nil for a room that starts with no rows.
+    static func lastMessageID(for groupID: String) -> String? {
+        rowCount(for: groupID) > 0 ? newestMessageID(for: groupID) : nil
+    }
+
     static func lastReadMessageID(for groupID: String) -> String {
         messageID(groupID: groupID, index: rowCount(for: groupID) - 1 - unreadCount)
     }
@@ -137,6 +142,8 @@ nonisolated enum MockChatFixtures {
         if groupID == MockTournamentFixtures.tableTennisID {
             return tournamentMessages(now: now)
         }
+        // The just-announced badminton open's room starts empty, whatever depth a demo flag asks for.
+        guard rowCount(for: groupID) > 0 else { return [] }
         let count = count ?? rowCount(for: groupID)
         let start = lastMessageAt.addingTimeInterval(-Double(count - 1) * secondsBetweenMessages)
         var rows: [ChatMessage] = []
@@ -213,6 +220,7 @@ nonisolated enum MockChatFixtures {
     private static func rowCount(for groupID: String) -> Int {
         if groupID == MockGroupFixtures.martaConversationID { return conversationLines.count }
         if groupID == MockTournamentFixtures.tableTennisID { return tournamentLines.count }
+        if groupID == MockTournamentFixtures.badmintonOpenID { return 0 }
         return AppConfig.Chat.mockMessagesPerRoom + (createdEvents[groupID] == nil ? 0 : 1)
     }
 

@@ -9,8 +9,8 @@ The concrete types behind `TournamentRepository` ([`../Interfaces/EGM.md`](../In
 `RemoteTournamentInviteRepository` build `APIRequest`s on `AppConfig.API.Paths` and call
 `client.send(request, failingWith:)`, remapping three backend codes (one on the tournament routes, two on the invite
 routes). `MockTournamentRepository` (split over `+Entries`
-and `+Matches`) and `MockTournamentInviteRepository` reproduce the backend's refusals in memory over three
-`MockTournamentFixtures` tournaments (Kickers Cup, Tuesday Table Tennis, Padel Open), store the caller as
+and `+Matches`) and `MockTournamentInviteRepository` reproduce the backend's refusals in memory over four
+`MockTournamentFixtures` tournaments (Kickers Cup, Tuesday Table Tennis, Padel Open, Moabit Badminton Open), store the caller as
 `callerMarker` and swap in `identity.currentUserID` on the way out, and mirror every roster change into
 `MockGroupRepository` rooms. The repository classes carry no isolation annotation (main-actor under the app's
 default); the fixtures enum is `nonisolated`. The directory holds no retry or read-back code: the one `TRY_AGAIN`
@@ -52,7 +52,8 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   `candidates(groupID:)`, `invite(groupID:userID:)`; private `requireInviteRights(in:)`, `peopleIn(_:)` and
   `candidates(for:in:)` (the pool minus the tournament's people, built once per call by both public methods).
 - `[lily/Features/Tournaments/Implementations/MockTournamentFixtures.swift:MockTournamentFixtures]`:
-  `nonisolated enum` with `kickersCupID`, `tableTennisID` (`ids` also lists `padelOpenID`, declared in `+PadelOpen`),
+  `nonisolated enum` with `kickersCupID`, `tableTennisID` (`ids` also lists `padelOpenID` and `badmintonOpenID`,
+  declared in `+PadelOpen` and `+BadmintonOpen`),
   `callerMarker = "mock-caller"`,
   `make(now:) -> [TournamentDetail]`, `kickersCup(now:organizerUserID:organizerName:)`,
   `deletedPlayer` ("Noor") and `stampingDeletedPlayer(_:)` (2026-11-07, `-mock-deleted-user`: in Tuesday Table Tennis
@@ -65,15 +66,21 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
 - `[lily/Features/Tournaments/Implementations/MockTournamentFixtures+PadelOpen.swift:MockTournamentFixtures.padelOpen(now:)]`:
   the `+PadelOpen` extension holds `padelOpenID`, `padelOpenPlayers` (Noor, Aiko, Sam, Tom), the private `padelOpenStartsInDays`
   (12) and `padelOpen(now:) -> TournamentDetail`.
+- `[lily/Features/Tournaments/Implementations/MockTournamentFixtures+BadmintonOpen.swift:MockTournamentFixtures.badmintonOpen(now:)]`:
+  the `+BadmintonOpen` extension (2026-11-15) holds `badmintonOpenID`, `badmintonOpenOrganizer` ("Ines") and
+  `badmintonOpen(now:) -> TournamentDetail`, the no-entries fixture; its room starts with no chat rows and no
+  `lastMessageId` (the round's review pass).
 - `[lily/Features/Tournaments/Implementations/MockTournamentFixtures+Rooms.swift:MockTournamentFixtures.rooms(now:)]`:
   `rooms(now:) -> [SportGroup]`, `room(for:organizerName:memberCount:membership:lastMessageId:lastMessageAt:)`,
   `roster(for:now:) -> [GroupMember]`; private `callerMembership(in:)`.
 - `[lily/Features/Tournaments/Implementations/MockTournamentFixtures.swift:MockTournamentFixtures.make(now:)]`: the
-  three fixtures: Kickers Cup (football, single elimination, teams of 5, 4 of 8 entries, caller organises, hosted by
+  four fixtures: Kickers Cup (football, single elimination, teams of 5, 4 of 8 entries, caller organises, hosted by
   the Kickers group, starts in 9 days, deadline in 7); Tuesday Table Tennis (round robin, `.inProgress`, 6 players
   including the caller, Marta organises, three results recorded, one report by Jonas, one dispute by Noor, match
   `r03p002` scheduled `AppConfig.Inbox.mockReminderLead` ahead); Padel Open (round robin, `.private`, Noor organises
-  and plays, 4 of 8, starts in 12 days, no group). Every date is `now` offset by a day or hour count times
+  and plays, 4 of 8, starts in 12 days, no group); Moabit Badminton Open (badminton, single elimination, singles,
+  0 of 8 — the no-entries empty state, reachable on any mock run — public, Ines organises, the caller not in it,
+  starts in 11 days, deadline in 10, no group, its room empty; 2026-11-15). Every date is `now` offset by a day or hour count times
   `TimeInterval.day`/`.hour` (`lily/Core/System/TimeInterval+Units.swift`).
 
 ## Invariants
@@ -156,7 +163,8 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   a room shares the tournament's id, has `maxMembers = maxEntries * teamSize + 1`, `kind: .tournament`, and members
   can neither create events nor invite; the caller owns the Kickers Cup room, is a member of the table-tennis room
   and has no membership in the Padel Open room, which is `.private` and unreadable until `noteInvitee(of:)` admits
-  the caller.
+  the caller, nor in the Badminton Open room, which is public, readable and empty — no rows, no `lastMessageId`
+  (`MockChatFixtures.lastMessageID(for:)` answers nil for a row-less room; 2026-11-15).
 
 ## Side Effects
 
@@ -199,7 +207,8 @@ repeat and the refetch after an unknown outcome live in the view models' `WriteG
   served" debug line comes from `candidates(groupID:)` alone, an invite builds its list through the private helper
   without it.
 - `[lily/Features/Tournaments/Implementations/MockTournamentFixtures.swift:MockTournamentFixtures]`: pure
-  construction; `+Rooms` reads `MockChatFixtures.newestMessageID(for:)` and `MockGroupFixtures` ids. No `Task`,
+  construction; `+Rooms` reads `MockChatFixtures.lastMessageID(for:)` (nil for the empty badminton room) and
+  `MockGroupFixtures` ids. No `Task`,
   sleep, timer, UserDefaults or disk access anywhere in the directory.
 
 ## Verification

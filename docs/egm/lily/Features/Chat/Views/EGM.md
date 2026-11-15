@@ -4,7 +4,7 @@ Source: `lily/Features/Chat/Views/`
 
 ## Overview
 
-The SwiftUI screens and row primitives of the Chats tab and of one open room: 46 files, no subdirectory. The tab is
+The SwiftUI screens and row primitives of the Chats tab and of one open room: 47 files, no subdirectory. The tab is
 `ChatsView` (compact widths) or `ChatsSplitView` (regular widths), both hosting one `ConversationList`, one
 destination set and one load task. A room is `ChatView`: a `ChatTranscript` (a bottom-anchored `ScrollView` whose
 scroll decisions are delegated to `TranscriptScrollPolicy` through a reference-type `ScrollTracker`) over a
@@ -33,6 +33,11 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `navigation.chatPath` showing `InboxView`, a `ChatView` or an `EmptyStateView` for `navigation.selectedConversation`.
 - `[ConversationList.swift:ConversationList]` `dependencies`, `selection: ConversationSelection?`, `onOpenInbox`,
   `onOpenRoom: (SportGroup) -> Void`; `InboxRow` over `GroupRowList`, Clear/Delete long-press item, pull-to-refresh.
+- `[ChatDestinations.swift:View.chatDestination(item:dependencies:)]` (2026-11-15): the shared in-place room push of
+  the group, tournament and profile details — `navigationDestination(item: Binding<SportGroup?>)` building `ChatView`
+  through `dependencies.makeChatViewModel(for:)` with `\.tabBarHiding` nil, because an item push never moves the
+  stack's bound path and a path-keyed registry would never prune the chat's hide after the pop; the chat sets the
+  bar's visibility itself (follow-up in `docs/notes/groups.md`: teach the registry to prune on disappear).
 - `[ChatView.swift:ChatView]` `init(viewModel: ChatViewModel, dependencies:)` (no `onGone`: the split view's
   watcher is the one mechanism); owns the view model and a `ViewerHero` as `@State`; transcript, `ViewerStage`
   overlay, composer inset, toolbar info link (the room offers no menu), empty and failed placeholders through

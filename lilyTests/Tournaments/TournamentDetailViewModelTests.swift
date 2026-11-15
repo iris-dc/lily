@@ -155,19 +155,32 @@ struct TournamentDetailViewModelTests {
         #expect(harness.logs(.info).contains { $0.contains("cancelled") })
     }
 
-    /// The room lands in Mine first, so the Chats split view (which shows only rooms Mine lists) can select it even
-    /// while Mine's index still misses a room just entered.
-    @Test func openChatFetchesTheRoomPlacesItInMineAndPushesIt() async {
+    /// The room lands in Mine first (the Chats tab and split view list only rooms Mine holds), and its chat is pushed
+    /// on the detail's own stack, so Back returns to the tournament; navigation is untouched, no tab switch.
+    @Test func openChatFetchesTheRoomPlacesItInMineAndOpensItsChatInPlace() async {
         harness.repository.details["t"] = .fixture(tournament: .fixture(myEntryId: "e"))
-        harness.groupRepository.result = .success([.tournamentRoomFixture()])
+        let room = SportGroup.tournamentRoomFixture()
+        harness.groupRepository.result = .success([room])
         let viewModel = harness.makeDetailViewModel(for: destination)
         await viewModel.load()
 
         await viewModel.openChat()
 
-        #expect(harness.groupRepository.fetchedGroupIDs == ["t"] && harness.navigation.selectedTab == .chat)
-        #expect(harness.navigation.chatPath.count == 1)
+        #expect(harness.groupRepository.fetchedGroupIDs == ["t"])
+        #expect(viewModel.openedRoom == room, "the view pushes this chat on its own stack")
         #expect(harness.groups.groups.map(\.id) == ["t"])
+        #expect(harness.navigation.selectedTab != .chat && harness.navigation.chatPath.isEmpty, "no tab switch")
+    }
+
+    /// Chat is for the involved (and behind its flag): an outsider's openChat fetches nothing and opens nothing.
+    @Test func openChatNeedsTheChatPermission() async {
+        harness.repository.details["t"] = .fixture()
+        let viewModel = harness.makeDetailViewModel(for: destination)
+        await viewModel.load()
+
+        await viewModel.openChat()
+
+        #expect(harness.groupRepository.fetchedGroupIDs.isEmpty && viewModel.openedRoom == nil)
     }
 
     @Test func aGuestCannotActAndSeesNoEntries() async {

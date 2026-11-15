@@ -74,3 +74,52 @@ A tournament (slice L1 of the tournaments plan, 2026-10-04; debug builds, behind
   `coordinateMissing`); the optional detail line (`tournament-location-detail`) joins the stored name on the wire.
   `walkTournamentWizard` now types the place and taps its first suggestion. The full record is in `events.md`
   (2026-11-12).
+- **The owner's corrections round (2026-11-15): the empty-tournament jump, Back from the room's chat, and the
+  group-parity action row.** (1) *Join no longer jumps on a tournament with no entries.* Opened from a card the detail
+  previews and drew `loadingSlot` (a spinner under `Spacing.xl` vertical padding, ≈68 pt); a fetch answering zero
+  entries replaced it with the bare "Nobody has entered yet" subheadline (≈20 pt, no padding), so
+  `TournamentParticipationControl` leapt up ≈50 pt on the first open. The two states now share `TournamentSegmentSlot`
+  (in `TournamentEntriesSegment.swift`): hidden copies of the slot's occupants — the spinner, the empty line and,
+  since the round's review pass, the failed preview's Try again button, the tallest of the three — fix the floor
+  under whichever content stands in the slot, with the same vertical padding, so the footprints are equal and the
+  control keeps its place on every path, the failed first load included. The slot's `tournament-loading` identifier
+  sits on an `.accessibilityElement(children: .contain)` container (the a11y container rule), so Try again keeps
+  its own element. Evidence: before/after capture of the open of the no-entries fixture with
+  the detail held two seconds (`~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-15/item3-jump/`:
+  loading and loaded shots, `small/` copies, `join-y.txt` with the Join button's measured Y — before the fix the
+  button moved 50.0 pt up between the loading and the loaded frame, after it 0.0 pt). The results/matches
+  segments' "not started" `EmptyStateView` also sits above the control but appears only on a section switch the user
+  makes (the default section is entries, and a preview keeps `loadingSlot` for every section), so its taller footprint
+  is left alone on purpose. The surface this needed: the mock gained a fourth fixture, Ines's public no-entries
+  "Moabit Badminton Open" (`MockTournamentFixtures+BadmintonOpen.swift`), so the empty detail is reachable on any mock
+  run; the pinned fixture lists grew it (`MockTournamentFixtureTests`, `MockTournamentRepositoryTests`, including the
+  exact upcoming orders). The review pass also emptied its room: `MockChatFixtures.rowCount` is 0 for
+  `badmintonOpenID` (a guard keeps it empty under `-mock-chat-replies` too) and `rooms(now:)` stamps `lastMessageId`
+  through the new `MockChatFixtures.lastMessageID(for:)`, nil for a row-less room, so a just-announced tournament no
+  longer opens on weeks of generic lines after a join (pinned in
+  `MockTournamentFixtureTests.theBadmintonOpenHasNoEntries`).
+- **Back from the tournament's chat returns to the tournament (2026-11-15, item 2 of the round).** `openChat()` had
+  pushed the room through `navigation.open(chat:)`, so Back landed on the Chats list; it now mirrors the 2026-11-05
+  profile fix: the view model sets `openedRoom` and `TournamentDetailView` pushes `ChatView` through
+  `navigationDestination(item: $viewModel.openedRoom)` on the detail's own stack, with `\.tabBarHiding` cleared on
+  the pushed room, as the profile's and the group detail's chat destinations do: an item push never moves the bound
+  path, so the stack root's bar animator would never prune the room's registration and the tab bar stayed hidden
+  after Back (caught by the new UI walk's Chats-tab step on the first run). `myGroups.add(room)` stays, so the
+  Chats tab and the split sidebar still list the room at once, and `AppNavigation` left the view model's dependencies
+  (the harness keeps one only to pin that it stays untouched). `openChat` is guarded by `permissions.canOpenChat`
+  (chat flag and involvement), so a caller the row and the menu never offer it to cannot reach it either. Pinned by
+  `openChatFetchesTheRoomPlacesItInMineAndOpensItsChatInPlace` (openedRoom set, Mine fed, `selectedTab != .chat`,
+  `chatPath` empty — the `UserProfileViewModelTests` pattern) and `openChatNeedsTheChatPermission`, and walked in
+  `LilyTournamentTests+ActionRow` (Kickers Cup, in-body chat, Back shows the detail, Chats lists the room). Recorded
+  difference from groups: a detail reached from the chat's info button still offers Open chat (pushing the chat again,
+  one level deeper) — the menu behaved exactly so before this change and `TournamentDestination` carries no origin
+  context, while the group detail hides its button through `showsOpenChat`; the owner's call if it ever grates.
+- **Group parity: the in-body action row (2026-11-15, item 3 of the round).** New `TournamentActionRow` mirrors
+  `GroupActionRow`'s look — prominent "Open chat", glass ink "Invite", `Spacing.md` apart — under the facts and above
+  the section picker, drawn for `permissions.showsActionRow` (= `canOpenChat || canInvite`, the new
+  `TournamentPermissions` member). The copy reuses the group's "Open chat" and "Invite" keys (the same role —
+  buttons for the same two actions — and the translations carry no group-specific wording, so no new catalog keys);
+  the identifiers are `tournament-action-chat` and `tournament-action-invite`, and the toolbar menu keeps its items
+  and identifiers, as the group detail keeps both. Invite stays gated on registration-open through `canInvite`; the
+  row's Invite presents the same `.invite` sheet. UI-pinned in the `LilyTournamentTests+ActionRow` walk (the row's
+  Invite opens the "Invite people" sheet).

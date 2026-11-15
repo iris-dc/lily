@@ -43,6 +43,15 @@ nonisolated enum AccessibilityIdentifiers {
     static let eventEdit = "event-edit"
     /// The non-interactive map on the event detail.
     static let eventDetailMap = "event-detail-map"
+
+    /// The edit form's compact type picker: its search field, its "See all" expander and one chip per offered type
+    /// ("draft-type-football").
+    static let draftTypeSearch = "draft-type-search"
+    static let draftTypeExpand = "draft-type-expand"
+    static func draftType(_ type: EventType) -> String {
+        "draft-type-\(type.wireName)"
+    }
+
     /// Fields and actions of the email form in the sign-in sheet. The toggle switches sign in / sign up and, on the
     /// confirmation step, reads "Back to sign in".
     static let authEmail = "auth-email"

@@ -66,7 +66,9 @@ private struct CreationWizardPresenter<Item: WizardPresentable, SheetContent: Vi
         content
             .sheet(item: sheetItem, onDismiss: noteRealDismissal) { presented in
                 if presented.isWizard {
+                    // The grabber is hidden: the wizard refuses the swipe while the draft is dirty, not a transient lock.
                     wizard.lilyFormSheet()
+                        .presentationDragIndicator(.hidden)
                 } else {
                     sheetContent(presented)
                 }

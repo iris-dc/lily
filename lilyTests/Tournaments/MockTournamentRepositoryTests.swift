@@ -58,7 +58,8 @@ struct MockTournamentRepositoryTests {
 
     @Test func listsFollowTheirScopes() async throws {
         let upcoming = try await repository.tournaments(in: .upcoming, near: nil)
-        #expect(upcoming.map(\.id) == [MockTournamentFixtures.kickersCupID], "the started one is off Explore")
+        #expect(upcoming.map(\.id) == [MockTournamentFixtures.kickersCupID, MockTournamentFixtures.badmintonOpenID],
+                "by start; the started one is off Explore")
         let mine = try await repository.tournaments(in: .mine, near: nil)
         #expect(mine.map(\.id) == [MockTournamentFixtures.tableTennisID, MockTournamentFixtures.kickersCupID],
                 "in progress first")
@@ -80,13 +81,14 @@ struct MockTournamentRepositoryTests {
         let far = try await repository.create(draft).tournament
         try #require(far.startsAt > cup.startsAt, "the fixture cup starts first")
 
+        let badminton = MockTournamentFixtures.badmintonOpenID
         let byStart = try await repository.tournaments(in: .upcoming, near: nil)
-        #expect(byStart.map(\.id) == [cup.id, far.id])
+        #expect(byStart.map(\.id) == [cup.id, far.id, badminton], "the badminton fixture starts last")
 
         let nearFar = try await repository.tournaments(in: .upcoming, near: .aroundMockCenter(lat: 3, lon: 3))
-        #expect(nearFar.map(\.id) == [far.id, cup.id])
+        #expect(nearFar.map(\.id) == [far.id, cup.id, badminton])
         let nearCup = try await repository.tournaments(in: .upcoming, near: cup.location.coordinate)
-        #expect(nearCup.map(\.id) == [cup.id, far.id])
+        #expect(nearCup.map(\.id) == [cup.id, badminton, far.id])
     }
 
     /// The rooms are in the group mock: Chats lists them, Home (communities) does not.

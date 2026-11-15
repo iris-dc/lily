@@ -65,8 +65,9 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
 - `LegalSheet(document: Document, language: AppLanguage, errorCenter: ErrorCenter)`
   `[lily/Features/Profile/Views/LegalSheet.swift:LegalSheet]` (2026-11-08, the gate removal): either legal screen
   presented modally — the sign-up footnote's links — in its own `NavigationStack` with Close
-  (`AccessibilityIdentifiers.legalClose`) and `.errorPopup(errorCenter)` mounted, so a popup draws on the topmost
-  surface; `Document` (`terms`/`privacy`) maps the footnote's `AppConfig.Legal` link tokens back to a document
+  (`AccessibilityIdentifiers.legalClose`), `.errorPopup(errorCenter)` mounted, so a popup draws on the topmost
+  surface, and `.presentationDragIndicator(.visible)` (2026-11-15: the grabber on every swipe-closable sheet);
+  `Document` (`terms`/`privacy`) maps the footnote's `AppConfig.Legal` link tokens back to a document
   (`Document(agreementURL:)`).
 - `DeleteAccountSheet(viewModel: DeleteAccountViewModel, errorCenter: ErrorCenter)`
   `[lily/Features/Profile/Views/DeleteAccountSheet.swift:DeleteAccountSheet]` (2026-11-07, the deletion contract):

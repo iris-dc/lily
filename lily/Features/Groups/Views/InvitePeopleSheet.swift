@@ -39,7 +39,6 @@ struct InvitePeopleSheet: View {
         }
         .errorPopup(errorCenter)
         .lilyFormSheet()
-        .presentationDragIndicator(.visible)
     }
 
     private var searchField: some View {

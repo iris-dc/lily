@@ -32,6 +32,8 @@ struct LegalSheet: View {
                 }
         }
         .errorPopup(errorCenter)
+        // The grabber is the hint that a swipe closes it, as on every swipe-closable sheet.
+        .presentationDragIndicator(.visible)
     }
 
     @ViewBuilder

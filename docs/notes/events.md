@@ -364,3 +364,19 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   name is still accepted anchored at the stored spot: the editing inits start `spotPickedOnMap`, so the
   chosen-address rule binds creates only. And the stored composed name shows whole with an empty detail field on
   edit (no split on commas). Both accepted as the grandfathering's price.
+- **The edit form's type picker goes compact (2026-11-15, the owner's correction round).** 34 types as one flat chip
+  flow made the edit sheet's Event section a wall. The form's type control is now `EventTypeCompactPicker`
+  (`Core/UI/Components`): the shared search field (`TypeSearchField`, the wizard's look and copy keys), the top
+  `collapsedTypeChipCount` (3) of `EventType.known` plus the current choice when it is not among them (the selection
+  is never hidden), and a trailing "See all" chip — Discover's catalog key read through `Groups.seeAll` itself (the `Create.typeShowAll`
+  duplicate wrapper removed in the round's review pass), the same reveal-the-list role, so
+  no new translations — that expands the full flow for the sheet's life, with no collapse control. A non-empty
+  search shows every match whatever the expansion, with the wizard's one-line no-match copy. The match rule was
+  extracted into `String.matchesSearch` (`Core/Localization/String+SearchMatching.swift`) and `WizardTypePicker`
+  adopts it too, so there is one fold (case- and diacritic-insensitive, `AppLocale.locale`). The wizard's grid, the
+  Explore filter, the group form and Discover's panel keep their full flat offer on purpose (`EventTypeChips` grew
+  optional `types` and expander parameters, every default unchanged); an unknown selected type stays unoffered, as
+  everywhere a type is listed. Pinned by `EventTypeChipSubsetTests` (one pure function: top three, the appended
+  selection, the search) and walked by `LilyEventEditTests.testEditTypePickerSearchesTheFullListAndExpands`;
+  screenshots (collapsed, mid-search, expanded) in
+  `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-15/item1/`.

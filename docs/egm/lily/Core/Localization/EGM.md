@@ -14,6 +14,10 @@ the one function every string goes through. The language and preference types ar
 
 - `localized(_ key: String.LocalizationValue) -> String` (`lily/Core/Localization/Localized.swift:localized`): `nonisolated`
   global function; `String(localized:bundle:locale:)` with `AppLocale.current`'s bundle and locale.
+- `String.matchesSearch(_ query: String) -> Bool` (`lily/Core/Localization/String+SearchMatching.swift`): `nonisolated
+  extension String`; a blank or empty query matches everything, else case- and diacritic-insensitive containment
+  folded by `AppLocale.locale`, not the system's — the type pickers' one match rule (extracted from
+  `WizardTypePicker`, 2026-11-15; pinned by `lilyTests/Events/EventTypeChipSubsetTests.swift`).
 - `AppLocale` (`lily/Core/Localization/AppLocale.swift:AppLocale`): `nonisolated enum`; `static var current: Context`,
   `static var locale: Locale`, `static func set(_ context: Context)` (the bundle is read through `current.bundle`). Nested
   `Context: Sendable`: `init(language: AppLanguage?, mainBundle: Bundle = .main, current: @escaping @Sendable () -> Locale = { .autoupdatingCurrent })`;

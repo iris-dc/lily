@@ -37,9 +37,8 @@ final class TournamentDetailViewModel {
     private let errorCenter: ErrorCenter
     private let now: () -> Date
     private let onChange: @MainActor (Tournament) -> Void
-    /// Read by the `+Actions` file: the chat opener fetches the room and pushes it.
+    /// Read by the `+Actions` file: the chat opener fetches the room and pushes its chat in place.
     let groupRepository: any GroupRepository
-    let navigation: AppNavigation
     private let recorder: any InteractionRecorder
     private let gate: WriteGate
     /// Tournament changes made anywhere; the screen reloads when it moved past the version it last agreed with.
@@ -53,13 +52,14 @@ final class TournamentDetailViewModel {
     /// The match the destination named, once the first loaded detail holds it; the view presents it and consumes it.
     private(set) var linkedMatchToShow: String?
     private var hasDecidedLinkedMatch = false
+    /// The room whose chat the view pushes over the detail; SwiftUI clears it when the reader comes back.
+    var openedRoom: SportGroup?
 
     init(destination: TournamentDestination,
          repository: any TournamentRepository,
          groupRepository: any GroupRepository,
          myGroups: MyGroupsStore,
          identity: any IdentityProvider,
-         navigation: AppNavigation,
          changes: ChangeTracker,
          errorCenter: ErrorCenter,
          recorder: any InteractionRecorder,
@@ -74,7 +74,6 @@ final class TournamentDetailViewModel {
         self.groupRepository = groupRepository
         self.myGroups = myGroups
         self.identity = identity
-        self.navigation = navigation
         self.changes = changes
         self.errorCenter = errorCenter
         self.recorder = recorder

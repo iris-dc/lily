@@ -17,6 +17,7 @@ final class TournamentHarness: LoadsGroups {
     let groupChanges = ChangeTracker()
     let logger = SpyLogger()
     let recorder = SpyInteractionRecorder()
+    /// No tournament view model touches it since the chat opens in place; `openChat`'s test pins exactly that.
     let navigation = AppNavigation()
     let errorCenter: ErrorCenter
     let groups: MyGroupsStore
@@ -69,7 +70,6 @@ final class TournamentHarness: LoadsGroups {
                                          groupRepository: groupRepository,
                                          myGroups: groups,
                                          identity: identity,
-                                         navigation: navigation,
                                          changes: changes,
                                          errorCenter: errorCenter,
                                          recorder: recorder,

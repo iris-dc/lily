@@ -75,3 +75,20 @@ Groups are communities around a sport (or "Any type"): a chat room, a member lis
 - **A detail under an empty name on a private group is dropped, accepted (2026-11-12, round-5 fix pass).** A detail
   line typed under an empty name goes out with the whole location: a private group may submit no location at all,
   and the detail never stands alone (`composedLocationName`).
+- **Back from a group's chat returns to the detail (2026-11-15).** "Open chat" on a group's detail used to call
+  `navigation.open(chat:)`, which switched to the Chats tab, so Back landed on the Chats root. It now mirrors the
+  2026-11-05 profile rule: `GroupDetailViewModel.openChat()` sets `openedChat` and the detail pushes `ChatView`
+  through `.navigationDestination(item:)` on its own stack — no tab switch, Back returns to the group. A member
+  detail reached outside Mine (Discover) enters Mine first, so the Chats tab lists the room; a group Mine already
+  holds is left alone (no change bump). `showsOpenChat` still hides the button from the chat itself (no cycle), and
+  a room deleted while open is covered by `ChatView`'s `isGone` dismissal. The first UI run caught the tab bar
+  staying hidden on the detail after Back: `ChatView.hidesTabBarOnCompact()` registers in the stack root's
+  `TabBarHiding` by the bound path's count, and an item push never moves the path, so the root never pruned the
+  hide. The pushed chat therefore gets `\.tabBarHiding` nil and sets the bar's visibility itself, so the bar
+  returns with the screen (the profile's chat push carries the same latent gap on a bound-path stack: Explore,
+  where its UI walk runs, has no registry). Pinned by the `openChat` cases in
+  `GroupDetailViewModelTests` and by `LilyGroupsTests.testOpenChatFromGroupDetailComesBackToTheDetail` (opens the
+  room from Home's Groups segment, comes Back to the detail, and the Chats tab still lists the room). The three
+  chat pushes (group, tournament, profile) share `chatDestination(item:dependencies:)`
+  (`lily/Features/Chat/Views/ChatDestinations.swift`, the round's review pass); follow-up: teach the `TabBarHiding`
+  registry to prune on screen disappear (or count item pushes), so pushed chats stop needing the nil override.

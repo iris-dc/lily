@@ -114,3 +114,11 @@ Every person the app names can be opened (2026-09-29): roster rows, event partic
   card walks are untouched; `LilyChatTests.testTheDeletionNoticesShowAsInboxCards` walks both cards and the group
   open. Three new catalog keys ("%@ was cancelled", "%@ is now yours", "Open group") in the seven languages; a native
   read is owed with the other recent keys.
+
+- **The profile's pushed chat frees the tab bar itself (2026-11-15).** The 2026-11-05 in-place chat push rides
+  `navigationDestination(item:)`, which never moves the bound path, so on a stack whose root registers hides by path
+  depth (`TabBarHiding`: Home, Chats) the chat's `hidesTabBarOnCompact()` was never pruned and the bar stayed hidden
+  after Back. The pushed `ChatView` now carries `.environment(\.tabBarHiding, nil)`, falling back to the per-screen
+  visibility that leaves with the screen — the same cure the group detail's chat push shipped with the same day (the
+  lesson's write-up: groups.md, 2026-11-15). Found by the group fix's first UI run; the profile walk never caught it
+  because `LilyPeopleTests` reaches profiles from Explore, whose stack registers no hides.

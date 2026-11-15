@@ -8,7 +8,8 @@ The SwiftUI surfaces of the Tournaments feature, all `import SwiftUI` structs. L
 (`TournamentCarousel`, `TournamentTile`), Discover (`DiscoverTournamentsView`), a group's segment
 (`GroupTournamentsSegment`) and the shared card (`TournamentCard`, `TournamentCardList`, `TournamentStatusChip`), all
 reading a `TournamentListViewModel`. The detail: `TournamentDetailView` composes `TournamentHeader`,
-`TournamentFacts`, a segmented section picker, `TournamentEntriesSegment`, `TournamentResultsSegment` (bracket,
+`TournamentFacts`, the in-body `TournamentActionRow` (group parity, 2026-11-15), a segmented section picker,
+`TournamentEntriesSegment`, `TournamentResultsSegment` (bracket,
 standings or matches), `TournamentParticipationControl` and the `TournamentMenu`, hosting the edit, team-name, match,
 invite and report sheets and the confirmation dialogs, around a `TournamentDetailViewModel`. Writes: `MatchSheet`
 with its pushed `MatchScheduleView`, and `TeamNameSheet`. The draft form `TournamentDraftForm<Model:
@@ -47,7 +48,11 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `presentedSheet: DetailSheet?` (`edit`, `teamName`, `invite`, `report`, `match(id:)`), `confirmation:
   TournamentConfirmation?`, `contentWidth`; renders `content(shown, isPreview:)` for `viewModel.shownDetail` or
   `emptyState` by `viewModel.state`; toolbar `TournamentMenu`; `sectionPicker` (`tournamentSection`),
-  `loadingSlot` (`tournamentLoading`), `bracketInset`.
+  `loadingSlot` (`tournamentLoading` on an `.accessibilityElement(children: .contain)` container, so Try again keeps
+  its own element; in the shared `TournamentSegmentSlot`), `bracketInset`; the shared
+  `chatDestination(item: $viewModel.openedRoom, dependencies:)` (`lily/Features/Chat/Views/ChatDestinations.swift`,
+  extracted in the round's review pass from the three identical pushes) pushes `ChatView` in place with
+  `\.tabBarHiding` cleared, so Back returns to the detail (the profile precedent, 2026-11-15).
 - `[lily/Features/Tournaments/Views/TournamentHeader.swift:TournamentHeader]`: `(tournament, organizerProfile:
   UserProfileDestination?, winnerName: String?)`: chips (type, format, status), `OwnerTitleBlock` — the organizer
   line maps the stored name through `Tombstone.displayName(tournament.organizerName, deleted: tournament.deleted)`
@@ -62,6 +67,10 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   no profile, 2026-11-07):
   a `PersonRow` for singles, a `GlassCard` team with seed chip, members, captain chip and a Join team `BusyButton`
   (`tournamentJoinTeam(id)`); identifiers `entryRow(id)`, `participantRow(userId)`.
+  `TournamentSegmentSlot(alignment:content:)` (same file) fixes one vertical footprint — hidden copies of the
+  spinner, the empty entries line and the failed preview's Try again button (the tallest) under the content,
+  `Spacing.xl` vertical padding — shared by the empty entries line and the detail's `loadingSlot`, so the
+  participation control below keeps its place when the fetch answers or the preview's load fails (2026-11-15).
 - `[lily/Features/Tournaments/Views/TournamentResultsSegment.swift:TournamentResultsSegment]`: `(showsMatches,
   detail, onSelect, bracketInset: CGFloat)` (no default) chooses `MatchList`, `BracketView` or `StandingsTable`, or an `EmptyStateView`
   (`AppBranding.Tournaments.notStarted`) with no matches.
@@ -80,6 +89,10 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   onOpenChat, onInvite, onStart, onEdit, onCancel, onReport)` is the toolbar `Menu` (`tournamentMore`,
   `tournamentOpenChat`, `tournamentInvite`, `tournamentStart`, `tournamentEdit`, `tournamentCancel`,
   `tournamentReport`).
+- `[lily/Features/Tournaments/Views/TournamentActionRow.swift:TournamentActionRow]`: `(viewModel, onOpenChat,
+  onInvite)`, the group-parity actions under the facts, drawn for `permissions.showsActionRow`: a prominent Open
+  chat (`tournamentActionChat`, shown by `canOpenChat`) and a glass ink Invite (`tournamentActionInvite`, shown by
+  `canInvite`), the group's copy keys, the same gates as the menu items, which stay (2026-11-15).
 - `[lily/Features/Tournaments/Views/MatchSheet.swift:MatchSheet]`: `(viewModel, matchID, errorCenter)` in its own
   `NavigationStack`; `MatchCell`, a notice, two score `TextField`s (`matchScoreA`, `matchScoreB`; titled "0", the
   placeholder, with `.accessibilityLabel` the entry's name, so VoiceOver says whose score each takes), a
@@ -173,6 +186,8 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
 - `[lily/Features/Tournaments/Views/TournamentParticipationControl.swift:TournamentMenu]`: menu items are gated by
   `permissions` (`canOpenChat`, `canInvite`, `showsStart` with Start disabled unless `canStart` and subtitled by
   `startBlockedReason`, `canEdit`, `canCancel`, `canReport`); the control is chosen by `participation` alone.
+  `TournamentActionRow` draws only under `permissions.showsActionRow`, each button under the same gate as its menu
+  item, its Open chat running the same `viewModel.openChat()` (2026-11-15).
   `[lily/Features/Tournaments/Views/TournamentEntriesSegment.swift:TournamentEntriesSegment]`: the Remove entry
   context item appears only when `permissions.canRemoveEntries`; Join team only when `viewModel.canJoin(entry)`.
 
@@ -187,8 +202,9 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
 - `[lily/Features/Tournaments/Views/TournamentDetailView.swift:TournamentDetailView.body]`: `.task(id:
   dependencies.tournamentChanges.version) { await viewModel.loadIfNeeded() }`; `.refreshable` and both Try again
   buttons call `viewModel.load()`; `.onChange(of: linkedMatchToShow)` presents the match sheet and calls
-  `consumeLinkedMatch()`; `.onChange(of: isGone)` calls `dismiss()`; the menu's Open chat runs
-  `viewModel.openChat()`; the dialog runs `cancel()`, `leave()`, `start()` or `removeEntry(_:)`.
+  `consumeLinkedMatch()`; `.onChange(of: isGone)` calls `dismiss()`; the menu's and the action row's Open chat run
+  `viewModel.openChat()`, whose `openedRoom` the view pushes through the shared `chatDestination(item:dependencies:)` (2026-11-15);
+  the row's Invite presents the invite sheet; the dialog runs `cancel()`, `leave()`, `start()` or `removeEntry(_:)`.
 - `[lily/Features/Tournaments/Views/TournamentDetailView.swift:TournamentDetailView.sheet]`: presenting a sheet
   builds view models through the container: `dependencies.makeEditTournamentViewModel(for:onChange:
   viewModel.accept)`, `makeTournamentInvitePeopleViewModel(for:)`, `makeReportViewModel(for:title:)`.

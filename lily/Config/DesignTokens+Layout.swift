@@ -12,6 +12,8 @@ nonisolated extension DesignTokens.Layout {
     static let tileMinWidth: CGFloat = 250
     /// Tiles the regular-width group grid shows before "See all".
     static let regularTileCount = 8
+    /// Chips the edit form's compact type picker shows before "See all": the head of `EventType.known`.
+    static let collapsedTypeChipCount = 3
     /// Share of a wide Explore the content column takes; the map pane takes the rest.
     static let exploreContentFraction: CGFloat = 0.55
     /// Widest the intro's framed miniature gets beside its caption on a regular width.

@@ -42,9 +42,10 @@ them are in [Views](../Views/EGM.md).
   now:, snapshots: any ListSnapshotStore = NoOpListSnapshotStore())`
   [`lily/Features/Groups/ViewModels/DiscoverGroupsViewModel.swift`:`DiscoverGroupsViewModel.search`].
 - `GroupDetailViewModel`: `private(set) group`, `let context: GroupDetailContext`, `private(set) isBusy`,
-  `private(set) isGone`; computed `access: GroupAccess`, `showsRoster`, `showsOpenChat`, `canReport`,
-  `reportTarget`, `showsMenu`; methods `recordViewed()`, `join()`, `leave()`, `delete()`, `accept(_ updated:)`,
-  `refreshFromStore()`; `init(group:, context:, repository:, identity:, store: MyGroupsStore, errorCenter:, recorder:,
+  `private(set) isGone`, `openedChat: SportGroup?` (settable: the view binds it and SwiftUI clears it on Back,
+  2026-11-15); computed `access: GroupAccess`, `showsRoster`, `showsOpenChat`, `canReport`,
+  `reportTarget`, `showsMenu`; methods `recordViewed()`, `openChat()`, `join()`, `leave()`, `delete()`,
+  `accept(_ updated:)`, `refreshFromStore()`; `init(group:, context:, repository:, identity:, store: MyGroupsStore, errorCenter:, recorder:,
   logger:, tryAgainDelay:, now:)`; private `Intent { join, leave, delete }` and `Refetch { fresh, gone, unavailable }`,
   and a private `AppError` extension (`isGroupConflict`, `leavesOutcomeUnknown`, `needsGroupRefresh`)
   [`lily/Features/Groups/ViewModels/GroupDetailViewModel.swift`:`GroupDetailViewModel`].
@@ -126,6 +127,10 @@ them are in [Views](../Views/EGM.md).
   in Mine, no navigation [`lily/Features/Groups/ViewModels/CreateGroupViewModel.swift`:`CreateGroupViewModel.submit`].
 - Detail gating: `showsRoster = access.canSeeMembers(in:)`; `showsOpenChat = access.canChat && context == .standalone
   && AppConfig.FeatureFlags.chat`; `canReport = access.canReport(in:)`; `showsMenu = access.canChat || canReport`;
+  `openChat()` acts only under `showsOpenChat`: it puts a group Mine does not yet hold into the store (so the Chats
+  tab lists the room; one Mine holds is left alone, no change bump) and sets `openedChat` for the view to push —
+  never a tab switch through `AppNavigation` (2026-11-15)
+  [`lily/Features/Groups/ViewModels/GroupDetailViewModel.swift`:`GroupDetailViewModel.openChat`];
   `refreshFromStore()` replaces `group` only when the store's `(loadVersion, changesVersion)` moved and the store
   holds the group and it is not gone; `apply` writes to the store with `add` for a live membership or `replace` when
   the store holds the id; `recordViewed()` records once per instance
@@ -155,7 +160,8 @@ them are in [Views](../Views/EGM.md).
   `setRole(id:userID:_:)`, `remove(id:userID:)`, `unban(id:userID:)`, `report(_:)`
   [`lily/Features/Groups/ViewModels/GroupDetailViewModel.swift`:`GroupDetailViewModel.update`]
   [`lily/Features/Groups/ViewModels/MembersViewModel.swift`:`MembersViewModel.ban`].
-- Store writes: `store.add(group)` after a create; `store.add`/`replace` after a detail action and `store.remove(id:)`
+- Store writes: `store.add(group)` after a create and from `openChat()` when Mine misses the group (2026-11-15);
+  `store.add`/`replace` after a detail action and `store.remove(id:)`
   when the group is gone (each bumps the `ChangeTracker`); the `onCreated`/`onChange` callbacks after a create, an
   edit, a remove or a ban [`lily/Features/Groups/ViewModels/GroupDetailViewModel.swift`:`GroupDetailViewModel.apply`].
 - Location: `locationService.currentLocation()` from `CreateGroupViewModel.prepare()` (which also keeps the

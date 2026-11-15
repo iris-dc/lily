@@ -400,3 +400,18 @@ the asset catalog.
   accent never colours text below headline size; the by-eye render check of the productionized screen (the accent
   glyph under glass, the segment switch, mid-refresh states) rides this round's simulator gate. The segment switch
   moves with `.snappy(Duration.fast)` only while `\.motion` allows movement.
+- **The grabber on every swipe-closable sheet (2026-11-15, the owner's consistency round).** The stated rule
+  (`FormSheet.swift`: the grabber is the hint that a swipe closes it) held only where a sheet hand-rolled
+  `.presentationDragIndicator(.visible)` or used the `lockedWhile:` overload; the Profile sheet, Explore's event
+  filter sheet and the legal pages closed on a swipe with no hint. Now the grabber lives in the base
+  `lilyFormSheet()` — one source, inherited by the `errorCenter:lockedWhile:` overload and every base call site
+  (the filter sheet, the sign-in sheet, the creation wizard's regular-width sheets, the poll composer and voters,
+  the invite sheet, whose three hand-rolled lines are deleted) — and the two sheets that are no form sheet add the
+  modifier themselves: the Profile sheet (`MainTabView`; not wrapped in `lilyFormSheet`, per the ipad note) and
+  `LegalSheet`. One deliberate opt-out (the round's review pass): the creation wizard's sheet hides the grabber
+  (`presentationDragIndicator(.hidden)` after `lilyFormSheet()` in the shared presenter and in the group detail's
+  own mount) because its dirty-draft lock (`interactiveDismissDisabled` while `isDirty || isSubmitting`) is not
+  transient — a grabber over a swipe that will not close would lie; a transient `lockedWhile:` lock keeps the base
+  grabber (`MatchSheet`, every writing sheet). Evidence
+  (profile, filter, legal, and the event edit sheet unchanged) under
+  `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-15/item6-grabbers/`.

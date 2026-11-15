@@ -52,9 +52,12 @@ device; the mode is the only switch. Widths, counts and durations come from `Des
 - `func readableColumn(maxWidth: CGFloat = DesignTokens.Layout.readableWidth) -> some View` and
   `func inReadableColumn() -> some View` (`padding(.horizontal, DesignTokens.Layout.detailMargin)` then `readableColumn()`)
   [`lily/Core/UI/Layout/ReadableColumn.swift:View.readableColumn`, `View.inReadableColumn`].
-- `func lilyFormSheet() -> some View` [`lily/Core/UI/Layout/FormSheet.swift:View.lilyFormSheet`]: `presentationSizing(.form)`.
+- `func lilyFormSheet() -> some View` [`lily/Core/UI/Layout/FormSheet.swift:View.lilyFormSheet`]:
+  `presentationSizing(.form)` then `presentationDragIndicator(.visible)` (2026-11-15: the grabber moved into the base,
+  the one source — it is the hint that a swipe closes the sheet; a caller whose dismissal lock is not transient hides
+  it after the call — the creation wizard's two sheet mounts).
 - `func lilyFormSheet(errorCenter: ErrorCenter, lockedWhile isBusy: Bool) -> some View`
-  [`lily/Core/UI/Layout/FormSheet.swift:View.lilyFormSheet`]: `lilyFormSheet()` then `presentationDragIndicator(.visible)`,
+  [`lily/Core/UI/Layout/FormSheet.swift:View.lilyFormSheet`]: `lilyFormSheet()` then
   `interactiveDismissDisabled(isBusy)` and `errorPopup(errorCenter)`, for a sheet that writes (DraftSheet, ReportSheet,
   FeedbackSheet, TeamNameSheet, MatchSheet); detents stay the sheet's own, set before it.
 - `func lilyHoverable() -> some View` [`lily/Core/UI/Layout/HoverEffects.swift:View.lilyHoverable`]: `hoverEffect(.highlight)`.
@@ -120,8 +123,9 @@ device; the mode is the only switch. Widths, counts and durations come from `Des
   [`lily/Core/UI/Layout/TileGrid.swift:TileGrid.shown(of:)`].
 - `readableColumn`: `frame(maxWidth: maxWidth).frame(maxWidth: .infinity)`, capped and centred
   [`lily/Core/UI/Layout/ReadableColumn.swift:View.readableColumn`]. `lilyFormSheet()` is exactly
-  `presentationSizing(.form)`, no detents; the `errorCenter:lockedWhile:` overload adds the grabber, the lock and the
-  popup in that order and nothing else [`lily/Core/UI/Layout/FormSheet.swift:View.lilyFormSheet`].
+  `presentationSizing(.form)` plus the grabber, no detents (2026-11-15; the grabber was the overload's until then); the
+  `errorCenter:lockedWhile:` overload adds the lock and the popup in that order and nothing else
+  [`lily/Core/UI/Layout/FormSheet.swift:View.lilyFormSheet`].
 - Tab bar: `TabBarHiding.hide` registers once per token (`if depths[token] == nil`), a later call with the same token
   and another depth is ignored; `prune(above:)` keeps entries with `value <= depth`; `hides(at:)` is
   `depths.values.contains { $0 <= depth }`, hidden if the top screen or any screen under it registered

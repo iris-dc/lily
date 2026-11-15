@@ -39,6 +39,8 @@ nonisolated struct TournamentPermissions: Equatable, Sendable {
                                             canJoinTeams: false)
 
     var showsMenu: Bool { canOpenChat || canEdit || canCancel || canInvite || canReport }
+    /// The in-body action row under the facts: chat and invite, drawn only when it has something to offer.
+    var showsActionRow: Bool { canOpenChat || canInvite }
 }
 
 /// The rule itself; in an extension so the memberwise init above stays synthesized.

@@ -96,6 +96,44 @@ final class LilyEventEditTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["1 joined"].waitForExistence(timeout: 5), "the count stands alone")
     }
 
+    /// The edit form's type control is compact (2026-11-15): the head of the list plus "See all", a search that
+    /// reaches every type, and the current choice never hidden. The walk searches out a type beyond the top three,
+    /// takes it, then expands the full flow. Identifiers mirror the draft-type literals by hand.
+    @MainActor
+    func testEditTypePickerSearchesTheFullListAndExpands() {
+        startCreating("Type picker check")
+        continueToDetails()
+        submitWizard()
+        assertCreateLandedOnDetail("Type picker check")
+        openEditSheet()
+
+        let search = app.textFields["draft-type-search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5), "the edit form shows the type search")
+        XCTAssertTrue(app.buttons["draft-type-football"].waitForExistence(timeout: 5),
+                      "the head of the list shows while collapsed")
+        XCTAssertTrue(app.buttons["draft-type-tennis"].exists)
+        XCTAssertFalse(app.buttons["draft-type-yoga"].exists, "a type beyond the top three hides until searched")
+        let expander = app.buttons["draft-type-expand"]
+        XCTAssertTrue(expander.exists, "the collapsed chips end on See all")
+
+        enter("yoga", into: search)
+        let yoga = app.buttons["draft-type-yoga"]
+        XCTAssertTrue(yoga.waitForExistence(timeout: 5), "the search reaches a type beyond the top three")
+        XCTAssertTrue(app.buttons["draft-type-football"].waitForNonExistence(timeout: 5), "only matches show while searching")
+        XCTAssertFalse(expander.exists, "a search already reaches the whole list, no expander")
+        yoga.tap()
+        XCTAssertTrue(waitUntil(yoga, holds: "isSelected == true"), "the draft takes the searched type")
+        assertBecomesEnabled(app.buttons["create-submit"], "a changed type is something to save")
+
+        replaceText(in: search, with: "")
+        XCTAssertTrue(yoga.waitForExistence(timeout: 5), "the current choice is never hidden while collapsed")
+        XCTAssertTrue(app.buttons["draft-type-football"].waitForExistence(timeout: 5))
+        XCTAssertTrue(expander.waitForExistence(timeout: 5))
+        expander.tap()
+        XCTAssertTrue(app.buttons["draft-type-hockey"].waitForExistence(timeout: 5), "See all reveals the full flow")
+        XCTAssertTrue(expander.waitForNonExistence(timeout: 5), "once expanded there is no way back")
+    }
+
     /// Signs in, opens the wizard through the "+" menu's "New event" and walks to its Players step (the spot comes
     /// from the mock location), where the player fields live; Details follows with the submit button, and the edit
     /// tests then reopen the created game through the edit form.

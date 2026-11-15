@@ -30,11 +30,7 @@ struct UserProfileView: View {
         }
         .navigationTitle(viewModel.displayName)
         .navigationBarTitleDisplayMode(.inline)
-        // "Message" pushes the chat here, on the stack the profile is on, so Back returns to the profile; opening it
-        // on the Chats tab instead had Back land on the Chats list.
-        .navigationDestination(item: $viewModel.openedConversation) { conversation in
-            ChatView(viewModel: dependencies.makeChatViewModel(for: conversation), dependencies: dependencies)
-        }
+        .chatDestination(item: $viewModel.openedConversation, dependencies: dependencies)
         .task { await viewModel.load() }
     }
 

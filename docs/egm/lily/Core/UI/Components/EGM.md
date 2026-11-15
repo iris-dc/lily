@@ -4,7 +4,7 @@ Source: `lily/Core/UI/Components/`
 
 ## Overview
 
-The reusable SwiftUI pieces every feature screen is built from, 45 files with no subfolders: the screen scaffold and
+The reusable SwiftUI pieces every feature screen is built from, 47 files with no subfolders: the screen scaffold and
 its aurora (`ContentScreen`, `AuroraBackground`, `FilmGrainOverlay`), the button, chip, picker and field modifiers that give
 the app its one look, the cards, titles, rows, avatars, sport marks (`sportFill`)
 and tiles, the list and empty states, the filter dropdowns, the
@@ -66,8 +66,18 @@ use the generated `Color.lily*` asset symbols.
   `Color.lilyInk`, on `lilyChip` glass tinted `Color.lilyAccentDeep` at `DesignTokens.Opacity.sportGlassTint`; amber
   before 2026-11-06); `VisibilityChip(visibility: GroupVisibility)`
   [`lily/Core/UI/Components/VisibilityChip.swift:VisibilityChip`];
-  `EventTypeChips(anyTitle: String? = nil, anyIdentifier: String? = nil, isSelected: (EventType?) -> Bool, onSelect: (EventType?) -> Void, identifier: ((EventType) -> String)? = nil)`
-  over `EventType.known` in a `FlowLayout` [`lily/Core/UI/Components/EventTypeChips.swift:EventTypeChips`].
+  `EventTypeChips(anyTitle: String? = nil, anyIdentifier: String? = nil, types: [EventType] = EventType.known, isSelected: (EventType?) -> Bool, onSelect: (EventType?) -> Void, identifier: ((EventType) -> String)? = nil, expandTitle: String? = nil, expandIdentifier: String? = nil, onExpand: (() -> Void)? = nil)`
+  over `types` in a `FlowLayout`, ended by a trailing expander chip while `expandTitle` is set (2026-11-15)
+  [`lily/Core/UI/Components/EventTypeChips.swift:EventTypeChips`];
+  `TypeSearchField(query: Binding<String>, identifier:)` [`lily/Core/UI/Components/TypeSearchField.swift:TypeSearchField`],
+  the type pickers' one search field — the magnifier, `AppBranding.Create.typeSearch`, `lilyField()` glass (2026-11-15,
+  extracted from `WizardTypePicker`); `EventTypeCompactPicker(selected: EventType, onSelect: (EventType) -> Void)`
+  [`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeCompactPicker`], the edit form's compact type choice
+  (2026-11-15): `TypeSearchField` (`draft-type-search`) over `EventTypeChips` narrowed by the pure
+  `EventTypeChipSubset.visible(matching:expanded:selected:)` — the first `collapsedTypeChipCount` (3) of
+  `EventType.known` plus a known selection not among them, the "See all" expander chip
+  (`AppBranding.Groups.seeAll`, `draft-type-expand`) until expanded for the view's life, every match while the
+  query is non-empty, and `AppBranding.Create.typeSearchNoMatch` when nothing matches.
 - Layout pieces: `FlowLayout: Layout` (`spacing`, `rowSpacing`, both `DesignTokens.Spacing.sm`)
   [`lily/Core/UI/Components/FlowLayout.swift:FlowLayout`]; `GlassCard<Content>(content:)`
   [`lily/Core/UI/Components/GlassCard.swift:GlassCard`] (`DesignTokens.Spacing.lg` padding, glass rect of
@@ -199,8 +209,13 @@ use the generated `Color.lily*` asset symbols.
 - Chips: `lilyChip` is always a glass capsule and `tappableLabel` a minimum, not fixed, height
   [`lily/Core/UI/Components/ChipModifiers.swift:View.lilyChip`, `View.tappableLabel`]; `ChoiceChip` is
   `.buttonStyle(.plain)` with the `.isSelected` trait when selected [`lily/Core/UI/Components/ChoiceChip.swift:ChoiceChip`];
-  `EventTypeChips` shows the "any" chip only `if let anyTitle` and iterates exactly `EventType.known`
-  [`lily/Core/UI/Components/EventTypeChips.swift:EventTypeChips`].
+  `EventTypeChips` shows the "any" chip only `if let anyTitle`, iterates exactly `types` (`EventType.known` unless a
+  caller narrows it; only the compact picker does) and shows the expander chip only `if let expandTitle`
+  [`lily/Core/UI/Components/EventTypeChips.swift:EventTypeChips`]; `EventTypeChipSubset.visible` never offers an
+  unknown type and appends a known selection so the choice is never hidden, and once `expanded` the compact picker
+  never collapses (plain `@State`, reset only with the view's identity; pinned by
+  `lilyTests/Events/EventTypeChipSubsetTests.swift`)
+  [`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeChipSubset`].
 - `FlowLayout`: line width `proposal.width ?? .infinity`; a subview is measured at `.unspecified` and re-measured at the
   line width only when `FlowArrangement.proposedWidth` returns one (an over-wide label truncates within the line);
   placement advances by `measured.width + spacing` and `row.height + rowSpacing` from `bounds.minX`/`minY`; no cache

@@ -75,7 +75,6 @@ struct PollComposerSheet: View {
             .tint(Color.lilyAccent)
         }
         .lilyFormSheet()
-        .presentationDragIndicator(.visible)
         .onAppear { focus = .question }
     }
 

@@ -62,6 +62,8 @@ struct MainTabView: View {
         // The profile sheet, presented once for the whole shell; the corner button on every tab root raises the flag.
         .sheet(isPresented: $navigation.isProfilePresented) {
             ProfileView(dependencies: dependencies, language: language)
+                // The grabber is the hint that a swipe closes it, as on every swipe-closable sheet.
+                .presentationDragIndicator(.visible)
         }
     }
 

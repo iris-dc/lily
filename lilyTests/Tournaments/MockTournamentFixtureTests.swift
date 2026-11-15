@@ -24,11 +24,14 @@ struct MockTournamentFixtureTests {
     /// lists it until the caller enters.
     @Test func thePadelOpenIsReachableByInviteAlone() async throws {
         let id = MockTournamentFixtures.padelOpenID
-        #expect(MockTournamentFixtures.ids == [MockTournamentFixtures.kickersCupID, MockTournamentFixtures.tableTennisID, id])
+        let ids = [MockTournamentFixtures.kickersCupID, MockTournamentFixtures.tableTennisID, id,
+                   MockTournamentFixtures.badmintonOpenID]
+        #expect(MockTournamentFixtures.ids == ids)
 
         await #expect(throws: AppError.tournamentNotFound) { try await repository.tournament(id: id) }
         await #expect(throws: AppError.tournamentNotFound) { try await repository.join(id: id, teamName: nil) }
-        #expect(try await repository.tournaments(in: .upcoming, near: nil).map(\.id) == [MockTournamentFixtures.kickersCupID])
+        let upcoming = try await repository.tournaments(in: .upcoming, near: nil).map(\.id)
+        #expect(upcoming == [MockTournamentFixtures.kickersCupID, MockTournamentFixtures.badmintonOpenID])
         let mineBefore = try await repository.tournaments(in: .mine, near: nil)
         let roomsBefore = try await groups.groups(in: .mine, cursor: nil, near: nil).items
         #expect(!mineBefore.contains { $0.id == id } && !roomsBefore.contains { $0.id == id })
@@ -46,6 +49,23 @@ struct MockTournamentFixtureTests {
         let mineAfter = try await repository.tournaments(in: .mine, near: nil)
         #expect(mineAfter.contains { $0.id == id } && groups.find(id)?.isMember == true, "entering joins the room")
         #expect(try await groups.members(id: id).count == 5, "Noor, Aiko, Sam, Tom and the caller")
+    }
+
+    /// The no-entries fixture: Ines's public knockout in registration with nobody in, so the detail's empty entries
+    /// state is reachable on a mock run; its room is in the group mock without a membership for the caller.
+    @Test func theBadmintonOpenHasNoEntries() async throws {
+        let id = MockTournamentFixtures.badmintonOpenID
+        let detail = try await repository.tournament(id: id)
+
+        #expect(detail.entries.isEmpty && detail.tournament.entryCount == 0 && detail.tournament.myEntryId == nil)
+        #expect(detail.tournament.status == .registration && detail.tournament.visibility == .public)
+        #expect(detail.tournament.teamSize == 1 && detail.tournament.organizerName == "Ines")
+        #expect(detail.tournament.isRegistrationOpen(now: now))
+        #expect(groups.find(id)?.isMember == false, "the caller has no row in its room")
+        #expect(groups.find(id)?.lastMessageId == nil, "a just-announced room carries no last message")
+        #expect(MockChatFixtures.lastMessageID(for: id) == nil)
+        let rows = MockChatFixtures.messages(groupID: id, callerID: "c", callerName: "C", now: now, lastMessageAt: now)
+        #expect(rows.isEmpty, "the room starts with no history")
     }
 
     /// The caller's third-round match against Dev carries the time and the hall, so the Matches list shows them and the

@@ -23,8 +23,10 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   `createTournament`, `signIn`, `report`; `isWizard` marks the two create cases — `WizardPresentable` since
   2026-11-14, so the cover rule is the shared `presentsAsCover(on:)`, read as `presentsWizardAsCover`), `wizardModel:
   AppCreationWizardModel?` (made once per presentation in `GroupDetailView+Create.swift`'s `presentWizard`, owned
-  above both presenters), `confirmation: GroupConfirmation?`; reads `@Environment(\.dismiss)` and `\.layoutMode`;
-  stamps `AccessibilityIdentifiers.groupSection` [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
+  above both presenters), `confirmation: GroupConfirmation?`; reads `@Environment(\.dismiss)` and `\.layoutMode`; binds
+  `$viewModel.openedChat` into the shared `chatDestination(item:dependencies:)`
+  (`lily/Features/Chat/Views/ChatDestinations.swift`, 2026-11-15); stamps `AccessibilityIdentifiers.groupSection`
+  [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
 - `GroupActionRow(viewModel:, onOpenChat:, onInvite:, onCreateEvent:, onSignIn:)` (identifiers `groupJoin`,
   `groupOpenChat`, `groupInvite`, `groupCreateEvent`) [`lily/Features/Groups/Views/GroupActionRow.swift`:`GroupActionRow`];
   `GroupDetailMenu(viewModel:, onInvite:, onCreateTournament:, onEdit:, onLeave:, onReport:, onDelete:)`
@@ -107,6 +109,13 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
 - The members model is rebuilt on every `access` change (`showsRoster ? makeMembersViewModel : nil`); tournament
   loads are gated by `AppConfig.FeatureFlags.tournaments`; the detail dismisses itself when `isGone` turns true
   [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
+- Open chat never switches tabs: the action row's `onOpenChat` calls `viewModel.openChat()` and the chat is pushed on
+  the detail's own stack through the shared `chatDestination(item: $viewModel.openedChat, dependencies:)`
+  (`lily/Features/Chat/Views/ChatDestinations.swift`, extracted 2026-11-15 from the three identical pushes), so Back
+  returns to the group (the 2026-11-05 profile rule, adopted 2026-11-15); the helper gives the pushed chat
+  `\.tabBarHiding` nil — an item push never moves the stack's bound path, so the root would never prune the chat's
+  hide after the pop — and the chat sets the bar's visibility itself, so the bar returns with the screen; a room deleted while open is covered by `ChatView`'s own
+  `isGone` dismissal [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
 - `GroupDestinations` never opens `GroupDetailView` for a conversation or a room: a `counterpart` goes to
   `UserProfileView`, `isTournamentRoom` to `TournamentDetailView`; a `SportGroup` push is `.standalone`, a
   `GroupInfoDestination` push `.fromChat`; a nil `onTournamentChange` defaults to
@@ -156,7 +165,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   identity, `unban(_:)` and `perform(_:on:)` from the roster menu
   [`lily/Features/Groups/Views/MembersList.swift`:`MembersList`].
 - Navigation: `NavigationLink(value:)`/`TileLink(value:)` push a `SportGroup`, "See all" a `DiscoverGroupsDestination`,
-  `HostedInLine` an `EventGroupRef`; Open chat calls `dependencies.navigation.open(chat:)`; `GroupDestinations`
+  `HostedInLine` an `EventGroupRef`; Open chat sets `viewModel.openedChat`, pushed in place through the shared `chatDestination` (2026-11-15);
+  `GroupDestinations`
   builds the destination view models through `AppDependencies` (`makeGroupDetailViewModel`, `makeGroupLoaderViewModel`,
   `makeChatViewModel`, `makeUserProfileViewModel`, `makeTournamentDetailViewModel`)
   [`lily/Features/Groups/Views/GroupDestinations.swift`:`GroupDestinations`].
@@ -165,7 +175,9 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   cases — seeded `CreationSeed(kind:, lockedGroup: group.ref)` with `onCreatedEvent` adding to `events` then
   opening the game's detail through `dependencies.navigation.open(event:)` (the fourth round, 2026-11-11) and
   `onCreatedTournament` adding to `tournaments` then opening the tournament's detail through
-  `dependencies.navigation.open(tournament:)` (the merge review, 2026-11-12), a full-screen cover on compact and a `lilyFormSheet()` otherwise (the cover claim through the shared
+  `dependencies.navigation.open(tournament:)` (the merge review, 2026-11-12), a full-screen cover on compact and a `lilyFormSheet()` with
+  `presentationDragIndicator(.hidden)` otherwise — the wizard's dirty lock is not transient, so the grabber would lie
+  (2026-11-15) — (the cover claim through the shared
   `WizardPresentable.presentsAsCover(on:)` since 2026-11-14), the two
   presenters split over one `presentedSheet` so a width-class change re-hosts the flow, and
   `clearWizardAfterDismiss` booking the close only on a real dismissal

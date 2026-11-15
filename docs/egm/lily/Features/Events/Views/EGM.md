@@ -55,7 +55,11 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   2026-11-11) — the shared `OptionalMarker` below the add row (2026-11-13, the seventh round), the
   "Finish time" picker `create-ends-at` floored at the start, the clear button `create-ends-at-remove`; the
   wizard's When page composes the same control, so edit parity holds); headers and first-issue footers stay in the
-  form. The form also carries a belt for the
+  form. The game section's type control (2026-11-15) is `CaptionedControl` over the compact `EventTypeCompactPicker`
+  (`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeCompactPicker`): the `draft-type-search` field, the
+  top three types plus the current choice, and the `draft-type-expand` "See all" chip — the flat 34-chip flow stays
+  with the other `EventTypeChips` callers (the filter sheet, the group form, Discover's panel); walked by
+  `LilyEventEditTests.testEditTypePickerSearchesTheFullListAndExpands`. The form also carries a belt for the
   extracted suggestion machinery: `.onChange(of: focusedField)` on the `Form` itself clears `suggestions` whenever
   the focused field is not `.locationName` — a `Form` culls off-viewport rows, so `PlaceNameField`'s row-level clear
   is not mounted then; the belt is idempotent with it. A still-focused name row scrolled off-viewport and back

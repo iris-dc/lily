@@ -11,6 +11,8 @@ final class GroupDetailViewModel {
     private(set) var isBusy = false
     /// The caller is out of the group and cannot see it any more (left a private group, or it was deleted).
     private(set) var isGone = false
+    /// The group whose chat the view pushes on its own stack; SwiftUI clears it when the reader comes back.
+    var openedChat: SportGroup?
 
     private let repository: any GroupRepository
     private let identity: any IdentityProvider
@@ -93,6 +95,17 @@ final class GroupDetailViewModel {
         guard !hasRecordedView else { return }
         hasRecordedView = true
         recorder.record(.groupViewed(group, at: now()))
+    }
+
+    /// The chat is pushed on the stack the detail is on, so Back returns here, never to the Chats root (the profile's
+    /// rule). A member's detail reached outside Mine (Discover) puts the group into Mine, so the Chats tab lists the
+    /// room; one Mine already holds is left alone, so no sibling list reloads.
+    func openChat() {
+        guard showsOpenChat else { return }
+        if !store.groups.contains(where: { $0.id == group.id }) {
+            store.add(group)
+        }
+        openedChat = group
     }
 
     func join() async {

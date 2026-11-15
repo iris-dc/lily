@@ -28,7 +28,6 @@ extension AppDependencies {
                                   groupRepository: groupRepository,
                                   myGroups: myGroups,
                                   identity: identity,
-                                  navigation: navigation,
                                   changes: tournamentChanges,
                                   errorCenter: errorCenter,
                                   recorder: interactionRecorder,

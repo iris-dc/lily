@@ -43,7 +43,6 @@ struct PollVotersSheet: View {
             .tint(Color.lilyAccent)
         }
         .lilyFormSheet()
-        .presentationDragIndicator(.visible)
         .errorPopup(errorCenter)
         .task { await load() }
     }

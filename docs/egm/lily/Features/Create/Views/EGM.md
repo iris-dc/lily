@@ -42,7 +42,9 @@ its own presenters over its six-case sheet enum, `GroupDetailView+Create.swift`)
   (`lily/Features/Create/Views/CreationWizardPresenter.swift:creationWizardPresenter`): the private modifier reads
   `\.layoutMode` and splits the one `item` between a `.fullScreenCover(item:)` and a `.sheet(item:)` whose bindings
   each show it only while the other does not claim it; the sheet side hosts `CreationWizardView(model:errorCenter:)`
-  under `lilyFormSheet()`, the cover hosts it bare, any non-wizard item goes to `sheetContent`, and `onDismissed`
+  under `lilyFormSheet()` with `presentationDragIndicator(.hidden)` — the wizard's dirty-draft lock is not transient,
+  so the base grabber would lie (2026-11-15) — the cover hosts it bare, any non-wizard item goes to `sheetContent`,
+  and `onDismissed`
   fires from either presenter's `onDismiss` only when the item is already `nil` — a real dismissal, never a
   width-class re-host. Callers: Explore's `EventListView` (`ExploreSheet: WizardPresentable`, sign-in through
   `sheetContent`) and `HomeView` (`WizardOnlySheet`); the group detail conforms its `DetailSheet` and reuses
@@ -77,8 +79,9 @@ its own presenters over its six-case sheet enum, `GroupDetailView+Create.swift`)
   card of the wizard's auto-advancing pages — the label, and the accent `chosen` check on the current choice (accent
   on the mark, never the words); whole-card tap target, `.isSelected` trait on the selection.
 - `WizardTypePicker` (`lily/Features/Create/Views/WizardTypePicker.swift:WizardTypePicker`): the type steps' picker
-  (the third design round, 2026-11-11) — a glass search capsule (`create-type-search`, filtering by localized name,
-  case- and diacritic-insensitively in the app's locale (`AppLocale`), as you type) over a `wizardTypeColumns`-column `LazyVGrid` of compact glass type cards
+  (the third design round, 2026-11-11) — the shared `TypeSearchField` (`create-type-search`), filtering by
+  localized name through the shared `String.matchesSearch` (case- and diacritic-insensitive in the app's locale
+  (`AppLocale`); both extracted 2026-11-15 for the edit form's compact picker), as you type, over a `wizardTypeColumns`-column `LazyVGrid` of compact glass type cards
   (its private `WizardTypeCard`: `Radius.md` glass at least `wizardTypeCardHeight` tall, symbol and name with the
   accent `chosen` check on the current choice), optionally led by an "Any" entry (`anyTitle`, the group's nullable
   choice; the query filters it like any card); a query no name

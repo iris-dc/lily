@@ -79,7 +79,8 @@ nothing here performs I/O or touches shared state. Limits come from
   leave, entered, registrationClosed, full }` from `(tournament, userID, now)`.
 - `[lily/Features/Tournaments/Models/TournamentPermissions.swift:TournamentPermissions]`: `canEdit`, `canCancel`,
   `canRemoveEntries`, `canOpenChat`, `canInvite`, `canReport`, `showsEntries`, `showsStart`, `canStart`,
-  `canJoinTeams`, `startBlockedReason?`, `organizerProfile: UserProfileDestination?`, `showsMenu`, `static none`;
+  `canJoinTeams`, `startBlockedReason?`, `organizerProfile: UserProfileDestination?`, `showsMenu`, `showsActionRow`
+  (the in-body action row, 2026-11-15), `static none`;
   `init(tournament:userID:now:chatEnabled:)`.
 - `[lily/Features/Tournaments/Models/MatchActions.swift:MatchActions]`: `canReport`, `canConfirm`, `canDispute`,
   `canRecord`, `canWalkover`, `canSchedule`, `awaitsOtherSide`; `none`, `isEmpty`, `takesScore`;
@@ -161,7 +162,8 @@ nothing here performs I/O or touches shared state. Limits come from
   `canInvite = involved && registration open`; `canReport = signed in && !organiser`; `canStart = showsStart &&
   tournament.canStart`, else `startBlockedReason` from `AppBranding.Tournaments.startNeeds`; `organizerProfile` only
   for a signed-in non-organiser and never for a tombstoned organiser (`tournament.deleted == true`: a deleted
-  account's name opens no profile); `showsMenu` ignores `showsStart`, `canRemoveEntries`, `canJoinTeams`.
+  account's name opens no profile); `showsMenu` ignores `showsStart`, `canRemoveEntries`, `canJoinTeams`;
+  `showsActionRow = canOpenChat || canInvite` (2026-11-15).
 - `[lily/Features/Tournaments/Models/MatchActions.swift:MatchActions.init]`: `.none` unless the tournament is
   `.inProgress` and the user is known; an entrant acts only on a match containing their entry; the organiser may
   confirm a reported match, record or give a walkover while `isReadyForResult`, and schedule while undecided; a side

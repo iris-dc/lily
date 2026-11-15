@@ -4,7 +4,8 @@ import Foundation
 /// the fixture enum stays under the type-body limit.
 nonisolated extension MockTournamentFixtures {
     /// The rooms the group mock lists for the tournaments: the caller owns the Kickers Cup's, is a member of the
-    /// table-tennis one and has no membership in the Padel Open's until they accept the invite.
+    /// table-tennis one and has no membership in the Padel Open's until they accept the invite. The just-announced
+    /// badminton open's room starts empty, so it carries no last message.
     static func rooms(now: Date) -> [SportGroup] {
         make(now: now).map { detail in
             let tournament = detail.tournament
@@ -13,7 +14,7 @@ nonisolated extension MockTournamentFixtures {
                         organizerName: tournament.organizerName,
                         memberCount: playerCount(of: detail),
                         membership: callerMembership(in: detail),
-                        lastMessageId: MockChatFixtures.newestMessageID(for: tournament.id),
+                        lastMessageId: MockChatFixtures.lastMessageID(for: tournament.id),
                         lastMessageAt: tournament.id == tableTennisID ? lastMessageAt : nil)
         }
     }

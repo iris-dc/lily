@@ -1,10 +1,20 @@
 import SwiftUI
 
+/// The sheets the detail hosts; at file scope so the view's type body stays under the length limit.
+private enum DetailSheet: Hashable, Identifiable {
+    case edit, teamName, invite, report
+    case match(id: String)
+
+    var id: Self { self }
+}
+
 /// A tournament: chips, name and organiser, the winner once it is over, where it is hosted, its facts, the entries,
 /// the bracket or the standings and the matches once it started, and the control the caller has. Fetched by id; an
 /// opener that holds the tournament (a card, a tile) hands it over as the preview and the header, facts and control
 /// draw at once, the rest (a room row, the chat's info button, a match reminder) shows the name until the detail
-/// answers; a system row or a reminder about a match opens it with that match's sheet up. The view model decides what the caller may do; this
+/// answers; a system row or a reminder about a match opens it with that match's sheet up. An involved caller gets
+/// Open chat and Invite under the facts, like a group's action row; the chat is pushed on this stack, so Back
+/// returns here. The view model decides what the caller may do; this
 /// draws it and hosts the sheets (edit, team name, match, invite, report) and confirmations.
 struct TournamentDetailView: View {
     @State private var viewModel: TournamentDetailViewModel
@@ -18,20 +28,14 @@ struct TournamentDetailView: View {
 
     private typealias Copy = AppBranding.Tournaments
 
-    private enum DetailSheet: Hashable, Identifiable {
-        case edit, teamName, invite, report
-        case match(id: String)
-
-        var id: Self { self }
-    }
-
     init(viewModel: TournamentDetailViewModel, dependencies: AppDependencies) {
         _viewModel = State(initialValue: viewModel)
         self.dependencies = dependencies
     }
 
     var body: some View {
-        ContentScreen {
+        @Bindable var viewModel = viewModel
+        return ContentScreen {
             // One branch for the previewed and the loaded detail, so the scroll view keeps its identity (and its
             // offset) when the fetch answers.
             if let shown = viewModel.shownDetail {
@@ -75,6 +79,7 @@ struct TournamentDetailView: View {
         .onChange(of: viewModel.isGone) {
             if viewModel.isGone { dismiss() }
         }
+        .chatDestination(item: $viewModel.openedRoom, dependencies: dependencies)
         .sheet(item: $presentedSheet) { sheet($0) }
         .confirmationDialog(item: $confirmation, title: confirmationTitle(for:)) {
             confirmationButton(for: $0)
@@ -119,6 +124,11 @@ struct TournamentDetailView: View {
                         Text(description).font(.body)
                     }
                     TournamentFacts(tournament: detail.tournament)
+                    if viewModel.permissions.showsActionRow {
+                        TournamentActionRow(viewModel: viewModel,
+                                            onOpenChat: { Task { await viewModel.openChat() } },
+                                            onInvite: { presentedSheet = .invite })
+                    }
                     if viewModel.permissions.showsEntries {
                         sectionPicker(detail.tournament)
                     }
@@ -163,9 +173,10 @@ struct TournamentDetailView: View {
         }
     }
 
-    /// Where the entries and matches will be while the fetch is out: a spinner, or Try again once the fetch failed.
+    /// Where the entries and matches will be while the fetch is out: a spinner, or Try again once the fetch failed,
+    /// in the shared slot so the control below keeps its place when the empty entries line takes over.
     @ViewBuilder private var loadingSlot: some View {
-        Group {
+        TournamentSegmentSlot {
             if viewModel.previewLoadFailed {
                 Button(AppBranding.Groups.tryAgain) { Task { await viewModel.load() } }
                     .lilyGlassButton(sizing: .fitted)
@@ -173,8 +184,8 @@ struct TournamentDetailView: View {
                 ProgressView()
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, DesignTokens.Spacing.xl)
+        // A container's identifier would otherwise stamp every child; Try again keeps its own element.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AccessibilityIdentifiers.tournamentLoading)
     }
 
@@ -200,11 +211,9 @@ struct TournamentDetailView: View {
                 .inReadableColumn()
         case .results where detail.tournament.format.drawsBracket && !detail.matches.isEmpty:
             // `BracketView` undoes the margin itself and scrolls edge to edge; only its inset follows the column.
-            results(detail)
-                .padding(.horizontal, DesignTokens.Layout.detailMargin)
+            results(detail).padding(.horizontal, DesignTokens.Layout.detailMargin)
         case .results, .matches:
-            results(detail)
-                .inReadableColumn()
+            results(detail).inReadableColumn()
         }
     }
 

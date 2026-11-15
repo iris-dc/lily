@@ -37,7 +37,7 @@ reading `AppConfig.FeatureFlags.chat`). Unit tests live under `lilyTests/Tournam
 - Implementations: [`./Implementations/EGM.md`](./Implementations/EGM.md) - `RemoteTournamentRepository` and
   `RemoteTournamentInviteRepository` over `APIClient` on the `/api/tournaments` routes, and the in-memory
   `MockTournamentRepository`, `MockTournamentInviteRepository` and `MockTournamentFixtures` (Kickers Cup, Tuesday
-  Table Tennis, Padel Open) that mirror the backend's refusals and keep the tournament rooms in `MockGroupRepository`
+  Table Tennis, Padel Open, Moabit Badminton Open) that mirror the backend's refusals and keep the tournament rooms in `MockGroupRepository`
   in step. Sends once; retries belong to the view models.
 - Services: [`./Services/EGM.md`](./Services/EGM.md) - `TournamentOpener`, which fetches a tournament named by a push
   notification and pushes its `TournamentDestination` (with an optional match) through
@@ -48,6 +48,7 @@ reading `AppConfig.FeatureFlags.chat`). Unit tests live under `lilyTests/Tournam
   and the `CreateTournamentViewModel` and `EditTournamentViewModel` draft sheets (`CreateFlow`, `WriteGate`). Every
   dependency is a protocol or a shared store.
 - Views: [`./Views/EGM.md`](./Views/EGM.md) - the carousel, Discover, group segment and cards; the detail screen with
-  header, facts, entries, bracket or standings, matches, participation control and menu; the match, schedule and
+  header, facts, the in-body action row (chat and invite, 2026-11-15), entries, bracket or standings, matches,
+  participation control and menu; the match, schedule and
   team-name sheets; and the generic `TournamentDraftForm` behind the create and edit sheets. Permissions and
   participation gate every control; sheets mount their own `.errorPopup`.

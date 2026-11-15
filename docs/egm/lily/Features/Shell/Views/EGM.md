@@ -31,7 +31,8 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   otherwise — and at zero the plain template `tabLabel` returns, see `docs/notes/design-and-ui.md`); every tab's
   tree carries `.id(language)` where
   `language = dependencies.language.language`. The profile sheet mounts on the `TabView` (2026-11-07):
-  `.sheet(isPresented: $navigation.isProfilePresented) { ProfileView(dependencies:language:) }` — above each tab's
+  `.sheet(isPresented: $navigation.isProfilePresented) { ProfileView(dependencies:language:) }` with
+  `.presentationDragIndicator(.visible)` (2026-11-15: the grabber on every swipe-closable sheet) — above each tab's
   `.id(language)` (a language pick rebuilds the tabs while the sheet re-renders in place) and inside the root's
   `.id(shellGeneration)`. `unreadChats =
   dependencies.unreadCenter.count + (dependencies.inbox.hasUnread ? 1 : 0)`, exposed as

@@ -5,14 +5,15 @@ import Foundation
 /// Table Tennis", Marta's round robin of six players, the caller among them, under way with three results in (so the
 /// standings are on screen at launch), a score Jonas reported against the caller (so Confirm and Dispute are a tap
 /// away), a disputed match for the organiser and the caller's next match scheduled an hour ahead (the inbox's match
-/// reminder names it); and Noor's private "Padel Open" (`MockTournamentFixtures+PadelOpen.swift`), which the caller is
-/// invited into and not in. The caller is `callerMarker` in every stored row; the repository swaps in whoever is signed
+/// reminder names it); Noor's private "Padel Open" (`MockTournamentFixtures+PadelOpen.swift`), which the caller is
+/// invited into and not in; and Ines's public "Moabit Badminton Open" (`+BadmintonOpen`), just announced with nobody
+/// entered yet. The caller is `callerMarker` in every stored row; the repository swaps in whoever is signed
 /// in when it answers.
 nonisolated enum MockTournamentFixtures {
     static let kickersCupID = "mock-tournament-kickers-cup"
     static let tableTennisID = "mock-tournament-table-tennis"
     /// Every fixture tournament, in the order `make(now:)` returns them.
-    static var ids: [String] { [kickersCupID, tableTennisID, padelOpenID] }
+    static var ids: [String] { [kickersCupID, tableTennisID, padelOpenID, badmintonOpenID] }
     /// Stands for the caller wherever a fixture names them; `MockTournamentRepository.resolved` replaces it.
     static let callerMarker = "mock-caller"
     static let tableTennisOrganizer = "Marta"
@@ -67,7 +68,7 @@ nonisolated enum MockTournamentFixtures {
     private static let entryIDDigits = 14
 
     static func make(now: Date) -> [TournamentDetail] {
-        [kickersCup(now: now), tableTennis(now: now), padelOpen(now: now)]
+        [kickersCup(now: now), tableTennis(now: now), padelOpen(now: now), badmintonOpen(now: now)]
     }
 
     /// Whose table-tennis entry the `-mock-deleted-user` stamp rewrites: a solo entry, so its name is the player's own.

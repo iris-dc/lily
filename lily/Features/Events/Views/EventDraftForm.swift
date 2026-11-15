@@ -62,12 +62,11 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
         }
     }
 
-    /// Single choice in the filter sheet's chip look; one type is always selected.
+    /// Single choice in the compact picker: a search, the head of the type list and "See all"; one type is always
+    /// selected, and the current choice is never hidden.
     private var typeChips: some View {
         CaptionedControl(Copy.eventType) {
-            EventTypeChips(isSelected: { $0 == viewModel.draft.type }, onSelect: { type in
-                if let type { viewModel.draft.type = type }
-            })
+            EventTypeCompactPicker(selected: viewModel.draft.type) { viewModel.draft.type = $0 }
         }
     }
 

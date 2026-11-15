@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import lily
 
@@ -25,6 +26,34 @@ struct GroupDetailViewModelTests {
         #expect(harness.makeGroupDetailViewModel(.fixture(id: "g", role: .member)).showsOpenChat)
         #expect(!harness.makeGroupDetailViewModel(.fixture(id: "g", role: .member), context: .fromChat).showsOpenChat)
         #expect(!harness.makeGroupDetailViewModel(.fixture(id: "g")).showsOpenChat)
+    }
+
+    /// "Open chat" pushes the room on the detail's own stack: the item is set, the tab and the Chats stack untouched.
+    /// A member's detail reached outside Mine (Discover) puts the group into Mine, so the Chats tab lists the room;
+    /// one Mine already holds is left alone, so no sibling list reloads.
+    @Test func openChatSetsTheItemAddsAMissingGroupToMineAndNeverSwitchesTheTab() {
+        let group = SportGroup.fixture(id: "g", role: .member)
+        let viewModel = harness.makeGroupDetailViewModel(group)
+
+        viewModel.openChat()
+
+        #expect(viewModel.openedChat == group)
+        #expect(harness.store.groups.map(\.id) == ["g"], "the room shows on the Chats tab")
+        #expect(harness.navigation.selectedTab != .chat && harness.navigation.chatPath.isEmpty, "no tab switch")
+
+        let before = harness.changes.version
+        viewModel.openChat()
+        #expect(harness.changes.version == before, "a group Mine holds is not re-added")
+    }
+
+    @Test func openChatFromTheChatOrForANonMemberOpensNothing() {
+        let fromChat = harness.makeGroupDetailViewModel(.fixture(id: "g", role: .member), context: .fromChat)
+        fromChat.openChat()
+        #expect(fromChat.openedChat == nil)
+
+        let outsider = harness.makeGroupDetailViewModel(.fixture(id: "g"))
+        outsider.openChat()
+        #expect(outsider.openedChat == nil && harness.store.groups.isEmpty)
     }
 
     @Test func recordViewedReportsTheGroupOncePerInstance() {
