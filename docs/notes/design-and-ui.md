@@ -389,7 +389,8 @@ the asset catalog.
 - **The badge a touch higher still (2026-11-13, the owner's chat-corrections round).** `badgeCenterOffset`
   (−1, +6) → (−1, +4): the capsule's centre 2 pt further up, its bottom kissing the bubble's top-right arc instead of
   riding into it, the left overlap kept. Evidence `groups-plan/chat-fixes-2026-11-13/new-badge-crop.png` against
-  `old-badge-crop.png` (round 7's `badge-v3` at the same 1:1 crop of the Chats tab).
+  `old-badge-crop.png` (round 7's `badge-v3` at the same 1:1 crop of the Chats tab). (The offset superseded
+  2026-11-17: the minimized bar's circle forced the capsule inward, see the badge-fits-the-circle bullet below.)
 - **The segmented Home, variant C (2026-11-14).** The owner chose the segmented Home from three rendered prototypes
   (evidence under `~/.claude/projects/-Users-makshr-lily/groups-plan/home-redesign-2026-11-14/`: variant-a,
   variant-b, variant-c, downscaled copies in small/): a segmented Events | Tournaments | Groups picker directly
@@ -415,3 +416,29 @@ the asset catalog.
   grabber (`MatchSheet`, every writing sheet). Evidence
   (profile, filter, legal, and the event edit sheet unchanged) under
   `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-15/item6-grabbers/`.
+- **The badge fits the minimized bar's circle (2026-11-17, owner bug report).** A scroll under
+  `.tabBarMinimizeBehavior(.onScrollDown)` collapses the floating bar to one 48 pt circle of the selected tab's
+  glyph (measured on the SE simulator — the 17 Pro's Chats list fits one screen and never minimizes; the
+  accessibility pill reads "Collapsed"), and the circle draws our composite exactly as the expanded bar does:
+  unscaled, untinted, centred. The capsule's centre sat 16.4 pt from the canvas centre, so a single digit reached
+  26.4 pt out and poked past the 24 pt rim; a two-digit count reached 29 pt and "99+" 33 pt, because the capsule
+  grew symmetrically around its centre. No supported seam offers a per-state image (the bar honours one `UIImage`;
+  nothing re-keys the minimized state), so one geometry serves both states and the expanded bar could not stay
+  pixel-identical. The least-bad single geometry: `badgeCenterOffset` (−1, +4) → (−5, +5) — the pull biased to x
+  because the owner tuned y twice (9 → 6 → 4) and never x — puts the capsule 22.6 pt out, 1.4 pt inside the rim,
+  and the capsule's right edge is now pinned at the single digit's, a wider count growing leftward over the glyph
+  like the system badge, so every count shares that extent and one canvas. In the expanded bar the capsule sits
+  4 pt further onto the bubble and 1 pt lower. Evidence under
+  `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-17/item2-badge/` (before/after of both
+  states at 1:1 crops, the mock 48 pt circle renders of 3, 23 and 99+); the bound is named in `DesignTokens.TabBar`
+  (`minimizedCircleRadius` 24, `minimizedCircleClearance` 1) and the fit is pinned by
+  `TabBadgeRendererTests.everyCountStaysInsideTheMinimizedBarsCircle` (farthest drawn pixel ≤ radius − clearance,
+  23 pt from the centre).
+
+- **Home's picker-to-create gap (2026-11-17).** The owner reported misclicks between the segmented picker and the
+  full-width create button (16 pt apart at the stack's lg spacing). Three prototyped variants — A: the button keeps its
+  place and label with the gap grown to 40 pt (`.padding(.top, Spacing.xl)`); B: a compact "+ Create" on the count
+  line; C: Explore's floating "+" bottom-trailing — were captured and judged (evidence and per-variant patches in
+  `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-17/item3-spacing/`). **The owner chose A**:
+  the labelled button stays, the dead band between the two tap zones roughly doubles, the first card moves ~24 pt
+  down. B and C stay available as patches if misclicks persist.

@@ -26,6 +26,9 @@ nonisolated extension ErrorMessageMapper {
                          body: localized("Only the name, description and place can change now."))
         case .tournamentLimit:
             tournamentLimitMessage
+        case .tournamentChatUnavailable:
+            ErrorMessage(title: localized("Chat unavailable"),
+                         body: localized("The chat isn't available for this tournament."))
         default:
             entryMessage(for: error)
         }

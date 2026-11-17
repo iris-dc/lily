@@ -1,7 +1,8 @@
 import Foundation
 
-/// Copy for what a host does to their own game (creating and editing it) and for inviting people into one;
-/// `eventMessage(for:)` falls through to here, so every switch stays under the complexity limit.
+/// Copy for what a host does to their own game (creating and editing it), for inviting people into one and for the
+/// event's room when none can be fetched; `eventMessage(for:)` falls through to here, so every switch stays
+/// under the complexity limit.
 nonisolated extension ErrorMessageMapper {
     static func hostMessage(for error: AppError) -> ErrorMessage {
         switch error {
@@ -19,6 +20,9 @@ nonisolated extension ErrorMessageMapper {
         case .capacityTooLow:
             ErrorMessage(title: localized("Too few spots"),
                          body: localized("Keep at least as many spots as players who already joined."))
+        case .eventChatUnavailable:
+            ErrorMessage(title: localized("Chat unavailable"),
+                         body: localized("The chat isn't available for this event."))
         default:
             eventInviteMessage(for: error)
         }

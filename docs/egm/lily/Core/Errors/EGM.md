@@ -5,7 +5,7 @@ Source: `lily/Core/Errors/`
 ## Overview
 
 The app's single typed failure and the one funnel that shows it. `AppError` is the `nonisolated`, `Equatable`, `Sendable`
-enum every repository and service throws (96 cases), with `wrapping(_:)` to normalise any thrown error and
+enum every repository and service throws (103 cases), with `wrapping(_:)` to normalise any thrown error and
 `isCancellation(_:)` to tell a caller leaving mid-request from a fault. `ErrorMessageMapper` turns every case into a
 localized `ErrorMessage` through one exhaustive switch that routes to per-area `nonisolated extension` files, each
 chaining to the next and ending in `unknownMessage`. `ErrorCenter`, an `@Observable` main-actor class mounted once on
@@ -24,7 +24,9 @@ draws.
     could not be geocoded into a spot; raised before the create goes out), `createIdReused` (a `*_ID_REUSED` on any create: the
     earlier create landed and `CreateFlow` updates it), `notHost`, `capacityTooLow`, `eventUpdateFailed`; the event-invite refusals (2026-11-15):
     `inviteeAlreadyJoined`, `cannotInviteToEvent`, `eventStarted` (`EVENT_STARTED`: invites only before the start)
-    and `eventInviteLimit` (the shared `INVITE_LIMIT`, remapped by the event invite repository);
+    and `eventInviteLimit` (the shared `INVITE_LIMIT`, remapped by the event invite repository), plus
+    `eventChatUnavailable` (the event's room missing from the backend, pre-backfill: the detail's chat opener remaps
+    the room fetch's `.groupNotFound`, so an event screen never pops group copy);
   - groups and invites: `groupsUnavailable`, `groupNotFound`, `groupFull`, `notAMember`, `bannedFromGroup`, `memberBanned`,
     `ownerCannotLeave`, `insufficientRole`, `membershipLimitReached`, `groupCreationFailed`, `groupActionFailed`,
     `contentRejected`, `inviteExpired`, `inviteUnavailable`, `inboxUnavailable`, `inviteActionFailed`, `inviteNotPending`,
@@ -45,7 +47,8 @@ draws.
     `notOrganizer`, `tournamentLocked`, `notEnoughEntries`, `notInMatch`, `matchNotReady`, `matchNotFound`,
     `drawNotAllowed`, `tournamentLimit`, `tournamentMembershipLimit` (open tournaments only: in registration or in
     progress), `inviteeAlreadyEntered`, `cannotInviteToTournament`, `tournamentInviteLimit` (`INVITE_LIMIT` on an invite:
-    the tournament has invited `tournaments.max-invited` distinct people);
+    the tournament has invited `tournaments.max-invited` distinct people) and `tournamentChatUnavailable` (the
+    tournament's room missing from the backend: the same chat-opener remap as the event's);
   - and `unknown`.
 - `AppError.wrapping(_ error: any Error) -> AppError`, `AppError.isCancellation(_ error: any Error) -> Bool`
   (`lily/Core/Errors/AppError.swift:wrapping`, `isCancellation`).
@@ -72,17 +75,20 @@ draws.
 
 ## Invariants
 
-- `message(for:)` is an exhaustive `switch` over all 98 cases with no `default`, so a new `AppError` case that is not
+- `message(for:)` is an exhaustive `switch` over all 103 cases with no `default`, so a new `AppError` case that is not
   routed is a compile error; `.network`, `.rateLimited` and `.requestTooLarge` go to `transportMessage(for:)` (the
   `retryAfter` value is not used in the copy; `.requestTooLarge` reads "Couldn't send that / It's larger than the server
   accepts."), every other case goes to an area function (`ErrorMessageMapper.swift:message(for:)`).
 - Every area switch ends in a `default` that chains or returns `unknownMessage`, so no path traps:
   `eventMessage -> hostMessage -> eventInviteMessage` (`.eventStarted`, `.inviteeAlreadyJoined`,
-  `.cannotInviteToEvent`, `.eventInviteLimit`; 2026-11-15), `groupMessage -> groupWriteMessage -> inviteMessage`, `chatMessage -> pollAndPinMessage`,
+  `.cannotInviteToEvent`, `.eventInviteLimit`; 2026-11-15; `hostMessage` also answers `.eventChatUnavailable` —
+  "Chat unavailable" over "The chat isn't available for this event."), `groupMessage -> groupWriteMessage -> inviteMessage`, `chatMessage -> pollAndPinMessage`,
   `peopleMessage -> accountMessage` ("Couldn't check your account" / "Couldn't delete your account", both over
   "Please try again in a moment."; the flow's settled outcomes — 401, `USER_NOT_FOUND` — never reach copy,
   `DeletionSettle` lands them), `tournamentMessage -> entryMessage -> matchMessage -> tournamentInviteMessage` (which also answers
-  `.tournamentInviteLimit`: "Can't invite more people / This tournament has invited as many people as it can."); `.createIdReused`
+  `.tournamentInviteLimit`: "Can't invite more people / This tournament has invited as many people as it can.";
+  `tournamentMessage` itself answers `.tournamentChatUnavailable` — "Chat unavailable" over "The chat isn't available
+  for this tournament."); `.createIdReused`
   shares `.tryAgain`'s copy in `eventMessage` (`CreateFlow` settles it before any popup); `authMessage`,
   `attachmentMessage` and `moderationMessage` fall straight to `unknownMessage` (`ErrorMessageMapper*.swift`).
 - Every title and body is read through `localized(_:)` (`lily/Core/Localization/Localized.swift`); the limits in the copy

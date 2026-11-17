@@ -32,8 +32,10 @@ final class TabBadgeRenderer {
     }
 
     /// The glyph centred on a canvas grown by one symmetric inset covering the capsule's overhang (the bar centres
-    /// the image, so the glyph stays where the template one sits), the capsule's centre `badgeCenterOffset` from the
-    /// glyph's top-right corner.
+    /// the image, so the glyph stays where the template one sits). The single-digit capsule's centre sits
+    /// `badgeCenterOffset` from the glyph's top-right corner; a wider count keeps that capsule's right edge and grows
+    /// leftward over the glyph, like the system badge, so no count reaches further out — the minimized bar draws the
+    /// bitmap unscaled inside its small circle, and the capsule must stay inside it.
     private func composite(for key: Key) -> UIImage {
         let configuration = UIImage.SymbolConfiguration(pointSize: DesignTokens.TabBar.badgeGlyphPointSize,
                                                         weight: DesignTokens.TabBar.symbolWeight)
@@ -41,9 +43,17 @@ final class TabBadgeRenderer {
             .withTintColor(key.glyphColor, renderingMode: .alwaysOriginal)
         let badge = badgeSize(for: key.text)
         let offset = DesignTokens.TabBar.badgeCenterOffset
-        let inset = ceil(max(offset.x + badge.width / 2, badge.height / 2 - offset.y, 0))
+        let rightReach = offset.x + DesignTokens.TabBar.badgeHeight / 2
+        let inset = ceil(max(rightReach,
+                             badge.height / 2 - offset.y,
+                             badge.width - rightReach - glyph.size.width,
+                             0))
+        // Every count shares one canvas only while the single-digit reaches dominate the inset: the widest capsule
+        // must not out-grow them, or counts would render at different sizes and the minimized-circle fit would drift.
+        assert(badge.width - rightReach - glyph.size.width <= max(rightReach, badge.height / 2 - offset.y),
+               "the capsule for \(key.text) outgrows the shared canvas; revisit the TabBar badge tokens")
         let canvas = CGSize(width: glyph.size.width + inset * 2, height: glyph.size.height + inset * 2)
-        let capsule = CGRect(x: inset + glyph.size.width + offset.x - badge.width / 2,
+        let capsule = CGRect(x: inset + glyph.size.width + rightReach - badge.width,
                              y: inset + offset.y - badge.height / 2,
                              width: badge.width,
                              height: badge.height)

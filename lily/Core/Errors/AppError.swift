@@ -168,6 +168,10 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case cannotInviteToTournament
     /// The tournament has invited as many distinct people as the backend allows (`INVITE_LIMIT` on an invite).
     case tournamentInviteLimit
+    /// The tournament's room is not fetchable (`GROUP_NOT_FOUND` on the room read: the backend holds none, or the
+    /// caller may not read it); remapped by the detail's chat opener, so the popup speaks of the tournament's chat,
+    /// not of a group.
+    case tournamentChatUnavailable
     /// The person invited into an event is in it already (`ALREADY_JOINED` on an invite).
     case inviteeAlreadyJoined
     /// Only the host and participants invite into an event (`FORBIDDEN` on an invite).
@@ -176,6 +180,9 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case eventStarted
     /// The event has invited as many distinct people as the backend allows (`INVITE_LIMIT` on an event invite).
     case eventInviteLimit
+    /// The event's room is not fetchable (`GROUP_NOT_FOUND` on the room read: the backend holds none, or the caller
+    /// may not read it). Remapped by the detail's chat opener, so the popup speaks of the event's chat, not of a group.
+    case eventChatUnavailable
     /// A message to us (the contact form) failed for a reason without a code of its own; Send stays available.
     case feedbackFailed
     case unknown

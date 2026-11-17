@@ -113,3 +113,9 @@ The app ships in English (the source language and the fallback), Russian, Spanis
   and group siblings; appended at the catalog's tail (the file is not key-sorted), with the byte-stable json round
   trip proven before and after. Machine-written like the recent keys — the native read stays owed. The action row,
   the invite sheet, the room caption and the invite card reuse existing keys.
+- 2026-11-17 — The missing-room remap adds 2 body keys (793 → 795): "The chat isn't available for this event."
+  and "The chat isn't available for this tournament." (the title reuses "Chat unavailable"). Worded without a promise
+  of arrival — the group 404 also covers a private room the caller is not in, so no "yet" in any language; the first
+  wording's "yet" keys were replaced the same day, before the commit. All seven languages, registers matched to the
+  chat and loader siblings (fr "discussion", pt "conversa"); appended at the catalog's tail with the byte-stable json
+  round trip proven before and after. Machine-written — the native read stays owed.

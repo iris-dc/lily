@@ -123,3 +123,9 @@ A tournament (slice L1 of the tournaments plan, 2026-10-04; debug builds, behind
   and identifiers, as the group detail keeps both. Invite stays gated on registration-open through `canInvite`; the
   row's Invite presents the same `.invite` sheet. UI-pinned in the `LilyTournamentTests+ActionRow` walk (the row's
   Invite opens the "Invite people" sheet).
+- 2026-11-17 — A tournament room the backend does not hold (or the caller may not read) answered "Open chat" with
+  the group 404's "Group not found" copy; `openChat` now rethrows exactly that `.groupNotFound` as
+  `.tournamentChatUnavailable` ("The chat isn't available for this tournament." — no "yet", since the 404 also covers
+  a private room the caller is not in), the event detail's recipe of the same date, the shared block extracted as
+  `RoomChatOpener` (see events.md). Other failures pass through unchanged
+  (`TournamentDetailLoadTests.openChatPassesOtherFailuresThroughUnchanged`).

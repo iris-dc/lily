@@ -60,6 +60,15 @@ struct ErrorMessageMapperTests {
         #expect(ErrorMessageMapper.message(for: .eventInviteLimit).body == "This event has invited as many people as it can.")
     }
 
+    /// The room behind an event or a tournament can be unavailable — a backend that predates it, or a room the
+    /// caller may not read: the remapped copy names that surface's chat, never a group.
+    @Test func missingRoomRefusalsNameTheSurfacesChat() {
+        #expect(ErrorMessageMapper.message(for: .eventChatUnavailable)
+                == ErrorMessage(title: "Chat unavailable", body: "The chat isn't available for this event."))
+        #expect(ErrorMessageMapper.message(for: .tournamentChatUnavailable)
+                == ErrorMessage(title: "Chat unavailable", body: "The chat isn't available for this tournament."))
+    }
+
     /// Being throttled is not being offline; the copy asks for a pause, not for a connection check, whatever the wait.
     @Test func rateLimitedHasItsOwnTitle() {
         #expect(ErrorMessageMapper.message(for: .rateLimited(retryAfter: 3)).title == "Slow down a moment")

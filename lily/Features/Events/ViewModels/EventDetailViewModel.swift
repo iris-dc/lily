@@ -119,17 +119,16 @@ final class EventDetailViewModel {
         myGroups.remove(id: event.id)
     }
 
-    /// The room is a group under the event's id; fetched for the chat, placed in Mine first (its by-user index may
-    /// still miss a room just entered) and pushed on the detail's own stack (`openedRoom`), so Back returns to the
-    /// event, like the tournament's and the profile's recipe.
+    /// The room is a group under the event's id: `RoomChatOpener` fetches it, places a member room into Mine and the
+    /// view pushes it on the detail's own stack (`openedRoom`), so Back returns to the event, like the tournament's
+    /// and the profile's recipe. A room the fetch cannot answer — gone, or private and the caller not in it — is
+    /// reported as the event's chat, never as a missing group.
     func openChat() async {
         guard permissions.canOpenChat, !isBusy else { return }
         isBusy = true
         defer { isBusy = false }
         await gate.run("Open chat for event \(event.id)") { [self] in
-            let room = try await groupRepository.group(id: event.id)
-            if room.isMember { myGroups.add(room) }
-            openedRoom = room
+            openedRoom = try await roomOpener.room(id: event.id, whenUnavailable: .eventChatUnavailable)
         }
     }
 
@@ -188,6 +187,11 @@ final class EventDetailViewModel {
                   tryAgainDelay: tryAgainDelay,
                   report: { [errorCenter] in errorCenter.report($0) },
                   isExpected: { $0.isParticipationConflict })
+    }
+
+    /// The chat opener shared with the tournament detail: fetch, remap a missing room, place a member room in Mine.
+    private var roomOpener: RoomChatOpener {
+        RoomChatOpener(groupRepository: groupRepository, myGroups: myGroups)
     }
 
     /// The event is read back after every refusal (the screen was stale; the popup still explains it) and after a 500

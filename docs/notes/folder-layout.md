@@ -249,7 +249,7 @@ lily/
                  ChatHistoryClearer: the per-side clear; AttachmentLoader (+ Files): cache first, else one download with the link refreshed
                  and its progress reported, and the named preview file QuickLook and the player read; ReadMarkerFlusher: the read marker's
                  timing; ImageFile: the one decode of a picture file for a view, capped at the header and downsampled to the side the
-                 view needs, the upload side downsampling through it too), State (UnreadCenter, ChatOutbox: every room's unsent and failed bubbles, ViewerHero: what the tiles,
+                 view needs, the upload side downsampling through it too; RoomChatOpener: the event and tournament details' chat opener — the room fetched, a missing or unreadable one remapped to the surface's error, a member room placed in Mine), State (UnreadCenter, ChatOutbox: every room's unsent and failed bubbles, ViewerHero: what the tiles,
                  the viewer and the composer share for the viewer's moves, ViewerMoveDriver: the moves a frame at a time on a FrameClock), ViewModels
                  (ChatViewModel + History + Send + Live + Events + Conversation + Clear + Reply + Attachments + Moderation + Pins + Polls, AttachmentComposerModel
                  (+ Picking: the items picked for one message and every way in; + Upload: AttachmentWork, one item's prepare, ticket and

@@ -12,8 +12,8 @@ holds the seven protocols every other layer depends on (`ChatRepository`, `ChatH
 repositories, the in-memory room cache and on-disk attachment cache, and the attachment pipeline; `Models` the wire
 types (`ChatMessage`, `MessagePage`, `Attachment`, polls, pins, `MessageKind` and `AttachmentKind` tolerating unknown
 kinds), the drafts, the per-room `ChatRoomState` and the pure presentation rules; `Services` the four main-actor
-services between the screens, the realtime controller and the data layer, and `ImageFile`, the one decode of a picture
-file for a view; `State` the observable objects that
+services between the screens, the realtime controller and the data layer, `ImageFile`, the one decode of a picture
+file for a view, and `RoomChatOpener`, the event and tournament details' chat opener (2026-11-17); `State` the observable objects that
 outlive a room (`ChatOutbox`, `UnreadCenter`) or are shared between a chat and its viewer (`ViewerHero`,
 `ViewerMoveDriver`); `ViewModels` the two `@Observable` classes (`ChatViewModel`, `AttachmentComposerModel`);
 `Views` the SwiftUI screens and row primitives.
@@ -46,7 +46,9 @@ the unit suites live under `lilyTests/Chat` (`./scripts/ci.sh unit`).
   forward from their watermark, refreshes polls, and warms the Chats list's top rooms so they open on their rows),
   `ChatHistoryClearer` (the caller-only clear), `ReadMarkerFlusher`
   (coalesced read-marker pushes), `ImageFile` (a picture file decoded at the side a view needs, refused unread when
-  its header declares more pixels than the cap).
+  its header declares more pixels than the cap), `RoomChatOpener` (the room behind an event or a tournament fetched
+  for its chat, a missing or unreadable one remapped to the surface's error, a member room placed in Mine;
+  2026-11-17).
 - State: [`./State/EGM.md`](./State/EGM.md) - `ChatOutbox` (unsent and failed messages per room) and `UnreadCenter`
   (rooms with unseen messages, feeding the tab badge), both `SessionObserver`s cleared on sign-out; `FirstPageReveal`,
   `ViewerHero` and `ViewerMoveDriver`, which runs the viewer's open and close move one frame at a time on one

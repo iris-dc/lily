@@ -393,3 +393,19 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   the new `EVENT_STARTED` to `.eventStarted` ("This event has already started"); `MockEventInviteRepository` mirrors
   Laurel's refusals, clock included. Walked by the three `LilyEventEditTests+Rooms` tests; stills under
   `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-15/item2-event-chats/`.
+- 2026-11-17 — **A missing event room no longer pops group copy.** Against a backend from before the event rooms
+  (pre-deploy/pre-backfill production), `GET /api/groups/{eventId}` answers 404, so the detail's "Open chat" popped
+  "Group not found. This group is no longer available." — group copy on an event screen, read by the owner as events
+  having group chats. `EventDetailViewModel.openChat()` now rethrows exactly the room fetch's `.groupNotFound` as the
+  new `AppError.eventChatUnavailable` — "Chat unavailable" (the chat title key reused) over "The chat isn't available
+  for this event." (`ErrorMessageMapper+Events`; no "yet" — the group 404 also covers a private room the caller is
+  not in, and the copy must not promise arrival) — while every other failure keeps its own copy (offline stays
+  "You're offline"). The tournament detail leaked the same way and got the same remap to `.tournamentChatUnavailable`;
+  the fetch-remap-place-in-Mine block the two details shared is one `RoomChatOpener` (`Features/Chat/Services`),
+  both view models calling it. The join's quiet room sync and `EventLoaderView`'s event-404 state were
+  already event-worded and are untouched. Pinned by `EventDetailRoomTests` (the remap and the pass-through),
+  `TournamentDetailLoadTests` (the same two: `openChatRemapsAMissingRoomToTheTournamentsChatCopy`,
+  `openChatPassesOtherFailuresThroughUnchanged`) and the mapper pins in
+  `ErrorHandlingTests`; the popup verified rendered on a simulator with the mock group route answering the event
+  room's 404 for the run (still under
+  `~/.claude/projects/-Users-makshr-lily/groups-plan/event-chat-copy-2026-11-17/`).

@@ -40,6 +40,28 @@ struct EventDetailRoomTests {
         #expect(harness.viewModel.openedRoom != nil && harness.groups.groups.isEmpty)
     }
 
+    /// A room the backend cannot answer (pre-backfill production, or a room the caller may not read) is the group
+    /// 404: the popup speaks of the event's chat, never of a group.
+    @Test func openChatRemapsAMissingRoomToTheEventsChatCopy() async {
+        let harness = EventDetailHarness(event: .fixture(id: "e", startsAt: upcoming, isJoined: true))
+
+        await harness.viewModel.openChat()
+
+        #expect(harness.errorCenter.current?.error == .eventChatUnavailable)
+        #expect(harness.viewModel.openedRoom == nil && harness.groups.groups.isEmpty)
+    }
+
+    /// Only the missing room is remapped: any other failure keeps its own copy (offline stays offline).
+    @Test func openChatPassesOtherFailuresThroughUnchanged() async {
+        let harness = EventDetailHarness(event: .fixture(id: "e", startsAt: upcoming, isJoined: true))
+        harness.groupRepository.thrownError = AppError.network
+
+        await harness.viewModel.openChat()
+
+        #expect(harness.errorCenter.current?.error == .network)
+        #expect(harness.viewModel.openedRoom == nil)
+    }
+
     /// A landed join reloads Mine and places the fetchable room, so Chats lists it without waiting for the index.
     @Test func aJoinReloadsMineAndPlacesTheFetchableRoom() async {
         let harness = EventDetailHarness(event: .fixture(id: "e", capacity: 4, participants: 1, startsAt: upcoming))

@@ -99,7 +99,9 @@ struct TournamentDetailLoadTests {
         #expect(unknown.linkedMatchToShow == nil, "decided on the first successful load")
     }
 
-    @Test func openChatFailureReachesThePopup() async {
+    /// Only the missing room is remapped: any other failure keeps its own copy (offline stays offline), reaches the
+    /// popup and is logged.
+    @Test func openChatPassesOtherFailuresThroughUnchanged() async {
         let entered = Tournament.fixture(entryCount: 1, myEntryId: "e1")
         let mine = TournamentEntry.fixture(id: "e1", captainUserId: TestFixtures.user.id)
         let viewModel = await harness.loadedDetailViewModel(entered, entries: [mine], for: destination)
@@ -108,8 +110,22 @@ struct TournamentDetailLoadTests {
         await viewModel.openChat()
 
         #expect(harness.presentedError == .network)
+        #expect(viewModel.openedRoom == nil)
         #expect(harness.navigation.chatPath.isEmpty)
         #expect(harness.logs(.error).contains { $0.contains("Open chat for tournament \(destination.id) failed") })
+    }
+
+    /// A room the backend cannot answer (none exists, or the caller may not read it) is the group 404: remapped so
+    /// the popup names the tournament's chat, never a group.
+    @Test func openChatRemapsAMissingRoomToTheTournamentsChatCopy() async {
+        let entered = Tournament.fixture(entryCount: 1, myEntryId: "e1")
+        let mine = TournamentEntry.fixture(id: "e1", captainUserId: TestFixtures.user.id)
+        let viewModel = await harness.loadedDetailViewModel(entered, entries: [mine], for: destination)
+
+        await viewModel.openChat()
+
+        #expect(harness.presentedError == .tournamentChatUnavailable)
+        #expect(viewModel.openedRoom == nil)
     }
 
     private func loadedWithARefreshHeld() async -> (viewModel: TournamentDetailViewModel, refresh: Task<Void, Never>) {

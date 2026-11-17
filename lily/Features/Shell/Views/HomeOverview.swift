@@ -21,7 +21,9 @@ struct HomeOverview: View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
                 picker
+                // Clear air under the picker: a tap meant for a segment must never land on the button, nor the reverse.
                 createButton
+                    .padding(.top, DesignTokens.Spacing.xl)
                 segmentContent
             }
             .padding(.top, DesignTokens.Spacing.sm)

@@ -58,8 +58,10 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   and `pushOptIn` are internal `let`s for the `+Actions`, `+Entries` and `+Matches` files, `groupRepository` for the
   `+Actions` file (`AppNavigation` left the dependencies 2026-11-15: the chat opens in place); `reporter`, `now`, `onChange`, `recorder`, `gate` and `changes` are private.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Actions.swift:TournamentDetailViewModel.openChat]`:
-  `openChat() async` (guarded by `permissions.canOpenChat`; sets `openedRoom`), `cancel() async`: the actions shared
-  by the menu and the in-body action row that write no entry and no match.
+  `openChat() async` (guarded by `permissions.canOpenChat`; the shared `RoomChatOpener` rethrows the room fetch's
+  `.groupNotFound` — the room gone, or private and the caller not in it — as `.tournamentChatUnavailable`, so the
+  popup names the tournament's chat, never a group; sets `openedRoom`),
+  `cancel() async`: the actions shared by the menu and the in-body action row that write no entry and no match.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Entries.swift:TournamentDetailViewModel.join]`:
   `canJoin(_ entry:) -> Bool`, `join() async`, `@discardableResult createTeam(named:onEntered: () -> Void = {}) async -> Bool`,
   `joinTeam(_ entry:) async`, `leave() async`, `removeEntry(_ entry:) async`.
@@ -189,7 +191,9 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   warning on a failed refetch after a write, and `LostAnswer`'s "<action> for tournament <id> outcome unknown",
   "Reading back after", "landed despite", "Could not read back after".
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Actions.swift:TournamentDetailViewModel.openChat]`:
-  `groupRepository.group(id:)`, `myGroups.add(room)` when a member, then `openedRoom = room` — the view's
+  `RoomChatOpener.room(id:whenUnavailable:)` (`lily/Features/Chat/Services/RoomChatOpener.swift`), which calls
+  `groupRepository.group(id:)` with `.groupNotFound` rethrown as `.tournamentChatUnavailable` and `myGroups.add(room)`
+  when a member, then `openedRoom = room` — the view's
   `navigationDestination(item:)` pushes the chat on the detail's own stack, so Back returns here; no `AppNavigation`
   mutation since 2026-11-15; `cancel` calls `repository.cancel(id:)` and logs "Tournament ... cancelled".
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Entries.swift:TournamentDetailViewModel.enter]`:
