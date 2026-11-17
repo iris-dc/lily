@@ -1,8 +1,8 @@
 import Foundation
 
 /// The rows of a mock room: `AppConfig.Chat.mockMessagesPerRoom` text messages from three fixture members and the
-/// caller, plus one system row about a game created in the group; the conversation with Marta has a few lines of its
-/// own. Ids sort like ULIDs and are shared with the group fixtures, so a group's `lastMessageId` and the caller's read
+/// caller, plus one system row about a game created in the group; the conversation with Marta and the sunset event
+/// room have a few lines of their own, and every other event room starts empty. Ids sort like ULIDs and are shared with the group fixtures, so a group's `lastMessageId` and the caller's read
 /// marker name real rows; a line written in the run (`sentMessageID`) sorts after every fixture row of its room and
 /// after every earlier line of the run, as the backend's ULIDs do.
 nonisolated enum MockChatFixtures {
@@ -38,28 +38,6 @@ nonisolated enum MockChatFixtures {
         (true, "Bring a ball if you have one, ours went flat."),
         (true, "See you there!"),
     ]
-    /// One row of the table-tennis room: a line someone wrote, or a tournament note the backend would have posted
-    /// (the start, a result with the names rendered server-side, a dispute), naming its match where there is one.
-    private struct TournamentLine {
-        let sender: String
-        var kind: MessageKind = .text
-        var text: String?
-        var matchID: String?
-    }
-
-    /// The table-tennis tournament's room: the start, the organiser and the players sorting out round one, the first
-    /// result and the disputed one (`MockTournamentFixtures`). The Kickers Cup's room shows the general lines.
-    private static let tournamentLines: [TournamentLine] = [
-        TournamentLine(sender: "Marta", kind: .tournamentStarted),
-        TournamentLine(sender: "Marta", text: "Round one is up. Find your opponent and agree on an evening."),
-        TournamentLine(sender: "Jonas", text: "Dev, Tuesday at seven? Table two."),
-        TournamentLine(sender: "Dev", text: "Works for me. Bring the good balls."),
-        TournamentLine(sender: "Ayşe", text: "Who has spare balls? Mine are done for."),
-        TournamentLine(sender: "Noor", text: "I'll bring a box."),
-        TournamentLine(sender: "Marta", kind: .matchResult, text: "Marta 3–1 Noor", matchID: "r01p001"),
-        TournamentLine(sender: "Marta", text: "Three results in already. Keep them coming!"),
-        TournamentLine(sender: "Ayşe", kind: .matchDisputed, text: "Noor – Ayşe", matchID: "r02p002"),
-    ]
     /// How long before the launch Marta's last line was written; the group fixture's `lastMessageAt` says the same.
     static let conversationLastMessageAge: TimeInterval = 2 * .hour
     /// Two minutes apart, within `AppConfig.Chat.groupingWindow`, so one person's consecutive lines draw as one run.
@@ -79,7 +57,9 @@ nonisolated enum MockChatFixtures {
     private static let unreadCount = 3
     private static let idPrefix = "01J8MOCK"
     private static let idDigits = 16
-    private static let secondsBetweenMessages = 540.0
+    /// Internal, not private: the event and tournament threads (`+Events.swift`, `+Tournament.swift`) space their
+    /// rows with it too.
+    static let secondsBetweenMessages = 540.0
     private static let idGroupCodeLength = 2
     /// Above every fixture index, the deepest demo room (`AppConfig.Chat.mockLongRoomMessages`) included; `idDigits`
     /// pads both.
@@ -130,21 +110,35 @@ nonisolated enum MockChatFixtures {
     /// its fixture size (a demo of paging and scrolling); the system row keeps its place. A room's last row is at
     /// `lastMessageAt`, the moment its group says, so opening it never moves it in Mine; a silent group's rows end at its
     /// creation, which Mine's order counts the same.
-    static func messages(groupID: String,
+    static func messages(in group: SportGroup,
                          callerID: String,
                          callerName: String,
                          now: Date,
-                         lastMessageAt: Date,
                          count: Int? = nil) -> [ChatMessage] {
-        if groupID == MockGroupFixtures.martaConversationID {
-            return conversationMessages(callerID: callerID, callerName: callerName, now: now)
-        }
-        if groupID == MockTournamentFixtures.tableTennisID {
-            return tournamentMessages(now: now)
+        let lastMessageAt = group.lastMessageAt ?? group.createdAt
+        if let scripted = scriptedMessages(in: group,
+                                           callerID: callerID,
+                                           callerName: callerName,
+                                           now: now,
+                                           lastMessageAt: lastMessageAt) {
+            return scripted
         }
         // The just-announced badminton open's room starts empty, whatever depth a demo flag asks for.
-        guard rowCount(for: groupID) > 0 else { return [] }
-        let count = count ?? rowCount(for: groupID)
+        guard rowCount(for: group.id) > 0 else { return [] }
+        return generatedMessages(groupID: group.id,
+                                 callerID: callerID,
+                                 callerName: callerName,
+                                 lastMessageAt: lastMessageAt,
+                                 count: count ?? rowCount(for: group.id))
+    }
+
+    /// The generated thread of an ordinary group room: `count` text rows with the system row and the Kickers reply
+    /// quote in their places.
+    private static func generatedMessages(groupID: String,
+                                          callerID: String,
+                                          callerName: String,
+                                          lastMessageAt: Date,
+                                          count: Int) -> [ChatMessage] {
         let start = lastMessageAt.addingTimeInterval(-Double(count - 1) * secondsBetweenMessages)
         var rows: [ChatMessage] = []
         var lineIndex = 0
@@ -178,6 +172,26 @@ nonisolated enum MockChatFixtures {
         return decorated(rows, groupID: groupID)
     }
 
+    /// The rooms whose threads are scripted, not generated: Marta's conversation, the table-tennis tournament and
+    /// the event rooms (the sunset thread; every other starts empty, keyed on the room's kind so a game created in
+    /// the run gets no fixture lines either); nil for an ordinary group room.
+    private static func scriptedMessages(in group: SportGroup,
+                                         callerID: String,
+                                         callerName: String,
+                                         now: Date,
+                                         lastMessageAt: Date) -> [ChatMessage]? {
+        if group.id == MockGroupFixtures.martaConversationID {
+            return conversationMessages(callerID: callerID, callerName: callerName, now: now)
+        }
+        if group.id == MockTournamentFixtures.tableTennisID {
+            return tournamentMessages(now: now)
+        }
+        if group.isEventRoom {
+            return eventRoomMessages(groupID: group.id, callerID: callerID, callerName: callerName, lastMessageAt: lastMessageAt)
+        }
+        return nil
+    }
+
     /// The conversation's lines, ending `conversationLastMessageAge` before the launch; the caller's carry client ids
     /// like every message the caller sent.
     private static func conversationMessages(callerID: String, callerName: String, now: Date) -> [ChatMessage] {
@@ -196,31 +210,12 @@ nonisolated enum MockChatFixtures {
         }
     }
 
-    /// The table-tennis room's rows, nine minutes apart like every room's, ending three hours before the launch; the
-    /// room is the tournament, so a note's `tournamentId` is the room's id.
-    private static func tournamentMessages(now: Date) -> [ChatMessage] {
-        let groupID = MockTournamentFixtures.tableTennisID
-        let end = now.addingTimeInterval(-tournamentLastMessageAge)
-        let start = end.addingTimeInterval(-Double(tournamentLines.count - 1) * secondsBetweenMessages)
-        return tournamentLines.enumerated().map { index, line in
-            ChatMessage(id: messageID(groupID: groupID, index: index),
-                        groupId: groupID,
-                        senderUserId: MockGroupFixtures.memberID(for: line.sender),
-                        senderName: line.sender,
-                        kind: line.kind,
-                        text: line.text,
-                        tournamentId: line.kind.isTournamentNote ? groupID : nil,
-                        matchId: line.matchID,
-                        sentAt: start.addingTimeInterval(Double(index) * secondsBetweenMessages))
-        }
-    }
-
-    private static let tournamentLastMessageAge: TimeInterval = 3 * .hour
-
     private static func rowCount(for groupID: String) -> Int {
         if groupID == MockGroupFixtures.martaConversationID { return conversationLines.count }
-        if groupID == MockTournamentFixtures.tableTennisID { return tournamentLines.count }
+        if groupID == MockTournamentFixtures.tableTennisID { return tournamentLineCount }
         if groupID == MockTournamentFixtures.badmintonOpenID { return 0 }
+        if groupID == MockEventFixtures.sunsetEventID { return eventRoomLines.count }
+        if groupID.hasPrefix(MockEventFixtures.eventIDPrefix) { return 0 }
         return AppConfig.Chat.mockMessagesPerRoom + (createdEvents[groupID] == nil ? 0 : 1)
     }
 

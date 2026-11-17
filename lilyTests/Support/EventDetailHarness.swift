@@ -10,10 +10,14 @@ final class EventDetailHarness {
     nonisolated static let now = Date(timeIntervalSince1970: 1_800_000_000)
 
     let repository = FakeEventRepository()
+    let groupRepository = FakeGroupRepository()
     let identity: FakeIdentityProvider
     let recorder = SpyInteractionRecorder()
     let logger = SpyLogger()
     let errorCenter: ErrorCenter
+    /// The group-changes tracker behind Mine; the detail's room syncs write through the store.
+    let groupChanges = ChangeTracker()
+    let groups: MyGroupsStore
     let viewModel: EventDetailViewModel
     private let changed = Recorded<SportEvent>()
 
@@ -23,9 +27,16 @@ final class EventDetailHarness {
         identity = FakeIdentityProvider(currentUserID: userID)
         errorCenter = ErrorCenter(logger: logger)
         repository.result = .success([event])
+        groups = MyGroupsStore(repository: groupRepository,
+                               identity: identity,
+                               changes: groupChanges,
+                               errorCenter: errorCenter,
+                               logger: logger)
         viewModel = EventDetailViewModel(event: event,
                                          repository: repository,
                                          identity: identity,
+                                         myGroups: groups,
+                                         groupRepository: groupRepository,
                                          errorCenter: errorCenter,
                                          recorder: recorder,
                                          logger: logger,

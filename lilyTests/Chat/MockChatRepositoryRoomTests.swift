@@ -11,7 +11,6 @@ extension MockChatRepositoryTests {
     func aSentMessageSortsAfterEveryFixtureRowInEveryRoom(room: String) async throws {
         let repository = makeRepository()
         let fixtures = try await repository.newest(groupID: room).items
-        let newestFixtureID = try #require(fixtures.last?.id)
 
         let sent = try await repository.send(groupID: room, draft("hi", clientID: "c-1"))
 
@@ -21,8 +20,11 @@ extension MockChatRepositoryTests {
         #expect(page.count == fixtures.count + 1)
         let before = try await repository.older(groupID: room, before: sent.message.id).items
         #expect(before == fixtures)
-        let after = try await repository.newer(groupID: room, after: newestFixtureID).items
-        #expect(after == [sent.message])
+        // A silent event room ships no fixture rows, so there is no cursor to page after: the sent line is the page.
+        if let newestFixtureID = fixtures.last?.id {
+            let after = try await repository.newer(groupID: room, after: newestFixtureID).items
+            #expect(after == [sent.message])
+        }
     }
 
     @Test(arguments: joinedRoomIDs)
@@ -134,6 +136,21 @@ extension MockChatRepositoryTests {
         let hers = try await repository.send(groupID: kickers, draft("hers", clientID: "c-10"))
         let stored = try await repository.newest(groupID: kickers).items.last
         #expect(hers.message.senderUserId == marta && stored == hers.message)
+    }
+
+    /// The empty-room rule is keyed on the room's kind, not an id prefix: a game created in the run (a UUID id)
+    /// opens on no fixture rows, only what its players write.
+    @Test func aFreshlyCreatedEventsRoomStartsEmpty() async throws {
+        let repository = makeRepository()
+        let events = MockEventRepository(identity: identity, logger: logger)
+        events.rooms = groups
+        var draft = EventDraft(startsAt: Date(timeIntervalSince1970: 1_800_000_000).addingTimeInterval(7_200))
+        draft.fillRequired()
+        let created = try await events.create(draft)
+
+        let page = try await repository.newest(groupID: created.id)
+
+        #expect(page.items.isEmpty && !page.hasMore)
     }
 
     private func draft(_ text: String, clientID: String) -> MessageDraft {

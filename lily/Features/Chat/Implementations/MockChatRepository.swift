@@ -156,11 +156,10 @@ final class MockChatRepository: ChatRepository {
         let group = try await groups.group(id: groupID)
         guard group.isMember else { throw AppError.notAMember }
         if rooms[groupID] == nil {
-            rooms[groupID] = MockChatFixtures.messages(groupID: groupID,
+            rooms[groupID] = MockChatFixtures.messages(in: group,
                                                        callerID: callerID,
                                                        callerName: callerName,
                                                        now: now(),
-                                                       lastMessageAt: group.lastMessageAt ?? group.createdAt,
                                                        count: autoReplies ? AppConfig.Chat.mockLongRoomMessages : nil)
             if deletedSender, groupID == MockGroupFixtures.kickersID {
                 let after = group.lastMessageAt ?? group.createdAt

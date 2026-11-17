@@ -5,7 +5,7 @@ import Testing
 /// Mine's and Discover's orders against the backend's contract; a sibling file because the main suite is near the type-body limit.
 extension MockGroupRepositoryTests {
     /// A group created now is silent and the newest activity, so it leads Mine; every row with a message precedes the
-    /// silent Kickers Cup room, whose creation is older than their messages.
+    /// silent rows (the two joined event rooms without a line yet, then the Kickers Cup room), ordered by creation.
     @Test func theMockOrdersMineLikeTheBackend() async throws {
         let repository = makeRepository()
         let created = try await repository.create(.fixture())
@@ -15,7 +15,7 @@ extension MockGroupRepositoryTests {
         #expect(mine.first?.id == created.id, "a group just created leads Mine, as it will after the reload")
         #expect(mine.map(\.id) == mine.sorted(by: SportGroup.mineOrder).map(\.id))
         let silent = mine.filter { $0.lastMessageAt == nil }
-        #expect(silent.map(\.name) == [created.name, "Kickers Cup"])
+        #expect(silent.map(\.name) == [created.name, "Easy 8k loop", "Sunrise yoga", "Kickers Cup"])
         let lastWithMessage = try #require(mine.firstIndex { $0.name == "Sunday Padel Crew" })
         let silentFixture = try #require(mine.firstIndex { $0.name == "Kickers Cup" })
         #expect(lastWithMessage < silentFixture, "the silent fixture follows every row with a message")

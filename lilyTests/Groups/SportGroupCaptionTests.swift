@@ -30,6 +30,14 @@ struct SportGroupCaptionTests {
         #expect(room.avatarSymbol == DesignTokens.Symbols.tournament && SportGroup.fixture().avatarSymbol == nil)
     }
 
+    /// An event's room names what it is and how many players are in; its mark is the calendar.
+    @Test func anEventRoomReadsEventAndItsPlayers() {
+        let room = SportGroup.eventRoomFixture(memberCount: 6)
+        #expect(room.caption() == "Event · 6 players")
+        #expect(room.caption(suffix: "Active today") == "Event · 6 players · Active today")
+        #expect(room.avatarSymbol == DesignTokens.Symbols.game)
+    }
+
     /// A conversation's two members and missing type say nothing worth a row; the caption names what it is.
     @Test func aConversationReadsDirectMessage() {
         let conversation = SportGroup.conversationFixture()

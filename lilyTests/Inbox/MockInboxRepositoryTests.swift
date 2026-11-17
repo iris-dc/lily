@@ -16,8 +16,11 @@ struct MockInboxRepositoryTests {
                                   now: @escaping () -> Date) -> (groups: MockGroupRepository, inbox: MockInboxRepository) {
         let groups = MockGroupRepository(identity: identity, logger: logger, now: now)
         let tournaments = MockTournamentRepository(groups: groups, identity: identity, logger: logger, now: now)
+        let events = MockEventRepository(now: self.now, identity: identity, logger: logger)
+        events.rooms = groups
         let inbox = MockInboxRepository(groups: groups,
                                         tournaments: tournaments,
+                                        events: events,
                                         identity: identity,
                                         logger: logger,
                                         deletedUser: deletedUser,
@@ -29,12 +32,13 @@ struct MockInboxRepositoryTests {
         makeRepositories { now }
     }
 
-    @Test func theFixturesAreATournamentInviteAGameReminderAMatchReminderThenNoorsInviteIntoClimbingBuddies() async throws {
+    @Test func theFixturesAreTheInvitesAndRemindersEndingOnNoorsEventInvite() async throws {
         let (_, inbox) = makeRepositories()
 
         let page = try await inbox.page(before: nil, limit: AppConfig.Inbox.pageSize)
 
-        let ids = [MockInboxFixtures.tournamentInviteID, reminderID, MockInboxFixtures.matchReminderID, inviteID]
+        let ids = [MockInboxFixtures.tournamentInviteID, reminderID, MockInboxFixtures.matchReminderID, inviteID,
+                   MockInboxFixtures.eventInviteID]
         #expect(page.items.map(\.id) == ids)
         #expect(!page.hasMore && page.nextBefore == nil && page.lastReadId == nil && page.items.allSatisfy(\.isVisible))
         #expect(page.items.map(\.id) == page.items.map(\.id).sorted())
@@ -48,6 +52,12 @@ struct MockInboxRepositoryTests {
         #expect(invite.groupId == climbing && invite.groupName == "Climbing Buddies" && invite.groupVisibility == .private)
         #expect(invite.inviterName == "Noor" && invite.inviterUserId == MockGroupFixtures.memberID(for: "Noor"))
         #expect(invite.status == .pending && invite.isOpen(now: now))
+        let invitedEvent = MockEventFixtures.make(now: now, count: MockInboxFixtures.invitedEventIndex + 1).last
+        let eventInvite = try #require(page.items[4].eventInvite)
+        #expect(eventInvite.eventId == invitedEvent?.id && eventInvite.title == "Doubles, all levels")
+        #expect(eventInvite.type == .tennis && eventInvite.startsAt == invitedEvent?.startsAt)
+        #expect(eventInvite.locationName == invitedEvent?.locationName && eventInvite.inviterName == "Noor")
+        #expect(eventInvite.status == .pending && eventInvite.isOpen(now: now))
     }
 
     /// `-mock-deleted-user`: another account's deletion leaves the two notices, newest in the inbox; neither is
@@ -57,7 +67,7 @@ struct MockInboxRepositoryTests {
 
         let page = try await inbox.page(before: nil, limit: AppConfig.Inbox.pageSize)
 
-        #expect(page.items.count == 6 && page.items.map(\.id) == page.items.map(\.id).sorted())
+        #expect(page.items.count == 7 && page.items.map(\.id) == page.items.map(\.id).sorted())
         #expect(page.items.map(\.createdAt) == page.items.map(\.createdAt).sorted(), "ids follow time")
         #expect(page.items.allSatisfy { $0.isVisible })
         let cancelled = try #require(page.items[4].eventCancelled)
@@ -65,11 +75,12 @@ struct MockInboxRepositoryTests {
         let ownership = try #require(page.items[5].groupOwnershipTransferred)
         #expect(page.items[5].id == MockInboxFixtures.ownershipID)
         #expect(ownership.groupId == MockGroupFixtures.padelID && ownership.groupName == "Sunday Padel Crew")
+        #expect(page.items[6].id == MockInboxFixtures.eventInviteID, "the event invite stays the newest")
         await #expect(throws: AppError.inviteNotPending) { try await inbox.accept(itemID: MockInboxFixtures.ownershipID) }
 
         let (_, plain) = makeRepositories()
         let plainPage = try await plain.page(before: nil, limit: 50)
-        #expect(plainPage.items.count == 4, "without the flag nothing changes")
+        #expect(plainPage.items.count == 5, "without the flag nothing changes")
     }
 
     @Test func acceptingAdmitsIntoClimbingBuddiesAndReplaysTheSameShape() async throws {
@@ -118,6 +129,25 @@ struct MockInboxRepositoryTests {
         await #expect(throws: AppError.inviteNotPending) { try await inbox.decline(itemID: tournamentInviteID) }
     }
 
+    /// Accepting Noor's event invite joins "Doubles, all levels" through the event mock (so the room follows) and
+    /// answers the event joined; a repeat changes nothing; a decline afterwards is refused.
+    @Test func acceptingTheEventInviteJoinsTheGame() async throws {
+        let (groups, inbox) = makeRepositories()
+        let eventInviteID = MockInboxFixtures.eventInviteID
+
+        let acceptance = try await inbox.accept(itemID: eventInviteID)
+
+        #expect(acceptance.group == nil && acceptance.tournament == nil)
+        #expect(acceptance.item.id == eventInviteID && acceptance.item.eventInvite?.status == .accepted)
+        #expect(acceptance.item.eventInvite?.respondedAt == now)
+        let event = try #require(acceptance.event)
+        #expect(event.id == "mock-event-2" && event.participates && event.participantCount == 2)
+        #expect(try await groups.group(id: event.id).isMember, "the room admitted the caller")
+        #expect(try await inbox.accept(itemID: eventInviteID) == acceptance, "a repeat changes nothing")
+        #expect(logger.hasLine(in: .inbox, at: .info, mentioning: eventInviteID, "accepted", event.id))
+        await #expect(throws: AppError.inviteNotPending) { try await inbox.decline(itemID: eventInviteID) }
+    }
+
     @Test func decliningTheTournamentInviteFlipsItAndRefusesALaterAccept() async throws {
         let (_, inbox) = makeRepositories()
         let tournamentInviteID = MockInboxFixtures.tournamentInviteID
@@ -154,13 +184,18 @@ struct MockInboxRepositoryTests {
 
     @Test func pagingFollowsTheIds() async throws {
         let (_, inbox) = makeRepositories()
+        let eventInviteID = MockInboxFixtures.eventInviteID
 
         let newest = try await inbox.page(before: nil, limit: 1)
-        #expect(newest.items.map(\.id) == [inviteID] && newest.hasMore && newest.nextBefore == inviteID)
+        #expect(newest.items.map(\.id) == [eventInviteID] && newest.hasMore && newest.nextBefore == eventInviteID)
 
-        let earlier = try await inbox.page(before: inviteID, limit: 3)
-        #expect(earlier.items.map(\.id) == [MockInboxFixtures.tournamentInviteID, reminderID, MockInboxFixtures.matchReminderID])
-        #expect(!earlier.hasMore && earlier.nextBefore == nil)
+        let earlier = try await inbox.page(before: eventInviteID, limit: 3)
+        #expect(earlier.items.map(\.id) == [reminderID, MockInboxFixtures.matchReminderID, inviteID])
+        #expect(earlier.hasMore && earlier.nextBefore == reminderID)
+
+        let oldest = try await inbox.page(before: reminderID, limit: 3)
+        #expect(oldest.items.map(\.id) == [MockInboxFixtures.tournamentInviteID] && !oldest.hasMore)
+        #expect(oldest.nextBefore == nil)
     }
 
     @Test func guestsHaveNoInbox() async {

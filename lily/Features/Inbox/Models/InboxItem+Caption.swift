@@ -13,6 +13,8 @@ nonisolated extension InboxItem {
             tournamentInvite.map { AppBranding.Inbox.invitedYou(inviter: $0.inviterName, group: $0.tournamentName) }
         case .matchReminder:
             matchReminder.map { AppBranding.Groups.caption([AppBranding.Inbox.matchReminderTitle, $0.tournamentName]) }
+        case .eventInvite:
+            eventInvite.map { AppBranding.Inbox.invitedYou(inviter: $0.inviterName, group: $0.title) }
         case .eventCancelled:
             eventCancelled.map { AppBranding.Inbox.wasCancelled($0.title) }
         case .groupOwnershipTransferred:
@@ -62,5 +64,16 @@ nonisolated extension MatchReminderPayload {
 nonisolated extension EventCancelledPayload {
     func startsAtCaption(now: Date, calendar: Calendar = .autoupdatingCurrent) -> String {
         InboxTimeCaption.text(for: startsAt, now: now, calendar: calendar)
+    }
+}
+
+nonisolated extension EventInvitePayload {
+    func startsAtCaption(now: Date, calendar: Calendar = .autoupdatingCurrent) -> String {
+        InboxTimeCaption.text(for: startsAt, now: now, calendar: calendar)
+    }
+
+    /// The event invite card's detail line: "Tennis · Today, 6:30 PM · in 1 hour".
+    func details(now: Date, calendar: Calendar = .autoupdatingCurrent) -> String {
+        AppBranding.Groups.caption([type.displayName, startsAtCaption(now: now, calendar: calendar)])
     }
 }

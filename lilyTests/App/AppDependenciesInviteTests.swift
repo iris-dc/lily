@@ -10,7 +10,23 @@ struct AppDependenciesInviteTests {
         #expect(mocked.inviteRepository is MockInviteRepository)
         let remote = AppDependencies.makeDefault(arguments: [], defaults: makeTestDefaults())
         #expect(remote.inviteRepository is RemoteInviteRepository)
+        #expect(mocked.eventInviteRepository is MockEventInviteRepository)
+        #expect(remote.eventInviteRepository is RemoteEventInviteRepository)
         #expect(AppDependencies.makeMock().inviteRepository is MockInviteRepository)
+    }
+
+    /// The event flow end to end: a participant of the joined sunset fixture invites someone from the shared pool.
+    @Test func theMockEventInviteFlowWorksThroughTheFactory() async throws {
+        let dependencies = await makeSignedInMockDependencies()
+        let viewModel = dependencies.makeEventInvitePeopleViewModel(for: MockEventFixtures.sunsetEventID)
+
+        await viewModel.load()
+        #expect(viewModel.content == .people && !viewModel.candidates.isEmpty)
+        let candidate = try #require(viewModel.candidates.first)
+
+        await viewModel.invite(candidate)
+        #expect(viewModel.candidates.first { $0.userId == candidate.userId }?.isInvited == true)
+        #expect(dependencies.errorCenter.current == nil)
     }
 
     /// The mock run end to end: the owner of Sunday Padel Crew sees Marta from Kreuzberg Kickers and invites her.

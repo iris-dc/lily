@@ -25,6 +25,7 @@ enum AppErrorCases {
         .registrationClosed, .tournamentFull, .alreadyEntered, .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked,
         .notEnoughEntries, .notInMatch, .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit,
         .tournamentMembershipLimit, .inviteeAlreadyEntered, .cannotInviteToTournament, .tournamentInviteLimit,
+        .inviteeAlreadyJoined, .cannotInviteToEvent, .eventStarted, .eventInviteLimit,
         .feedbackFailed, .unknown,
     ]
 
@@ -49,7 +50,8 @@ enum AppErrorCases {
              .tournamentUpdateFailed, .tournamentActionFailed, .registrationClosed, .tournamentFull, .alreadyEntered,
              .teamFull, .entryNotFound, .notOrganizer, .tournamentLocked, .notEnoughEntries, .notInMatch,
              .matchNotReady, .matchNotFound, .drawNotAllowed, .tournamentLimit, .tournamentMembershipLimit,
-             .inviteeAlreadyEntered, .cannotInviteToTournament, .tournamentInviteLimit, .feedbackFailed, .unknown:
+             .inviteeAlreadyEntered, .cannotInviteToTournament, .tournamentInviteLimit,
+             .inviteeAlreadyJoined, .cannotInviteToEvent, .eventStarted, .eventInviteLimit, .feedbackFailed, .unknown:
             break
         }
     }

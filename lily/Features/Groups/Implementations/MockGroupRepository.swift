@@ -187,10 +187,11 @@ final class MockGroupRepository: GroupRepository {
         return group
     }
 
-    /// The backend's `requireGroupKind`: a conversation and a tournament's room are entered and left through the
-    /// person or the tournament, so the group routes answer FORBIDDEN; an unknown kind passes, as there.
+    /// The backend's `requireGroupKind`: a conversation, a tournament's room and an event's room are entered and left
+    /// through the person, the tournament or the event, so the group routes answer FORBIDDEN; an unknown kind passes,
+    /// as there.
     private func requireGroupRoute(_ group: SportGroup) throws {
-        guard !group.isDirect, !group.isTournamentRoom else { throw AppError.insufficientRole }
+        guard !group.isDirect, !group.isTournamentRoom, !group.isEventRoom else { throw AppError.insufficientRole }
     }
 
     func find(_ id: String) -> SportGroup? {

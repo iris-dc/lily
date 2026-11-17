@@ -123,7 +123,8 @@ struct AppDependenciesChatTests {
         dependencies.myGroupsDidLoad()
         dependencies.myGroupsDidChange()
         #expect(dependencies.unreadCenter.unreadGroupIDs == [MockGroupFixtures.kickersID, MockGroupFixtures.martaConversationID])
-        #expect(dependencies.realtime.subscribedRooms.count == 6, "three groups, the conversation, two tournament rooms")
+        #expect(dependencies.realtime.subscribedRooms.count == 9,
+                "three groups, the conversation, two tournament rooms and three event rooms")
 
         let kickers = try #require(dependencies.myGroups.groups.first { $0.id == MockGroupFixtures.kickersID })
         let viewModel = dependencies.makeChatViewModel(for: kickers)

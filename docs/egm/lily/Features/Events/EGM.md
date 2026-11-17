@@ -25,13 +25,16 @@ by every layer. Contracts live out of tree under `docs/egm/` because `lily/` may
 - Implementations: [./Implementations/EGM.md](./Implementations/EGM.md) - `RemoteEventRepository` (GET/POST/PUT/
   DELETE under `/api/events` and `/api/groups/{id}/events`, position only on Explore), `MockEventRepository` with
   Berlin fixtures and Laurel's refusal order, `UserDefaultsEventFilterStore` under `lily.events.filter`,
-  `NoOpEventFilterStore`.
+  `NoOpEventFilterStore`; since 2026-11-15 the event-invite seam (`RemoteEventInviteRepository` +
+  `MockEventInviteRepository`) and the mock event rooms (`MockEventFixtures+Rooms`).
 - Services: [./Services/EGM.md](./Services/EGM.md) - `EventOpener`, which fetches an event by id and pushes it
   through `AppNavigation.openFromNotification`, silent on cancellation, otherwise logging and reporting.
 - ViewModels: [./ViewModels/EGM.md](./ViewModels/EGM.md) - `EventListViewModel` (snapshot-first lists per
   `EventScope`, freshness and change-tracker reloads, position head start, `keep(_:for:)` under the right caller),
-  `EventDetailViewModel` (join/leave through `LostRace.attemptTwice`, refetch on an unknown outcome),
+  `EventDetailViewModel` (join/leave through `LostRace.attemptTwice`, refetch on an unknown outcome; since 2026-11-15
+  also the room seams — `openChat`, Mine kept in step — beside `EventLoaderViewModel`, an event behind an
+  id-and-name push),
   `CreateEventViewModel` (`CreateFlow` keyed on `clientId`) and `EditEventViewModel` (`WriteGate`).
 - Views: [./Views/EGM.md](./Views/EGM.md) - the Explore screen and its states, the detail with its participation
-  control, the generic `EventDraftForm` and sheets, the filter sheet, the events map and location picker, and the
+  control and in-body action row (2026-11-15), the generic `EventDraftForm` and sheets, the filter sheet, the events map and location picker, and the
   cards and rows reused by Groups and Tournaments.

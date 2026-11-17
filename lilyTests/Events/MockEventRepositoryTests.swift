@@ -4,16 +4,16 @@ import Testing
 
 @MainActor
 struct MockEventRepositoryTests {
-    /// `count` sizes the fixture set; Explore lists all of them but the private group's game (index 3), like the backend.
-    @Test func upcomingListsTheRequestedFixturesButThePrivateGroups() async throws {
-        let repository = MockEventRepository(now: .now, count: 5, identity: FakeIdentityProvider(), logger: SpyLogger())
+    /// Explore lists the whole fixture feed but the private group's game (index 3), like the backend.
+    @Test func upcomingListsTheFeedButThePrivateGroupsGame() async throws {
+        let repository = MockEventRepository(now: .now, identity: FakeIdentityProvider(), logger: SpyLogger())
         let upcoming = try await repository.events(in: .upcoming, near: nil)
-        #expect(upcoming.count == 4)
+        #expect(upcoming.count == AppConfig.Events.mockFeedSize - 1)
         #expect(upcoming.allSatisfy { $0.isListed })
     }
 
     @Test func joinedIsNonEmptyStrictSubsetOfUpcoming() async throws {
-        let repository = MockEventRepository(now: .now, count: 8, identity: FakeIdentityProvider(), logger: SpyLogger())
+        let repository = MockEventRepository(now: .now, identity: FakeIdentityProvider(), logger: SpyLogger())
         let upcoming = try await repository.events(in: .upcoming, near: nil)
         let joined = try await repository.events(in: .joined, near: nil)
         #expect(!joined.isEmpty)
@@ -50,10 +50,7 @@ struct MockEventRepositoryTests {
     /// Two fixtures are hosted in groups (one public, one private), so the badge and "Hosted in" have data. Like the
     /// backend, Explore lists the public group's game only; the private group's is found under its group's scope.
     @Test func groupedFixturesFollowTheirGroupsVisibility() async throws {
-        let repository = MockEventRepository(now: .now,
-                                             count: AppConfig.Events.mockFeedSize,
-                                             identity: FakeIdentityProvider(),
-                                             logger: SpyLogger())
+        let repository = MockEventRepository(now: .now, identity: FakeIdentityProvider(), logger: SpyLogger())
         let upcoming = try await repository.events(in: .upcoming, near: nil)
         let kickers = try await repository.events(in: .group(id: MockGroupFixtures.kickersID), near: nil)
         let padel = try await repository.events(in: .group(id: MockGroupFixtures.padelID), near: nil)

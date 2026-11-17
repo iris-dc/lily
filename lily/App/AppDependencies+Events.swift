@@ -36,16 +36,25 @@ extension AppDependencies {
         LandingViewModel(session: sessionController, logger: logger)
     }
 
+    /// The detail owns the join/leave write, the room sync behind it and the in-place chat, so it takes the group
+    /// repository and Mine beside the event repository.
     func makeEventDetailViewModel(for event: SportEvent,
                                   onChange: @escaping @MainActor (SportEvent) -> Void) -> EventDetailViewModel {
         EventDetailViewModel(event: event,
                              repository: eventRepository,
                              identity: identity,
+                             myGroups: myGroups,
+                             groupRepository: groupRepository,
                              errorCenter: errorCenter,
                              recorder: interactionRecorder,
                              logger: logger,
                              pushOptIn: pushCoordinator,
                              onChange: onChange)
+    }
+
+    /// The loader behind an event room's info button and row: fetches the event by id, then shows the detail.
+    func makeEventLoaderViewModel(for destination: EventDestination) -> EventLoaderViewModel {
+        EventLoaderViewModel(destination: destination, repository: eventRepository, errorCenter: errorCenter, logger: logger)
     }
 
     /// `onChange` receives the event as the backend stored it after the host's edit; the detail behind the sheet takes

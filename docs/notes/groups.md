@@ -92,3 +92,13 @@ Groups are communities around a sport (or "Any type"): a chat room, a member lis
   chat pushes (group, tournament, profile) share `chatDestination(item:dependencies:)`
   (`lily/Features/Chat/Views/ChatDestinations.swift`, the round's review pass); follow-up: teach the `TabBarHiding`
   registry to prune on screen disappear (or count item pushes), so pushed chats stop needing the nil override.
+- 2026-11-15 — **Event rooms are groups** (the event-chats slice): `GroupKind.event` joins the known kinds, and an
+  event's room is a `SportGroup` under the event's id (`isEventRoom`). The Chats caption reads "Event · N players"
+  (`AppBranding.Events.roomCaption`, the tournament pattern; the calendar glyph is the avatar mark), access is `.room`
+  like a tournament's (members may poll, pins stay the admins'), `MyGroupsStore.communities` leaves event rooms out,
+  and `MockGroupRepository.requireGroupRoute` refuses the group-only routes for them (leave, update, delete, bans and
+  the group join — the participation writes own the membership). The mock fixtures ship a room per event
+  (`MockEventFixtures+Rooms`, every fourth joined; the sunset five-a-side carries the one scripted thread, read, 5 h
+  back in Mine, so the unread pins — Kickers and Marta — stand), Mine grew 6 → 9 rooms, and the order, role and unread
+  pins in `MockGroupRepositoryTests` moved with it on purpose. Event rooms never enter the invite candidate pool; the
+  mock event repository mirrors join, leave, create and edit into the rooms through `MockGroupRepository+Events`.

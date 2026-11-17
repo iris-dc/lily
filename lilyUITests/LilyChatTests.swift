@@ -4,7 +4,7 @@ import XCTest
 /// cards, deleting a conversation, replying, attachments and the picture viewer (helpers in
 /// `LilyChatTests+Attachments.swift`). Identifiers mirror `AccessibilityIdentifiers(+Inbox, +Attachments)`; the item
 /// ids mirror `MockInboxFixtures` (the tournament invite and the match reminder, ids 1 and 3, are `LilyTournamentTests`';
-/// ids 5 and 6 are the `-mock-deleted-user` deletion notices).
+/// ids 5 and 6 are the `-mock-deleted-user` deletion notices; the event invite, id 7, is `LilyEventEditTests`').
 final class LilyChatTests: LilyUITestCase {
     let inviteID = "01J8MOCKNB0000000000000004"
     let reminderID = "01J8MOCKNB0000000000000002"
@@ -20,7 +20,8 @@ final class LilyChatTests: LilyUITestCase {
         openChatsTab()
 
         XCTAssertTrue(app.buttons["inbox-row"].waitForExistence(timeout: 10))
-        XCTAssertTrue(labelled("Noor invited you to Climbing Buddies").waitForExistence(timeout: 5),
+        // The event invite is the newest fixture, so the preview pin names it on purpose.
+        XCTAssertTrue(labelled("Noor invited you to Doubles, all levels").waitForExistence(timeout: 5),
                       "the inbox row previews its newest item")
         XCTAssertTrue(app.buttons[MockIDs.kickersRow].exists, "the caller's rooms follow the inbox")
 

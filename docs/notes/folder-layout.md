@@ -10,8 +10,8 @@ lily/
                  remote and mock wirings build; GroupDependencies: the group, invite, inbox, account, moderation and chat
                  repositories, MyGroupsStore, MeStore, InboxStore, the chat cache, UnreadCenter, the realtime controller,
                  the pasteboard, the group and tournament change trackers, ChatOutbox, BlockListStore, the session observers to register; the
-                 factories of every groups view model, the invite sheet's included) + AppDependencies+Chat, +Inbox and +People (the
-                 chat, inbox and profile factories) + AppDependencies+Events (the event view-model factories) + AppDependencies+Push
+                 factories of every groups view model, the invite sheets' included) + AppDependencies+GroupMocks (GroupRepositories.mock and its shared data mocks, split under the file-length limit; 2026-11-15) + AppDependencies+Chat, +Inbox and +People (the
+                 chat, inbox and profile factories) + AppDependencies+Events (the event view-model factories, the event loader's included) + AppDependencies+Push
                  (PushDependencies: the registrar and device repository the data layer chose, EventOpener,
                  PushCoordinator) + AppDependencies+Repositories (Repositories, Auth and the data-layer factories; 2026-11-02)
                  + AppDependencies+Localization (the language store built from the stored choice and the launch arguments)
@@ -31,7 +31,7 @@ lily/
                  +Shell / +Localization / +Settings / +FeatureFlags / +Build (the kind of build: debug, staging, release; 2026-11-01) / +Tournaments / +TournamentResults / +TournamentInvites /
                  +ChatTournaments / +Profile (the display name's limits, copy and identifiers; 2026-10-31) / +Events (map stacking and the place
                  suggestions, 2026-11-06) / +SportMarks (the sport marks' and the map cards' tokens; 2026-11-06) / +EventsMap
-                 (the map list's "N events here" header and "+N more" pill; 2026-11-06) / +HomeSegments and +Home (the segmented
+                 (the map list's "N events here" header and "+N more" pill; 2026-11-06) / +EventRooms (an event room's caption and the event-invite copy; 2026-11-15) / +HomeSegments and +Home (the segmented
                  Home's copy and identifiers; 2026-11-14) / +Polls, +ChatPolls and +ChatPins
                  (the polls' and pins' constants, copy, tokens and identifiers; 2026-10-24) and one `+Area` file per feature beyond these
                  (`ls lily/Config` is the list; 2026-11-02) extension files so SwiftLint's type_body_length never trips on the four main types
@@ -153,13 +153,13 @@ lily/
                  EventsPresentation, EventDraft (with its editing init and Rules; the price field's text lives on it) and the
                  Create/UpdateEventPayloads, EventScope with its group case (and the scopes' wire names), EventParticipant, EventLocation
                  (the one distance rule of events, groups and tournaments), PlaceDraft (the shared place validation of the event and
-                 tournament drafts), EventListScreenState (Explore's loading / failed / empty / filtered-out / list ladder),
+                 tournament drafts), EventListScreenState (Explore's loading / failed / empty / filtered-out / list ladder), EventPermissions (the detail's chat and invite rules) and EventDestination (an event pushed by id + name; both 2026-11-15),
                  CreateIntentPolicy + ExploreSheet (the wizard, seeded per request or shortcut, or sign-in for a guest; the
                  create-form cases left with slice 3, 2026-11-11); SportEvent and
                  EventDraft carry an optional EventGroupRef), Interfaces (EventRepository, EventFilterStore, EventDraftEditing),
-                 Implementations (remote and mock repositories, MockEventFixtures with the mock's participant names in MockEventFixtures+Participants),
-                 ViewModels (list with its filter and freshness extensions, detail with who is in, create, edit), Views (cards, EventCardList (the
-                 bare card list), list screen, map, detail with the host's Edit button, ParticipantRow, preview card, EventMapCardList (the
+                 Implementations (remote and mock repositories, MockEventFixtures with the mock's participant names in MockEventFixtures+Participants and the per-event rooms and rosters in +Rooms, RemoteEventInviteRepository + MockEventInviteRepository (the InviteRepository seam over the event routes; 2026-11-15)),
+                 ViewModels (list with its filter and freshness extensions, detail with who is in, create, edit, EventLoaderViewModel (an event by id, 2026-11-15)), Views (cards, EventCardList (the
+                 bare card list), list screen, map, detail with the host's Edit button, EventActionRow + EventLoaderView (the in-body chat and invite row, and the loader behind a pushed EventDestination; 2026-11-15), ParticipantRow, preview card, EventMapCardList (the
                  selected map stack's scrolling cards, in one glass panel with its header for several, and the "+N more" pill;
                  2026-11-06), filter button and sheet (EventFilterSheet, the full-screen form, 2026-11-05; over SkillLevelPicker, the one level picker), CreateButton (the floating "+": a menu of the kinds CreationWizardPolicy offers, each opening the wizard seeded — back with the third design round 2026-11-11 — or a plain one-tap event button when only events are flagged on), the Edit sheet (a thin wrapper over
                  EventDraftSheet, itself a thin wrapper over the shared DraftSheet around the generic EventDraftForm, whose +Place file holds the Where
@@ -206,13 +206,13 @@ lily/
                  GroupMembership, GroupVisibility, MemberRole, GroupAccess, GroupDraft and the create/update payloads, GroupScope (with
                  the Discover query's searchPrefix), GroupDetailSection, GroupConfirmation (the detail's leave / delete / remove / ban
                  dialogs), InviteCandidate (with its source and caption), SentInvite (with the
-                 send payload; into a group or a tournament), InviteTarget (what the invite sheet invites into), EventGroupRef, MembershipChange, RoomSubscription, GroupDetailContext,
+                 send payload; into a group, a tournament or an event), InviteTarget (what the invite sheet invites into), EventGroupRef, MembershipChange, RoomSubscription, GroupDetailContext,
                  Account, DeletionPlan (+ DeletionSettle, the delete flow's landed check),
                  Report models), Interfaces (GroupRepository, InviteRepository, MeRepository, ModerationRepository, GroupDraftEditing),
                  Implementations (Remote* over APIClient, Mock* with the six fixture groups; MockGroupRepository+Direct holds the
                  mock's direct conversations and who a user id names, +Tournaments the rooms the tournament mock registers,
-                 admits into and leaves, +Discover the mock's Discover filter and its three orders over GroupScope.searchPrefix;
-                 MockInviteCandidatePool + MockInviteLedger, the candidate pool (every non-direct membership, tournament rooms included)
+                 admits into and leaves, +Events the event mock's the same way (2026-11-15), +Discover the mock's Discover filter and its three orders over GroupScope.searchPrefix;
+                 MockInviteCandidatePool + MockInviteLedger, the candidate pool (every non-direct membership, tournament rooms included, event rooms left out)
                  and the one send both invite mocks call), State (MyGroupsStore, MeStore, BlockListStore: the one block list, loaded by
                  the shell sync), ViewModels (DiscoverGroups (the Discover search behind the carousel and
                  the Discover screen; Home reads MyGroupsStore.communities directly), GroupDetail, GroupLoader,
@@ -242,7 +242,7 @@ lily/
                  ViewerLayer (pure: where the moving picture is at each moment and which side of the composer line a layer draws),
                  MovingPicture (the picture on its way), Poll + PollOptionDisplay (a poll message and how an option draws) and
                  PinnedMessage + PinnedBarPosition (the room's pins and where the bar sits; 2026-10-24)), Implementations (RemoteChatRepository, MockChatRepository
-                 (+ Attachments + Polls) + MockChatFixtures (+ Polls), InMemoryChatHistoryCache, URLSessionAttachmentUploader, DiskAttachmentCache (+ AttachmentCacheFiles, the
+                 (+ Attachments + Polls) + MockChatFixtures (+ Polls + Events, the sunset event room's thread, + Tournament, the table-tennis thread; 2026-11-15), InMemoryChatHistoryCache, URLSessionAttachmentUploader, DiskAttachmentCache (+ AttachmentCacheFiles, the
                  byte-moving steps off the main actor), DeviceMediaPreparer over ImagePreparer (+ ImageEncoding), VideoPreparer (+ VideoEncoding)
                  and FilePreparer (+ FileCopying), all off the main actor through DetachedWork, MockMediaPreparer (the picker stand-in), MockAttachmentStore + MockAttachmentURLProtocol,
                  MockAttachmentUploader, DisplayLinkFrameClock: the FrameClock on Core Animation's display link), Services (ChatCatchUp: the REST catch-up shared by the chat and the realtime controller;
@@ -300,20 +300,20 @@ lily/
                  the standalone TournamentScheduleFields and TournamentEntriesFields (2026-11-10; the create-only
                  TournamentBasicsControls and TournamentWhoMayJoinControls deleted 2026-11-11 — the group row is the
                  shared HostingGroupRow, read-only on an edit))
-    Inbox/       Models (InboxItem with InboxItemKind, InviteStatus, InvitePayload and TournamentInvitePayload (both over the shared
+    Inbox/       Models (InboxItem with InboxItemKind, InviteStatus, InvitePayload, TournamentInvitePayload and EventInvitePayload (all over the shared
                  InviteAnswer), ReminderPayload, MatchReminderPayload, DeletionNoticePayloads (EventCancelledPayload,
-                 GroupOwnershipTransferredPayload) and the captions; InboxPage; InviteAcceptance (a group or a
-                 tournament); InboxDestination; InboxTimeline (day chips, unknown kinds hidden)), Interfaces (InboxRepository),
+                 GroupOwnershipTransferredPayload) and the captions; InboxPage; InviteAcceptance (a group, a tournament
+                 or an event); InboxDestination; InboxTimeline (day chips, unknown kinds hidden)), Interfaces (InboxRepository),
                  Implementations (RemoteInboxRepository, MockInboxRepository + MockInboxFixtures), State (InboxStore, the one source
-                 of the caller's inbox), ViewModels (InboxViewModel: accept into a group or a tournament, decline, open the
+                 of the caller's inbox), ViewModels (InboxViewModel: accept into a group, a tournament or an event, decline, open the
                  reminder's game or match or the ownership notice's group), Views (InboxView, InboxItemRow (the group invite and
-                 game reminder cards) + InboxItemRow+Tournaments (the tournament invite and match reminder cards) +
+                 game reminder cards) + InboxItemRow+Tournaments (the tournament invite and match reminder cards) + InboxItemRow+Events (the event invite card, 2026-11-15) +
                  InboxItemRow+Notices (the account-deletion notice cards) over InboxCardParts, InboxRow (the pinned
                  row on Chats))
 lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCancelTests and HeadStartTests), Errors/ (with AppErrorCases, every AppError case
                  listed), Foundation/, Preferences/, Shell/, System/ (with SpyLoggerTests), Validation/ included;
                  Profile/ holds ProfileStoreTests and ProfileStoreBioTests, DisplayNameViewModelTests, AboutViewModelTests,
-                 DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01, and MapCardListEdgesTests since 2026-11-06, with CreateEventPlaceTests, EditEventPlaceTests and EventDraftPlaceTests from the 2026-11-06 pre-merge review; Location/ holds PlaceSuggestionTests since then; Create/ holds CreationStepsTests, CreationStepsGroupTests, CreationStepsTournamentTests, CreationWizardPolicyTests, CreationWizardModelTests and CreationWizardModelKindsTests (the creation wizard, 2026-11-10/11); Realtime/ holds AppSyncRealtimeTransportTests, AppSyncRealtimeTransportSubscribeTests and RealtimeCatchUpFallbackTests (the AppSync transport, 2026-11-13)); Support/ holds fakes
+                 DisplayNameDraftTests, AboutDraftTests and both repositories' tests (2026-11-04); Networking/ holds SendFailingWithTests, LostRaceTests, WriteGateTests, LostAnswerTests, CreateFlowTests and WireNamedKindTests; Realtime/ holds RealtimeRoomCompactionTests and Tournaments/ TournamentUnseenValuesTests beside the suites at their limits (2026-11-01); Errors/ BackendErrorCodeTests, Realtime/ RealtimeMembershipChangeRoutingTests and Tournaments/ MockTournamentRefusalsTests+Caps the same way (2026-11-02); App/ holds PrivacyManifestTests beside the AppDependencies suites, Chat/ MessageArrivalTests and UI/ MotionPreferenceTests (2026-11-01); Events/ holds CreateEventOutcomeTests beside CreateEventViewModelTests since 2026-11-01, and MapCardListEdgesTests since 2026-11-06, with CreateEventPlaceTests, EditEventPlaceTests and EventDraftPlaceTests from the 2026-11-06 pre-merge review; Location/ holds PlaceSuggestionTests since then; Create/ holds CreationStepsTests, CreationStepsGroupTests, CreationStepsTournamentTests, CreationWizardPolicyTests, CreationWizardModelTests and CreationWizardModelKindsTests (the creation wizard, 2026-11-10/11); Realtime/ holds AppSyncRealtimeTransportTests, AppSyncRealtimeTransportSubscribeTests and RealtimeCatchUpFallbackTests (the AppSync transport, 2026-11-13); Events/ EventPermissionsTests, EventLoaderViewModelTests, EventDetailRoomTests, MockEventRoomsTests, RemoteEventInviteRepositoryTests and MockEventInviteRepositoryTests with Inbox/ EventInboxContractTests and InboxViewModelEventTests (the event rooms and invites, 2026-11-15)); Support/ holds fakes
                  (TestDoubles, AuthDoubles, FakeEventRepository, NetworkingDoubles, ChatDoubles, ChatFixtures, RealtimeHarness, RealtimeSocketDoubles (FakeEventsSocket + the transport harness), ShellDoubles,
                  StatisticsDoubles, GroupDoubles (with FakeInviteRepository), GroupViewModelDoubles with the shared GroupHarness and the
                  TermsCountingReporter every harness uses, InboxDoubles, PeopleDoubles, LocationDoubles, PushDoubles, FeedbackDoubles,
@@ -324,13 +324,13 @@ lilyTests/       Mirrors the above (Changes/, Concurrency/ (with ReleaseAfterCan
                  GroupFixtures with the groups and invites contract JSON, InboxFixtures with the inbox's, PeopleFixtures with the profile,
                  conversation and participants contract JSON, TournamentFixtures with the tournament, entry, match, standing, room and
                  tournament-note contract JSON, TournamentInboxFixtures with Laurel B3's inbox, accept, invite and room-event JSON
-                 (an `extension ContractSamples` since 2026-11-02);
+                 (an `extension ContractSamples` since 2026-11-02), EventInboxFixtures with the event-invite and accept JSON the same way (2026-11-15);
                  Fixtures/pairings holds the shared pairing fixtures TournamentScheduleTests reproduces)
 lilyUITests/     LilyUITestCase (launch + the primitives) + LilyUITestCase+Screens (the screen-reaching helpers)
                  + LilyUITestCase+Elements (element primitives: text, scroll-and-tap, predicate wait, confirmation taps; 2026-11-02)
                  + LilyUITestCase+Wizard (the creation wizard's walk: step waits, Next, submit, discard; 2026-11-10)
                  + MockIDs (the fixture row ids, 2026-11-02), LilySmokeTests, LilySignInTests,
-                 LilyGroupsTests (+ Helpers), LilyChatTests (+ Attachments, + Composer, + Polls, + Rows, + Viewer), LilyPeopleTests, LilyEventEditTests, LilyLanguageTests,
+                 LilyGroupsTests (+ Helpers), LilyChatTests (+ Attachments, + Composer, + Polls, + Rows, + Viewer), LilyPeopleTests, LilyEventEditTests (+ Rooms, the event rooms and invites; 2026-11-15), LilyLanguageTests,
                  LilyTournamentTests (+ Helpers, + ActionRow), LilyDiscoverTests, LilyProfileTests, LilySettingsTests, LilyRosterTests, LilyStateTests, LilyIPadTests: end-to-end
                  walks against the real app in a simulator
 scripts/         ci.sh, the single entry point for lint, build and tests; l10n-check.py, the catalog-against-code and InfoPlist check it runs,

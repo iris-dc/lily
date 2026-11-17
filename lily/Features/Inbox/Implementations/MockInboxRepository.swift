@@ -1,28 +1,33 @@
 import Foundation
 
 /// The inbox without a backend: the fixture items for whoever is signed in, a read marker kept for the run, and an
-/// accept that admits into the group mock's Climbing Buddies or enters the tournament mock's Padel Open, the private
-/// group and tournament nothing else reaches. Under `-mock-deleted-user` the two deletion notices join the fixtures.
+/// accept that admits into the group mock's Climbing Buddies, enters the tournament mock's Padel Open (the private
+/// group and tournament nothing else reaches) or joins the event mock's game. Under `-mock-deleted-user` the two
+/// deletion notices join the fixtures.
 final class MockInboxRepository: InboxRepository {
     private var items: [InboxItem]
     private var lastReadID: String?
     private let groups: MockGroupRepository
     private let tournaments: MockTournamentRepository
+    private let events: MockEventRepository
     private let identity: any IdentityProvider
     private let logger: any Logging
     private let now: () -> Date
 
     init(groups: MockGroupRepository,
          tournaments: MockTournamentRepository,
+         events: MockEventRepository,
          identity: any IdentityProvider,
          logger: any Logging,
          deletedUser: Bool = false,
          now: @escaping () -> Date = { .now }) {
         var items = MockInboxFixtures.make(now: now())
         if deletedUser { items += MockInboxFixtures.deletionNotices(now: now()) }
-        self.items = items
+        // The deletion notices' ids predate the event invite's; the page contract is ascending by id.
+        self.items = items.sorted { $0.id < $1.id }
         self.groups = groups
         self.tournaments = tournaments
+        self.events = events
         self.identity = identity
         self.logger = logger
         self.now = now
@@ -48,9 +53,10 @@ final class MockInboxRepository: InboxRepository {
         return marker
     }
 
-    /// The way into a private group or tournament: the group mock admits the caller, or the tournament mock enters
-    /// them (an individual tournament; a team one is left for the detail). The entry comes first, so a refused one
-    /// leaves the item pending, as the backend's transaction does. A repeat answers the same shape.
+    /// The way into a private group, a tournament or a game: the group mock admits the caller, the tournament mock
+    /// enters them (an individual tournament; a team one is left for the detail), or the event mock joins the game,
+    /// so the room follows. The entry comes first, so a refused one leaves the item pending, as the backend's
+    /// transaction does. A repeat answers the same shape.
     func accept(itemID: String) async throws -> InviteAcceptance {
         try requireUser()
         let (index, answer) = try invite(at: itemID)
@@ -63,7 +69,10 @@ final class MockInboxRepository: InboxRepository {
             guard answer.isOpen(now: now()) else { throw AppError.inviteExpired }
             let admitted = try await admittance(for: items[index], entering: true)
             items[index] = items[index].responding(.accepted, at: now())
-            return InviteAcceptance(item: items[index], group: admitted.group, tournament: admitted.tournament)
+            return InviteAcceptance(item: items[index],
+                                    group: admitted.group,
+                                    tournament: admitted.tournament,
+                                    event: admitted.event)
         }
     }
 
@@ -88,6 +97,13 @@ final class MockInboxRepository: InboxRepository {
             let group = try groups.admit(id: invite.groupId)
             if entering { logger.info(.inbox, "Mock invite \(item.id) accepted into group \(group.id)") }
             return InviteAcceptance(item: item, group: group)
+        }
+        if let invite = item.eventInvite {
+            let current = try await events.event(id: invite.eventId)
+            guard entering else { return InviteAcceptance(item: item, event: current) }
+            let joined = if current.participates { current } else { try await events.join(eventId: invite.eventId) }
+            logger.info(.inbox, "Mock invite \(item.id) accepted into event \(invite.eventId)")
+            return InviteAcceptance(item: item, event: joined)
         }
         guard let invite = item.tournamentInvite else { throw AppError.inviteNotPending }
         if entering, !invite.isTeam {

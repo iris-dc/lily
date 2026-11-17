@@ -62,7 +62,27 @@ extension MockGroupRepositoryTests {
         #expect(joined.memberCount == 6)
         #expect(joined == stored)
         let mine = try await repository.groups(in: .mine, cursor: nil, near: nil).items
-        #expect(mine.count == 6, "a replayed join adds nothing to Mine")
+        #expect(mine.count == 9, "a replayed join adds nothing to Mine")
+    }
+
+    /// An event's room is entered and left through the event: the group routes refuse its participants, a member's
+    /// join is replayed, a public room's join by an outsider is refused as the backend's `NOT_ALLOWED_IN_EVENT`, and a
+    /// private group's event room is not there for an outsider.
+    @Test func anEventRoomRefusesGroupRoutes() async throws {
+        let repository = makeRepository()
+        let sunset = MockEventFixtures.sunsetEventID
+
+        await #expect(throws: AppError.insufficientRole) { try await repository.leave(id: sunset) }
+        await #expect(throws: AppError.insufficientRole) { try await repository.update(id: sunset, .fixture()) }
+        await #expect(throws: AppError.insufficientRole) { try await repository.delete(id: sunset) }
+        await #expect(throws: AppError.insufficientRole) { try await repository.bans(id: sunset) }
+        await #expect(throws: AppError.insufficientRole) { try await repository.join(id: "mock-event-1") }
+
+        let before = try await repository.group(id: sunset)
+        #expect(try await repository.join(id: sunset) == before, "a member joining again gets the room as it is")
+        let roster = try await repository.members(id: sunset)
+        #expect(roster.first?.role == .owner && roster.first?.displayName == "Marta", "the roster route stays open")
+        await #expect(throws: AppError.groupNotFound) { try await repository.group(id: "mock-event-3") }
     }
 
     @Test func aTargetOffTheRosterIsNotAMember() async throws {

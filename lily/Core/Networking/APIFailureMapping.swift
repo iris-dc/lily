@@ -48,7 +48,7 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case alreadyMember = "ALREADY_MEMBER"
     case cannotInvite = "CANNOT_INVITE"
     /// The tournament has invited as many distinct people as the backend allows (`tournaments.max-invited`); a group
-    /// invite never answers it.
+    /// invite never answers it, and the event invite repository remaps it to the event's own copy.
     case inviteLimit = "INVITE_LIMIT"
     case blockLimit = "BLOCK_LIMIT"
     /// The caller holds the maximum number of direct conversations.
@@ -89,6 +89,8 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
     case notInMatch = "NOT_IN_MATCH"
     case matchNotReady = "MATCH_NOT_READY"
     case drawNotAllowed = "DRAW_NOT_ALLOWED"
+    /// An invite into an event that already started; a join stays allowed, so only the invites close.
+    case eventStarted = "EVENT_STARTED"
 
     /// Exhaustive, so a code added above without a mapping fails to compile.
     var appError: AppError {
@@ -152,6 +154,7 @@ nonisolated enum BackendErrorCode: String, CaseIterable, Sendable {
         case .notInMatch: .notInMatch
         case .matchNotReady: .matchNotReady
         case .drawNotAllowed: .drawNotAllowed
+        case .eventStarted: .eventStarted
         }
     }
 }

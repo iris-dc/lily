@@ -32,11 +32,19 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   `requestPosition: Coordinate?`, `positionReason: String?`, `stalenessReason: String?`. The
   stored `recorder` and `now` are internal for these extensions; `logger` is private (no extension reads it).
 - `EventDetailViewModel` (`lily/Features/Events/ViewModels/EventDetailViewModel.swift`):
-  `init(event:repository:identity:errorCenter:recorder:logger:tryAgainDelay: = AppConfig.API.tryAgainDelay,
-  now:pushOptIn: = NoPushOptIn(), onChange: @MainActor (SportEvent) -> Void)`. State: `event`, `isBusy`,
-  `participants`, `isLoadingParticipants`. Derived: `participation: Participation`, `canEdit`, `showsParticipants`,
+  `init(event:repository:identity:myGroups: MyGroupsStore, groupRepository: any GroupRepository,
+  errorCenter:recorder:logger:tryAgainDelay: = AppConfig.API.tryAgainDelay,
+  now:pushOptIn: = NoPushOptIn(), onChange: @MainActor (SportEvent) -> Void)` (the room seams, 2026-11-15). State:
+  `event`, `isBusy`, `participants`, `isLoadingParticipants`, `openedRoom: SportGroup?` (the chat the view pushes in
+  place). Derived: `participation: Participation`, `permissions: EventPermissions` (chat behind
+  `AppConfig.FeatureFlags.chat`), `canEdit`, `showsParticipants`,
   `hostProfile: UserProfileDestination?`, `isSelf(_:)`. Methods: `loadParticipants()`, `recordViewed()`, `join()`,
-  `leave()`, `accept(_:)`.
+  `leave()`, `openChat()`, `accept(_:)`.
+- `EventLoaderViewModel` (`lily/Features/Events/ViewModels/EventLoaderViewModel.swift`, 2026-11-15): the group
+  loader's ladder for an event pushed by id (`EventDestination`, an event room's info button):
+  `init(destination:repository:errorCenter:logger:)`; `state` (`loading`, `loaded(SportEvent)`, `notFound`,
+  `failed`), `destination`; `loadIfNeeded()`, `load()`. `.eventNotFound` is the gone state; a failed reload keeps a
+  loaded event on screen and reports through the popup.
 - `CreateEventViewModel` (`lily/Features/Events/ViewModels/CreateEventViewModel.swift`):
   `init(repository:identity:locationService:groups: MyGroupsStore, errorCenter:logger:now:
   currencyCode:pushOptIn:lockedGroup: EventGroupRef? = nil, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay,
@@ -109,6 +117,13 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   outcome unknown, every `isParticipationConflict` refusal is worth another look; `repository.event(id:)` is applied
   before the popup and the roster reloads after every fresh event; an unknown outcome whose fresh event shows
   `participates == wantsToParticipate` reports nothing.
+- Detail room seams (2026-11-15): a landed `join()` runs `syncRoomAfterJoin()` — `myGroups.reload()`, then the room
+  fetched by the event's id is placed only when it answers with the membership, else a debug line and Mine's reload
+  stands — before `pushOptIn.offerReminders()`; a landed `leave()` runs `myGroups.reload()` then
+  `myGroups.remove(id: event.id)`, so the room leaves Chats whatever the lagging by-user index still answers;
+  `openChat()` needs `permissions.canOpenChat` and a free `isBusy`, fetches `groupRepository.group(id: event.id)`
+  through the same gate (the two-argument `run`, no read-back), places a member room into Mine and sets `openedRoom`,
+  which the view pushes in place.
 - `loadParticipants()` is a no-op for guests (`showsParticipants = identity.currentUserID != nil`);
   `recordViewed()` records once per instance; `canEdit = participation == .hosting`; `hostProfile` is `nil` for a
   guest, an unknown host, the caller themselves or a deleted host (`event.deleted == true` — a tombstone opens no
@@ -160,4 +175,4 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   `EventListFilteringTests.swift`, `EventDetailViewModelTests.swift`, `EventDetailCapacityTests.swift`,
   `EventDetailParticipantsTests.swift`, `EventDetailEditTests.swift`, `EventDetailPushOptInTests.swift`,
   `CreateEventViewModelTests.swift`, `CreateEventGroupTests.swift`, `CreateEventPushOptInTests.swift`,
-  `EditEventViewModelTests.swift`).
+  `EditEventViewModelTests.swift`, `EventDetailRoomTests.swift`, `EventLoaderViewModelTests.swift` (2026-11-15)).

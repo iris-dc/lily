@@ -44,7 +44,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `/api/feedback`, `/api/me/devices`, `/api/tournaments`; one `static func` per sub-resource, e.g. `event(id:)`,
   `participants(eventId:)`, `group(id:)`, `groupMembers(id:)`, `messages(id:)`, `message(id:messageID:)`, `read(id:)`,
   `uploads(id:)`, `attachment(id:messageID:attachmentID:)`, `pin(id:messageID:)`, `inboxAccept(id:)`, `block(userID:)`,
-  `user(id:)`, `device(token:)`, `tournament(id:)`, `tournamentStart(id:)`, `matchResult(id:matchID:)`, `groupTournaments(id:)`.
+  `user(id:)`, `device(token:)`, `tournament(id:)`, `tournamentStart(id:)`, `matchResult(id:matchID:)`, `groupTournaments(id:)`,
+  `eventInvitees(id:)` and `eventInvites(id:)` (`/api/events/{id}/invitees`, `/invites`; `AppConfig+Events.swift`, 2026-11-15).
 - `LaunchArguments` (`lily/Config/AppConfig.swift:AppConfig.LaunchArguments`): `isHonored` is `true` under `#if DEBUG`;
   `flagPrefix = "-"`. Flags: `-reset-session`, `-mock-location`, `-start-as-guest`, `-mock-auth`, `-mock-auth-confirm`,
   `-mock-auth-fail`, `-mock-events`, `-mock-events-fail`, `-hold-popups`, `-freeze-aurora`, `-mock-attachment-picker`,
@@ -263,7 +264,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 ### `AccessibilityIdentifiers` (`lily/Config/AccessibilityIdentifiers.swift:AccessibilityIdentifiers`)
 
-- Kebab-case, area-prefixed `static let` literals: root (`events-filter`, `create-submit`, `auth-email`, ...),
+- Kebab-case, area-prefixed `static let` literals: root (`events-filter`, `create-submit`, `auth-email`, `event-action-chat` and `event-action-invite` — the event
+  detail's in-body action row, 2026-11-15 — ...),
   +Groups (`chat-list`, `chat-composer`, `create-group`, ...), +Tournaments (47 literals and 6 builders, e.g. `match-score-a`; `tournament-action-chat` and
   `tournament-action-invite`, the detail's in-body action row, 2026-11-15), +Polls,
   +Attachments, +Home (`home-segment` and `home-create` — the segmented Home's picker and its per-segment create
@@ -357,7 +359,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   is mirrored from +Landing, plus the segmented Home's `home-segment` and `home-create` from +Home (the Home walks
   switch the segment and open the wizard by them; 2026-11-14); the report sheet's reason rows and the feedback kind picker carry no identifiers and are
   found by label; the inbox's "Load earlier" button, the profile's shared-group rows container and the owner line of an
-  event's and a tournament's title carry none either (no test read them); the event Edit sheet reuses the create identifiers and mirrors its compact type picker's `draft-type-*` ids in `LilyEventEditTests` (2026-11-15); `createGroup` is the group row of both the event
+  event's and a tournament's title carry none either (no test read them); the event Edit sheet reuses the create identifiers and mirrors its compact type picker's `draft-type-*` ids in `LilyEventEditTests` (2026-11-15), whose `+Rooms` walks also mirror `event-action-chat`,
+  `event-action-invite` and the sunset event room's row id (the same day); `createGroup` is the group row of both the event
   and the tournament form; `message(clientID:)` is stable across the optimistic-to-stored swap.
 
 ## Side Effects

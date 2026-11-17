@@ -11,6 +11,7 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
     let reminder: ReminderPayload?
     let tournamentInvite: TournamentInvitePayload?
     let matchReminder: MatchReminderPayload?
+    let eventInvite: EventInvitePayload?
     let eventCancelled: EventCancelledPayload?
     let groupOwnershipTransferred: GroupOwnershipTransferredPayload?
 
@@ -21,6 +22,7 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
          reminder: ReminderPayload? = nil,
          tournamentInvite: TournamentInvitePayload? = nil,
          matchReminder: MatchReminderPayload? = nil,
+         eventInvite: EventInvitePayload? = nil,
          eventCancelled: EventCancelledPayload? = nil,
          groupOwnershipTransferred: GroupOwnershipTransferredPayload? = nil) {
         self.id = id
@@ -30,6 +32,7 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
         self.reminder = reminder
         self.tournamentInvite = tournamentInvite
         self.matchReminder = matchReminder
+        self.eventInvite = eventInvite
         self.eventCancelled = eventCancelled
         self.groupOwnershipTransferred = groupOwnershipTransferred
     }
@@ -41,6 +44,7 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
         case .eventReminder: reminder != nil
         case .tournamentInvite: tournamentInvite != nil
         case .matchReminder: matchReminder != nil
+        case .eventInvite: eventInvite != nil
         case .eventCancelled: eventCancelled != nil
         case .groupOwnershipTransferred: groupOwnershipTransferred != nil
         case .unknown: false
@@ -49,12 +53,12 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
 
     /// The invite this item carries, whichever kind, for the answer it is waiting for; `nil` for a reminder.
     var inviteAnswer: (any InviteAnswer)? {
-        invite ?? tournamentInvite
+        invite ?? tournamentInvite ?? eventInvite
     }
 
     /// The same invite after the caller answered it; anything else is returned as it is.
     func responding(_ status: InviteStatus, at date: Date) -> InboxItem {
-        guard invite != nil || tournamentInvite != nil else { return self }
+        guard invite != nil || tournamentInvite != nil || eventInvite != nil else { return self }
         return InboxItem(id: id,
                          kind: kind,
                          createdAt: createdAt,
@@ -62,12 +66,13 @@ nonisolated struct InboxItem: Identifiable, Hashable, Codable, Sendable {
                          reminder: reminder,
                          tournamentInvite: tournamentInvite?.responding(status, at: date),
                          matchReminder: matchReminder,
+                         eventInvite: eventInvite?.responding(status, at: date),
                          eventCancelled: eventCancelled,
                          groupOwnershipTransferred: groupOwnershipTransferred)
     }
 }
 
-/// `group_invite`, `event_reminder`, `tournament_invite`, `match_reminder`, `event_cancelled` or
+/// `group_invite`, `event_reminder`, `tournament_invite`, `match_reminder`, `event_invite`, `event_cancelled` or
 /// `group_ownership_transferred`; anything else keeps its name, so a page or a stream from a newer backend still
 /// decodes.
 nonisolated enum InboxItemKind: WireNamedKind {
@@ -75,17 +80,19 @@ nonisolated enum InboxItemKind: WireNamedKind {
     case eventReminder
     case tournamentInvite
     case matchReminder
+    case eventInvite
     case eventCancelled
     case groupOwnershipTransferred
     case unknown(String)
 
     static let known: [InboxItemKind] = [.groupInvite, .eventReminder, .tournamentInvite, .matchReminder,
-                                         .eventCancelled, .groupOwnershipTransferred]
+                                         .eventInvite, .eventCancelled, .groupOwnershipTransferred]
 
     private static let groupInviteName = "group_invite"
     private static let eventReminderName = "event_reminder"
     private static let tournamentInviteName = "tournament_invite"
     private static let matchReminderName = "match_reminder"
+    private static let eventInviteName = "event_invite"
     private static let eventCancelledName = "event_cancelled"
     private static let groupOwnershipTransferredName = "group_ownership_transferred"
 
@@ -95,6 +102,7 @@ nonisolated enum InboxItemKind: WireNamedKind {
         case .eventReminder: Self.eventReminderName
         case .tournamentInvite: Self.tournamentInviteName
         case .matchReminder: Self.matchReminderName
+        case .eventInvite: Self.eventInviteName
         case .eventCancelled: Self.eventCancelledName
         case .groupOwnershipTransferred: Self.groupOwnershipTransferredName
         case .unknown(let name): name

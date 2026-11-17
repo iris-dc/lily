@@ -22,7 +22,9 @@ draws.
   - events: `eventsUnavailable`, `eventNotFound`, `eventFull`, `alreadyJoined`, `notAParticipant`, `hostCannotLeave`,
     `tryAgain`, `participationFailed`, `eventCreationFailed`, `placeNotFound` (client-side, 2026-11-05: the typed place
     could not be geocoded into a spot; raised before the create goes out), `createIdReused` (a `*_ID_REUSED` on any create: the
-    earlier create landed and `CreateFlow` updates it), `notHost`, `capacityTooLow`, `eventUpdateFailed`;
+    earlier create landed and `CreateFlow` updates it), `notHost`, `capacityTooLow`, `eventUpdateFailed`; the event-invite refusals (2026-11-15):
+    `inviteeAlreadyJoined`, `cannotInviteToEvent`, `eventStarted` (`EVENT_STARTED`: invites only before the start)
+    and `eventInviteLimit` (the shared `INVITE_LIMIT`, remapped by the event invite repository);
   - groups and invites: `groupsUnavailable`, `groupNotFound`, `groupFull`, `notAMember`, `bannedFromGroup`, `memberBanned`,
     `ownerCannotLeave`, `insufficientRole`, `membershipLimitReached`, `groupCreationFailed`, `groupActionFailed`,
     `contentRejected`, `inviteExpired`, `inviteUnavailable`, `inboxUnavailable`, `inviteActionFailed`, `inviteNotPending`,
@@ -52,7 +54,8 @@ draws.
 - `ErrorMessageMapper` (`lily/Core/Errors/ErrorMessageMapper.swift:ErrorMessageMapper`): `nonisolated enum`;
   `static message(for: AppError) -> ErrorMessage`; `static var unknownMessage`; private `authMessage(for:)` and
   `eventMessage(for:)` in the main file. Per-area `nonisolated extension`s: `hostMessage(for:)`
-  (`ErrorMessageMapper+Events.swift`); `groupMessage(for:)` and `moderationMessage(for:)` (`+Groups.swift`, private
+  (`ErrorMessageMapper+Events.swift`, chaining to the private `eventInviteMessage(for:)`, the event-invite refusals;
+  2026-11-15); `groupMessage(for:)` and `moderationMessage(for:)` (`+Groups.swift`, private
   `groupWriteMessage`, `inviteMessage`, `membershipLimitMessage`, `accountSuspendedMessage`); `chatMessage(for:)` and
   `attachmentMessage(for:)` (`+Chat.swift`, private `attachmentCapsBody(_:)`); `pollAndPinMessage(for:)` (`+Polls.swift`);
   `peopleMessage(for:)` (`+People.swift`, chaining to `accountMessage(for:)` in `+Profile.swift` for the
@@ -69,12 +72,13 @@ draws.
 
 ## Invariants
 
-- `message(for:)` is an exhaustive `switch` over all 94 cases with no `default`, so a new `AppError` case that is not
+- `message(for:)` is an exhaustive `switch` over all 98 cases with no `default`, so a new `AppError` case that is not
   routed is a compile error; `.network`, `.rateLimited` and `.requestTooLarge` go to `transportMessage(for:)` (the
   `retryAfter` value is not used in the copy; `.requestTooLarge` reads "Couldn't send that / It's larger than the server
   accepts."), every other case goes to an area function (`ErrorMessageMapper.swift:message(for:)`).
 - Every area switch ends in a `default` that chains or returns `unknownMessage`, so no path traps:
-  `eventMessage -> hostMessage`, `groupMessage -> groupWriteMessage -> inviteMessage`, `chatMessage -> pollAndPinMessage`,
+  `eventMessage -> hostMessage -> eventInviteMessage` (`.eventStarted`, `.inviteeAlreadyJoined`,
+  `.cannotInviteToEvent`, `.eventInviteLimit`; 2026-11-15), `groupMessage -> groupWriteMessage -> inviteMessage`, `chatMessage -> pollAndPinMessage`,
   `peopleMessage -> accountMessage` ("Couldn't check your account" / "Couldn't delete your account", both over
   "Please try again in a moment."; the flow's settled outcomes — 401, `USER_NOT_FOUND` — never reach copy,
   `DeletionSettle` lands them), `tournamentMessage -> entryMessage -> matchMessage -> tournamentInviteMessage` (which also answers

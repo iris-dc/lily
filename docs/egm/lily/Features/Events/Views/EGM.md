@@ -30,7 +30,20 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `presentationPicker`, `content`, `listContent`, `eventList`, `filteredOutState`, `loadFailedState`,
   `emptyState`, `stateSlot`, `refreshableScroll`.
 - `EventDetailView` (`lily/Features/Events/Views/EventDetailView.swift`): `init(viewModel: EventDetailViewModel,
-  dependencies: AppDependencies)`; hosts `EditEventSheet` in `.sheet(isPresented:)`. The host line (2026-11-07) maps
+  dependencies: AppDependencies)`; hosts `EditEventSheet` and the invite sheet (`InvitePeopleSheet` over
+  `makeEventInvitePeopleViewModel(for: event.id)`) in `.sheet(isPresented:)`, draws `EventActionRow` after the facts
+  card and pushes `viewModel.openedRoom`'s chat in place through the shared `chatDestination(item:dependencies:)`
+  (2026-11-15).
+- `EventActionRow(permissions: EventPermissions, onOpenChat:onInvite:)`
+  (`lily/Features/Events/Views/EventActionRow.swift`, 2026-11-15): the tournament row's shape over the permissions
+  value the detail passes — Open chat `lilyProminentButton()` under `canOpenChat` (identifier `event-action-chat`),
+  Invite `lilyGlassButton(labelColor: .lilyInk)` under `canInvite` (`event-action-invite`); the copy is the group
+  row's (`AppBranding.Groups.openChat`, `.invite`).
+- `EventLoaderView(viewModel: EventLoaderViewModel, dependencies:)`
+  (`lily/Features/Events/Views/EventLoaderView.swift`, 2026-11-15): the state ladder behind a pushed
+  `EventDestination` — a spinner, the detail (`makeEventDetailViewModel`, its `onChange` recording `eventChanges`),
+  an `EmptyStateView` for a gone event ("This event is no longer available"), `loadFailed` with Try again; inline
+  title. The host line (2026-11-07) maps
   the stored name through `Tombstone.displayName(event.hostName, deleted: event.deleted)` and passes
   `Tombstone.symbol` as `OwnerTitleBlock`'s `subtitleMark` for a deleted host; the view model's `hostProfile` is nil
   then, so the line is plain, never a link.
@@ -215,7 +228,9 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   prominent `BusyButton` → `join()`, `.leave` a glass `BusyButton` → `leave()`, `.full` a prominent `BusyButton`
   with no action, `.hosting` a caption. The Edit toolbar item (`lilyToolbarTextButton()`) shows only when `canEdit`;
   the roster only when
-  `showsParticipants`; `.task` calls `recordViewed()` then `loadParticipants()`.
+  `showsParticipants`; `.task` calls `recordViewed()` then `loadParticipants()`. The action row shows only when
+  `permissions.showsActionRow` (the view computes `viewModel.permissions` once per body pass and hands the value to
+  the row): Open chat runs `openChat()` in a `Task`, Invite presents the invite sheet (2026-11-15).
 - Form (`EventDraftForm`): each section footer shows the first matching `viewModel.issue(for:)`: game
   `.titleMissing` / `.titleTooLong` / `.startsAtTooSoon` / `.endsBeforeStart`, where `.locationNameMissing` / `.locationNameTooLong` /
   `.coordinateMissing`, players `.capacityOutOfRange` / `.capacityBelowParticipants`, details

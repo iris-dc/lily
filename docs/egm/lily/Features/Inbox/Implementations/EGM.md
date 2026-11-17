@@ -6,9 +6,9 @@ Source: `lily/Features/Inbox/Implementations/`
 
 The two concrete `InboxRepository` types and the fixture builder the mock uses. `RemoteInboxRepository` maps each
 protocol method to one `APIRequest` under `/api/me/inbox` through `APIClient.send(_:failingWith:)`.
-`MockInboxRepository` keeps the fixture items in memory (four; six with the deletion notices under
+`MockInboxRepository` keeps the fixture items in memory (five since the event invite, 2026-11-15; seven with the deletion notices under
 `-mock-deleted-user`), mirrors the backend's monotonic read marker and invite refusals, and delegates admission to the
-group and tournament mocks; `MockInboxFixtures` builds those items from the
+group, tournament and event mocks; `MockInboxFixtures` builds those items from the
 other features' fixtures, so previews, UI tests and `-mock-events` runs need no backend.
 
 ## Interface
@@ -19,14 +19,16 @@ other features' fixtures, so previews, UI tests and `-mock-events` runs need no 
   `decline(itemID:)` (answers `InviteDeclination.item`).
 - `final class MockInboxRepository: InboxRepository`
   `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:MockInboxRepository]`:
-  `init(groups: MockGroupRepository, tournaments: MockTournamentRepository, identity: any IdentityProvider, logger: any Logging, deletedUser: Bool = false, now: @escaping () -> Date = { .now })`;
-  private `items: [InboxItem]`, `lastReadID: String?`; helpers `admittance(for:entering:)`, `invite(at:)`,
+  `init(groups: MockGroupRepository, tournaments: MockTournamentRepository, events: MockEventRepository (2026-11-15), identity: any IdentityProvider, logger: any Logging, deletedUser: Bool = false, now: @escaping () -> Date = { .now })`;
+  private `items: [InboxItem]` (sorted by id at init, so a fixture built out of order keeps the wire's ascending
+  order; 2026-11-15), `lastReadID: String?`; helpers `admittance(for:entering:)`, `invite(at:)`,
   `requireUser()`.
 - `nonisolated enum MockInboxFixtures` `[lily/Features/Inbox/Implementations/MockInboxFixtures.swift:MockInboxFixtures]`:
-  `tournamentInviteID`, `reminderID`, `matchReminderID`, `inviteID`, `eventCancelledID`, `ownershipID`
-  (`itemID(index:)` 1 to 6), `inviterName`
+  `tournamentInviteID`, `reminderID`, `matchReminderID`, `inviteID`, `eventCancelledID`, `ownershipID`,
+  `eventInviteID` (`itemID(index:)` 1 to 7; the event invite is 7, the newest, 2026-11-15), `inviterName`
   (`"Noor"`), `itemID(index:)` (prefix `01J8MOCKNB` plus a zero-padded 16-digit index), `make(now:) -> [InboxItem]`
-  (oldest first: tournament invite, event reminder, match reminder, group invite) and `deletionNotices(now:)` (the
+  (oldest first: tournament invite, event reminder, match reminder, group invite, event invite — Noor into the
+  "Doubles, all levels" game, 2026-11-15) and `deletionNotices(now:)` (the
   cancelled "Friday 5-a-side" snapshot, no event behind it, and Sunday Padel Crew handed to the caller), built from
   `MockTournamentFixtures`, `MockEventFixtures` and `MockGroupFixtures`.
 
@@ -47,7 +49,9 @@ other features' fixtures, so previews, UI tests and `-mock-events` runs need no 
 - Accept: `.declined` or an `.unknown` status throws `inviteNotPending` (Laurel refuses a non-pending invite);
   `.accepted` replays the same shape without re-joining; `.pending`
   past `expiresAt` throws `AppError.inviteExpired`; otherwise admission runs before the item turns accepted, so a
-  refused admission leaves it pending `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:accept]`.
+  refused admission leaves it pending; an event invite's admittance reads the event once — entering a caller not yet
+  in joins through the event mock and the acceptance answers the join's own return, a replay answers the read event
+  (2026-11-15) `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:accept]`.
 - Decline: `.accepted` or an `.unknown` status throws `inviteNotPending`; `.declined` answers the same item; `.pending` is declined at
   `now()`; expiry is not checked `[lily/Features/Inbox/Implementations/MockInboxRepository.swift:decline]`.
 - Admission: a group invite calls `groups.admit(id:)` on every accept, replay included; a tournament invite calls

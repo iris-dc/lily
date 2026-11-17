@@ -3,9 +3,10 @@ import Foundation
 /// What a group offers the caller, decided in one place from the group and the caller's id so the screens and their
 /// tests agree. The analogue of `Participation`. The server stays the authority: a stale role only changes which
 /// buttons show, every call is re-checked there. A direct conversation is its own case: chat and the two-person
-/// roster, nothing a group offers beyond that (the backend refuses those too). A member of a tournament's room, or of a
-/// room of a kind this build does not know (a newer backend's), gets the same: a tournament is entered and left through
-/// its entries, and an unknown kind's rules are the backend's, not this build's to guess.
+/// roster, nothing a group offers beyond that (the backend refuses those too). A member of a tournament's or an event's room, or
+/// of a room of a kind this build does not know (a newer backend's), gets the same: a tournament is entered and left
+/// through its entries, an event through its participation, and an unknown kind's rules are the backend's, not this
+/// build's to guess.
 nonisolated enum GroupAccess: Equatable, Sendable {
     /// Guests see the group; joining needs an account.
     case guest
@@ -17,8 +18,8 @@ nonisolated enum GroupAccess: Equatable, Sendable {
     case full
     /// The caller's side of a direct conversation.
     case conversation
-    /// A member of a tournament's room or of a room of a kind this build does not know: chat and the roster, nothing a
-    /// group offers beyond that.
+    /// A member of a tournament's or an event's room, or of a room of a kind this build does not know: chat and the
+    /// roster, nothing a group offers beyond that.
     case room
 
     init(group: SportGroup, userID: String?) {
@@ -28,7 +29,7 @@ nonisolated enum GroupAccess: Equatable, Sendable {
         }
         if group.isDirect, group.isMember {
             self = .conversation
-        } else if group.isTournamentRoom || group.kind.isUnknown, group.isMember {
+        } else if group.isTournamentRoom || group.isEventRoom || group.kind.isUnknown, group.isMember {
             self = .room
         } else if let role = group.role {
             self = .member(role)
@@ -54,7 +55,7 @@ nonisolated enum GroupAccess: Equatable, Sendable {
     }
     var canChat: Bool { isMember }
     /// Owners cannot leave; nobody leaves a conversation or a room through the group routes (a tournament's is left
-    /// through its entry, an unknown kind's rule is the backend's).
+    /// through its entry, an event's through its participation, an unknown kind's rule is the backend's).
     var canLeave: Bool { role.map { $0 != .owner } ?? false }
     var canEdit: Bool { role?.isAdmin ?? false }
     var canDelete: Bool { role == .owner }
@@ -95,14 +96,14 @@ nonisolated enum GroupAccess: Equatable, Sendable {
         canRemove(other)
     }
 
-    /// Polls go into a group or a tournament's room the caller is in, never a conversation, nor a room of a kind this
-    /// build does not know.
+    /// Polls go into a group or a tournament's or an event's room the caller is in, never a conversation, nor a room
+    /// of a kind this build does not know.
     func canCreatePolls(in group: SportGroup) -> Bool {
         isMember && !group.isDirect && !group.kind.isUnknown
     }
 
-    /// Either side of a conversation; in a group or a tournament's room, its admins and owner; never in a room of a
-    /// kind this build does not know, whose rules are the backend's.
+    /// Either side of a conversation; in a group or a tournament's or an event's room, its admins and owner; never in
+    /// a room of a kind this build does not know, whose rules are the backend's.
     func canPin(in group: SportGroup) -> Bool {
         self == .conversation || (isMember && group.role?.isAdmin == true && !group.kind.isUnknown)
     }

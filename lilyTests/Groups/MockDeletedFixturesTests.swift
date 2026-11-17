@@ -36,12 +36,16 @@ struct MockDeletedFixturesTests {
         #expect(plainPage.items.allSatisfy { $0.deleted == nil }, "without the flag no fixture is tombstoned")
     }
 
-    @Test func aPastGameHostedByADeletedUserJoinsTheEventFixtures() async throws {
+    @Test func aPastGameHostedByADeletedUserJoinsTheEventFixturesWithItsRoom() async throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let groups = MockGroupRepository(identity: identity, logger: logger)
         let repository = MockEventRepository(now: now, identity: identity, logger: logger, deletedHost: true)
+        repository.rooms = groups
         let event = try await repository.event(id: "mock-event-deleted-host")
         #expect(event.deleted == true && event.hostName == AppConfig.DisplayName.backendDefault)
         #expect(event.startsAt < now, "the job cancels upcoming hosted games, so only a past one can keep its host")
+        let room = try await groups.group(id: "mock-event-deleted-host")
+        #expect(room.isEventRoom && room.isMember, "the joined game has a fetchable room, so Open chat opens it")
 
         let plain = MockEventRepository(now: now, identity: identity, logger: logger)
         await #expect(throws: AppError.eventNotFound) { try await plain.event(id: "mock-event-deleted-host") }

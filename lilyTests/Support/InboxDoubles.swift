@@ -22,6 +22,8 @@ final class FakeInboxRepository: InboxRepository, HoldsRequests {
     var acceptedGroup: SportGroup? = .fixture(id: "g3", name: "Climbing Buddies", visibility: .private, role: .member)
     /// The tournament an accept of a tournament invite answers; one named after the invite's id when not set.
     var acceptedTournament: Tournament?
+    /// The event an accept of an event invite answers; `nil` answers the drift shape that names nothing.
+    var acceptedEvent: SportEvent?
     /// Thrown by the next accepts, one each, before `acceptError` is consulted: a `.tryAgain` that a repeat gets past.
     var transientAcceptErrors: [AppError] = []
     var acceptError: (any Error)?
@@ -62,6 +64,9 @@ final class FakeInboxRepository: InboxRepository, HoldsRequests {
         if let invite = item.tournamentInvite {
             let tournament = acceptedTournament ?? .fixture(id: invite.tournamentId, name: invite.tournamentName)
             return InviteAcceptance(item: item.responding(.accepted, at: now), tournament: tournament)
+        }
+        if item.eventInvite != nil {
+            return InviteAcceptance(item: item.responding(.accepted, at: now), event: acceptedEvent)
         }
         return InviteAcceptance(item: item.responding(.accepted, at: now), group: acceptedGroup)
     }

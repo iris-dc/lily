@@ -12,7 +12,7 @@ holds no copy of the items; they live in
 ## Interface
 
 - `@Observable final class InboxViewModel` `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:InboxViewModel]`;
-  `init(store: InboxStore, repository: any InboxRepository, opener: EventOpener, myGroups: MyGroupsStore, tournamentChanges: ChangeTracker, navigation: AppNavigation, errorCenter: ErrorCenter, logger: any Logging, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay, now: @escaping () -> Date = { .now })`.
+  `init(store: InboxStore, repository: any InboxRepository, opener: EventOpener, myGroups: MyGroupsStore, groupRepository: any GroupRepository (2026-11-15), tournamentChanges: ChangeTracker, eventChanges: ChangeTracker (2026-11-15), navigation: AppNavigation, errorCenter: ErrorCenter, logger: any Logging, tryAgainDelay: Duration = AppConfig.API.tryAgainDelay, now: @escaping () -> Date = { .now })`.
 - State: `store`, `busyItemIDs: Set<String>` (answers in flight), `openingItemID: String?` (the reminder whose game
   is being fetched), `now`; derived `rows: [InboxTimelineRow]` (`InboxTimeline.rows(store.items)`), `hasOlder`,
   `isLoadingOlder`, `loadFailed`, `isInitialLoad` (`!store.hasLoaded && !store.loadFailed`), `newestID`;
@@ -20,7 +20,8 @@ holds no copy of the items; they live in
 - Actions: `appear() async`, `refresh() async`, `loadOlder() async` (answers nothing; the store's Bool is dropped),
   `noteNewItems() async`,
   `accept(_:) async`, `decline(_:) async`, `openEvent(for:) async`, `openTournament(for:)`, `openGroup(for:) async`.
-- Private: `answer(_:verb:wanting:_:)`, `noteLanded(_:of:)`, `inviteReadBack: LostAnswer<[InboxItem]>`,
+- Private: `answer(_:verb:wanting:_:)`, `noteLanded(_:of:)`, `syncRoom(forEvent:)` (2026-11-15),
+  `inviteReadBack: LostAnswer<[InboxItem]>`,
   `restated(_:for:)`, `AppError.isInviteVerdict` (`inviteNotPending` or `inviteExpired`)
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:isInviteVerdict]`.
 
@@ -38,8 +39,8 @@ holds no copy of the items; they live in
 - An outcome left unknown (`.network`, `.inviteActionFailed`) is read back through `LostAnswer` before any popup:
   `store.reload()` is the refetch (a failed reload throws `.inboxUnavailable` into the read-back), and the card's
   `inviteAnswer.status` equal to the wanted status means the tap went through: nothing is reported and an accept
-  reloads Mine and, for a tournament invite, bumps `tournamentChanges` (the page names no group or tournament, so
-  nothing opens); a card still pending is reported. A verdict
+  reloads Mine and, for a tournament invite, bumps `tournamentChanges`, for an event invite `eventChanges`
+  (2026-11-15; the page names no group, tournament or event, so nothing opens); a card still pending is reported. A verdict
   on the invite (`inviteNotPending`, `inviteExpired`) is a stale card, not a fault: the same read-back runs
   (`isWorthAnotherLook`), then a warning and the report, so the card shows the invite as the backend has it; any other
   failure logs at error and is reported; a cancellation is silent
@@ -48,8 +49,12 @@ holds no copy of the items; they live in
   route answers the groups cap and the tournaments cap under one code
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:restated]`.
 - Accept: the answered item replaces the held one; a group goes into Mine at once and its chat opens; a tournament
-  bumps `tournamentChanges`, reloads Mine first when the caller has entered, then opens the tournament; an acceptance
-  naming neither reloads Mine, opens nothing and shows no popup `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:accept]`.
+  bumps `tournamentChanges`, reloads Mine first when the caller has entered, then opens the tournament; an event
+  bumps `eventChanges` and, when the fresh event says the caller participates (the room rode the acceptance
+  transaction), runs `syncRoom(forEvent:)` — Mine reloads, then the room fetched by the event's id is placed only
+  when it answers with the membership, else a debug line and Mine's reload stands (the event detail's join recipe) —
+  and opens the event's detail on Home (2026-11-15); an acceptance
+  naming none reloads Mine, opens nothing and shows no popup `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:accept]`.
 - `openEvent(for:)` and `openGroup(for:)` run one at a time (`openingItemID`) and only for an item with their payload;
   `openTournament(for:)` needs a `matchReminder` and fetches nothing. `openGroup` finds the group in Mine (reloading it
   once when not yet held — the caller owns the group now, so Mine is where it surfaces) and opens it on Home; a group
@@ -64,9 +69,11 @@ holds no copy of the items; they live in
 - `repository.accept(itemID:)` and `repository.decline(itemID:)`; `store.loadIfStale()`, `store.reload()`,
   `store.loadOlder()`, `store.markRead()`, `store.replace(_:)` `[lily/Features/Inbox/ViewModels/InboxViewModel.swift]`.
 - `myGroups.add(group)` and `myGroups.reload()` (an accept's, and `openGroup`'s for a group not yet held);
-  `tournamentChanges.recordChange()` `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:accept]`,
+  `groupRepository.group(id:)` and `myGroups.add(room)` on an accepted event invite's `syncRoom` (2026-11-15);
+  `tournamentChanges.recordChange()`; `eventChanges.recordChange()` (2026-11-15) `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:accept]`,
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:openGroup]`.
-- Navigation: `navigation.open(chat:)`, `navigation.open(tournament:)`, `navigation.open(group:)` (an ownership
+- Navigation: `navigation.open(chat:)`, `navigation.open(tournament:)`, `navigation.open(event:)` (an accepted event
+  invite, 2026-11-15), `navigation.open(group:)` (an ownership
   notice), `navigation.openInChat(_:)` (a match
   reminder's `TournamentDestination`); `opener.open(eventID:from:)` pushes the game or reports one that is gone
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:accept]`,
@@ -75,8 +82,9 @@ holds no copy of the items; they live in
 - `errorCenter.report(failure)` for every failed answer the read-back did not find landed
   `[lily/Features/Inbox/ViewModels/InboxViewModel.swift:answer]`.
 - Logging under `.inbox`: info on an accept (group, or tournament with its entry), a decline, a reminder opening a
-  game or a match, an ownership notice opening its group; warning on an acceptance into nothing this build knows, on a
-  verdict and on an ownership notice naming a group Mine does not hold; error on other failures;
+  game or a match, an ownership notice opening its group; debug "Event <id> has no fetchable room yet; Mine's reload
+  stands" when `syncRoom` cannot place the room (2026-11-15); warning on an acceptance into nothing this build knows,
+  on a verdict and on an ownership notice naming a group Mine does not hold; error on other failures;
   the `LostAnswer` lines with `what` = "Invite <id> <verb>": warning "Invite <id> <verb> outcome unknown (<error>);
   reading back", info "Reading back after <error> on Invite <id> <verb>" and "Invite <id> <verb> landed despite
   <error>; nothing to report", warning "Could not read back after Invite <id> <verb>: <error>"

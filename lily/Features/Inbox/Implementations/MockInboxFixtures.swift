@@ -1,9 +1,10 @@
 import Foundation
 
-/// The four items of a mock inbox, oldest first: Noor's invite into the Padel Open (the private tournament nothing else
+/// The five items of a mock inbox, oldest first: Noor's invite into the Padel Open (the private tournament nothing else
 /// reaches), a game reminder for the first fixture event, a match reminder for the caller's scheduled table-tennis match,
-/// then Noor's invite into Climbing Buddies, the private group nothing else reaches. Ids sort like ULIDs, the group
-/// invite being the newest. Under `-mock-deleted-user` two newer notices join them (`deletionNotices`).
+/// Noor's invite into Climbing Buddies (the private group nothing else reaches), then her invite into "Doubles, all
+/// levels", the unjoined tennis fixture. Ids sort like ULIDs, the event invite being the newest; the `-mock-deleted-user`
+/// notices (`deletionNotices`) take ids 5 and 6 between the two invites, and the repository keeps the page ascending.
 nonisolated enum MockInboxFixtures {
     static let tournamentInviteID = itemID(index: 1)
     static let reminderID = itemID(index: 2)
@@ -11,7 +12,10 @@ nonisolated enum MockInboxFixtures {
     static let inviteID = itemID(index: 4)
     static let eventCancelledID = itemID(index: 5)
     static let ownershipID = itemID(index: 6)
+    static let eventInviteID = itemID(index: 7)
     static let inviterName = "Noor"
+    /// The fixture event Noor invites into: "Doubles, all levels", which the stride leaves unjoined.
+    static let invitedEventIndex = 2
     private static let idPrefix = "01J8MOCKNB"
     private static let idDigits = 16
     /// How long before the launch each item was written; the group invite is the most recent one.
@@ -21,6 +25,7 @@ nonisolated enum MockInboxFixtures {
     private static let inviteAge: TimeInterval = 60
     private static let eventCancelledAge: TimeInterval = 40
     private static let ownershipAge: TimeInterval = 30
+    private static let eventInviteAge: TimeInterval = 20
     /// The cancelled fixture game would start this far ahead; the event itself is gone, as the deletion job leaves it.
     private static let cancelledEventLead: TimeInterval = 2 * .day
 
@@ -30,7 +35,8 @@ nonisolated enum MockInboxFixtures {
     }
 
     static func make(now: Date) -> [InboxItem] {
-        [tournamentInvite(now: now), reminder(now: now), matchReminder(now: now), invite(now: now)].compactMap { $0 }
+        [tournamentInvite(now: now), reminder(now: now), matchReminder(now: now), invite(now: now), eventInvite(now: now)]
+            .compactMap { $0 }
     }
 
     /// Noor asks the caller into her Padel Open as it stands: individual, so an accept enters them.
@@ -96,6 +102,25 @@ nonisolated enum MockInboxFixtures {
                          kind: .groupInvite,
                          createdAt: now.addingTimeInterval(-inviteAge),
                          invite: invite)
+    }
+
+    /// Noor asks the caller into the unjoined tennis fixture as it stands: an accept joins the game.
+    private static func eventInvite(now: Date) -> InboxItem? {
+        let events = MockEventFixtures.make(now: now, count: invitedEventIndex + 1)
+        guard events.indices.contains(invitedEventIndex) else { return nil }
+        let event = events[invitedEventIndex]
+        let invite = EventInvitePayload(eventId: event.id,
+                                        title: event.title,
+                                        type: event.type,
+                                        startsAt: event.startsAt,
+                                        locationName: event.locationName,
+                                        inviterUserId: MockGroupFixtures.memberID(for: inviterName),
+                                        inviterName: inviterName,
+                                        expiresAt: now.addingTimeInterval(AppConfig.Inbox.mockInviteExpiry))
+        return InboxItem(id: eventInviteID,
+                         kind: .eventInvite,
+                         createdAt: now.addingTimeInterval(-eventInviteAge),
+                         eventInvite: invite)
     }
 
     /// What another account's deletion leaves in the caller's inbox (`-mock-deleted-user`), newest of the fixtures:

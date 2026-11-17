@@ -6,7 +6,6 @@ import Testing
 @MainActor
 struct MockEventRepositoryCreateTests {
     private let repository = MockEventRepository(now: .now,
-                                                 count: AppConfig.Events.mockFeedSize,
                                                  identity: FakeIdentityProvider(currentUserID: TestFixtures.user.id),
                                                  logger: SpyLogger())
 

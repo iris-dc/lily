@@ -122,3 +122,12 @@ Every person the app names can be opened (2026-09-29): roster rows, event partic
   visibility that leaves with the screen — the same cure the group detail's chat push shipped with the same day (the
   lesson's write-up: groups.md, 2026-11-15). Found by the group fix's first UI run; the profile walk never caught it
   because `LilyPeopleTests` reaches profiles from Explore, whose stack registers no hides.
+- 2026-11-15 — **Event invites in the inbox** (the event-chats slice): `InboxItemKind.eventInvite` ("event_invite")
+  with the tolerant `EventInvitePayload` (event id, title, type, start, place, inviter, status), drawn by
+  `EventInviteCard` (the calendar mark, "Noor invited you to …", type · start beneath). Accept answers
+  `{item, event}`: the detail opens from the answer's event on Home's stack, `eventChanges` bumps the event lists,
+  and Mine reloads when the fresh event says the caller participates (the room rode the acceptance transaction);
+  decline mirrors the tournament's, and a decided card's refusal re-syncs through the usual read-back. The mock inbox
+  gains the event invite as its newest item (the repository now sorts its fixtures by id, so the builder order stops
+  mattering); `LilyChatTests`' inbox-preview pin moved with it on purpose, and `MockInboxRepositoryTests`' paging pins
+  were rewritten around the new first page.

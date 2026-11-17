@@ -19,6 +19,18 @@ nonisolated extension AppConfig.Events {
     static let placeSuggestionTimeout: Duration = .seconds(8)
 }
 
+nonisolated extension AppConfig.API.Paths {
+    /// `GET`: the people the host or a participant may invite into the event, in the group invitee shape.
+    static func eventInvitees(id: String) -> String {
+        "\(event(id: id))/invitees"
+    }
+
+    /// `POST {userId}`: sends the invite; the invitee answers it from their inbox.
+    static func eventInvites(id: String) -> String {
+        "\(event(id: id))/invites"
+    }
+}
+
 nonisolated extension AppConfig.Events.Creation {
     /// The finish time proposed when the host adds one: an hour past the start, a round default to edit from.
     static let proposedDuration: TimeInterval = .hour

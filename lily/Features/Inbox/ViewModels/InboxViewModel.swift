@@ -15,7 +15,10 @@ final class InboxViewModel {
     private let repository: any InboxRepository
     private let opener: EventOpener
     private let myGroups: MyGroupsStore
+    /// An accepted event invite fetches the game's room directly (`syncRoom`), the event detail's join recipe.
+    private let groupRepository: any GroupRepository
     private let tournamentChanges: ChangeTracker
+    private let eventChanges: ChangeTracker
     private let navigation: AppNavigation
     private let errorCenter: ErrorCenter
     private let logger: any Logging
@@ -26,7 +29,9 @@ final class InboxViewModel {
          repository: any InboxRepository,
          opener: EventOpener,
          myGroups: MyGroupsStore,
+         groupRepository: any GroupRepository,
          tournamentChanges: ChangeTracker,
+         eventChanges: ChangeTracker,
          navigation: AppNavigation,
          errorCenter: ErrorCenter,
          logger: any Logging,
@@ -36,7 +41,9 @@ final class InboxViewModel {
         self.repository = repository
         self.opener = opener
         self.myGroups = myGroups
+        self.groupRepository = groupRepository
         self.tournamentChanges = tournamentChanges
+        self.eventChanges = eventChanges
         self.navigation = navigation
         self.errorCenter = errorCenter
         self.logger = logger
@@ -83,9 +90,10 @@ final class InboxViewModel {
 
     /// Accepts: the item shows as accepted; a group goes into Mine at once and its chat opens; a tournament's lists
     /// reload and its detail opens (Mine reloaded first when the accept entered the caller, so their new room is
-    /// listed; a team tournament leaves them to pick or name a team). An acceptance naming neither (contract drift)
-    /// still admitted the caller somewhere, so Mine is reloaded, the one place a new room can surface; nothing opens
-    /// and no popup shows.
+    /// listed; a team tournament leaves them to pick or name a team); an event's lists reload and its detail opens on
+    /// Home, Mine reloaded and the fetchable room placed (`syncRoom`). An acceptance naming none of them (contract
+    /// drift) still admitted the caller
+    /// somewhere, so Mine is reloaded, the one place a new room can surface; nothing opens and no popup shows.
     func accept(_ item: InboxItem) async {
         await answer(item, verb: "accept", wanting: .accepted) {
             let acceptance = try await repository.accept(itemID: item.id)
@@ -100,6 +108,11 @@ final class InboxViewModel {
                 logger.info(.inbox, "Invite \(item.id) accepted into tournament \(tournament.id)\(entry)")
                 if tournament.hasEntered { await myGroups.reload() }
                 navigation.open(tournament: tournament.destination)
+            } else if let event = acceptance.event {
+                eventChanges.recordChange()
+                logger.info(.inbox, "Invite \(item.id) accepted into event \(event.id)")
+                if event.participates { await syncRoom(forEvent: event.id) }
+                navigation.open(event: event)
             } else {
                 logger.warning(.inbox, "Invite \(item.id) accepted into nothing this build knows; reloading Mine")
                 await myGroups.reload()
@@ -112,6 +125,18 @@ final class InboxViewModel {
             store.replace(try await repository.decline(itemID: item.id))
             logger.info(.inbox, "Invite \(item.id) declined")
         }
+    }
+
+    /// The accept entered the caller into the game's room: Mine reloads (its by-user index may lag), and the room is
+    /// placed directly when the backend already serves it with the membership (the event detail's join recipe); a
+    /// room not yet fetchable stays quiet, Mine's reload the fallback.
+    private func syncRoom(forEvent eventID: String) async {
+        await myGroups.reload()
+        guard let room = try? await groupRepository.group(id: eventID), room.isMember else {
+            logger.debug(.inbox, "Event \(eventID) has no fetchable room yet; Mine's reload stands")
+            return
+        }
+        myGroups.add(room)
     }
 
     /// The game a reminder points at, pushed on the Chats stack; a game that is gone or unreachable reaches the popup.
@@ -152,7 +177,7 @@ final class InboxViewModel {
     /// One answer per invite at a time; `TRY_AGAIN` is repeated once. An outcome left unknown (a lost connection, a
     /// 5xx) is read back from the inbox before any popup (`LostAnswer`): a card the backend shows answered as asked
     /// means the tap went through, and an accept then reloads Mine, the one place the new room can surface, since the
-    /// page names no group or tournament (a tournament invite's tells the tournament lists too). A verdict on the invite
+    /// page names no group, tournament or event (a tournament or event invite's tells its lists too). A verdict on the invite
     /// (answered already, expired) is a stale card, not a fault: a warning, and the same read-back so the card shows
     /// the invite as the backend now has it.
     private func answer(_ item: InboxItem,
@@ -189,6 +214,7 @@ final class InboxViewModel {
     private func noteLanded(_ status: InviteStatus, of item: InboxItem) async {
         guard status == .accepted else { return }
         if item.kind == .tournamentInvite { tournamentChanges.recordChange() }
+        if item.kind == .eventInvite { eventChanges.recordChange() }
         await myGroups.reload()
     }
 

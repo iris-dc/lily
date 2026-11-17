@@ -41,6 +41,26 @@ extension SportGroup {
                    kind: kind,
                    location: location)
     }
+
+    /// An event's room as the backend shapes one: kind `event`, no group powers; `role` is the caller's row.
+    static func eventRoomFixture(id: String = "e",
+                                 name: String = "Sunset 5-a-side",
+                                 visibility: GroupVisibility = .public,
+                                 memberCount: Int = 6,
+                                 role: MemberRole? = .member,
+                                 lastMessageAt: Date? = nil) -> SportGroup {
+        fixture(id: id,
+                name: name,
+                visibility: visibility,
+                type: .football,
+                memberCount: memberCount,
+                maxMembers: 11,
+                membersCanCreateEvents: false,
+                membersCanInvite: false,
+                lastMessageAt: lastMessageAt,
+                role: role,
+                kind: .event)
+    }
 }
 
 extension GroupDraft {
@@ -79,16 +99,19 @@ extension InviteCandidate {
 }
 
 extension SentInvite {
-    /// A pending invite as the backend answers a send, a week before it expires; into a group unless a tournament is named.
+    /// A pending invite as the backend answers a send, a week before it expires; into a group unless a tournament or
+    /// an event is named.
     static func fixture(id: String = "01J9INVITE0000000000000001",
                         groupID: String? = "g",
                         tournamentID: String? = nil,
+                        eventID: String? = nil,
                         inviteeUserId: String = "u-2",
                         inviteeName: String = "Marta",
                         createdAt: Date = Date(timeIntervalSince1970: 1_800_000_000)) -> SentInvite {
         SentInvite(id: id,
                    groupId: groupID,
                    tournamentId: tournamentID,
+                   eventId: eventID,
                    inviteeUserId: inviteeUserId,
                    inviteeName: inviteeName,
                    status: .pending,

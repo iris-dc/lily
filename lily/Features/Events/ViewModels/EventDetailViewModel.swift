@@ -9,9 +9,15 @@ final class EventDetailViewModel {
     /// Who is in, the host first; empty for guests, who see the count only.
     private(set) var participants: [EventParticipant] = []
     private(set) var isLoadingParticipants = false
+    /// The room whose chat the view pushes over the detail; SwiftUI clears it when the reader comes back.
+    var openedRoom: SportGroup?
 
     private let repository: any EventRepository
     private let identity: any IdentityProvider
+    /// Joining and leaving move the caller's room, so the participation writes sync Mine; the chat opener fetches the
+    /// room and pushes it in place.
+    private let myGroups: MyGroupsStore
+    private let groupRepository: any GroupRepository
     private let errorCenter: ErrorCenter
     private let recorder: any InteractionRecorder
     private let logger: any Logging
@@ -25,6 +31,8 @@ final class EventDetailViewModel {
     init(event: SportEvent,
          repository: any EventRepository,
          identity: any IdentityProvider,
+         myGroups: MyGroupsStore,
+         groupRepository: any GroupRepository,
          errorCenter: ErrorCenter,
          recorder: any InteractionRecorder,
          logger: any Logging,
@@ -36,6 +44,8 @@ final class EventDetailViewModel {
         self.pushOptIn = pushOptIn
         self.repository = repository
         self.identity = identity
+        self.myGroups = myGroups
+        self.groupRepository = groupRepository
         self.errorCenter = errorCenter
         self.recorder = recorder
         self.logger = logger
@@ -46,6 +56,11 @@ final class EventDetailViewModel {
 
     var participation: Participation {
         Participation(event: event, userID: identity.currentUserID)
+    }
+
+    /// Chat and invite on this detail, from the event on screen and the caller.
+    var permissions: EventPermissions {
+        EventPermissions(event: event, userID: identity.currentUserID, now: now(), chatEnabled: AppConfig.FeatureFlags.chat)
     }
 
     /// The host, and nobody else, may change the game; the detail shows Edit for them.
@@ -87,15 +102,46 @@ final class EventDetailViewModel {
         recorder.record(.viewed(event, at: now()))
     }
 
-    /// A join that landed, directly or by the read-back, earns the reminder prompt once the control is free: the
-    /// offer runs after `update` released `isBusy`, so a Leave tapped during the prompt owns the flag to its own end.
+    /// A join that landed, directly or by the read-back, puts the event's room into Mine (the Chats tab lists only
+    /// rooms Mine holds) and earns the reminder prompt once the control is free: both run after `update` released
+    /// `isBusy`, so a Leave tapped during the prompt owns the flag to its own end.
     func join() async {
         guard await update("Join", wantsToParticipate: true, { try await repository.join(eventId: event.id) }) else { return }
+        await syncRoomAfterJoin()
         await pushOptIn.offerReminders()
     }
 
+    /// A landed leave takes the room off Chats at once: Mine reloads for the backend's order, and the room is dropped
+    /// whatever the eventually consistent index still answers (the tournament leave's recipe).
     func leave() async {
-        await update("Leave", wantsToParticipate: false) { try await repository.leave(eventId: event.id) }
+        guard await update("Leave", wantsToParticipate: false, { try await repository.leave(eventId: event.id) }) else { return }
+        await myGroups.reload()
+        myGroups.remove(id: event.id)
+    }
+
+    /// The room is a group under the event's id; fetched for the chat, placed in Mine first (its by-user index may
+    /// still miss a room just entered) and pushed on the detail's own stack (`openedRoom`), so Back returns to the
+    /// event, like the tournament's and the profile's recipe.
+    func openChat() async {
+        guard permissions.canOpenChat, !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        await gate.run("Open chat for event \(event.id)") { [self] in
+            let room = try await groupRepository.group(id: event.id)
+            if room.isMember { myGroups.add(room) }
+            openedRoom = room
+        }
+    }
+
+    /// A landed join entered the caller into the room: Mine reloads (its index may lag), and the room is placed
+    /// directly when the backend already serves it with the membership.
+    private func syncRoomAfterJoin() async {
+        await myGroups.reload()
+        guard let room = try? await groupRepository.group(id: event.id), room.isMember else {
+            logger.debug(.events, "Event \(event.id) has no fetchable room yet; Mine's reload stands")
+            return
+        }
+        myGroups.add(room)
     }
 
     /// One change at a time, through the shared gate (`WriteGate`: one `TRY_AGAIN` repeated, a cancellation quiet, a

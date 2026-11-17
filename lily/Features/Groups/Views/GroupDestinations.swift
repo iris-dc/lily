@@ -2,8 +2,9 @@ import SwiftUI
 
 /// The group destinations every `NavigationStack` root registers, so a "Hosted in" link works from Explore as well as
 /// from Home: a group, a group reached from its chat, a group reference that still has to be fetched, a chat, the
-/// Discover screens, a person's profile and a tournament. A direct conversation pushed as a group shows the other
-/// person's profile and a tournament's room its tournament: neither has a group detail of its own.
+/// Discover screens, a person's profile, a tournament and an event named by id. A direct conversation pushed as a
+/// group shows the other person's profile, a tournament's room its tournament and an event's room its event: none has
+/// a group detail of its own.
 private struct GroupDestinations: ViewModifier {
     let dependencies: AppDependencies
     /// What a tournament detail pushed on this stack hands back after a write.
@@ -29,6 +30,9 @@ private struct GroupDestinations: ViewModifier {
             .navigationDestination(for: TournamentDestination.self) { destination in
                 tournamentDetail(for: destination)
             }
+            .navigationDestination(for: EventDestination.self) { destination in
+                eventDetail(for: destination)
+            }
             .navigationDestination(for: DiscoverTournamentsDestination.self) { _ in
                 DiscoverTournamentsView(dependencies: dependencies)
             }
@@ -40,12 +44,19 @@ private struct GroupDestinations: ViewModifier {
                              dependencies: dependencies)
     }
 
+    /// Events navigate by whole `SportEvent`; an id-and-name opener (an event room) goes through the loader instead.
+    private func eventDetail(for destination: EventDestination) -> some View {
+        EventLoaderView(viewModel: dependencies.makeEventLoaderViewModel(for: destination), dependencies: dependencies)
+    }
+
     @ViewBuilder private func detail(for group: SportGroup, context: GroupDetailContext) -> some View {
         if let counterpart = group.counterpart {
             UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: counterpart.profile()),
                             dependencies: dependencies)
         } else if group.isTournamentRoom {
             tournamentDetail(for: TournamentDestination(id: group.id, name: group.name))
+        } else if group.isEventRoom {
+            eventDetail(for: EventDestination(id: group.id, name: group.name))
         } else {
             // Home draws Mine from the store and Discover searches again on `groupChanges`, so the detail hands
             // nothing back.

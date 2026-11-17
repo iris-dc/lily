@@ -19,14 +19,15 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - `SportEvent` (`lily/Features/Events/Models/SportEvent.swift`): `Identifiable, Hashable, Codable`. Stored: `id`,
   `title`, `type: EventType`, `startsAt: Date`, `endsAt: Date?` (the optional finish time, 2026-11-11; absent when
   the host set none), `location: EventLocation`, `capacity: Int?`,
-  `allowsExtraParticipants: Bool`, `participantCount: Int`, `hostName`, `deleted: Bool?` (the host's account was
+  `allowsExtraParticipants: Bool`, `participantCount: Int`, `channelEpoch: Int` (the room's channel mirror, 1 when
+  the key is absent; 2026-11-15), `hostName`, `deleted: Bool?` (the host's account was
   deleted — the deletion contract's tombstone, mapped by `Tombstone`; absent unless true), `hostUserId: String?`,
   `isJoined: Bool?`,
   `description?`, `lookingFor?`, `skillLevel: SkillLevel?`, `price: Price?`, `group: EventGroupRef?`. Explicit
   `CodingKeys` and a hand-written `init(from:)`; synthesized `encode(to:)`. Derived: `locationName`, `playerLimit`,
   `spotsLeft`, `isFull`, `isNearlyFull`, `hasPlayersNeeded`, `fillRatio`, `participates`, `isFree`, `isListed`,
   `spotsDescription`, `countDescription`, `priceText`, `availabilityText`, `capacityText`; `isHosted(by:)`,
-  `distance(from:) -> Measurement<UnitLength>?`, `updating(with: EventDraft)`, `updatingParticipation(count:isJoined:)`.
+  `distance(from:) -> Measurement<UnitLength>?`, `updating(with: EventDraft)`, `updatingParticipation(count:isJoined:channelEpoch: Int? = nil)` (2026-11-15).
 - `EventScope` (`SportEvent.swift`): `upcoming`, `joined`, `group(id: String)`; `wireName: String?`
   (`"upcoming"`, `"joined"`, `nil`), `snapshotList: String` (`AppConfig.Lists.upcomingEventsSnapshot` =
   `events-upcoming`, `joinedEventsSnapshot` = `events-joined`, `groupEventsSnapshot(id)` = `events-group-<id>`).
@@ -117,7 +118,10 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `end`; `contains(_:)`, `days(from:to:calendar:)`, `proposal(from:calendar:)`.
 - Decision types: `EventListScreenState` (`loading`, `failed`, `empty`, `filteredOut`, `list`;
   `resolve(isInitialLoad:loadFailed:hasEvents:isEverythingFilteredOut:awaitsAnswerForPosition:)`), `Participation`
-  (`hidden`, `join`, `leave`, `full`, `hosting`; `init(event:userID:)`), `CreateIntentPolicy`
+  (`hidden`, `join`, `leave`, `full`, `hosting`; `init(event:userID:)`), `EventPermissions`
+  (`canOpenChat`, `canInvite`; `none`, `showsActionRow`; `init(event:userID:now:chatEnabled:)`; 2026-11-15),
+  `EventDestination` (`id`, `name`: an event pushed by id, the event room's info-button value; 2026-11-15),
+  `CreateIntentPolicy`
   (`sheet(for:isSignedIn:)`, `decide(intent:presentedSheet:isSignedIn:) -> Decision(consumes:present:)`),
   `PickerSettlePolicy.isAChoice(_:current:isFirstSettle:minimumMoveMeters:)`,
   `MapFraming.initialRegion(userLocation:radiusMeters:) -> MKCoordinateRegion?`, `EventListLayout`
@@ -174,6 +178,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   else `loading` while `awaitsAnswerForPosition`, else `filteredOut`.
 - `Participation.init` precedence: `userID == nil` → `hidden`; hosted by the user → `hosting`; `participates` →
   `leave`; `isFull` → `full`; else `join`.
+- `EventPermissions.init` (2026-11-15): involved = a signed-in caller hosting or joined; `canOpenChat = chatEnabled
+  && involved`, `canInvite = involved && startsAt > now`; `showsActionRow = canOpenChat || canInvite`; `.none` is
+  all false (the guest's and the outsider's row).
 - `CreateIntentPolicy.decide`: no intent → not consumed; an intent while a sheet is up → consumed, nothing presented;
   otherwise consumed with `sheet(for:isSignedIn:)`, which substitutes `.signIn` for a guest. The guest substitution
   and the consume-without-presenting invariant are this policy's sole property; `CreationWizardPolicy` never sees
@@ -209,7 +216,8 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `EventDraftTests.swift`, `EventDraftPriceTests.swift`, `EventFilterTests.swift`, `EventTypeTests.swift`,
   `SkillLevelTests.swift`, `EventListScreenStateTests.swift`, `CreateIntentPolicyTests.swift`,
   `PickerSettlePolicyTests.swift`, `MapFramingTests.swift`, `PlaceDraftTests.swift`, `CreateEventPayloadTests.swift`,
-  `EventMapStackTests.swift`, `MapCardListEdgesTests.swift`, `EventDraftPlaceTests.swift`).
+  `EventMapStackTests.swift`, `MapCardListEdgesTests.swift`, `EventDraftPlaceTests.swift`,
+  `EventPermissionsTests.swift` (2026-11-15)).
 - `MapCardListEdgesTests` (`lilyTests/Events/MapCardListEdgesTests.swift`): `aListThatFitsHasNothingBeyondEitherEdge`,
   `aTallListAtItsTopHasMoreBelowOnly`, `midwayThereIsMoreOnBothSides`,
   `atTheEndOnlyAboveRemainsAndRoundingDoesNotCount`, `oneCardTallerThanTheListStillHasMoreBelow`,

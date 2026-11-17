@@ -4,9 +4,10 @@ Source: `lily/Features/Inbox/Models/`
 
 ## Overview
 
-Plain `nonisolated`, `Sendable` value types for the inbox: the `InboxItem` envelope with its six payloads (group
-invite, event reminder, tournament invite, match reminder, event cancelled, group ownership transferred), the wire shapes for a page, an acceptance, a declination
-and the read marker, the `InviteAnswer` protocol both invite payloads share, and two pure helpers: `InboxTimeline`
+Plain `nonisolated`, `Sendable` value types for the inbox: the `InboxItem` envelope with its seven payloads (group
+invite, event reminder, tournament invite, match reminder, event invite (2026-11-15), event cancelled, group
+ownership transferred), the wire shapes for a page, an acceptance, a declination
+and the read marker, the `InviteAnswer` protocol the three invite payloads share, and two pure helpers: `InboxTimeline`
 (items to list rows with day separators) and `InboxTimeCaption` (a reminder's time text). Every type decodes with the
 backend's key names; nothing here performs I/O.
 
@@ -14,14 +15,14 @@ backend's key names; nothing here performs I/O.
 
 - `InboxItem: Identifiable, Hashable, Codable, Sendable` `[lily/Features/Inbox/Models/InboxItem.swift:InboxItem]`:
   `id`, `kind: InboxItemKind`, `createdAt: Date`, optional `invite: InvitePayload?`, `reminder: ReminderPayload?`,
-  `tournamentInvite: TournamentInvitePayload?`, `matchReminder: MatchReminderPayload?`,
+  `tournamentInvite: TournamentInvitePayload?`, `eventInvite: EventInvitePayload?` (2026-11-15), `matchReminder: MatchReminderPayload?`,
   `eventCancelled: EventCancelledPayload?`, `groupOwnershipTransferred: GroupOwnershipTransferredPayload?`;
   synthesized `Codable`;
-  `isVisible` (kind known and its payload present), `inviteAnswer: (any InviteAnswer)?` (`invite ?? tournamentInvite`),
+  `isVisible` (kind known and its payload present), `inviteAnswer: (any InviteAnswer)?` (`invite ?? tournamentInvite ?? eventInvite`),
   `responding(_:at:) -> InboxItem` (a copy with the invite payload answered).
 - `InboxItemKind: WireNamedKind` `[lily/Features/Inbox/Models/InboxItem.swift:InboxItemKind]`: `.groupInvite`
   (`group_invite`), `.eventReminder` (`event_reminder`), `.tournamentInvite` (`tournament_invite`), `.matchReminder`
-  (`match_reminder`), `.eventCancelled` (`event_cancelled`), `.groupOwnershipTransferred`
+  (`match_reminder`), `.eventInvite` (`event_invite`, 2026-11-15), `.eventCancelled` (`event_cancelled`), `.groupOwnershipTransferred`
   (`group_ownership_transferred`), `.unknown(String)`; `known`, `wireName` (the lookup is `WireNamedKind`'s default).
 - `InviteStatus: WireNamedKind` `[lily/Features/Inbox/Models/InboxItem.swift:InviteStatus]`: `pending`, `accepted`,
   `declined`, `.unknown(String)`; `known`, `wireName`.
@@ -35,6 +36,11 @@ backend's key names; nothing here performs I/O.
   `tournamentName`, `type: EventType`, `format: TournamentFormat`, `teamSize`, `inviterUserId`, `inviterName`,
   `status`, `expiresAt`, `respondedAt?`; `isTeam` (`teamSize > 1`), `details` (through
   `AppBranding.Tournaments.inviteDetails(type:format:teamSize:)`), `responding(_:at:)`.
+- `EventInvitePayload: Hashable, Codable, Sendable, InviteAnswer`
+  `[lily/Features/Inbox/Models/EventInvitePayload.swift:EventInvitePayload]` (2026-11-15): `eventId`, `title`,
+  `type: EventType`, `startsAt`, `locationName`, `inviterUserId`, `inviterName`, `status` (default `.pending`),
+  `expiresAt`, `respondedAt?`; `responding(_:at:)`; `startsAtCaption(now:calendar:)` and `details(now:calendar:)`
+  (type · start) in `InboxItem+Caption.swift`.
 - `MatchReminderPayload` `[lily/Features/Inbox/Models/TournamentInboxPayloads.swift:MatchReminderPayload]`:
   `tournamentId`, `tournamentName`, `matchId`, `opponentName`, `scheduledAt`, `locationName?`;
   `destination: TournamentDestination` (id, name and `matchID`).
@@ -53,7 +59,7 @@ backend's key names; nothing here performs I/O.
   `MatchReminderPayload.startsAtCaption(now:calendar:)` and `EventCancelledPayload.startsAtCaption(now:calendar:)`
   delegate to it.
 - Page and answers `[lily/Features/Inbox/Models/InboxPage.swift]`: `InboxPage` (`items`, `hasMore`, `nextBefore?`,
-  `lastReadId?`), `InviteAcceptance` (`item`, `group: SportGroup?`, `tournament: Tournament?`), `InviteDeclination`
+  `lastReadId?`), `InviteAcceptance` (`item`, `group: SportGroup?`, `tournament: Tournament?`, `event: SportEvent?` (2026-11-15)), `InviteDeclination`
   (`item`), `InboxReadPayload: Encodable` (`itemId`, the PUT body), `InboxReadMarker` (`lastReadId`).
 - `InboxTimelineRow: Identifiable, Hashable, Sendable` `[lily/Features/Inbox/Models/InboxTimeline.swift:InboxTimelineRow]`:
   `.day(Date)` (id `day-<epoch seconds>` through `ChatDayLabel.rowID(for:)`, shared with `ChatRow`) and
@@ -73,7 +79,7 @@ backend's key names; nothing here performs I/O.
   `[lily/Features/Inbox/Models/InviteAnswer.swift:InviteAnswer.statusCaption]`.
 - An item is drawable only when `kind` is known and that kind's payload is present; `.unknown` is never visible
   `[lily/Features/Inbox/Models/InboxItem.swift:InboxItem.isVisible]`.
-- `responding(_:at:)` answers `self` unchanged for an item with neither invite payload; answering never mutates, it
+- `responding(_:at:)` answers `self` unchanged for an item with none of the invite payloads; answering never mutates, it
   returns a new value with `respondedAt` set to the given date and `expiresAt` kept
   `[lily/Features/Inbox/Models/InboxItem.swift:InboxItem.responding]`,
   `[lily/Features/Inbox/Models/InboxItem.swift:InvitePayload.responding]`,

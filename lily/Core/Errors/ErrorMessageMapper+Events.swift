@@ -1,7 +1,7 @@
 import Foundation
 
-/// Copy for what a host does to their own game: creating and editing it; `eventMessage(for:)` falls through to here,
-/// so it stays under the complexity limit.
+/// Copy for what a host does to their own game (creating and editing it) and for inviting people into one;
+/// `eventMessage(for:)` falls through to here, so every switch stays under the complexity limit.
 nonisolated extension ErrorMessageMapper {
     static func hostMessage(for error: AppError) -> ErrorMessage {
         switch error {
@@ -19,6 +19,26 @@ nonisolated extension ErrorMessageMapper {
         case .capacityTooLow:
             ErrorMessage(title: localized("Too few spots"),
                          body: localized("Keep at least as many spots as players who already joined."))
+        default:
+            eventInviteMessage(for: error)
+        }
+    }
+
+    /// Inviting people into an event: the join codes read differently on an invite, plus the start-time refusal the
+    /// backend answers with `EVENT_STARTED` (joining stays open; only the invites close).
+    private static func eventInviteMessage(for error: AppError) -> ErrorMessage {
+        switch error {
+        case .eventStarted:
+            ErrorMessage(title: localized("This event has already started"),
+                         body: localized("Invites can only be sent before the start."))
+        case .inviteeAlreadyJoined:
+            ErrorMessage(title: localized("They're already in this event"), body: localized("No invite needed."))
+        case .cannotInviteToEvent:
+            ErrorMessage(title: localized("Only players can invite"),
+                         body: localized("Join the event first, or ask the host to send the invite."))
+        case .eventInviteLimit:
+            ErrorMessage(title: localized("Can't invite more people"),
+                         body: localized("This event has invited as many people as it can."))
         default:
             unknownMessage
         }

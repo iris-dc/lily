@@ -4,7 +4,7 @@ Source: `lily/Features/Inbox/`
 
 ## Overview
 
-The inbox feature: the "iskra" conversation pinned as the first row of the Chats tab, holding group and tournament
+The inbox feature: the "iskra" conversation pinned as the first row of the Chats tab, holding group, tournament and event (2026-11-15)
 invites (Accept / Decline), event and match reminders (open the event or the tournament) and the account-deletion
 notices (an event cancelled, a group handed to the caller). Data flows from
 `InboxRepository` (the `/api/me/inbox` routes) into `InboxStore`, the one source of the inbox kept for the app's

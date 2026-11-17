@@ -34,7 +34,7 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - `[ConversationList.swift:ConversationList]` `dependencies`, `selection: ConversationSelection?`, `onOpenInbox`,
   `onOpenRoom: (SportGroup) -> Void`; `InboxRow` over `GroupRowList`, Clear/Delete long-press item, pull-to-refresh.
 - `[ChatDestinations.swift:View.chatDestination(item:dependencies:)]` (2026-11-15): the shared in-place room push of
-  the group, tournament and profile details — `navigationDestination(item: Binding<SportGroup?>)` building `ChatView`
+  the group, tournament, event and profile details (the event detail joined 2026-11-15) — `navigationDestination(item: Binding<SportGroup?>)` building `ChatView`
   through `dependencies.makeChatViewModel(for:)` with `\.tabBarHiding` nil, because an item push never moves the
   stack's bound path and a path-keyed registry would never prune the chat's hide after the pop; the chat sets the
   bar's visibility itself (follow-up in `docs/notes/groups.md`: teach the registry to prune on disappear).
@@ -147,7 +147,8 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
   `GroupAccess(group:userID:).canChat`, and only after the alert's destructive button; the room has no menu.
 - `[ChatView.swift:ChatView]` The placeholder shows only when `rows.isEmpty && !isAwaitingHistory`, Try again only
   when `historyLoadFailed`; `isGone` calls `dismiss()`; the info link is the counterpart's profile, else the
-  tournament, else the group, one `chat-title` identifier on the `Group` around the three.
+  tournament, else the event (`EventDestination`, for a room of kind `event`; 2026-11-15), else the group, one
+  `chat-title` identifier on the `Group` around the four.
 - `[ChatTranscript.swift:ChatTranscript]` The end marker is a zero-height view outside the `LazyVStack`, never lazy;
   the position and both default anchors are `.bottom`; rows are invisible until `firstPageReveal.isShown`, true from
   the start only when `room.hasHistory`; the scroll view carries `scrollDismissesKeyboard(.interactively)` and a tap

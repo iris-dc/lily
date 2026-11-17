@@ -18,16 +18,19 @@ nonisolated struct InboxPage: Hashable, Codable, Sendable {
 
 /// Answer of `POST /api/me/inbox/{itemId}/accept`: the item as accepted, and what it let the caller into: the group
 /// (membership included) for a group invite, the tournament for a tournament invite (`myEntryId` set when the accept
-/// entered the caller; absent for a team tournament, where the caller picks or names a team on the detail).
+/// entered the caller; absent for a team tournament, where the caller picks or names a team on the detail), or the
+/// event the accept joined for an event invite.
 nonisolated struct InviteAcceptance: Hashable, Codable, Sendable {
     let item: InboxItem
     let group: SportGroup?
     let tournament: Tournament?
+    let event: SportEvent?
 
-    init(item: InboxItem, group: SportGroup? = nil, tournament: Tournament? = nil) {
+    init(item: InboxItem, group: SportGroup? = nil, tournament: Tournament? = nil, event: SportEvent? = nil) {
         self.item = item
         self.group = group
         self.tournament = tournament
+        self.event = event
     }
 }
 

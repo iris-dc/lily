@@ -51,6 +51,14 @@ struct GroupAccessTests {
         Case(name: "tournament room, player", group: .tournamentRoomFixture(role: .member), userID: "u", expected: .room),
         Case(name: "tournament room, guest", group: .tournamentRoomFixture(role: nil), userID: nil, expected: .guest),
         Case(name: "tournament room, not a member", group: .tournamentRoomFixture(role: nil), userID: "u", expected: .canJoin),
+        Case(name: "event room, host", group: .eventRoomFixture(role: .owner), userID: "u", expected: .room),
+        Case(name: "event room, participant", group: .eventRoomFixture(role: .member), userID: "u", expected: .room),
+        Case(name: "event room, guest", group: .eventRoomFixture(role: nil), userID: nil, expected: .guest),
+        Case(name: "event room, not a member", group: .eventRoomFixture(role: nil), userID: "u", expected: .canJoin),
+        Case(name: "private event room, not a member",
+             group: .eventRoomFixture(visibility: .private, role: nil),
+             userID: "u",
+             expected: .inviteOnly),
     ]
 
     @Test(arguments: cases)
@@ -150,8 +158,8 @@ struct GroupAccessTests {
         #expect(!owner.canRemove(.owner) && !owner.canBan(.owner) && !owner.canRemove(.banned))
     }
 
-    /// Polls go into groups and tournament rooms the caller is in; pins are an admin's there and either side's in a
-    /// conversation; a room of a kind this build does not know keeps the backend's rules for both.
+    /// Polls go into groups and tournament and event rooms the caller is in; pins are an admin's there and either
+    /// side's in a conversation; a room of a kind this build does not know keeps the backend's rules for both.
     @Test func pollsAndPinsFollowTheRoomsKindAndTheCallersRole() {
         func access(_ group: SportGroup, _ userID: String? = "u") -> (polls: Bool, pins: Bool) {
             let access = GroupAccess(group: group, userID: userID)
@@ -166,6 +174,8 @@ struct GroupAccessTests {
         #expect(access(.conversationFixture()) == (false, true))
         #expect(access(.tournamentRoomFixture(role: .owner)) == (true, true))
         #expect(access(.tournamentRoomFixture(role: .member)) == (true, false))
+        #expect(access(.eventRoomFixture(role: .owner)) == (true, true))
+        #expect(access(.eventRoomFixture(role: .member)) == (true, false))
         #expect(access(.fixture(role: .owner, kind: .unknown("poll_room"))) == (false, false))
     }
 }

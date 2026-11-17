@@ -105,8 +105,12 @@ struct GroupModelsTests {
 
     @Test func knownGroupKindsRoundTripThroughTheirWireNames() {
         #expect(GroupKind(wireName: "group") == .group && GroupKind(wireName: "direct") == .direct)
+        #expect(GroupKind(wireName: "tournament") == .tournament && GroupKind(wireName: "event") == .event)
         #expect(GroupKind.group.wireName == "group" && GroupKind.direct.wireName == "direct")
-        #expect(!GroupKind.group.isUnknown && !GroupKind.direct.isUnknown)
+        #expect(GroupKind.tournament.wireName == "tournament" && GroupKind.event.wireName == "event")
+        #expect(GroupKind.known.allSatisfy { !$0.isUnknown })
+        #expect(SportGroup.eventRoomFixture().isEventRoom && !SportGroup.eventRoomFixture().isCommunity)
+        #expect(!SportGroup.eventRoomFixture().isTournamentRoom && !SportGroup.fixture().isEventRoom)
     }
 
     /// A banned marker must never read as a membership, whatever the backend sends.

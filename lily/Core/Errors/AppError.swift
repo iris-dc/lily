@@ -168,6 +168,14 @@ nonisolated enum AppError: Error, Equatable, Sendable {
     case cannotInviteToTournament
     /// The tournament has invited as many distinct people as the backend allows (`INVITE_LIMIT` on an invite).
     case tournamentInviteLimit
+    /// The person invited into an event is in it already (`ALREADY_JOINED` on an invite).
+    case inviteeAlreadyJoined
+    /// Only the host and participants invite into an event (`FORBIDDEN` on an invite).
+    case cannotInviteToEvent
+    /// Invites close once the event starts (`EVENT_STARTED`); joining stays open.
+    case eventStarted
+    /// The event has invited as many distinct people as the backend allows (`INVITE_LIMIT` on an event invite).
+    case eventInviteLimit
     /// A message to us (the contact form) failed for a reason without a code of its own; Send stays available.
     case feedbackFailed
     case unknown

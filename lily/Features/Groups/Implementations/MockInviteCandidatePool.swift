@@ -23,7 +23,9 @@ struct MockInviteCandidatePool {
                                  isInvited: (String) -> Bool) async throws -> [InviteCandidate] {
         var candidates: [InviteCandidate] = []
         let mine = try await groups.groups(in: .mine, cursor: nil, near: nil).items
-        for group in mine where group.id != groupID && !group.isDirect {
+        // Event rooms stay out: their people reach the pool through the games (`eventCandidates`), and "In <name>"
+        // would read an event's title as a group.
+        for group in mine where group.id != groupID && !group.isDirect && !group.isEventRoom {
             for member in groups.roster(of: group.id) where member.role != .banned && !seen.contains(member.userId) {
                 seen.insert(member.userId)
                 candidates.append(InviteCandidate(userId: member.userId,
@@ -38,7 +40,7 @@ struct MockInviteCandidatePool {
 
     private func eventCandidates(seen: inout Set<String>, isInvited: (String) -> Bool) -> [InviteCandidate] {
         var candidates: [InviteCandidate] = []
-        for event in MockEventFixtures.make(now: now(), count: AppConfig.Events.mockFeedSize) {
+        for event in MockEventFixtures.feed(now: now()) {
             let hostID = MockGroupFixtures.memberID(for: event.hostName)
             guard !seen.contains(hostID) else { continue }
             seen.insert(hostID)
@@ -91,9 +93,11 @@ final class MockInviteLedger {
         sentCount += 1
         let groupID: String? = if case .group(let id) = target { id } else { nil }
         let tournamentID: String? = if case .tournament(let id) = target { id } else { nil }
+        let eventID: String? = if case .event(let id) = target { id } else { nil }
         let invite = SentInvite(id: Self.idPrefix + String(format: "%0\(Self.idDigits)d", sentCount),
                                 groupId: groupID,
                                 tournamentId: tournamentID,
+                                eventId: eventID,
                                 inviteeUserId: candidate.userId,
                                 inviteeName: candidate.displayName,
                                 status: .pending,

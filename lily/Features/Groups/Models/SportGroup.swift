@@ -25,8 +25,8 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     private(set) var deletedAt: Date?
     /// Absent for non-members and for banned users.
     private(set) var membership: GroupMembership?
-    /// A community, the direct conversation with `counterpart` or a tournament's room; older payloads carry no `kind`,
-    /// and a kind this build does not know is kept by name.
+    /// A community, the direct conversation with `counterpart`, or a tournament's or an event's room; older payloads
+    /// carry no `kind`, and a kind this build does not know is kept by name.
     let kind: GroupKind
     /// The other person of a direct conversation, as the caller sees them; absent for a community.
     let counterpart: Counterpart?
@@ -110,6 +110,8 @@ nonisolated struct SportGroup: Identifiable, Hashable, Codable, Sendable {
     var isDirect: Bool { kind == .direct }
     /// A tournament's room, under the tournament's id; its detail is the tournament's.
     var isTournamentRoom: Bool { kind == .tournament }
+    /// An event's room, under the event's id; its detail is the event's.
+    var isEventRoom: Bool { kind == .event }
     /// A community: what "your groups" means on Home and in the event form. Neither a conversation nor a room of a kind
     /// this build does not know.
     var isCommunity: Bool { kind == .group }

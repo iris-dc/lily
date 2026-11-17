@@ -21,15 +21,16 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   `Group`): `id`, `name`, `description?`, `visibility: GroupVisibility`, `type: EventType?`, `ownerName`,
   `memberCount`, `maxMembers`, `channelEpoch`, `membersCanCreateEvents`, `membersCanInvite`, `lastMessageId?`,
   `lastMessageAt?`, `createdAt`, `deletedAt?`, `membership: GroupMembership?`, `kind: GroupKind`,
-  `counterpart: Counterpart?`, `location: EventLocation?`. Computed: `isFull`, `isDirect`, `isTournamentRoom`,
+  `counterpart: Counterpart?`, `location: EventLocation?`. Computed: `isFull`, `isDirect`, `isTournamentRoom`, `isEventRoom` (2026-11-15),
   `isCommunity`, `isDeleted`, `isPublic`, `isMember`, `role: MemberRole?`, `hasUnread`, `lastActivityAt`,
   `ref: EventGroupRef`; `static mineOrder(_:_:)`, `isActive(on:calendar:)`, `distance(from:)`; copy builders
   `updatingMembership(_:memberCount:channelEpoch:)`, `dropping(_:)`, `keepingMembership(of:)`, `updating(with:)`,
   `markingDeleted(at:)`, `noting(_:) -> SportGroup?`, `keepingLaterLastMessage(of:)`
   [`lily/Features/Groups/Models/SportGroup.swift`:`SportGroup`].
-- `SportGroup` captions: `caption(suffix:)`, `placeCaption(distance:) -> String?`, `avatarSymbol: String?`
+- `SportGroup` captions: `caption(suffix:)`, `placeCaption(distance:) -> String?`, `avatarSymbol: String?` (the
+  trophy for a tournament room, the calendar for an event room, whose caption leads "Event · N players"; 2026-11-15)
   [`lily/Features/Groups/Models/SportGroup+Caption.swift`:`SportGroup.caption`].
-- `GroupKind: WireNamedKind` with `group`, `direct`, `tournament`, `unknown(String)`; `known`, `wireName`;
+- `GroupKind: WireNamedKind` with `group`, `direct`, `tournament`, `event` (2026-11-15), `unknown(String)`; `known`, `wireName`;
   `init(wireName:)` and `isUnknown` are `WireNamedKind`'s defaults [`lily/Features/Groups/Models/GroupKind.swift`:`GroupKind`].
 - `GroupVisibility: String` (`public`, `private`; `displayName`, `symbolName`)
   [`lily/Features/Groups/Models/GroupVisibility.swift`:`GroupVisibility`]; `GroupScope` (`mine`,
@@ -86,9 +87,9 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   `DiscoverGroupsDestination` [`lily/Features/Groups/Models/DiscoverGroupsDestination.swift`:`DiscoverGroupsDestination`].
 - Invites: `InviteCandidate { userId, displayName, via: InviteCandidateSource, viaName, isInvited }` with `id == userId`,
   `caption`, `markingInvited()`; `InviteCandidateSource: WireNamedKind` (`group`, `event`, `unknown(String)`; `known`,
-  `wireName`) [`lily/Features/Groups/Models/InviteCandidate.swift`:`InviteCandidate`]; `SentInvite { id, groupId?, tournamentId?,
+  `wireName`) [`lily/Features/Groups/Models/InviteCandidate.swift`:`InviteCandidate`]; `SentInvite { id, groupId?, tournamentId?, eventId? (2026-11-15),
   inviteeUserId, inviteeName, status: InviteStatus, createdAt, expiresAt }`
-  [`lily/Features/Groups/Models/SentInvite.swift`:`SentInvite`]; `InviteTarget` (`group(id:)`, `tournament(id:)`;
+  [`lily/Features/Groups/Models/SentInvite.swift`:`SentInvite`]; `InviteTarget` (`group(id:)`, `tournament(id:)`, `event(id:)` (2026-11-15);
   `id`, `logName`, `logCategory`) [`lily/Features/Groups/Models/InviteTarget.swift`:`InviteTarget`].
 - Moderation: `ReportReason: String` (`spam`, `harassment`, `inappropriate`, `other`; `displayName`); `ReportTarget
   { kind: Kind, id, groupID? }` with `Kind` = `message`, `group`, `tournament` (no `user`: the app files no user report;
@@ -109,7 +110,7 @@ types decoded from Laurel's group, member, account, invite and moderation answer
 - `SportGroup.init(from:)` is hand-written key for key only so a missing `kind` reads as `.group`; `Account.init(from:)`
   only so a missing `attachmentsEnabled` reads as `false` [`lily/Features/Groups/Models/SportGroup.swift`:`SportGroup.init(from:)`]
   [`lily/Features/Groups/Models/Account.swift`:`Account.init(from:)`].
-- `GroupKind` travels as one string (`"group"`, `"direct"`, `"tournament"`); any other name is kept in `unknown`, so a
+- `GroupKind` travels as one string (`"group"`, `"direct"`, `"tournament"`, `"event"`); any other name is kept in `unknown`, so a
   newer backend's kind still decodes; the single-value `Codable` comes from `WireNamedKind`
   [`lily/Features/Groups/Models/GroupKind.swift`:`GroupKind.known`]
   [`lily/Core/Networking/Models/WireNamedKind.swift`:`WireNamedKind`].
@@ -141,7 +142,7 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   place, since the body is the whole editable state [`lily/Features/Groups/Models/UpdateGroupPayload.swift`:`UpdateGroupPayload`]
   [`lily/Features/Groups/Models/GroupVisibility.swift`:`GroupVisibility`].
 - `GroupAccess.init(group:userID:)` decides in order: no `userID` is `guest`; a direct group the caller is in is
-  `conversation`; a tournament room or an unknown kind the caller is in is `room`; a role is `member(role)`; then
+  `conversation`; a tournament room, an event room (2026-11-15) or an unknown kind the caller is in is `room`; a role is `member(role)`; then
   `full`, then `canJoin` for a public group, else `inviteOnly`
   [`lily/Features/Groups/Models/GroupAccess.swift`:`GroupAccess.init`].
 - `GroupAccess` rules: `canLeave` only for a member who is not the owner; `canEdit` for `isAdmin` roles; `canDelete`

@@ -9,8 +9,9 @@ The concrete types behind the protocols in [Interfaces](../Interfaces/EGM.md). F
 `AppError`; they perform no retry of their own (the one `TRY_AGAIN` repeat belongs to the callers in
 [ViewModels](../ViewModels/EGM.md)) and emit no log lines. Four `Mock*` repositories replay Laurel's refusals and
 orders in memory, over six fixture communities around Berlin, one direct conversation with Marta and the fixture
-tournament rooms, so the simulator and the UI tests run without a backend. `MockInviteCandidatePool` and
-`MockInviteLedger` are shared by the group and tournament invite mocks. The value types they move are in
+tournament and event rooms (a room per fixture event, 2026-11-15), so the simulator and the UI tests run without a backend. `MockInviteCandidatePool` and
+`MockInviteLedger` are shared by the group, tournament and event invite mocks (event rooms never enter the pool,
+2026-11-15). The value types they move are in
 [Models](../Models/EGM.md).
 
 ## Interface
@@ -35,11 +36,17 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
   `discover(prefix:type:near:) -> Page<SportGroup>` with a private `SportGroup.matches(prefix:type:)`
   [`lily/Features/Groups/Implementations/MockGroupRepository+Discover.swift`:`MockGroupRepository.discover`];
   `registerRoom(for:memberCount:)`, `syncRoom(for:memberCount:)`, `admitToRoom(id:)`, `leaveRoom(id:userID:)`
-  [`lily/Features/Groups/Implementations/MockGroupRepository+Tournaments.swift`:`MockGroupRepository.registerRoom`].
+  [`lily/Features/Groups/Implementations/MockGroupRepository+Tournaments.swift`:`MockGroupRepository.registerRoom`];
+  `registerEventRoom(for:role: MemberRole? = .owner)`, `syncEventRoom(for:)`, `admitToEventRoom(for:)`,
+  `leaveEventRoom(for:)` — the event mock's mirror of a create (the creator owner), an appended fixture's
+  registration (`role` `.member` or nil), an edit, a join and a leave (the leave following the event's bumped
+  `channelEpoch`),
+  2026-11-15 [`lily/Features/Groups/Implementations/MockGroupRepository+Events.swift`:`MockGroupRepository.registerEventRoom`].
 - `nonisolated enum MockGroupFixtures`: ids `kickersID`, `runnersID`, `padelID`, `basketballID`, `volleyID`,
   `climbingID` (`"mock-group-<name>"`), `conversationCounterpart` (Marta) and `martaConversationID`;
-  `make(now:) -> [SportGroup]` (the six templates, Marta's conversation and `MockTournamentFixtures.rooms(now:)`),
-  `roster(for:now:)`, `memberID(for:)` (`"mock-user-<lowercased name>"`), `directConversationID(for:)`
+  `make(now:) -> [SportGroup]` (the six templates, Marta's conversation, `MockTournamentFixtures.rooms(now:)` and
+  `MockEventFixtures.rooms(now:)`, 2026-11-15),
+  `roster(for:now:)` (an event-prefixed id answers `MockEventFixtures.roster(for:now:)`), `memberID(for:)` (`"mock-user-<lowercased name>"`), `directConversationID(for:)`
   (`"mock-dm-<userID>"`), `ref(for:) -> EventGroupRef?`
   [`lily/Features/Groups/Implementations/MockGroupFixtures.swift`:`MockGroupFixtures.make`]; the `Template` and
   `Place` structs that describe a fixture
@@ -82,8 +89,8 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
   [`lily/Features/Groups/Implementations/RemoteGroupRepository.swift`:`GroupScope.takesPosition`]
   [`lily/Config/AppConfig+Groups.swift`:`AppConfig.Groups.discoverPageSize`].
 - Mock readability gate `readable(id)`: an unknown or deleted id, or a private group the caller is not in, throws
-  `AppError.groupNotFound`; `requireGroupRoute` throws `.insufficientRole` for a direct conversation or a tournament
-  room (unknown kinds pass) [`lily/Features/Groups/Implementations/MockGroupRepository.swift`:`MockGroupRepository.readable`].
+  `AppError.groupNotFound`; `requireGroupRoute` throws `.insufficientRole` for a direct conversation, a tournament
+  room or an event room (2026-11-15; unknown kinds pass) [`lily/Features/Groups/Implementations/MockGroupRepository.swift`:`MockGroupRepository.readable`].
 - Mock role rules: `update`, `bans`, `unban` need `isAdmin`; `delete` needs the owner; `remove` needs
   `GroupAccess.canRemove(target.role)`; `setRole(.banned)` needs `canBan`, other roles `canChangeRoles`; a target not on
   the roster throws `.notAMember` [`lily/Features/Groups/Implementations/MockGroupRepository.swift`:`MockGroupRepository.setRole`].
@@ -109,8 +116,8 @@ tournament rooms, so the simulator and the UI tests run without a backend. `Mock
   else `.alreadyMember`
   [`lily/Features/Groups/Implementations/MockInviteRepository.swift`:`MockInviteRepository.invite`]; not a candidate
   `.userNotFound` [`lily/Features/Groups/Implementations/MockInviteCandidatePool.swift`:`MockInviteLedger.send`].
-- Mock candidates are the live members of the caller's other non-direct groups and rooms, then the hosts of the mock
-  event feed, deduplicated through `seen` (seeded with the target roster and the caller), sorted by display name
+- Mock candidates are the live members of the caller's other non-direct groups and rooms (event rooms left out,
+  2026-11-15), then the hosts of the mock event feed, deduplicated through `seen` (seeded with the target roster and the caller), sorted by display name
   [`lily/Features/Groups/Implementations/MockInviteCandidatePool.swift`:`MockInviteCandidatePool.candidates`].
 - `MockMeRepository.me()` throws `.sessionExpired` without a user, marks the Apple mock user as operator (mirroring the
   backend's operators group; lily has no operator UI) with the terms stamped accepted, as Laurel stamps them at

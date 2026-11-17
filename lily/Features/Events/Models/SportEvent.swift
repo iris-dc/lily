@@ -1,8 +1,8 @@
 import Foundation
 
 /// Decodes the backend's `Event` directly: same keys, same optionality. `CodingKeys` and `init(from:)` are written out
-/// for one reason: `allowsExtraParticipants` reads as `false` when absent, so fixtures and payloads from before it keep
-/// decoding, while the synthesized encoder still writes it.
+/// for one reason: `allowsExtraParticipants` reads as `false` when absent and `channelEpoch` as 1, so fixtures and
+/// payloads from before them keep decoding, while the synthesized encoder still writes both.
 nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     let id: String
     let title: String
@@ -33,6 +33,9 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
     let price: Price?
     /// The group the game is hosted in, as the backend stamps it; `nil` for an ungrouped game.
     let group: EventGroupRef?
+    /// The room's epoch mirror; the chat channel is `rooms/<id>/<channelEpoch>`. Moved by a leave that dropped a room
+    /// row; payloads from before rooms carry none and read as 1.
+    let channelEpoch: Int
 
     init(id: String,
          title: String,
@@ -51,7 +54,8 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
          lookingFor: String? = nil,
          skillLevel: SkillLevel? = nil,
          price: Price? = nil,
-         group: EventGroupRef? = nil) {
+         group: EventGroupRef? = nil,
+         channelEpoch: Int = 1) {
         self.id = id
         self.title = title
         self.type = type
@@ -70,11 +74,12 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
         self.skillLevel = skillLevel
         self.price = price
         self.group = group
+        self.channelEpoch = channelEpoch
     }
 
     enum CodingKeys: String, CodingKey {
         case id, title, type, startsAt, endsAt, location, capacity, allowsExtraParticipants, participantCount
-        case hostName, deleted, hostUserId, isJoined, description, lookingFor, skillLevel, price, group
+        case hostName, deleted, hostUserId, isJoined, description, lookingFor, skillLevel, price, group, channelEpoch
     }
 
     init(from decoder: any Decoder) throws {
@@ -97,6 +102,7 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
         skillLevel = try container.decodeIfPresent(SkillLevel.self, forKey: .skillLevel)
         price = try container.decodeIfPresent(Price.self, forKey: .price)
         group = try container.decodeIfPresent(EventGroupRef.self, forKey: .group)
+        channelEpoch = try container.decodeIfPresent(Int.self, forKey: .channelEpoch) ?? 1
     }
 
     var locationName: String { location.name }
@@ -160,11 +166,13 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
                    lookingFor: draft.trimmedLookingFor,
                    skillLevel: draft.skillLevel,
                    price: draft.eventPrice,
-                   group: group)
+                   group: group,
+                   channelEpoch: channelEpoch)
     }
 
-    /// The same event after a join or leave; everything but the participation is kept.
-    func updatingParticipation(count: Int, isJoined: Bool) -> SportEvent {
+    /// The same event after a join or leave; everything but the participation is kept, and a leave that dropped a
+    /// room row hands the bumped epoch in.
+    func updatingParticipation(count: Int, isJoined: Bool, channelEpoch: Int? = nil) -> SportEvent {
         SportEvent(id: id,
                    title: title,
                    type: type,
@@ -182,7 +190,8 @@ nonisolated struct SportEvent: Identifiable, Hashable, Codable, Sendable {
                    lookingFor: lookingFor,
                    skillLevel: skillLevel,
                    price: price,
-                   group: group)
+                   group: group,
+                   channelEpoch: channelEpoch ?? self.channelEpoch)
     }
 }
 

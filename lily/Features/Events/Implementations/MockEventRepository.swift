@@ -1,12 +1,21 @@
 import Foundation
 
-/// Fixture events with in-memory joins, for previews, UI tests and `-mock-events` runs without a backend.
+/// Fixture events with in-memory joins, for previews, UI tests and `-mock-events` runs without a backend. The rooms
+/// live in the group mock (`rooms`), which every create and participation write mirrors into, as the backend's
+/// transactions do.
 final class MockEventRepository: EventRepository {
-    /// Every n-th fixture starts out joined so the Home tab has content. Four leaves the full basketball game
-    /// unjoined, so the disabled "Event is full" state is visible somewhere in the mock feed.
-    private static let joinedStride = 4
-
     private var events: [SportEvent]
+    /// The group mock the rooms live in; wired right after construction (`GroupRepositories.mock`), absent in tests
+    /// that need no rooms. Wiring registers a room for any held event the group fixtures do not ship (the appended
+    /// deleted-host game): every event has a room, as on the backend.
+    var rooms: MockGroupRepository? {
+        didSet {
+            guard let rooms else { return }
+            for event in events where rooms.find(event.id) == nil {
+                rooms.registerEventRoom(for: event, role: event.participates ? .member : nil)
+            }
+        }
+    }
     /// Who creates events; the backend takes the host from the token, the mock from here.
     private let identity: any IdentityProvider
     private let logger: any Logging
@@ -17,13 +26,13 @@ final class MockEventRepository: EventRepository {
     private var drafts: [String: EventDraft] = [:]
 
     init(now: Date = .now,
-         count: Int = AppConfig.Events.mockFeedSize,
          identity: any IdentityProvider,
          logger: any Logging,
          failsFirstLoad: Bool = false,
          deletedHost: Bool = false) {
-        var events = MockEventFixtures.make(now: now, count: count).enumerated().map { index, event in
-            event.updatingParticipation(count: event.participantCount, isJoined: index.isMultiple(of: Self.joinedStride))
+        var events = MockEventFixtures.feed(now: now).enumerated().map { index, event in
+            event.updatingParticipation(count: event.participantCount,
+                                        isJoined: MockEventFixtures.isInitiallyJoined(index: index))
         }
         if deletedHost { events.append(MockEventFixtures.deletedHostEvent(now: now)) }
         self.events = events
@@ -82,7 +91,9 @@ final class MockEventRepository: EventRepository {
         let event = try find(eventId)
         guard !event.participates else { throw AppError.alreadyJoined }
         guard !event.isFull else { throw AppError.eventFull }
-        return store(event.updatingParticipation(count: event.participantCount + 1, isJoined: true))
+        let joined = store(event.updatingParticipation(count: event.participantCount + 1, isJoined: true))
+        rooms?.admitToEventRoom(for: joined)
+        return joined
     }
 
     /// Like the backend: the host is refused before participation is judged (`HOST_CANNOT_LEAVE` first).
@@ -90,7 +101,12 @@ final class MockEventRepository: EventRepository {
         let event = try find(eventId)
         guard !event.isHosted(by: identity.currentUserID) else { throw AppError.hostCannotLeave }
         guard event.participates else { throw AppError.notAParticipant }
-        return store(event.updatingParticipation(count: event.participantCount - 1, isJoined: false))
+        // A leave bumps the epoch mirror, as the backend's room transaction does; the room follows it.
+        let left = store(event.updatingParticipation(count: event.participantCount - 1,
+                                                     isJoined: false,
+                                                     channelEpoch: event.channelEpoch + 1))
+        rooms?.leaveEventRoom(for: left)
+        return left
     }
 
     /// Like the backend: the draft's client id is the event id, so a repeated create answers the same event, and the
@@ -107,6 +123,7 @@ final class MockEventRepository: EventRepository {
                                     coordinate: coordinate)
         events.append(event)
         drafts[draft.clientId] = draft
+        rooms?.registerEventRoom(for: event)
         logger.info(.events, "Mock event \(event.id) created (\(event.spotsDescription))")
         return event
     }
@@ -118,8 +135,14 @@ final class MockEventRepository: EventRepository {
         guard draft.playerLimit != .maximum || draft.capacity >= event.participantCount else { throw AppError.capacityTooLow }
         let updated = store(event.updating(with: draft))
         drafts[id] = draft
+        rooms?.syncEventRoom(for: updated)
         logger.info(.events, "Mock event \(updated.id) updated (\(updated.spotsDescription))")
         return updated
+    }
+
+    /// The stored event behind an id, for the sibling mocks (the invite mock's gate); `EVENT_NOT_FOUND` otherwise.
+    func stored(_ eventId: String) throws -> SportEvent {
+        try find(eventId)
     }
 
     private func find(_ eventId: String) throws -> SportEvent {

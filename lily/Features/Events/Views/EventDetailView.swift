@@ -1,10 +1,13 @@
 import SwiftUI
 
 /// Event detail with the join/leave control and, for signed-in callers, who is in. The view model decides what the
-/// control is, whose profiles may open and whether the caller may edit; this only draws it and hosts the edit sheet.
+/// control is, whose profiles may open and whether the caller may edit; this only draws it and hosts the sheets. An
+/// involved caller gets Open chat and Invite under the facts, like a group's action row; the chat is pushed on this
+/// stack, so Back returns here.
 struct EventDetailView: View {
     @State private var viewModel: EventDetailViewModel
     @State private var isEditing = false
+    @State private var isInviting = false
     private let dependencies: AppDependencies
 
     init(viewModel: EventDetailViewModel, dependencies: AppDependencies) {
@@ -15,7 +18,8 @@ struct EventDetailView: View {
     private var event: SportEvent { viewModel.event }
 
     var body: some View {
-        ContentScreen {
+        @Bindable var viewModel = viewModel
+        return ContentScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     EventTypeChip(type: event.type)
@@ -31,6 +35,7 @@ struct EventDetailView: View {
                         Text(description).font(.body)
                     }
                     EventFactsCard(event: event)
+                    actionRow
                     EventLocationMap(event: event)
                     if viewModel.showsParticipants {
                         participantsSection
@@ -59,6 +64,23 @@ struct EventDetailView: View {
             EditEventSheet(viewModel: dependencies.makeEditEventViewModel(for: event, onChange: viewModel.accept),
                            errorCenter: dependencies.errorCenter)
         }
+        .chatDestination(item: $viewModel.openedRoom, dependencies: dependencies)
+        .sheet(isPresented: $isInviting) { inviteSheet }
+    }
+
+    /// Open chat and Invite for the host and participants; nothing for everyone else.
+    @ViewBuilder private var actionRow: some View {
+        let permissions = viewModel.permissions
+        if permissions.showsActionRow {
+            EventActionRow(permissions: permissions,
+                           onOpenChat: { Task { await viewModel.openChat() } },
+                           onInvite: { isInviting = true })
+        }
+    }
+
+    private var inviteSheet: some View {
+        InvitePeopleSheet(viewModel: dependencies.makeEventInvitePeopleViewModel(for: event.id),
+                          errorCenter: dependencies.errorCenter)
     }
 
     /// A plain toolbar button, like the sheets' Cancel.

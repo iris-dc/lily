@@ -80,7 +80,7 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
 - `View.groupDestinations(dependencies:, onTournamentChange: (@MainActor (Tournament) -> Void)? = nil)`, applying
   the private `GroupDestinations` modifier that registers `navigationDestination(for:)` `SportGroup`,
   `GroupInfoDestination`, `EventGroupRef`, `ChatDestination`, `DiscoverGroupsDestination`, `UserProfileDestination`,
-  `TournamentDestination`, `DiscoverTournamentsDestination`
+  `TournamentDestination`, `DiscoverTournamentsDestination`, `EventDestination` (2026-11-15)
   [`lily/Features/Groups/Views/GroupDestinations.swift`:`groupDestinations`].
 
 ## Invariants
@@ -117,7 +117,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   hide after the pop — and the chat sets the bar's visibility itself, so the bar returns with the screen; a room deleted while open is covered by `ChatView`'s own
   `isGone` dismissal [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
 - `GroupDestinations` never opens `GroupDetailView` for a conversation or a room: a `counterpart` goes to
-  `UserProfileView`, `isTournamentRoom` to `TournamentDetailView`; a `SportGroup` push is `.standalone`, a
+  `UserProfileView`, `isTournamentRoom` to `TournamentDetailView`, `isEventRoom` to `EventLoaderView` over its
+  `EventDestination` (2026-11-15); a `SportGroup` push is `.standalone`, a
   `GroupInfoDestination` push `.fromChat`; a nil `onTournamentChange` defaults to
   `dependencies.tournamentChanges.recordChange()` [`lily/Features/Groups/Views/GroupDestinations.swift`:`GroupDestinations`].
 - `GroupDraftForm` offers no visibility choice (fixed once created; the wizard's visibility page owns the create

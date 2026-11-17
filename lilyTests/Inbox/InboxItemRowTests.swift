@@ -24,6 +24,12 @@ struct InboxItemRowTests {
         #expect(height(of: .reminder()) > 0)
     }
 
+    @Test func anEventInviteDrawsItsCardAndABarePayloadNothing() {
+        #expect(height(of: .eventInvite()) > 0)
+        let bare = InboxItem(id: "bare-ei", kind: .eventInvite, createdAt: .now)
+        #expect(height(of: bare) == 0)
+    }
+
     @Test func theDeletionNoticesDrawTheirCards() {
         #expect(height(of: .eventCancelled()) > 0)
         #expect(height(of: .groupOwnershipTransferred()) > 0)

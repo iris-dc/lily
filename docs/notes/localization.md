@@ -105,3 +105,11 @@ The app ships in English (the source language and the fallback), Russian, Spanis
   grammatical role (nominative-plural nouns, empty-state titles) in all seven languages, so no role keys. Appended
   with the byte-stable json round trip proven before and after the edit; the new translations are machine-written
   like the other recent keys — the native read stays owed.
+- 2026-11-15 — The event-chats slice adds 7 keys (786 → 793): the event loader's "This event is no longer available"
+  and "Couldn't load event", and the event-invite refusals — "This event has already started" with "Invites can only
+  be sent before the start.", "They're already in this event", "Join the event first, or ask the host to send the
+  invite.", "This event has invited as many people as it can." (the titles "No invite needed.", "Only players can
+  invite" and "Can't invite more people" are reused). All seven languages, translations matched to their tournament
+  and group siblings; appended at the catalog's tail (the file is not key-sorted), with the byte-stable json round
+  trip proven before and after. Machine-written like the recent keys — the native read stays owed. The action row,
+  the invite sheet, the room caption and the invite card reuse existing keys.

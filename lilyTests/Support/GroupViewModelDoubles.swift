@@ -34,6 +34,7 @@ final class GroupHarness {
     let location = FakeLocationService()
     let changes = ChangeTracker()
     let tournamentChanges = ChangeTracker()
+    let eventChanges = ChangeTracker()
     let logger = SpyLogger()
     let recorder = SpyInteractionRecorder()
     let pasteboard = SpyPasteboard()
@@ -75,7 +76,9 @@ final class GroupHarness {
                        repository: inboxRepository,
                        opener: EventOpener(events: events, navigation: navigation, errorCenter: errorCenter, logger: logger),
                        myGroups: store,
+                       groupRepository: repository,
                        tournamentChanges: tournamentChanges,
+                       eventChanges: eventChanges,
                        navigation: navigation,
                        errorCenter: errorCenter,
                        logger: logger,

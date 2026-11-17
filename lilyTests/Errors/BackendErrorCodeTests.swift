@@ -45,7 +45,7 @@ struct BackendErrorCodeTests {
             "REGISTRATION_CLOSED": .registrationClosed, "TOURNAMENT_FULL": .tournamentFull, "ALREADY_ENTERED": .alreadyEntered,
             "TEAM_FULL": .teamFull, "ENTRY_NOT_FOUND": .entryNotFound, "NOT_ENOUGH_ENTRIES": .notEnoughEntries,
             "NOT_IN_MATCH": .notInMatch, "MATCH_NOT_READY": .matchNotReady, "MATCH_NOT_FOUND": .matchNotFound,
-            "DRAW_NOT_ALLOWED": .drawNotAllowed,
+            "DRAW_NOT_ALLOWED": .drawNotAllowed, "EVENT_STARTED": .eventStarted,
         ]
         for (raw, error) in expected {
             #expect(BackendErrorCode(rawValue: raw)?.appError == error, "\(raw)")
@@ -55,7 +55,7 @@ struct BackendErrorCodeTests {
                 == .termsRequired)
     }
 
-    /// Laurel's 69 codes are the enum's 61 plus these eight; each falls to the fallback of the route it arrived on, as
+    /// Laurel's 70 codes are the enum's 62 plus these eight; each falls to the fallback of the route it arrived on, as
     /// `REPORT_NOT_FOUND` (the operator's per-report routes, which the app never calls) always has.
     @Test(arguments: codesWithoutACase)
     func laurelsFrameworkAndOperatorCodesHaveNoCaseOnPurpose(code: String) {
@@ -66,7 +66,7 @@ struct BackendErrorCodeTests {
     }
 
     @Test func theEnumAndTheCodesWithoutACaseAreLaurelsList() {
-        #expect(BackendErrorCode.allCases.count == 61)
+        #expect(BackendErrorCode.allCases.count == 62)
         #expect(Set(Self.codesWithoutACase).isDisjoint(with: BackendErrorCode.allCases.map(\.rawValue)))
     }
 }

@@ -165,6 +165,12 @@ nonisolated enum MockEventFixtures {
         }
     }
 
+    /// The fixture feed of a mock run: the events the repository serves and `rooms(now:)` builds rooms for, one
+    /// source so the two can never disagree on which games exist.
+    static func feed(now: Date) -> [SportEvent] {
+        make(now: now, count: AppConfig.Events.mockFeedSize)
+    }
+
     private static func coordinate(for template: Template) -> Coordinate {
         .aroundMockCenter(lat: template.offset.lat, lon: template.offset.lon)
     }

@@ -6,8 +6,9 @@ Source: `lily/Features/Inbox/Views/`
 
 The inbox as a conversation: `InboxView` is the screen (day chips and system cards anchored at the bottom like a chat,
 "Load earlier" above the oldest item while an earlier page exists, a spinner, an empty or a failed state), `InboxRow`
-is the pinned row on the Chats tab, `InboxItemRow` picks a card per item kind, and `InboxCardParts` plus `InboxItemRow+Tournaments` and
-`InboxItemRow+Notices` hold the shared card pieces, the tournament cards and the account-deletion notices. Cards are
+is the pinned row on the Chats tab, `InboxItemRow` picks a card per item kind, and `InboxCardParts` plus `InboxItemRow+Tournaments`, `InboxItemRow+Events` (2026-11-15) and
+`InboxItemRow+Notices` hold the shared card pieces, the tournament cards, the event invite card and the
+account-deletion notices. Cards are
 plain fills on the surface
 colour, never glass, because the list draws many at once. The model is [ViewModels](../ViewModels/EGM.md).
 
@@ -21,7 +22,9 @@ colour, never glass, because the list draws many at once. The model is [ViewMode
   a `ConversationRow` button with the inbox symbol avatar, the `inbox.hasUnread` dot and the caption
   `inbox.newestVisible?.caption ?? AppBranding.Inbox.emptyCaption`; identifier `AccessibilityIdentifiers.inboxRow`.
 - `InboxItemRow(item: InboxItem, viewModel: InboxViewModel)` `[lily/Features/Inbox/Views/InboxItemRow.swift:InboxItemRow]`:
-  switches on `item.kind`; private `InviteCard` (group invite) and `ReminderCard` (event reminder).
+  switches on `item.kind`; private `InviteCard` (group invite) and `ReminderCard` (event reminder);
+  `EventInviteCard(item:invite:viewModel:)` in `InboxItemRow+Events.swift` (2026-11-15): the calendar-mark avatar
+  over the shared invite card, the details a `Label` of type · start (`EventInvitePayload.details(now:)`).
 - `TournamentInviteCard(item:invite: TournamentInvitePayload, viewModel:)` and
   `MatchReminderCard(item:reminder: MatchReminderPayload, viewModel:)`
   `[lily/Features/Inbox/Views/InboxItemRow+Tournaments.swift:TournamentInviteCard]`,

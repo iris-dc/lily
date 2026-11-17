@@ -50,6 +50,16 @@ struct ErrorMessageMapperTests {
         #expect(ErrorMessageMapper.message(for: .eventCreationFailed).title == "Couldn't create your event")
     }
 
+    /// The event invite refusals read as invites, with the start-time refusal of their own (`EVENT_STARTED`).
+    @Test func eventInviteRefusalsHaveTheirOwnTitles() {
+        #expect(ErrorMessageMapper.message(for: .eventStarted).title == "This event has already started")
+        #expect(ErrorMessageMapper.message(for: .eventStarted).body == "Invites can only be sent before the start.")
+        #expect(ErrorMessageMapper.message(for: .inviteeAlreadyJoined).title == "They're already in this event")
+        #expect(ErrorMessageMapper.message(for: .cannotInviteToEvent).title == "Only players can invite")
+        #expect(ErrorMessageMapper.message(for: .eventInviteLimit).title == "Can't invite more people")
+        #expect(ErrorMessageMapper.message(for: .eventInviteLimit).body == "This event has invited as many people as it can.")
+    }
+
     /// Being throttled is not being offline; the copy asks for a pause, not for a connection check, whatever the wait.
     @Test func rateLimitedHasItsOwnTitle() {
         #expect(ErrorMessageMapper.message(for: .rateLimited(retryAfter: 3)).title == "Slow down a moment")

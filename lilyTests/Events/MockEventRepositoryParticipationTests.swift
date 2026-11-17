@@ -5,10 +5,7 @@ import Testing
 /// The mock joins and leaves in memory so previews, UI tests and `-mock-events` behave like the backend.
 @MainActor
 struct MockEventRepositoryParticipationTests {
-    private let repository = MockEventRepository(now: .now,
-                                                 count: AppConfig.Events.mockFeedSize,
-                                                 identity: FakeIdentityProvider(),
-                                                 logger: SpyLogger())
+    private let repository = MockEventRepository(now: .now, identity: FakeIdentityProvider(), logger: SpyLogger())
 
     @Test func joinedEventsAlwaysHaveAParticipant() async throws {
         let joined = try await repository.events(in: .joined, near: nil)
@@ -81,7 +78,6 @@ struct MockEventRepositoryParticipationTests {
     /// they joined, and the rows count what the event counts.
     @Test func participantsListTheHostFirstAndTheCallerAsYouWhenJoined() async throws {
         let signedIn = MockEventRepository(now: .now,
-                                           count: AppConfig.Events.mockFeedSize,
                                            identity: FakeIdentityProvider(currentUserID: TestFixtures.user.id),
                                            logger: SpyLogger())
         let events = try await signedIn.events(in: .upcoming, near: nil)
@@ -109,7 +105,6 @@ struct MockEventRepositoryParticipationTests {
     /// A game the caller created is theirs: one "You" row, the host's, never a second one.
     @Test func aCreatedGameListsTheCallerAsItsHostOnce() async throws {
         let signedIn = MockEventRepository(now: .now,
-                                           count: 1,
                                            identity: FakeIdentityProvider(currentUserID: TestFixtures.user.id),
                                            logger: SpyLogger())
         let created = try await signedIn.create(.fixture())

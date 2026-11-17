@@ -51,7 +51,8 @@ struct ChatView: View {
     }
 
     /// The group's detail, the other person's profile in a direct conversation (reached from the chat, so it offers
-    /// no "Message" back into it), or the tournament of a tournament's room; one identifier either way.
+    /// no "Message" back into it), the tournament of a tournament's room or the event of an event's room (both fetched
+    /// by id behind their loaders); one identifier either way.
     private var infoButton: some View {
         Group {
             if let counterpart = group.counterpart {
@@ -59,6 +60,10 @@ struct ChatView: View {
             } else if group.isTournamentRoom {
                 NavigationLink(value: TournamentDestination(id: group.id, name: group.name)) {
                     infoLabel(AppBranding.Tournaments.tournament)
+                }
+            } else if group.isEventRoom {
+                NavigationLink(value: EventDestination(id: group.id, name: group.name)) {
+                    infoLabel(AppBranding.Events.event)
                 }
             } else {
                 NavigationLink(value: GroupInfoDestination(group: group)) { infoLabel(AppBranding.Groups.title) }

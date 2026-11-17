@@ -54,7 +54,8 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `mock(identity:logger:autoReplies:mockPicker:systemPush:eventsFailFirst:deletedUser:)` binds the `Mock*` set,
   `NoOpInteractionRecorder()` and `SystemPushRegistrar` only when `systemPush`, else `MockPushRegistrar`.
 - `GroupRepositories` (`lily/App/AppDependencies+Groups.swift:GroupRepositories`): `groups`, `invites`, `inbox`, `me`,
-  `moderation`, `chat`, `users`, `tournaments`, `tournamentInvites`, `realtimeTransport`,
+  `moderation`, `chat`, `users`, `tournaments`, `tournamentInvites`, `eventInvites` (the event-invite seam,
+  2026-11-15), `realtimeTransport`,
   `makeRealtimeEndpointProvider: @MainActor (MeStore) -> any RealtimeEndpointProvider`, `attachmentUploader`,
   `mediaPreparer`, `attachmentSession: URLSession`. `remote(client:realtimeEndpoint:identity:tokenProvider:logger:)` binds the
   `Remote*Repository` set, `AppSyncRealtimeTransport(socket: URLSessionEventsSocket(), tokenProvider:, logger:)`,
@@ -62,7 +63,9 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `DeviceMediaPreparer`, `URLSession(configuration: .default)`;
   `mock(identity:logger:events:profiles:autoReplies:mockPicker:deletedFixtures:)` (the Bools default to
   false; `deletedFixtures` adds the deleted-flagged chat, tournament and inbox fixtures, 2026-11-08)
-  binds the `Mock*Repository` set, `MockRealtimeTransport`, `FixedRealtimeEndpointProvider(url: AppConfig.Realtime.mockEndpoint)`,
+  binds the `Mock*Repository` set (in `lily/App/AppDependencies+GroupMocks.swift` since 2026-11-15, split under the
+  file-length limit; it also closes the `events.rooms = groups` loop, so the event mock's writes reach the rooms, and
+  hands the inbox mock the event mock), `MockRealtimeTransport`, `FixedRealtimeEndpointProvider(url: AppConfig.Realtime.mockEndpoint)`,
   `MockAttachmentUploader(store:)` and `MockAttachmentURLProtocol.makeSession()`.
 - `GroupDependencies` (`lily/App/AppDependencies+Groups.swift:GroupDependencies`): `init(repositories:identity:tokenProvider:errorCenter:logger:snapshots:)`
   builds `MyGroupsStore` (the one reader of `snapshots`, which is not stored), `MeStore`, `InboxStore`, `BlockListStore`, `InMemoryChatHistoryCache`,
@@ -81,7 +84,9 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   (`+Localization.swift`), `makeCurrencyStore` (`+Currency.swift`), `makeEventFilterStore` (`+Events.swift`),
   `makeListSnapshotStore(arguments:startsFresh:directory:logger:)`; instance factories `makeShellSync()` and
   `makeShellLists()` (`lily/App/AppDependencies+Shell.swift:AppDependencies.makeShellLists`).
-- View-model factories, one per screen: `makeEventListViewModel(scope:snapshots:)`, `makeLandingViewModel`, `makeEventDetailViewModel`,
+- View-model factories, one per screen: `makeEventListViewModel(scope:snapshots:)`, `makeLandingViewModel`, `makeEventDetailViewModel` (hands the detail
+  `myGroups` and the group repository for its room seams, 2026-11-15), `makeEventLoaderViewModel(for:
+  EventDestination)` (2026-11-15),
   `makeEditEventViewModel`, `makeCreateEventViewModel(onCreated:lockedGroup:)` (`+Events.swift`);
   `makeCreationWizardModel(seed:onCreatedEvent:onCreatedGroup:onCreatedTournament:)`
   (`lily/App/AppDependencies+Create.swift`, 2026-11-10; all three kinds since slice 3, 2026-11-11: builds
@@ -95,7 +100,8 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   locked group — strong captures, the root outlives every wizard; call sites: Explore's `EventListView`, the group
   detail and, since 2026-11-14, `HomeView`'s per-segment create button); `makeDiscoverGroupsViewModel`,
   `makeGroupDetailViewModel`, `makeGroupLoaderViewModel`, `makeCreateGroupViewModel`, `makeEditGroupViewModel`, `makeMembersViewModel`,
-  `makeInvitePeopleViewModel`, `makeTournamentInvitePeopleViewModel`, `makeReportViewModel` (`+Groups.swift`); `makeChatViewModel`,
+  `makeInvitePeopleViewModel`, `makeTournamentInvitePeopleViewModel`, `makeEventInvitePeopleViewModel` (over
+  `InviteTarget.event`, 2026-11-15), `makeReportViewModel` (`+Groups.swift`); `makeChatViewModel`,
   `makeAttachmentComposer`, `makeChatHistoryClearer`, `preloadTopRooms()` (warms the Chats list's top rooms through
   `ChatCatchUp.preloadRooms` under `AppConfig.Chat.preloadedRoomCount` and `maxConcurrentCatchUps`, 2026-11-13),
   `myGroupsDidChange()`, `myGroupsDidLoad()` (`+Chat.swift`);

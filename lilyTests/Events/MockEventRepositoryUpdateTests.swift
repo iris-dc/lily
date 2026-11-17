@@ -9,7 +9,7 @@ struct MockEventRepositoryUpdateTests {
     private let repository: MockEventRepository
 
     init() {
-        repository = MockEventRepository(now: .now, count: AppConfig.Events.mockFeedSize, identity: identity, logger: SpyLogger())
+        repository = MockEventRepository(now: .now, identity: identity, logger: SpyLogger())
     }
 
     @Test func theHostUpdatesTheirOwnGameEverywhereItIsListed() async throws {

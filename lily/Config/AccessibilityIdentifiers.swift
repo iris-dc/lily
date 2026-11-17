@@ -43,6 +43,9 @@ nonisolated enum AccessibilityIdentifiers {
     static let eventEdit = "event-edit"
     /// The non-interactive map on the event detail.
     static let eventDetailMap = "event-detail-map"
+    /// The in-body action row under the event's facts, mirroring the tournament's.
+    static let eventActionChat = "event-action-chat"
+    static let eventActionInvite = "event-action-invite"
 
     /// The edit form's compact type picker: its search field, its "See all" expander and one chip per offered type
     /// ("draft-type-football").

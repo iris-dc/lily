@@ -380,3 +380,16 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   selection, the search) and walked by `LilyEventEditTests.testEditTypePickerSearchesTheFullListAndExpands`;
   screenshots (collapsed, mid-search, expanded) in
   `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-15/item1/`.
+- 2026-11-15 — **Event chat rooms and invites, the app side of Laurel's 81ff7ce.** Every event owns a room: a group
+  of kind `event` under the event's id, and `SportEvent.channelEpoch` (default 1 when the key is absent) mirrors the
+  room's channel, bumped by a leave so a rejoiner reads a fresh thread. The detail gains the in-body `EventActionRow`
+  (the tournament row's copy keys verbatim) behind `EventPermissions`: involved = hosting or joined, Open chat behind
+  the chat flag, Invite only before `startsAt`. `openChat()` fetches the room by the event's id, places it in Mine
+  when the answer carries the membership (the by-user index may lag a fresh join) and pushes the chat in place
+  (`openedRoom` through the shared `chatDestination`), so Back returns to the detail; a landed join reloads Mine and
+  places the fetchable room (pre-backfill events without one log a debug line and keep quiet), a landed leave reloads
+  and drops it (`EventDetailRoomTests`). Invites reuse the `InvitePeopleSheet` seam over `RemoteEventInviteRepository`
+  (`POST /api/events/{id}/invites`, candidates from `/invitees`), remapping the shared refusal codes to event copy and
+  the new `EVENT_STARTED` to `.eventStarted` ("This event has already started"); `MockEventInviteRepository` mirrors
+  Laurel's refusals, clock included. Walked by the three `LilyEventEditTests+Rooms` tests; stills under
+  `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-15/item2-event-chats/`.

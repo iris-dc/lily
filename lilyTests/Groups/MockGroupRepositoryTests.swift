@@ -12,17 +12,20 @@ struct MockGroupRepositoryTests {
         MockGroupRepository(identity: identity, logger: logger)
     }
 
-    /// The three joined groups, the conversation with Marta and the two tournament rooms, most recently active first,
-    /// as the backend orders Mine.
-    @Test func mineHoldsTheJoinedGroupsAndTheConversationMostRecentlyActiveFirst() async throws {
+    /// The three joined groups, the conversation with Marta, the two tournament rooms the caller is in and the three
+    /// pre-joined event rooms, most recently active first, as the backend orders Mine; the silent event rooms sit deep,
+    /// above only the older Kickers Cup room, and none of them is unread, so the badge's pins stay.
+    @Test func mineHoldsTheJoinedGroupsTheConversationAndTheRoomsMostRecentlyActiveFirst() async throws {
         let mine = try await makeRepository().groups(in: .mine, cursor: nil, near: nil)
 
-        #expect(mine.items.map(\.name) == ["Kreuzberg Kickers", "Marta", "Tuesday Table Tennis", "Tempelhof Runners",
-                                           "Sunday Padel Crew", "Kickers Cup"])
-        #expect(mine.items.map(\.role) == [.member, .member, .member, .admin, .owner, .owner])
-        #expect(mine.items.map(\.hasUnread) == [true, true, false, false, false, false])
-        #expect(mine.items.map(\.isDirect) == [false, true, false, false, false, false])
-        #expect(mine.items.map(\.isTournamentRoom) == [false, false, true, false, false, true])
+        #expect(mine.items.map(\.name) == ["Kreuzberg Kickers", "Marta", "Tuesday Table Tennis", "Sunset 5-a-side",
+                                           "Tempelhof Runners", "Sunday Padel Crew", "Easy 8k loop", "Sunrise yoga",
+                                           "Kickers Cup"])
+        #expect(mine.items.map(\.role) == [.member, .member, .member, .member, .admin, .owner, .member, .member, .owner])
+        #expect(mine.items.map(\.hasUnread) == [true, true, false, false, false, false, false, false, false])
+        #expect(mine.items.count(where: \.isDirect) == 1 && mine.items[1].isDirect)
+        #expect(mine.items.map(\.isTournamentRoom) == [false, false, true, false, false, false, false, false, true])
+        #expect(mine.items.map(\.isEventRoom) == [false, false, false, true, false, false, true, true, false])
         #expect(mine.nextCursor == nil)
     }
 
@@ -57,8 +60,8 @@ struct MockGroupRepositoryTests {
         repository.hideConversation(id: marta)
 
         let mine = try await repository.groups(in: .mine, cursor: nil, near: nil).items
-        #expect(mine.map(\.name) == ["Kreuzberg Kickers", "Tuesday Table Tennis", "Tempelhof Runners", "Sunday Padel Crew",
-                                     "Kickers Cup"])
+        #expect(mine.map(\.name) == ["Kreuzberg Kickers", "Tuesday Table Tennis", "Sunset 5-a-side", "Tempelhof Runners",
+                                     "Sunday Padel Crew", "Easy 8k loop", "Sunrise yoga", "Kickers Cup"])
         #expect(try await repository.group(id: marta).isDirect, "the room stays readable while it is cleared")
 
         repository.unhideConversation(id: marta)
@@ -69,7 +72,7 @@ struct MockGroupRepositoryTests {
 
         repository.hideConversation(id: MockGroupFixtures.kickersID)
         let afterHidingAGroup = try await repository.groups(in: .mine, cursor: nil, near: nil).items
-        #expect(afterHidingAGroup.count == 6, "only a conversation can be hidden")
+        #expect(afterHidingAGroup.count == 9, "only a conversation can be hidden")
     }
 
     @Test func discoverListsPublicGroupsNewestFirstAndSearchesByPrefix() async throws {
@@ -120,7 +123,7 @@ struct MockGroupRepositoryTests {
         let joined = try await repository.join(id: MockGroupFixtures.basketballID)
         #expect(joined.role == .member && joined.memberCount == 59)
         #expect(try await repository.join(id: MockGroupFixtures.basketballID).memberCount == 59, "a replay changes nothing")
-        #expect(try await repository.groups(in: .mine, cursor: nil, near: nil).items.count == 7)
+        #expect(try await repository.groups(in: .mine, cursor: nil, near: nil).items.count == 10)
         let joinLines = logger.messages(in: .groups, at: .info)
         #expect(joinLines.contains { $0.contains(joined.id) } && !joinLines.contains { $0.contains(joined.name) })
 

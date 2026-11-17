@@ -6,7 +6,8 @@ Source: `lily/Features/Events/Implementations/`
 
 The concrete types behind the two Events protocols in [Interfaces](../Interfaces/EGM.md). `RemoteEventRepository`
 maps each `EventRepository` call to one Laurel request through `APIClient.send(_:failingWith:)`;
-`MockEventRepository` serves `MockEventFixtures` from memory with the backend's refusals, for previews, UI tests and
+`MockEventRepository` serves `MockEventFixtures` from memory with the backend's refusals and mirrors joins, leaves,
+creates and edits into the group mock's event rooms (2026-11-15), for previews, UI tests and
 `-mock-events` runs without a backend. `UserDefaultsEventFilterStore` keeps Explore's filter across launches as
 `PersistedEventFilter` JSON; `NoOpEventFilterStore` stores nothing for lists whose filter is not worth keeping. The
 classes carry no `nonisolated` marker and so run on the main actor by the target's default; `MockEventFixtures` is a
@@ -19,14 +20,23 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   `participants(eventId:)`, `join(eventId:)`, `leave(eventId:)`, `create(_:)`, `update(id:_:)`. Private
   `static listRequest(for: EventScope, near: Coordinate?) -> APIRequest<[SportEvent]>` and `scopeItems(for:)`.
 - `MockEventRepository` (`lily/Features/Events/Implementations/MockEventRepository.swift`): `final class`,
-  `init(now: Date = .now, count: Int = AppConfig.Events.mockFeedSize, identity: any IdentityProvider,
-  logger: any Logging, failsFirstLoad: Bool = false, deletedHost: Bool = false)`; the same seven methods over an
-  in-memory `[SportEvent]`.
+  `init(now: Date = .now, identity: any IdentityProvider, logger: any Logging, failsFirstLoad: Bool = false,
+  deletedHost: Bool = false)` (the fixture set is always `MockEventFixtures.feed(now:)`, so the repository and the
+  group fixtures' rooms can never disagree on which games exist); the same seven methods over an
+  in-memory `[SportEvent]`; `rooms: MockGroupRepository?` (the event rooms the writes mirror into, set by the
+  composition root; wiring registers a room for any held event the group fixtures do not ship — the appended
+  deleted-host game) and `stored(_ eventId:) throws -> SportEvent` (the invite mock's read), 2026-11-15.
 - `MockEventFixtures` (`lily/Features/Events/Implementations/MockEventFixtures.swift`,
-  `MockEventFixtures+Participants.swift`): `static func make(now: Date, count: Int) -> [SportEvent]`;
+  `MockEventFixtures+Participants.swift`, and `MockEventFixtures+Rooms.swift`, 2026-11-15: `eventIDPrefix` =
+  `mock-event-`, `sunsetEventID` = `mock-event-0`, `isInitiallyJoined(index:)` (every fourth), `feed(now:)` (the one
+  fixture feed, `mockFeedSize` events, that the repository serves and `rooms(now:)` / `roster(for:now:)` build from),
+  `rooms(now:)`,
+  `room(for:membership:lastMessageId:lastMessageAt:createdAt:)` — kind `.event`, the event's `channelEpoch`, private
+  visibility iff the group fixture's — and `roster(for:now:)`, the host the owner): `static func make(now: Date, count: Int) -> [SportEvent]`;
   `static func deletedHostEvent(now:) -> SportEvent` (2026-11-07, `-mock-deleted-user`: id `mock-event-deleted-host`,
   started three days ago, the placeholder host name with `deleted: true` — the stamp pass's shape, past because the
-  job cancels upcoming hosted games — joined, appended by `MockEventRepository.init` under `deletedHost`);
+  job cancels upcoming hosted games — joined, appended by `MockEventRepository.init` under `deletedHost`, its room
+  registered with a member row when `rooms` is wired);
   `static let participantNames` (11 names), `hostJoinLead: TimeInterval` (7 days), `joinSpacing` (1 hour); the
   fixtures start `firstStartHours` (3) plus `hoursBetweenEvents` (7) per index after `now`, in `TimeInterval.hour`;
   `static func participantNames(for: SportEvent, count: Int) -> [String]`.
@@ -35,6 +45,18 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   `save(_:)`, `clear()`.
 - `NoOpEventFilterStore` (`lily/Features/Events/Implementations/NoOpEventFilterStore.swift`): `final class`;
   `load()` answers `nil`, `save` and `clear` do nothing.
+- `RemoteEventInviteRepository: InviteRepository`
+  (`lily/Features/Events/Implementations/RemoteEventInviteRepository.swift`, 2026-11-15): `init(client:)`; the two
+  `InviteRepository` calls over `GET AppConfig.API.Paths.eventInvitees(id:)` and `POST eventInvites(id:)`; a private
+  send remaps the shared wire codes to event copy — `.alreadyJoined` → `.inviteeAlreadyJoined`,
+  `.insufficientRole` → `.cannotInviteToEvent`, `.tournamentInviteLimit` (the shared `INVITE_LIMIT`) →
+  `.eventInviteLimit` — with fallback `.inviteUnavailable`.
+- `MockEventInviteRepository: InviteRepository`
+  (`lily/Features/Events/Implementations/MockEventInviteRepository.swift`, 2026-11-15):
+  `init(groups:events:identity:logger:now:)`; refuses a guest (`.sessionExpired`), a caller neither hosting nor
+  joined (`.cannotInviteToEvent`) and a started event (`.eventStarted`); candidates from the shared
+  `MockInviteCandidatePool` minus the event's participants and the caller; sends through the shared
+  `MockInviteLedger` into `InviteTarget.event(id:)`.
 
 ## Invariants
 
@@ -47,6 +69,11 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   `.participationFailed`, `create` with `.eventCreationFailed`, `update` with `.eventUpdateFailed`; `create` and
   `update` throw their fallback before any request when `CreateEventPayload(draft:)` or `UpdateEventPayload(draft:)`
   is `nil` (no coordinate).
+- Room mirroring (2026-11-15): the mock's `join` runs `rooms?.admitToEventRoom(for:)` on the joined answer; `leave`
+  bumps the event's `channelEpoch` by one (`updatingParticipation(..., channelEpoch:)`, the backend's rule) and runs
+  `leaveEventRoom(for:)`; `create` runs `registerEventRoom(for:)`; `update` runs `syncEventRoom(for:)`; every fixture
+  event ships a room (`MockGroupFixtures.make` appends `MockEventFixtures.rooms(now:)`), and wiring `rooms` registers
+  one for any held event the fixtures do not ship, so every event has a room, as on the backend.
 - `RemoteEventRepository.participants` decodes `Page<EventParticipant>` and returns `items`: the backend sends
   `{items: [...]}` without a cursor.
 - Fixtures (`MockEventFixtures.make`): nine `Template`s cycled by `index % templates.count`; id

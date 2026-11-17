@@ -3,8 +3,9 @@ import Foundation
 /// The six groups of a mock run: three the caller is in (as member, admin and owner), one to join, one that is full,
 /// and one private group reachable only through the mock inbox's invite (`MockInboxFixtures`), each at a real Berlin
 /// place so the carousel's distances read as on a real Explore; plus one direct
-/// conversation, with Marta, unread, so the Chats tab shows a person row from the start; plus the rooms of the two
-/// fixture tournaments (`MockTournamentFixtures.rooms`), so Chats lists them like the backend's Mine does.
+/// conversation, with Marta, unread, so the Chats tab shows a person row from the start; plus the rooms of the
+/// fixture tournaments (`MockTournamentFixtures.rooms`) and of every fixture event (`MockEventFixtures.rooms`, the
+/// caller in the pre-joined ones), so Chats lists them like the backend's Mine does.
 nonisolated enum MockGroupFixtures {
     static let kickersID = "mock-group-kickers"
     static let runnersID = "mock-group-runners"
@@ -106,6 +107,7 @@ nonisolated enum MockGroupFixtures {
 
     static func make(now: Date) -> [SportGroup] {
         templates.map { makeGroup($0, now: now) } + [martaConversation(now: now)] + MockTournamentFixtures.rooms(now: now)
+            + MockEventFixtures.rooms(now: now)
     }
 
     private static func makeGroup(_ template: Template, now: Date) -> SportGroup {
@@ -179,6 +181,9 @@ nonisolated enum MockGroupFixtures {
     static func roster(for groupID: String, now: Date) -> [GroupMember] {
         if MockTournamentFixtures.ids.contains(groupID) {
             return MockTournamentFixtures.roster(for: groupID, now: now)
+        }
+        if groupID.hasPrefix(MockEventFixtures.eventIDPrefix) {
+            return MockEventFixtures.roster(for: groupID, now: now)
         }
         if groupID == martaConversationID {
             return [GroupMember(userId: conversationCounterpart.userId,

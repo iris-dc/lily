@@ -64,7 +64,8 @@ struct MockTournamentFixtureTests {
         #expect(groups.find(id)?.isMember == false, "the caller has no row in its room")
         #expect(groups.find(id)?.lastMessageId == nil, "a just-announced room carries no last message")
         #expect(MockChatFixtures.lastMessageID(for: id) == nil)
-        let rows = MockChatFixtures.messages(groupID: id, callerID: "c", callerName: "C", now: now, lastMessageAt: now)
+        let room = try #require(groups.find(id))
+        let rows = MockChatFixtures.messages(in: room, callerID: "c", callerName: "C", now: now)
         #expect(rows.isEmpty, "the room starts with no history")
     }
 
