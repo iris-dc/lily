@@ -446,7 +446,7 @@ the asset catalog.
   the labelled button stays, the dead band between the two tap zones roughly doubles, the first card moves ~24 pt
   down. B and C stay available as patches if misclicks persist.
 
-- **The badge hides while the bar is minimized (2026-11-19, owner correction).** The owner judged the 2026-11-17
+- **The badge hides while the bar is minimized (2026-11-19, owner correction; superseded the same day — the owner judged the count-swap "works terrible", see the fading-overlay bullet below).** The owner judged the 2026-11-17
   inward pull "looks off — move it back": `badgeCenterOffset` is back at the tuned (−1, +4) and the renderer's
   symmetric canvas growth is restored (both byte-exact to the pre-2026-11-17 revision; the circle-fit scan and the
   `minimizedCircleRadius`/`minimizedCircleClearance` tokens are deleted), so the capsule again pokes past the
@@ -460,7 +460,7 @@ the asset catalog.
   0.1 s, at most `tabBarFindAttempts` 20 — never steady-state polling) and observes the panes' layers by KVO
   (`CALayer` is KVO-compliant where `UIView` is not), re-attaching only when the pane set itself changed, compared
   by identity: the bar's layer churns on every state swap, and tearing every observation down per churn would
-  re-create them for nothing. The rule is `TabBarCollapse.isMinimized`: minimized iff the widest visible pane
+  re-create them for nothing. The rule was `TabBarCollapse.isMinimized` (deleted 2026-11-19 with the fading overlay below; `TabBarCollapse.phase` is the rule since): minimized iff the widest visible pane
   (above `DesignTokens.TabBar.paneVisibleAlpha`) is laid out and under half the bar's width — mid-swap both panes
   show and the bar reads as expanded, and a pane before its first layout reports zero width and is no signal, so a
   pre-layout read can never latch the badge hidden (a wrong latch would stand until the next KVO event); the badge
@@ -479,3 +479,64 @@ the asset catalog.
   `TabBarCollapseTests` (the width rule, every testable branch of the detector: the wide platter, the small circle,
   mid-swap, the exact midpoint, no pane, a zero bar and the zero-width pre-layout pane) and the restored
   `TabBadgeRendererTests` (the geometry).
+
+- **The unread capsule floats over the bar and fades with its collapse (2026-11-19, owner verdict on the hide
+  above: "works terrible").** Swapping the composited glyph between the counted and the plain image on a binary
+  minimized state could only ever cut: the count dropped in one frame instead of fading, the capsule jumped on the
+  swap (the bar lays a 25.5 pt template image out half a point from a 44 pt composite), and mid-expand the
+  still-small circle drew the composite cut at its rim — all three inherent to the mechanism, so the mechanism
+  changed, not the tuning. The Chats label now hands the bar the plain template glyph while `TabBarBadgeOverlay`
+  (`Features/Shell/Views`) floats the capsule as its own `UIImageView` riding the `UITabBar` itself — a bar subview
+  above both state panes, so the bar's own hiding and removal carry it and no pane's clip can ever cut it —
+  rendered alone by `TabBadgeRenderer.capsule` (one `drawCapsule` shared with the composite, so it is the
+  composite's to the pixel) and anchored by `TabBadgePlacement.capsuleCenter`: the owner-tuned `badgeCenterOffset`
+  (−1, +4) from the top-right of the drawn glyph's box around the glyph view's centre, which the bar keeps in one
+  place whichever image the label hands it, so the composite-to-overlay handoff at startup moves nothing. Finding
+  the Chats glyph (SE dump, iOS 26.5): the expanded platter is the bar's widest pane and holds **two parallel item
+  trees** (`SelectedContentView` and `ContentView`, three `_UITabButton`s each at identical frames), so the item
+  views are deduplicated into x-columns and trusted only when exactly one column per tab shows, Chats the column at
+  its tab index (`TabBadgePlacement.chatsColumn`; labels exist but are localized, the index is not); the glyph is
+  the button's one `UIImageView`. Visibility is a real fade, not a swap: the panes' layers are KVO-observed as
+  before, but the rule is now three-phase (`TabBarCollapse.phase`) — the minimized circle joins the platter on
+  screen the moment a morph starts, about 0.7 s before the leaving pane hides (measured pane log: collapse
+  12:21:53.87 circle unhides beside the 274 pt platter, 12:21:54.61 platter hides), so "both endpoints visible" is
+  the morphing phase and the capsule fades toward the opposite of the last settled state
+  (`TabBarCollapse.fadesOut`): out over the collapse, in from the first frame of the expand, an abandoned morph
+  correcting itself at the next settle. The endpoints are told on absolute bounds (review fix, same day): the
+  48 pt circle and the ~100 pt tab-switch transient pane are absolute sizes on every device while only the
+  platter scales with the bar, so the circle is a visible pane at most `AppConfig.Shell.tabBarCircleMaxWidth`
+  72 pt — between the measured 48 and 100 with margin both ways — and the platter at least
+  `tabBarPlatterMinimumFraction` (half the bar); the first cut's width-relative quarter-bar circle test crossed
+  the transient on 400 pt-class bars (the 17 Pro's 402, the Pro Max's 440) and read every tab switch as a morph,
+  flickering the capsule 0.45 s per switch, so the rule is pinned at bar widths 375/402/440 and a pane that is
+  neither endpoint errs expanded. An attach that lands mid-morph seeds the settled phase as minimized
+  (`TabBarCollapse.settle`), so the capsule errs visible and the next settle corrects it — the hard-seeded
+  expanded faded it invisible through a morph it attached into. The fade is
+  `DesignTokens.TabBar.badgeFadeDuration` 0.45 s ease-in-out (`badgeFadeOptions`), tuned on film against the bar's
+  ~0.7 s morph: the first cut faded only after the settle (the capsule hung alone over the list for ~0.8 s —
+  `item2-badge-fade/first-cut-collapse-strip-capsule-lingers.png`), the landed cut ramps over the morph in both
+  directions with the capsule's anchor not moving a pixel (`collapse-fade-strip-se.png`,
+  `expand-fade-strip-se.png`, full video `film-fade-se.mp4`, all under
+  `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-19/item2-badge-fade/`). At rest the
+  expanded bar reads identical to the owner-tuned baseline: the 17 Pro and SE 1:1 crops match by eye
+  (`expanded-17pro-baseline-vs-overlay-vs-diffx4.png`, `expanded-se-baseline-vs-overlay-vs-diffx4.png`); the
+  amplified diff shows only a thin sub-pixel halo — the bar lays the template glyph about half a point higher than
+  it laid the composite, and the capsule rides the glyph, so the pair moved together while the offset relative to
+  the glyph is exactly the tuned (−1, +4). Fail-safe, direction deliberately flipped from the hide: whenever the
+  hierarchy is missing or not the expected shape (no `UITabBar` — the iPad's top bar, which never minimizes;
+  regular widths never even mount the overlay and keep the composite as before — the find budget spent,
+  untrustworthy item columns, a re-created item losing the glyph), `onHosting` reports false and `MainTabView`
+  composites the count into the glyph as before, so an unread count is never lost — and never blanks on the way:
+  the stand-down is sequenced so the capsule stays up until the composite's body pass has had a turn (a handoff
+  may double-draw for a frame in either direction, never show nothing; the first cut's synchronous removal
+  blanked the count for at least a frame), a hierarchy churn replenishes the find budget so a late churn can
+  never strand the fallback, and a search that spends the budget logs one warning through the `Logging` facade
+  (`.ui`) instead of going silent; the recorded costs are the old
+  capsule-past-the-rim overflow returning silently, and a signal lost after hosting leaving the capsule showing at
+  its last anchor. Fragility as before: only the `UITabBar` class is public; the pane shapes, the two item trees
+  and the morph's pane choreography are observed behaviour (iOS 26.5 simulator), not API. Pinned by
+  `TabBarCollapseTests` (the phase rule at bar widths 375/402/440, the fade direction and the settle seeding),
+  `TabBadgePlacementTests` (the anchor and the trust rule) and `TabBadgeRendererTests` (the untouched composite
+  geometry plus the capsule-only render: cache identity, the cap, nothing at zero); the fade itself is UIKit
+  runtime behaviour, proven on the film above. The 17 Pro's Chats list never crosses the minimize threshold, so
+  only a compact phone that collapses the bar ever fades the capsule.

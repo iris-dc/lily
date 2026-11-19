@@ -38,6 +38,26 @@ struct TabBadgeRendererTests {
         #expect(first.renderingMode == .alwaysOriginal, "a template image would tint the badge with the glyph")
     }
 
+    @Test func theCapsuleAloneSkipsZeroAndCaches() throws {
+        #expect(renderer.capsule(count: 0, badgeColor: .red) == nil)
+        #expect(renderer.capsule(count: -3, badgeColor: .red) == nil)
+        let five = try #require(renderer.capsule(count: 5, badgeColor: .red))
+        #expect(five === renderer.capsule(count: 5, badgeColor: .red),
+                "the capsule for a count is rendered once, not per frame")
+    }
+
+    /// The overlay's capsule is the composite's: one height, a circle for a single digit, one capped size.
+    @Test func theCapsuleAloneSharesTheCompositesGeometry() throws {
+        let one = try #require(renderer.capsule(count: 1, badgeColor: .red))
+        let circle = CGSize(width: DesignTokens.TabBar.badgeHeight, height: DesignTokens.TabBar.badgeHeight)
+        #expect(one.size == circle, "a single digit reads as a circle")
+        let hundred = try #require(renderer.capsule(count: 100, badgeColor: .red))
+        let thousands = try #require(renderer.capsule(count: 5000, badgeColor: .red))
+        #expect(hundred.size == thousands.size, "every capped count reads 99+ and shares one size")
+        #expect(hundred.size.width > one.size.width, "three characters need a wider capsule")
+        #expect(hundred.size.height == one.size.height)
+    }
+
     /// The canvas grows by one symmetric inset around the glyph, so the bar, centring the image, keeps the glyph
     /// where the plain template one sits.
     @Test func theCanvasPadsTheGlyphSymmetrically() throws {

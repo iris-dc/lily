@@ -14,8 +14,8 @@ between a stack and the iPad split view. Lists are read from `dependencies.lists
 `dependencies.navigation` (`AppNavigation`), and the screens shown inside (`ProfileView`, `ChatsView`, `ChatsSplitView`,
 `EventListView`, `EventDetailView`, `GroupCarousel`, `TournamentCarousel`) belong to other features.
 
-Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views/TabBarMinimizeReporter.swift`,
-`lily/Features/Shell/Views/ProfileCornerButton.swift`,
+Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views/TabBarBadgeOverlay.swift`,
+`lily/Features/Shell/Views/TabBarCollapse.swift`, `lily/Features/Shell/Views/ProfileCornerButton.swift`,
 `lily/Features/Shell/Views/HomeTab.swift`,
 `lily/Features/Shell/Views/HomeView.swift`, `lily/Features/Shell/Views/HomeOverview.swift`,
 `lily/Features/Shell/Views/ExploreTab.swift`, `lily/Features/Shell/Views/ChatTab.swift`,
@@ -29,9 +29,11 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `@State`-held `TabBadgeRenderer`, because the bar ignores `UITabBarAppearance.badgePositionAdjustment` (2026-11-12
   probe) and honours only the label's title and `UIImage`; the composite is `.alwaysOriginal`, so the glyph colour
   follows `navigation.selectedTab` — `UIColor(Color.lilyAccent)` selected, `DesignTokens.TabBar.unselectedGlyphColor`
-  otherwise — at zero the plain template `tabLabel` returns, and the count passed is zero while the floating bar is
-  minimized (`isBarMinimized`, set by `TabBarMinimizeReporter` mounted as the `TabView`'s background), so the
-  minimized circle draws the plain glyph (2026-11-19), see `docs/notes/design-and-ui.md`); every tab's
+  otherwise — at zero the plain template `tabLabel` returns, and the count passed is zero while `TabBarBadgeOverlay`
+  reports itself hosting (`overlayCarriesBadge`; the overlay mounts in the `TabView`'s background behind the chat
+  flag on compact widths only — the iPad's top bar never minimizes and is no `UITabBar`, so regular widths keep the
+  composite), so the bar holds the plain glyph while the overlay floats the fading capsule (2026-11-19), see
+  `docs/notes/design-and-ui.md`); every tab's
   tree carries `.id(language)` where
   `language = dependencies.language.language`. The profile sheet mounts on the `TabView` (2026-11-07):
   `.sheet(isPresented: $navigation.isProfilePresented) { ProfileView(dependencies:language:) }` with
@@ -43,19 +45,50 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `AppBranding.homeTitle`/`exploreTitle`/`chatsTitle` with `DesignTokens.Symbols.home`/`explore`/
   `chat` through `tabLabel(for:symbol:)`, which reads the title from `AppTab.title`, a `UIImage.SymbolConfiguration(weight:
   DesignTokens.TabBar.symbolWeight)`; `.tabBarMinimizeBehavior(.onScrollDown)`.
-- `[TabBarMinimizeReporter.swift:TabBarCollapse]`: `static func isMinimized(visiblePaneWidths: [CGFloat], barWidth:
-  CGFloat) -> Bool` — true iff the widest visible pane is laid out (width > 0) and under half the bar's width; no
-  pane, no laid-out pane or a zero bar answers false (a pre-layout read must never latch the badge hidden). `[TabBarMinimizeReporter.swift:TabBarMinimizeReporter]` (2026-11-19): `UIViewRepresentable` over `onChange:
-  (Bool) -> Void`; its `ReporterView` finds the `UITabBar` backing SwiftUI's `TabView` in its window (breadth-first
-  walk, public class check; the bar joins the window a few frames after the reporter's view, so a failed find
-  retries on `AppConfig.Shell.tabBarFindRetryDelay` deferrals, at most `tabBarFindAttempts` — a bounded startup
-  search, never steady-state polling), observes each
-  pane's layer (`isHidden`, `opacity`) and the bar's `sublayers` by KVO (`CALayer` is KVO-compliant where `UIView`
-  is not; a sublayer churn re-attaches only when the pane set itself changed, compared by identity — a same-set
-  churn only re-reads the state), counts a pane visible above `DesignTokens.TabBar.paneVisibleAlpha`, and reports
-  the deduplicated state a
-  turn later (`DispatchQueue.main.async` — KVO can fire inside a UIKit layout pass, and the handler writes SwiftUI
-  state).
+- `[TabBarCollapse.swift:TabBarCollapse]`: `Phase { expanded, minimized, morphing }`; `static func
+  phase(visiblePaneWidths: [CGFloat], barWidth: CGFloat) -> Phase` — morphing iff a laid-out visible platter (at
+  least `AppConfig.Shell.tabBarPlatterMinimumFraction` of the bar; the platter scales with the bar) and a circle
+  (a pane at most the absolute `AppConfig.Shell.tabBarCircleMaxWidth`; the 48 pt circle and the ~100 pt tab-switch
+  transient are absolute sizes on every device, and a width-relative quarter-bar bound read the transient as the
+  circle on 400 pt-class bars, flickering the capsule on every tab switch there) show together, which is how a
+  starting collapse or expand announces itself about 0.7 s before the leaving pane hides; one endpoint alone is
+  its settled state and every other shape or fail-safe (no pane, no laid-out pane, a zero bar, a lone mid-size
+  pane) answers expanded (a pre-layout read must never latch the capsule faded out; the midpoint itself reads as
+  expanded). `static func settle(current: Phase, previous: Phase?) -> Phase` — the settled phase carried across
+  reads: a settled read replaces it, a morph keeps it, and a mid-morph first read seeds minimized, so the capsule
+  errs visible until the next settle. `static func fadesOut(phase: Phase, settled: Phase) -> Bool` — out while
+  minimized, shown while expanded, mid-morph the opposite of the last settled state. (`isMinimized` was deleted:
+  it had no production caller, `phase` is the one rule.)
+- `[TabBarCollapse.swift:TabBadgePlacement]` (2026-11-19): the overlay's pure placement and trust rules.
+  `capsuleCenter(glyphCenter:glyphSize:)` — the owner-tuned `DesignTokens.TabBar.badgeCenterOffset` from the
+  top-right corner of the drawn glyph's box, anchored on the glyph view's centre (the bar centres the glyph in its
+  item whichever image it holds, so the handoff from the composited label moves nothing).
+  `chatsColumn(itemColumns:chatIndex:expectedTabs:)` — the platter's item views deduplicated into x-columns (it
+  holds two parallel item trees at identical frames); only exactly one column per tab, in bar order, is trusted,
+  anything else answers `nil` and the overlay stands down.
+- `[TabBarBadgeOverlay.swift:TabBarBadgeOverlay]` (2026-11-19): `UIViewRepresentable` over `count: Int`, `renderer:
+  TabBadgeRenderer`, `logger: any Logging` and `onHosting: (Bool) -> Void`; its `OverlayView` finds the `UITabBar`
+  backing SwiftUI's `TabView` in its window (breadth-first walk, public class check; the bar joins the window a few
+  frames after the overlay's view, so a failed find retries on `AppConfig.Shell.tabBarFindRetryDelay` deferrals, at
+  most `tabBarFindAttempts` — a bounded search, never steady-state polling; a pane or item churn starts a fresh
+  search with the whole budget again, and a search that spends it logs one `.ui` warning, "Tab badge overlay stood
+  down"), resolves the Chats item's glyph
+  image view inside the widest pane (`TabBadgePlacement.chatsColumn` over `AppTab.shown`), and keeps one capsule
+  `UIImageView` (`TabBadgeRenderer.capsule`, accent) as a bar subview above the panes, centred by
+  `TabBadgePlacement.capsuleCenter` over `TabBadgeRenderer.glyphSize` (re-fronted only when another subview sits
+  above it: an unconditional bring-to-front churned the bar's sublayers on every KVO tick and fed the observation
+  back to itself). KVO (`CALayer` is KVO-compliant where
+  `UIView` is not): the panes' `isHidden`/`opacity` drive the capsule's alpha through the morph rule
+  (`TabBarCollapse.phase` with `settle(current:previous:)` and `fadesOut(phase:settled:)` — the circle pane joins
+  the platter on screen the moment
+  a morph starts, so the fade runs over the collapse and the expand, not after them; a `UIView` fade,
+  `DesignTokens.TabBar.badgeFadeDuration` and `badgeFadeOptions`), the glyph layer's
+  `bounds`/`position`/`contents` re-position the capsule, and a `sublayers` churn re-attaches — only when the pane
+  set itself changed, compared by identity, or the resolved glyph died with a re-created item. `onHosting` is
+  reported deduplicated a turn later (`DispatchQueue.main.async` — KVO can fire inside a UIKit layout pass, and
+  the handler writes SwiftUI state; the closure is read at delivery, so `updateUIView` replacing it never leaves a
+  stale one, and a dismantled overlay's is nilled after the final hand-back); a stand-down removes the capsule one
+  turn after the `false` delivery, so the count never blanks between the two carriers.
 - `[ProfileCornerButton.swift:ProfileCornerButton]` (2026-11-07): `ToolbarContent` over `dependencies`; one
   `.topBarLeading` item under `.sharedBackgroundVisibility(.hidden)` whose button sets
   `navigation.isProfilePresented = true`. The label is an `AvatarCircle` at `DesignTokens.Layout.profileCornerSize`:
@@ -132,13 +165,24 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   (owner decision: the app never prompts to accept terms); the profile sheet is the shell's root-level sheet. A
   session end tears it down twice over: `sessionDidEnd()` clears the flag and the `shellGeneration` bump rebuilds the
   view.
-- `[TabBarMinimizeReporter.swift:TabBarMinimizeReporter]` (2026-11-19): the badge-hide errs on showing — mid-swap
-  both panes are visible and the bar reads as expanded, a pane before its first layout reports zero width and is no
-  signal (so a pre-layout read can never latch the badge hidden), and a lost signal (the undocumented two-pane shape
-  changes, no `UITabBar` found, the find budget runs out) reports nothing, so the badge stays visible — the old
-  overflow past the minimized circle then returns silently, the accepted fallback — never stuck hidden.
-  The 17 Pro's Chats list never crosses the minimize threshold and the iPad's top bar never minimizes, so only a
-  compact phone that collapses the bar ever hides the badge.
+- `[TabBarBadgeOverlay.swift:TabBarBadgeOverlay]` (2026-11-19): the fade runs over the morph, not after it — both
+  endpoints visible at once is the morphing phase, faded toward the opposite of the last settled state, so an
+  abandoned morph corrects itself at the next settle; the settled state is seeded from the first read (a first
+  read that lands mid-morph seeds minimized, so the capsule errs visible until the next settle); a pane before its
+  first layout reports zero width and is no
+  signal, and every fail-safe answers expanded (a pre-layout read can never latch the capsule faded out). The fail-safe direction: whenever the hierarchy is
+  missing or not the expected shape (no `UITabBar`, the find budget runs out — replenished by the next churn, the
+  exhaustion logged at warning —, `TabBadgePlacement.chatsColumn`
+  distrusts the item columns, a re-created item loses the glyph), `onHosting` reports `false` and `MainTabView`
+  composites the count into the glyph as before — an unread count is never lost, and never blank: the capsule
+  leaves only after the `false` delivery has had a body-pass turn, so a handoff may double-draw briefly but never
+  shows nothing; the recorded cost is the old
+  capsule-past-the-rim overflow returning silently (and a signal lost after hosting leaves the overlay showing at
+  its last anchor). The capsule is a subview of the bar itself, so the bar's own hiding, alpha and removal carry it,
+  and no pane's clip can cut it. The first state application snaps with no animation; a re-attach with an unchanged
+  state leaves a running fade alone. Regular widths never mount the overlay (the iPad's top bar never minimizes and
+  is no `UITabBar`); the 17 Pro's Chats list never crosses the minimize threshold, so only a compact phone that
+  collapses the bar ever fades the capsule.
 - `[HomeView.swift:HomeView.loadIfStale]`: `await dependencies.sessionController.restore()` first, then `guard
   !Task.isCancelled, content == .overview else { return }`: a guest asks for nothing and nothing is requested before the
   pool confirmed the cached user. The three loads (`events.loadIfStale()`, `myGroups.loadIfStale()` behind
@@ -177,9 +221,11 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   profile sheet, which mounts its own `.errorPopup`), sets `usesSplitChats`; `[ProfileCornerButton.swift:ProfileCornerButton]` sets `isProfilePresented = true`;
   `[HomeTab.swift:HomeTab]` and `[ChatTab.swift:ChatTab]` bind `homePath` and `chatPath`.
 - `[MainTabView.swift:MainTabView.tabLabel(for:symbol:)]`: builds `UIImage(systemName:withConfiguration:)` glyphs (UIKit); `chatTabLabel(count:selected:)` asks the `@State` `TabBadgeRenderer` for the badged composite, rendered once per count and colour and cached (2026-11-12).
-- `[TabBarMinimizeReporter.swift:TabBarMinimizeReporter.ReporterView]`: installs KVO observations on the found
-  bar's pane layers and sublayers (replaced only when the observed pane set changed, released with the view); no
-  polling once the bar is found, no network, disk or `UserDefaults` access.
+- `[TabBarBadgeOverlay.swift:TabBarBadgeOverlay.OverlayView]`: adds one capsule `UIImageView` to the found bar and
+  installs KVO observations on the bar's pane layers, their sublayers and the Chats glyph's layer (replaced only
+  when the observed pane set changed or the glyph died; released with the view, the capsule removed on teardown);
+  animates the capsule's alpha; logs one warning (`.ui`) when a find budget is spent; no polling once the bar is
+  found, no network, disk or `UserDefaults` access.
 - `[GuestSignInPrompt.swift:GuestSignInPrompt]`: presents `SignInSheet`, which mounts its own `.errorPopup`.
 - `[HomeView.swift:HomeView.body]`: `tournaments.replace` and `events.replace` are handed to the destinations as change
   callbacks that mutate the Home lists.
@@ -188,11 +234,13 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `tournaments.add` (inserted, not refetched: the by-user index is eventually consistent and could answer without
   the new tournament; `add` still invalidates the sibling lists) then `navigation.open(tournament:)` — and
   `[HomeView.swift:HomeView.wizardDismissed]` books `noteClosed()` on a real dismissal alone, never on a re-host.
-- No logging, disk or `UserDefaults` access is made directly by these views.
+- Beyond the overlay's stand-down warning, no logging is made directly by these views, and no disk or `UserDefaults` access.
 
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (from the repository root; the segment model these views draw is pinned in
-  `lilyTests/Shell/HomeSegmentTests.swift`, the minimize rule in `lilyTests/Shell/TabBarCollapseTests.swift` and
+  `lilyTests/Shell/HomeSegmentTests.swift`, the collapse phase, settle and fade rules (pinned at bar widths 375, 402 and 440) in `lilyTests/Shell/TabBarCollapseTests.swift`, the
+  overlay's placement and trust rules in `lilyTests/Shell/TabBadgePlacementTests.swift` and
   the pane rule in `lilyTests/Changes/ListStateTests.swift`; the screens
-  themselves are exercised by the UI tests, `./scripts/ci.sh ui` and `./scripts/ci.sh ui-ipad`).
+  themselves are exercised by the UI tests, `./scripts/ci.sh ui` and `./scripts/ci.sh ui-ipad`; the capsule's fade
+  is UIKit runtime behaviour, proven on film — `docs/notes/design-and-ui.md` 2026-11-19).

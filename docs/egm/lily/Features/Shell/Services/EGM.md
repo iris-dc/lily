@@ -9,9 +9,10 @@ empty (each starts from its disk snapshot) and clears them when the session ends
 once per scene phase and user in a load-bearing order: the session check against the pool, the account, the realtime
 connection, the caller's groups, the inbox, the block list, then the push offer and registration, with Explore's loads
 alongside. Both classes are main-actor isolated by the app target's default and depend on collaborators injected by
-`AppDependencies`. `TabBadgeRenderer` (2026-11-12) draws the Chats tab's unread count into its glyph image for
-`MainTabView` — the iOS 26 floating bar honours only a label's title and `UIImage` and never moves its own badge —
-caching one composite per count and colour.
+`AppDependencies`. `TabBadgeRenderer` (2026-11-12) draws the Chats tab's unread count for `MainTabView` — the iOS 26
+floating bar honours only a label's title and `UIImage` and never moves its own badge — as the capsule alone for
+`TabBarBadgeOverlay` to float over the bar (2026-11-19), or composited into the glyph image as the overlay's
+fallback; both share one capsule drawing, cached per count and colour.
 
 Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Services/ShellSync.swift`,
 `lily/Features/Shell/Services/TabBadgeRenderer.swift`.
@@ -37,7 +38,10 @@ Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Ser
   count, or "99+" above `DesignTokens.TabBar.badgeCountCap`. `func icon(symbol: String, count: Int, glyphColor:
   UIColor, badgeColor: UIColor) -> UIImage?` — the symbol's glyph (built at `DesignTokens.TabBar.badgeGlyphPointSize`
   and `symbolWeight`, tinted `glyphColor`) with the count's capsule over its top-right corner
-  (`DesignTokens.TabBar.badgeCenterOffset`), or `nil` at a count of zero or less.
+  (`DesignTokens.TabBar.badgeCenterOffset`), or `nil` at a count of zero or less. `func capsule(count: Int,
+  badgeColor: UIColor) -> UIImage?` (2026-11-19) — the capsule alone at its natural size, for `TabBarBadgeOverlay`;
+  `nil` at zero or less. `static func glyphSize(symbol: String) -> CGSize` — the glyph as the composite draws it,
+  whose box the owner tuned the capsule offset against (the overlay anchors on it around the glyph view's centre).
 
 ## Invariants
 
@@ -67,8 +71,10 @@ Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Ser
   the canvas grows by one symmetric inset around the glyph, so the bar, centring the image, keeps the glyph where
   the template one sits; the composite is `.alwaysOriginal` (a template would tint the badge with the glyph); one
   image per `(symbol, text, colours)` is rendered, then answered from the cache, which the count cap bounds. (The
-  2026-11-17 pinned-right-edge growth and circle-fit scan were reverted 2026-11-19 with the owner-tuned offset: the
-  minimized bar hides the badge instead, the Shell Views contract.)
+  2026-11-17 pinned-right-edge growth and circle-fit scan were reverted 2026-11-19 with the owner-tuned offset.)
+- `[TabBadgeRenderer.swift:TabBadgeRenderer.capsule]` (2026-11-19): `nil` for `count <= 0` (the overlay hides then);
+  shares the composite's one capsule drawing (`drawCapsule`) and its `badgeSize` rule, cached per text and colour,
+  so the overlay's capsule is the composite's to the pixel.
 
 ## Side Effects
 
@@ -81,8 +87,8 @@ Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Ser
 - `[ShellLists.swift:ShellLists.loadExploreIfStale]`: `loadIfStaleNearTheUser()` on the three Explore view models (each
   asks for the position and may hit the backend when its content is stale).
 - `[ShellLists.swift:ShellLists.sessionDidEnd]`: mutates the five view models (`clear()`); any snapshot writes are theirs.
-- `[TabBadgeRenderer.swift:TabBadgeRenderer.composite]`: UIKit drawing only (`UIGraphicsImageRenderer`,
-  `UIImage(systemName:)`); no network, disk or `UserDefaults` access.
+- `[TabBadgeRenderer.swift:TabBadgeRenderer.composite]` and `[TabBadgeRenderer.swift:TabBadgeRenderer.capsule]`:
+  UIKit drawing only (`UIGraphicsImageRenderer`, `UIImage(systemName:)`); no network, disk or `UserDefaults` access.
 - No logging is done in these files.
 
 ## Verification
