@@ -14,7 +14,8 @@ between a stack and the iPad split view. Lists are read from `dependencies.lists
 `dependencies.navigation` (`AppNavigation`), and the screens shown inside (`ProfileView`, `ChatsView`, `ChatsSplitView`,
 `EventListView`, `EventDetailView`, `GroupCarousel`, `TournamentCarousel`) belong to other features.
 
-Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views/ProfileCornerButton.swift`,
+Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views/TabBarMinimizeReporter.swift`,
+`lily/Features/Shell/Views/ProfileCornerButton.swift`,
 `lily/Features/Shell/Views/HomeTab.swift`,
 `lily/Features/Shell/Views/HomeView.swift`, `lily/Features/Shell/Views/HomeOverview.swift`,
 `lily/Features/Shell/Views/ExploreTab.swift`, `lily/Features/Shell/Views/ChatTab.swift`,
@@ -28,7 +29,9 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `@State`-held `TabBadgeRenderer`, because the bar ignores `UITabBarAppearance.badgePositionAdjustment` (2026-11-12
   probe) and honours only the label's title and `UIImage`; the composite is `.alwaysOriginal`, so the glyph colour
   follows `navigation.selectedTab` — `UIColor(Color.lilyAccent)` selected, `DesignTokens.TabBar.unselectedGlyphColor`
-  otherwise — and at zero the plain template `tabLabel` returns, see `docs/notes/design-and-ui.md`); every tab's
+  otherwise — at zero the plain template `tabLabel` returns, and the count passed is zero while the floating bar is
+  minimized (`isBarMinimized`, set by `TabBarMinimizeReporter` mounted as the `TabView`'s background), so the
+  minimized circle draws the plain glyph (2026-11-19), see `docs/notes/design-and-ui.md`); every tab's
   tree carries `.id(language)` where
   `language = dependencies.language.language`. The profile sheet mounts on the `TabView` (2026-11-07):
   `.sheet(isPresented: $navigation.isProfilePresented) { ProfileView(dependencies:language:) }` with
@@ -40,6 +43,19 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `AppBranding.homeTitle`/`exploreTitle`/`chatsTitle` with `DesignTokens.Symbols.home`/`explore`/
   `chat` through `tabLabel(for:symbol:)`, which reads the title from `AppTab.title`, a `UIImage.SymbolConfiguration(weight:
   DesignTokens.TabBar.symbolWeight)`; `.tabBarMinimizeBehavior(.onScrollDown)`.
+- `[TabBarMinimizeReporter.swift:TabBarCollapse]`: `static func isMinimized(visiblePaneWidths: [CGFloat], barWidth:
+  CGFloat) -> Bool` — true iff the widest visible pane is laid out (width > 0) and under half the bar's width; no
+  pane, no laid-out pane or a zero bar answers false (a pre-layout read must never latch the badge hidden). `[TabBarMinimizeReporter.swift:TabBarMinimizeReporter]` (2026-11-19): `UIViewRepresentable` over `onChange:
+  (Bool) -> Void`; its `ReporterView` finds the `UITabBar` backing SwiftUI's `TabView` in its window (breadth-first
+  walk, public class check; the bar joins the window a few frames after the reporter's view, so a failed find
+  retries on `AppConfig.Shell.tabBarFindRetryDelay` deferrals, at most `tabBarFindAttempts` — a bounded startup
+  search, never steady-state polling), observes each
+  pane's layer (`isHidden`, `opacity`) and the bar's `sublayers` by KVO (`CALayer` is KVO-compliant where `UIView`
+  is not; a sublayer churn re-attaches only when the pane set itself changed, compared by identity — a same-set
+  churn only re-reads the state), counts a pane visible above `DesignTokens.TabBar.paneVisibleAlpha`, and reports
+  the deduplicated state a
+  turn later (`DispatchQueue.main.async` — KVO can fire inside a UIKit layout pass, and the handler writes SwiftUI
+  state).
 - `[ProfileCornerButton.swift:ProfileCornerButton]` (2026-11-07): `ToolbarContent` over `dependencies`; one
   `.topBarLeading` item under `.sharedBackgroundVisibility(.hidden)` whose button sets
   `navigation.isProfilePresented = true`. The label is an `AvatarCircle` at `DesignTokens.Layout.profileCornerSize`:
@@ -116,6 +132,13 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   (owner decision: the app never prompts to accept terms); the profile sheet is the shell's root-level sheet. A
   session end tears it down twice over: `sessionDidEnd()` clears the flag and the `shellGeneration` bump rebuilds the
   view.
+- `[TabBarMinimizeReporter.swift:TabBarMinimizeReporter]` (2026-11-19): the badge-hide errs on showing — mid-swap
+  both panes are visible and the bar reads as expanded, a pane before its first layout reports zero width and is no
+  signal (so a pre-layout read can never latch the badge hidden), and a lost signal (the undocumented two-pane shape
+  changes, no `UITabBar` found, the find budget runs out) reports nothing, so the badge stays visible — the old
+  overflow past the minimized circle then returns silently, the accepted fallback — never stuck hidden.
+  The 17 Pro's Chats list never crosses the minimize threshold and the iPad's top bar never minimizes, so only a
+  compact phone that collapses the bar ever hides the badge.
 - `[HomeView.swift:HomeView.loadIfStale]`: `await dependencies.sessionController.restore()` first, then `guard
   !Task.isCancelled, content == .overview else { return }`: a guest asks for nothing and nothing is requested before the
   pool confirmed the cached user. The three loads (`events.loadIfStale()`, `myGroups.loadIfStale()` behind
@@ -154,6 +177,9 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   profile sheet, which mounts its own `.errorPopup`), sets `usesSplitChats`; `[ProfileCornerButton.swift:ProfileCornerButton]` sets `isProfilePresented = true`;
   `[HomeTab.swift:HomeTab]` and `[ChatTab.swift:ChatTab]` bind `homePath` and `chatPath`.
 - `[MainTabView.swift:MainTabView.tabLabel(for:symbol:)]`: builds `UIImage(systemName:withConfiguration:)` glyphs (UIKit); `chatTabLabel(count:selected:)` asks the `@State` `TabBadgeRenderer` for the badged composite, rendered once per count and colour and cached (2026-11-12).
+- `[TabBarMinimizeReporter.swift:TabBarMinimizeReporter.ReporterView]`: installs KVO observations on the found
+  bar's pane layers and sublayers (replaced only when the observed pane set changed, released with the view); no
+  polling once the bar is found, no network, disk or `UserDefaults` access.
 - `[GuestSignInPrompt.swift:GuestSignInPrompt]`: presents `SignInSheet`, which mounts its own `.errorPopup`.
 - `[HomeView.swift:HomeView.body]`: `tournaments.replace` and `events.replace` are handed to the destinations as change
   callbacks that mutate the Home lists.
@@ -167,5 +193,6 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
 ## Verification
 
 - Run: `./scripts/ci.sh unit` (from the repository root; the segment model these views draw is pinned in
-  `lilyTests/Shell/HomeSegmentTests.swift` and the pane rule in `lilyTests/Changes/ListStateTests.swift`; the screens
+  `lilyTests/Shell/HomeSegmentTests.swift`, the minimize rule in `lilyTests/Shell/TabBarCollapseTests.swift` and
+  the pane rule in `lilyTests/Changes/ListStateTests.swift`; the screens
   themselves are exercised by the UI tests, `./scripts/ci.sh ui` and `./scripts/ci.sh ui-ipad`).

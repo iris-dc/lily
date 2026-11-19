@@ -218,7 +218,8 @@ final class LilyGroupsTests: LilyUITestCase {
     }
 
     /// "Open chat" on a group's detail opens the room in place, on the same stack, so Back returns to the detail
-    /// rather than to the Chats root; the Chats tab still lists the room.
+    /// rather than to the Chats root; the room hides the tab bar, Back restores it, and the Chats tab still lists
+    /// the room.
     @MainActor
     func testOpenChatFromGroupDetailComesBackToTheDetail() {
         tapSignInWithApple()
@@ -229,9 +230,11 @@ final class LilyGroupsTests: LilyUITestCase {
 
         XCTAssertTrue(app.descendants(matching: .any)["chat-composer"].waitForExistence(timeout: 10), "the room opens")
         XCTAssertTrue(app.navigationBars["Kreuzberg Kickers"].exists, "the room is titled with the group")
+        XCTAssertTrue(app.tabBars.buttons["Home"].waitForNonExistence(timeout: 5), "the chat pushed in place hides the bar")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(openChat.waitForExistence(timeout: 5), "Back returns to the group's detail, not the Chats root")
         XCTAssertTrue(labelled("Kreuzberg Kickers").exists, "the header still names the group")
+        XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 5), "the bar returns with the detail")
 
         chatsRow(MockIDs.kickersRow)
     }

@@ -66,15 +66,20 @@ device; the mode is the only switch. Widths, counts and durations come from `Des
   (`Color.lilyAccent.opacity(DesignTokens.Opacity.selectedRow)`, radius `DesignTokens.Radius.md`, bleeding
   `DesignTokens.Spacing.sm` horizontally) behind a selected row.
 - `@Observable final class TabBarHiding` [`lily/Core/UI/Layout/TabBarHiding.swift:TabBarHiding`]:
-  `func hide(_ token: AnyHashable, at depth: Int)`, `func prune(above depth: Int)`, `func hides(at depth: Int) -> Bool`.
-  `@Entry var tabBarHiding: TabBarHiding?` and `@Entry var navigationDepth = 0`
-  [`lily/Core/UI/Layout/TabBarHiding.swift:EnvironmentValues.tabBarHiding`, `EnvironmentValues.navigationDepth`].
+  `func hide(_ token: AnyHashable, at depth: Int)`, `func prune(above depth: Int)`, `func release(_ token: AnyHashable)`,
+  `func hides(at depth: Int) -> Bool`.
+  `@Entry var tabBarHiding: TabBarHiding?`, `@Entry var navigationDepth = 0` and
+  `@Entry var tabBarHideToken: AnyHashable?` (set by an item push's presenter on the pushed screen, which registers
+  its hide under it; the presenter releases it when its item binding clears)
+  [`lily/Core/UI/Layout/TabBarHiding.swift:EnvironmentValues.tabBarHiding`, `EnvironmentValues.navigationDepth`,
+  `EnvironmentValues.tabBarHideToken`].
   `func animatesTabBar(depth: Int) -> some View` [`lily/Core/UI/Layout/TabBarHiding.swift:View.animatesTabBar`]: owns
   one `TabBarHiding` for a `NavigationStack`, publishes it and `depth`, and animates `toolbarVisibility(_, for: .tabBar)`
   (`DesignTokens.Duration.normal`).
 - `func hidesTabBarOnCompact() -> some View` [`lily/Core/UI/Layout/HidesTabBarOnCompact.swift:View.hidesTabBarOnCompact`]:
-  a screen registers with the stack's `TabBarHiding` under a per-view `UUID` token at its `navigationDepth`; with no
-  `TabBarHiding` in the environment it sets `toolbarVisibility` itself.
+  a screen registers with the stack's `TabBarHiding` at its `navigationDepth`, under `\.tabBarHideToken` when an
+  item push's presenter set one and a per-view `UUID` otherwise; nothing is released on disappear (a tab switch and
+  a cover fire it too). With no `TabBarHiding` in the environment it sets `toolbarVisibility` itself.
 - `func onArrival(perform arrived: @escaping () -> Void, onDeparture departed: @escaping () -> Void) -> some View`
   [`lily/Core/UI/Layout/ArrivalReader.swift:View.onArrival`]: `arrived` once the hosting controller's navigation
   transition has completed (at once when there is none), `departed` when the view leaves its window; backed by a
@@ -127,14 +132,18 @@ device; the mode is the only switch. Widths, counts and durations come from `Des
   `errorCenter:lockedWhile:` overload adds the lock and the popup in that order and nothing else
   [`lily/Core/UI/Layout/FormSheet.swift:View.lilyFormSheet`].
 - Tab bar: `TabBarHiding.hide` registers once per token (`if depths[token] == nil`), a later call with the same token
-  and another depth is ignored; `prune(above:)` keeps entries with `value <= depth`; `hides(at:)` is
-  `depths.values.contains { $0 <= depth }`, hidden if the top screen or any screen under it registered
-  [`lily/Core/UI/Layout/TabBarHiding.swift:TabBarHiding.hide`, `TabBarHiding.prune`, `TabBarHiding.hides`].
+  and another depth is ignored; `prune(above:)` keeps entries with `value <= depth`; `release(_:)` forgets the token
+  unconditionally — its one caller is an item push's presenter releasing on its cleared item binding, a signal
+  SwiftUI sends on the pop alone (never on a tab switch, never under a cover), so after a path pop's prune it is a
+  no-op; `hides(at:)` is `depths.values.contains { $0 <= depth }`, hidden if the top screen or any screen under it
+  registered [`lily/Core/UI/Layout/TabBarHiding.swift:TabBarHiding.hide`, `TabBarHiding.prune`,
+  `TabBarHiding.release`, `TabBarHiding.hides`].
   `AnimatesTabBar` sets `isHidden = hiding.hides(at: depth) && !layoutMode.isRegular` inside
   `withAnimation(.easeInOut(duration: DesignTokens.Duration.normal))` on `onChange(..., initial: true)`, so the bar
   never hides on a regular or wide layout, and prunes on `onChange(of: depth)`; each stack owns its own `@State`
   `TabBarHiding()` [`lily/Core/UI/Layout/TabBarHiding.swift:AnimatesTabBar.body`]. `HidesTabBarOnCompact` with a
-  `TabBarHiding` present only registers (`onAppear { hiding.hide(token, at: depth) }`); without one it sets
+  `TabBarHiding` present registers (`onAppear { hiding.hide(presenterToken ?? ownToken, at: depth) }`) and never
+  releases itself; without one it sets
   `toolbarVisibility(layoutMode.isRegular ? .automatic : .hidden, for: .tabBar)`
   [`lily/Core/UI/Layout/HidesTabBarOnCompact.swift:HidesTabBarOnCompact.body`].
 - `onArrival` is not once-only: `didMoveToWindow` runs each time the view joins or leaves a window. `window == nil`
@@ -164,8 +173,10 @@ device; the mode is the only switch. Widths, counts and durations come from `Des
   `\.navigationDepth` and `toolbarVisibility(_, for: .tabBar)` [`lily/Core/UI/Layout/TabBarHiding.swift:AnimatesTabBar.body`];
   `hidesTabBarOnCompact()` sets `toolbarVisibility` when no `TabBarHiding` is present
   [`lily/Core/UI/Layout/HidesTabBarOnCompact.swift:HidesTabBarOnCompact.body`].
-- Observable and view state: `TabBarHiding.hide` inserts into `depths`, `prune` reassigns it, and
-  `hidesTabBarOnCompact()` mutates the shared instance from `onAppear` [`lily/Core/UI/Layout/TabBarHiding.swift:TabBarHiding`];
+- Observable and view state: `TabBarHiding.hide` inserts into `depths`, `prune` reassigns it, `release` removes an
+  entry, and `hidesTabBarOnCompact()` mutates the shared instance from `onAppear` alone; the item push's presenter
+  (`chatDestination`, the Chat Views contract) calls `release`
+  [`lily/Core/UI/Layout/TabBarHiding.swift:TabBarHiding`];
   `@State` `width`/`height` change from `onGeometryChange`, `isHidden` inside `withAnimation`.
 - UIKit: `KeyboardDismissal` enumerates `UIApplication.shared.connectedScenes`, calls `endEditing(true)` (resigns the
   first responder), adds and removes a `NotificationCenter` observer (its block runs `MainActor.assumeIsolated`) and

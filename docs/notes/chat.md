@@ -98,3 +98,10 @@ status code also settles the last transport checkpoint).
   `navigation.open(chat:)`, so the tab bar's hide and Back behave like the group's and tournament's pushes. The sunset
   event room carries a five-line scripted thread (`MockChatFixtures+Events.swift`, split out under the type-body
   limit, with the scripted-rooms dispatch hoisted into `scriptedMessages`); every other event room starts empty.
+- 2026-11-19 — **An in-place chat hides the bar like every chat**: the nil `\.tabBarHiding` override on
+  `chatDestination(item:dependencies:)` left the bar visible in a chat pushed from a group, tournament, event or
+  profile detail on the Home and Chats stacks (the stack root's `animatesTabBar` visibility outweighs a screen's
+  own). The push's presenter owns the pop signal now: `chatDestination` hands the chat a token it releases when its
+  item binding clears (the one pop signal an item push gives — never a tab switch, never a cover), so the chat
+  registers like any room and Back restores the bar.
+  Mechanism, pins and evidence: `groups.md` (2026-11-19).

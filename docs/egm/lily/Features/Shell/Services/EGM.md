@@ -65,15 +65,10 @@ Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Ser
 - `[TabBadgeRenderer.swift:TabBadgeRenderer.icon]`: `nil` for `count <= 0` (the caller keeps the plain template
   label); the capsule is `badgeHeight` tall and never narrower than it is tall, so a single digit reads as a circle;
   the canvas grows by one symmetric inset around the glyph, so the bar, centring the image, keeps the glyph where
-  the template one sits; the single-digit capsule's centre sits `badgeCenterOffset` from the glyph's top-right corner
-  and a wider count keeps that capsule's right edge, growing leftward like the system badge, so every count shares
-  one canvas — holding only while the widest capsule's leftward reach never exceeds the single-digit inset terms,
-  asserted in debug at render time — and no drawn pixel reaches past ~22.6 pt from the centre: inside
-  `DesignTokens.TabBar.minimizedCircleRadius` (24) less `minimizedCircleClearance` (1), the minimized bar's circle,
-  which draws the bitmap unscaled and untinted like the expanded bar (2026-11-17, pinned by
-  `TabBadgeRendererTests.everyCountStaysInsideTheMinimizedBarsCircle`); the composite is `.alwaysOriginal` (a
-  template would tint the badge with the glyph); one image per `(symbol, text, colours)` is rendered, then answered
-  from the cache, which the count cap bounds.
+  the template one sits; the composite is `.alwaysOriginal` (a template would tint the badge with the glyph); one
+  image per `(symbol, text, colours)` is rendered, then answered from the cache, which the count cap bounds. (The
+  2026-11-17 pinned-right-edge growth and circle-fit scan were reverted 2026-11-19 with the owner-tuned offset: the
+  minimized bar hides the badge instead, the Shell Views contract.)
 
 ## Side Effects
 

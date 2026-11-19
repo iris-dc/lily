@@ -27,6 +27,13 @@ final class TabBarHiding {
         depths = depths.filter { $0.value <= depth }
     }
 
+    /// Forgets the screen. Called by an item push's presenter when its item binding clears — the one pop signal an
+    /// item push gives, since it never moves the bound path. SwiftUI clears the binding on the pop alone, never on a
+    /// tab switch, never under a cover, so no guard is needed; after a path pop's prune this is a no-op.
+    func release(_ token: AnyHashable) {
+        depths[token] = nil
+    }
+
     /// Whether the bar is hidden with the screen at `depth` on top: by that screen, or by one under it.
     func hides(at depth: Int) -> Bool {
         depths.values.contains { $0 <= depth }
@@ -38,6 +45,10 @@ extension EnvironmentValues {
     @Entry var tabBarHiding: TabBarHiding?
     /// The number of screens pushed on the stack a screen is in: its own depth while it is the top.
     @Entry var navigationDepth = 0
+    /// Set by an item push's presenter (`chatDestination`) on the pushed screen: the screen registers its hide under
+    /// this token, and the presenter releases it when the item binding clears. `nil` on a path-pushed screen, whose
+    /// hide the shrinking path prunes.
+    @Entry var tabBarHideToken: AnyHashable?
 }
 
 /// Goes on a `NavigationStack` bound to a path: owns the tab bar's visibility for the whole stack and animates it

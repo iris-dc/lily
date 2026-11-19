@@ -16,6 +16,9 @@ struct MainTabView: View {
     @Environment(\.layoutMode) private var layoutMode
     /// Kept across body runs, so each count's composite is rendered once, never per frame.
     @State private var badgeRenderer = TabBadgeRenderer()
+    /// Raised by `TabBarMinimizeReporter`: the minimized bar's circle draws the badged composite unscaled and the
+    /// owner-tuned capsule pokes past its rim, so the badge hides while the bar is minimized.
+    @State private var isBarMinimized = false
 
     private var language: AppLanguage { dependencies.language.language }
 
@@ -41,7 +44,7 @@ struct MainTabView: View {
                 Tab(value: .chat) {
                     content { ChatTab(dependencies: dependencies).id(language) }
                 } label: {
-                    chatTabLabel(count: unreadChats, selected: navigation.selectedTab == .chat)
+                    chatTabLabel(count: isBarMinimized ? 0 : unreadChats, selected: navigation.selectedTab == .chat)
                 }
                 // The drawn badge is not in the accessibility tree (neither was the system one); the value says what
                 // it means for VoiceOver and lets tests see it.
@@ -52,6 +55,7 @@ struct MainTabView: View {
         // and dropped: its sidebar only repeated the tabs and iPadOS opened it by itself in landscape,
         // taking 280 pt from the content column.
         .tabBarMinimizeBehavior(.onScrollDown)
+        .background(TabBarMinimizeReporter { isBarMinimized = $0 })
         // The tabs fill and the bar shows at once, under the landing that the root fades out over them; animated, the
         // bar would slide up into view.
         .animation(nil, value: showsContent)

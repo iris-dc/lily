@@ -8,17 +8,10 @@ nonisolated extension DesignTokens {
     enum TabBar {
         static let symbolWeight: UIImage.SymbolWeight = .light
         /// The Chats tab's unread count, drawn into the glyph image (`TabBadgeRenderer`): the bar never moves its own
-        /// badge (`badgePositionAdjustment` probed at zero effect), so the count sits where the owner wants it — the
-        /// single-digit capsule's centre this far from the glyph's top-right corner (x into the glyph, y below its
-        /// top; the system badge sat at about (+13, +3) on the same glyph). Far enough in that the whole capsule
-        /// clears the minimized bar's 48 pt circle, which draws the bitmap unscaled; a wider count keeps this
-        /// capsule's right edge and grows leftward, like the system badge.
-        static let badgeCenterOffset = CGPoint(x: -5, y: 5)
-        /// The minimized bar collapses to one circle of this radius (48 pt across, measured on the simulator) that
-        /// draws the composite unscaled and centred, so nothing may be drawn past it; the clearance is the air kept
-        /// to the rim, and the badge test bounds the farthest drawn pixel at radius minus clearance.
-        static let minimizedCircleRadius: CGFloat = 24
-        static let minimizedCircleClearance: CGFloat = 1
+        /// badge (`badgePositionAdjustment` probed at zero effect), so the count sits where the owner wants it — its
+        /// centre this far from the glyph's top-right corner (x into the glyph, y below its top; the system badge sat
+        /// at about (+13, +3) on the same glyph), clearly further left and down.
+        static let badgeCenterOffset = CGPoint(x: -1, y: 4)
         /// The composite draws its own glyph (the bar re-renders template symbols at its own size but draws a bitmap
         /// as-is), so the symbol is built at the size the bar gives the template neighbours, measured against them.
         static let badgeGlyphPointSize: CGFloat = 23
@@ -33,6 +26,9 @@ nonisolated extension DesignTokens {
         /// The composite draws as `.alwaysOriginal` (a template would tint the badge with the glyph), so the glyph's
         /// colour is drawn in: this unselected, matching the bar's own template tint, the accent while selected.
         static let unselectedGlyphColor: UIColor = .white
+        /// A pane of the bar counts as visible above this alpha (`TabBarMinimizeReporter`): a leaving pane can rest
+        /// at a near-zero alpha instead of exactly zero, so visibility is judged with a small tolerance.
+        static let paneVisibleAlpha: CGFloat = 0.01
     }
 }
 

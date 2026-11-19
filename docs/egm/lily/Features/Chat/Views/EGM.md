@@ -34,10 +34,13 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - `[ConversationList.swift:ConversationList]` `dependencies`, `selection: ConversationSelection?`, `onOpenInbox`,
   `onOpenRoom: (SportGroup) -> Void`; `InboxRow` over `GroupRowList`, Clear/Delete long-press item, pull-to-refresh.
 - `[ChatDestinations.swift:View.chatDestination(item:dependencies:)]` (2026-11-15): the shared in-place room push of
-  the group, tournament, event and profile details (the event detail joined 2026-11-15) — `navigationDestination(item: Binding<SportGroup?>)` building `ChatView`
-  through `dependencies.makeChatViewModel(for:)` with `\.tabBarHiding` nil, because an item push never moves the
-  stack's bound path and a path-keyed registry would never prune the chat's hide after the pop; the chat sets the
-  bar's visibility itself (follow-up in `docs/notes/groups.md`: teach the registry to prune on disappear).
+  the group, tournament, event and profile details (the event detail joined 2026-11-15) —
+  `navigationDestination(item: Binding<SportGroup?>)` building `ChatView` through
+  `dependencies.makeChatViewModel(for:)`. The chat registers its tab-bar hide with the stack's `TabBarHiding` under
+  the push's own token (handed down as `\.tabBarHideToken`); an item push never moves the bound path, so the helper
+  releases that token when its item binding clears — the pop, which SwiftUI signals there alone, never on a tab
+  switch, never under a cover (2026-11-19, closing the nil-override follow-up; the rule lives in
+  `lily/Core/UI/Layout`'s EGM).
 - `[ChatView.swift:ChatView]` `init(viewModel: ChatViewModel, dependencies:)` (no `onGone`: the split view's
   watcher is the one mechanism); owns the view model and a `ViewerHero` as `@State`; transcript, `ViewerStage`
   overlay, composer inset, toolbar info link (the room offers no menu), empty and failed placeholders through

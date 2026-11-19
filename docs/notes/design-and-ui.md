@@ -390,7 +390,8 @@ the asset catalog.
   (−1, +6) → (−1, +4): the capsule's centre 2 pt further up, its bottom kissing the bubble's top-right arc instead of
   riding into it, the left overlap kept. Evidence `groups-plan/chat-fixes-2026-11-13/new-badge-crop.png` against
   `old-badge-crop.png` (round 7's `badge-v3` at the same 1:1 crop of the Chats tab). (The offset superseded
-  2026-11-17: the minimized bar's circle forced the capsule inward, see the badge-fits-the-circle bullet below.)
+  2026-11-17: the minimized bar's circle forced the capsule inward, see the badge-fits-the-circle bullet below;
+  that pull was reverted 2026-11-19 and (−1, +4) stands again, the badge hiding while the bar is minimized.)
 - **The segmented Home, variant C (2026-11-14).** The owner chose the segmented Home from three rendered prototypes
   (evidence under `~/.claude/projects/-Users-makshr-lily/groups-plan/home-redesign-2026-11-14/`: variant-a,
   variant-b, variant-c, downscaled copies in small/): a segmented Events | Tournaments | Groups picker directly
@@ -416,7 +417,9 @@ the asset catalog.
   grabber (`MatchSheet`, every writing sheet). Evidence
   (profile, filter, legal, and the event edit sheet unchanged) under
   `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-15/item6-grabbers/`.
-- **The badge fits the minimized bar's circle (2026-11-17, owner bug report).** A scroll under
+- **The badge fits the minimized bar's circle (2026-11-17, owner bug report; superseded 2026-11-19: the owner judged
+  the moved badge "looks off — move it back", so the offset is reverted to (−1, +4) and the badge instead hides while
+  the bar is minimized, see the 2026-11-19 bullet below).** A scroll under
   `.tabBarMinimizeBehavior(.onScrollDown)` collapses the floating bar to one 48 pt circle of the selected tab's
   glyph (measured on the SE simulator — the 17 Pro's Chats list fits one screen and never minimizes; the
   accessibility pill reads "Collapsed"), and the circle draws our composite exactly as the expanded bar does:
@@ -442,3 +445,37 @@ the asset catalog.
   `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-17/item3-spacing/`). **The owner chose A**:
   the labelled button stays, the dead band between the two tap zones roughly doubles, the first card moves ~24 pt
   down. B and C stay available as patches if misclicks persist.
+
+- **The badge hides while the bar is minimized (2026-11-19, owner correction).** The owner judged the 2026-11-17
+  inward pull "looks off — move it back": `badgeCenterOffset` is back at the tuned (−1, +4) and the renderer's
+  symmetric canvas growth is restored (both byte-exact to the pre-2026-11-17 revision; the circle-fit scan and the
+  `minimizedCircleRadius`/`minimizedCircleClearance` tokens are deleted), so the capsule again pokes past the
+  minimized circle's rim — and instead of squeezing it in, the Chats label now hands the bar the plain glyph while
+  the bar is minimized. No supported seam says "minimized" (`tabBarMinimizeBehavior` has no readable state or
+  callback; the iOS 26 accessory traits apply only inside a bottom accessory), but SwiftUI's `TabView` turned out
+  to be UIKit-backed — `UIKitAdaptableTabView` hosts a real `UITabBar` holding one pane per state (the 274 pt
+  platter and the 48 pt circle on the SE), swapped by `isHidden` — so `TabBarMinimizeReporter`
+  (`Features/Shell/Views`) finds the bar from the window (public class check only; the bar joins the window a few
+  frames after the reporter's view, so a failed find retries on short deferrals — `AppConfig.Shell.tabBarFindRetryDelay`
+  0.1 s, at most `tabBarFindAttempts` 20 — never steady-state polling) and observes the panes' layers by KVO
+  (`CALayer` is KVO-compliant where `UIView` is not), re-attaching only when the pane set itself changed, compared
+  by identity: the bar's layer churns on every state swap, and tearing every observation down per churn would
+  re-create them for nothing. The rule is `TabBarCollapse.isMinimized`: minimized iff the widest visible pane
+  (above `DesignTokens.TabBar.paneVisibleAlpha`) is laid out and under half the bar's width — mid-swap both panes
+  show and the bar reads as expanded, and a pane before its first layout reports zero width and is no signal, so a
+  pre-layout read can never latch the badge hidden (a wrong latch would stand until the next KVO event); the badge
+  errs on showing either way. `MainTabView` then passes a zero count, the plain template label, and the circle draws the bare glyph;
+  measured on the SE: the label swaps 2 ms after the collapse settles, and the count returns the moment the expand
+  starts. Fragility, stated plainly: the two-pane shape and its `isHidden` swap are observed behaviour (iOS 26.5
+  simulator), not API; if a future iOS changes the hierarchy the signal is lost and nothing notices — the badge
+  simply stays visible in both states and the old overflow, the capsule poking past the minimized circle's rim,
+  returns silently: the 2026-11-17 circle-fit pixel scan is deleted with the inward pull, so no test fails then.
+  That is the accepted residual risk of the owner's choice (the tuned placement plus the hide), never a stuck-hidden
+  badge. The 17 Pro's Chats list never crosses
+  the minimize threshold and the iPad's top bar never minimizes, so both always keep the badge. Evidence
+  (before/after of both states at 1:1 crops, the 17 Pro expanded shot pixel-identical to the 2026-11-17 baseline,
+  frame logs and timings) under
+  `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-19/item2-badge-opacity/`; pinned by
+  `TabBarCollapseTests` (the width rule, every testable branch of the detector: the wide platter, the small circle,
+  mid-swap, the exact midpoint, no pane, a zero bar and the zero-width pre-layout pane) and the restored
+  `TabBadgeRendererTests` (the geometry).

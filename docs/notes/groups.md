@@ -90,8 +90,9 @@ Groups are communities around a sport (or "Any type"): a chat room, a member lis
   `GroupDetailViewModelTests` and by `LilyGroupsTests.testOpenChatFromGroupDetailComesBackToTheDetail` (opens the
   room from Home's Groups segment, comes Back to the detail, and the Chats tab still lists the room). The three
   chat pushes (group, tournament, profile) share `chatDestination(item:dependencies:)`
-  (`lily/Features/Chat/Views/ChatDestinations.swift`, the round's review pass); follow-up: teach the `TabBarHiding`
-  registry to prune on screen disappear (or count item pushes), so pushed chats stop needing the nil override.
+  (`lily/Features/Chat/Views/ChatDestinations.swift`, the round's review pass); follow-up (closed 2026-11-19,
+  below): teach the `TabBarHiding` registry to prune on screen disappear (or count item pushes), so pushed chats
+  stop needing the nil override.
 - 2026-11-15 — **Event rooms are groups** (the event-chats slice): `GroupKind.event` joins the known kinds, and an
   event's room is a `SportGroup` under the event's id (`isEventRoom`). The Chats caption reads "Event · N players"
   (`AppBranding.Events.roomCaption`, the tournament pattern; the calendar glyph is the avatar mark), access is `.room`
@@ -102,3 +103,25 @@ Groups are communities around a sport (or "Any type"): a chat room, a member lis
   back in Mine, so the unread pins — Kickers and Marta — stand), Mine grew 6 → 9 rooms, and the order, role and unread
   pins in `MockGroupRepositoryTests` moved with it on purpose. Event rooms never enter the invite candidate pool; the
   mock event repository mirrors join, leave, create and edit into the rooms through `MockGroupRepository+Events`.
+- **The bar hides in a chat pushed in place; the 2026-11-15 follow-up is closed (2026-11-19, on the owner's
+  "opening an event's chat from the event detail shows the tab bar").** The nil `\.tabBarHiding` override opted the
+  pushed chat out of the registry, and on a stack whose root carries `animatesTabBar(depth:)` (Home, Chats) the
+  root's own `toolbarVisibility` outweighs the screen's, so the chat's self-set hide never took: the bar stayed
+  visible in every chat opened in place from a group, tournament, event or profile detail on those stacks. The item
+  binding is the pop signal: `chatDestination(item:dependencies:)` lost the override, hands the pushed chat a token
+  of its own (`\.tabBarHideToken`, which `hidesTabBarOnCompact()` registers under instead of its per-view one) and
+  releases it when the binding clears — SwiftUI nils a `navigationDestination(item:)` binding on the pop alone,
+  never on a tab switch, never under a cover, so `TabBarHiding.release(_:)` needs no guard. A first cut released
+  from `onDisappear` guarded by the stack's recorded depth and was replaced the same day: a tab switch also fires
+  `onDisappear` with the depth unchanged, freeing a still-valid hide (the bar flickered over the open chat on every
+  tab return — the trap that already broke the 2026-10-18 first cut, see `shell-and-navigation.md`), and the covered
+  screen's survival hung on the prune running before `onDisappear`, an ordering SwiftUI does not contract. A path
+  pop stays the prune's (by depth), and a release after one is a no-op; all four in-place pushes hide the bar and
+  Back restores it (on Explore, still registry-less, the self-set fallback stands unchanged). Pinned by the release
+  cases in `TabBarHidingTests` and the bar asserts in
+  `LilyGroupsTests.testOpenChatFromGroupDetailComesBackToTheDetail`; walked green with
+  `LilyGroupsTests.testTabSwitchKeepsTheBarHiddenOverTheChatOpenedInPlace` (⌘2 away and back: the bar stays away
+  over the open chat and only Back restores it), `LilyChatTests.testChatsTabShowsInboxRowAndRooms` (the path-keyed
+  pop) and `testAProfileOpenedFromARoomKeepsTheTabBarHidden` (the cover, popped back to the Chats root where the bar
+  returns). Rendered evidence — the event detail's chat without the bar, the bar back after Back — under
+  `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-19/item1-tabbar/`.

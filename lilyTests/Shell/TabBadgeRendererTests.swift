@@ -29,48 +29,7 @@ struct TabBadgeRendererTests {
         let hundred = try #require(icon(100))
         let thousands = try #require(icon(5000))
         #expect(hundred.size == thousands.size, "every capped count reads 99+ and shares one size")
-        #expect(hundred.size == one.size, "a wider capsule grows leftward over the glyph; the canvas never grows")
-    }
-
-    /// The minimized iOS 26 bar draws the composite unscaled, centred in its circle (measured on the simulator), so
-    /// everything drawn must stay inside `minimizedCircleRadius`, with `minimizedCircleClearance` of air to the rim.
-    @Test func everyCountStaysInsideTheMinimizedBarsCircle() throws {
-        let bound = DesignTokens.TabBar.minimizedCircleRadius - DesignTokens.TabBar.minimizedCircleClearance
-        for count in [1, 23, 100] {
-            let image = try #require(icon(count))
-            let reach = try #require(Self.farthestDrawnPoint(of: image))
-            #expect(reach <= bound, "count \(count) reaches \(reach) pt from the centre, out of the minimized circle")
-        }
-    }
-
-    /// The farthest drawn pixel's distance from the image's centre, in points.
-    private static func farthestDrawnPoint(of image: UIImage) -> CGFloat? {
-        guard let cgImage = image.cgImage else { return nil }
-        let width = cgImage.width
-        let height = cgImage.height
-        var alphas = [UInt8](repeating: 0, count: width * height)
-        // The context writes through the buffer's pointer, so it must not outlive the closure the pointer is valid in.
-        let rendered = alphas.withUnsafeMutableBytes { buffer -> Bool in
-            guard let context = CGContext(data: buffer.baseAddress,
-                                          width: width,
-                                          height: height,
-                                          bitsPerComponent: 8,
-                                          bytesPerRow: width,
-                                          space: CGColorSpaceCreateDeviceGray(),
-                                          bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue) else { return false }
-            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-            return true
-        }
-        guard rendered else { return nil }
-        var farthest: CGFloat = 0
-        for y in 0..<height {
-            for x in 0..<width where alphas[y * width + x] > 25 {
-                let dx = CGFloat(x) + 0.5 - CGFloat(width) / 2
-                let dy = CGFloat(y) + 0.5 - CGFloat(height) / 2
-                farthest = max(farthest, (dx * dx + dy * dy).squareRoot())
-            }
-        }
-        return farthest / image.scale
+        #expect(hundred.size.width > one.size.width, "three characters need a wider capsule")
     }
 
     @Test func theCompositeIsCachedPerCountAndNeverTemplated() throws {

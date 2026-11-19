@@ -56,6 +56,40 @@ struct TabBarHidingTests {
         #expect(hiding.hides(at: 2), "a profile pushed, popped and pushed again stays in the room's flow")
     }
 
+    @Test func anItemPushedScreenIsFreedByItsRelease() {
+        let hiding = TabBarHiding()
+        hiding.hide("chat", at: 1)
+        #expect(hiding.hides(at: 1))
+        hiding.release("chat")
+        #expect(!hiding.hides(at: 1), "an item pop moves no path, so no prune fires: the release frees the hide")
+    }
+
+    /// The registry trusts its one releasing caller (`chatDestination`, on its cleared item binding — a signal
+    /// SwiftUI sends on the pop alone, never on a tab switch, never under a cover): no depth guard, a release frees
+    /// the screen wherever the stack stands.
+    @Test func aReleaseFreesTheScreenWhateverTheStacksDepth() {
+        let hiding = TabBarHiding()
+        hiding.hide("chat", at: 1)
+        hiding.prune(above: 3)
+        hiding.release("chat")
+        #expect(!hiding.hides(at: 3))
+    }
+
+    @Test func aReleaseAfterAPathPopsPruneIsANoOp() {
+        let hiding = TabBarHiding()
+        hiding.hide("room", at: 1)
+        hiding.prune(above: 0)
+        hiding.release("room")
+        #expect(!hiding.hides(at: 1))
+    }
+
+    @Test func releasingAnotherScreensTokenChangesNothing() {
+        let hiding = TabBarHiding()
+        hiding.hide("room", at: 1)
+        hiding.release("profile")
+        #expect(hiding.hides(at: 1))
+    }
+
     @Test func twoHidingScreensAtDifferentDepthsLeaveWithTheirOwnPops() {
         let hiding = TabBarHiding()
         hiding.hide("room", at: 1)
