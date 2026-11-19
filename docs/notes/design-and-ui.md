@@ -460,7 +460,7 @@ the asset catalog.
   0.1 s, at most `tabBarFindAttempts` 20 — never steady-state polling) and observes the panes' layers by KVO
   (`CALayer` is KVO-compliant where `UIView` is not), re-attaching only when the pane set itself changed, compared
   by identity: the bar's layer churns on every state swap, and tearing every observation down per churn would
-  re-create them for nothing. The rule was `TabBarCollapse.isMinimized` (deleted 2026-11-19 with the fading overlay below; `TabBarCollapse.phase` is the rule since): minimized iff the widest visible pane
+  re-create them for nothing. The rule was `TabBarCollapse.isMinimized` (deleted 2026-11-19 with the fading overlay below; `TabBarCollapse.phase` was the rule until the ride bullet below deleted the detector whole): minimized iff the widest visible pane
   (above `DesignTokens.TabBar.paneVisibleAlpha`) is laid out and under half the bar's width — mid-swap both panes
   show and the bar reads as expanded, and a pane before its first layout reports zero width and is no signal, so a
   pre-layout read can never latch the badge hidden (a wrong latch would stand until the next KVO event); the badge
@@ -481,7 +481,8 @@ the asset catalog.
   `TabBadgeRendererTests` (the geometry).
 
 - **The unread capsule floats over the bar and fades with its collapse (2026-11-19, owner verdict on the hide
-  above: "works terrible").** Swapping the composited glyph between the counted and the plain image on a binary
+  above: "works terrible"; superseded the same day — the bar-anchored capsule stayed put while the platter animated
+  away, see the ride bullet below).** Swapping the composited glyph between the counted and the plain image on a binary
   minimized state could only ever cut: the count dropped in one frame instead of fading, the capsule jumped on the
   swap (the bar lays a 25.5 pt template image out half a point from a 44 pt composite), and mid-expand the
   still-small circle drew the composite cut at its rim — all three inherent to the mechanism, so the mechanism
@@ -540,3 +541,45 @@ the asset catalog.
   geometry plus the capsule-only render: cache identity, the cap, nothing at zero); the fade itself is UIKit
   runtime behaviour, proven on the film above. The 17 Pro's Chats list never crosses the minimize threshold, so
   only a compact phone that collapses the bar ever fades the capsule.
+
+- **The unread capsule rides inside the platter pane (2026-11-19, owner verdict on the fading overlay above: during
+  the collapse the capsule stayed put while the panel animated away, "looks very off").** The bar-anchored capsule
+  could never move with the morph: the collapse is a presentation-level animation of the expanded platter pane itself
+  (`_UITabBarPlatterView` — the pane slides and scales into the 48 pt circle while crossfading, its model geometry
+  never changing, so no KVO fires and nothing outside the pane inherits the motion), and the 0.45 s hand-tuned fade
+  ran on its own clock beside it. The mechanism changed again, not the tuning: `TabBarBadgeOverlay` now adds the
+  capsule as a direct subview of the platter itself — above both parallel item trees, positioned by converting the
+  Chats glyph's centre into platter coordinates (`TabBadgePlacement.capsuleCenter`, the tuned (−1, +4) unchanged) —
+  so the platter's own morph carries and fades it with zero timing code of ours: motion and visibility are the
+  panel's own by construction, and the minimized circle pane never contains it, so the bare circle stays bare.
+  Filmed on the SE: the capsule travels on the shrinking pill's top-right corner and fades with the pane's content
+  while the incoming circle keeps the bare glyph (the morph crossfades the two panes), the expand forms the platter
+  with the "3" aboard from its first frames, and the rest states match the owner baseline. What the fade knobs
+  drove is gone: `TabBarCollapse` (phase, settle, fadesOut), `badgeFadeDuration`, `badgeFadeOptions`,
+  `paneVisibleAlpha` and `tabBarCircleMaxWidth` are deleted — their one caller was the hand-run fade, and with the
+  ride there is nothing left to time (`TabBarCollapseTests` went with them) — while `tabBarPlatterMinimumFraction`
+  stays as the platter trust rule: only a pane spanning at least half the bar hosts the capsule
+  (`TabBadgePlacement.isPlatter`, rules in their own file and suite), so the ~100 pt tab-switch transient and a
+  pre-layout zero-width pane can never be mistaken for the platter (the review's catch: the widest-subview pick
+  could trust the transient mid-swap). Two new traps, filmed: the selection lens
+  (`_UILiquidLensView`, a platter sibling UIKit re-adds over the selected item) magnified and bloomed the crisp "3"
+  into a red glow whenever Chats was the selected tab — the capsule renders above it by
+  `DesignTokens.TabBar.badgeZPosition` (subview re-ordering loses to UIKit's re-adds, a layer z-position does not
+  and churns no sublayers); and a re-created item now dies with the capsule aboard (it lives inside the pane's
+  tree), which no observed layer announces, so the capsule reports its own eviction (`didMoveToWindow` nil-window →
+  a deferred re-attach with the budget replenished; a teardown or stand-down removes it on purpose, `isHosting`
+  already false, and must not re-attach). Everything else stands: the find budget and its churn replenish, the
+  stood-down warning, the x-column trust rule, the sequenced never-blank handoffs, the composite fallback on
+  regular widths and lost hierarchies, the VoiceOver value seam. Fragility as before, plus the lens: the pane
+  shapes, the item trees, the lens and the morph's choreography are observed behaviour (iOS 26.5 simulator), not
+  API; the platter clips (clips=1), but the morph scales the clip with the pane, so the riding capsule is never
+  cut mid-morph — pinned on film — and a rest layout whose clip would cut it stands the capsule down to the
+  composite instead (the fit re-judged on every reposition, on model geometry the morph never moves). The
+  pre-commit review (high) confirmed six findings — the stale-glyph strand when the bar leaves the window (the
+  no-bar path now clears the host and hands back), the per-tab-switch re-attach churn (re-attach only when the
+  platter left the bar or the host died), the missing clip safeguard, the stand-down's bare queue hops (the
+  capsule leaves in the committing transaction's completion), the renderer's stale header, the transient-trusting
+  platter pick — all folded in. Evidence under
+  `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-19/item2-badge-ride/` (collapse and
+  expand films and strips, the 1:1 morph frames, the 17 Pro six-switch red-pixel trace, the rest crops against the
+  owner baseline, the lens-bloom iteration).

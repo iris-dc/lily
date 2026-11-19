@@ -3,10 +3,10 @@ import UIKit
 /// Draws the Chats tab's unread count. The iOS 26 floating bar honours only a label's title and `UIImage` and never
 /// moves its own badge (`badgePositionAdjustment` probed at zero effect), so the count the owner wants closer to the
 /// glyph is drawn by hand, every metric and offset in `DesignTokens.TabBar`. Two renders share one capsule drawing:
-/// `capsule(count:badgeColor:)`, the capsule alone for the overlay `TabBarBadgeOverlay` floats over the bar (it can
-/// fade with the bar's collapse where a composited image could only swap), and `icon(...)`, the glyph with the capsule
-/// composited over its top-right corner — the fallback when the overlay finds no bar to ride (regular widths, a lost
-/// hierarchy signal). The composite renders as `.alwaysOriginal` — the bar cannot tint it — so the caller passes the
+/// `capsule(count:badgeColor:)`, the capsule alone for `TabBarBadgeOverlay` to ride inside the bar's expanded
+/// platter pane (whose own collapse morph moves, fades and hides it, where a composited image could only swap), and
+/// `icon(...)`, the glyph with the capsule composited over its top-right corner — the fallback when the overlay
+/// finds no platter to ride (regular widths, a lost hierarchy signal). The composite renders as `.alwaysOriginal` — the bar cannot tint it — so the caller passes the
 /// glyph's colour per selection state; images are cached per count and colour, never re-rendered per frame.
 final class TabBadgeRenderer {
     private struct Key: Hashable {

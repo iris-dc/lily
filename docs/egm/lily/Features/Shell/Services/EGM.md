@@ -11,7 +11,7 @@ connection, the caller's groups, the inbox, the block list, then the push offer 
 alongside. Both classes are main-actor isolated by the app target's default and depend on collaborators injected by
 `AppDependencies`. `TabBadgeRenderer` (2026-11-12) draws the Chats tab's unread count for `MainTabView` — the iOS 26
 floating bar honours only a label's title and `UIImage` and never moves its own badge — as the capsule alone for
-`TabBarBadgeOverlay` to float over the bar (2026-11-19), or composited into the glyph image as the overlay's
+`TabBarBadgeOverlay` to ride inside the bar's platter pane (2026-11-19), or composited into the glyph image as the overlay's
 fallback; both share one capsule drawing, cached per count and colour.
 
 Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Services/ShellSync.swift`,

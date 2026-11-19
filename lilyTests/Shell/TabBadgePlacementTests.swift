@@ -30,4 +30,16 @@ struct TabBadgePlacementTests {
         #expect(TabBadgePlacement.chatsColumn(itemColumns: [], chatIndex: 2, expectedTabs: 3) == nil)
         #expect(TabBadgePlacement.chatsColumn(itemColumns: [4, 90, 176], chatIndex: 3, expectedTabs: 3) == nil)
     }
+
+    /// The platter is the one pane that scales with the bar (about three quarters of it on every device): the
+    /// minimized circle (48 pt), the ~100 pt tab-switch transient and a pre-layout zero-width pane never host the
+    /// capsule, and an unlaid-out bar trusts nothing.
+    @Test func onlyAPaneSpanningMostOfTheBarIsThePlatter() {
+        #expect(TabBadgePlacement.isPlatter(paneWidth: 280, barWidth: 375))
+        #expect(TabBadgePlacement.isPlatter(paneWidth: 187.5, barWidth: 375))
+        #expect(!TabBadgePlacement.isPlatter(paneWidth: 100, barWidth: 375))
+        #expect(!TabBadgePlacement.isPlatter(paneWidth: 48, barWidth: 375))
+        #expect(!TabBadgePlacement.isPlatter(paneWidth: 0, barWidth: 375))
+        #expect(!TabBadgePlacement.isPlatter(paneWidth: 300, barWidth: 0))
+    }
 }

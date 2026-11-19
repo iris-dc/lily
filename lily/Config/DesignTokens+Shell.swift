@@ -26,13 +26,10 @@ nonisolated extension DesignTokens {
         /// The composite draws as `.alwaysOriginal` (a template would tint the badge with the glyph), so the glyph's
         /// colour is drawn in: this unselected, matching the bar's own template tint, the accent while selected.
         static let unselectedGlyphColor: UIColor = .white
-        /// A pane of the bar counts as visible above this alpha (`TabBarBadgeOverlay`): a leaving pane can rest
-        /// at a near-zero alpha instead of exactly zero, so visibility is judged with a small tolerance.
-        static let paneVisibleAlpha: CGFloat = 0.01
-        /// The overlay capsule's fade (`TabBarBadgeOverlay`): out over the bar's collapse morph, in on the expand;
-        /// the morph runs about 0.7 s wall to its settle, and the fade was tuned by eye on film against it.
-        static let badgeFadeDuration: TimeInterval = 0.45
-        static let badgeFadeOptions: UIView.AnimationOptions = .curveEaseInOut
+        /// The overlay capsule renders above every platter sibling (`TabBarBadgeOverlay`): the selection lens is
+        /// re-added over the selected item and its glass magnifies and blooms a capsule under it; a layer z-position
+        /// outranks subview order, which UIKit's re-adds would otherwise win.
+        static let badgeZPosition: CGFloat = 10_000
     }
 }
 

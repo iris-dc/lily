@@ -1,21 +1,26 @@
 import SwiftUI
 import UIKit
 
-/// Floats the Chats unread capsule over the UIKit-backed floating tab bar, so the count can fade with the bar's
-/// collapse morph: swapping a composited glyph image on the binary minimize state dropped the count in one frame,
-/// jumped the capsule and let the still-small circle cut it mid-expand. SwiftUI's `TabView` is backed by a real
-/// `UITabBar` holding one pane per state (the wide platter, the minimized circle), swapped by visibility; this view
-/// finds the bar (bounded retries, knobs in `AppConfig.Shell`; a hierarchy churn starts a fresh search with the whole
-/// budget again), the Chats item inside the widest pane (`TabBadgePlacement`) and the item's glyph image view, then
-/// keeps one capsule `UIImageView` above the panes — a bar subview, so the bar's own hiding carries it, which no
-/// pane's clip can cut — at the owner-tuned offset, pixel-identical to the composite at rest. KVO on the panes'
-/// layers drives the capsule's alpha through the minimize rule (`TabBarCollapse`, a `UIView` fade instead of an
-/// image swap), KVO on the glyph's layer re-positions it, and a pane or item churn re-finds what UIKit re-created.
-/// Fragile by nature: only the `UITabBar` class is public, the pane and item shapes are observed behaviour, not API.
-/// `onHosting` tells `MainTabView` who carries the count: `true` while the overlay rides the bar (the label hands
-/// the bar the plain template glyph), `false` whenever the hierarchy is missing or not the expected shape — the
-/// label then composites the count into the glyph as before, so an unread count is never lost. Both handoffs keep
-/// the count on screen: the leaving carrier stays until the arriving one has had a body pass, so a handoff may
+/// Rides the Chats unread capsule inside the UIKit-backed floating tab bar's expanded platter pane, so the pane's
+/// own collapse morph carries it: motion, fade and hiding are the platter's, in lockstep by construction, with no
+/// timing code of ours. A capsule anchored to the bar itself stayed put while the platter animated away — the morph
+/// never touches the items' model geometry, so nothing outside the pane inherits it, and a hand-tuned fade ran on
+/// its own clock beside the morph's. SwiftUI's `TabView` is backed by a real `UITabBar` holding one pane per state
+/// (the wide platter, the minimized circle), swapped by visibility; this view finds the bar (bounded retries, knobs
+/// in `AppConfig.Shell`; a hierarchy churn starts a fresh search with the whole budget again), the Chats item inside
+/// the platter and its glyph image view (`TabBadgePlacement`), then keeps one capsule `UIImageView` as a direct
+/// platter subview — above both of the platter's parallel item trees, whose selection styling could cover or mask a
+/// capsule parented deeper — at the owner-tuned offset converted into platter coordinates, pixel-identical to the
+/// composite at rest; the platter clips to its bounds, so a capsule the clip would cut stands down to the composite
+/// instead (the fit re-judged on every layout move). The minimized circle pane never contains the capsule, so the bare circle stays bare. KVO on
+/// the glyph's layer re-positions the capsule when layout really moves it, a pane or item churn re-finds what UIKit
+/// re-created, and the capsule reports its own eviction (a re-created item dies with its subviews, which no observed
+/// layer announces), so a dead host never silently takes the count with it. Fragile by nature: only the `UITabBar`
+/// class is public, the pane and item shapes and the morph's choreography are observed behaviour, not API.
+/// `onHosting` tells `MainTabView` who carries the count: `true` while the capsule rides the platter (the label
+/// hands the bar the plain template glyph), `false` whenever the hierarchy is missing or not the expected shape —
+/// the label then composites the count into the glyph as before, so an unread count is never lost. Both handoffs
+/// keep the count on screen: the leaving carrier stays until the arriving one has had a body pass, so a handoff may
 /// double-draw briefly but never blanks.
 struct TabBarBadgeOverlay: UIViewRepresentable {
     let count: Int
@@ -47,17 +52,11 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
         }
 
         private weak var bar: UITabBar?
+        private weak var platter: UIView?
         private weak var chatsGlyph: UIImageView?
-        private let capsule = UIImageView()
+        private let capsule = TabBadgeCapsuleView()
         private lazy var glyphSize = TabBadgeRenderer.glyphSize(symbol: DesignTokens.Symbols.chat)
         private var observations: [NSKeyValueObservation] = []
-        /// The observed panes by identity, so a sublayer churn re-attaches only when the pane set itself changed.
-        private var observedPanes: [ObjectIdentifier] = []
-        /// The last settled phase, unknown until the first read: an attach mid-morph must err visible
-        /// (`TabBarCollapse.settle`), not fade toward a guessed endpoint.
-        private var settled: TabBarCollapse.Phase?
-        private var isFadedOut = false
-        private var hasAppliedState = false
         private var isHosting = false
         private var findBudget = 0
 
@@ -70,21 +69,22 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
             capsule.isUserInteractionEnabled = false
             // The tab's accessibility value stays the one VoiceOver seam for the count.
             capsule.isAccessibilityElement = false
+            // Above the selection lens, which UIKit re-adds over the selected item: its glass magnifies and blooms
+            // a capsule under it (filmed), and a z-position outranks any subview re-ordering without churning it.
+            capsule.layer.zPosition = DesignTokens.TabBar.badgeZPosition
+            capsule.onDetach = { [weak self] in self?.capsuleWasEvicted() }
             findBudget = AppConfig.Shell.tabBarFindAttempts
-            hasAppliedState = false
-            settled = nil
             attach()
         }
 
         func teardown() {
+            // The eviction report is for a host dying mid-ride; the overlay leaving takes the capsule on purpose.
+            capsule.onDetach = nil
             observations.removeAll()
-            observedPanes = []
-            // Removed at once, not sequenced: the overlay itself is leaving, usually with the bar it rides.
             capsule.removeFromSuperview()
             bar = nil
+            platter = nil
             chatsGlyph = nil
-            hasAppliedState = false
-            settled = nil
             guard isHosting else { return }
             isHosting = false
             // Captured strongly: the hand-back to the composite must land even if this view is deallocated first.
@@ -96,53 +96,48 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
         /// catches a pane or item view UIKit re-creates.
         private func attach() {
             observations.removeAll()
-            observedPanes = []
             bar = window.flatMap { Self.descendants(of: UITabBar.self, in: $0).first }
             guard let bar else {
+                // A stale resolved glyph would block the retry's re-attach guard and strand the hand-back: a bar
+                // that left the window takes the ride with it, so the composite carries the count while the search
+                // runs again.
+                platter = nil
+                chatsGlyph = nil
+                host(false)
                 scheduleRetry(reason: "no tab bar in the window")
                 return
             }
             observations.append(bar.layer.observe(\.sublayers) { [weak self] _, _ in
                 Task { @MainActor [weak self] in self?.panesDidChurn() }
             })
-            observedPanes = panes(of: bar).map(ObjectIdentifier.init)
-            for pane in panes(of: bar) {
-                observations.append(pane.layer.observe(\.isHidden) { [weak self] _, _ in
-                    Task { @MainActor [weak self] in self?.applyState() }
-                })
-                observations.append(pane.layer.observe(\.opacity) { [weak self] _, _ in
-                    Task { @MainActor [weak self] in self?.applyState() }
-                })
+            for pane in bar.subviews {
                 observations.append(pane.layer.observe(\.sublayers) { [weak self] _, _ in
                     Task { @MainActor [weak self] in self?.itemsDidChurn() }
                 })
             }
             resolveGlyph(in: bar)
-            applyState()
         }
 
-        /// The bar's state panes: its subviews short of the capsule this view added itself.
-        private func panes(of bar: UITabBar) -> [UIView] {
-            bar.subviews.filter { $0 !== capsule }
-        }
-
-        /// Re-attaches only when the pane set itself changed or the resolved glyph died with a re-created item;
-        /// the bar's layer churns on every state swap, and a full tear-down per churn would re-create every
-        /// observation for nothing.
+        /// Re-attaches only when the platter itself left the bar or the resolved host died; the bar's layer churns
+        /// on every state swap — the ~100 pt transient pane joins and leaves on each tab switch, and UIKit re-fronts
+        /// panes — and a full tear-down per churn would re-create every observation for nothing.
         private func panesDidChurn() {
             guard let bar else { return }
-            if panes(of: bar).map(ObjectIdentifier.init) != observedPanes || chatsGlyph?.window == nil {
-                churnedAttach()
-            } else {
-                applyState()
-            }
+            let platterLeft = platter.map { $0.superview !== bar } ?? true
+            if platterLeft || hostIsDead { churnedAttach() }
         }
 
         /// An item view re-created inside a pane (a language change rebuilds the titles) kills the resolved glyph
         /// without churning the bar's own panes.
         private func itemsDidChurn() {
-            guard bar != nil else { return }
-            if chatsGlyph?.window == nil { churnedAttach() }
+            guard bar != nil, hostIsDead else { return }
+            churnedAttach()
+        }
+
+        /// A dead host: the glyph or the mounted capsule out of the window. While stood down the glyph is nil, so
+        /// any churn is a fresh chance to resolve.
+        private var hostIsDead: Bool {
+            chatsGlyph?.window == nil || (isHosting && capsule.window == nil)
         }
 
         /// A churn is a fresh hierarchy, so the search earns its whole budget again; only the timer retries
@@ -152,11 +147,23 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
             attach()
         }
 
+        /// The host item died with the capsule aboard — nothing observed announces a wholesale item re-creation,
+        /// so the capsule reports its own eviction. Deferred, because `didMoveToWindow` lands inside UIKit's
+        /// hierarchy surgery, and re-checked at delivery: a teardown or stand-down removes the capsule on purpose
+        /// (`isHosting` is already false then) and must not re-attach.
+        private func capsuleWasEvicted() {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.window != nil, self.isHosting, self.capsule.window == nil else { return }
+                self.churnedAttach()
+            }
+        }
+
         /// Tells `MainTabView` who carries the count, deduplicated and deferred: KVO can fire inside a UIKit layout
         /// pass, and the handler writes SwiftUI state. The closure is read at delivery, not at the call
         /// (`updateUIView` may have replaced it), and a flip back before delivery supersedes the older message. On a
-        /// stand-down the capsule leaves only after the composite's body pass has had a turn — a brief double-draw,
-        /// never a blank count.
+        /// stand-down the capsule leaves in the completion of the transaction whose commit carries the composite's
+        /// body pass — a brief double-draw, never a blank count (a bare second queue hop could still beat the
+        /// commit under load).
         private func host(_ hosting: Bool) {
             guard hosting != isHosting else { return }
             isHosting = hosting
@@ -164,9 +171,11 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
                 guard let self, self.isHosting == hosting else { return }
                 self.onHosting?(hosting)
                 guard !hosting else { return }
-                DispatchQueue.main.async { [weak self] in
-                    guard let self, !self.isHosting else { return }
-                    self.capsule.removeFromSuperview()
+                CATransaction.setCompletionBlock { [weak self] in
+                    MainActor.assumeIsolated {
+                        guard let self, !self.isHosting else { return }
+                        self.capsule.removeFromSuperview()
+                    }
                 }
             }
         }
@@ -181,56 +190,50 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
         }
 
         private func reposition() {
-            guard let bar, let glyph = chatsGlyph, capsule.image != nil else { return }
-            let center = glyph.convert(CGPoint(x: glyph.bounds.midX, y: glyph.bounds.midY), to: bar)
+            guard let platter, let glyph = chatsGlyph, capsule.image != nil else { return }
+            let center = glyph.convert(CGPoint(x: glyph.bounds.midX, y: glyph.bounds.midY), to: platter)
             capsule.center = TabBadgePlacement.capsuleCenter(glyphCenter: center, glyphSize: glyphSize)
-            // Re-fronting unconditionally would churn the bar's sublayers on every KVO tick and feed the
-            // observation back to itself.
-            if bar.subviews.last !== capsule { bar.bringSubviewToFront(capsule) }
-        }
-
-        /// Fades the capsule with the bar's morph: out from the moment a collapse starts (the circle pane joins the
-        /// platter on screen), fully out while minimized, and back in the moment the expand starts — an alpha
-        /// animation a swapped composite could never give. Mid-morph the direction is the opposite of the last
-        /// settled state, so a morph abandoned midway fades back at the next settle; the first read seeds the
-        /// settled state (`TabBarCollapse.settle`), erring visible when it lands mid-morph. The first application
-        /// snaps (no fade-in at startup); a re-attach with an unchanged target leaves a running fade alone.
-        private func applyState() {
-            guard let bar else { return }
-            let widths = panes(of: bar)
-                .filter { !$0.isHidden && $0.alpha > DesignTokens.TabBar.paneVisibleAlpha }
-                .map { $0.bounds.width }
-            let phase = TabBarCollapse.phase(visiblePaneWidths: widths, barWidth: bar.bounds.width)
-            let settledPhase = TabBarCollapse.settle(current: phase, previous: settled)
-            settled = settledPhase
-            let fadedOut = TabBarCollapse.fadesOut(phase: phase, settled: settledPhase)
-            guard !hasAppliedState || fadedOut != isFadedOut else { return }
-            let animated = hasAppliedState
-            hasAppliedState = true
-            isFadedOut = fadedOut
-            let target: CGFloat = fadedOut ? 0 : 1
-            guard animated else {
-                capsule.alpha = target
-                return
+            if platter.bounds.insetBy(dx: -0.5, dy: -0.5).contains(capsule.frame) { return }
+            // The platter clips to its bounds, so a capsule its clip would cut (a layout pushing the glyph to the
+            // pane's edge) hands the count back to the composite instead of showing it shaved; model geometry is
+            // judged, which the morph's presentation-level animation never moves.
+            chatsGlyph = nil
+            if isHosting {
+                host(false)
+            } else {
+                capsule.removeFromSuperview()
             }
-            UIView.animate(withDuration: DesignTokens.TabBar.badgeFadeDuration,
-                           delay: 0,
-                           options: DesignTokens.TabBar.badgeFadeOptions) { self.capsule.alpha = target }
+            scheduleRetry(reason: "the capsule would not fit the platter")
         }
+    }
+}
+
+/// The overlay's capsule, which reports losing its window: the one way it leaves outside a deliberate removal is its
+/// host item dying, and no observed layer announces that.
+private final class TabBadgeCapsuleView: UIImageView {
+    var onDetach: (() -> Void)?
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil { onDetach?() }
     }
 }
 
 /// The find half of the overlay, outside the type body under the length limit; a same-file extension, so the
 /// stored state stays private.
 private extension TabBarBadgeOverlay.OverlayView {
-    /// The Chats item's glyph: inside the widest pane (the expanded platter), the item views are the controls in
-    /// bar order — two parallel trees with identical frames, so the pick is by x-column (`TabBadgePlacement`).
+    /// The Chats item's glyph: inside the expanded platter — the one pane spanning most of the bar
+    /// (`TabBadgePlacement.isPlatter`), so the ~100 pt tab-switch transient and a pre-layout zero-width pane never
+    /// host — where the item views are the controls in bar order: two parallel trees with identical frames, so the
+    /// pick is by x-column (`TabBadgePlacement`). The capsule joins the platter itself, above both item trees,
+    /// under the platter's own morph.
     func resolveGlyph(in bar: UITabBar) {
         chatsGlyph = nil
-        if let platter = panes(of: bar).max(by: { $0.bounds.width < $1.bounds.width }) {
-            chatsGlyph = Self.chatsGlyph(inPlatter: platter)
-        }
-        guard let glyph = chatsGlyph else {
+        platter = bar.subviews
+            .filter { TabBadgePlacement.isPlatter(paneWidth: $0.bounds.width, barWidth: bar.bounds.width) }
+            .max(by: { $0.bounds.width < $1.bounds.width })
+        if let platter { chatsGlyph = Self.chatsGlyph(inPlatter: platter) }
+        guard let platter, let glyph = chatsGlyph else {
             // The capsule stays up through `host(false)`'s sequenced removal: never a blank count.
             host(false)
             scheduleRetry(reason: "Chats glyph not resolved")
@@ -242,12 +245,11 @@ private extension TabBarBadgeOverlay.OverlayView {
         observations.append(glyph.layer.observe(\.position) { [weak self] _, _ in
             Task { @MainActor [weak self] in self?.reposition() }
         })
-        observations.append(glyph.layer.observe(\.contents) { [weak self] _, _ in
-            Task { @MainActor [weak self] in self?.reposition() }
-        })
-        bar.addSubview(capsule)
-        host(true)
+        platter.addSubview(capsule)
         refreshCapsule()
+        // The first reposition judges the fit; a capsule the platter's clip would cut has stood down already.
+        guard chatsGlyph != nil else { return }
+        host(true)
     }
 
     static func chatsGlyph(inPlatter platter: UIView) -> UIImageView? {
