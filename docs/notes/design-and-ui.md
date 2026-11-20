@@ -585,7 +585,8 @@ the asset catalog.
   owner baseline, the lens-bloom iteration).
 
 - **The switch cover: the badge no longer blinks through a tab switch (2026-11-20, owner regression report on the
-  ride).** Two symptoms on the committed ride (b1d982d): (A) selecting Chats from any tab blinked the badge, and
+  ride; superseded the same day — the owner rebuilt the phone and both symptoms persisted there, the device
+  mounting its selection glass outside the bar's subviews, see the twin bullet below).** Two symptoms on the committed ride (b1d982d): (A) selecting Chats from any tab blinked the badge, and
   (B) on the owner's phone the badge read ~90% for about a second after an expand. Probed first, not assumed: the
   temporary overlay probe (every host flip, resolve failure, fit trip and churn cause logged; deleted after) shows
   the b1d982d trust gates never fire — no transient stand-downs, no fit trips, the capsule's presentation opacity
@@ -614,3 +615,38 @@ the asset catalog.
   is the owner's stated requirement; if the badge must snap ahead of the panel's tail, that is an owner decision
   against the lockstep rule, not a defect of the ride. Evidence (films, probe logs, traces, zooms, notes) under
   `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-19/item2-badge-ride-fix2/`.
+
+- **The badge twin follows the pane states (2026-11-20, owner re-test on the phone: both symptoms unchanged — the
+  simulator diverges from the device).** The transient-detection cover fixed the blink only where the flying glass
+  is a bar subview; on the owner's phone both symptoms persisted, so the selection glass there mounts outside the
+  bar's subviews (beyond any z-position of ours) and the expand plateau is the platter content's own glass-settle
+  tail dimming the riding capsule — both invisible to the simulator, whose glass is simplified. The foundation
+  changed from transient detection to a pane-state rule that exists on any hierarchy
+  (`TabBadgePlacement.twinShows` over `Pane`, unit-pinned): the badge is drawn by exactly one of two twins — the
+  bar-level twin at the capsule's converted spot wherever the platter shows settled (circle hidden or absent: rest
+  and every tab switch) or is arriving (both panes visible with the platter unhid last: the badge reads full from
+  the expand's first frame, the owner's explicit ask, accepted over riding in), and the riding capsule only while
+  the circle unhid last (a collapse, the one morph the badge must move and fade with); an unknown direction at
+  attach errs to the ride. While the twin draws, the capsule hides — stacked identical copies would double the
+  antialiased edges and break the rest-crop baseline — and the swap lands in one runloop turn at the same
+  converted spot, so it is pixel-invisible. Both state panes' hidden flags are KVO-observed (the platter's at
+  resolve, the circle's re-synced per churn), and which pane unhid last while the other was visible is the rule's
+  one piece of memory. Transient detection (`foreignPane`, `shouldCover`) is deleted. Whether bar level outranks
+  the device's selection glass for the blink cannot be answered on the simulator: debug builds record every pane
+  flip, churn and a 2 s tail of the bar's real shape (subview classes, frames, hidden flags, presentation alphas,
+  twin and capsule visibility) into a ring-buffered `Documents/badge-pane-diagnostics.log`
+  (`BadgePaneDiagnostics`, compiled out of Release and Staging; ids and class names only), pulled with
+  `xcrun devicectl device copy from --device <name-or-udid> --domain-type appDataContainer --domain-identifier
+  iris.lily --source Documents/badge-pane-diagnostics.log --destination .` — sim film verdicts and the recipe in
+  `item2-badge-ride-fix2/fix5-twin/`. The max review hardened the twin the same day: real
+  pane transitions only (`[.old, .new]`, same-value writes ignored), any pane hiding clears the morph memory, a
+  changed circle identity clears it too, and the expand memory expires on
+  `AppConfig.Shell.twinExpandMemoryGrace` (1 s; the expand settles in ~0.7 s, so the grace fires only on a
+  reversed or abandoned morph — filmed with the new reversal walks); the rule is the three-valued
+  `TabBadgePlacement.badgeDrawer` (stood down, the carriers are left to the sequenced hand-back — flipping them
+  early showed a shaved capsule for a frame); the fit stand-down keeps the glyph behind a `capsuleUnfit` flag
+  (nil'ing it looped our own churn through fresh attaches), with the accepted residual that an unfit capsule
+  stands the whole overlay down although the twin could carry an unclipped rest; a collapse settling with no
+  circle resolved warns once per attach (the device signal that the class-equality pick failed); and the
+  diagnostics walk the window above the bar — one level plus anything overlapping the bar — since the glass
+  question is unanswerable from the bar's subviews.

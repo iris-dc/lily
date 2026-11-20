@@ -23,12 +23,35 @@ enum TabBadgePlacement {
         return columns[chatIndex]
     }
 
-    /// Whether the bar-level twin covers the capsule: only during a pure tab switch — hosting, a visible capsule,
-    /// a transient pane up and the minimized circle hidden. A morph has the circle visible, so the cover can never
-    /// ghost over a collapsing platter; an unresolved circle (`nil`) errs off — a brief blink over a bar-anchored
-    /// ghost.
-    static func shouldCover(hosting: Bool, capsuleVisible: Bool, transientPresent: Bool, circleHidden: Bool?) -> Bool {
-        hosting && capsuleVisible && transientPresent && circleHidden == true
+    /// The bar's two state panes, for the twin rule's memory of which unhid last.
+    enum Pane {
+        case platter, circle
+    }
+
+    /// Which badge twin draws, told from the two state panes alone — a rule that exists on any bar hierarchy,
+    /// where transient detection does not (the device mounts its selection glass outside the bar's subviews).
+    /// The bar-level twin draws wherever the platter shows settled (the circle hidden, or absent — `nil` reads
+    /// as hidden — covering rest and every tab switch) or is arriving (both panes visible with the platter unhid
+    /// last: the expand reads full from its first frame, the owner's ask over riding in); the platter capsule
+    /// rides only while the circle unhid last — a collapse, the one morph the badge must move and fade with —
+    /// and an unknown direction errs to the ride.
+    static func twinShows(platterHidden: Bool, circleHidden: Bool?, lastUnhidden: Pane?) -> Bool {
+        guard !platterHidden else { return false }
+        guard circleHidden == false else { return true }
+        return lastUnhidden == .platter
+    }
+
+    /// Who draws the badge: the twin, the riding capsule, or — not hosting — neither, because the stand-down's
+    /// sequenced hand-back owns the carriers and flipping them early would show a shaved capsule for a frame.
+    /// Hosting decided, `twinShows` picks the twin or the ride.
+    enum Drawer {
+        case twin, ride, standDown
+    }
+
+    static func badgeDrawer(hosting: Bool, platterHidden: Bool, circleHidden: Bool?, lastUnhidden: Pane?) -> Drawer {
+        guard hosting else { return .standDown }
+        let twin = twinShows(platterHidden: platterHidden, circleHidden: circleHidden, lastUnhidden: lastUnhidden)
+        return twin ? .twin : .ride
     }
 
     /// Whether a pane is wide enough to be the expanded platter: the platter is the one pane that scales with the

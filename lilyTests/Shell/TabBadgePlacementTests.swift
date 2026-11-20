@@ -43,21 +43,41 @@ struct TabBadgePlacementTests {
         #expect(!TabBadgePlacement.isPlatter(paneWidth: 300, barWidth: 0))
     }
 
-    /// The cover shows only during a pure tab switch: hosting, a visible capsule, a transient pane up and the
-    /// circle hidden. A visible circle means a morph is running (the cover would ghost over the collapsing
-    /// platter), and an unresolved circle errs off.
-    @Test func theCoverShowsOnlyDuringAPureTabSwitch() {
-        func covers(_ hosting: Bool, _ capsule: Bool, _ transient: Bool, _ circleHidden: Bool?) -> Bool {
-            TabBadgePlacement.shouldCover(hosting: hosting,
-                                          capsuleVisible: capsule,
-                                          transientPresent: transient,
-                                          circleHidden: circleHidden)
+    /// The twin draws wherever the platter shows settled or arriving; the capsule rides only a collapse morph.
+    @Test func theTwinFollowsThePaneStatesAndTheLastUnhiddenPane() {
+        func twin(_ platterHidden: Bool, _ circleHidden: Bool?, _ last: TabBadgePlacement.Pane?) -> Bool {
+            TabBadgePlacement.twinShows(platterHidden: platterHidden,
+                                        circleHidden: circleHidden,
+                                        lastUnhidden: last)
         }
-        #expect(covers(true, true, true, true))
-        #expect(!covers(false, true, true, true))
-        #expect(!covers(true, false, true, true))
-        #expect(!covers(true, true, false, true))
-        #expect(!covers(true, true, true, false))
-        #expect(!covers(true, true, true, nil))
+        #expect(twin(false, true, nil), "expanded rest: the twin draws, and every tab switch keeps it")
+        #expect(twin(false, true, .circle), "a settled rest ignores stale morph history")
+        #expect(twin(false, nil, nil), "no circle pane on screen reads as hidden")
+        #expect(twin(false, false, .platter), "expand morph: the badge is full from the first frame")
+        #expect(!twin(false, false, .circle), "collapse morph: the capsule rides and fades with the pane")
+        #expect(!twin(false, false, nil), "an unknown direction errs to the ride")
+        #expect(!twin(true, false, .platter), "minimized rest: the bare circle stays bare")
+        #expect(!twin(true, true, nil))
+    }
+
+    /// The three-valued drawer: stood down iff not hosting — the carriers are then the hand-back's to remove,
+    /// never flipped early — and hosting, the pane rule picks the twin or the ride.
+    @Test func theDrawerStandsDownOnlyWhenNotHosting() {
+        func drawer(_ hosting: Bool, _ platter: Bool, _ circle: Bool?, _ last: TabBadgePlacement.Pane?)
+            -> TabBadgePlacement.Drawer {
+            TabBadgePlacement.badgeDrawer(hosting: hosting,
+                                          platterHidden: platter,
+                                          circleHidden: circle,
+                                          lastUnhidden: last)
+        }
+        #expect(drawer(false, false, true, nil) == .standDown)
+        #expect(drawer(false, true, false, .platter) == .standDown)
+        #expect(drawer(false, false, false, .circle) == .standDown)
+        #expect(drawer(true, false, true, nil) == .twin, "expanded rest")
+        #expect(drawer(true, false, nil, nil) == .twin, "no circle pane reads as hidden")
+        #expect(drawer(true, false, false, .platter) == .twin, "expand morph")
+        #expect(drawer(true, false, false, .circle) == .ride, "collapse morph")
+        #expect(drawer(true, false, false, nil) == .ride, "unknown direction errs to the ride")
+        #expect(drawer(true, true, false, .platter) == .ride, "minimized rest never twins")
     }
 }

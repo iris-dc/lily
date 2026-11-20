@@ -53,6 +53,9 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `chatsColumn(itemColumns:chatIndex:expectedTabs:)` — the platter's item views deduplicated into x-columns (it
   holds two parallel item trees at identical frames); only exactly one column per tab, in bar order, is trusted,
   anything else answers `nil` and the overlay stands down.
+  `twinShows(platterHidden:circleHidden:lastUnhidden:)` over `Pane` — the pure pane-state rule for which badge
+  twin draws: the bar-level twin at settled and expanding states, the riding capsule through a collapse; an
+  absent circle reads as hidden, an unknown direction errs to the ride.
   `isPlatter(paneWidth:barWidth:)` — only a pane spanning at least `AppConfig.Shell.tabBarPlatterMinimumFraction`
   of a laid-out bar is the expanded platter: the minimized circle (48 pt), the ~100 pt tab-switch transient and a
   pre-layout zero-width pane never host the capsule. (`TabBarCollapse` — the phase, settle and fade
@@ -74,17 +77,33 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   morph — a presentation-level animation that never touches model geometry — carries the capsule's motion, fade
   and hiding, with no animation code of ours; the minimized circle pane never contains it, so the bare circle
   stays bare; the platter clips to its bounds, so a capsule the clip would cut stands down to the composite
-  instead — the fit judged at every reposition on model geometry, which the morph never moves. A tab switch mounts
-  a transient bar-level pane hosting the flying selection glass above the platter — beyond any platter child's
-  z-position — which rendered the capsule dimmed through the glass for its few frames (the 2026-11-20 blink):
-  `updateCover` (in `TabBarBadgeOverlay+Resolve.swift`, the find, cover and retry half split under the file length
-  limit) mirrors the capsule as a bar-level twin at `badgeZPosition`, pixel-identical at the capsule's own spot,
-  exactly while a transient pane is up and the circle pane is hidden (`TabBadgePlacement.shouldCover`) — never
-  during a morph, so a collapse cannot see a bar-anchored ghost; panes are told apart by runtime class identity
-  against the platter's class, the circle as the narrowest same-class pane, a transient counting only while
-  visible (no width requirement: the select portal measures zero width exactly during its glass crossfade, the
-  frames the cover exists for), and the circle's hidden-flag observation re-syncs on every pane churn, so a circle
-  created after the attach still clears a mounted cover. KVO (`CALayer` is
+  instead — the fit judged at every reposition on model geometry, which the morph never moves. The badge is drawn by exactly one of
+  two twins (`applyTwinState` in `TabBarBadgeOverlay+Resolve.swift`, the find, twin and retry half split under the
+  file length limit): a bar-level twin at the capsule's converted spot and `badgeZPosition` wherever the platter
+  shows settled or is arriving — on the device, selection glass can mount outside the bar's subviews and the
+  platter content's own glass settle dims what rides inside it, so only a bar subview above the panes keeps the
+  badge steady through tab switches and reads full from the expand's first frame (the owner's ask over riding
+  in) — and the riding capsule only while a collapse morph carries it out. The choice is the pure three-valued
+  `TabBadgePlacement.badgeDrawer` (stood down, neither carrier is touched — the sequenced hand-back owns their
+  removal; hosting, `twinShows` picks the twin or the ride) over both state panes' hidden flags and which pane
+  unhid last while the other was visible (each flag KVO-observed with `[.old, .new]`, same-value writes ignored:
+  the platter's at resolve, the circle's — the narrowest same-class pane — re-synced on every churn, a changed
+  circle identity clearing the memory). Any pane hiding is a settle and clears the morph memory (the flags then
+  speak alone), and the expand memory alone also expires on `AppConfig.Shell.twinExpandMemoryGrace` (1 s,
+  generation-cancelled by any newer write): a reversed or abandoned expand fires no pane event, and without the
+  grace the twin hung static over the reversed collapse until its settle. A collapse that settles with no circle
+  resolved logs one warning per attach through the facade — the device signal that the class-equality circle pick
+  failed. The capsule hides while the twin draws (stacked copies would double the antialiased edges) and the swap
+  lands in one turn at the same spot. A capsule the platter's clip would cut stands down behind the `capsuleUnfit`
+  flag with the glyph and observations kept, so the same layout moving back re-hosts without a search (nil'ing the
+  glyph churned our own subview into a fresh attach whose budget replenish made the loop unbounded); the accepted
+  residual is that the fit rule stands the whole overlay down although the twin could carry an unclipped rest —
+  an altitude the rule does not model. Debug builds record every attach, pane event, memory write and twin flip (with the fired
+  `badgeDrawer` branch and the memory value) plus a 2 s bar-and-window-shape tail through
+  `BadgePaneDiagnostics.shared` — a deliberate debug-only exception to the no-concrete-types rule: a `#if DEBUG`
+  tool, and an injected seam would put debug plumbing into `updateUIView` for every build. `diagnose(_:)` takes an
+  `@autoclosure`, so release builds evaluate nothing, and its DEBUG body mirrors each event through
+  `logger?.debug(.ui, ...)` for an attached console and `SpyLogger`. KVO (`CALayer` is
   KVO-compliant where `UIView` is not): the glyph layer's `bounds`/`position` re-position the capsule when layout
   really moves it, and a `sublayers` churn on the bar or a pane re-attaches — only when the platter itself left
   the bar or the resolved host died (the transient pane joins and leaves on every tab switch, so pane-set
@@ -176,7 +195,7 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
 - `[TabBarBadgeOverlay.swift:TabBarBadgeOverlay]` (2026-11-19): the capsule is a subview of the expanded platter
   pane, so the pane's own morph carries its motion and visibility — in lockstep by construction, with no fade or
   timing code in the app (the `TabBarCollapse` detector and the fade knobs were deleted with their one caller);
-  the minimized circle pane never holds it, so the bare circle never shows a count. The switch cover shows iff hosting, the capsule visible, a transient (non-pane-class, visible; zero-width counts — the select portal is unlaid-out during its crossfade) bar subview present and the circle pane (the narrowest same-class pane) hidden — the pure `TabBadgePlacement.shouldCover`, pinned in its suite; an unresolved circle errs off (a brief blink over a bar-anchored ghost), and the cover leaves with the transient's churn, the circle unhiding, a stand-down and the teardown. The fail-safe direction:
+  the minimized circle pane never holds it, so the bare circle never shows a count. Exactly one carrier draws (`TabBadgePlacement.badgeDrawer`, the full table pinned in its suite): stood down, neither is touched — the sequenced hand-back owns them; hosting, the twin draws while the platter shows settled (the circle hidden or absent) or arriving (both panes visible, the platter unhid last), the riding capsule while the circle unhid last (a collapse). A settle (any pane hiding) clears the morph memory, the expand memory also expires on the 1 s grace (a reversed expand hands back to the ride within it), an unknown direction errs to the ride, and the twin leaves with a stand-down and the teardown. The fail-safe direction:
   whenever the hierarchy is missing or not the expected shape (no `UITabBar`, the find budget runs out —
   replenished by the next churn, the exhaustion logged at warning —, `TabBadgePlacement.chatsColumn` distrusts the
   item columns, a re-created item loses the glyph or evicts the capsule), `onHosting` reports `false` and
@@ -227,7 +246,7 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `[HomeTab.swift:HomeTab]` and `[ChatTab.swift:ChatTab]` bind `homePath` and `chatPath`.
 - `[MainTabView.swift:MainTabView.tabLabel(for:symbol:)]`: builds `UIImage(systemName:withConfiguration:)` glyphs (UIKit); `chatTabLabel(count:selected:)` asks the `@State` `TabBadgeRenderer` for the badged composite, rendered once per count and colour and cached (2026-11-12).
 - `[TabBarBadgeOverlay.swift:TabBarBadgeOverlay.OverlayView]`: adds one capsule `UIImageView` to the found bar's
-  expanded platter pane (and its bar-level twin during tab-switch transients) and installs KVO observations on the bar's layer, the panes' sublayers, the circle pane's hidden flag and the Chats
+  expanded platter pane (and its bar-level twin wherever the platter shows settled or arriving) and installs KVO observations on the bar's layer, the panes' sublayers, both state panes' hidden flags and the Chats
   glyph's layer (replaced only when the observed pane set changed or the resolved host died; released with the
   view, the capsule removed on teardown); logs one warning (`.ui`) when a find budget is spent; animates nothing
   itself; no polling once the bar is found, no network, disk or `UserDefaults` access.
@@ -248,5 +267,5 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   overlay's placement and trust rules in `lilyTests/Shell/TabBadgePlacementTests.swift` and
   the pane rule in `lilyTests/Changes/ListStateTests.swift`; the screens
   themselves are exercised by the UI tests, `./scripts/ci.sh ui` and `./scripts/ci.sh ui-ipad`; the capsule's ride —
-  motion and fade carried by the platter's own morph — and the switch cover are UIKit runtime behaviour, proven on film —
+  motion and fade carried by the platter's own morph — and the twin's pane-state swaps are UIKit runtime behaviour, proven on film —
   `docs/notes/design-and-ui.md` 2026-11-19 and 2026-11-20).

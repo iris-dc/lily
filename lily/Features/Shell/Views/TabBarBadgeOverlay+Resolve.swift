@@ -1,21 +1,22 @@
 import UIKit
 
-/// The find, cover and retry half of the overlay, split from the main file under the length limit; the stored
+/// The find, twin and retry half of the overlay, split from the main file under the length limit; the stored
 /// state lives in `TabBarBadgeOverlay.swift` and is internal for this extension.
 extension TabBarBadgeOverlay.OverlayView {
     /// The Chats item's glyph: inside the expanded platter — the one pane spanning most of the bar
     /// (`TabBadgePlacement.isPlatter`), so the ~100 pt tab-switch transient and a pre-layout zero-width pane never
     /// host — where the item views are the controls in bar order: two parallel trees with identical frames, so the
     /// pick is by x-column (`TabBadgePlacement`). The capsule joins the platter itself, above both item trees,
-    /// under the platter's own morph.
+    /// under the platter's own morph; both state panes' hidden flags feed the twin rule.
     func resolveGlyph(in bar: UITabBar) {
         chatsGlyph = nil
+        capsuleUnfit = false
         platter = bar.subviews
             .filter { TabBadgePlacement.isPlatter(paneWidth: $0.bounds.width, barWidth: bar.bounds.width) }
             .max(by: { $0.bounds.width < $1.bounds.width })
         if let platter { chatsGlyph = Self.chatsGlyph(inPlatter: platter) }
         guard let platter, let glyph = chatsGlyph else {
-            // The capsule stays up through `host(false)`'s sequenced removal: never a blank count.
+            // The badge stays up through `host(false)`'s sequenced removal: never a blank count.
             host(false)
             scheduleRetry(reason: "Chats glyph not resolved")
             return
@@ -23,21 +24,27 @@ extension TabBarBadgeOverlay.OverlayView {
         observations.append(glyph.layer.observe(\.bounds) { [weak self] _, _ in
             Task { @MainActor [weak self] in
                 self?.reposition()
-                self?.updateCover()
+                self?.applyTwinState()
             }
         })
         observations.append(glyph.layer.observe(\.position) { [weak self] _, _ in
             Task { @MainActor [weak self] in
                 self?.reposition()
-                self?.updateCover()
+                self?.applyTwinState()
             }
+        })
+        observations.append(platter.layer.observe(\.isHidden, options: [.old, .new]) { [weak self] _, change in
+            let old = change.oldValue
+            let new = change.newValue
+            Task { @MainActor [weak self] in self?.platterHiddenChanged(from: old, to: new) }
         })
         syncCircleObservation(of: bar)
         platter.addSubview(capsule)
         refreshCapsule()
         // The first reposition judges the fit; a capsule the platter's clip would cut has stood down already.
-        guard chatsGlyph != nil else { return }
+        guard !capsuleUnfit else { return }
         host(true)
+        applyTwinState()
     }
 
     static func chatsGlyph(inPlatter platter: UIView) -> UIImageView? {
@@ -63,42 +70,126 @@ extension TabBarBadgeOverlay.OverlayView {
 
     /// Keeps one hidden-flag observation on the current circle pane, re-synced on every pane churn: the circle may
     /// be created after the attach (the first minimize), and unhiding it changes no sublayers, so only its own
-    /// observation can clear a mounted cover the moment a morph starts.
+    /// observation can hand the badge back to the riding capsule the moment a collapse starts.
     func syncCircleObservation(of bar: UITabBar) {
         let circle = circlePane(of: bar)
         guard circle !== observedCircle else { return }
         observedCircle = circle
-        circleObservation = circle?.layer.observe(\.isHidden) { [weak self] _, _ in
-            Task { @MainActor [weak self] in self?.updateCover() }
+        // A different circle is a different morph context: stale direction memory must not outlive it.
+        clearMorphMemory(reason: "circle pane changed")
+        circleObservation = circle?.layer.observe(\.isHidden, options: [.old, .new]) { [weak self] _, change in
+            let old = change.oldValue
+            let new = change.newValue
+            Task { @MainActor [weak self] in self?.circleHiddenChanged(from: old, to: new) }
         }
     }
 
-    /// A bar subview that is no state pane and not ours: the transient hosting a tab switch's flying glass. Only a
-    /// visible view counts — a permanent hidden chrome subview must never mount the cover at rest — but with no
-    /// laid-out requirement: the select portal measures zero width exactly while its glass crossfades, the very
-    /// frames the cover exists for (a width clause re-opened 1–2-frame dips, filmed).
-    func foreignPane(of bar: UITabBar) -> UIView? {
-        guard let platter else { return nil }
-        return bar.subviews.first { $0 !== switchCover && type(of: $0) != type(of: platter) && !$0.isHidden }
+    /// A real platter transition (same-value KVO writes are ignored): hiding is a collapse settle — the one
+    /// moment the missing-circle warning can be judged — and unhiding beside a visible circle is an expand
+    /// starting, the twin full from that first frame.
+    func platterHiddenChanged(from old: Bool?, to new: Bool?) {
+        guard let new, old != new else { return }
+        if new {
+            if observedCircle == nil, !warnedNoCircle {
+                warnedNoCircle = true
+                logger?.warning(.ui, "Tab badge overlay: collapse settled with no circle pane resolved")
+            }
+            clearMorphMemory(reason: "platter hid")
+        } else if let bar, circlePane(of: bar)?.isHidden == false {
+            setMorphMemory(.platter)
+        }
+        applyTwinState()
+        diagnose("platter hidden=\(new)")
     }
 
-    /// Mirrors the capsule at bar level during a pure tab switch — a transient pane up, no morph underway (the
-    /// circle pane hidden; an unresolved circle errs off, a brief blink over a bar-anchored ghost) — at the
-    /// capsule's own spot, so the twin is pixel-identical and the handoff invisible.
-    func updateCover() {
-        guard let bar else { return }
-        let covering = TabBadgePlacement.shouldCover(hosting: isHosting,
-                                                     capsuleVisible: !capsule.isHidden && capsule.window != nil,
-                                                     transientPresent: foreignPane(of: bar) != nil,
-                                                     circleHidden: circlePane(of: bar)?.isHidden)
-        guard covering else {
-            switchCover.removeFromSuperview()
+    /// A real circle transition: hiding is an expand settle; unhiding beside a visible platter is a collapse
+    /// starting, the capsule riding from that frame.
+    func circleHiddenChanged(from old: Bool?, to new: Bool?) {
+        guard let new, old != new else { return }
+        if new {
+            clearMorphMemory(reason: "circle hid")
+        } else if let platter, !platter.isHidden {
+            setMorphMemory(.circle)
+        }
+        applyTwinState()
+        diagnose("circle hidden=\(new)")
+    }
+
+    /// Writes the morph direction; any pane hiding or a newer write supersedes it, and the expand memory alone
+    /// also expires on `AppConfig.Shell.twinExpandMemoryGrace` — a reversed or abandoned expand fires no pane
+    /// event, so without the grace the twin would hang static over the reversed collapse until its settle.
+    func setMorphMemory(_ pane: TabBadgePlacement.Pane) {
+        lastUnhiddenPane = pane
+        morphMemoryGeneration += 1
+        diagnose("memory=\(pane)")
+        guard pane == .platter else { return }
+        let generation = morphMemoryGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppConfig.Shell.twinExpandMemoryGrace) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, self.morphMemoryGeneration == generation else { return }
+                self.lastUnhiddenPane = nil
+                self.applyTwinState()
+                self.diagnose("expand memory expired")
+            }
+        }
+    }
+
+    func clearMorphMemory(reason: @autoclosure () -> String) {
+        morphMemoryGeneration += 1
+        guard lastUnhiddenPane != nil else { return }
+        lastUnhiddenPane = nil
+        diagnose("memory cleared: \(reason())")
+    }
+
+    /// One owner for who draws the badge (`TabBadgePlacement.badgeDrawer`): the bar-level twin at the capsule's
+    /// converted spot, the riding capsule, or — stood down — neither carrier touched, because the sequenced
+    /// hand-back owns their removal and flipping them here would show a shaved capsule at a misfit spot for a
+    /// frame. Only a count of zero hides both imperatively; the twin and capsule never draw together (stacked
+    /// copies would double the antialiased edges), and the swap lands in one turn at the same spot.
+    func applyTwinState() {
+        if capsule.image == nil {
+            twin.isHidden = true
+            capsule.isHidden = true
             return
         }
-        switchCover.image = capsule.image
-        switchCover.bounds.size = capsule.bounds.size
-        switchCover.center = bar.convert(capsule.center, from: capsule.superview)
-        if switchCover.superview !== bar { bar.addSubview(switchCover) }
+        guard let bar, let platter, capsule.window != nil else { return }
+        let drawer = TabBadgePlacement.badgeDrawer(hosting: isHosting,
+                                                   platterHidden: platter.isHidden,
+                                                   circleHidden: circlePane(of: bar)?.isHidden,
+                                                   lastUnhidden: lastUnhiddenPane)
+        #if DEBUG
+        let wasShown = twin.superview != nil && !twin.isHidden
+        #endif
+        switch drawer {
+        case .standDown:
+            return
+        case .twin:
+            twin.image = capsule.image
+            twin.bounds.size = capsule.bounds.size
+            twin.center = bar.convert(capsule.center, from: platter)
+            if twin.superview !== bar { bar.addSubview(twin) }
+            twin.isHidden = false
+            capsule.isHidden = true
+        case .ride:
+            twin.isHidden = true
+            capsule.isHidden = false
+        }
+        #if DEBUG
+        let shows = drawer == .twin
+        if shows != wasShown {
+            diagnose("twin \(shows ? "on" : "off") drawer=\(drawer) memory=\(String(describing: lastUnhiddenPane))")
+        }
+        #endif
+    }
+
+    /// Debug-only: mirrors the event through the facade (an attached console and `SpyLogger` see it) and records
+    /// it with a 2 s bar-shape tail to the pullable file (`BadgePaneDiagnostics`); release builds evaluate nothing.
+    func diagnose(_ event: @autoclosure () -> String) {
+        #if DEBUG
+        let message = event()
+        logger?.debug(.ui, "Tab badge: \(message)")
+        BadgePaneDiagnostics.shared.note(message, bar: bar, twin: twin, capsule: capsule)
+        #endif
     }
 
     /// The bar joins the window a few frames after this view does (SwiftUI adds its UIKit backing separately),

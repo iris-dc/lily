@@ -4,7 +4,7 @@ Source: `lily/Features/Shell/Services/`
 
 ## Overview
 
-Two app-lifetime services and one renderer behind the shell. `ShellLists` owns the Home and Explore list view models so a tab never opens
+Two app-lifetime services, one renderer and a debug-only diagnostics recorder behind the shell. `ShellLists` owns the Home and Explore list view models so a tab never opens
 empty (each starts from its disk snapshot) and clears them when the session ends. `ShellSync` runs the per-user work
 once per scene phase and user in a load-bearing order: the session check against the pool, the account, the realtime
 connection, the caller's groups, the inbox, the block list, then the push offer and registration, with Explore's loads
@@ -15,7 +15,8 @@ floating bar honours only a label's title and `UIImage` and never moves its own 
 fallback; both share one capsule drawing, cached per count and colour.
 
 Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Services/ShellSync.swift`,
-`lily/Features/Shell/Services/TabBadgeRenderer.swift`.
+`lily/Features/Shell/Services/TabBadgeRenderer.swift`, `lily/Features/Shell/Services/BadgePaneDiagnostics.swift`
+(debug builds only).
 
 ## Interface
 
@@ -42,6 +43,22 @@ Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Ser
   badgeColor: UIColor) -> UIImage?` (2026-11-19) — the capsule alone at its natural size, for `TabBarBadgeOverlay`;
   `nil` at zero or less. `static func glyphSize(symbol: String) -> CGSize` — the glyph as the composite draws it,
   whose box the owner tuned the capsule offset against (the overlay anchors on it around the glyph view's centre).
+
+- `[BadgePaneDiagnostics.swift:BadgePaneDiagnostics]` (2026-11-20, `#if DEBUG` only — compiled out of Release and
+  Staging): `@MainActor final class`; `init(clock:now:flushDelay:writeSink:)` with production defaults behind
+  `static let shared` — the clock is the Chat `FrameClock` seam (`DisplayLinkFrameClock`, which gained a
+  `frameRate` init parameter; the sampler runs 15–30 fps) so `FakeFrameClock` drives the tests.
+  `note(_:bar:twin:capsule:)` records one event line and samples a 2 s tail (extended by repeated events) of the
+  bar's subviews — the twin excluded and labelled separately — plus one level of the window and any deeper view
+  outside the bar's subtree overlapping the bar (where a device may mount its selection glass), each as class
+  name, frame, hidden flag and presentation alpha, into a 4,000-line ring flushed by coalesced background writes
+  (the lines snapshot on the main actor, joined and written off it) to `Documents/badge-pane-diagnostics.log` —
+  pullable via `xcrun devicectl device copy from --device <name> --domain-type appDataContainer
+  --domain-identifier iris.lily --source Documents/badge-pane-diagnostics.log --destination .`; ids and class
+  names only, never content; the rate range, name truncation and entry caps are named statics. Exists because the
+  device's bar hierarchy diverges from the simulator's (the 2026-11-20 badge regressions reproduced only on the
+  phone). Ring trim, tail extension and flush coalescing are pinned by
+  `lilyTests/Shell/BadgePaneDiagnosticsTests.swift`.
 
 ## Invariants
 
