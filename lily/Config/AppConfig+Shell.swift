@@ -14,9 +14,5 @@ nonisolated extension AppConfig {
         /// (`TabBadgePlacement.isPlatter`); the minimized circle (48 pt), the ~100 pt tab-switch transient and a
         /// pre-layout zero-width pane never qualify.
         static let tabBarPlatterMinimumFraction: CGFloat = 0.5
-        /// How long the expand's morph-direction memory may stand while both panes stay visible: the expand
-        /// settles in about 0.7 s, so this grace only ever fires on an abandoned or reversed morph — handing the
-        /// badge back to the riding capsule instead of ghosting a static twin over a moving pane.
-        static let twinExpandMemoryGrace: TimeInterval = 1.0
     }
 }

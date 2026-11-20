@@ -28,7 +28,6 @@ final class BadgePaneDiagnostics {
     private let writeSink: @Sendable (String, URL) -> Void
     private var stopAt: CFTimeInterval = 0
     private weak var bar: UITabBar?
-    private weak var twin: UIView?
     private weak var capsule: UIView?
     private var flushPending = false
     private let writer = DispatchQueue(label: "badge-pane-diagnostics", qos: .utility)
@@ -49,9 +48,8 @@ final class BadgePaneDiagnostics {
     }
 
     /// Records one event and keeps sampling the bar for a short tail; a repeated event extends the tail.
-    func note(_ event: String, bar: UITabBar?, twin: UIView, capsule: UIView) {
+    func note(_ event: String, bar: UITabBar?, capsule: UIView) {
         self.bar = bar
-        self.twin = twin
         self.capsule = capsule
         append("event \(event)")
         stopAt = now() + Self.tailSeconds
@@ -68,10 +66,10 @@ final class BadgePaneDiagnostics {
         }
         guard let bar else { return }
         var line = "panes"
-        for pane in bar.subviews where pane !== twin {
+        for pane in bar.subviews {
             line += Self.entry(for: pane, in: bar)
         }
-        line += describe(twin, as: "twin") + describe(capsule, as: "cap")
+        line += describe(capsule, as: "cap")
         line += windowLine(for: bar)
         append(line)
     }

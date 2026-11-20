@@ -48,8 +48,8 @@ Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Ser
   Staging): `@MainActor final class`; `init(clock:now:flushDelay:writeSink:)` with production defaults behind
   `static let shared` — the clock is the Chat `FrameClock` seam (`DisplayLinkFrameClock`, which gained a
   `frameRate` init parameter; the sampler runs 15–30 fps) so `FakeFrameClock` drives the tests.
-  `note(_:bar:twin:capsule:)` records one event line and samples a 2 s tail (extended by repeated events) of the
-  bar's subviews — the twin excluded and labelled separately — plus one level of the window and any deeper view
+  `note(_:bar:capsule:)` records one event line and samples a 2 s tail (extended by repeated events) of the
+  bar's subviews plus one level of the window and any deeper view
   outside the bar's subtree overlapping the bar (where a device may mount its selection glass), each as class
   name, frame, hidden flag and presentation alpha, into a 4,000-line ring flushed by coalesced background writes
   (the lines snapshot on the main actor, joined and written off it) to `Documents/badge-pane-diagnostics.log` —

@@ -135,9 +135,9 @@ lily/
                  buttons (Models + Views + ViewModels)
     SignIn/      Sign-in sheet with provider buttons and the email form with the sign-up agreement footnote (Views + ViewModels)
     Shell/       MainTabView (TabView(selection:) over AppTab: Home, Explore, Chats; the unread badge on Chats; mounts the profile
-                 sheet above the per-tab language identity; 2026-11-07), TabBarBadgeOverlay (+Resolve: the find, twin and retry half) + TabBadgePlacement (the unread
-                 capsule riding the platter's collapse morph while a bar-level twin, chosen by the
-                 pane-state rule, draws the settled and expanding states; 2026-11-19/20), ProfileCornerButton (the
+                 sheet above the per-tab language identity; 2026-11-07), TabBarBadgeOverlay (+Resolve: the find and retry half) + TabBadgePlacement (the unread
+                 capsule riding inside the platter pane, the bar's own morphs carrying its motion and
+                 fade; 2026-11-19/20), ProfileCornerButton (the
                  top-left corner control on every tab root — initials or the person glyph — opening the profile sheet; 2026-11-07), HomeTab (the
                  Home stack), HomeView (hosts the create button's wizard through the shared presenter), HomeOverview (the segmented
                  Events | Tournaments | Groups panes, one at a time, with the per-segment create button; 2026-11-14), HomeContent
@@ -147,7 +147,7 @@ lily/
                  and opens a pending notification tap, and the per-user run: account, realtime, Mine, inbox, block list, push, in order,
                  with Explore's lists loading alongside; ShellLists: the Home and Explore list view models the root owns for the app's
                  lifetime, each seeded from its snapshot; BadgePaneDiagnostics: the debug-only pane recorder behind the
-                 badge twin, debug builds only; 2026-11-20)
+                 badge ride, debug builds only; 2026-11-20)
     Events/      Models (SportEvent with optional Price and SkillLevel, EventType and SkillLevel (both keeping a wire value this build does
                  not know as unknown), EventFilter + PersistedEventFilter, DateWindow, Participation, MapFraming + PickerSettlePolicy (the
                  map's opening region; when a settle is the user's choice), EventMapStack (the events on one map spot,

@@ -650,3 +650,25 @@ the asset catalog.
   circle resolved warns once per attach (the device signal that the class-equality pick failed); and the
   diagnostics walk the window above the bar — one level plus anything overlapping the bar — since the glass
   question is unanswerable from the bar's subviews.
+  (Superseded later the same day — next bullet: the device recording shows a bar that never flips its panes'
+  hidden flags, so this rule never fires there.)
+- **The badge saga closes: ride only (2026-11-20, the owner's device recording and restated spec).** A phone screen
+  recording of the real bar answered what no simulator film could: the device never flips its panes' hidden flags —
+  the pill slides left and fades into a LEFT-side minimized circle as one continuous animation, no pane swap — so
+  the pane-state rule above is structurally silent there (the twin never fired; the recorded "2" stood bar-anchored
+  and static while the pill moved under it). The owner also restated the spec exactly: the badge must behave
+  exactly like the bar's other icons — same scale, position and motion in every bar animation — with one difference
+  only, its opacity fading out as the menu shrinks and back in as it expands. That is the riding capsule by
+  construction and nothing else: a subview of the platter pane inherits every slide, scale, fade and glass pass the
+  icons get, on any hierarchy, with zero timing or state code of ours. The twin and all pane-state machinery are
+  deleted (`twinShows`, `badgeDrawer`, `Pane`, the hidden-flag observations, the morph memory and
+  `AppConfig.Shell.twinExpandMemoryGrace`); the ride keeps every hardening it earned — platter parenting at
+  `badgeZPosition`, the `isPlatter` and x-column trust rules, the find budget with its churn replenish and
+  stood-down warning, the capsule's eviction self-report, the `capsuleUnfit` fit guard re-hosting on refit, the
+  sequenced never-blank handoffs, the composite fallback, the VoiceOver seam — and `BadgePaneDiagnostics` stays
+  the debug-only device microscope (`note(_:bar:capsule:)`). In spec by the owner's rule, not defects: the flying
+  selection glass dims the badge during a select exactly as it dims the icons (filmed: through the glass flight the badge never
+  drops below 83% of its rest red; at the lens landing its red desaturates for one or two frames while its own
+  luminance holds above rest — a white veil, not a darkening — in the very frames the lens brightens the Chats
+  glyph itself by a quarter to a half), and the expand's glass settle reads on the badge as on the glyph. Films and the proportionality traces in
+  `item2-badge-ride-fix2/fix7-ride-final/`.

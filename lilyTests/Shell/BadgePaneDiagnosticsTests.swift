@@ -33,10 +33,10 @@ struct BadgePaneDiagnosticsTests {
         var time = 0.0
         let diagnostics = makeDiagnostics(clock: FakeFrameClock(), now: { time })
         let bar = UITabBar()
-        diagnostics.note("oldest", bar: bar, twin: UIView(), capsule: UIView())
+        diagnostics.note("oldest", bar: bar, capsule: UIView())
         for index in 0..<4200 {
             time += 0.01
-            diagnostics.note("evt\(index)", bar: bar, twin: UIView(), capsule: UIView())
+            diagnostics.note("evt\(index)", bar: bar, capsule: UIView())
         }
         #expect(diagnostics.lines.count == 4000, "the ring is bounded")
         #expect(diagnostics.lines.last?.contains("evt4199") == true, "the newest line survives")
@@ -48,11 +48,11 @@ struct BadgePaneDiagnosticsTests {
         let clock = FakeFrameClock()
         let diagnostics = makeDiagnostics(clock: clock, now: { time })
         let bar = UITabBar()
-        diagnostics.note("one", bar: bar, twin: UIView(), capsule: UIView())
+        diagnostics.note("one", bar: bar, capsule: UIView())
         #expect(clock.isRunning, "an event starts the tail")
         time = 1.5
         clock.tick(at: time)
-        diagnostics.note("two", bar: bar, twin: UIView(), capsule: UIView())
+        diagnostics.note("two", bar: bar, capsule: UIView())
         time = 2.5
         clock.tick(at: time)
         #expect(clock.isRunning, "a repeated event extends the tail past the first deadline")
@@ -70,7 +70,7 @@ struct BadgePaneDiagnosticsTests {
                                           onWrite: { counter.bump() })
         let bar = UITabBar()
         for _ in 0..<10 {
-            diagnostics.note("burst", bar: bar, twin: UIView(), capsule: UIView())
+            diagnostics.note("burst", bar: bar, capsule: UIView())
         }
         try await Task.sleep(for: .milliseconds(400))
         #expect(counter.calls == 1, "appends inside the delay coalesce into one buffered write")
