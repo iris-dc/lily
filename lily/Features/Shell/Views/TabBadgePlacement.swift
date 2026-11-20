@@ -23,6 +23,14 @@ enum TabBadgePlacement {
         return columns[chatIndex]
     }
 
+    /// Whether the bar-level twin covers the capsule: only during a pure tab switch — hosting, a visible capsule,
+    /// a transient pane up and the minimized circle hidden. A morph has the circle visible, so the cover can never
+    /// ghost over a collapsing platter; an unresolved circle (`nil`) errs off — a brief blink over a bar-anchored
+    /// ghost.
+    static func shouldCover(hosting: Bool, capsuleVisible: Bool, transientPresent: Bool, circleHidden: Bool?) -> Bool {
+        hosting && capsuleVisible && transientPresent && circleHidden == true
+    }
+
     /// Whether a pane is wide enough to be the expanded platter: the platter is the one pane that scales with the
     /// bar (about three quarters of it on every device), while the minimized circle (48 pt), the ~100 pt tab-switch
     /// transient and a pre-layout zero-width pane all sit under half — and an unlaid-out bar trusts nothing.

@@ -42,4 +42,22 @@ struct TabBadgePlacementTests {
         #expect(!TabBadgePlacement.isPlatter(paneWidth: 0, barWidth: 375))
         #expect(!TabBadgePlacement.isPlatter(paneWidth: 300, barWidth: 0))
     }
+
+    /// The cover shows only during a pure tab switch: hosting, a visible capsule, a transient pane up and the
+    /// circle hidden. A visible circle means a morph is running (the cover would ghost over the collapsing
+    /// platter), and an unresolved circle errs off.
+    @Test func theCoverShowsOnlyDuringAPureTabSwitch() {
+        func covers(_ hosting: Bool, _ capsule: Bool, _ transient: Bool, _ circleHidden: Bool?) -> Bool {
+            TabBadgePlacement.shouldCover(hosting: hosting,
+                                          capsuleVisible: capsule,
+                                          transientPresent: transient,
+                                          circleHidden: circleHidden)
+        }
+        #expect(covers(true, true, true, true))
+        #expect(!covers(false, true, true, true))
+        #expect(!covers(true, false, true, true))
+        #expect(!covers(true, true, false, true))
+        #expect(!covers(true, true, true, false))
+        #expect(!covers(true, true, true, nil))
+    }
 }

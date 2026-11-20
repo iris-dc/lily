@@ -15,7 +15,7 @@ between a stack and the iPad split view. Lists are read from `dependencies.lists
 `EventListView`, `EventDetailView`, `GroupCarousel`, `TournamentCarousel`) belong to other features.
 
 Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views/TabBarBadgeOverlay.swift`,
-`lily/Features/Shell/Views/TabBadgePlacement.swift`, `lily/Features/Shell/Views/ProfileCornerButton.swift`,
+`lily/Features/Shell/Views/TabBarBadgeOverlay+Resolve.swift`, `lily/Features/Shell/Views/TabBadgePlacement.swift`, `lily/Features/Shell/Views/ProfileCornerButton.swift`,
 `lily/Features/Shell/Views/HomeTab.swift`,
 `lily/Features/Shell/Views/HomeView.swift`, `lily/Features/Shell/Views/HomeOverview.swift`,
 `lily/Features/Shell/Views/ExploreTab.swift`, `lily/Features/Shell/Views/ChatTab.swift`,
@@ -74,7 +74,17 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   morph — a presentation-level animation that never touches model geometry — carries the capsule's motion, fade
   and hiding, with no animation code of ours; the minimized circle pane never contains it, so the bare circle
   stays bare; the platter clips to its bounds, so a capsule the clip would cut stands down to the composite
-  instead — the fit judged at every reposition on model geometry, which the morph never moves. KVO (`CALayer` is
+  instead — the fit judged at every reposition on model geometry, which the morph never moves. A tab switch mounts
+  a transient bar-level pane hosting the flying selection glass above the platter — beyond any platter child's
+  z-position — which rendered the capsule dimmed through the glass for its few frames (the 2026-11-20 blink):
+  `updateCover` (in `TabBarBadgeOverlay+Resolve.swift`, the find, cover and retry half split under the file length
+  limit) mirrors the capsule as a bar-level twin at `badgeZPosition`, pixel-identical at the capsule's own spot,
+  exactly while a transient pane is up and the circle pane is hidden (`TabBadgePlacement.shouldCover`) — never
+  during a morph, so a collapse cannot see a bar-anchored ghost; panes are told apart by runtime class identity
+  against the platter's class, the circle as the narrowest same-class pane, a transient counting only while
+  visible (no width requirement: the select portal measures zero width exactly during its glass crossfade, the
+  frames the cover exists for), and the circle's hidden-flag observation re-syncs on every pane churn, so a circle
+  created after the attach still clears a mounted cover. KVO (`CALayer` is
   KVO-compliant where `UIView` is not): the glyph layer's `bounds`/`position` re-position the capsule when layout
   really moves it, and a `sublayers` churn on the bar or a pane re-attaches — only when the platter itself left
   the bar or the resolved host died (the transient pane joins and leaves on every tab switch, so pane-set
@@ -166,7 +176,7 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
 - `[TabBarBadgeOverlay.swift:TabBarBadgeOverlay]` (2026-11-19): the capsule is a subview of the expanded platter
   pane, so the pane's own morph carries its motion and visibility — in lockstep by construction, with no fade or
   timing code in the app (the `TabBarCollapse` detector and the fade knobs were deleted with their one caller);
-  the minimized circle pane never holds it, so the bare circle never shows a count. The fail-safe direction:
+  the minimized circle pane never holds it, so the bare circle never shows a count. The switch cover shows iff hosting, the capsule visible, a transient (non-pane-class, visible; zero-width counts — the select portal is unlaid-out during its crossfade) bar subview present and the circle pane (the narrowest same-class pane) hidden — the pure `TabBadgePlacement.shouldCover`, pinned in its suite; an unresolved circle errs off (a brief blink over a bar-anchored ghost), and the cover leaves with the transient's churn, the circle unhiding, a stand-down and the teardown. The fail-safe direction:
   whenever the hierarchy is missing or not the expected shape (no `UITabBar`, the find budget runs out —
   replenished by the next churn, the exhaustion logged at warning —, `TabBadgePlacement.chatsColumn` distrusts the
   item columns, a re-created item loses the glyph or evicts the capsule), `onHosting` reports `false` and
@@ -217,7 +227,7 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `[HomeTab.swift:HomeTab]` and `[ChatTab.swift:ChatTab]` bind `homePath` and `chatPath`.
 - `[MainTabView.swift:MainTabView.tabLabel(for:symbol:)]`: builds `UIImage(systemName:withConfiguration:)` glyphs (UIKit); `chatTabLabel(count:selected:)` asks the `@State` `TabBadgeRenderer` for the badged composite, rendered once per count and colour and cached (2026-11-12).
 - `[TabBarBadgeOverlay.swift:TabBarBadgeOverlay.OverlayView]`: adds one capsule `UIImageView` to the found bar's
-  expanded platter pane and installs KVO observations on the bar's layer, the panes' sublayers and the Chats
+  expanded platter pane (and its bar-level twin during tab-switch transients) and installs KVO observations on the bar's layer, the panes' sublayers, the circle pane's hidden flag and the Chats
   glyph's layer (replaced only when the observed pane set changed or the resolved host died; released with the
   view, the capsule removed on teardown); logs one warning (`.ui`) when a find budget is spent; animates nothing
   itself; no polling once the bar is found, no network, disk or `UserDefaults` access.
@@ -238,5 +248,5 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   overlay's placement and trust rules in `lilyTests/Shell/TabBadgePlacementTests.swift` and
   the pane rule in `lilyTests/Changes/ListStateTests.swift`; the screens
   themselves are exercised by the UI tests, `./scripts/ci.sh ui` and `./scripts/ci.sh ui-ipad`; the capsule's ride —
-  motion and fade carried by the platter's own morph — is UIKit runtime behaviour, proven on film —
-  `docs/notes/design-and-ui.md` 2026-11-19).
+  motion and fade carried by the platter's own morph — and the switch cover are UIKit runtime behaviour, proven on film —
+  `docs/notes/design-and-ui.md` 2026-11-19 and 2026-11-20).

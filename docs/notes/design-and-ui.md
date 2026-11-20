@@ -583,3 +583,34 @@ the asset catalog.
   `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-19/item2-badge-ride/` (collapse and
   expand films and strips, the 1:1 morph frames, the 17 Pro six-switch red-pixel trace, the rest crops against the
   owner baseline, the lens-bloom iteration).
+
+- **The switch cover: the badge no longer blinks through a tab switch (2026-11-20, owner regression report on the
+  ride).** Two symptoms on the committed ride (b1d982d): (A) selecting Chats from any tab blinked the badge, and
+  (B) on the owner's phone the badge read ~90% for about a second after an expand. Probed first, not assumed: the
+  temporary overlay probe (every host flip, resolve failure, fit trip and churn cause logged; deleted after) shows
+  the b1d982d trust gates never fire — no transient stand-downs, no fit trips, the capsule's presentation opacity
+  1.00 throughout — so the blink was not our handoff. The film shows the cause: a tab switch mounts a transient
+  bar-level pane (`_UIPortalView`/`_UIReparentingView`, crossfading 0.18 → 1.0 over ~0.5 s) hosting the flying
+  selection glass ABOVE the platter, where no platter child's z-position competes, and the glass renders the
+  capsule dimmed/desaturated for its frames — 1–2 frame dips to ~10% of the badge's red count at every select
+  (`item2-badge-ride-fix2/`). The fix mirrors, never moves: `updateCover` (the overlay's
+  `TabBarBadgeOverlay+Resolve.swift` half, split under the file length limit) shows a bar-level twin of the capsule
+  at `badgeZPosition`, pixel-identical at the capsule's own spot, exactly while a transient pane is up AND the
+  minimized circle pane is hidden — so a pure switch is covered above the glass and a morph (circle visible) never
+  sees a bar-anchored ghost; the twin leaves with the transient's churn, the circle unhiding, a stand-down or the
+  teardown, and an unresolved circle errs off (a brief blink over a ghost); the show rule is the pure
+  `TabBadgePlacement.shouldCover`, pinned in its suite. Panes are told apart by runtime class identity against the
+  platter's own class (no private names): the circle is the narrowest same-class pane, a transient counts only
+  while visible but regardless of width — the select portal measures zero width exactly during its glass crossfade,
+  and a laid-out requirement re-opened 1–2-frame dips on both devices (filmed in fix3-verify, repaired same day) —
+  and the circle's hidden-flag observation re-syncs on every pane churn so a circle created after the attach still
+  clears a mounted cover (the cover review's hardening, same day). Re-filmed: the select-walk red trace has zero
+  dips (min 1,108 vs the regression's min 119 across four dip episodes), the cover engages only around switches
+  (probe log), and the collapse ride, bare circle and 2-frame expand ramp are unchanged. Symptom B did not
+  reproduce on the simulator: the expand reaches full badge brightness within 3 frames (mean-brightness trace flat
+  after), the lingering circle pane's content is invisible ~2 frames after the expand, no code path writes the
+  capsule's or cover's alpha (grep), and no host flip or fit trip fires — the remaining suspect is the device's
+  own glass-settle tail on the platter's content, which the badge follows because riding the pane's own animation
+  is the owner's stated requirement; if the badge must snap ahead of the panel's tail, that is an owner decision
+  against the lockstep rule, not a defect of the ride. Evidence (films, probe logs, traces, zooms, notes) under
+  `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-19/item2-badge-ride-fix2/`.

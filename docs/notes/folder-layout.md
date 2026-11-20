@@ -135,8 +135,9 @@ lily/
                  buttons (Models + Views + ViewModels)
     SignIn/      Sign-in sheet with provider buttons and the email form with the sign-up agreement footnote (Views + ViewModels)
     Shell/       MainTabView (TabView(selection:) over AppTab: Home, Explore, Chats; the unread badge on Chats; mounts the profile
-                 sheet above the per-tab language identity; 2026-11-07), TabBarBadgeOverlay + TabBadgePlacement (the unread capsule riding inside the bar's
-                 platter pane, carried by its collapse morph; 2026-11-19), ProfileCornerButton (the
+                 sheet above the per-tab language identity; 2026-11-07), TabBarBadgeOverlay (+Resolve: the find, switch-cover and retry half) + TabBadgePlacement (the unread
+                 capsule riding inside the bar's platter pane, carried by its collapse morph, its bar-level twin
+                 covering tab-switch transients; 2026-11-19/20), ProfileCornerButton (the
                  top-left corner control on every tab root — initials or the person glyph — opening the profile sheet; 2026-11-07), HomeTab (the
                  Home stack), HomeView (hosts the create button's wizard through the shared presenter), HomeOverview (the segmented
                  Events | Tournaments | Groups panes, one at a time, with the per-segment create button; 2026-11-14), HomeContent
