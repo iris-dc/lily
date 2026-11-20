@@ -16,8 +16,8 @@ struct MainTabView: View {
     @Environment(\.layoutMode) private var layoutMode
     /// Kept across body runs, so each count's image is rendered once, never per frame.
     @State private var badgeRenderer = TabBadgeRenderer()
-    /// Raised by `TabBarBadgeOverlay` once it rides the capsule inside the bar's expanded platter pane (whose own
-    /// morph moves and fades it): the label then hands the bar the plain template glyph. While `false` — startup,
+    /// Raised by `TabBarBadgeOverlay` once it rides its capsules inside the bar's Chats items (every treatment
+    /// the glyph gets carries them): the label then hands the bar the plain template glyph. While `false` — startup,
     /// regular widths, a lost bar signal — the count is composited into the glyph as before, so it is never lost.
     @State private var overlayCarriesBadge = false
 

@@ -95,7 +95,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   never count, as Laurel's `tournaments.max-per-user` says), `scoreRange = 0...999`;
   `maxEntries(for:)`, `minEntries(for:)`, `entriesRange(for: TournamentFormat) -> ClosedRange<Int>` (an unknown
   format takes single elimination's bounds; Laurel validates the real ones).
-- Smaller areas: `Inbox.pageSize = 50`; `Shell` (`lily/Config/AppConfig+Shell.swift`): `tabBarFindAttempts = 20`, `tabBarFindRetryDelay = 0.1` (`TabBarBadgeOverlay`'s bounded find of the UIKit bar, the budget replenished by a hierarchy churn, 2026-11-19), `tabBarPlatterMinimumFraction = 0.5` (the platter scales with the bar, about three quarters of it, so only a pane spanning at least half the bar hosts the capsule — `TabBadgePlacement.isPlatter`; the circle-width bound and the fade knobs were deleted the same day with `TabBarCollapse`: the capsule rides inside the platter pane and nothing times the morph); `Moderation` (`commentMaxLength = 500`, `maxBlocks = 500`,
+- Smaller areas: `Inbox.pageSize = 50`; `Shell` (`lily/Config/AppConfig+Shell.swift`): `tabBarFindAttempts = 20`, `tabBarFindRetryDelay = 0.1` (`TabBarBadgeOverlay`'s bounded find of the UIKit bar, the budget replenished by a hierarchy churn, 2026-11-19), `tabBarPlatterMinimumFraction = 0.5` (the platter scales with the bar, about three quarters of it, so only a pane spanning at least half the bar hosts the capsules — `TabBadgePlacement.isPlatter`; the circle-width bound and the fade knobs were deleted the same day with `TabBarCollapse`: the capsules ride inside the platter's Chats items and nothing times the morph); `Moderation` (`commentMaxLength = 500`, `maxBlocks = 500`,
   `supportEmail = "support@iskra.red"`, `termsURL` and `privacyURL` = `API.productionBaseURL.appending(path:)` `terms` / `privacy`); `People.maxConversations = 200`, `People.maxSharedHistory = 20` (Laurel's `profile.max-shared-history`); `Feedback`
   (`messageMaxLength = 2000`, `replyEmailMaxLength = 254`, `detailMaxLength = 80`); `Currency` (`defaultCode = "EUR"`,
   `offered`, 14 codes); `Push` (`reregisterInterval = 24 * 60 * 60`, `tokenTimeout = .seconds(10)`, `platform = "ios"`,
@@ -219,11 +219,12 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   6 → 4 on 2026-11-13, the seventh round and the chat-corrections round after it: the capsule 3 pt and then 2 pt
   higher, the left overlap kept; the 2026-11-17 inward pull to (−5, +5) and its `minimizedCircleRadius` /
   `minimizedCircleClearance` tokens were reverted 2026-11-19, the owner's call — on compact widths the count
-  rides `TabBarBadgeOverlay` inside the bar's platter pane, see the Shell Views contract —,
+  rides `TabBarBadgeOverlay` inside the Chats item of each of the platter's item trees, see the Shell Views
+  contract —,
   `badgeGlyphPointSize` 23, `badgeHeight` 20, `badgeFontSize` 13, `badgeHorizontalPadding` 5, `badgeCountCap` 99,
-  `badgeTextColor` white, `unselectedGlyphColor` white, `badgeZPosition` 10 000 — the overlay capsule's layer
-  z-position above the platter's selection lens, whose glass magnifies and blooms a capsule under it
-  (2026-11-19; the fade knobs and `paneVisibleAlpha` were deleted with the hand-run fade the same day) —,
+  `badgeTextColor` white, `unselectedGlyphColor` white (2026-11-19: the fade knobs and `paneVisibleAlpha` were
+  deleted with the hand-run fade; 2026-11-20: `badgeZPosition` with the platter-sibling mount, the capsules now
+  living inside the Chats items, whose subtrees the selection lens copies),
   and `Layout.profileCornerSize` 36 (the corner profile button's circle, 2026-11-07) with
   `Layout.profileCornerCapsuleInset` 10 (the hidden capsule's content inset the circle backs out of, owner
   correction 2026-11-08), all in `lily/Config/DesignTokens+Shell.swift`.
@@ -357,7 +358,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - `DesignTokens` aliases keep one source: `Layout.tournamentTileWidth = groupTileWidth`, `Symbols.currency = Symbols.price`. `Symbols.fileGlyphs` is ordered,
   first match wins, `Symbols.file` for the rest. `Aurora.driftPeriods` are pairwise incommensurate, `driftWeights` sum
   to one, `grainSeed` is deterministic so every launch and test sees the same grain (`lily/Config/DesignTokens.swift:DesignTokens.Aurora`).
-  `TabBar.symbolWeight` exists because the iOS 26 tab bar ignores `symbolVariants` and `fontWeight`; the `TabBar` badge constants (2026-11-12) exist because the bar also never moves its own badge (`badgePositionAdjustment` probed at zero effect), so the Chats count is drawn into the glyph image (`TabBadgeRenderer`), and a drawn bitmap must name its own symbol size and colours (`badgeGlyphPointSize`, `unselectedGlyphColor`) since the bar neither resizes nor tints it; the minimized bar's 48 pt circle draws the tab's `UIImage` unscaled, so on compact widths the count rides `TabBarBadgeOverlay` — the capsule inside the bar's platter pane, carried by its collapse morph, above the selection lens (`badgeZPosition`) — and the composite stays the fallback when the overlay finds no bar to ride (2026-11-19, the Shell Views contract).
+  `TabBar.symbolWeight` exists because the iOS 26 tab bar ignores `symbolVariants` and `fontWeight`; the `TabBar` badge constants (2026-11-12) exist because the bar also never moves its own badge (`badgePositionAdjustment` probed at zero effect), so the Chats count is drawn into the glyph image (`TabBadgeRenderer`), and a drawn bitmap must name its own symbol size and colours (`badgeGlyphPointSize`, `unselectedGlyphColor`) since the bar neither resizes nor tints it; the minimized bar's 48 pt circle draws the tab's `UIImage` unscaled, so on compact widths the count rides `TabBarBadgeOverlay` — a capsule inside each item tree's Chats item, carried by the bar's own morphs and copied by the selection lens with the glyph — and the composite stays the fallback when the overlay finds no bar to ride (2026-11-19/20, the Shell Views contract).
 - A UI test that reads an `AccessibilityIdentifiers` literal mirrors it by hand in `lilyUITests` (as it does the launch arguments): a rename
   here must be repeated there (`lily/Config/AccessibilityIdentifiers.swift:AccessibilityIdentifiers`). Only `introPager`
   is mirrored from +Landing, plus the segmented Home's `home-segment` and `home-create` from +Home (the Home walks

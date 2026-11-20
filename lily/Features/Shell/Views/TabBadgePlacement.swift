@@ -6,7 +6,7 @@ enum TabBadgePlacement {
     /// The capsule's centre: the owner-tuned `badgeCenterOffset` from the top-right corner of the glyph the composite
     /// draws (`badgeGlyphPointSize`), anchored on the glyph view's centre — the bar centres the glyph in its item
     /// whichever image it holds, so the handoff from the composited label moves nothing. Pure geometry around the
-    /// centre the caller measured, in whatever space it measured it (the overlay converts into platter coordinates).
+    /// centre the caller measured, in whatever space it measured it (the overlay feeds each glyph's centre in its item's own coordinates, where its capsule mounts).
     static func capsuleCenter(glyphCenter: CGPoint, glyphSize: CGSize) -> CGPoint {
         let offset = DesignTokens.TabBar.badgeCenterOffset
         return CGPoint(x: glyphCenter.x + glyphSize.width / 2 + offset.x,
@@ -21,6 +21,19 @@ enum TabBadgePlacement {
         let columns = Set(itemColumns).sorted()
         guard columns.count == expectedTabs, (0..<expectedTabs).contains(chatIndex) else { return nil }
         return columns[chatIndex]
+    }
+
+    /// How many parallel item trees the platter draws: every x-column must carry the same number of controls
+    /// (the trees are identical copies), or nothing is trusted — a lone extra control would mount a capsule on a
+    /// partial tree and pin the count to whichever copy happened to resolve.
+    static func treeCount(itemColumns: [CGFloat], expectedTabs: Int) -> Int? {
+        let columns = Set(itemColumns).sorted()
+        guard columns.count == expectedTabs else { return nil }
+        var counts: [CGFloat: Int] = [:]
+        for column in itemColumns { counts[column, default: 0] += 1 }
+        let sizes = Set(counts.values)
+        guard sizes.count == 1, let size = sizes.first else { return nil }
+        return size
     }
 
     /// Whether a pane is wide enough to be the expanded platter: the platter is the one pane that scales with the

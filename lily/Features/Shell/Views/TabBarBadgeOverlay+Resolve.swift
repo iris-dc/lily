@@ -1,49 +1,165 @@
 import UIKit
 
-/// The find and retry half of the overlay, split from the main file under the length limit; the stored state
-/// lives in `TabBarBadgeOverlay.swift` and is internal for this extension.
+/// The find, mount and retry half of the overlay, split from the main file under the length limit; the stored
+/// state lives in `TabBarBadgeOverlay.swift` and is internal for this extension.
 extension TabBarBadgeOverlay.OverlayView {
-    /// The Chats item's glyph: inside the expanded platter — the one pane spanning most of the bar
-    /// (`TabBadgePlacement.isPlatter`), so the ~100 pt tab-switch transient and a pre-layout zero-width pane never
-    /// host — where the item views are the controls in bar order: two parallel trees with identical frames, so the
-    /// pick is by x-column (`TabBadgePlacement`). The capsule joins the platter itself, above both item trees,
-    /// under the platter's own morph.
-    func resolveGlyph(in bar: UITabBar) {
-        chatsGlyph = nil
-        capsuleUnfit = false
+    /// The Chats items' glyphs: inside the expanded platter — the one pane spanning most of the bar
+    /// (`TabBadgePlacement.isPlatter`), so the minimized circle, the ~100 pt tab-switch transient and a pre-layout
+    /// zero-width pane never host — where the item views are the controls in bar order, two parallel trees at
+    /// identical frames (`SelectedContentView` and `ContentView`). Whole trees only: the column pick and the
+    /// uniform-multiplicity rule are `TabBadgePlacement`'s, and every Chats item must have its glyph — a partial
+    /// mount would pin the count to whichever tree happened to resolve. A success replaces the previous hosts
+    /// only after the new capsules are mounted, so the swap never blanks.
+    func resolveGlyphs(in bar: UITabBar) {
         platter = bar.subviews
             .filter { TabBadgePlacement.isPlatter(paneWidth: $0.bounds.width, barWidth: bar.bounds.width) }
             .max(by: { $0.bounds.width < $1.bounds.width })
-        if let platter { chatsGlyph = Self.chatsGlyph(inPlatter: platter) }
-        guard let platter, let glyph = chatsGlyph else {
-            // The badge stays up through `host(false)`'s sequenced removal: never a blank count.
-            host(false)
-            scheduleRetry(reason: "Chats glyph not resolved")
+        guard let platter else {
+            resolveFailed(reason: "no expanded platter")
             return
         }
-        observations.append(glyph.layer.observe(\.bounds) { [weak self] _, _ in
-            Task { @MainActor [weak self] in self?.reposition() }
-        })
-        observations.append(glyph.layer.observe(\.position) { [weak self] _, _ in
-            Task { @MainActor [weak self] in self?.reposition() }
-        })
-        platter.addSubview(capsule)
-        refreshCapsule()
+        let glyphs = Self.chatsGlyphs(inPlatter: platter)
+        diagnose("resolved \(glyphs.count) item glyphs")
+        guard !glyphs.isEmpty else {
+            resolveFailed(reason: "Chats glyphs not resolved")
+            return
+        }
+        let previous = hosts
+        hosts = glyphs.map { glyph in
+            observeLayout(of: glyph)
+            return BadgeHost(glyph: glyph) { [weak self] in self?.capsuleWasEvicted() }
+        }
+        remount()
+        for old in previous { old.capsule.onDetach = nil }
+        unmountCapsules(previous.map(\.capsule))
+        sweepLeaving()
+        registerCapsules()
+        refreshCapsules()
         // The first reposition judges the fit; a capsule the platter's clip would cut has stood down already.
         guard !capsuleUnfit else { return }
         host(true)
     }
 
-    static func chatsGlyph(inPlatter platter: UIView) -> UIImageView? {
+    /// The mounted capsules are retired, not stripped: they leave in the composite's commit (`host(false)`'s
+    /// transaction completion, or the next successful mount's sweep), so the count never blanks while the search
+    /// runs again.
+    private func resolveFailed(reason: String) {
+        retireHosts()
+        host(false)
+        scheduleRetry(reason: reason)
+    }
+
+    /// Every item tree's Chats glyph, one per parallel tree, in subview order; `[]` for any shape that is not
+    /// whole trees.
+    static func chatsGlyphs(inPlatter platter: UIView) -> [UIImageView] {
         let controls = descendants(of: UIControl.self, in: platter).filter { $0.bounds.width > 0 }
+        let columns = controls.map { $0.frame.minX.rounded() }
         guard let chatIndex = AppTab.shown.firstIndex(of: .chat),
-              let column = TabBadgePlacement.chatsColumn(itemColumns: controls.map { $0.frame.minX.rounded() },
+              let column = TabBadgePlacement.chatsColumn(itemColumns: columns,
                                                          chatIndex: chatIndex,
-                                                         expectedTabs: AppTab.shown.count) else { return nil }
-        return controls.lazy
+                                                         expectedTabs: AppTab.shown.count),
+              let trees = TabBadgePlacement.treeCount(itemColumns: columns,
+                                                      expectedTabs: AppTab.shown.count) else { return [] }
+        let glyphs = controls
             .filter { $0.frame.minX.rounded() == column }
             .compactMap { descendants(of: UIImageView.self, in: $0).first }
-            .first
+        return glyphs.count == trees ? glyphs : []
+    }
+
+    /// A host item died with its capsule aboard — nothing observed announces a wholesale item re-creation,
+    /// so each capsule reports its own eviction. Deferred, because `didMoveToWindow` lands inside UIKit's
+    /// hierarchy surgery, and re-checked at delivery: a teardown or stand-down removes capsules on purpose
+    /// (`isHosting` is already false then) and must not re-attach. The composite takes the count first
+    /// (a dead item shows no capsule, so the glyph must carry it through the re-resolve), then the fresh
+    /// resolve hands back.
+    func capsuleWasEvicted() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.window != nil, self.isHosting,
+                  self.hosts.contains(where: { $0.capsule.window == nil }) else { return }
+            self.diagnose("evicted")
+            self.host(false)
+            self.churnedAttach()
+        }
+    }
+
+    /// A glyph died or left its item while repositioning: the same route as an eviction — the composite
+    /// carries the count while a deferred fresh resolve runs; the fit judgment is skipped that pass (judging
+    /// a dead tree could strand or mis-trip the live one).
+    func glyphDied() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.window != nil,
+                  self.hosts.contains(where: { $0.glyph == nil || $0.glyph?.superview == nil }) else { return }
+            self.diagnose("glyph died")
+            if self.isHosting { self.host(false) }
+            self.churnedAttach()
+        }
+    }
+
+    /// One pass per turn: a layout burst fires every glyph observation at once, and each pass walks every
+    /// host anyway.
+    func scheduleReposition() {
+        guard !repositionPending else { return }
+        repositionPending = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.repositionPending = false
+            self.reposition()
+        }
+    }
+
+    // MARK: - The hosts' lifecycle
+
+    /// Failure paths: the capsules stay mounted (silenced) until the composite's commit sweeps them, and the
+    /// emptied hosts let the retry's re-attach guard pass.
+    func retireHosts() {
+        for badgeHost in hosts { badgeHost.capsule.onDetach = nil }
+        leavingCapsules += hosts.map(\.capsule)
+        hosts = []
+        registerCapsules()
+    }
+
+    /// Teardown: the overlay leaves the window, so everything goes now.
+    func removeHosts() {
+        for badgeHost in hosts { badgeHost.capsule.onDetach = nil }
+        unmountCapsules(hosts.map(\.capsule))
+        hosts = []
+        sweepLeaving()
+        registerCapsules()
+    }
+
+    func sweepLeaving() {
+        unmountCapsules(leavingCapsules)
+        leavingCapsules = []
+    }
+
+    func unmountCapsules(_ capsules: [TabBadgeCapsuleView]) {
+        for capsule in capsules { capsule.removeFromSuperview() }
+    }
+
+    /// Mounts every capsule directly above its tree's glyph — the spot the lens copies.
+    func remount() {
+        for badgeHost in hosts {
+            guard let glyph = badgeHost.glyph, let item = glyph.superview else { continue }
+            if badgeHost.capsule.superview !== item { item.insertSubview(badgeHost.capsule, aboveSubview: glyph) }
+        }
+    }
+
+    /// The diagnostics tail samples the live capsules even around a hand-off, so the registration follows every
+    /// hosts change; debug builds only.
+    func registerCapsules() {
+        #if DEBUG
+        BadgePaneDiagnostics.shared.register(capsules: hosts.map(\.capsule))
+        #endif
+    }
+
+    /// Both layout key paths of a glyph coalesce into one reposition pass per turn (`scheduleReposition`).
+    private func observeLayout(of glyph: UIImageView) {
+        observations.append(glyph.layer.observe(\.bounds) { [weak self] _, _ in
+            Task { @MainActor [weak self] in self?.scheduleReposition() }
+        })
+        observations.append(glyph.layer.observe(\.position) { [weak self] _, _ in
+            Task { @MainActor [weak self] in self?.scheduleReposition() }
+        })
     }
 
     /// Debug-only: mirrors the event through the facade (an attached console and `SpyLogger` see it) and records
@@ -52,7 +168,7 @@ extension TabBarBadgeOverlay.OverlayView {
         #if DEBUG
         let message = event()
         logger?.debug(.ui, "Tab badge: \(message)")
-        BadgePaneDiagnostics.shared.note(message, bar: bar, capsule: capsule)
+        BadgePaneDiagnostics.shared.note(message, bar: bar, capsules: hosts.map(\.capsule))
         #endif
     }
 
@@ -69,7 +185,7 @@ extension TabBarBadgeOverlay.OverlayView {
         findBudget -= 1
         DispatchQueue.main.asyncAfter(deadline: .now() + AppConfig.Shell.tabBarFindRetryDelay) { [weak self] in
             MainActor.assumeIsolated {
-                guard let self, self.window != nil, self.chatsGlyph == nil else { return }
+                guard let self, self.window != nil, self.hosts.isEmpty else { return }
                 self.attach()
             }
         }

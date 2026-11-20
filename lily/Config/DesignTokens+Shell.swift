@@ -26,10 +26,6 @@ nonisolated extension DesignTokens {
         /// The composite draws as `.alwaysOriginal` (a template would tint the badge with the glyph), so the glyph's
         /// colour is drawn in: this unselected, matching the bar's own template tint, the accent while selected.
         static let unselectedGlyphColor: UIColor = .white
-        /// The overlay capsule renders above every platter sibling (`TabBarBadgeOverlay`): the selection lens is
-        /// re-added over the selected item and its glass magnifies and blooms a capsule under it; a layer z-position
-        /// outranks subview order, which UIKit's re-adds would otherwise win.
-        static let badgeZPosition: CGFloat = 10_000
     }
 }
 

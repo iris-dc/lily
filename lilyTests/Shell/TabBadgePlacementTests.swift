@@ -31,6 +31,17 @@ struct TabBadgePlacementTests {
         #expect(TabBadgePlacement.chatsColumn(itemColumns: [4, 90, 176], chatIndex: 3, expectedTabs: 3) == nil)
     }
 
+    /// Both parallel trees must be whole: every column carries the same number of controls, or the overlay
+    /// resolves nothing and retries — a partial tree would pin the count to whichever copy happened to resolve.
+    @Test func everyColumnMustCarryTheSameNumberOfControls() {
+        #expect(TabBadgePlacement.treeCount(itemColumns: [4, 90, 176, 4, 90, 176], expectedTabs: 3) == 2)
+        #expect(TabBadgePlacement.treeCount(itemColumns: [4, 90, 176], expectedTabs: 3) == 1)
+        #expect(TabBadgePlacement.treeCount(itemColumns: [4, 90, 176, 4], expectedTabs: 3) == nil)
+        #expect(TabBadgePlacement.treeCount(itemColumns: [4, 90, 176, 4, 90], expectedTabs: 3) == nil)
+        #expect(TabBadgePlacement.treeCount(itemColumns: [], expectedTabs: 3) == nil)
+        #expect(TabBadgePlacement.treeCount(itemColumns: [4, 90], expectedTabs: 3) == nil)
+    }
+
     /// The platter is the one pane that scales with the bar (about three quarters of it on every device): the
     /// minimized circle (48 pt), the ~100 pt tab-switch transient and a pre-layout zero-width pane never host the
     /// capsule, and an unlaid-out bar trusts nothing.

@@ -27,8 +27,12 @@ final class BadgePaneDiagnostics {
     private let flushDelay: TimeInterval
     private let writeSink: @Sendable (String, URL) -> Void
     private var stopAt: CFTimeInterval = 0
+    private struct WeakView {
+        weak var view: UIView?
+    }
+
     private weak var bar: UITabBar?
-    private weak var capsule: UIView?
+    private var capsules: [WeakView] = []
     private var flushPending = false
     private let writer = DispatchQueue(label: "badge-pane-diagnostics", qos: .utility)
     private let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -48,9 +52,15 @@ final class BadgePaneDiagnostics {
     }
 
     /// Records one event and keeps sampling the bar for a short tail; a repeated event extends the tail.
-    func note(_ event: String, bar: UITabBar?, capsule: UIView) {
+    /// The live capsules the tail samples; re-registered on every hosts change (a resolve, a retire, the
+    /// teardown), so a tail around a hand-off still sees them.
+    func register(capsules: [UIView]) {
+        self.capsules = capsules.map { WeakView(view: $0) }
+    }
+
+    func note(_ event: String, bar: UITabBar?, capsules: [UIView]) {
         self.bar = bar
-        self.capsule = capsule
+        register(capsules: capsules)
         append("event \(event)")
         stopAt = now() + Self.tailSeconds
         guard !isSampling else { return }
@@ -69,7 +79,9 @@ final class BadgePaneDiagnostics {
         for pane in bar.subviews {
             line += Self.entry(for: pane, in: bar)
         }
-        line += describe(capsule, as: "cap")
+        for (index, box) in capsules.enumerated() {
+            line += describe(box.view, as: "cap\(index)")
+        }
         line += windowLine(for: bar)
         append(line)
     }

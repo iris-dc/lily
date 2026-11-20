@@ -583,6 +583,8 @@ the asset catalog.
   `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-19/item2-badge-ride/` (collapse and
   expand films and strips, the 1:1 morph frames, the 17 Pro six-switch red-pixel trace, the rest crops against the
   owner baseline, the lens-bloom iteration).
+  (Superseded 2026-11-20 — the in-item bullet below: the device's lens copies only the item's own subtree, so a
+  platter-sibling capsule sat dimmed beneath it; the capsules moved inside the Chats items, one per item tree.)
 
 - **The switch cover: the badge no longer blinks through a tab switch (2026-11-20, owner regression report on the
   ride; superseded the same day — the owner rebuilt the phone and both symptoms persisted there, the device
@@ -672,3 +674,29 @@ the asset catalog.
   luminance holds above rest — a white veil, not a darkening — in the very frames the lens brightens the Chats
   glyph itself by a quarter to a half), and the expand's glass settle reads on the badge as on the glyph. Films and the proportionality traces in
   `item2-badge-ride-fix2/fix7-ride-final/`.
+  (Superseded the same day — next bullet: a second device recording showed the dim is no passing glass moment on
+  the phone: with Chats selected the badge sat beneath the lens for as long as the selection lasted.)
+- **The badge joins the item: the lens copies it with the glyph (2026-11-20, the second device recording).** On
+  the phone, with Chats selected, the unread capsule sat dimmed beneath the selection glass with the glyph's edges
+  crisp over it, persisting after a collapse or expand and pulsing as the reported blink. The recording plus a
+  hierarchy probe (archived as `item2-badge-ride-fix2/fix8-initem/probe.log`) explain it: the lens
+  (`_UILiquidLensView`, framed to the selected item inside the expanded platter) draws a magnified COPY of the
+  selected item's own subtree through a `_UIPortalView` above its glass — the icons look right because their
+  copies replace them; a platter-sibling capsule is never in the copy, so it stays in the dimmed backdrop, and no
+  layer z-position can beat a portal that simply does not sample it. The capsule therefore lives INSIDE the Chats
+  item, directly above its glyph image view, at the owner-tuned offset in the item's own coordinates — and one
+  capsule per parallel item tree: the platter draws two full trees at identical frames (`SelectedContentView` and
+  `ContentView`, both fully opaque in every settled state, a `DestOutView` punching the backdrop out under the
+  lens), which tree the lens samples or a transition fades is not observable, and the glyphs themselves are drawn
+  once per tree — so two pixel-identical capsules (`BadgeHost`) are exactly-like-the-icons by construction,
+  whatever a tree does: lens copy, selection crossfade, the platter's collapse morph. `badgeZPosition` is deleted
+  with the platter-sibling mount; the minimized circle pane is its own platter and never hosts (the bare circle
+  stays bare); all the ride hardening stays, the fit guard now converting each capsule's frame into the platter —
+  the ancestor that clips. On the simulator, whose lens is simplified, the
+  Chats-selected rest crop stays byte-equal to the owner baseline (grain-level diff, YMAX 19) and the
+  unselected-item rest matches the previous build at grain; on the device the lens copy now includes the badge,
+  magnified and brightened with the glyph — the point of the move, the owner's to confirm on the phone. On film
+  the fix7 lens-landing desaturation is gone: the badge's red never leaves 79% of rest on the SE (one two-frame
+  window, badge luminance 132% of rest, the glyph's own red at 117% in the same frames — the lens brightens both
+  together) and never leaves 81% on the 17 Pro, against 12–14% floors before the move. Films and traces in
+  `item2-badge-ride-fix2/fix8-initem/`.

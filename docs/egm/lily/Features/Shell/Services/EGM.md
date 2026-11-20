@@ -11,7 +11,7 @@ connection, the caller's groups, the inbox, the block list, then the push offer 
 alongside. Both classes are main-actor isolated by the app target's default and depend on collaborators injected by
 `AppDependencies`. `TabBadgeRenderer` (2026-11-12) draws the Chats tab's unread count for `MainTabView` — the iOS 26
 floating bar honours only a label's title and `UIImage` and never moves its own badge — as the capsule alone for
-`TabBarBadgeOverlay` to ride inside the bar's platter pane (2026-11-19), or composited into the glyph image as the overlay's
+`TabBarBadgeOverlay` to ride inside the platter's Chats items (2026-11-19/20), or composited into the glyph image as the overlay's
 fallback; both share one capsule drawing, cached per count and colour.
 
 Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Services/ShellSync.swift`,
@@ -48,7 +48,7 @@ Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Ser
   Staging): `@MainActor final class`; `init(clock:now:flushDelay:writeSink:)` with production defaults behind
   `static let shared` — the clock is the Chat `FrameClock` seam (`DisplayLinkFrameClock`, which gained a
   `frameRate` init parameter; the sampler runs 15–30 fps) so `FakeFrameClock` drives the tests.
-  `note(_:bar:capsule:)` records one event line and samples a 2 s tail (extended by repeated events) of the
+  `note(_:bar:capsules:)` records one event line and samples a 2 s tail (extended by repeated events) of the
   bar's subviews plus one level of the window and any deeper view
   outside the bar's subtree overlapping the bar (where a device may mount its selection glass), each as class
   name, frame, hidden flag and presentation alpha, into a 4,000-line ring flushed by coalesced background writes
