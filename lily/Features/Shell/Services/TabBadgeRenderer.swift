@@ -2,13 +2,11 @@ import UIKit
 
 /// Draws the Chats tab's unread count. The iOS 26 floating bar honours only a label's title and `UIImage` and never
 /// moves its own badge (`badgePositionAdjustment` probed at zero effect), so the count the owner wants closer to the
-/// glyph is drawn by hand, every metric and offset in `DesignTokens.TabBar`. Two renders share one capsule drawing:
-/// `capsule(count:badgeColor:)`, the capsule alone for `TabBarBadgeOverlay` to mount inside each item tree's
-/// Chats item (every treatment the glyph gets — the collapse morph, a selection crossfade, the lens copy —
-/// carries it, where a composited image could only swap), and
-/// `icon(...)`, the glyph with the capsule composited over its top-right corner — the fallback when the overlay
-/// finds no whole item trees to ride (regular widths, a lost hierarchy signal). The composite renders as `.alwaysOriginal` — the bar cannot tint it — so the caller passes the
-/// glyph's colour per selection state; images are cached per count and colour, never re-rendered per frame.
+/// glyph is drawn by hand, every metric and offset in `DesignTokens.TabBar`: `icon(...)` renders the glyph with the
+/// count's capsule over its top-right corner. The composite renders as `.alwaysOriginal` — the bar cannot tint
+/// it — so the caller passes the glyph's colour per selection state; images are cached per count and colour, never
+/// re-rendered per frame. The known trade, accepted with the 2026-11-22 revert of the in-bar overlay: the minimized
+/// circle draws the tab's `UIImage` unscaled, so the count shows cut at the circle's rim while Chats is selected.
 final class TabBadgeRenderer {
     private struct Key: Hashable {
         let symbol: String
@@ -17,13 +15,7 @@ final class TabBadgeRenderer {
         let badgeColor: UIColor
     }
 
-    private struct CapsuleKey: Hashable {
-        let text: String
-        let badgeColor: UIColor
-    }
-
     private var cache: [Key: UIImage] = [:]
-    private var capsuleCache: [CapsuleKey: UIImage] = [:]
 
     /// What the badge reads: the count, capped like the system badge.
     static func label(for count: Int) -> String {
@@ -38,25 +30,6 @@ final class TabBadgeRenderer {
         let image = composite(for: key)
         cache[key] = image
         return image
-    }
-
-    /// The capsule alone at its natural size, for the overlay riding the bar; nothing at zero — the overlay hides then.
-    func capsule(count: Int, badgeColor: UIColor) -> UIImage? {
-        guard count > 0 else { return nil }
-        let key = CapsuleKey(text: Self.label(for: count), badgeColor: badgeColor)
-        if let cached = capsuleCache[key] { return cached }
-        let size = badgeSize(for: key.text)
-        let image = UIGraphicsImageRenderer(size: size).image { _ in
-            drawCapsule(text: key.text as NSString, color: key.badgeColor, in: CGRect(origin: .zero, size: size))
-        }
-        capsuleCache[key] = image
-        return image
-    }
-
-    /// The glyph as the composite draws it (`badgeGlyphPointSize`): the box the owner tuned the capsule offset
-    /// against, which the overlay anchors its capsule on around the glyph view's centre.
-    static func glyphSize(symbol: String) -> CGSize {
-        drawnGlyph(symbol: symbol).size
     }
 
     private static func drawnGlyph(symbol: String) -> UIImage {
@@ -93,7 +66,7 @@ final class TabBadgeRenderer {
         return image.withRenderingMode(.alwaysOriginal)
     }
 
-    /// One capsule drawing for both renders, so the overlay's capsule is the composite's to the pixel.
+    /// The capsule over the count, matched to the system badge's look.
     private func drawCapsule(text: NSString, color: UIColor, in rect: CGRect) {
         color.setFill()
         UIBezierPath(roundedRect: rect, cornerRadius: rect.height / 2).fill()

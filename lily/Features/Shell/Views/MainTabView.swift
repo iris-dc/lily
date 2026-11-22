@@ -16,10 +16,6 @@ struct MainTabView: View {
     @Environment(\.layoutMode) private var layoutMode
     /// Kept across body runs, so each count's image is rendered once, never per frame.
     @State private var badgeRenderer = TabBadgeRenderer()
-    /// Raised by `TabBarBadgeOverlay` once it rides its capsules inside the bar's Chats items (every treatment
-    /// the glyph gets carries them): the label then hands the bar the plain template glyph. While `false` — startup,
-    /// regular widths, a lost bar signal — the count is composited into the glyph as before, so it is never lost.
-    @State private var overlayCarriesBadge = false
 
     private var language: AppLanguage { dependencies.language.language }
 
@@ -45,8 +41,7 @@ struct MainTabView: View {
                 Tab(value: .chat) {
                     content { ChatTab(dependencies: dependencies).id(language) }
                 } label: {
-                    chatTabLabel(count: overlayCarriesBadge ? 0 : unreadChats,
-                                 selected: navigation.selectedTab == .chat)
+                    chatTabLabel(count: unreadChats, selected: navigation.selectedTab == .chat)
                 }
                 // The drawn badge is not in the accessibility tree (neither was the system one); the value says what
                 // it means for VoiceOver and lets tests see it.
@@ -57,14 +52,6 @@ struct MainTabView: View {
         // and dropped: its sidebar only repeated the tabs and iPadOS opened it by itself in landscape,
         // taking 280 pt from the content column.
         .tabBarMinimizeBehavior(.onScrollDown)
-        // Compact widths only: the iPad's top bar never minimizes and is no `UITabBar`, so it keeps the composite.
-        .background {
-            if AppConfig.FeatureFlags.chat && !layoutMode.isRegular {
-                TabBarBadgeOverlay(count: unreadChats,
-                                   renderer: badgeRenderer,
-                                   logger: dependencies.logger) { overlayCarriesBadge = $0 }
-            }
-        }
         // The tabs fill and the bar shows at once, under the landing that the root fades out over them; animated, the
         // bar would slide up into view.
         .animation(nil, value: showsContent)
@@ -107,7 +94,9 @@ struct MainTabView: View {
     /// The Chats label with the unread count drawn into the glyph (`TabBadgeRenderer`): the system badge cannot move
     /// and the bar honours only the label's title and `UIImage`, so the count rides the image itself. The composite
     /// is `.alwaysOriginal`, which the bar does not tint, so the glyph's colour follows the selection here; at zero
-    /// the plain template label stands, tinted by the bar like every other tab.
+    /// the plain template label stands, tinted by the bar like every other tab. The known trade, accepted with the
+    /// 2026-11-22 revert of the in-bar overlay: the minimized circle draws the tab's `UIImage` unscaled, so the
+    /// count shows cut at the circle's rim while Chats is selected.
     @ViewBuilder
     private func chatTabLabel(count: Int, selected: Bool) -> some View {
         let glyphColor = selected ? UIColor(Color.lilyAccent) : DesignTokens.TabBar.unselectedGlyphColor

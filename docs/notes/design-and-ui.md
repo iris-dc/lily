@@ -480,7 +480,8 @@ the asset catalog.
   mid-swap, the exact midpoint, no pane, a zero bar and the zero-width pre-layout pane) and the restored
   `TabBadgeRendererTests` (the geometry).
 
-- **The unread capsule floats over the bar and fades with its collapse (2026-11-19, owner verdict on the hide
+- (Superseded 2026-11-22: the overlay reverted to the composite-only label — the revert bullet at the end.)
+  **The unread capsule floats over the bar and fades with its collapse (2026-11-19, owner verdict on the hide
   above: "works terrible"; superseded the same day — the bar-anchored capsule stayed put while the platter animated
   away, see the ride bullet below).** Swapping the composited glyph between the counted and the plain image on a binary
   minimized state could only ever cut: the count dropped in one frame instead of fading, the capsule jumped on the
@@ -542,7 +543,8 @@ the asset catalog.
   runtime behaviour, proven on the film above. The 17 Pro's Chats list never crosses the minimize threshold, so
   only a compact phone that collapses the bar ever fades the capsule.
 
-- **The unread capsule rides inside the platter pane (2026-11-19, owner verdict on the fading overlay above: during
+- (Superseded 2026-11-22: the overlay reverted to the composite-only label — the revert bullet at the end.)
+  **The unread capsule rides inside the platter pane (2026-11-19, owner verdict on the fading overlay above: during
   the collapse the capsule stayed put while the panel animated away, "looks very off").** The bar-anchored capsule
   could never move with the morph: the collapse is a presentation-level animation of the expanded platter pane itself
   (`_UITabBarPlatterView` — the pane slides and scales into the 48 pt circle while crossfading, its model geometry
@@ -586,7 +588,8 @@ the asset catalog.
   (Superseded 2026-11-20 — the in-item bullet below: the device's lens copies only the item's own subtree, so a
   platter-sibling capsule sat dimmed beneath it; the capsules moved inside the Chats items, one per item tree.)
 
-- **The switch cover: the badge no longer blinks through a tab switch (2026-11-20, owner regression report on the
+- (Superseded 2026-11-22: the overlay reverted to the composite-only label — the revert bullet at the end.)
+  **The switch cover: the badge no longer blinks through a tab switch (2026-11-20, owner regression report on the
   ride; superseded the same day — the owner rebuilt the phone and both symptoms persisted there, the device
   mounting its selection glass outside the bar's subviews, see the twin bullet below).** Two symptoms on the committed ride (b1d982d): (A) selecting Chats from any tab blinked the badge, and
   (B) on the owner's phone the badge read ~90% for about a second after an expand. Probed first, not assumed: the
@@ -618,7 +621,8 @@ the asset catalog.
   against the lockstep rule, not a defect of the ride. Evidence (films, probe logs, traces, zooms, notes) under
   `~/.claude/projects/-Users-makshr-lily/groups-plan/corrections-2026-11-19/item2-badge-ride-fix2/`.
 
-- **The badge twin follows the pane states (2026-11-20, owner re-test on the phone: both symptoms unchanged — the
+- (Superseded 2026-11-22: the overlay reverted to the composite-only label — the revert bullet at the end.)
+  **The badge twin follows the pane states (2026-11-20, owner re-test on the phone: both symptoms unchanged — the
   simulator diverges from the device).** The transient-detection cover fixed the blink only where the flying glass
   is a bar subview; on the owner's phone both symptoms persisted, so the selection glass there mounts outside the
   bar's subviews (beyond any z-position of ours) and the expand plateau is the platter content's own glass-settle
@@ -654,7 +658,8 @@ the asset catalog.
   question is unanswerable from the bar's subviews.
   (Superseded later the same day — next bullet: the device recording shows a bar that never flips its panes'
   hidden flags, so this rule never fires there.)
-- **The badge saga closes: ride only (2026-11-20, the owner's device recording and restated spec).** A phone screen
+- (Superseded 2026-11-22: the overlay reverted to the composite-only label — the revert bullet at the end.)
+  **The badge saga closes: ride only (2026-11-20, the owner's device recording and restated spec).** A phone screen
   recording of the real bar answered what no simulator film could: the device never flips its panes' hidden flags —
   the pill slides left and fades into a LEFT-side minimized circle as one continuous animation, no pane swap — so
   the pane-state rule above is structurally silent there (the twin never fired; the recorded "2" stood bar-anchored
@@ -676,7 +681,8 @@ the asset catalog.
   `item2-badge-ride-fix2/fix7-ride-final/`.
   (Superseded the same day — next bullet: a second device recording showed the dim is no passing glass moment on
   the phone: with Chats selected the badge sat beneath the lens for as long as the selection lasted.)
-- **The badge joins the item: the lens copies it with the glyph (2026-11-20, the second device recording).** On
+- (Superseded 2026-11-22: the overlay reverted to the composite-only label — the revert bullet at the end.)
+  **The badge joins the item: the lens copies it with the glyph (2026-11-20, the second device recording).** On
   the phone, with Chats selected, the unread capsule sat dimmed beneath the selection glass with the glyph's edges
   crisp over it, persisting after a collapse or expand and pulsing as the reported blink. The recording plus a
   hierarchy probe (archived as `item2-badge-ride-fix2/fix8-initem/probe.log`) explain it: the lens
@@ -700,7 +706,8 @@ the asset catalog.
   window, badge luminance 132% of rest, the glyph's own red at 117% in the same frames — the lens brightens both
   together) and never leaves 81% on the 17 Pro, against 12–14% floors before the move. Films and traces in
   `item2-badge-ride-fix2/fix8-initem/`.
-- **The expand rebuilds the selected item; eviction re-resolves in place behind a hand-off grace (2026-11-22,
+- (Superseded 2026-11-22: the overlay reverted to the composite-only label — the revert bullet at the end.)
+  **The expand rebuilds the selected item; eviction re-resolves in place behind a hand-off grace (2026-11-22,
   the owner's third recording).** With Chats selected, a collapse+expand left the badge at partial opacity over
   the white glyph for up to about a second after the pill settled (the owner's frames: the glass and glyphs at
   rest ~10 frames before the badge's red climbed 13 -> 59). The device mechanism is NOT yet proven: the max
@@ -735,7 +742,8 @@ the asset catalog.
   `badge-pane-diagnostics.log` — `remounted in place`, `grace-retry`, `handed off after grace`, `host(...)` flips
   and `resolved N item glyphs` bursts all count as evidence. Films, logs and traces in
   `item2-badge-ride-fix2/fix11-grace/`.
-- **The grace diff reviewed: adoption joins the condemnation standard, the budget wedge and the fresh-mount bail
+- (Superseded 2026-11-22: the overlay reverted to the composite-only label — the revert bullet at the end.)
+  **The grace diff reviewed: adoption joins the condemnation standard, the budget wedge and the fresh-mount bail
   closed (2026-11-22, the second max-review round).** Nine findings on the fix11 diff, all in. (1) Resolve and
   condemnation judged different things: a re-resolve could adopt the very tree `isDrawable` condemns a frame
   later — the fix11 films' glyphDied -> churn -> adopt spin. `chatsGlyphs` now filters controls and glyphs
@@ -761,3 +769,18 @@ the asset catalog.
   late pop; the four rests' bar strips pixel-identical to the fix11 baselines (YMAX 0, badge counts
   1168/1144/0/1168; the full-frame diff is the mock fixtures' relative-date text above the bar). Films, logs
   and traces in `item2-badge-ride-fix2/fix12-review/`.
+- **The badge saga reverts: composite only (2026-11-22, the owner's verdict after a simulator repro).** The owner
+  reproduced the artifact on the simulator — the chat icon's borders visible at the unread badge when the bottom
+  menu expands with Chats selected — and ordered the in-bar overlay reverted. Our capture confirms it at 1:1
+  (`item2-badge-ride-fix2/fix13-revert/repro/`): after an expand the capsule sits visibly shifted right of the
+  owner-tuned spot, the glyph's top-right arc fully exposed where the baseline has the capsule covering it
+  (side-by-side.png, the owner baseline against the post-expand tiles), persisting for seconds until the next
+  collapse, on both a normal and a slow expand in one run — while the fix12 rest-after-expand shot on the same
+  code was byte-flat, so the misregistration is intermittent across runs; the red-count traces were blind to it
+  because the shifted capsule's red mass stays inside the badge box. Deleted: `TabBarBadgeOverlay` (+Resolve,
+  +Churn), `TabBadgePlacement`, `BadgePaneDiagnostics`, `AppConfig.Shell`, their suites, the renderer's
+  standalone capsule render and `overlayCarriesBadge`; `MainTabView` always composites the count into the glyph
+  (`TabBadgeRenderer`, the owner-tuned `badgeCenterOffset`), and the tab's VoiceOver unread value stays the one
+  seam. The accepted trade RETURNS: the minimized circle draws the tab's `UIImage` unscaled, so the count shows
+  cut at the circle's rim while Chats is selected (filmed for the owner in `fix13-revert/`). The saga bullets
+  above (2026-11-19 through 2026-11-22) are superseded by this revert.
