@@ -53,4 +53,50 @@ struct TabBadgePlacementTests {
         #expect(!TabBadgePlacement.isPlatter(paneWidth: 0, barWidth: 375))
         #expect(!TabBadgePlacement.isPlatter(paneWidth: 300, barWidth: 0))
     }
+
+    /// Only a hosted churn arms the hand-off grace, and only once per episode: a churn during the grace never
+    /// extends the deadline, and an unhosted churn (an ordinary stand-down) arms nothing.
+    @Test func onlyAHostedChurnArmsTheGraceAndOnlyOnce() {
+        #expect(TabBadgePlacement.armedGraceDeadline(isHosting: true, graceArmed: false, now: 100)
+            == 100 + AppConfig.Shell.tabBarHandoffGraceSeconds)
+        #expect(TabBadgePlacement.armedGraceDeadline(isHosting: true, graceArmed: true, now: 100) == nil)
+        #expect(TabBadgePlacement.armedGraceDeadline(isHosting: false, graceArmed: false, now: 100) == nil)
+    }
+
+    /// Inside the armed grace a hosted failure retries; at or past the deadline, or once hosting already ended,
+    /// an armed failure hands off saying so; an unarmed failure hands off at once.
+    @Test func aFailedResolveRetriesInsideTheGraceAndHandsOffPastIt() {
+        #expect(TabBadgePlacement.handoffStep(isHosting: true, graceArmed: true, deadline: 10, now: 9.9)
+            == .graceRetry)
+        #expect(TabBadgePlacement.handoffStep(isHosting: true, graceArmed: true, deadline: 10, now: 10)
+            == .handOffAfterGrace)
+        #expect(TabBadgePlacement.handoffStep(isHosting: false, graceArmed: true, deadline: 10, now: 5)
+            == .handOffAfterGrace)
+        #expect(TabBadgePlacement.handoffStep(isHosting: true, graceArmed: false, deadline: 0, now: 5)
+            == .handOff)
+        #expect(TabBadgePlacement.handoffStep(isHosting: false, graceArmed: false, deadline: 0, now: 5)
+            == .handOff)
+    }
+
+    /// The grace must outlast at least one retry delay, or an armed grace could never see a second resolve
+    /// before its deadline and the retries would be theatre.
+    @Test func theGraceOutlastsARetryDelay() {
+        #expect(AppConfig.Shell.tabBarHandoffGraceSeconds > AppConfig.Shell.tabBarFindRetryDelay)
+    }
+
+    /// Resolved hosts must match the drawn trees' glyphs by count and identity; an empty current shape is
+    /// mid-churn noise, not staleness.
+    @Test func staleHostsDifferByCountOrIdentityAndAnEmptyShapeIsNoise() {
+        final class Marker {}
+        let markers = (Marker(), Marker(), Marker())
+        let first = ObjectIdentifier(markers.0)
+        let second = ObjectIdentifier(markers.1)
+        let third = ObjectIdentifier(markers.2)
+        #expect(!TabBadgePlacement.hostsAreStale(current: [first, second], resolved: [first, second], hostCount: 2))
+        #expect(TabBadgePlacement.hostsAreStale(current: [first, second, third],
+                                                resolved: [first, second],
+                                                hostCount: 2))
+        #expect(TabBadgePlacement.hostsAreStale(current: [first, third], resolved: [first, second], hostCount: 2))
+        #expect(!TabBadgePlacement.hostsAreStale(current: [], resolved: [first, second], hostCount: 2))
+    }
 }

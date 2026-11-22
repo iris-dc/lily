@@ -700,3 +700,64 @@ the asset catalog.
   window, badge luminance 132% of rest, the glyph's own red at 117% in the same frames — the lens brightens both
   together) and never leaves 81% on the 17 Pro, against 12–14% floors before the move. Films and traces in
   `item2-badge-ride-fix2/fix8-initem/`.
+- **The expand rebuilds the selected item; eviction re-resolves in place behind a hand-off grace (2026-11-22,
+  the owner's third recording).** With Chats selected, a collapse+expand left the badge at partial opacity over
+  the white glyph for up to about a second after the pill settled (the owner's frames: the glass and glyphs at
+  rest ~10 frames before the badge's red climbed 13 -> 59). The device mechanism is NOT yet proven: the max
+  review showed the success-path hand-off was never delivered at the previous head (the delivery guard dropped
+  the `false` once the same-turn `host(true)` re-flipped), so the suspect is the FAILURE branch — the device
+  rebuilds the selected item non-atomically on the expand, the eviction delivery's re-resolve meets half-built
+  trees (zero-width controls, missing glyphs, a single tree) and fails, and the hand-off's
+  plain -> composite -> plain label swaps, each crossfaded by the bar, ride the rebuilding item's own fade as the
+  dim badge. The fix keeps the in-place re-resolve (a success never flips the host) and puts the failure behind a
+  bounded grace: any churn of a hosted hierarchy arms `AppConfig.Shell.tabBarHandoffGraceSeconds` (0.3 s — a
+  deadline, because the rebuild's own churns re-attach faster than the retry timer and burned a counted grace in
+  a millisecond on film) in `churnedAttach` — an eviction, a glyph death, a dead-host pane or item churn: the before film
+  showed the failing re-resolve arriving via the churn observation while the eviction delivery was dropped behind
+  its hand-off, so arming only in the deliveries would have missed the real route — each failed re-resolve logs
+  `grace-retry` and keeps the label plain (armed once per episode — the first after film showed a restore churn re-arming it, which under a churn storm over unresolvable trees would keep the count off screen indefinitely) — the badge simply
+  absent inside an item that is itself mid-rebuild, strictly better than the filmed dim crossfade — and only a
+  spent grace hands off (`handed off after grace`). Ordinary stand-downs (no bar, cold start) hand off at once,
+  and a fresh mount whose first fit judgment trips unmounts those capsules synchronously before the hand-off —
+  never a shaved commit (the review's regression catch on the in-place path). The probe's capsule census exposed a second silent route on the way: the
+  select re-stacks the platter's item trees one level below the observed pane layers about a second after it
+  settles, leaving the capsules windowed in a stale, undrawn subtree (mounted, visible-state, right position — and
+  not drawn), with every observed layer quiet; bar-level churns do fire around that swap, so every churn now also
+  verifies the resolved glyphs are still the drawn trees' glyphs by identity (`hostsAreStale`, the "stale hosts"
+  token) AND still drawable — windowed with nothing hidden up to the pane (`isDrawable`; the layer census proved
+  the stale tree stays windowed and layer-rooted with clean own-flags while an ancestor below the pane hides
+  it) — and re-resolves under the same grace. Sim proof via a temp probe (a
+  delayed rebuild kept unresolvable through the grace, a straddling re-resolve fit trip, a churn storm outlasting
+  the grace, and the census; deleted
+  after): before the grace the delayed rebuild filmed the composite flicker; after it the badge is briefly absent
+  and remounts with no label swap, and the fit trip commits no shaved frame. The sim's own expand still never
+  rebuilds the selected item, so the device verdict is the owner's rebuild with the pulled
+  `badge-pane-diagnostics.log` — `remounted in place`, `grace-retry`, `handed off after grace`, `host(...)` flips
+  and `resolved N item glyphs` bursts all count as evidence. Films, logs and traces in
+  `item2-badge-ride-fix2/fix11-grace/`.
+- **The grace diff reviewed: adoption joins the condemnation standard, the budget wedge and the fresh-mount bail
+  closed (2026-11-22, the second max-review round).** Nine findings on the fix11 diff, all in. (1) Resolve and
+  condemnation judged different things: a re-resolve could adopt the very tree `isDrawable` condemns a frame
+  later — the fix11 films' glyphDied -> churn -> adopt spin. `chatsGlyphs` now filters controls and glyphs
+  failing `isDrawable` (the alpha floor named `AppConfig.Shell.tabBarDrawableAlphaMinimum`), so a stale hidden
+  tree beside the live ones is ignored and an only-stale shape FAILS onto the grace: the probe's whole fake tree
+  in an ancestor-hidden container resolved 0 glyphs — never adopted — rode three grace-retries and remounted on
+  the restore with zero host flips. (2) The grace relied on a future retry for its hand-off, but a drained find
+  budget schedules none — a wedge of hosting-true/hosts-empty/no-timer; `scheduleRetry`'s spent path now
+  delivers the hand-off when the grace is armed ("handed off after grace" at +0.105 s on the probe, the census
+  tick inside the window reading hosting false / hosts 0 / budget 0), the stood-down warning kept for the
+  unarmed lost-bar case. (3) `freshMount` was consumed at reposition entry, so a liveness bail burned the
+  never-shaved guarantee and could strand capsules at their zero origin; it is consumed only by a completed
+  fit-judgment pass now, and the bail books a reposition — the probe's fabricated bail recentred to the proper
+  item spot with the flag consumed by the completed pass and no glyph-death churn. (4) Pre-existing: every pane
+  churn re-judges the platter pick (`platterIsStale`, the "stale platter" token) — a stored platter outgrown by
+  or hidden beside another qualifying pane re-resolves, a pane-level replacement all glyph rules were blind to;
+  a plain minimize (platter hidden, no other qualifying pane) never trips it. The grace and staleness decisions
+  are pure pinned rules now (`TabBadgePlacement.handoffStep` / `armedGraceDeadline` / `hostsAreStale`, the
+  grace-outlasts-retry-delay relation pinned), the churn half lives in `TabBarBadgeOverlay+Churn.swift` under
+  the file-length limit, and the never-blank claims carry the two deliberate carve-outs (a grace retry, a fresh
+  mount's fit trip). The matrix on the fixed tree is unchanged: selects SE min 787 with one 1-frame lens bloom
+  (71% of rest), 17 Pro zero dips (min 2260 of rest 2604); collapse/expand two-frame ramps with no plateau or
+  late pop; the four rests' bar strips pixel-identical to the fix11 baselines (YMAX 0, badge counts
+  1168/1144/0/1168; the full-frame diff is the mock fixtures' relative-date text above the bar). Films, logs
+  and traces in `item2-badge-ride-fix2/fix12-review/`.

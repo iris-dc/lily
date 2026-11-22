@@ -15,7 +15,7 @@ between a stack and the iPad split view. Lists are read from `dependencies.lists
 `EventListView`, `EventDetailView`, `GroupCarousel`, `TournamentCarousel`) belong to other features.
 
 Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views/TabBarBadgeOverlay.swift`,
-`lily/Features/Shell/Views/TabBarBadgeOverlay+Resolve.swift`, `lily/Features/Shell/Views/TabBadgePlacement.swift`, `lily/Features/Shell/Views/ProfileCornerButton.swift`,
+`lily/Features/Shell/Views/TabBarBadgeOverlay+Resolve.swift`, `lily/Features/Shell/Views/TabBarBadgeOverlay+Churn.swift`, `lily/Features/Shell/Views/TabBadgePlacement.swift`, `lily/Features/Shell/Views/ProfileCornerButton.swift`,
 `lily/Features/Shell/Views/HomeTab.swift`,
 `lily/Features/Shell/Views/HomeView.swift`, `lily/Features/Shell/Views/HomeOverview.swift`,
 `lily/Features/Shell/Views/ExploreTab.swift`, `lily/Features/Shell/Views/ChatTab.swift`,
@@ -58,7 +58,14 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   whichever copy happened to resolve.
   `isPlatter(paneWidth:barWidth:)` — only a pane spanning at least `AppConfig.Shell.tabBarPlatterMinimumFraction`
   of a laid-out bar is the expanded platter: the minimized circle (48 pt), the ~100 pt tab-switch transient and a
-  pre-layout zero-width pane never host the capsule. (`TabBarCollapse` — the phase, settle and fade
+  pre-layout zero-width pane never host the capsule.
+  `handoffStep(isHosting:graceArmed:deadline:now:)` and `armedGraceDeadline(isHosting:graceArmed:now:)` — the
+  hand-off grace decisions, pure over the caller's clock (2026-11-22): only a hosted churn arms the grace, once
+  per episode (never extended); inside the deadline a hosted failure retries (`.graceRetry`), past it — or once
+  hosting already ended — an armed failure hands off saying so (`.handOffAfterGrace`), an unarmed one at once
+  (`.handOff`); the grace must outlast `tabBarFindRetryDelay`, pinned, or the retries would be theatre.
+  `hostsAreStale(current:resolved:hostCount:)` — resolved hosts must match the drawn trees' glyphs by count AND
+  identity; an empty current shape is mid-churn noise, not staleness. (`TabBarCollapse` — the phase, settle and fade
   detector — was deleted 2026-11-19 with the hand-run fade: the capsules ride inside the Chats items and the
   bar's own treatments carry their motion and visibility, leaving nothing to time.)
 - `[TabBarBadgeOverlay.swift:TabBarBadgeOverlay]` (2026-11-19): `UIViewRepresentable` over `count: Int`, `renderer:
@@ -99,8 +106,18 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `logger?.debug(.ui, ...)` for an attached console and `SpyLogger`. KVO (`CALayer` is
   KVO-compliant where `UIView` is not): each glyph layer's `bounds`/`position` re-position its capsule when layout
   really moves it, and a `sublayers` churn on the bar or a pane re-attaches — only when the platter itself left
-  the bar or a resolved host died (the transient pane joins and leaves on every tab switch, so pane-set
-  comparisons would churn hot); each capsule also reports
+  the bar, a resolved host died — deadness includes a glyph left windowed but HIDDEN below the pane (`isDrawable`, the re-stack's other face: the capsule census read mounted, visible-state and layer-rooted while the screen showed no badge) — or the drawn trees' glyphs no longer match the resolved ones by identity
+  (`hostsAreStale`: the select re-stacks the platter's content one level below the observed pane layers about a
+  second after it settles, leaving mounts windowed in a stale, undrawn subtree while every observed layer stays
+  quiet — the transient pane still joins and leaves on every tab switch, so plain pane-set comparisons would
+  churn hot; the count-and-identity rule is the pinned pure `TabBadgePlacement.hostsAreStale`) — or the stored
+  platter stopped being the qualifying widest pane, or hides while another qualifying pane stands (a pane-level
+  replacement the glyph rules are blind to, re-judged on every pane churn; a plain minimize hides the platter
+  with no other qualifying pane and never trips it). Adoption uses the condemnation standard too (2026-11-22):
+  `chatsGlyphs` filters controls and glyphs failing `isDrawable` (its alpha floor the named
+  `AppConfig.Shell.tabBarDrawableAlphaMinimum`), so a stale hidden tree beside the live ones is simply ignored
+  and a shape where only stale trees parse as whole FAILS the resolve onto the grace path — never an
+  adopt-and-condemn spin; each capsule also reports
   its own eviction (`didMoveToWindow`), because a re-created item dies with its subviews and no observed layer
   announces that — a deferred re-check at delivery keeps a deliberate teardown or stand-down from re-attaching.
   `onHosting` is reported deduplicated a turn later (`DispatchQueue.main.async` — KVO can fire inside a UIKit
@@ -108,8 +125,24 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   it never leaves a stale one, and a dismantled overlay's is nilled after the final hand-back); a stand-down or
   failed resolve retires the mounted capsules to a leaving list swept in the completion of the transaction whose
   commit carries the composite's body pass — or by the next successful mount, which replaces the old capsules only
-  after the new ones are mounted — so the count never blanks between the two carriers; an evicted or dead host
-  hands the count to the composite first, then the fresh resolve hands back.
+  after the new ones are mounted — so the count never blanks between the two carriers, outside two deliberate
+  windows: a grace retry strips its capsules at once (the badge absent inside an item that is itself
+  mid-rebuild), and a fresh mount's fit trip unmounts at once rather than commit shaved; an evicted or dead host re-resolves and remounts in place
+  in the deferred delivery turn — `host(true)` a no-op, `isHosting` never flipping, the label never swapped — and
+  a failure right after any hosted churn retries until `AppConfig.Shell.tabBarHandoffGraceSeconds` (a deadline armed once per episode: the rebuild's own churns re-attach faster than the retry timer, so a counted grace would burn in a millisecond and a storm must not extend it either) before the hand-off: the
+  device rebuilds the selected item non-atomically, so the re-resolve can meet half-built trees, and a composite
+  hand-off would visibly crossfade through the rebuilding item (2026-11-22; the suspected cause of the owner's
+  dim badge over the white glyph after an expand — not yet proven on the device: at the previous head the
+  success-path flip was never delivered, so only this failure branch could swap the label, and the pulled
+  diagnostics log is the verdict). A grace whose find budget runs out hands off right there (`scheduleRetry`'s
+  spent path, 2026-11-22: the grace relies on a future retry for its hand-off, and a wedged hosting-true with no
+  capsules and no timer must not exist; the stood-down warning stays for a silently lost bar). A fresh mount
+  whose first fit judgment trips also hands off, its capsules leaving the screen synchronously — never a shaved
+  commit; `freshMount` is consumed only by a COMPLETED fit-judgment pass — a liveness bail leaves it set and
+  books a reposition, so un-centred capsules never persist and a later first judgment still takes the
+  never-shaved path. A teardown hands back on the last DELIVERED hosting value, not on `isHosting` (a pending
+  flip may have reset the flag while the composite still believes the overlay carries the count — the iPad
+  compact-to-regular unmount), so a stranded `true` can never blank the count for the session.
 - `[ProfileCornerButton.swift:ProfileCornerButton]` (2026-11-07): `ToolbarContent` over `dependencies`; one
   `.topBarLeading` item under `.sharedBackgroundVisibility(.hidden)` whose button sets
   `navigation.isProfilePresented = true`. The label is an `AvatarCircle` at `DesignTokens.Layout.profileCornerSize`:
@@ -196,11 +229,16 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   at a count of zero. The fail-safe direction:
   whenever the hierarchy is missing or not the expected shape (no `UITabBar`, the find budget runs out —
   replenished by the next churn, the exhaustion logged at warning —, `TabBadgePlacement.chatsColumn` or `treeCount` distrusts the
-  item columns (whole trees only), a re-created item loses a glyph or evicts a capsule), `onHosting` reports `false` and
-  `MainTabView` composites the count into the glyph as before — an unread count is never lost, and never blank:
+  item columns (whole trees only) past any armed grace — a grace whose find budget runs out hands off right
+  there, never a wedge; a re-created item that loses a glyph or evicts a capsule
+  re-resolves in place first), `onHosting` reports `false` and
+  `MainTabView` composites the count into the glyph as before — an unread count is never lost, and never blank
+  outside the two deliberate windows (a grace retry, a fresh mount's fit trip):
   failing paths retire the mounted capsules to a leaving list swept by the composite's commit, a successful
-  re-resolve replaces them only after the new capsules are mounted, and an evicted or dead host hands the count
-  to the composite before the re-resolve — a handoff may double-draw briefly but never shows nothing; the recorded costs are the old capsule-past-the-rim overflow returning silently
+  re-resolve replaces them only after the new capsules are mounted, and an evicted or dead host re-resolves and
+  remounts in place, handing off only when the fresh resolve still fails after the bounded grace, or at once when
+  a fresh mount's first fit judgment trips (those capsules leave the screen synchronously — never a shaved
+  commit) — a handoff may double-draw briefly but never shows nothing; the recorded costs are the old capsule-past-the-rim overflow returning silently
   (and a signal lost after hosting leaving the overlay showing at its last anchor). The capsules intercept no
   touches and are no accessibility elements (the tab's value stays the one VoiceOver seam). Regular widths never
   mount the overlay (the iPad's top bar never minimizes and is no `UITabBar`); the 17 Pro's Chats list never
@@ -247,7 +285,7 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
 - `[TabBarBadgeOverlay.swift:TabBarBadgeOverlay.OverlayView]`: adds one capsule `UIImageView` to each of the found bar's
   expanded platter pane's two Chats items (one per item tree, each directly above that tree's glyph) and installs
   KVO observations on the bar's layer, the panes' sublayers and each Chats
-  glyph's layer (re-attached only when the platter left the bar or a resolved host died; released with the
+  glyph's layer (re-attached only when the platter left the bar, a resolved host died or the resolved glyphs went stale by identity; released with the
   view, the capsules removed on teardown); logs one warning (`.ui`) when a find budget is spent; animates nothing
   itself; no polling once the bar is found, no network, disk or `UserDefaults` access.
 - `[GuestSignInPrompt.swift:GuestSignInPrompt]`: presents `SignInSheet`, which mounts its own `.errorPopup`.

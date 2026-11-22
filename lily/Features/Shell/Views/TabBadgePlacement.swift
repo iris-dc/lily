@@ -42,4 +42,39 @@ enum TabBadgePlacement {
     static func isPlatter(paneWidth: CGFloat, barWidth: CGFloat) -> Bool {
         barWidth > 0 && paneWidth >= barWidth * AppConfig.Shell.tabBarPlatterMinimumFraction
     }
+
+    /// What a failed re-resolve does next (`TabBarBadgeOverlay`): inside the armed grace a hosted failure retries
+    /// with the label kept plain (the device rebuilds the selected item non-atomically, so the first re-resolves
+    /// meet half-built trees); a spent grace hands off once, saying so; an unarmed failure is an ordinary
+    /// stand-down and hands off at once.
+    enum HandoffStep {
+        case graceRetry
+        case handOffAfterGrace
+        case handOff
+    }
+
+    /// Pure over the caller's clock, so the grace rule is unit-tested.
+    static func handoffStep(isHosting: Bool,
+                            graceArmed: Bool,
+                            deadline: CFTimeInterval,
+                            now: CFTimeInterval) -> HandoffStep {
+        if isHosting && graceArmed && now < deadline { return .graceRetry }
+        return graceArmed ? .handOffAfterGrace : .handOff
+    }
+
+    /// The deadline a churn arms, or nothing: only a HOSTED churn arms the grace (an ordinary stand-down hands
+    /// off at once), and only once per episode — a churn during the grace never extends it, or a churn storm
+    /// over unresolvable trees would keep the count off screen indefinitely.
+    static func armedGraceDeadline(isHosting: Bool, graceArmed: Bool, now: CFTimeInterval) -> CFTimeInterval? {
+        guard isHosting, !graceArmed else { return nil }
+        return now + AppConfig.Shell.tabBarHandoffGraceSeconds
+    }
+
+    /// Whether resolved hosts still match the drawn trees' glyphs, by count AND identity; an empty current
+    /// shape is mid-churn noise, not staleness (left to the dead-host and failure paths).
+    static func hostsAreStale(current: [ObjectIdentifier], resolved: [ObjectIdentifier], hostCount: Int) -> Bool {
+        guard !current.isEmpty else { return false }
+        if current.count != hostCount { return true }
+        return Set(current) != Set(resolved)
+    }
 }

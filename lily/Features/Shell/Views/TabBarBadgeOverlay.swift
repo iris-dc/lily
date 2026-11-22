@@ -24,14 +24,18 @@ import UIKit
 /// `capsuleUnfit` flag, the glyphs and observations kept, and re-mounts when the layout fits again. KVO on each
 /// glyph's layer re-positions the capsules when layout really moves them (a burst coalesces into one pass), a
 /// pane or item churn re-finds what UIKit re-created, and each capsule reports its own eviction (a re-created
-/// item dies with its subviews, which no observed layer announces) — a dead host hands the count to the composite
-/// first and re-resolves after. Fragile by nature: only the `UITabBar` class is public; the pane and item shapes
+/// item dies with its subviews, which no observed layer announces) — a dead host re-resolves and remounts in
+/// place, handing off only when the fresh resolve still fails after a bounded grace of retries (the device
+/// rebuilds the selected item non-atomically) or when a fresh mount's first fit judgment trips, the tripped
+/// capsules leaving the screen at once — never a shaved commit. Fragile by nature: only the `UITabBar` class is public; the pane and item shapes
 /// are observed behaviour, not API. `onHosting` tells `MainTabView` who carries the count: `true` while the
 /// capsules ride (the label hands the bar the plain template glyph), `false` whenever the hierarchy is missing or
 /// not the expected shape — the label then composites the count into the glyph as before, so an unread count is
 /// never lost. Both handoffs keep the count on screen: a failing resolve retires the mounted capsules to a
 /// leaving list that the composite's commit sweeps (and any next successful mount sweeps first), and a successful
-/// one replaces them only after the new capsules are mounted — a handoff may double-draw briefly but never blanks.
+/// one replaces them only after the new capsules are mounted — a handoff may double-draw briefly but never blanks,
+/// with two deliberate exceptions: a grace retry strips its capsules at once (the badge absent inside an item that
+/// is itself mid-rebuild), and a fresh mount's first fit trip unmounts at once rather than commit shaved.
 struct TabBarBadgeOverlay: UIViewRepresentable {
     let count: Int
     let renderer: TabBadgeRenderer
@@ -79,6 +83,14 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
         var isHosting = false
         var findBudget = 0
         var repositionPending = false
+        /// Until when a hosted churn's failed re-resolves keep retrying before the hand-off
+        /// (`AppConfig.Shell.tabBarHandoffGraceSeconds`); armed once per episode by `churnedAttach`.
+        var graceDeadline: CFTimeInterval = 0
+        var graceArmed = false
+        /// The last value actually delivered to `onHosting`: a teardown hands back on it, not on `isHosting`.
+        var deliveredHosting = false
+        /// The pass right after a fresh mount: a fit trip there unmounts synchronously, never a shaved commit.
+        var freshMount = false
 
         override func didMoveToWindow() {
             super.didMoveToWindow()
@@ -87,6 +99,8 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
                 return
             }
             findBudget = AppConfig.Shell.tabBarFindAttempts
+            graceDeadline = 0
+            graceArmed = false
             attach()
         }
 
@@ -94,10 +108,17 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
             removeHosts()
             observations.removeAll()
             capsuleUnfit = false
+            graceDeadline = 0
+            graceArmed = false
             bar = nil
             platter = nil
-            guard isHosting else { return }
+            // The hand-back keys on what was DELIVERED, not on `isHosting`: a pending flip may have reset the
+            // flag while the composite still believes the overlay carries the count (the iPad compact->regular
+            // unmount), and a stranded `true` would blank the count for the session.
+            let mustHandBack = isHosting || deliveredHosting
             isHosting = false
+            deliveredHosting = false
+            guard mustHandBack else { return }
             // Captured strongly: the hand-back to the composite must land even if this view is deallocated first.
             let tell = onHosting
             DispatchQueue.main.async { tell?(false) }
@@ -115,6 +136,7 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
                 // A bar that left the window takes the ride with it: the hosts retire (so the retry re-attaches)
                 // and the composite carries the count while the search runs again.
                 platter = nil
+                graceArmed = false
                 retireHosts()
                 host(false)
                 scheduleRetry(reason: "no tab bar in the window")
@@ -131,41 +153,6 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
             resolveGlyphs(in: bar)
         }
 
-        /// Re-attaches only when the platter itself left the bar or a resolved host died; the bar's layer churns
-        /// on every state swap — transients join and leave on each tab switch, and UIKit re-fronts panes — and a
-        /// full tear-down per churn would re-create every observation for nothing.
-        private func panesDidChurn() {
-            guard let bar else { return }
-            let platterLeft = platter.map { $0.superview !== bar } ?? true
-            if platterLeft || hostIsDead {
-                churnedAttach()
-            } else {
-                diagnose("panes churned")
-            }
-        }
-
-        /// An item view re-created inside a pane (a language change rebuilds the titles) kills a resolved glyph
-        /// without churning the bar's own panes.
-        private func itemsDidChurn() {
-            guard bar != nil, hostIsDead else { return }
-            churnedAttach()
-        }
-
-        /// A dead host: any glyph or mounted capsule out of the window. While stood down the hosts are empty, so
-        /// any churn is a fresh chance to resolve.
-        private var hostIsDead: Bool {
-            hosts.isEmpty
-                || hosts.contains { $0.glyph?.window == nil }
-                || (isHosting && hosts.contains { $0.capsule.window == nil })
-        }
-
-        /// A churn is a fresh hierarchy, so the search earns its whole budget again; only the timer retries
-        /// spend it. Without this, a late churn that found the budget spent stood down silently for good.
-        func churnedAttach() {
-            findBudget = AppConfig.Shell.tabBarFindAttempts
-            attach()
-        }
-
         /// Tells `MainTabView` who carries the count, deduplicated and deferred: KVO can fire inside a UIKit
         /// layout pass, and the handler writes SwiftUI state. The closure is read at delivery, not at the call
         /// (`updateUIView` may have replaced it), and a flip back before delivery supersedes the older message.
@@ -178,6 +165,7 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
             diagnose("host(\(hosting))")
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.isHosting == hosting else { return }
+                self.deliveredHosting = hosting
                 self.onHosting?(hosting)
                 guard !hosting else { return }
                 CATransaction.setCompletionBlock { [weak self] in
@@ -208,8 +196,14 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
             guard let platter, hosts.first?.capsule.image != nil else { return }
             var allFit = true
             for badgeHost in hosts {
-                guard let glyph = badgeHost.glyph, let item = glyph.superview else {
+                // Drawable liveness: a detached-but-retained tree would judge the fit across disjoint
+                // hierarchies and mis-trip, and a windowed-but-hidden stale tree must re-resolve, not reposition.
+                guard let glyph = badgeHost.glyph, isDrawable(glyph), let item = glyph.superview else {
+                    // The bail leaves `freshMount` for a completed pass and books one: the deferred recheck
+                    // may find the glyphs alive again (a transient), and un-centred capsules must never
+                    // persist at their zero origin.
                     glyphDied()
+                    scheduleReposition()
                     return
                 }
                 badgeHost.capsule.center = TabBadgePlacement.capsuleCenter(glyphCenter: glyph.center,
@@ -218,6 +212,10 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
                 let frameInPlatter = item.convert(badgeHost.capsule.frame, to: platter)
                 if !platter.bounds.insetBy(dx: -0.5, dy: -0.5).contains(frameInPlatter) { allFit = false }
             }
+            // Consumed only by a COMPLETED fit-judgment pass: a bail above leaves it set, so a later first
+            // judgment still takes the never-shaved path.
+            let fresh = freshMount
+            freshMount = false
             if allFit {
                 guard capsuleUnfit else { return }
                 // The layout that pushed a capsule past the platter's clip moved back: the overlay re-mounts
@@ -234,11 +232,12 @@ struct TabBarBadgeOverlay: UIViewRepresentable {
             // judged, which the morph's presentation-level animation never moves.
             capsuleUnfit = true
             diagnose("fit trip")
-            if isHosting {
-                host(false)
-            } else {
+            if fresh || !isHosting {
+                // A freshly mounted capsule must never commit shaved: it leaves the screen now, while the label
+                // hand-off still sequences through the composite's commit.
                 unmountCapsules(hosts.map(\.capsule))
             }
+            if isHosting { host(false) }
         }
     }
 }

@@ -34,6 +34,9 @@ extension TabBarBadgeOverlay.OverlayView {
         unmountCapsules(previous.map(\.capsule))
         sweepLeaving()
         registerCapsules()
+        graceDeadline = 0
+        graceArmed = false
+        freshMount = true
         refreshCapsules()
         // The first reposition judges the fit; a capsule the platter's clip would cut has stood down already.
         guard !capsuleUnfit else { return }
@@ -42,17 +45,41 @@ extension TabBarBadgeOverlay.OverlayView {
 
     /// The mounted capsules are retired, not stripped: they leave in the composite's commit (`host(false)`'s
     /// transaction completion, or the next successful mount's sweep), so the count never blanks while the search
-    /// runs again.
+    /// runs again. A failure right after a hosted hierarchy churned (an eviction, a glyph death, a dead-host
+    /// pane or item churn) retries through a bounded
+    /// grace first (`AppConfig.Shell.tabBarHandoffGraceSeconds`, a deadline — the rebuild's own churns re-attach
+    /// faster than the retry timer and would burn a counted grace in a millisecond): the device rebuilds the selected item
+    /// non-atomically, so the first re-resolve can meet half-built trees, and a composite hand-off would visibly
+    /// crossfade through the rebuilding item — during the grace the badge is deliberately absent inside an item
+    /// that is itself mid-rebuild, the one planned blank beside a fresh mount's fit trip. Ordinary stand-downs
+    /// (no bar, cold start) hand off at once. The decision is the pinned pure rule (`TabBadgePlacement.handoffStep`).
     private func resolveFailed(reason: String) {
-        retireHosts()
-        host(false)
+        switch TabBadgePlacement.handoffStep(isHosting: isHosting,
+                                             graceArmed: graceArmed,
+                                             deadline: graceDeadline,
+                                             now: CACurrentMediaTime()) {
+        case .graceRetry:
+            diagnose("grace-retry")
+            removeHosts()
+        case .handOffAfterGrace:
+            graceArmed = false
+            diagnose("handed off after grace")
+            retireHosts()
+            host(false)
+        case .handOff:
+            retireHosts()
+            host(false)
+        }
         scheduleRetry(reason: reason)
     }
 
     /// Every item tree's Chats glyph, one per parallel tree, in subview order; `[]` for any shape that is not
-    /// whole trees.
+    /// whole DRAWABLE trees. Adoption uses the condemnation standard (`isDrawable`): a stale hidden tree beside
+    /// the live ones is simply ignored, and a shape where only stale trees parse as whole fails the resolve onto
+    /// the grace and hand-off path — adopting it would spin glyph-death churns against it forever.
     static func chatsGlyphs(inPlatter platter: UIView) -> [UIImageView] {
-        let controls = descendants(of: UIControl.self, in: platter).filter { $0.bounds.width > 0 }
+        let controls = descendants(of: UIControl.self, in: platter)
+            .filter { $0.bounds.width > 0 && isDrawable($0, upTo: platter) }
         let columns = controls.map { $0.frame.minX.rounded() }
         guard let chatIndex = AppTab.shown.firstIndex(of: .chat),
               let column = TabBadgePlacement.chatsColumn(itemColumns: columns,
@@ -63,36 +90,8 @@ extension TabBarBadgeOverlay.OverlayView {
         let glyphs = controls
             .filter { $0.frame.minX.rounded() == column }
             .compactMap { descendants(of: UIImageView.self, in: $0).first }
+            .filter { isDrawable($0, upTo: platter) }
         return glyphs.count == trees ? glyphs : []
-    }
-
-    /// A host item died with its capsule aboard — nothing observed announces a wholesale item re-creation,
-    /// so each capsule reports its own eviction. Deferred, because `didMoveToWindow` lands inside UIKit's
-    /// hierarchy surgery, and re-checked at delivery: a teardown or stand-down removes capsules on purpose
-    /// (`isHosting` is already false then) and must not re-attach. The composite takes the count first
-    /// (a dead item shows no capsule, so the glyph must carry it through the re-resolve), then the fresh
-    /// resolve hands back.
-    func capsuleWasEvicted() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self, self.window != nil, self.isHosting,
-                  self.hosts.contains(where: { $0.capsule.window == nil }) else { return }
-            self.diagnose("evicted")
-            self.host(false)
-            self.churnedAttach()
-        }
-    }
-
-    /// A glyph died or left its item while repositioning: the same route as an eviction — the composite
-    /// carries the count while a deferred fresh resolve runs; the fit judgment is skipped that pass (judging
-    /// a dead tree could strand or mis-trip the live one).
-    func glyphDied() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self, self.window != nil,
-                  self.hosts.contains(where: { $0.glyph == nil || $0.glyph?.superview == nil }) else { return }
-            self.diagnose("glyph died")
-            if self.isHosting { self.host(false) }
-            self.churnedAttach()
-        }
     }
 
     /// One pass per turn: a layout burst fires every glyph observation at once, and each pass walks every
@@ -179,7 +178,17 @@ extension TabBarBadgeOverlay.OverlayView {
     func scheduleRetry(reason: String) {
         guard window != nil else { return }
         guard findBudget > 0 else {
-            logger?.warning(.ui, "Tab badge overlay stood down: \(reason), find attempts spent")
+            if graceArmed {
+                // The grace relies on a future retry for its hand-off; with the budget spent none is coming,
+                // so it goes now — never a wedged hosting-true with no capsules and no timer. The stood-down
+                // warning is for a silently lost bar, not for this deliberate hand-off.
+                graceArmed = false
+                diagnose("handed off after grace")
+                retireHosts()
+                host(false)
+            } else {
+                logger?.warning(.ui, "Tab badge overlay stood down: \(reason), find attempts spent")
+            }
             return
         }
         findBudget -= 1
