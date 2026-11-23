@@ -105,3 +105,16 @@ status code also settles the last transport checkpoint).
   item binding clears (the one pop signal an item push gives — never a tab switch, never a cover), so the chat
   registers like any room and Back restores the bar.
   Mechanism, pins and evidence: `groups.md` (2026-11-19).
+- 2026-11-23 — An event note inside the event's OWN room (the note's `eventId` is the room's id) pushed the full
+  detail by value, which offered "Open chat" back into the room (the loop the merge review closed for the info
+  button and the tournament note). `SystemRowContent.destination` now answers that one case as
+  `SystemRowDestination.eventRoom` — the info button's exact `EventDestination(id:name:context: .fromChat)`,
+  answered without a fetch while the pushed `EventLoaderView` fetches on arrival, as behind the info button — so
+  `canOpenChat` is false there; every other event note keeps the by-value `SportEvent` push with no new
+  loading state. Pinned in `SystemRowContentTests.aNoteAboutTheRoomsOwnGameOpensItFromChatWithoutAFetch` (and the
+  untouched fetched-push pins); no walk covers the note push, so none changed.
+- 2026-11-23 — Review residuals, recorded: the own-room eventCreated row still fetches its own event to word
+  itself (`load(for:)`; an own-room shortcut there is the shape if it ever matters), and
+  `SystemRowDestination.open(through:)` routes every system-row destination to the Chats tab even from a chat
+  opened in place (pre-existing since the tournament note; a current-stack push is the shape if the owner ever
+  reports it).

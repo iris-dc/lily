@@ -106,3 +106,8 @@ the auth-failed popup) — a run against the real backend must build signed (dro
 is enough). And `-reset-session` does not clear the Amplify keychain session: a signed build can restore the previous
 account and skip the landing; reset it per run with `xcrun simctl keychain <udid> reset` (which signs every stored
 account out of that simulator).
+- 2026-11-23 — `dragUpUntilHittable` judges hittability only once the keyboard is down (its upper-half drags
+  dismiss it; a `Form` dismisses on the scroll): asking hittability of a row the keyboard covers — directly or
+  through a predicate expectation — can "fail to determine hittability (activation point invalid)", which XCTest
+  records as a test failure instead of answering false. Both shapes were caught in the same round, the direct read
+  on the SE and the predicate on the Pro, before the keyboard gate landed.

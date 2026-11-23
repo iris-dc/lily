@@ -24,7 +24,7 @@ extension View {
 
     /// The floating action look (the "+" on Explore): a prominent glass circle in the accent colour. The circle takes its
     /// diameter from the extra-large control size, never from a frame on the label, like every other button, then scales
-    /// up slightly (`floatingButtonScale`, the owner's fourth design round) — the transform grows the drawn circle and
+    /// up slightly (`floatingButtonScale`) — the transform grows the drawn circle and
     /// its hit area together, the one way to a size between the fixed control sizes.
     func lilyFloatingActionButton() -> some View {
         lilyIconButton(controlSize: .extraLarge)

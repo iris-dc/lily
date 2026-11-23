@@ -4,8 +4,7 @@ import Observation
 /// The caller's `GET /api/me`, loaded once per signed-in session: operator status, where live chat connects and
 /// whether the backend takes attachments. A failed load is logged and not shown: the screens treat a missing account
 /// as "not known yet" and the next `loadIfNeeded` tries again. The answer's terms fields stay on the wire and are
-/// ignored: the app never prompts for terms — agreement is by use, stamped by the backend at account creation
-/// (owner decision 2026-11-08).
+/// ignored: the app never prompts for terms — agreement is by use, stamped by the backend at account creation.
 @Observable
 final class MeStore: SessionObserver {
     private(set) var account: Account?

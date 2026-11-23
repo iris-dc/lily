@@ -6,7 +6,7 @@ nonisolated extension AppBranding {
     /// at `AppConfig.Moderation.privacyURL` — the canonical address App Store Connect points at — section for section,
     /// fact for fact: a change to either side lands in both in the same change
     /// (`laurel/src/main/resources/pages/privacy.html`). The page's date line and its self-referencing footer stay on
-    /// the page alone (owner decision 2026-11-08: the in-app screen carries the sections and nothing else).
+    /// the page alone: the in-app screen carries the sections and nothing else.
     enum Privacy {
         typealias Section = Legal.Section
         typealias Paragraph = Legal.Paragraph

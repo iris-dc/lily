@@ -61,9 +61,11 @@ final class SystemRowContent {
         }
     }
 
-    /// Where a row leads, `.success(nil)` when nowhere. A tournament note needs no fetch: the room is the tournament and
-    /// `roomName` names it until the detail loads. A game is fetched; a failure is answered, not reported, so the room
-    /// decides what the caller sees.
+    /// Where a row leads, `.success(nil)` when nowhere. A tournament note is answered without a fetch: the room is the
+    /// tournament and `roomName` names it until the detail loads; a note about the room's own game is answered the same
+    /// way, as the info button's push — the loader behind it fetches on arrival, and the detail offers no chat back
+    /// into this room. Any other game is fetched here; a failure is answered, not reported, so the room decides what
+    /// the caller sees.
     func destination(for message: ChatMessage, roomName: String) async -> Result<SystemRowDestination?, any Error> {
         if message.kind.isTournamentNote, let tournamentID = message.tournamentId {
             let name = linked.tournaments[tournamentID]?.name ?? roomName
@@ -74,6 +76,9 @@ final class SystemRowContent {
             return .success(.tournament(destination))
         }
         guard let eventID = message.eventId else { return .success(nil) }
+        if eventID == groupID {
+            return .success(.eventRoom(EventDestination(id: eventID, name: roomName, context: .fromChat)))
+        }
         switch await fetchEvent(id: eventID) {
         case .success(let event): return .success(.event(event))
         case .failure(let error): return .failure(error)

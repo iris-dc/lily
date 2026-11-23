@@ -4,7 +4,7 @@ nonisolated extension AppBranding {
     /// The creation wizard's chrome: the step titles with their captions and the progress mark's counter, Next and
     /// the discard confirmation. The fields keep their copy from each kind's existing `Create` namespace, and the
     /// final step's button reuses each kind's submit. Captions are plain sentences in the app's voice — no jargon,
-    /// no semicolons, one under every step title (the owner's third design round, 2026-11-11).
+    /// no semicolons, one under every step title.
     enum Create {
         /// The event steps' navigation titles, one idea per page.
         static var eventName: String { localized("Name") }
@@ -26,7 +26,7 @@ nonisolated extension AppBranding {
             localized("A group event lives on that group's page. Without one it's open to everyone.")
         }
         /// The place caption is the Where rule the form already states: pick a suggested place or set the spot
-        /// on the map (round 5, 2026-11-12).
+        /// on the map.
         static var eventPlaceCaption: String { Events.Create.whereHint }
         static var eventPlayersCaption: String {
             localized("A limit closes the event when it's full. A number needed lets more people join.")

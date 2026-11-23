@@ -103,12 +103,42 @@ class LilyUITestCase: XCTestCase {
     func dragUpUntilExists(_ element: XCUIElement, maxDrags: Int = 4) {
         var drags = 0
         while !element.waitForExistence(timeout: 1) && drags < maxDrags {
-            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15))
-            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45))
-                .press(forDuration: 0.05, thenDragTo: end, withVelocity: .default, thenHoldForDuration: 0.1)
+            dragUpOnce()
             drags += 1
         }
         XCTAssertTrue(element.exists, "element never scrolled into the accessibility tree")
+    }
+
+    /// `dragUpUntilExists` for a row that already counts as existing while the keyboard covers it (so that
+    /// helper runs no drag): the same upper-half drags until the element is hittable, with the `Form`
+    /// dismissing the keyboard on the scroll. Hittability is asked only once the keyboard is down — asking it
+    /// of a covered row, directly or through a predicate, can fail to determine ("activation point invalid")
+    /// and is recorded as a failure instead of answering false — and each ask carries a short settle wait, so
+    /// a mid-deceleration read on a slow runner never triggers an overshoot drag.
+    @MainActor
+    func dragUpUntilHittable(_ element: XCUIElement, maxDrags: Int = 6) {
+        var drags = 0
+        while (app.keyboards.firstMatch.exists || !isHittableSoon(element)) && drags < maxDrags {
+            dragUpOnce()
+            drags += 1
+        }
+        XCTAssertTrue(isHittableSoon(element, timeout: 3), "element never dragged into a hittable position")
+    }
+
+    /// Whether the element settles hittable within the wait: `waitForExistence`'s shape for hittability.
+    @MainActor
+    private func isHittableSoon(_ element: XCUIElement, timeout: TimeInterval = 1) -> Bool {
+        let hittable = NSPredicate(format: "exists == true AND hittable == true")
+        let settled = XCTNSPredicateExpectation(predicate: hittable, object: element)
+        return XCTWaiter().wait(for: [settled], timeout: timeout) == .completed
+    }
+
+    /// One upper-half drag: the screen's centre may be keyboard, where a swipe scrolls nothing.
+    @MainActor
+    private func dragUpOnce() {
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15))
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45))
+            .press(forDuration: 0.05, thenDragTo: end, withVelocity: .default, thenHoldForDuration: 0.1)
     }
 
     /// Pulls the content down, slowly, from the upper half of the screen so a `.refreshable` fires: a quick

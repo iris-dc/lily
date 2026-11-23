@@ -4,7 +4,7 @@ import Foundation
 /// are below the project's minimum for a type name. A missing `attachmentsEnabled` reads as off: the field arrived
 /// with attachments, and an older backend has no bucket to take them. The two terms fields stay decoded for wire
 /// compatibility and are ignored: the app never prompts for terms — agreement is by use, and the backend stamps
-/// `acceptedTermsVersion` at account creation (owner decision 2026-11-08).
+/// `acceptedTermsVersion` at account creation.
 nonisolated struct Account: Hashable, Codable, Sendable {
     let userId: String
     let isOperator: Bool

@@ -91,6 +91,18 @@ struct SystemRowContentTests {
         #expect(events.fetchedEventIDs == ["e", "e"])
     }
 
+    /// A note about the room's own game (its id is the room's) opens the info button's push — by id and name,
+    /// `.fromChat` so the detail offers no chat back — answered without a fetch (the pushed loader fetches on
+    /// arrival); any other game keeps the by-value push.
+    @Test func aNoteAboutTheRoomsOwnGameOpensItFromChatWithoutAFetch() async {
+        let ownRow = ChatMessage.fixture(id: "s9", senderName: "Marta", kind: .eventCreated, text: nil, eventID: "g")
+
+        let destination = await opened(ownRow)
+
+        #expect(destination == .eventRoom(EventDestination(id: "g", name: roomName, context: .fromChat)))
+        #expect(events.fetchedEventIDs.isEmpty, "the destination is answered without a fetch; the loader fetches on arrival")
+    }
+
     @Test func aTournamentNoteOpensTheTournamentWithoutAFetch() async {
         let note = await opened(started)
         #expect(note == .tournament(TournamentDestination(id: "t", name: roomName, matchID: nil, context: .fromChat)))

@@ -63,10 +63,10 @@ nonisolated enum DesignTokens {
         /// The map opens this much wider than the filter's diameter, so a pin at the radius sits inside the edge and
         /// clear of the floating controls.
         static let mapRegionPadding: Double = 1.3
-        /// The floating "+" grows a tenth over the extra-large control (the owner asked for a slightly larger mark,
-        /// fourth design round 2026-11-11): the 52 pt glass circle draws and hit-tests at about 57 pt.
+        /// The floating "+" grows a tenth over the extra-large control: the 52 pt glass circle draws and hit-tests
+        /// at about 57 pt, a size between the fixed control sizes.
         static let floatingButtonScale: CGFloat = 1.1
-        /// The "+"'s layout distance from the trailing edge: `Spacing.lg` plus the owner's 23 pt leftward nudge,
+        /// The "+"'s layout distance from the trailing edge: `Spacing.lg` plus the design's 23 pt leftward nudge,
         /// plus the ~3 pt the scale grows the control beyond its layout box on each side.
         static let floatingButtonTrailingPadding: CGFloat = 42
         /// The "+"'s layout distance from the bottom safe area: exactly the ~3 pt the scale grows the circle past

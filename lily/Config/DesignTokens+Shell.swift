@@ -8,7 +8,7 @@ nonisolated extension DesignTokens {
     enum TabBar {
         static let symbolWeight: UIImage.SymbolWeight = .light
         /// The Chats tab's unread count, drawn into the glyph image (`TabBadgeRenderer`): the bar never moves its own
-        /// badge (`badgePositionAdjustment` probed at zero effect), so the count sits where the owner wants it — its
+        /// badge (`badgePositionAdjustment` has no effect), so the count is placed by hand — its
         /// centre this far from the glyph's top-right corner (x into the glyph, y below its top; the system badge sat
         /// at about (+13, +3) on the same glyph), clearly further left and down.
         static let badgeCenterOffset = CGPoint(x: -1, y: 4)
@@ -34,7 +34,7 @@ nonisolated extension DesignTokens.Layout {
     /// the circle is the one surface — no glass on glass.
     static let profileCornerSize: CGFloat = 36
     /// The hidden capsule's content inset: the corner circle backs out by this and takes the capsule's own leading
-    /// edge, flush with the large titles' margin on the iPhone (owner correction 2026-11-08; measured as the same
+    /// edge, flush with the large titles' margin on the iPhone (measured as the same
     /// 10 pt on the iPhone and iPad simulators, where the system's own capsule sits at 16 pt and 10 pt).
     static let profileCornerCapsuleInset: CGFloat = 10
 }

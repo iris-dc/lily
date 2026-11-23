@@ -5,7 +5,7 @@ nonisolated extension AppBranding {
     /// like the privacy policy. They mirror the page Laurel serves at `AppConfig.Moderation.termsURL` section for
     /// section, fact for fact — a change to either side lands in both in the same change
     /// (`laurel/src/main/resources/pages/terms.html`) — minus the page's version stamp: agreement is by use, never
-    /// a prompt (owner decision 2026-11-08), so no version is put to the reader and nothing asks to be accepted.
+    /// a prompt, so no version is put to the reader and nothing asks to be accepted.
     enum Terms {
         typealias Section = Legal.Section
         typealias Paragraph = Legal.Paragraph
@@ -65,7 +65,7 @@ nonisolated extension AppBranding {
             ])
         }
 
-        /// Agreement is by use (owner decision 2026-11-08): a change never prompts, it applies to continued use.
+        /// Agreement is by use: a change never prompts, it applies to continued use.
         static var changes: Section {
             Section(title: Legal.changesTitle, paragraphs: [
                 Paragraph(body: localized("""

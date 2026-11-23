@@ -79,9 +79,11 @@ extension LilyChatTests {
         enter("Friday", into: app.textFields["poll-option-field-2"])
         let multiple = app.switches["poll-multiple"].firstMatch
         XCTAssertTrue(multiple.waitForExistence(timeout: 5))
-        // With the keyboard up the toggles sit under it; scrolled into the clear, a Toggle in a Form flips at its
-        // trailing end (a tap in the middle lands on the label).
-        scrollUntilHittable(multiple)
+        // On the SE-class height the keyboard owns the screen's centre, where `scrollUntilHittable`'s swipe
+        // grabs nothing, and the covered row still counts as existing, so `dragUpUntilExists` runs no drag:
+        // the unconditional upper-half drags scroll the Form, which dismisses the keyboard, until the toggle
+        // is clear. A Toggle in a Form flips at its trailing end (a middle tap lands on the label).
+        dragUpUntilHittable(multiple)
         multiple.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
         XCTAssertTrue(waitUntil(multiple, holds: "value == '1'"), "the toggle reads \(String(describing: multiple.value))")
         app.buttons["poll-send"].tap()
