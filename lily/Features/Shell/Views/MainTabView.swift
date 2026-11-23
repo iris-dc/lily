@@ -52,6 +52,12 @@ struct MainTabView: View {
         // and dropped: its sidebar only repeated the tabs and iPadOS opened it by itself in landscape,
         // taking 280 pt from the content column.
         .tabBarMinimizeBehavior(.onScrollDown)
+        // Compact widths only: the iPad's top bar never minimizes and is no `UITabBar`, so it has no circle.
+        .background {
+            if AppConfig.FeatureFlags.chat && !layoutMode.isRegular {
+                TabBarBareCircle(count: unreadChats, renderer: badgeRenderer, logger: dependencies.logger)
+            }
+        }
         // The tabs fill and the bar shows at once, under the landing that the root fades out over them; animated, the
         // bar would slide up into view.
         .animation(nil, value: showsContent)
@@ -94,9 +100,9 @@ struct MainTabView: View {
     /// The Chats label with the unread count drawn into the glyph (`TabBadgeRenderer`): the system badge cannot move
     /// and the bar honours only the label's title and `UIImage`, so the count rides the image itself. The composite
     /// is `.alwaysOriginal`, which the bar does not tint, so the glyph's colour follows the selection here; at zero
-    /// the plain template label stands, tinted by the bar like every other tab. The known trade, accepted with the
-    /// 2026-11-22 revert of the in-bar overlay: the minimized circle draws the tab's `UIImage` unscaled, so the
-    /// count shows cut at the circle's rim while Chats is selected.
+    /// the plain template label stands, tinted by the bar like every other tab. The minimized circle would draw
+    /// this composite unscaled and cut the count at its rim, so `TabBarBareCircle` keeps the circle's mirrored
+    /// glyph plain — the count fades out with the menu and returns with the expand (the owner's spec).
     @ViewBuilder
     private func chatTabLabel(count: Int, selected: Bool) -> some View {
         let glyphColor = selected ? UIColor(Color.lilyAccent) : DesignTokens.TabBar.unselectedGlyphColor

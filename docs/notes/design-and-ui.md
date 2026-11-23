@@ -784,3 +784,40 @@ the asset catalog.
   seam. The accepted trade RETURNS: the minimized circle draws the tab's `UIImage` unscaled, so the count shows
   cut at the circle's rim while Chats is selected (filmed for the owner in `fix13-revert/`). The saga bullets
   above (2026-11-19 through 2026-11-22) are superseded by this revert.
+- **The minimized circle goes bare: the count fades with the menu (2026-11-22, the owner-approved follow-up to
+  the revert).** `TabBarBareCircle`, a lean UIKit seam mounted like the old overlay was: it finds the bar, then
+  the minimized circle pane (its own one-item platter holding one `UIImageView` that UIKit mirrors the tab's
+  image into), and whenever that mirror holds one of OUR composites (`TabBadgeRenderer.isComposite` — identity
+  by instance or backing `CGImage`, pinned) swaps it for the plain template Chats glyph the count-zero label
+  uses. KVO on the mirror's `image` re-applies after UIKit resets it (the identity rule makes a loop impossible
+  and keeps every other tab's glyph untouched — Home's circle filmed intact); a pane churn re-finds a re-created
+  circle with the bounded budget (`AppConfig.Shell` returned, with `tabBarCircleMaxWidth = 64`: only a
+  circle-narrow pane is ever a candidate, judged on model bounds the morph never moves); `MainTabView` keeps the
+  composite label unconditionally. Two filmed findings shaped it: the circle SCALES template symbols to its own
+  bounds — Home's native house draws just as large, so the plain replacement stays template and reads exactly
+  like the other tabs' circles (a point-sized configuration changed nothing, and a drawn-bitmap detour was
+  reverted once Home's circle proved large-is-native) — and draws BITMAPS unscaled, which is why the composite
+  was cut at the rim. On film (`item2-badge-ride-fix2/fix14-bare-circle/`): the count fades out with the pill's
+  own fade and the circle is plain from its first drawn frame in all four rapid cycles — the only composite
+  pixels in any formation frame belong to the fading pill itself, so the one-frame flash risk never commits; the
+  expand returns the full composite riding the pill's fade-in, with no rim-cut frame; the expanded rests are
+  byte-flat to the fix13 baselines (bar-strip YMAX 0); selects and the lens are untouched (SE min 763 of rest
+  1131, 17 Pro 2222 of 2612). The capture walks gained a wait on the tab's unread value — the mock count arrives
+  with the rooms preload and twice outran a three-second sleep straight into the swipes.
+- **The circle guard reviewed: the ferried count is the re-arm's channel (2026-11-23, the second max-review
+  round on the seam).** Nine findings folded in: churns re-run the full search with a fresh budget; churn and
+  adoption share the condemnation standard (the pure pinned `isDrawable` walk up to, excluding, the pane, with
+  the named alpha floor); the adopted circle pane's own sublayers are observed (an image view rebuilt inside a
+  persisting pane re-finds the mirror); the swap runs synchronously inside the mirror's KVO callout; a spent
+  search with no bar warns once through the facade; a stale retry no-ops once bound. The filmed discovery: at a
+  shell swap a fresh guard adopted the OUTGOING bar — still in the window during the crossfade — and went
+  permanently silent when it left, because SwiftUI SKIPS `updateUIView` on a representable whose stored value is
+  unchanged (`renderer` and `logger` never change), so the promised count-change updates never landed.
+  `TabBarBareCircle` now carries `count` purely as the value-change driver, and a healthy update re-judges the
+  mirror. A probe stream also showed UIKit re-stamping the composite into the mirror repeatedly DURING minimized
+  rest, each stamp answered by a synchronous swap in the same callout — the films stay plain through those exact
+  windows, which is the restamp-while-minimized proof; a dedicated count-change-while-minimized walk was
+  attempted three ways and abandoned honestly (a mock reply races the departing room's read flusher and lands
+  read; the 0 -> 3 preload beats any walk to the Chats tab, warm or cold). The sign-out walk asserts the second
+  session's count and films both sessions' circles plain. Films, probe streams and the failed-driver evidence in
+  `item2-badge-ride-fix2/fix15-guard/`.

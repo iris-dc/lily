@@ -35,7 +35,7 @@ screens inside the tabs and the sheet (`ProfileView`, `ChatsView`, `ChatsSplitVi
   with the bar hidden while `!showsContent`, chat badge from `unreadCenter` and `inbox.hasUnread` drawn into the glyph image
   (`TabBadgeRenderer`, 2026-11-12: the system badge is immovable on the iOS 26 bar), outline glyphs via
   `UIImage.SymbolConfiguration`, `usesSplitChats` from `LayoutMode`; mounts the profile sheet above the per-tab
-  language identity), `ProfileCornerButton` (the shared `.topBarLeading` control at
+  language identity), `TabBarBareCircle` (the UIKit seam keeping the minimized circle's mirrored glyph plain, so the unread count fades with the menu), `ProfileCornerButton` (the shared `.topBarLeading` control at
   the four stack roots, initials or the person glyph, raising `AppNavigation.isProfilePresented`; 2026-11-07),
   `HomeTab` and `ChatTab` (the stacks bound to
   `homePath` and `chatPath`; the iPad split view for a signed-in regular width), `HomeView` (guest prompt or overview;

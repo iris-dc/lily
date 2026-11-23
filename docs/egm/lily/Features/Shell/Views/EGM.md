@@ -14,7 +14,7 @@ between a stack and the iPad split view. Lists are read from `dependencies.lists
 `dependencies.navigation` (`AppNavigation`), and the screens shown inside (`ProfileView`, `ChatsView`, `ChatsSplitView`,
 `EventListView`, `EventDetailView`, `GroupCarousel`, `TournamentCarousel`) belong to other features.
 
-Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views/ProfileCornerButton.swift`,
+Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views/TabBarBareCircle.swift`, `lily/Features/Shell/Views/ProfileCornerButton.swift`,
 `lily/Features/Shell/Views/HomeTab.swift`,
 `lily/Features/Shell/Views/HomeView.swift`, `lily/Features/Shell/Views/HomeOverview.swift`,
 `lily/Features/Shell/Views/ExploreTab.swift`, `lily/Features/Shell/Views/ChatTab.swift`,
@@ -30,8 +30,9 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   follows `navigation.selectedTab` — `UIColor(Color.lilyAccent)` selected, `DesignTokens.TabBar.unselectedGlyphColor`
   otherwise — and at zero the plain template `tabLabel` returns. The in-bar capsule overlay was reverted
   2026-11-22 (the owner's verdict after a simulator repro: an expand left the capsule misregistered against the
-  glyph, its borders exposed); the accepted trade: the minimized circle draws the tab's `UIImage` unscaled, so
-  the count shows cut at the circle's rim while Chats is selected — see `docs/notes/design-and-ui.md`); every tab's
+  glyph, its borders exposed); the minimized circle would draw this composite unscaled and cut the count at its
+  rim, so `TabBarBareCircle` keeps the circle's mirrored glyph plain — the count fades with the menu, the
+  owner-approved follow-up — see `docs/notes/design-and-ui.md`); every tab's
   tree carries `.id(language)` where
   `language = dependencies.language.language`. The profile sheet mounts on the `TabView` (2026-11-07):
   `.sheet(isPresented: $navigation.isProfilePresented) { ProfileView(dependencies:language:) }` with
@@ -43,6 +44,32 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   `AppBranding.homeTitle`/`exploreTitle`/`chatsTitle` with `DesignTokens.Symbols.home`/`explore`/
   `chat` through `tabLabel(for:symbol:)`, which reads the title from `AppTab.title`, a `UIImage.SymbolConfiguration(weight:
   DesignTokens.TabBar.symbolWeight)`; `.tabBarMinimizeBehavior(.onScrollDown)`.
+- `[TabBarBareCircle.swift:TabBarBareCircle]` (2026-11-22, the owner-approved follow-up to the revert):
+  `UIViewRepresentable` over `count: Int` (carried only so the representable's value changes with the count —
+  SwiftUI skips `updateUIView` on an unchanged value, and the count change is the re-arm's one guaranteed
+  channel after a shell swap; filmed: a fresh guard adopted the OUTGOING bar during the sign-out crossfade and
+  went permanently silent without it), `renderer: TabBadgeRenderer` and `logger`, mounted in the `TabView`'s
+  background behind the chat flag on compact widths only. Its `GuardView` finds the `UITabBar`, then the minimized circle pane — the one
+  bar subview no wider than `AppConfig.Shell.tabBarCircleMaxWidth` (`isMinimizedCircle`, a pure pinned rule on
+  model bounds, which the collapse morph never moves; the expanded platter and the ~100 pt tab-switch transient
+  never qualify) — adopting only a mirror the condemnation standard accepts (`isDrawable`, the pure pinned walk:
+  nothing hidden or under `tabBarDrawableAlphaMinimum` up to, excluding, the pane, which hides at rest by
+  design) — and keeps that one `UIImageView` mirror on the plain template Chats glyph whenever UIKit has
+  mirrored one of our composites into it (`TabBadgeRenderer.isComposite`, identity by instance or backing
+  `CGImage`; the replacement is left template, so the circle tints and scales it natively, exactly as it draws
+  the other tabs' glyphs, which render just as large there). The swap runs SYNCHRONOUSLY inside the mirror's
+  KVO callout, joining the transaction that stamped the composite — a deferred swap could commit one rim-cut
+  frame on a count change while minimized; identity bounds the re-entrant callout to one no-op. A churn of the
+  bar's panes or of the adopted circle's own sublayers (an image view can be rebuilt inside a persisting pane)
+  re-validates the bound mirror by the same standard and re-runs the FULL search with a fresh budget on failure;
+  the SwiftUI update re-arms a guard whose adopted bar is gone or windowless (the shell rebuild can swap
+  hierarchies under a live guard — its observations die with the outgoing bar and no churn fires again; the
+  ferried count is what makes those updates land, and a healthy update re-judges the mirror, the belt to the
+  KVO braces); a stale deferred retry no-ops once a mirror is
+  bound; and a search that spends its budget with NO bar logs one `.ui` warning ("Tab bar circle guard stood
+  down") — a bar found but no circle yet idles silently, the normal pre-minimize state. No positioning, no
+  capsules, no handoffs — a guard that never finds its circle costs only the rim-cut count the owner lived with
+  before the seam.
 - `[ProfileCornerButton.swift:ProfileCornerButton]` (2026-11-07): `ToolbarContent` over `dependencies`; one
   `.topBarLeading` item under `.sharedBackgroundVisibility(.hidden)` whose button sets
   `navigation.isProfilePresented = true`. The label is an `AvatarCircle` at `DesignTokens.Layout.profileCornerSize`:
@@ -121,10 +148,11 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   view.
 - `[MainTabView.swift:MainTabView.chatTabLabel]` (composite-only since the 2026-11-22 revert of the in-bar
   overlay): the unread count is always drawn into the glyph image, on every width; at zero the plain template
-  label stands, tinted by the bar. The accepted trade: the minimized circle draws the tab's `UIImage` unscaled,
-  so the count shows cut at the circle's rim while Chats is selected — the owner's call when ordering the
-  revert (an expand left the overlay's capsule misregistered on the simulator; the films sit in
-  `item2-badge-ride-fix2/fix13-revert/`). The drawn badge is no accessibility element; the tab's
+  label stands, tinted by the bar. The minimized circle draws bitmaps unscaled and would cut the count
+  at its rim; `TabBarBareCircle` swaps OUR composite alone for the plain template glyph there (identity by
+  instance or backing `CGImage`), so the count fades out with the menu, the bare circle reads like every other
+  tab's circle, and another tab's glyph is never touched (the revert films sit in
+  `item2-badge-ride-fix2/fix13-revert/`, the circle films in `fix14-bare-circle/`). The drawn badge is no accessibility element; the tab's
   `accessibilityValue` (`AppBranding.Chats.unreadChats`) stays the one VoiceOver and test seam.
 - `[HomeView.swift:HomeView.loadIfStale]`: `await dependencies.sessionController.restore()` first, then `guard
   !Task.isCancelled, content == .overview else { return }`: a guest asks for nothing and nothing is requested before the
@@ -164,6 +192,11 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   profile sheet, which mounts its own `.errorPopup`), sets `usesSplitChats`; `[ProfileCornerButton.swift:ProfileCornerButton]` sets `isProfilePresented = true`;
   `[HomeTab.swift:HomeTab]` and `[ChatTab.swift:ChatTab]` bind `homePath` and `chatPath`.
 - `[MainTabView.swift:MainTabView.tabLabel(for:symbol:)]`: builds `UIImage(systemName:withConfiguration:)` glyphs (UIKit); `chatTabLabel(count:selected:)` asks the `@State` `TabBadgeRenderer` for the badged composite, rendered once per count and colour and cached (2026-11-12).
+- `[TabBarBareCircle.swift:TabBarBareCircle.GuardView]`: installs KVO on the bar's and the adopted circle
+  pane's layer sublayers and on the circle mirror's `image`, and writes that one image view's `image` (the plain
+  template glyph) when it holds our composite — synchronously inside the image callout; bounded find retries, no
+  polling once found; logs one `.ui` warning when a search spends its budget with no bar; no network, disk or
+  `UserDefaults` access.
 - `[GuestSignInPrompt.swift:GuestSignInPrompt]`: presents `SignInSheet`, which mounts its own `.errorPopup`.
 - `[HomeView.swift:HomeView.body]`: `tournaments.replace` and `events.replace` are handed to the destinations as change
   callbacks that mutate the Home lists.
@@ -178,5 +211,6 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
 
 - Run: `./scripts/ci.sh unit` (from the repository root; the segment model these views draw is pinned in
   `lilyTests/Shell/HomeSegmentTests.swift`, the
-  the pane rule in `lilyTests/Changes/ListStateTests.swift`; the screens
+  the circle guard's pane rule in `lilyTests/Shell/TabBarBareCircleTests.swift` and its identity rule in
+  `lilyTests/Shell/TabBadgeRendererTests.swift`, the pane rule in `lilyTests/Changes/ListStateTests.swift`; the screens
   themselves are exercised by the UI tests, `./scripts/ci.sh ui` and `./scripts/ci.sh ui-ipad`).

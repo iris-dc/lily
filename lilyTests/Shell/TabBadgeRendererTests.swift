@@ -38,6 +38,18 @@ struct TabBadgeRendererTests {
         #expect(first.renderingMode == .alwaysOriginal, "a template image would tint the badge with the glyph")
     }
 
+    /// The circle guard swaps only our composites: the rendered image by instance, a rewrapped one by its
+    /// backing image (bridging may rewrap), and never a plain or foreign glyph — the identity rule that keeps
+    /// the re-apply from looping.
+    @Test func theCircleGuardRecognisesOnlyOurComposites() throws {
+        let composite = try #require(icon(3))
+        #expect(renderer.isComposite(composite))
+        let rewrapped = try #require(composite.cgImage.map { UIImage(cgImage: $0) })
+        #expect(renderer.isComposite(rewrapped))
+        #expect(!renderer.isComposite(nil))
+        #expect(!renderer.isComposite(UIImage(systemName: "message")))
+    }
+
     /// The canvas grows by one symmetric inset around the glyph, so the bar, centring the image, keeps the glyph
     /// where the plain template one sits.
     @Test func theCanvasPadsTheGlyphSymmetrically() throws {

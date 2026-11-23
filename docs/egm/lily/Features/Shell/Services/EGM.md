@@ -12,7 +12,7 @@ alongside. Both classes are main-actor isolated by the app target's default and 
 `AppDependencies`. `TabBadgeRenderer` (2026-11-12) draws the Chats tab's unread count for `MainTabView` — the iOS 26
 floating bar honours only a label's title and `UIImage` and never moves its own badge — composited into the glyph
 image, cached per count and colour (the in-bar capsule overlay was reverted 2026-11-22; the composite is the one
-badge on every width).
+badge on every width, and `TabBarBareCircle` keeps the minimized circle's mirror plain by `isComposite` identity).
 
 Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Services/ShellSync.swift`,
 `lily/Features/Shell/Services/TabBadgeRenderer.swift`.
@@ -38,7 +38,10 @@ Files: `lily/Features/Shell/Services/ShellLists.swift`, `lily/Features/Shell/Ser
   count, or "99+" above `DesignTokens.TabBar.badgeCountCap`. `func icon(symbol: String, count: Int, glyphColor:
   UIColor, badgeColor: UIColor) -> UIImage?` — the symbol's glyph (built at `DesignTokens.TabBar.badgeGlyphPointSize`
   and `symbolWeight`, tinted `glyphColor`) with the count's capsule over its top-right corner
-  (`DesignTokens.TabBar.badgeCenterOffset`), or `nil` at a count of zero or less.
+  (`DesignTokens.TabBar.badgeCenterOffset`), or `nil` at a count of zero or less. `func isComposite(_ image:
+  UIImage?) -> Bool` (2026-11-22) — whether an image is one of the cached composites, by instance or by backing
+  `CGImage` (bridging may rewrap): the circle guard's identity rule (`TabBarBareCircle`), never matching a plain
+  or foreign glyph, which is what keeps its re-apply from looping.
 
 ## Invariants
 

@@ -5,8 +5,9 @@ import UIKit
 /// glyph is drawn by hand, every metric and offset in `DesignTokens.TabBar`: `icon(...)` renders the glyph with the
 /// count's capsule over its top-right corner. The composite renders as `.alwaysOriginal` — the bar cannot tint
 /// it — so the caller passes the glyph's colour per selection state; images are cached per count and colour, never
-/// re-rendered per frame. The known trade, accepted with the 2026-11-22 revert of the in-bar overlay: the minimized
-/// circle draws the tab's `UIImage` unscaled, so the count shows cut at the circle's rim while Chats is selected.
+/// re-rendered per frame. The minimized circle would draw the composite unscaled and cut the count at its rim,
+/// so `TabBarBareCircle` keeps the circle's mirrored glyph plain — the count fades out with the menu and
+/// returns with the expand.
 final class TabBadgeRenderer {
     private struct Key: Hashable {
         let symbol: String
@@ -74,6 +75,15 @@ final class TabBadgeRenderer {
         let size = text.size(withAttributes: attributes)
         text.draw(at: CGPoint(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2),
                   withAttributes: attributes)
+    }
+
+    /// Whether `image` is one of this renderer's composites — by instance, or by backing `CGImage` (bridging
+    /// may rewrap the instance). UIKit mirrors the tab's image into the minimized circle; the circle guard
+    /// (`TabBarBareCircle`) swaps only OUR composites, never a plain or another tab's glyph, and the check is
+    /// what keeps its re-apply from ever looping.
+    func isComposite(_ image: UIImage?) -> Bool {
+        guard let image else { return false }
+        return cache.values.contains { $0 === image || ($0.cgImage != nil && $0.cgImage === image.cgImage) }
     }
 
     /// The capsule around the count: never narrower than it is tall, so a single digit reads as a circle.
