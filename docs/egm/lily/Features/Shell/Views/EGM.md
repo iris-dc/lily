@@ -64,7 +64,8 @@ Files: `lily/Features/Shell/Views/MainTabView.swift`, `lily/Features/Shell/Views
   re-validates the bound mirror by the same standard and re-runs the FULL search with a fresh budget on failure;
   the SwiftUI update re-arms a guard whose adopted bar is gone or windowless (the shell rebuild can swap
   hierarchies under a live guard — its observations die with the outgoing bar and no churn fires again; the
-  ferried count is what makes those updates land, and a healthy update re-judges the mirror, the belt to the
+  ferried count is what makes those updates land, and a healthy update re-judges the mirror with the
+  condemnation standard — a swap alone would no-op on a mirror that silently died (2026-11-23) — the belt to the
   KVO braces); a stale deferred retry no-ops once a mirror is
   bound; and a search that spends its budget with NO bar logs one `.ui` warning ("Tab bar circle guard stood
   down") — a bar found but no circle yet idles silently, the normal pre-minimize state. No positioning, no

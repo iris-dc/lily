@@ -1,8 +1,9 @@
 import Foundation
 
 /// Opens the chat behind an event or a tournament: the room is a group under the surface's id, fetched for the chat,
-/// placed in Mine when the caller is a member (its by-user index may still miss a room just entered, and the Chats
-/// tab lists only rooms Mine holds) and handed back for the caller to push in place.
+/// placed in Mine when the caller is a member and Mine lacks it (the by-user index may still miss a room just
+/// entered, and the Chats tab lists only rooms Mine holds; a held copy is never replaced and no change is recorded —
+/// opening a chat is a read) and handed back for the caller to push in place.
 struct RoomChatOpener {
     let groupRepository: any GroupRepository
     let myGroups: MyGroupsStore
@@ -17,7 +18,9 @@ struct RoomChatOpener {
         } catch AppError.groupNotFound {
             throw unavailable
         }
-        if room.isMember { myGroups.add(room) }
+        if room.isMember && !myGroups.groups.contains(where: { $0.id == room.id }) {
+            myGroups.add(room)
+        }
         return room
     }
 }

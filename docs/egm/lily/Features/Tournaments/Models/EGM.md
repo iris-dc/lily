@@ -31,8 +31,9 @@ nothing here performs I/O or touches shared state. Limits come from
   `updatingEntries(...)`, `replacingOrganizer(...)`, `updating(with:at:)`, `starting(at:)`, `completing(...)`,
   `cancelling(at:)`.
 - `[lily/Features/Tournaments/Models/Tournament.swift:TournamentScope]`: `enum { upcoming, mine, group(id:) }` with
-  `wireName: String?` and `snapshotList`. `TournamentDestination(id, name, matchID?, preview: Tournament?)` and the
-  empty marker `DiscoverTournamentsDestination` are the feature's navigation values.
+  `wireName: String?` and `snapshotList`. `TournamentDestination(id, name, matchID?, preview: Tournament?, context:
+  GroupDetailContext = .standalone)` (the chat's info button and a room's tournament note pass `.fromChat`,
+  2026-11-23) and the empty marker `DiscoverTournamentsDestination` are the feature's navigation values.
 - `[lily/Features/Tournaments/Models/TournamentDetail.swift:TournamentDetail]`: `tournament`, `entries`, `matches`,
   `standings` (all `private(set)`); `registeredEntries`, `entry(id:)`, `match(id:)`, `entryName(_:)`, `isMine(_:)`,
   `entry(containing:)`, `opponent(in:of:)`; copy-returning `replacing(...)` variants, `starting(at:)`,
@@ -158,8 +159,9 @@ nothing here performs I/O or touches shared state. Limits come from
   organiser wins over an own entry. `TournamentParticipation` precedence: hidden, leave or entered (by registration
   open), registrationClosed, full, createTeam or join (by `isTeam`).
 - `[lily/Features/Tournaments/Models/TournamentPermissions.swift:TournamentPermissions.init]`: `canEdit = canCancel =
-  organiser && !isOver`; `canRemoveEntries = organiser && .registration`; `canOpenChat = chatEnabled && involved`;
-  `canInvite = involved && registration open`; `canReport = signed in && !organiser`; `canStart = showsStart &&
+  organiser && !isOver`; `canRemoveEntries = organiser && .registration`; `canOpenChat = chatEnabled && involved && context ==
+  .standalone` (2026-11-23: from the room's own chat there is no chat to open); `canInvite = involved && registration
+  open`; `canReport = signed in && !organiser`; `canStart = showsStart &&
   tournament.canStart`, else `startBlockedReason` from `AppBranding.Tournaments.startNeeds`; `organizerProfile` only
   for a signed-in non-organiser and never for a tombstoned organiser (`tournament.deleted == true`: a deleted
   account's name opens no profile); `showsMenu` ignores `showsStart`, `canRemoveEntries`, `canJoinTeams`;

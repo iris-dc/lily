@@ -53,12 +53,15 @@ of the seven files sends invites; the invite sheet is the shared one built by `A
   `consumeLinkedMatch()`, and the shared write frame
   `@discardableResult perform(_ action: String, _ work: () async throws -> Void) async -> Bool` with its
   `perform(_ action: String, settling: (any Error) async -> Bool, _ work: () async throws -> Void) async -> Bool`
-  overload; `extension AppError { var isTournamentRefusal: Bool; var leavesTournamentWriteOutcomeUnknown: Bool }` is
+  overload and `performChat(_ action: String, _ work:) async` (2026-11-23: the same single-flight through `chatGate`,
+  whose one expected refusal is `.tournamentChatUnavailable`, logged at warning — `isTournamentRefusal` feeds the
+  entries refetch and stays untouched); `extension AppError { var isTournamentRefusal: Bool; var leavesTournamentWriteOutcomeUnknown: Bool }` is
   internal, the second shared by the `+Entries` and `+Matches` files; `repository`, `myGroups`, `identity`, `logger`
   and `pushOptIn` are internal `let`s for the `+Actions`, `+Entries` and `+Matches` files, `groupRepository` for the
-  `+Actions` file (`AppNavigation` left the dependencies 2026-11-15: the chat opens in place); `reporter`, `now`, `onChange`, `recorder`, `gate` and `changes` are private.
+  `+Actions` file (`AppNavigation` left the dependencies 2026-11-15: the chat opens in place); `reporter`, `now`, `onChange`, `recorder`, `gate`, `chatGate` and `changes` are private.
 - `[lily/Features/Tournaments/ViewModels/TournamentDetailViewModel+Actions.swift:TournamentDetailViewModel.openChat]`:
-  `openChat() async` (guarded by `permissions.canOpenChat`; the shared `RoomChatOpener` rethrows the room fetch's
+  `openChat() async` (guarded by `permissions.canOpenChat`, which is false `.fromChat`; runs through `performChat`,
+  2026-11-23; the shared `RoomChatOpener` rethrows the room fetch's
   `.groupNotFound` — the room gone, or private and the caller not in it — as `.tournamentChatUnavailable`, so the
   popup names the tournament's chat, never a group; sets `openedRoom`),
   `cancel() async`: the actions shared by the menu and the in-body action row that write no entry and no match.

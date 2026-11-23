@@ -118,7 +118,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   `isGone` dismissal [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
 - `GroupDestinations` never opens `GroupDetailView` for a conversation or a room: a `counterpart` goes to
   `UserProfileView`, `isTournamentRoom` to `TournamentDetailView`, `isEventRoom` to `EventLoaderView` over its
-  `EventDestination` (2026-11-15); a `SportGroup` push is `.standalone`, a
+  `EventDestination`, both carrying the push's own `context` (2026-11-15; forwarded 2026-11-23); a `SportGroup`
+  push is `.standalone`, a
   `GroupInfoDestination` push `.fromChat`; a nil `onTournamentChange` defaults to
   `dependencies.tournamentChanges.recordChange()` [`lily/Features/Groups/Views/GroupDestinations.swift`:`GroupDestinations`].
 - `GroupDraftForm` offers no visibility choice (fixed once created; the wizard's visibility page owns the create

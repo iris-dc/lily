@@ -18,6 +18,8 @@ final class EventDetailViewModel {
     /// room and pushes it in place.
     private let myGroups: MyGroupsStore
     private let groupRepository: any GroupRepository
+    /// Where the detail was opened from: from the event room's own chat, Open chat is hidden (the path would cycle).
+    private let context: GroupDetailContext
     private let errorCenter: ErrorCenter
     private let recorder: any InteractionRecorder
     private let logger: any Logging
@@ -33,6 +35,7 @@ final class EventDetailViewModel {
          identity: any IdentityProvider,
          myGroups: MyGroupsStore,
          groupRepository: any GroupRepository,
+         context: GroupDetailContext = .standalone,
          errorCenter: ErrorCenter,
          recorder: any InteractionRecorder,
          logger: any Logging,
@@ -46,6 +49,7 @@ final class EventDetailViewModel {
         self.identity = identity
         self.myGroups = myGroups
         self.groupRepository = groupRepository
+        self.context = context
         self.errorCenter = errorCenter
         self.recorder = recorder
         self.logger = logger
@@ -60,7 +64,11 @@ final class EventDetailViewModel {
 
     /// Chat and invite on this detail, from the event on screen and the caller.
     var permissions: EventPermissions {
-        EventPermissions(event: event, userID: identity.currentUserID, now: now(), chatEnabled: AppConfig.FeatureFlags.chat)
+        EventPermissions(event: event,
+                         userID: identity.currentUserID,
+                         now: now(),
+                         chatEnabled: AppConfig.FeatureFlags.chat,
+                         context: context)
     }
 
     /// The host, and nobody else, may change the game; the detail shows Edit for them.
@@ -116,6 +124,8 @@ final class EventDetailViewModel {
     func leave() async {
         guard await update("Leave", wantsToParticipate: false, { try await repository.leave(eventId: event.id) }) else { return }
         await myGroups.reload()
+        // Re-checked after the await: a Join that landed while the reload was out keeps its room.
+        guard !event.participates else { return }
         myGroups.remove(id: event.id)
     }
 
@@ -127,7 +137,7 @@ final class EventDetailViewModel {
         guard permissions.canOpenChat, !isBusy else { return }
         isBusy = true
         defer { isBusy = false }
-        await gate.run("Open chat for event \(event.id)") { [self] in
+        await chatGate.run("Open chat for event \(event.id)") { [self] in
             openedRoom = try await roomOpener.room(id: event.id, whenUnavailable: .eventChatUnavailable)
         }
     }
@@ -140,6 +150,8 @@ final class EventDetailViewModel {
             logger.debug(.events, "Event \(event.id) has no fetchable room yet; Mine's reload stands")
             return
         }
+        // Re-checked after the awaits: a Leave that landed while the sync was out owns the room's exit.
+        guard event.participates else { return }
         myGroups.add(room)
     }
 
@@ -187,6 +199,16 @@ final class EventDetailViewModel {
                   tryAgainDelay: tryAgainDelay,
                   report: { [errorCenter] in errorCenter.report($0) },
                   isExpected: { $0.isParticipationConflict })
+    }
+
+    /// `openChat`'s gate: the room the backend cannot answer yet (pre-backfill events have none) is its expected
+    /// refusal, logged at warning; the participation conflicts stay the write gate's.
+    private var chatGate: WriteGate {
+        WriteGate(category: .events,
+                  logger: logger,
+                  tryAgainDelay: tryAgainDelay,
+                  report: { [errorCenter] in errorCenter.report($0) },
+                  isExpected: { $0 == .eventChatUnavailable })
     }
 
     /// The chat opener shared with the tournament detail: fetch, remap a missing room, place a member room in Mine.

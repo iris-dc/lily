@@ -821,3 +821,9 @@ the asset catalog.
   read; the 0 -> 3 preload beats any walk to the Chats tab, warm or cold). The sign-out walk asserts the second
   session's count and films both sessions' circles plain. Films, probe streams and the failed-driver evidence in
   `item2-badge-ride-fix2/fix15-guard/`.
+- 2026-11-23 — The merge review found the guard's healthy-update branch calling the bare swap, which no-ops on a
+  mirror that silently died (hidden ancestor, rebuilt image view): the recovery channel was dead code exactly
+  where the KVO braces had failed. `rearmIfDetached`'s healthy branch now runs the full re-validation
+  (`revalidate()`: the condemnation standard, then swap or a fresh search). Re-filmed on the final tree per the
+  re-film rule: the collapse/expand triple stays plain through minimized rest with the count returning on expand,
+  films under `item2-badge-ride-fix2/fix16-merge-review/`.

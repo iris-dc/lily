@@ -41,6 +41,8 @@ final class TournamentDetailViewModel {
     let groupRepository: any GroupRepository
     private let recorder: any InteractionRecorder
     private let gate: WriteGate
+    /// `openChat`'s gate: the unanswerable room is its one expected refusal, warning-logged; `isTournamentRefusal` is untouched.
+    private let chatGate: WriteGate
     /// Tournament changes made anywhere; the screen reloads when it moved past the version it last agreed with.
     private let changes: ChangeTracker
     private var acknowledgedVersion: Int?
@@ -83,6 +85,11 @@ final class TournamentDetailViewModel {
                          tryAgainDelay: tryAgainDelay,
                          report: { errorCenter.report($0) },
                          isExpected: { $0.isTournamentRefusal })
+        chatGate = WriteGate(category: .tournaments,
+                             logger: logger,
+                             tryAgainDelay: tryAgainDelay,
+                             report: { errorCenter.report($0) },
+                             isExpected: { $0 == .tournamentChatUnavailable })
         self.now = now
         self.pushOptIn = pushOptIn
         self.onChange = onChange
@@ -118,7 +125,8 @@ final class TournamentDetailViewModel {
             TournamentPermissions(tournament: $0,
                                   userID: identity.currentUserID,
                                   now: now(),
-                                  chatEnabled: AppConfig.FeatureFlags.chat)
+                                  chatEnabled: AppConfig.FeatureFlags.chat,
+                                  context: destination.context)
         } ?? .none
     }
     var reportTarget: ReportTarget { .tournament(id: destination.id) }
@@ -258,6 +266,15 @@ final class TournamentDetailViewModel {
         isBusy = true
         defer { isBusy = false }
         return await gate.run("\(action) for tournament \(destination.id)", settling: settling, work)
+    }
+
+    /// `openChat`'s `perform`: the same single-flight, through the gate whose expected refusal is the room the
+    /// backend cannot answer yet, so the pre-backfill 404 logs at warning, not error.
+    func performChat(_ action: String, _ work: () async throws -> Void) async {
+        guard !isBusy, identity.currentUserID != nil else { return }
+        isBusy = true
+        defer { isBusy = false }
+        await chatGate.run("\(action) for tournament \(destination.id)", work)
     }
 }
 

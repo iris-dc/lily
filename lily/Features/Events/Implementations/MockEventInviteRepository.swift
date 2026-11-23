@@ -3,8 +3,9 @@ import Foundation
 /// Invites into an event without a backend, behind the same seam as the group invites: the candidates are the people
 /// of the caller's groups and rooms and the hosts of the mock games minus everyone already in the event
 /// (`MockInviteCandidatePool`); sent invites are remembered per event for the run (`MockInviteLedger`). The refusals
-/// follow the backend's: only the host and participants invite, while the event has not started, never someone who is
-/// in already. Nothing lands in an inbox: the mock user's inbox is the only one there is.
+/// follow the backend's, in its order: only the host and participants invite, the invitee must exist and not be in
+/// already, and the send refuses a started event (the candidates still answer for one, as the backend's do).
+/// Nothing lands in an inbox: the mock user's inbox is the only one there is.
 final class MockEventInviteRepository: InviteRepository {
     private let ledger = MockInviteLedger()
     private let pool: MockInviteCandidatePool
@@ -32,12 +33,17 @@ final class MockEventInviteRepository: InviteRepository {
         return candidates
     }
 
-    /// The backend's refusals in its order: the event and the caller's right, the invitee's participation, then
-    /// whether the invitee exists at all; a pending invite is replayed.
+    /// The backend's refusals in its order: the event and the caller's right, then the invitee's existence, their
+    /// participation and the start; a pending invite is replayed.
     func invite(groupID eventID: String, userID: String) async throws -> SentInvite {
         let event = try requireInviteRights(in: eventID)
-        guard try await !peopleIn(event).contains(userID) else { throw AppError.inviteeAlreadyJoined }
+        let people = try await peopleIn(event)
         let candidates = try await self.candidates(for: event)
+        guard people.contains(userID) || candidates.contains(where: { $0.userId == userID }) else {
+            throw AppError.userNotFound
+        }
+        guard !people.contains(userID) else { throw AppError.inviteeAlreadyJoined }
+        guard event.startsAt > now() else { throw AppError.eventStarted }
         return try ledger.send(to: userID, among: candidates, into: .event(id: eventID), now: now(), logger: logger)
     }
 
@@ -50,12 +56,11 @@ final class MockEventInviteRepository: InviteRepository {
         }
     }
 
-    /// Like the backend: the signed-in host or a participant, while the event has not started.
+    /// Like the backend: the signed-in host or a participant. The start closes only the send, never the list.
     private func requireInviteRights(in eventID: String) throws -> SportEvent {
         guard identity.currentUserID != nil else { throw AppError.sessionExpired }
         let event = try events.stored(eventID)
         guard event.participates || event.isHosted(by: identity.currentUserID) else { throw AppError.cannotInviteToEvent }
-        guard event.startsAt > now() else { throw AppError.eventStarted }
         return event
     }
 

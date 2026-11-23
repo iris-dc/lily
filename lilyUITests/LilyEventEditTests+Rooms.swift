@@ -7,7 +7,7 @@ extension LilyEventEditTests {
     private var eventInviteID: String { "01J8MOCKNB0000000000000007" }
 
     /// The joined sunset fixture's room is listed on Chats with the event caption, opens on its lines, and the chat's
-    /// info button leads to the event's detail.
+    /// info button leads to the event's detail, which offers no Open chat back into the room it came from.
     @MainActor
     func testEventRoomIsListedOnChatsAndOpensTheEventFromTheInfoButton() {
         tapSignInWithApple()
@@ -25,6 +25,8 @@ extension LilyEventEditTests {
         XCTAssertTrue(app.staticTexts["Hosted in Kreuzberg Kickers"].waitForExistence(timeout: 10),
                       "the info button leads to the event's detail")
         XCTAssertTrue(app.buttons["Leave"].waitForExistence(timeout: 10), "the caller is in the game")
+        XCTAssertFalse(app.buttons["event-action-chat"].waitForExistence(timeout: 1),
+                       "a detail reached from its own chat offers no Open chat")
     }
 
     /// The row's "Open chat" opens the room in place, so Back returns to the detail rather than the Chats list, and

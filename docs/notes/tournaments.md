@@ -129,3 +129,11 @@ A tournament (slice L1 of the tournaments plan, 2026-10-04; debug builds, behind
   a private room the caller is not in), the event detail's recipe of the same date, the shared block extracted as
   `RoomChatOpener` (see events.md). Other failures pass through unchanged
   (`TournamentDetailLoadTests.openChatPassesOtherFailuresThroughUnchanged`).
+- 2026-11-23 — The merge review's loop fix, the events' twin: `TournamentDestination` gained
+  `context: GroupDetailContext` (default `.standalone`); the chat's info button and the transcript's tournament
+  note (the room is the tournament, so that push is from its own chat too) pass `.fromChat`, and
+  `TournamentPermissions` zeroes `canOpenChat` there, which also drops the menu's Open chat
+  (`TournamentPermissionsTests.aDetailReachedFromItsChatOffersNoChat`; the info-button walk asserts the absent
+  row button). `openChat` now runs through `performChat` and a dedicated `chatGate` whose one expected refusal is
+  `.tournamentChatUnavailable`, logged at warning (`isTournamentRefusal` stays untouched — it feeds the entries
+  refetch); `TournamentDetailLoadTests.openChatRemapsAMissingRoomToTheTournamentsChatCopy` pins the level.

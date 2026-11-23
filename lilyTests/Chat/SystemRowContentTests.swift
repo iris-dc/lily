@@ -92,14 +92,17 @@ struct SystemRowContentTests {
     }
 
     @Test func aTournamentNoteOpensTheTournamentWithoutAFetch() async {
-        #expect(await opened(started) == .tournament(TournamentDestination(id: "t", name: roomName, matchID: nil)))
+        let note = await opened(started)
+        #expect(note == .tournament(TournamentDestination(id: "t", name: roomName, matchID: nil, context: .fromChat)))
         let result = ChatMessage.fixture(id: "s3", kind: .matchResult, text: "Marta 3–1 Noor", tournamentID: "t", matchID: "m")
-        #expect(await opened(result) == .tournament(TournamentDestination(id: "t", name: roomName, matchID: "m")))
+        let resultNote = await opened(result)
+        #expect(resultNote == .tournament(TournamentDestination(id: "t", name: roomName, matchID: "m", context: .fromChat)))
         #expect(tournaments.fetchedIDs.isEmpty)
 
         tournaments.details["t"] = .fixture(tournament: .fixture(id: "t", name: "Autumn Open", status: .inProgress))
         await content.load(for: started)
-        #expect(await opened(started) == .tournament(TournamentDestination(id: "t", name: "Autumn Open", matchID: nil)))
+        let renamed = await opened(started)
+        #expect(renamed == .tournament(TournamentDestination(id: "t", name: "Autumn Open", matchID: nil, context: .fromChat)))
     }
 
     @Test func aStartedNoteReadsTheFallbackUntilTheTournamentLoadedAndAsksOnce() async {

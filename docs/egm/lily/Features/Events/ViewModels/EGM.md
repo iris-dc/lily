@@ -118,14 +118,17 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
   before the popup and the roster reloads after every fresh event; an unknown outcome whose fresh event shows
   `participates == wantsToParticipate` reports nothing.
 - Detail room seams (2026-11-15): a landed `join()` runs `syncRoomAfterJoin()` — `myGroups.reload()`, then the room
-  fetched by the event's id is placed only when it answers with the membership, else a debug line and Mine's reload
-  stands — before `pushOptIn.offerReminders()`; a landed `leave()` runs `myGroups.reload()` then
-  `myGroups.remove(id: event.id)`, so the room leaves Chats whatever the lagging by-user index still answers;
-  `openChat()` needs `permissions.canOpenChat` and a free `isBusy` and runs, through the same gate (the two-argument
-  `run`, no read-back), the shared `RoomChatOpener` (`lily/Features/Chat/Services/RoomChatOpener.swift`), which
+  fetched by the event's id is placed only when it answers with the membership and `event.participates` still holds
+  (2026-11-23: a Leave that landed during the sync's awaits owns the room's exit), else a debug line and Mine's reload
+  stands — before `pushOptIn.offerReminders()`; a landed `leave()` runs `myGroups.reload()` then, unless a Join
+  landed meanwhile (`event.participates` re-checked, 2026-11-23), `myGroups.remove(id: event.id)`, so the room leaves
+  Chats whatever the lagging by-user index still answers;
+  `openChat()` needs `permissions.canOpenChat` and a free `isBusy` and runs, through its own `chatGate` (the
+  two-argument `run`, no read-back; `.eventChatUnavailable` is its expected refusal, logged at warning, 2026-11-23),
+  the shared `RoomChatOpener` (`lily/Features/Chat/Services/RoomChatOpener.swift`), which
   fetches `groupRepository.group(id: event.id)`, rethrows exactly the fetch's `.groupNotFound` as
   `.eventChatUnavailable` (the 404 means the backend holds no room, or a private room the caller is not in; group
-  copy must not pop, and every other failure keeps its own) and places a member room into Mine; the view model sets
+  copy must not pop, and every other failure keeps its own) and places a member room into Mine only when Mine lacks it; the view model sets
   `openedRoom`, which the view pushes in place.
 - `loadParticipants()` is a no-op for guests (`showsParticipants = identity.currentUserID != nil`);
   `recordViewed()` records once per instance; `canEdit = participation == .hosting`; `hostProfile` is `nil` for a

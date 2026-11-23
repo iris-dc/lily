@@ -205,7 +205,7 @@ final class LilyTournamentTests: LilyUITestCase {
     }
 
     /// Tuesday Table Tennis is a tournament the caller plays in: its room is listed on Chats with the trophy's caption,
-    /// opens the chat, and the chat's info button leads to the tournament's detail.
+    /// opens the chat, and the chat's info button leads to the tournament's detail, which offers no Open chat.
     @MainActor
     func testTournamentRoomIsListedOnChatsAndOpensTheDetailFromTheInfoButton() {
         tapSignInWithApple()
@@ -222,6 +222,8 @@ final class LilyTournamentTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Organised by Marta"].waitForExistence(timeout: 10), "the info button leads to it")
         XCTAssertTrue(app.segmentedControls["tournament-section"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["You're in"].exists, "the caller plays in it")
+        XCTAssertFalse(app.buttons["tournament-action-chat"].waitForExistence(timeout: 1),
+                       "a detail reached from its own chat offers no Open chat")
     }
 
     /// Kreuzberg Kickers hosts the Kickers Cup: its detail's Tournaments segment lists the card.

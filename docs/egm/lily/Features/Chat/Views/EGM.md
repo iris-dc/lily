@@ -151,7 +151,8 @@ Every symbol is `internal` unless marked private; paths are under `lily/Features
 - `[ChatView.swift:ChatView]` The placeholder shows only when `rows.isEmpty && !isAwaitingHistory`, Try again only
   when `historyLoadFailed`; `isGone` calls `dismiss()`; the info link is the counterpart's profile, else the
   tournament, else the event (`EventDestination`, for a room of kind `event`; 2026-11-15), else the group, one
-  `chat-title` identifier on the `Group` around the four.
+  `chat-title` identifier on the `Group` around the four; both room destinations carry `context: .fromChat`
+  (2026-11-23), so the pushed detail offers no Open chat back into the room it came from.
 - `[ChatTranscript.swift:ChatTranscript]` The end marker is a zero-height view outside the `LazyVStack`, never lazy;
   the position and both default anchors are `.bottom`; rows are invisible until `firstPageReveal.isShown`, true from
   the start only when `room.hasHistory`; the scroll view carries `scrollDismissesKeyboard(.interactively)` and a tap

@@ -43,7 +43,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   (`lily/Features/Events/Views/EventLoaderView.swift`, 2026-11-15): the state ladder behind a pushed
   `EventDestination` — a spinner, the detail (`makeEventDetailViewModel`, its `onChange` recording `eventChanges`),
   an `EmptyStateView` for a gone event ("This event is no longer available"), `loadFailed` with Try again; inline
-  title. The host line (2026-11-07) maps
+  title, the destination's name on the loading and gone states (2026-11-23; the loaded detail keeps its own look),
+  and the destination's `context` handed to the detail, so a loader behind a room's info button offers no Open chat. The host line (2026-11-07) maps
   the stored name through `Tombstone.displayName(event.hostName, deleted: event.deleted)` and passes
   `Tombstone.symbol` as `OwnerTitleBlock`'s `subtitleMark` for a deleted host; the view model's `hostProfile` is nil
   then, so the line is plain, never a link.

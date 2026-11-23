@@ -5,7 +5,8 @@ import Foundation
 /// nothing. The organiser edits and cancels until the tournament is over, removes entries and is offered Start while
 /// registration is open; the organiser and every entrant chat (while the flag is on) and invite until the deadline;
 /// anyone signed in but the organiser reports and opens the organiser's profile; anyone signed in and not yet in may
-/// join a team while registration is open, whatever the entry count, because joining a team adds no entry.
+/// join a team while registration is open, whatever the entry count, because joining a team adds no entry. A detail
+/// reached from the room's own chat (`.fromChat`) offers no Open chat: the path would only cycle.
 nonisolated struct TournamentPermissions: Equatable, Sendable {
     let canEdit: Bool
     let canCancel: Bool
@@ -45,11 +46,15 @@ nonisolated struct TournamentPermissions: Equatable, Sendable {
 
 /// The rule itself; in an extension so the memberwise init above stays synthesized.
 nonisolated extension TournamentPermissions {
-    init(tournament: Tournament, userID: String?, now: Date, chatEnabled: Bool) {
+    init(tournament: Tournament,
+         userID: String?,
+         now: Date,
+         chatEnabled: Bool,
+         context: GroupDetailContext = .standalone) {
         let role = TournamentRole(tournament: tournament, userID: userID)
         let signedIn = userID != nil
         let open = tournament.isRegistrationOpen(now: now)
-        // The room's members: the organiser and every player in.
+        // The room's members: the organiser and every player in; from the room's own chat there is no chat to open.
         let isInvolved = role.isOrganizer || tournament.hasEntered
         let canEdit = role.isOrganizer && !tournament.status.isOver
         let showsStart = role.isOrganizer && tournament.status == .registration
@@ -62,7 +67,7 @@ nonisolated extension TournamentPermissions {
         self.init(canEdit: canEdit,
                   canCancel: canEdit,
                   canRemoveEntries: role.isOrganizer && tournament.status == .registration,
-                  canOpenChat: chatEnabled && isInvolved,
+                  canOpenChat: chatEnabled && isInvolved && context == .standalone,
                   canInvite: isInvolved && open,
                   canReport: signedIn && !role.isOrganizer,
                   showsEntries: signedIn,

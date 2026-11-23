@@ -114,6 +114,18 @@ struct TournamentPermissionsTests {
         #expect(!permissions(for: .fixture(teamSize: 2), as: nil).canJoinTeams, "a guest")
     }
 
+    /// From the room's own chat the detail offers no way back into it; standalone keeps the chat.
+    @Test func aDetailReachedFromItsChatOffersNoChat() {
+        let entered = Tournament.fixture(myEntryId: "e1")
+        let fromChat = TournamentPermissions(tournament: entered,
+                                             userID: me,
+                                             now: now,
+                                             chatEnabled: true,
+                                             context: .fromChat)
+        #expect(!fromChat.canOpenChat)
+        #expect(permissions(for: entered, as: me).canOpenChat, "standalone keeps the chat")
+    }
+
     @Test func theMenuShowsWhenAnythingInItDoes() {
         #expect(permissions(for: .fixture(status: .completed), as: me).showsMenu, "an outsider may still report")
         let silent = permissions(for: .fixture(status: .completed, organizerUserId: me), as: me, chatEnabled: false)

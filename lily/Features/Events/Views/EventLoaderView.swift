@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// An event reached by id and name alone (an event room's info button): fetched first, then shown as the detail; gone
-/// events get the "no longer available" state, other failures a retry. `GroupLoaderView`'s pattern.
+/// events get the "no longer available" state, other failures a retry; the destination's name titles the states
+/// with no event to draw. `GroupLoaderView`'s pattern.
 struct EventLoaderView: View {
     @State private var viewModel: EventLoaderViewModel
     private let dependencies: AppDependencies
@@ -18,9 +19,11 @@ struct EventLoaderView: View {
             switch viewModel.state {
             case .loading:
                 ContentScreen { ProgressView() }
+                    .navigationTitle(viewModel.destination.name)
             case .loaded(let event):
                 // The lists behind reload on the change tracker, like the Chats stack's own `SportEvent` destination.
-                EventDetailView(viewModel: dependencies.makeEventDetailViewModel(for: event) { _ in
+                EventDetailView(viewModel: dependencies.makeEventDetailViewModel(
+                    for: event, context: viewModel.destination.context) { _ in
                     dependencies.eventChanges.recordChange()
                 }, dependencies: dependencies)
             case .notFound:
@@ -29,6 +32,7 @@ struct EventLoaderView: View {
                                    title: Copy.unavailable,
                                    message: AppBranding.Groups.unavailableMessage)
                 }
+                .navigationTitle(viewModel.destination.name)
             case .failed:
                 ContentScreen {
                     EmptyStateView.loadFailed(title: Copy.detailLoadFailedTitle,

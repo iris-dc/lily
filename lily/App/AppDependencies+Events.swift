@@ -37,14 +37,17 @@ extension AppDependencies {
     }
 
     /// The detail owns the join/leave write, the room sync behind it and the in-place chat, so it takes the group
-    /// repository and Mine beside the event repository.
+    /// repository and Mine beside the event repository. `context` is `.fromChat` behind a room's info button, where
+    /// Open chat is hidden.
     func makeEventDetailViewModel(for event: SportEvent,
+                                  context: GroupDetailContext = .standalone,
                                   onChange: @escaping @MainActor (SportEvent) -> Void) -> EventDetailViewModel {
         EventDetailViewModel(event: event,
                              repository: eventRepository,
                              identity: identity,
                              myGroups: myGroups,
                              groupRepository: groupRepository,
+                             context: context,
                              errorCenter: errorCenter,
                              recorder: interactionRecorder,
                              logger: logger,

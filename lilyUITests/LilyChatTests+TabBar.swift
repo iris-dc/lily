@@ -14,12 +14,15 @@ extension LilyChatTests {
         app.buttons["chat-title"].tap()
         XCTAssertTrue(app.staticTexts["Groups in common"].waitForExistence(timeout: 10), "the profile opened")
 
-        XCTAssertFalse(app.buttons["profile-message"].exists, "a profile reached from its chat offers no Message")
-        XCTAssertFalse(app.tabBars.buttons["Home"].exists, "the profile pushed over the room keeps the bar away")
+        XCTAssertFalse(app.buttons["profile-message"].waitForExistence(timeout: 1),
+                       "a profile reached from its chat offers no Message")
+        XCTAssertFalse(app.tabBars.buttons["Home"].waitForExistence(timeout: 1),
+                       "the profile pushed over the room keeps the bar away")
 
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.descendants(matching: .any)["chat-composer"].waitForExistence(timeout: 10), "back on the room")
-        XCTAssertFalse(app.tabBars.buttons["Home"].exists, "the room under the popped cover still hides the bar")
+        XCTAssertFalse(app.tabBars.buttons["Home"].waitForExistence(timeout: 1),
+                       "the room under the popped cover still hides the bar")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Chats"].waitForExistence(timeout: 5), "back on the Chats root")
         XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 5), "the room's pop brings the bar back")

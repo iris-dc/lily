@@ -10,7 +10,7 @@ extension TournamentDetailViewModel {
     /// reported as the tournament's chat, never as a missing group.
     func openChat() async {
         guard permissions.canOpenChat else { return }
-        await perform("Open chat") { [self] in
+        await performChat("Open chat") { [self] in
             openedRoom = try await roomOpener.room(id: destination.id, whenUnavailable: .tournamentChatUnavailable)
         }
     }

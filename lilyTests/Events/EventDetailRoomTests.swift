@@ -49,6 +49,9 @@ struct EventDetailRoomTests {
 
         #expect(harness.errorCenter.current?.error == .eventChatUnavailable)
         #expect(harness.viewModel.openedRoom == nil && harness.groups.groups.isEmpty)
+        #expect(harness.logger.messages(in: .events, at: .warning).contains { $0.contains("Open chat for event e failed") },
+                "the pre-backfill refusal is an expected product state")
+        #expect(harness.logger.messages(in: .events, at: .error).isEmpty)
     }
 
     /// Only the missing room is remapped: any other failure keeps its own copy (offline stays offline).
@@ -99,5 +102,56 @@ struct EventDetailRoomTests {
         #expect(!harness.viewModel.event.participates)
         #expect(harness.groupRepository.requestedScopes == [.mine], "Mine reloaded once")
         #expect(!harness.groups.groups.contains { $0.id == "e" }, "the room left Chats with the participation")
+    }
+
+    /// Opening a chat is a read: a room Mine already holds is not replaced (a stale fetch could regress its last
+    /// message) and no change is recorded (Discover must not re-search for a mere open).
+    @Test func openChatLeavesAHeldRoomUntouchedAndRecordsNoChange() async {
+        let harness = EventDetailHarness(event: .fixture(id: "e", startsAt: upcoming, isJoined: true))
+        let held = SportGroup.eventRoomFixture(id: "e", lastMessageAt: EventDetailHarness.now)
+        harness.groups.add(held)
+        harness.groupRepository.result = .success([SportGroup.eventRoomFixture(id: "e")])
+        let version = harness.groupChanges.version
+
+        await harness.viewModel.openChat()
+
+        #expect(harness.viewModel.openedRoom != nil)
+        #expect(harness.groups.groups == [held], "the held copy stands")
+        #expect(harness.groupChanges.version == version, "no bump for a mere open")
+    }
+
+    /// The race the sync must lose gracefully: a Leave that lands while the join's room fetch is out owns the
+    /// room's exit, so the sync never re-adds the left room (the fetch is parked to order the writes).
+    @Test func aLeaveDuringTheJoinsRoomSyncKeepsTheRoomOutOfMine() async {
+        let harness = EventDetailHarness(event: .fixture(id: "e", capacity: 4, participants: 1, startsAt: upcoming))
+        harness.groupRepository.result = .success([room])
+        harness.groupRepository.holdsFetches = true
+        async let join: Void = harness.viewModel.join()
+        while harness.groupRepository.fetchedGroupIDs.isEmpty { await Task.yield() }
+
+        await harness.viewModel.leave()
+        harness.groupRepository.releaseFetches()
+        _ = await join
+
+        #expect(!harness.viewModel.event.participates)
+        #expect(!harness.groups.groups.contains { $0.id == "e" }, "the sync must not re-add the left room")
+    }
+
+    /// The mirror race: a join whose answer lands while the leave's reload is out keeps its room in Mine (the
+    /// reload is parked; the competing join's read-back arrives through `accept`).
+    @Test func aJoinThatLandedDuringTheLeavesReloadKeepsTheRoom() async {
+        let event = SportEvent.fixture(id: "e", capacity: 4, participants: 2, startsAt: upcoming, isJoined: true)
+        let harness = EventDetailHarness(event: event)
+        harness.groups.add(room)
+        harness.groupRepository.result = .success([room])
+        harness.groupRepository.holdsRequests = true
+        async let leave: Void = harness.viewModel.leave()
+        while !harness.groupRepository.requestedScopes.contains(.mine) { await Task.yield() }
+
+        harness.viewModel.accept(.fixture(id: "e", capacity: 4, participants: 2, startsAt: upcoming, isJoined: true))
+        harness.groupRepository.releaseRequests()
+        _ = await leave
+
+        #expect(harness.groups.groups.contains { $0.id == "e" }, "the re-joined room stays in Mine")
     }
 }

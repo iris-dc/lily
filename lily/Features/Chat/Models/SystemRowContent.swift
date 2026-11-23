@@ -67,7 +67,11 @@ final class SystemRowContent {
     func destination(for message: ChatMessage, roomName: String) async -> Result<SystemRowDestination?, any Error> {
         if message.kind.isTournamentNote, let tournamentID = message.tournamentId {
             let name = linked.tournaments[tournamentID]?.name ?? roomName
-            return .success(.tournament(TournamentDestination(id: tournamentID, name: name, matchID: message.matchId)))
+            let destination = TournamentDestination(id: tournamentID,
+                                                    name: name,
+                                                    matchID: message.matchId,
+                                                    context: .fromChat)
+            return .success(.tournament(destination))
         }
         guard let eventID = message.eventId else { return .success(nil) }
         switch await fetchEvent(id: eventID) {

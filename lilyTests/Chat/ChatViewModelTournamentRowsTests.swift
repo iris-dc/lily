@@ -58,9 +58,9 @@ struct ChatViewModelTournamentRowsTests {
         let (harness, viewModel) = await makeChat()
 
         #expect(await viewModel.destination(for: result)
-            == .tournament(TournamentDestination(id: "t", name: "Tuesday Table Tennis", matchID: "r01p001")))
+            == .tournament(TournamentDestination(id: "t", name: "Tuesday Table Tennis", matchID: "r01p001", context: .fromChat)))
         #expect(await viewModel.destination(for: started)
-            == .tournament(TournamentDestination(id: "t", name: "Tuesday Table Tennis")))
+            == .tournament(TournamentDestination(id: "t", name: "Tuesday Table Tennis", context: .fromChat)))
         #expect(harness.tournaments.fetchedIDs.isEmpty && harness.errorCenter.current == nil)
         #expect(await viewModel.destination(for: .fixture(id: "x", kind: .matchResult, text: "a", tournamentID: nil)) == nil)
     }
@@ -86,7 +86,7 @@ struct ChatViewModelTournamentRowsTests {
         #expect(viewModel.systemText(for: started) == "The tournament started")
         #expect(viewModel.systemRows.linked.unavailableTournamentIDs == ["t"])
         #expect(await viewModel.destination(for: started)
-            == .tournament(TournamentDestination(id: "t", name: "Tuesday Table Tennis")))
+            == .tournament(TournamentDestination(id: "t", name: "Tuesday Table Tennis", context: .fromChat)))
         #expect(harness.tournaments.fetchedIDs == ["t"], "the tap needs no fetch: the room is the tournament")
     }
 

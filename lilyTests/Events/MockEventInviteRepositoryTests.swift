@@ -67,12 +67,14 @@ struct MockEventInviteRepositoryTests {
         await #expect(throws: AppError.sessionExpired) { try await invites.candidates(groupID: sunset) }
     }
 
-    /// Once the game started the invites close (`EVENT_STARTED`), though the caller still participates.
+    /// Once the game started the sends close (`EVENT_STARTED`) though the caller still participates; the list still
+    /// answers, as the backend's does, and a missing invitee is refused before the start is judged.
     @Test func aStartedEventRefusesInvites() async throws {
         let start = try #require(MockEventFixtures.make(now: now, count: 1).first?.startsAt)
         let (_, invites) = makeRepositories { start.addingTimeInterval(60) }
 
-        await #expect(throws: AppError.eventStarted) { try await invites.candidates(groupID: sunset) }
-        await #expect(throws: AppError.eventStarted) { try await invites.invite(groupID: sunset, userID: "anyone") }
+        let candidate = try #require(try await invites.candidates(groupID: sunset).first)
+        await #expect(throws: AppError.eventStarted) { try await invites.invite(groupID: sunset, userID: candidate.userId) }
+        await #expect(throws: AppError.userNotFound) { try await invites.invite(groupID: sunset, userID: "nobody") }
     }
 }

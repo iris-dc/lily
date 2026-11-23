@@ -53,8 +53,10 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   `.eventInviteLimit` — with fallback `.inviteUnavailable`.
 - `MockEventInviteRepository: InviteRepository`
   (`lily/Features/Events/Implementations/MockEventInviteRepository.swift`, 2026-11-15):
-  `init(groups:events:identity:logger:now:)`; refuses a guest (`.sessionExpired`), a caller neither hosting nor
-  joined (`.cannotInviteToEvent`) and a started event (`.eventStarted`); candidates from the shared
+  `init(groups:events:identity:logger:now:)`; refuses a guest (`.sessionExpired`) and a caller neither hosting nor
+  joined (`.cannotInviteToEvent`); the send refuses, in the backend's order (2026-11-23), a missing invitee
+  (`.userNotFound`), one already in (`.inviteeAlreadyJoined`), then a started event (`.eventStarted`), while the
+  candidates still answer for a started event; candidates from the shared
   `MockInviteCandidatePool` minus the event's participants and the caller; sends through the shared
   `MockInviteLedger` into `InviteTarget.event(id:)`.
 

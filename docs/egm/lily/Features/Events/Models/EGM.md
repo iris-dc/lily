@@ -119,8 +119,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - Decision types: `EventListScreenState` (`loading`, `failed`, `empty`, `filteredOut`, `list`;
   `resolve(isInitialLoad:loadFailed:hasEvents:isEverythingFilteredOut:awaitsAnswerForPosition:)`), `Participation`
   (`hidden`, `join`, `leave`, `full`, `hosting`; `init(event:userID:)`), `EventPermissions`
-  (`canOpenChat`, `canInvite`; `none`, `showsActionRow`; `init(event:userID:now:chatEnabled:)`; 2026-11-15),
-  `EventDestination` (`id`, `name`: an event pushed by id, the event room's info-button value; 2026-11-15),
+  (`canOpenChat`, `canInvite`; `none`, `showsActionRow`; `init(event:userID:now:chatEnabled:context:)`; 2026-11-15),
+  `EventDestination` (`id`, `name`, `context: GroupDetailContext = .standalone`: an event pushed by id, the event
+  room's info-button value, which passes `.fromChat`; 2026-11-15, context 2026-11-23),
   `CreateIntentPolicy`
   (`sheet(for:isSignedIn:)`, `decide(intent:presentedSheet:isSignedIn:) -> Decision(consumes:present:)`),
   `PickerSettlePolicy.isAChoice(_:current:isFirstSettle:minimumMoveMeters:)`,
@@ -179,7 +180,8 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - `Participation.init` precedence: `userID == nil` → `hidden`; hosted by the user → `hosting`; `participates` →
   `leave`; `isFull` → `full`; else `join`.
 - `EventPermissions.init` (2026-11-15): involved = a signed-in caller hosting or joined; `canOpenChat = chatEnabled
-  && involved`, `canInvite = involved && startsAt > now`; `showsActionRow = canOpenChat || canInvite`; `.none` is
+  && involved && context == .standalone` (2026-11-23: from the room's own chat there is no chat to open — the path
+  would cycle), `canInvite = involved && startsAt > now`; `showsActionRow = canOpenChat || canInvite`; `.none` is
   all false (the guest's and the outsider's row).
 - `CreateIntentPolicy.decide`: no intent → not consumed; an intent while a sheet is up → consumed, nothing presented;
   otherwise consumed with `sheet(for:isSignedIn:)`, which substitutes `.signIn` for a guest. The guest substitution

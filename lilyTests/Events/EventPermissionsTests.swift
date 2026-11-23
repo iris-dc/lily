@@ -46,4 +46,18 @@ struct EventPermissionsTests {
         #expect(permissions(for: .fixture(startsAt: upcoming, isJoined: true), as: me).showsActionRow)
         #expect(!permissions(for: .fixture(startsAt: now), as: me).showsActionRow, "a started game's outsider")
     }
+
+    /// From the room's own chat the detail offers no way back into it; invites stand, and standalone keeps the chat.
+    @Test func aDetailReachedFromItsChatOffersNoChat() {
+        let event = SportEvent.fixture(startsAt: upcoming, isJoined: true)
+        let fromChat = EventPermissions(event: event, userID: me, now: now, chatEnabled: true, context: .fromChat)
+        #expect(!fromChat.canOpenChat && fromChat.canInvite && fromChat.showsActionRow)
+        let started = EventPermissions(event: .fixture(startsAt: now, isJoined: true),
+                                       userID: me,
+                                       now: now,
+                                       chatEnabled: true,
+                                       context: .fromChat)
+        #expect(!started.showsActionRow, "no chat from the chat and no invites after the start: nothing to offer")
+        #expect(permissions(for: event, as: me).canOpenChat, "standalone keeps the chat")
+    }
 }

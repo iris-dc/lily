@@ -126,6 +126,8 @@ struct TournamentDetailLoadTests {
 
         #expect(harness.presentedError == .tournamentChatUnavailable)
         #expect(viewModel.openedRoom == nil)
+        #expect(harness.logs(.warning).contains { $0.contains("Open chat for tournament \(destination.id) failed") },
+                "the pre-backfill refusal is an expected product state")
     }
 
     private func loadedWithARefreshHeld() async -> (viewModel: TournamentDetailViewModel, refresh: Task<Void, Never>) {

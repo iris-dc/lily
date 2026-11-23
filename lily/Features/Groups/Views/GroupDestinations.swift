@@ -54,9 +54,9 @@ private struct GroupDestinations: ViewModifier {
             UserProfileView(viewModel: dependencies.makeUserProfileViewModel(for: counterpart.profile()),
                             dependencies: dependencies)
         } else if group.isTournamentRoom {
-            tournamentDetail(for: TournamentDestination(id: group.id, name: group.name))
+            tournamentDetail(for: TournamentDestination(id: group.id, name: group.name, context: context))
         } else if group.isEventRoom {
-            eventDetail(for: EventDestination(id: group.id, name: group.name))
+            eventDetail(for: EventDestination(id: group.id, name: group.name, context: context))
         } else {
             // Home draws Mine from the store and Discover searches again on `groupChanges`, so the detail hands
             // nothing back.

@@ -222,12 +222,19 @@ nonisolated struct TournamentDestination: Hashable, Sendable {
     let matchID: String?
     /// The opener's copy of the tournament, as fresh as the list it came from.
     let preview: Tournament?
+    /// `.fromChat` when the tournament's room is one Back away, where "Open chat" would only push the same chat again.
+    let context: GroupDetailContext
 
-    init(id: String, name: String, matchID: String? = nil, preview: Tournament? = nil) {
+    init(id: String,
+         name: String,
+         matchID: String? = nil,
+         preview: Tournament? = nil,
+         context: GroupDetailContext = .standalone) {
         self.id = id
         self.name = name
         self.matchID = matchID
         self.preview = preview
+        self.context = context
     }
 }
 

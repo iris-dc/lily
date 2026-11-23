@@ -88,11 +88,12 @@ struct TabBarBareCircle: UIViewRepresentable {
         /// The shell rebuild can swap hierarchies under a live guard: a fresh view adopts the OUTGOING bar
         /// during the crossfade and its observations die with it, with no churn left to fire. The representable
         /// carries the count so its value changes and the update lands (an unchanged value is skipped) — the
-        /// recovery channel, no polling; a healthy update re-judges the mirror, the belt to the KVO braces.
+        /// recovery channel, no polling; a healthy update re-judges the mirror with the condemnation standard,
+        /// the belt to the KVO braces: a swap alone would no-op on a mirror that silently died.
         func rearmIfDetached() {
             guard window != nil else { return }
             guard bar == nil || bar?.window == nil else {
-                keepPlain()
+                revalidate()
                 return
             }
             rearm()

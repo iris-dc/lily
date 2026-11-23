@@ -409,3 +409,19 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   `ErrorHandlingTests`; the popup verified rendered on a simulator with the mock group route answering the event
   room's 404 for the run (still under
   `~/.claude/projects/-Users-makshr-lily/groups-plan/event-chat-copy-2026-11-17/`).
+- 2026-11-23 — The merge review's event-side fixes, all pinned. (1) A detail reached from its own room's chat
+  offered "Open chat" back into it (chat -> info -> detail -> chat #2, unbounded): `EventDestination` gained
+  `context: GroupDetailContext` (default `.standalone`), the chat's info button passes `.fromChat`,
+  `EventLoaderView` hands it to the detail, and `EventPermissions` zeroes `canOpenChat` for `.fromChat` — the
+  groups' `GroupDetailContext` recipe (`EventPermissionsTests.aDetailReachedFromItsChatOffersNoChat`; the
+  info-button walk asserts the absent button). (2) The join's room sync raced a quick Leave (and the leave's
+  reload a re-Join): both re-check `event.participates` after their awaits before touching Mine
+  (`EventDetailRoomTests.aLeaveDuringTheJoinsRoomSyncKeepsTheRoomOutOfMine`,
+  `aJoinThatLandedDuringTheLeavesReloadKeepsTheRoom`, ordered with the fakes' `RequestHold`s). (3) `RoomChatOpener`
+  replaced Mine's held copy wholesale and bumped the change tracker for a mere open (Discover re-searched): it now
+  adds only when Mine lacks the room (`openChatLeavesAHeldRoomUntouchedAndRecordsNoChange`). (4) The pre-backfill
+  "no room" refusal logged at error: `openChat` runs through its own gate whose expected refusal is
+  `.eventChatUnavailable`, logged at warning (`openChatRemapsAMissingRoomToTheEventsChatCopy` pins the level).
+  (5) `EventLoaderView` titles its loading and gone states with the destination's name (the loaded detail keeps
+  its own look). (6) `MockEventInviteRepository` now refuses in Laurel's order — invitee existence, already
+  joined, then the start — and its candidates answer for a started event (`aStartedEventRefusesInvites`).

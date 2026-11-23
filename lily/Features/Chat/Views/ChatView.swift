@@ -58,11 +58,11 @@ struct ChatView: View {
             if let counterpart = group.counterpart {
                 NavigationLink(value: counterpart.profile(context: .fromChat)) { infoLabel(AppBranding.profileTitle) }
             } else if group.isTournamentRoom {
-                NavigationLink(value: TournamentDestination(id: group.id, name: group.name)) {
+                NavigationLink(value: TournamentDestination(id: group.id, name: group.name, context: .fromChat)) {
                     infoLabel(AppBranding.Tournaments.tournament)
                 }
             } else if group.isEventRoom {
-                NavigationLink(value: EventDestination(id: group.id, name: group.name)) {
+                NavigationLink(value: EventDestination(id: group.id, name: group.name, context: .fromChat)) {
                     infoLabel(AppBranding.Events.event)
                 }
             } else {
