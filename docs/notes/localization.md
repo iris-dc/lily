@@ -119,3 +119,12 @@ The app ships in English (the source language and the fallback), Russian, Spanis
   wording's "yet" keys were replaced the same day, before the commit. All seven languages, registers matched to the
   chat and loader siblings (fr "discussion", pt "conversa"); appended at the catalog's tail with the byte-stable json
   round trip proven before and after. Machine-written — the native read stays owed.
+
+- 2026-11-23: `STRING_CATALOG_GENERATE_SYMBOLS` is off in the app target's three configurations (it was on;
+  the test targets already said no). With it on, an Xcode-GUI build session rewrote the hand-maintained
+  `lily/Localizable.xcstrings` wholesale — a 50,609-line reformat plus auto-added bare `%@` keys that fail
+  `l10n-check.py` — even though `SWIFT_EMIT_LOC_STRINGS` has been off everywhere since the 7c8bbc0 fix; command-line
+  builds never wrote back (probed). Nothing uses the generated symbols: every string is read through `localized(...)`,
+  so the setting only ever produced the regeneration. If a GUI build still dirties the catalog after this, discard
+  that diff (a backup of the 2026-11-22 regeneration sits in the badge evidence folder as
+  `fix13-revert/xcode-regenerated-catalog.patch`) and investigate the editor's own catalog-sync behaviour next.
