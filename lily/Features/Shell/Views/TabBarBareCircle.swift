@@ -2,8 +2,8 @@ import SwiftUI
 import UIKit
 
 /// Keeps the minimized circle's Chats glyph plain. The composited label is the one badge, but the minimized
-/// bar's 48 pt circle draws bitmaps unscaled and would cut the count at its rim; the owner's spec is the count
-/// fading out with the menu instead. The circle pane is its own one-item platter holding one `UIImageView` that
+/// bar's 48 pt circle draws bitmaps unscaled and would cut the count at its rim; the count fades out with the
+/// menu instead. The circle pane is its own one-item platter holding one `UIImageView` that
 /// UIKit mirrors the tab's image into: whenever that mirror holds one of OUR composites
 /// (`TabBadgeRenderer.isComposite` — identity by instance or backing `CGImage`), this view swaps it for the
 /// plain template glyph the count-zero label uses, left template so the circle tints and scales it natively,

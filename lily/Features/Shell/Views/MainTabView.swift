@@ -102,7 +102,7 @@ struct MainTabView: View {
     /// is `.alwaysOriginal`, which the bar does not tint, so the glyph's colour follows the selection here; at zero
     /// the plain template label stands, tinted by the bar like every other tab. The minimized circle would draw
     /// this composite unscaled and cut the count at its rim, so `TabBarBareCircle` keeps the circle's mirrored
-    /// glyph plain — the count fades out with the menu and returns with the expand (the owner's spec).
+    /// glyph plain — the count fades out with the menu and returns with the expand.
     @ViewBuilder
     private func chatTabLabel(count: Int, selected: Bool) -> some View {
         let glyphColor = selected ? UIColor(Color.lilyAccent) : DesignTokens.TabBar.unselectedGlyphColor

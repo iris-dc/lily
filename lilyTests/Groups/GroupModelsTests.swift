@@ -134,7 +134,7 @@ struct GroupModelsTests {
         #expect(roster.items == [marta])
     }
 
-    /// The two terms fields still decode — laurel serves them; the client ignores them (owner decision 2026-11-08).
+    /// The two terms fields still decode — laurel serves them; the client ignores them on purpose.
     @Test func accountDecodesWithTheIgnoredTermsFields() throws {
         let owing = try ContractSamples.decode(Account.self, from: ContractSamples.me)
         #expect(owing.isOperator && owing.termsVersion == 2 && owing.acceptedTermsVersion == 1)

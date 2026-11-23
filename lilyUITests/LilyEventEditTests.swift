@@ -96,7 +96,7 @@ final class LilyEventEditTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["1 joined"].waitForExistence(timeout: 5), "the count stands alone")
     }
 
-    /// The edit form's type control is compact (2026-11-15): the head of the list plus "See all", a search that
+    /// The edit form's type control is compact: the head of the list plus "See all", a search that
     /// reaches every type, and the current choice never hidden. The walk searches out a type beyond the top three,
     /// takes it, then expands the full flow. Identifiers mirror the draft-type literals by hand.
     @MainActor
@@ -144,7 +144,7 @@ final class LilyEventEditTests: LilyUITestCase {
         walkEventWizardToPlayers(title: title, place: "Canal Path")
     }
 
-    /// A create lands straight on the new game's detail (the owner's fourth round), so the walks assert the landing
+    /// A create lands straight on the new game's detail, so the walks assert the landing
     /// instead of opening the game from Home.
     @MainActor
     private func assertCreateLandedOnDetail(_ title: String) {

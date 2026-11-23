@@ -1,8 +1,8 @@
 import UIKit
 
 /// Draws the Chats tab's unread count. The iOS 26 floating bar honours only a label's title and `UIImage` and never
-/// moves its own badge (`badgePositionAdjustment` probed at zero effect), so the count the owner wants closer to the
-/// glyph is drawn by hand, every metric and offset in `DesignTokens.TabBar`: `icon(...)` renders the glyph with the
+/// moves its own badge (`badgePositionAdjustment` has no effect), so the count is drawn by hand close to the
+/// glyph, every metric and offset in `DesignTokens.TabBar`: `icon(...)` renders the glyph with the
 /// count's capsule over its top-right corner. The composite renders as `.alwaysOriginal` — the bar cannot tint
 /// it — so the caller passes the glyph's colour per selection state; images are cached per count and colour, never
 /// re-rendered per frame. The minimized circle would draw the composite unscaled and cut the count at its rim,

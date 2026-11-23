@@ -6,7 +6,7 @@ import Testing
 /// once expanded, and a search that reaches every type whatever the expansion — one pure function
 /// (`EventTypeChipSubset.visible`) over the shared `String.matchesSearch`, tested as one.
 struct EventTypeChipSubsetTests {
-    /// The owner asked for the top three, so the number is pinned, not just read back from the constant.
+    /// The top three is the product decision, so the number is pinned, not just read back from the constant.
     private let topOfTheList = Array(EventType.known.prefix(3))
 
     @Test func collapsedShowsTheHeadOfTheListAndTheExpander() {

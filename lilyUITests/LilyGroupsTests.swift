@@ -70,8 +70,8 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(app.buttons[MockIDs.basketballRow].waitForExistence(timeout: 10), "the joined group must be listed on Home")
     }
 
-    /// A game created from a group's detail lands straight on its own detail, hosted in the group (the owner's
-    /// fourth round); behind it the group's Events segment lists it and, being a public group's game, the Explore
+    /// A game created from a group's detail lands straight on its own detail, hosted in the group; behind it the
+    /// group's Events segment lists it and, being a public group's game, the Explore
     /// list carries its card with the group's badge, without a manual refresh.
     @MainActor
     func testGroupEventCreatedFromGroupShowsBadgeOnExplore() {

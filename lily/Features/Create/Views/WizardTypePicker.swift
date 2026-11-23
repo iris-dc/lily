@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The type steps' picker (the owner's third design round, 2026-11-11): a search field over a compact two-column
+/// The type steps' picker: a search field over a compact two-column
 /// grid of glass type cards, lighter than the full-width choice cards the longer type list outgrew. Tapping picks
 /// and the page auto-advances; re-entering shows the current choice selected. Filtering is `String.matchesSearch`,
 /// the type pickers' one match rule (case- and diacritic-insensitive in the app's locale, so it matches what the
