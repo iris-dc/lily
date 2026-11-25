@@ -15,6 +15,7 @@ struct ProfileView: View {
     @State private var isNamePresented = false
     @State private var isAboutPresented = false
     @State private var isSettingsPresented = false
+    @State private var isActivityPresented = false
 
     private var session: SessionController { dependencies.sessionController }
     private var profile: ProfileStore { dependencies.profile }
@@ -29,6 +30,7 @@ struct ProfileView: View {
                             .id(language)
                         AboutRow(store: profile) { isAboutPresented = true }
                             .id(language)
+                        activityRow
                         settingsRow
                     } else {
                         guest
@@ -51,6 +53,12 @@ struct ProfileView: View {
             .navigationDestination(isPresented: $isSettingsPresented) {
                 SettingsScreen(dependencies: dependencies, language: language)
             }
+            .navigationDestination(isPresented: $isActivityPresented) {
+                ActivityScreen(viewModel: dependencies.makeActivityViewModel())
+            }
+            // The history's tournament rows push `TournamentDestination`; the sheet's own stack registers the shared
+            // destinations for them, as every tab root does.
+            .groupDestinations(dependencies: dependencies)
         }
         .errorPopup(dependencies.errorCenter)
         .sheet(isPresented: $isSignInPresented) {
@@ -78,6 +86,14 @@ struct ProfileView: View {
                         subtitle: AppBranding.Settings.rowSubtitle,
                         systemImage: DesignTokens.Symbols.settings,
                         identifier: AccessibilityIdentifiers.profileSettings) { isSettingsPresented = true }
+    }
+
+    /// The way into the caller's own history; like the Settings row, its inputs are recomputed on a language change.
+    private var activityRow: some View {
+        SettingsLinkRow(title: AppBranding.Activity.title,
+                        subtitle: AppBranding.Activity.rowSubtitle,
+                        systemImage: DesignTokens.Symbols.activity,
+                        identifier: AccessibilityIdentifiers.profileActivity) { isActivityPresented = true }
     }
 
     /// The name is the backend's, or the last one shown while the load runs: a glyph and a spinner stand in only for a

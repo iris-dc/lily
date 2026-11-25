@@ -18,6 +18,8 @@ final class MockEventRepository: EventRepository {
     }
     /// Who creates events; the backend takes the host from the token, the mock from here.
     private let identity: any IdentityProvider
+    /// What divides upcoming from history, fixed at launch like the fixtures' starts.
+    private let now: Date
     private let logger: any Logging
     /// `-mock-events-fail`: the next list load throws, the reads by id, joins and creates never do.
     private var failsNextLoad: Bool
@@ -36,13 +38,15 @@ final class MockEventRepository: EventRepository {
         }
         if deletedHost { events.append(MockEventFixtures.deletedHostEvent(now: now)) }
         self.events = events
+        self.now = now
         self.identity = identity
         self.logger = logger
         self.failsNextLoad = failsFirstLoad
     }
 
     /// The position is ignored: the fixtures keep their start order. Like the backend, Explore never lists a private
-    /// group's game; its group's scope and Home do.
+    /// group's game; its group's scope and Home do. `.past` adds the dedicated history fixtures, which live outside
+    /// the feed: a finished game gets no room and no detail, only its history row.
     func events(in scope: EventScope, near position: Coordinate?) async throws -> [SportEvent] {
         if failsNextLoad {
             failsNextLoad = false
@@ -53,6 +57,10 @@ final class MockEventRepository: EventRepository {
         switch scope {
         case .upcoming: return events.filter(\.isListed)
         case .joined: return events.filter(\.participates)
+        case .past:
+            return (events + MockEventFixtures.pastGames(now: now))
+                .filter { $0.participates && $0.startsAt < now }
+                .sorted { $0.startsAt > $1.startsAt }
         case .group(let id): return events.filter { $0.group?.id == id }
         }
     }

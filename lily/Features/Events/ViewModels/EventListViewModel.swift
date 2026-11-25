@@ -183,6 +183,9 @@ final class EventListViewModel {
             break
         case .joined, .group:
             if listsByStart(event) { Self.insertByStart(event, into: &next) }
+        case .past:
+            // A game just created or joined is never history.
+            break
         }
         keep(next, for: identity.currentUserID)
         recordOwnChange("Event \(event.id) added to scope \(scope)")
@@ -206,6 +209,8 @@ final class EventListViewModel {
         switch scope {
         case .upcoming: false
         case .joined: event.participates
+        // The history is fetched when its screen opens, never grown on device.
+        case .past: false
         case .group(let id): event.group?.id == id
         }
     }

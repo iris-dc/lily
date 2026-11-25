@@ -158,3 +158,23 @@
   "Changes" paragraph now reads "Continuing to use iskra after a change constitutes acceptance of the updated
   policy." in the app and on Laurel's `privacy.html`, changed together. Compliance: guideline 1.2's agree-to-terms
   expectation is met by the footnote (the checklist records it, dated).
+
+- **"Activity" on Profile (2026-11-25, on the user's "add an ability for a user to see history of the
+  events/tournaments").** A `SettingsLinkRow` on the signed-in profile root (`profile-activity`,
+  `Symbols.activity = "clock.arrow.circlepath"`) pushes `ActivityScreen` (`Features/Profile/Views`) on the sheet's
+  stack: "Past games" — the caller's games that have started, from the new `EventScope.past`
+  (`GET /api/events?scope=past`, Laurel's complement of `joined` over the same participant rows, latest first,
+  reaching back the rows' year-long TTL) — and "Past tournaments" — `.mine` filtered to `.completed` on device
+  (finished rooms stay in Mine forever; a cancelled one is no history, as on a profile's shared lists). Both lists
+  load together in `ActivityViewModel` (one spinner, one retry; a loaded history stays on screen through a failed
+  reload) and are reduced to the shared `EventSummary`/`TournamentSummary` rows: game rows are rows alone (a past
+  game has no detail to open), tournament rows push `TournamentDestination`, so `ProfileView`'s stack now registers
+  `.groupDestinations`. The profile's section rendering moved into the shared `RowsSection`/`SectionNote`
+  (`Core/UI/Components`), which `UserProfileView` and the history screen both draw. The mock serves three dedicated
+  past fixtures (`MockEventFixtures.pastGames`, outside the feed so they get no room and no detail; the deleted-host
+  game joins them in its runs) and no finished tournament, so the tournaments section shows its "none yet" line on
+  the simulator. Tests: `ActivityViewModelTests` (reduction, scopes, failure, retry, cancellation, the mock wiring),
+  `MockEventRepositoryTests.pastServesTheHistoryFixturesLatestFirst`, `RemoteEventRepositoryTests` (the `past`
+  query, never a position), UI `LilyProfileTests.testActivityOnProfileListsPastGames`. Laurel's side landed the same
+  day (`EventListings.past`; its note in laurel's `data-model-and-events.md`). Owed: a native read of the seven new
+  catalog keys, and Laurel's deploy before a phone shows any history.

@@ -62,4 +62,19 @@ nonisolated extension AppBranding {
             localized("Keep it under \(limit) characters")
         }
     }
+
+    /// Copy of the caller's own history: the link row on the profile root and the screen it pushes, with the games
+    /// they joined that have started and their finished tournaments.
+    enum Activity {
+        /// The screen's title and the link row that opens it.
+        static var title: String { localized("Activity") }
+        /// Under the link row's title: what the screen holds.
+        static var rowSubtitle: String { localized("Past games and tournaments") }
+        static var pastGamesTitle: String { localized("Past games") }
+        static var noPastGames: String { localized("No past games yet") }
+        static var pastTournamentsTitle: String { localized("Past tournaments") }
+        static var noPastTournaments: String { localized("No past tournaments yet") }
+        /// The quiet line when the load failed; the popup said why, the screen offers the retry.
+        static var loadFailedTitle: String { localized("Couldn't load your activity") }
+    }
 }

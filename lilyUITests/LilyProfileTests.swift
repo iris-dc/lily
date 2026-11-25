@@ -150,4 +150,21 @@ final class LilyProfileTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["You're browsing as a guest"].waitForExistence(timeout: 5), "the session was forgotten")
         XCTAssertFalse(app.buttons[MockIDs.kickersRow].exists)
     }
+
+    /// The profile's "Activity" row opens the caller's past games; no tournament has finished in the mock, so the
+    /// tournaments section says none yet.
+    @MainActor
+    func testActivityOnProfileListsPastGames() {
+        tapSignInWithApple()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+        openProfileSheet()
+        let row = app.buttons["profile-activity"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "the signed-in profile root offers the history")
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Activity"].waitForExistence(timeout: 5))
+        let game = app.descendants(matching: .any)["shared-event-row-mock-event-past-0"]
+        XCTAssertTrue(game.waitForExistence(timeout: 5), "the latest past game leads the list")
+        XCTAssertTrue(game.label.contains("Thursday futsal"), "the row shows the game: \(game.label)")
+        XCTAssertTrue(app.staticTexts["No past tournaments yet"].waitForExistence(timeout: 5))
+    }
 }

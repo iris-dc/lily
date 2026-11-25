@@ -21,6 +21,28 @@ struct MockEventRepositoryTests {
         #expect(joined.allSatisfy(upcoming.contains))
     }
 
+    /// `.past` serves the dedicated history fixtures: joined, started, the latest first, and off the other scopes.
+    @Test func pastServesTheHistoryFixturesLatestFirst() async throws {
+        let now = Date.now
+        let repository = MockEventRepository(now: now, identity: FakeIdentityProvider(), logger: SpyLogger())
+        let past = try await repository.events(in: .past, near: nil)
+        #expect(past.map(\.id) == ["mock-event-past-0", "mock-event-past-1", "mock-event-past-2"])
+        #expect(past.allSatisfy { $0.participates && $0.startsAt < now })
+        let upcoming = try await repository.events(in: .upcoming, near: nil)
+        let joined = try await repository.events(in: .joined, near: nil)
+        #expect((upcoming + joined).allSatisfy { !$0.id.hasPrefix("mock-event-past") })
+    }
+
+    /// The deleted-host run's past game joins the history, as its lingering participant row would on the backend.
+    @Test func pastIncludesTheDeletedHostGameInItsRuns() async throws {
+        let repository = MockEventRepository(now: .now,
+                                             identity: FakeIdentityProvider(),
+                                             logger: SpyLogger(),
+                                             deletedHost: true)
+        let past = try await repository.events(in: .past, near: nil)
+        #expect(past.map(\.id).contains("mock-event-deleted-host"))
+    }
+
     /// A cap is never exceeded; a game that allows extras may stand past the number it needs.
     @Test func fixturesNeverExceedACap() throws {
         for event in MockEventFixtures.make(now: .now, count: 40) where event.playerLimit == .maximum {

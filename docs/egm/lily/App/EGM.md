@@ -107,7 +107,8 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `myGroupsDidChange()`, `myGroupsDidLoad()` (`+Chat.swift`);
   `makeTournamentListViewModel(scope:snapshots:)`, `makeTournamentDetailViewModel`, `makeCreateTournamentViewModel`,
   `makeEditTournamentViewModel` (`+Tournaments.swift`); `makeInboxViewModel`, `makeUserProfileViewModel`,
-  `makeFeedbackViewModel`, `makeDisplayNameViewModel`, `makeAboutViewModel`, `makeDeleteAccountViewModel`
+  `makeFeedbackViewModel`, `makeDisplayNameViewModel`, `makeAboutViewModel`, `makeDeleteAccountViewModel`,
+  `makeActivityViewModel` (2026-11-25, the history screen over the events and tournaments repositories)
   (`+Inbox`, `+People`, `+Feedback`, `+Profile`; the last builds `DeleteAccountViewModel` over
   `meRepository` and `sessionController` as its `AccountDeletionSession`, 2026-11-07). The
   `+Groups`, `+Chat`, `+Push`, `+Inbox`, `+People` and `+Tournaments` extensions expose their stores and repositories as

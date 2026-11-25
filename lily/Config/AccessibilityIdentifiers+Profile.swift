@@ -16,6 +16,8 @@ nonisolated extension AccessibilityIdentifiers {
     static let profileAboutField = "profile-about-field"
     static let profileAboutSave = "profile-about-save"
     static let profileAboutCancel = "profile-about-cancel"
+    /// The "Activity" link row on the profile root; its screen reuses the shared-history row identifiers.
+    static let profileActivity = "profile-activity"
     /// The Settings link row on the profile root, and the Settings screen's own rows.
     static let profileSettings = "profile-settings"
     static let settingsSignOut = "settings-sign-out"

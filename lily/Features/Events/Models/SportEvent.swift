@@ -229,6 +229,8 @@ extension SportEvent {
 nonisolated enum EventScope: Hashable, Sendable {
     case upcoming
     case joined
+    /// The caller's games that have started, the latest first; what Profile's Activity screen shows.
+    case past
     /// The upcoming games of one group, in start order; what its Events segment shows.
     case group(id: String)
 
@@ -237,6 +239,7 @@ nonisolated enum EventScope: Hashable, Sendable {
         switch self {
         case .upcoming: "upcoming"
         case .joined: "joined"
+        case .past: "past"
         case .group: nil
         }
     }
@@ -246,6 +249,7 @@ nonisolated enum EventScope: Hashable, Sendable {
         switch self {
         case .upcoming: AppConfig.Lists.upcomingEventsSnapshot
         case .joined: AppConfig.Lists.joinedEventsSnapshot
+        case .past: AppConfig.Lists.pastEventsSnapshot
         case .group(let id): AppConfig.Lists.groupEventsSnapshot(id)
         }
     }

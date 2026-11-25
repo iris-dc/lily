@@ -20,16 +20,18 @@ struct RemoteEventRepositoryTests {
     private var repository: RemoteEventRepository { RemoteEventRepository(client: client) }
 
     @Test func scopesBecomeTheScopeQueryParameter() async throws {
-        client.responses = [[SportEvent](), [SportEvent]()]
+        client.responses = [[SportEvent](), [SportEvent](), [SportEvent]()]
 
         _ = try await repository.events(in: .upcoming, near: nil)
         _ = try await repository.events(in: .joined, near: nil)
+        _ = try await repository.events(in: .past, near: nil)
 
-        #expect(client.requests.map(\.method) == [.get, .get])
-        #expect(client.requests.map(\.path) == ["/api/events", "/api/events"])
+        #expect(client.requests.map(\.method) == [.get, .get, .get])
+        #expect(client.requests.map(\.path) == ["/api/events", "/api/events", "/api/events"])
         let expectedQueries = [
             [URLQueryItem(name: "scope", value: "upcoming")],
             [URLQueryItem(name: "scope", value: "joined")],
+            [URLQueryItem(name: "scope", value: "past")],
         ]
         #expect(client.requests.map(\.queryItems) == expectedQueries)
     }
@@ -61,6 +63,14 @@ struct RemoteEventRepositoryTests {
         _ = try await repository.events(in: .joined, near: AppConfig.Location.mockCenter)
 
         #expect(client.requests.first?.queryItems == [URLQueryItem(name: "scope", value: "joined")])
+    }
+
+    @Test func pastNeverSendsAPosition() async throws {
+        client.responses = [[SportEvent]()]
+
+        _ = try await repository.events(in: .past, near: Coordinate(latitude: 52.5234, longitude: 13.4056))
+
+        #expect(client.requests.first?.queryItems == [URLQueryItem(name: "scope", value: "past")])
     }
 
     /// A group's games are a resource of their own, in the backend's start order: no scope, no position.

@@ -20,13 +20,24 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   `AccessibilityIdentifiers.profileSheet`, and the stack mounts `.errorPopup(dependencies.errorCenter)` itself (the
   topmost mount draws; the app root's popup sits below the sheet) (2026-11-07); signed in: an `AvatarCircle` of the
   profile name's initials (a glyph while the name is unknown), the name from `dependencies.profile` (a small spinner
-  while the first load runs) and the email, then `DisplayNameRow(store:action:)`, `AboutRow(store:action:)` and the
+  while the first load runs) and the email, then `DisplayNameRow(store:action:)`, `AboutRow(store:action:)`, the
+  history link row (2026-11-25: a `SettingsLinkRow` titled `AppBranding.Activity.title` with `History.rowSubtitle`,
+  `DesignTokens.Symbols.activity` and identifier `AccessibilityIdentifiers.profileActivity`) pushing
+  `ActivityScreen(viewModel: dependencies.makeActivityViewModel())` through `navigationDestination(isPresented:)`, and the
   Settings link row (a `SettingsLinkRow` titled `AppBranding.Settings.title` with `AppBranding.Settings.rowSubtitle`,
   `DesignTokens.Symbols.settings` and identifier `AccessibilityIdentifiers.profileSettings`) pushing `SettingsScreen`
-  through `navigationDestination(isPresented:)`; guest: `AppBranding.guestProfileTitle`, `guestProfileMessage` and a
+  through `navigationDestination(isPresented:)`; the stack's root also registers `.groupDestinations(dependencies:)`
+  (2026-11-25), so the history's tournament rows push `TournamentDestination` in place; guest: `AppBranding.guestProfileTitle`, `guestProfileMessage` and a
   prominent Sign in, then `LanguageRow`, `CurrencyRow` and `FeedbackRow(action:)` inline; sheets
   `SignInSheet(session:errorCenter:)`, `DisplayNameSheet(viewModel:errorCenter:)` over
   `dependencies.makeDisplayNameViewModel()` and `AboutSheet(viewModel:errorCenter:)` over `dependencies.makeAboutViewModel()`.
+- `ActivityScreen(viewModel: ActivityViewModel)` `[lily/Features/Profile/Views/ActivityScreen.swift:ActivityScreen]`
+  (2026-11-25): the caller's own history pushed from the profile root — inline title `AppBranding.Activity.title`, a
+  `ContentScreen` `ScrollView` whose content follows the view model's state (one spinner; one retry with
+  `SectionNote(text: History.loadFailedTitle)` and `AppBranding.Groups.tryAgain`; loaded: two `RowsSection`s,
+  `History.pastGamesTitle` over `SharedEventRow`s — rows alone, a past game has no detail to open — and
+  `History.pastTournamentsTitle` over `SharedTournamentRow`s, each a `NavigationLink` to `TournamentDestination`,
+  with `History.noPastGames` / `noPastTournaments` when empty); `.task { await viewModel.load() }`.
 - `SettingsScreen(dependencies: AppDependencies, language: AppLanguage)`
   `[lily/Features/Profile/Views/SettingsScreen.swift:SettingsScreen]`: the signed-in settings pushed from the profile
   root (2026-11-07), title `AppBranding.Settings.title`, a `ScrollView` that scrolls only past the screen
@@ -180,6 +191,8 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
 - `ProfileStore.loadIfNeeded()` (`GET /api/profile` once per session) from the `.task(id: session.state.user?.id) {
   await profile.loadIfNeeded() }` on `ProfileView`'s `NavigationStack`
   `[lily/Features/Profile/Views/ProfileView.swift:ProfileView]`.
+- `ActivityViewModel.load()` (the `.past` events read and the `.mine` tournaments read) from `ActivityScreen`'s
+  `.task` (2026-11-25) `[lily/Features/Profile/Views/ActivityScreen.swift:ActivityScreen]`.
 - `LanguageStore.select(_:)` and `CurrencyStore.select(_:)` on a pick `[lily/Features/Profile/Views/LanguageRow.swift:selection]`,
   `[lily/Features/Profile/Views/CurrencyRow.swift:selection]`.
 - An info log under `.auth` when a guest asks to send feedback `[lily/Features/Profile/Views/ProfileView.swift:openFeedback]`.
@@ -190,8 +203,9 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
 - Run: `./scripts/ci.sh unit` (`lilyTests/Preferences` covers the choice stores behind these rows, `lilyTests/Profile`
   the store, the editors' model, `SettingsConfigTests` — the Settings glyphs and copy keys, the delete copy and the
   launch-argument literal — `PrivacyConfigTests` and `TermsConfigTests` — the two documents' shapes, every key resolving in all
-  seven languages, the terms' agreement-by-use framing — and `DeleteAccountViewModelTests`); `./scripts/ci.sh ui`
-  (`LilyProfileTests` walks the display name and the "About you" cards and sheets; `LilySettingsTests` the Settings
+  seven languages, the terms' agreement-by-use framing — `DeleteAccountViewModelTests` and `ActivityViewModelTests`, the history screen's model); `./scripts/ci.sh ui`
+  (`LilyProfileTests` walks the display name and the "About you" cards and sheets and opens "Activity" from
+  its row — `testActivityOnProfileListsPastGames`, 2026-11-25; `LilySettingsTests` the Settings
   push, the guest root, a language pick inside Settings, the privacy policy and the terms pushed in place with their
   first sections rendered, Sign out, the delete flow end to end on the mock backend and
   the deleted sender's tombstone under `-mock-deleted-user`).

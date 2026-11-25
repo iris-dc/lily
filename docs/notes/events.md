@@ -425,3 +425,9 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   (5) `EventLoaderView` titles its loading and gone states with the destination's name (the loaded detail keeps
   its own look). (6) `MockEventInviteRepository` now refuses in Laurel's order — invitee existence, already
   joined, then the start — and its candidates answer for a started event (`aStartedEventRefusesInvites`).
+
+- **`EventScope.past` (2026-11-25).** The caller's games that have started, the latest first, for Profile's Activity screen alone (`profile-and-feedback.md` the same day): wire `scope=past` with never a position, snapshot name
+  `events-past` (no list view model takes the scope, so nothing writes one), and `.past` inert in
+  `EventListViewModel.add` and `listsByStart` (a game just created or joined is never history). The mock serves
+  `MockEventFixtures.pastGames(now:)` plus any held started game, so the feed, the rooms and the other scopes stay
+  untouched.

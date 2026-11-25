@@ -10,7 +10,9 @@ Source: `lily/Features/Profile/ViewModels/`
 Save for a changed valid text, the store's write of the field as the write, the backend's answer as the new value. A
 refusal reaches the popup and keeps the draft for a repeat; a cancellation stays quiet. `ProfileField` names the field
 and routes to the store. `DeleteAccountViewModel` (2026-11-07) is the delete flow's state machine behind
-`DeleteAccountSheet`: the advisory plan, the confirm, the inverted-check poll and the one-time acknowledgment.
+`DeleteAccountSheet`: the advisory plan, the confirm, the inverted-check poll and the one-time acknowledgment. `ActivityViewModel`
+(2026-11-25) loads the caller's own history for `ActivityScreen`: the started games (`EventScope.past`) and the
+completed tournaments out of `.mine`.
 
 ## Interface
 
@@ -40,6 +42,13 @@ and routes to the store. `DeleteAccountViewModel` (2026-11-07) is the delete flo
   `init(store:errorCenter:logger:)` fixing the field `[lily/Features/Profile/ViewModels/ProfileFieldViewModel.swift:DisplayNameViewModel]`,
   `[lily/Features/Profile/ViewModels/ProfileFieldViewModel.swift:AboutViewModel]`.
 
+- `@Observable final class ActivityViewModel`
+  `[lily/Features/Profile/ViewModels/ActivityViewModel.swift:ActivityViewModel]` (2026-11-25):
+  `init(events: any EventRepository, tournaments: any TournamentRepository, errorCenter: ErrorCenter,
+  logger: any Logging)`; `enum State { loading, loaded(Activity), failed }`, `nonisolated struct Activity
+  { events: [EventSummary], tournaments: [TournamentSummary] }`, `private(set) var state`, `var activity: Activity?`;
+  `load() async`.
+
 ## Invariants
 
 - The draft starts from the store's value of the field, or empty while it is unknown; `prepare()` loads the store and
@@ -55,6 +64,13 @@ and routes to the store. `DeleteAccountViewModel` (2026-11-07) is the delete flo
   `isDone` on the answer, reports every other failure to `ErrorCenter` with an error log, and a cancellation neither
   logs nor reports `[lily/Features/Profile/ViewModels/ProfileFieldViewModel.swift:submit]`.
 
+- `ActivityViewModel.load()` fetches `.past` events and `.mine` tournaments together (`async let`), reduces them off
+  the actor to summaries — games sorted latest start first; tournaments filtered to `.completed` (a cancelled one is
+  no history, as on a profile's shared lists) and sorted the same — and reports any failure to `ErrorCenter` with an
+  error log; a history already loaded stays through a failed reload, a cancellation neither logs nor reports, and the
+  open is logged once per instance (`"Activity opened"`, `.events`)
+  `[lily/Features/Profile/ViewModels/ActivityViewModel.swift:load]`,
+  `[lily/Features/Profile/ViewModels/ActivityViewModel.swift:reduce]`.
 - `DeleteAccountViewModel`: `prepare()` loads the plan once and only while unlocked; a failure reports the popup and
   leaves `plan` nil, blocking nothing (the preview is advisory and must never stand between the caller and erasure) —
   except locked or landed (`DeletionSettle.isLanded`), which reports nothing and logs at debug: the account-deleted

@@ -72,7 +72,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `minimumLeadTimeMinutes = 15`, `priceLimitExclusive = 10_000_000`. `Editing`: `startMargin = 60`, `minimumLeadTime = 0`.
 - `Lists`: `staleAfter = 60`, `retryAfterFailure = 10`, `snapshotDirectoryName = "ListSnapshots"`, `snapshotFormat = 2`,
   `snapshotFormatFileName = "format"`, `guestSnapshotName = "guest"`, the snapshot names (`events-upcoming`,
-  `events-joined`, `tournaments-upcoming`, `tournaments-mine`, `groups-mine`, `groups-discover`, `profile`,
+  `events-joined`, `events-past` (2026-11-25), `tournaments-upcoming`, `tournaments-mine`, `groups-mine`, `groups-discover`, `profile`,
   `groupEventsSnapshot(_:)`, `groupTournamentsSnapshot(_:)`). `Location`: `mockCenter = Coordinate(52.5200, 13.4050)`,
   `fixTimeout = .seconds(8)`, `firstFixWait = .seconds(1.5)`, `fixTTL = .seconds(300)`, `failedFixTTL = .seconds(30)`.
   `Statistics`: `batchSize = 10`, `flushDelay = .seconds(30)`, `maxBuffered = 100`, `maxFilterTypes = 48`.
@@ -127,7 +127,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Groups` (+ `Create`, `Invite`), `Chats`, `Inbox`, `Intro` (+ `Chat`), `Feedback`, `DisplayName`, `About`
   (`lily/Config/AppBranding+Profile.swift`: `title`, `subtitle`, `defaultSubtitle`, `placeholder`, `footer`, `save`,
   `tooLong(limit:)`), `DeletedUser` (same file, 2026-11-07: `name`, the localized "Deleted user" the `Tombstone`
-  helper shows over a deleted account's snapshots), `DeleteAccount` (same file, 2026-11-07: the delete flow's copy —
+  helper shows over a deleted account's snapshots), `History` (same file, 2026-11-25: the history row and screen's copy — `title`, `rowSubtitle`, `pastGamesTitle`,
+  `noPastGames`, `pastTournamentsTitle`, `noPastTournaments`, `loadFailedTitle`), `DeleteAccount` (same file, 2026-11-07: the delete flow's copy —
   `title`, `approximate`, `messagesSentence` (the always-true "Your messages will show as Deleted user."),
   `irreversible`, `dialogTitle`, `confirmAction`, `deleting`, `deletedTitle`, `deletedMessage`, `acknowledgeAction`
   (reuses the "Done" key) and the five `%lld` plural lines `groupsTransferring(_:)`, `groupsDeleted(_:)`,
@@ -238,6 +239,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   many-events panel, instead of a second glass); `Symbols.moreBelow = "chevron.down"`
   (`lily/Config/DesignTokens+SportMarks.swift:DesignTokens.Layout`). The Settings screen's glyphs (2026-11-07,
   `lily/Config/DesignTokens+Settings.swift`): `Symbols.settings = "gearshape"` (the profile root's link row),
+  `Symbols.activity = "clock.arrow.circlepath"` (the history row, 2026-11-25),
   `Symbols.privacy = "lock.shield"` and `Symbols.terms = "doc.text"` (the legal rows), beside that file's dropdown tokens;
   `Spacing.accountActions` 0 joined it 2026-11-08 (owner correction): Sign out and Delete account stack flush
   at the settings list's end, with `Spacing.accountActionsFoldClearance` 16 padding the group's top on regular
@@ -276,7 +278,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   button; 2026-11-14), +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
   +Profile (`profile-corner` and `profile-sheet` — the corner control on every tab root and the profile sheet's root
   container, 2026-11-07 — `profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
-  `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-settings`, `settings-sign-out`,
+  `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-activity` (2026-11-25), `profile-settings`, `settings-sign-out`,
   `settings-privacy`, `settings-terms`, `settings-privacy-policy` and `settings-terms-of-use` (the pushed policy
   and terms screens, 2026-11-08), `legal-close` (Close on the legal sheets the sign-up footnote presents, 2026-11-08), and the
   delete flow's `settings-delete-account`,

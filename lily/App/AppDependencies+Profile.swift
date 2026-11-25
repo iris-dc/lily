@@ -15,4 +15,9 @@ extension AppDependencies {
     func makeDeleteAccountViewModel() -> DeleteAccountViewModel {
         DeleteAccountViewModel(repository: meRepository, session: sessionController, errorCenter: errorCenter, logger: logger)
     }
+
+    /// The caller's own history: past games over the events boundary, finished tournaments over the tournaments one.
+    func makeActivityViewModel() -> ActivityViewModel {
+        ActivityViewModel(events: eventRepository, tournaments: tournamentRepository, errorCenter: errorCenter, logger: logger)
+    }
 }

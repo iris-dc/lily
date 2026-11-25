@@ -192,4 +192,36 @@ nonisolated enum MockEventFixtures {
     }
 
     private static let deletedHostEventDaysAgo = 3.0
+
+    /// The caller's finished games, served for `.past` alone: history rows live outside the feed, so they get no room
+    /// and no detail, as `MockEventRepository` explains. Latest first, as the backend answers.
+    static func pastGames(now: Date) -> [SportEvent] {
+        [SportEvent(id: "mock-event-past-0",
+                    title: "Thursday futsal",
+                    type: .football,
+                    startsAt: now.addingTimeInterval(-2 * .day),
+                    location: EventLocation(name: "Sporthalle Mitte", coordinate: .aroundMockCenter(lat: 0.2, lon: 0.5)),
+                    capacity: 10,
+                    participantCount: 10,
+                    hostName: "Jonas",
+                    isJoined: true),
+         SportEvent(id: "mock-event-past-1",
+                    title: "Morning doubles",
+                    type: .padel,
+                    startsAt: now.addingTimeInterval(-9 * .day),
+                    location: EventLocation(name: "Padel Hub North", coordinate: .aroundMockCenter(lat: 1.0, lon: -0.2)),
+                    capacity: 4,
+                    participantCount: 4,
+                    hostName: "Marta",
+                    isJoined: true),
+         SportEvent(id: "mock-event-past-2",
+                    title: "Lakeside 10k",
+                    type: .running,
+                    startsAt: now.addingTimeInterval(-30 * .day),
+                    location: EventLocation(name: "Canal Path", coordinate: .aroundMockCenter(lat: -0.2, lon: 0.7)),
+                    capacity: nil,
+                    participantCount: 7,
+                    hostName: "Aiko",
+                    isJoined: true)]
+    }
 }

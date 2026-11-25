@@ -15,7 +15,8 @@ target's default `@MainActor` isolation.
 
 - `EventRepository` (`lily/Features/Events/Interfaces/EventRepository.swift`): every requirement is `async throws`.
   - `events(in scope: EventScope, near position: Coordinate?) -> [SportEvent]`: the position is documented as sent
-    rounded to about a kilometre and only for `.upcoming`; `nil` keeps the backend's default order.
+    rounded to about a kilometre and only for `.upcoming`; `nil` keeps the backend's default order. `.past`
+    (2026-11-25) answers the caller's started games, the latest first, and sends no position.
   - `event(id: String) -> SportEvent`: documented to throw `AppError.eventNotFound` when the event is gone.
   - `participants(eventId: String) -> [EventParticipant]`: host first, then by join time; for signed-in callers.
   - `join(eventId: String) -> SportEvent` and `leave(eventId: String) -> SportEvent`: answer the event as the server

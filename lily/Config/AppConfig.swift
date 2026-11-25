@@ -107,6 +107,7 @@ nonisolated enum AppConfig {
         /// The lists' names in their snapshot files; a scope reads its own through `snapshotList`.
         static let upcomingEventsSnapshot = "events-upcoming"
         static let joinedEventsSnapshot = "events-joined"
+        static let pastEventsSnapshot = "events-past"
         static let upcomingTournamentsSnapshot = "tournaments-upcoming"
         static let mineTournamentsSnapshot = "tournaments-mine"
         static let mineGroupsSnapshot = "groups-mine"

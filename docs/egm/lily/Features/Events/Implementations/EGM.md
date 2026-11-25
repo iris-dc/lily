@@ -22,7 +22,8 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
 - `MockEventRepository` (`lily/Features/Events/Implementations/MockEventRepository.swift`): `final class`,
   `init(now: Date = .now, identity: any IdentityProvider, logger: any Logging, failsFirstLoad: Bool = false,
   deletedHost: Bool = false)` (the fixture set is always `MockEventFixtures.feed(now:)`, so the repository and the
-  group fixtures' rooms can never disagree on which games exist); the same seven methods over an
+  group fixtures' rooms can never disagree on which games exist; `now` stays stored as the divide between upcoming
+  and history, 2026-11-25); the same seven methods over an
   in-memory `[SportEvent]`; `rooms: MockGroupRepository?` (the event rooms the writes mirror into, set by the
   composition root; wiring registers a room for any held event the group fixtures do not ship — the appended
   deleted-host game) and `stored(_ eventId:) throws -> SportEvent` (the invite mock's read), 2026-11-15.
@@ -37,6 +38,9 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   started three days ago, the placeholder host name with `deleted: true` — the stamp pass's shape, past because the
   job cancels upcoming hosted games — joined, appended by `MockEventRepository.init` under `deletedHost`, its room
   registered with a member row when `rooms` is wired);
+  `static func pastGames(now:) -> [SportEvent]` (2026-11-25: three joined, started games — ids
+  `mock-event-past-0/1/2`, 2, 9 and 30 days back, so the latest leads — served for `.past` alone and outside the
+  feed, so they get no room and no detail);
   `static let participantNames` (11 names), `hostJoinLead: TimeInterval` (7 days), `joinSpacing` (1 hour); the
   fixtures start `firstStartHours` (3) plus `hoursBetweenEvents` (7) per index after `now`, in `TimeInterval.hour`;
   `static func participantNames(for: SportEvent, count: Int) -> [String]`.
@@ -87,7 +91,9 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   (2026-11-11). In
   `MockEventRepository.init` every fourth fixture starts joined (`joinedStride = 4`).
 - `MockEventRepository.events(in:near:)` ignores the position: `.upcoming` → `filter(\.isListed)` (a private group's
-  game is never on Explore), `.joined` → `filter(\.participates)`, `.group(id)` → `group?.id == id`. With
+  game is never on Explore), `.joined` → `filter(\.participates)`, `.past` → the held events plus
+  `MockEventFixtures.pastGames(now:)`, filtered to joined games that have started and sorted latest first
+  (2026-11-25), `.group(id)` → `group?.id == id`. With
   `failsFirstLoad`, the first list call throws `AppError.network` once (`failsNextLoad` then clears); reads by id,
   joins and creates never fail that way.
 - Refusals mirror Laurel (`MockEventRepository`): `find` throws `.eventNotFound`; `join` throws `.alreadyJoined`

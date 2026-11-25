@@ -28,9 +28,11 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `spotsLeft`, `isFull`, `isNearlyFull`, `hasPlayersNeeded`, `fillRatio`, `participates`, `isFree`, `isListed`,
   `spotsDescription`, `countDescription`, `priceText`, `availabilityText`, `capacityText`; `isHosted(by:)`,
   `distance(from:) -> Measurement<UnitLength>?`, `updating(with: EventDraft)`, `updatingParticipation(count:isJoined:channelEpoch: Int? = nil)` (2026-11-15).
-- `EventScope` (`SportEvent.swift`): `upcoming`, `joined`, `group(id: String)`; `wireName: String?`
-  (`"upcoming"`, `"joined"`, `nil`), `snapshotList: String` (`AppConfig.Lists.upcomingEventsSnapshot` =
-  `events-upcoming`, `joinedEventsSnapshot` = `events-joined`, `groupEventsSnapshot(id)` = `events-group-<id>`).
+- `EventScope` (`SportEvent.swift`): `upcoming`, `joined`, `past` (the caller's started games, latest first,
+  Profile's Activity screen, 2026-11-25), `group(id: String)`; `wireName: String?` (`"upcoming"`, `"joined"`, `"past"`,
+  `nil`), `snapshotList: String` (`AppConfig.Lists.upcomingEventsSnapshot` = `events-upcoming`,
+  `joinedEventsSnapshot` = `events-joined`, `pastEventsSnapshot` = `events-past`, `groupEventsSnapshot(id)` =
+  `events-group-<id>`).
 - `EventLocation` (`EventLocation.swift`): `name`, `coordinate: Coordinate`; `distance(from:)`.
   `EventParticipant` (`EventParticipant.swift`): `userId` (the `id`), `displayName`, `joinedAt`, `isHost`.
 - `EventType` (`EventType.swift`): `WireNamedKind` with 34 known cases (`football` ... `other`; 14 added

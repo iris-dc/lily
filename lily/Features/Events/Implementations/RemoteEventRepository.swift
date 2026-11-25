@@ -51,7 +51,7 @@ private extension RemoteEventRepository {
             .get(AppConfig.API.Paths.groupEvents(id: id))
         case .upcoming:
             .get(AppConfig.API.Paths.events, query: scopeItems(for: scope) + (position?.queryItems ?? []))
-        case .joined:
+        case .joined, .past:
             .get(AppConfig.API.Paths.events, query: scopeItems(for: scope))
         }
     }
