@@ -17,6 +17,12 @@ nonisolated extension AppConfig {
     }
 
     /// The delete-account flow (the deletion contract).
+    /// The caller's own Activity screen.
+    enum Activity {
+        /// How many rows a section shows at first, and how many each "Show more" reveals.
+        static let visibleBatch = 5
+    }
+
     enum AccountDeletion {
         /// How often the locked sheet re-reads `GET /api/me` until a 401 or `USER_NOT_FOUND` settles the deletion.
         static let pollInterval: Duration = .seconds(2)

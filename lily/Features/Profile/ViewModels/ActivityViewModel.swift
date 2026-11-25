@@ -20,6 +20,9 @@ final class ActivityViewModel {
     }
 
     private(set) var state: State = .loading
+    /// The rows each section shows; "Show more" grows a count by a batch, for the screen instance's lifetime.
+    private(set) var visibleGamesCount = AppConfig.Activity.visibleBatch
+    private(set) var visibleTournamentsCount = AppConfig.Activity.visibleBatch
 
     private let events: any EventRepository
     private let tournaments: any TournamentRepository
@@ -41,6 +44,15 @@ final class ActivityViewModel {
         if case .loaded(let activity) = state { return activity }
         return nil
     }
+
+    /// The latest rows up to the visible count: long lists open folded so a year of games is not one endless wall.
+    var visibleGames: [EventSummary] { Array((activity?.events ?? []).prefix(visibleGamesCount)) }
+    var visibleTournaments: [TournamentSummary] { Array((activity?.tournaments ?? []).prefix(visibleTournamentsCount)) }
+    var hasMoreGames: Bool { (activity?.events.count ?? 0) > visibleGamesCount }
+    var hasMoreTournaments: Bool { (activity?.tournaments.count ?? 0) > visibleTournamentsCount }
+
+    func showMoreGames() { visibleGamesCount += AppConfig.Activity.visibleBatch }
+    func showMoreTournaments() { visibleTournamentsCount += AppConfig.Activity.visibleBatch }
 
     /// Loads both lists together, or reloads them on retry; a history already on screen stays while the request runs
     /// and when it fails, as a profile keeps its shared lists.

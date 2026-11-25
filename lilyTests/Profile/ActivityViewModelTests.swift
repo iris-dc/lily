@@ -96,4 +96,35 @@ struct ActivityViewModelTests {
         #expect(viewModel.activity?.events.map(\.id) == ["mock-event-past-0", "mock-event-past-1", "mock-event-past-2"])
         #expect(viewModel.activity?.tournaments.isEmpty == true)
     }
+
+    /// Long lists open folded: the latest five show, and each "Show more" reveals another five.
+    @Test func sectionsShowTheLatestFiveAndGrowByFive() async {
+        events.result = .success((0..<12).map {
+            .fixture(id: "g-\($0)", startsAt: Date(timeIntervalSince1970: Double(1_000 - $0)))
+        })
+        tournaments.result = .success((0..<7).map {
+            .fixture(id: "t-\($0)", status: .completed, startsAt: Date(timeIntervalSince1970: Double(1_000 - $0)))
+        })
+        let viewModel = makeViewModel()
+
+        await viewModel.load()
+
+        #expect(viewModel.visibleGames.map(\.id) == ["g-0", "g-1", "g-2", "g-3", "g-4"])
+        #expect(viewModel.hasMoreGames && viewModel.hasMoreTournaments)
+        viewModel.showMoreGames()
+        #expect(viewModel.visibleGames.count == 10 && viewModel.hasMoreGames)
+        viewModel.showMoreGames()
+        #expect(viewModel.visibleGames.count == 12 && !viewModel.hasMoreGames)
+        viewModel.showMoreTournaments()
+        #expect(viewModel.visibleTournaments.count == 7 && !viewModel.hasMoreTournaments)
+    }
+
+    @Test func aShortSectionShowsWholeWithNothingMoreToReveal() async {
+        events.result = .success([.fixture(id: "g-1")])
+        let viewModel = makeViewModel()
+
+        await viewModel.load()
+
+        #expect(viewModel.visibleGames.count == 1 && !viewModel.hasMoreGames && !viewModel.hasMoreTournaments)
+    }
 }

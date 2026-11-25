@@ -96,7 +96,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `maxEntries(for:)`, `minEntries(for:)`, `entriesRange(for: TournamentFormat) -> ClosedRange<Int>` (an unknown
   format takes single elimination's bounds; Laurel validates the real ones).
 - Smaller areas: `Inbox.pageSize = 50`; `Shell` (`lily/Config/AppConfig+Shell.swift`, returned 2026-11-22): `tabBarFindAttempts = 20`, `tabBarFindRetryDelay = 0.1` (the circle guard's bounded find of the bar and its circle: a pane churn re-runs the full search with a fresh budget once a bar is observed, and the SwiftUI update re-arms a guard whose adopted bar died — no observation outlives its hierarchy), `tabBarCircleMaxWidth = 64` (only a pane no wider than this is a swap candidate, judged on model bounds that the collapse morph never moves; the expanded platter and the ~100 pt tab-switch transient never qualify), `tabBarDrawableAlphaMinimum = 0.01` (the condemnation walk's floor: an ancestor below it reads as hiding the mirror); `Moderation` (`commentMaxLength = 500`, `maxBlocks = 500`,
-  `supportEmail = "support@iskra.red"`, `termsURL` and `privacyURL` = `API.productionBaseURL.appending(path:)` `terms` / `privacy`); `People.maxConversations = 200`, `People.maxSharedHistory = 20` (Laurel's `profile.max-shared-history`); `Feedback`
+  `supportEmail = "support@iskra.red"`, `termsURL` and `privacyURL` = `API.productionBaseURL.appending(path:)` `terms` / `privacy`); `People.maxConversations = 200`, `People.maxSharedHistory = 20` (Laurel's `profile.max-shared-history`); `Activity.visibleBatch = 5` (how many rows an Activity section opens with and grows by, 2026-11-25); `Feedback`
   (`messageMaxLength = 2000`, `replyEmailMaxLength = 254`, `detailMaxLength = 80`); `Currency` (`defaultCode = "EUR"`,
   `offered`, 14 codes); `Push` (`reregisterInterval = 24 * 60 * 60`, `tokenTimeout = .seconds(10)`, `platform = "ios"`,
   `redactedToken = "<token>"`, `Payload` keys `kind`, `eventId`, `event_reminder`, `match_reminder`, `tournamentId`,
@@ -278,7 +278,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   button; 2026-11-14), +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
   +Profile (`profile-corner` and `profile-sheet` — the corner control on every tab root and the profile sheet's root
   container, 2026-11-07 — `profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
-  `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-activity` (2026-11-25), `profile-settings`, `settings-sign-out`,
+  `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-activity`, `activity-more-games`, `activity-more-tournaments` (2026-11-25), `profile-settings`, `settings-sign-out`,
   `settings-privacy`, `settings-terms`, `settings-privacy-policy` and `settings-terms-of-use` (the pushed policy
   and terms screens, 2026-11-08), `legal-close` (Close on the legal sheets the sign-up footnote presents, 2026-11-08), and the
   delete flow's `settings-delete-account`,

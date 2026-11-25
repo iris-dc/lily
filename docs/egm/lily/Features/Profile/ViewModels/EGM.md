@@ -47,7 +47,8 @@ completed tournaments out of `.mine`.
   `init(events: any EventRepository, tournaments: any TournamentRepository, errorCenter: ErrorCenter,
   logger: any Logging)`; `enum State { loading, loaded(Activity), failed }`, `nonisolated struct Activity
   { events: [EventSummary], tournaments: [TournamentSummary] }`, `private(set) var state`, `var activity: Activity?`;
-  `load() async`.
+  `load() async`; `visibleGames` / `visibleTournaments`, `hasMoreGames` / `hasMoreTournaments`,
+  `showMoreGames()` / `showMoreTournaments()` and the counts behind them (2026-11-25, the fold).
 
 ## Invariants
 
@@ -71,6 +72,10 @@ completed tournaments out of `.mine`.
   open is logged once per instance (`"Activity opened"`, `.events`)
   `[lily/Features/Profile/ViewModels/ActivityViewModel.swift:load]`,
   `[lily/Features/Profile/ViewModels/ActivityViewModel.swift:reduce]`.
+- The sections open folded: `visibleGames` / `visibleTournaments` are the reduced lists' prefixes at the visible
+  counts (seeded `AppConfig.Activity.visibleBatch` = 5), `hasMore*` compares the full count, and `showMore*()` grows a
+  count by one batch; the counts live for the screen instance, so a reload keeps what was revealed
+  `[lily/Features/Profile/ViewModels/ActivityViewModel.swift:visibleGames]`.
 - `DeleteAccountViewModel`: `prepare()` loads the plan once and only while unlocked; a failure reports the popup and
   leaves `plan` nil, blocking nothing (the preview is advisory and must never stand between the caller and erasure) —
   except locked or landed (`DeletionSettle.isLanded`), which reports nothing and logs at debug: the account-deleted

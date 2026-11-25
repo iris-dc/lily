@@ -74,6 +74,8 @@ nonisolated extension AppBranding {
         static var noPastGames: String { localized("No past games yet") }
         static var pastTournamentsTitle: String { localized("Past tournaments") }
         static var noPastTournaments: String { localized("No past tournaments yet") }
+        /// Under a section still holding hidden rows: reveals the next batch.
+        static var showMore: String { localized("Show more") }
         /// The quiet line when the load failed; the popup said why, the screen offers the retry.
         static var loadFailedTitle: String { localized("Couldn't load your activity") }
     }

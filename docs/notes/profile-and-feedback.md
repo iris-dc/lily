@@ -178,3 +178,12 @@
   query, never a position), UI `LilyProfileTests.testActivityOnProfileListsPastGames`. Laurel's side landed the same
   day (`EventListings.past`; its note in laurel's `data-model-and-events.md`). Owed: a native read of the seven new
   catalog keys, and Laurel's deploy before a phone shows any history.
+
+- **The Activity sections fold (2026-11-25, later the same day, on the user's "show only the latest five and hide the
+  rest").** Each section opens at the latest `AppConfig.Activity.visibleBatch` (5) rows; while more remain, an ink
+  "Show more" text button (`activity-more-games` / `activity-more-tournaments`) reveals another batch. The counts are
+  the view model's (`visibleGames`, `hasMoreGames`, `showMoreGames()` and the tournament trio), live for the screen
+  instance, so a reload keeps what was revealed; the whole year still arrives in the one request, only the rendering
+  folds. The mock ships three past games, so the fold is pinned by
+  `ActivityViewModelTests.sectionsShowTheLatestFiveAndGrowByFive`, not by a UI test; the demo capture recipe (inject
+  demo data into the view model, screenshot, revert) stays out of the tree.

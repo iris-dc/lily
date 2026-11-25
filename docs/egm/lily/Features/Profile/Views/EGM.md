@@ -21,7 +21,7 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   topmost mount draws; the app root's popup sits below the sheet) (2026-11-07); signed in: an `AvatarCircle` of the
   profile name's initials (a glyph while the name is unknown), the name from `dependencies.profile` (a small spinner
   while the first load runs) and the email, then `DisplayNameRow(store:action:)`, `AboutRow(store:action:)`, the
-  history link row (2026-11-25: a `SettingsLinkRow` titled `AppBranding.Activity.title` with `History.rowSubtitle`,
+  history link row (2026-11-25: a `SettingsLinkRow` titled `AppBranding.Activity.title` with `Activity.rowSubtitle`,
   `DesignTokens.Symbols.activity` and identifier `AccessibilityIdentifiers.profileActivity`) pushing
   `ActivityScreen(viewModel: dependencies.makeActivityViewModel())` through `navigationDestination(isPresented:)`, and the
   Settings link row (a `SettingsLinkRow` titled `AppBranding.Settings.title` with `AppBranding.Settings.rowSubtitle`,
@@ -35,9 +35,11 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   (2026-11-25): the caller's own history pushed from the profile root — inline title `AppBranding.Activity.title`, a
   `ContentScreen` `ScrollView` whose content follows the view model's state (one spinner; one retry with
   `SectionNote(text: History.loadFailedTitle)` and `AppBranding.Groups.tryAgain`; loaded: two `RowsSection`s,
-  `History.pastGamesTitle` over `SharedEventRow`s — rows alone, a past game has no detail to open — and
-  `History.pastTournamentsTitle` over `SharedTournamentRow`s, each a `NavigationLink` to `TournamentDestination`,
-  with `History.noPastGames` / `noPastTournaments` when empty); `.task { await viewModel.load() }`.
+  `Activity.pastGamesTitle` over `SharedEventRow`s — rows alone, a past game has no detail to open — and
+  `Activity.pastTournamentsTitle` over `SharedTournamentRow`s, each a `NavigationLink` to `TournamentDestination`,
+  with `Activity.noPastGames` / `noPastTournaments` when empty; each section folded to the view model's visible rows,
+  an ink `Activity.showMore` text button — `activity-more-games` / `activity-more-tournaments` — revealing the next
+  batch while more remain, 2026-11-25); `.task { await viewModel.load() }`.
 - `SettingsScreen(dependencies: AppDependencies, language: AppLanguage)`
   `[lily/Features/Profile/Views/SettingsScreen.swift:SettingsScreen]`: the signed-in settings pushed from the profile
   root (2026-11-07), title `AppBranding.Settings.title`, a `ScrollView` that scrolls only past the screen

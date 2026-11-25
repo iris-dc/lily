@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The caller's own history, pushed from the profile root: the games they joined that have started and their finished
-/// tournaments. Game rows are rows alone, as on a profile (a past game has no detail to open); tournament rows open
+/// tournaments, each section folded to the latest few with "Show more" revealing the next batch. Game rows are rows
+/// alone, as on a profile (a past game has no detail to open); tournament rows open
 /// the detail through `TournamentDestination`, which the profile sheet's stack registers.
 struct ActivityScreen: View {
     @State private var viewModel: ActivityViewModel
@@ -36,14 +37,34 @@ struct ActivityScreen: View {
                 .padding(.vertical, DesignTokens.Spacing.lg)
         case .failed:
             loadFailed
-        case .loaded(let activity):
-            RowsSection(title: Copy.pastGamesTitle, emptyNote: Copy.noPastGames, items: activity.events) {
-                SharedEventRow(event: $0)
+        case .loaded:
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+                RowsSection(title: Copy.pastGamesTitle, emptyNote: Copy.noPastGames, items: viewModel.visibleGames) {
+                    SharedEventRow(event: $0)
+                }
+                if viewModel.hasMoreGames {
+                    showMoreButton(AccessibilityIdentifiers.activityMoreGames) { viewModel.showMoreGames() }
+                }
             }
-            RowsSection(title: Copy.pastTournamentsTitle, emptyNote: Copy.noPastTournaments, items: activity.tournaments) {
-                SharedTournamentRow(tournament: $0)
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+                RowsSection(title: Copy.pastTournamentsTitle,
+                            emptyNote: Copy.noPastTournaments,
+                            items: viewModel.visibleTournaments) {
+                    SharedTournamentRow(tournament: $0)
+                }
+                if viewModel.hasMoreTournaments {
+                    showMoreButton(AccessibilityIdentifiers.activityMoreTournaments) { viewModel.showMoreTournaments() }
+                }
             }
         }
+    }
+
+    /// Reveals a folded section's next batch; ink, at the rows' margin.
+    private func showMoreButton(_ identifier: String, action: @escaping () -> Void) -> some View {
+        Button(Copy.showMore, action: action)
+            .lilyTextButton()
+            .accessibilityIdentifier(identifier)
+            .padding(.horizontal, DesignTokens.Layout.screenMargin)
     }
 
     /// The popup said what went wrong; the screen offers the retry.
