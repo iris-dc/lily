@@ -40,10 +40,23 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   with `Activity.noPastGames` / `noPastTournaments` when empty; each section folded to the view model's visible rows,
   an ink `Activity.showMore` text button — `activity-more-games` / `activity-more-tournaments` — revealing the next
   batch while more remain, 2026-11-25); `.task { await viewModel.load() }`.
+- `NotificationsScreen(viewModel: NotificationsViewModel)`
+  `[lily/Features/Profile/Views/NotificationsScreen.swift:NotificationsScreen]` (2026-11-26): which notifications
+  reach this device, pushed from Settings — one spinner until the permission's state answers; not-determined shows
+  `Notifications.notDeterminedMessage` and a prominent `enableAction` button (`notifications-enable`) running the
+  opt-in; denied shows `deniedMessage` and a glass `openSettingsAction` button (`notifications-open-settings`) opening
+  `UIApplication.openSettingsURLString`; authorized shows one `GlassCard` `Toggle` per `NotificationKind` (accent
+  tint, title and caption from `AppBranding.Notifications`, the identifier `notifications-toggle-<wire>` on the
+  `Toggle` itself so a test finds the switch) and the `inboxFootnote`. The state re-reads on `.task` and whenever
+  `scenePhase` returns `.active` (back from the system settings).
 - `SettingsScreen(dependencies: AppDependencies, language: AppLanguage)`
   `[lily/Features/Profile/Views/SettingsScreen.swift:SettingsScreen]`: the signed-in settings pushed from the profile
   root (2026-11-07), title `AppBranding.Settings.title`, a `ScrollView` that scrolls only past the screen
-  (`.scrollBounceBehavior(.basedOnSize)`): `LanguageRow`, `CurrencyRow`, `FeedbackRow` presenting
+  (`.scrollBounceBehavior(.basedOnSize)`): `LanguageRow`, `CurrencyRow`, the Notifications link row (2026-11-26: a
+  `SettingsLinkRow` titled `AppBranding.Notifications.title` with `Notifications.rowSubtitle`,
+  `DesignTokens.Symbols.notifications` and identifier `AccessibilityIdentifiers.settingsNotifications`, pushing
+  `NotificationsScreen(viewModel: dependencies.makeNotificationsViewModel())` through
+  `navigationDestination(isPresented:)`), `FeedbackRow` presenting
   `FeedbackSheet(viewModel:errorCenter:)` over `dependencies.makeFeedbackViewModel()`, two `SettingsLinkRow` legal
   rows — `AppBranding.Moderation.privacyLink` / `AppBranding.Settings.privacySubtitle` / `DesignTokens.Symbols.privacy`
   / `AccessibilityIdentifiers.settingsPrivacy` pushing `PrivacyPolicyScreen(language:)` through
@@ -207,7 +220,8 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   launch-argument literal — `PrivacyConfigTests` and `TermsConfigTests` — the two documents' shapes, every key resolving in all
   seven languages, the terms' agreement-by-use framing — `DeleteAccountViewModelTests` and `ActivityViewModelTests`, the history screen's model); `./scripts/ci.sh ui`
   (`LilyProfileTests` walks the display name and the "About you" cards and sheets and opens "Activity" from
-  its row — `testActivityOnProfileListsPastGames`, 2026-11-25; `LilySettingsTests` the Settings
+  its row — `testActivityOnProfileListsPastGames`, 2026-11-25; the notification switches flip and flip back —
+  `LilySettingsTests.testNotificationSwitchesFlipInSettings`, 2026-11-26; `LilySettingsTests` the Settings
   push, the guest root, a language pick inside Settings, the privacy policy and the terms pushed in place with their
   first sections rendered, Sign out, the delete flow end to end on the mock backend and
   the deleted sender's tombstone under `-mock-deleted-user`).

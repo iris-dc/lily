@@ -108,7 +108,10 @@ remote set over one `URLSessionAPIClient` or the in-memory mock set, `AuthWiring
   `makeTournamentListViewModel(scope:snapshots:)`, `makeTournamentDetailViewModel`, `makeCreateTournamentViewModel`,
   `makeEditTournamentViewModel` (`+Tournaments.swift`); `makeInboxViewModel`, `makeUserProfileViewModel`,
   `makeFeedbackViewModel`, `makeDisplayNameViewModel`, `makeAboutViewModel`, `makeDeleteAccountViewModel`,
-  `makeActivityViewModel` (2026-11-25, the history screen over the events and tournaments repositories)
+  `makeActivityViewModel` (2026-11-25, the history screen over the events and tournaments repositories),
+  `makeNotificationsViewModel` (`+Push.swift`, 2026-11-26, over the registrar, `push.notificationPreferences` — one
+  per-device mutes instance `PushDependencies` builds and hands the coordinator — and the coordinator as both
+  `PushOptIn` and `PushSyncing`)
   (`+Inbox`, `+People`, `+Feedback`, `+Profile`; the last builds `DeleteAccountViewModel` over
   `meRepository` and `sessionController` as its `AccountDeletionSession`, 2026-11-07). The
   `+Groups`, `+Chat`, `+Push`, `+Inbox`, `+People` and `+Tournaments` extensions expose their stores and repositories as

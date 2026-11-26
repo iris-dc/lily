@@ -22,32 +22,53 @@ struct PushModelsTests {
         #expect(PushTap.event(id: "e1").logName == "event e1")
     }
 
-    @Test func aRegistrationIsCurrentForTheSameTokenUserAndLanguageWithinTheInterval() {
-        let now = Date(timeIntervalSince1970: 1_800_000_000)
-        let registration = LastDeviceRegistration(token: "t", userID: "u", locale: "en", registeredAt: now)
+    /// A registration payload as the currency check sees one; what the check ignores stays fixed.
+    private func payload(token: String = "t",
+                         locale: String = "en",
+                         mutedKinds: [String] = []) -> DeviceRegistrationPayload {
+        DeviceRegistrationPayload(token: token,
+                                  platform: "ios",
+                                  environment: .sandbox,
+                                  appVersion: "1",
+                                  locale: locale,
+                                  mutedKinds: mutedKinds)
+    }
 
-        #expect(registration.isCurrent(token: "t", userID: "u", locale: "en", now: now.addingTimeInterval(3_599), within: 3_600))
-        #expect(!registration.isCurrent(token: "t", userID: "u", locale: "en", now: now.addingTimeInterval(3_600), within: 3_600))
-        #expect(!registration.isCurrent(token: "other", userID: "u", locale: "en", now: now, within: 3_600))
-        #expect(!registration.isCurrent(token: "t", userID: "someone", locale: "en", now: now, within: 3_600))
-        #expect(!registration.isCurrent(token: "t", userID: "u", locale: "ru", now: now, within: 3_600))
+    @Test func aRegistrationIsCurrentForTheSamePayloadAndUserWithinTheInterval() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let registration = LastDeviceRegistration(token: "t", userID: "u", locale: "en", mutedKinds: [], registeredAt: now)
+
+        #expect(registration.isCurrent(for: payload(), userID: "u", now: now.addingTimeInterval(3_599), within: 3_600))
+        #expect(!registration.isCurrent(for: payload(), userID: "u", now: now.addingTimeInterval(3_600), within: 3_600))
+        #expect(!registration.isCurrent(for: payload(token: "other"), userID: "u", now: now, within: 3_600))
+        #expect(!registration.isCurrent(for: payload(), userID: "someone", now: now, within: 3_600))
+        #expect(!registration.isCurrent(for: payload(locale: "ru"), userID: "u", now: now, within: 3_600))
+        #expect(!registration.isCurrent(for: payload(mutedKinds: ["event_reminder"]), userID: "u", now: now, within: 3_600))
     }
 
     /// The coordinator stores the row with a plain `JSONEncoder`, so `registeredAt` is seconds since the reference date;
-    /// rows stored by older builds have no `locale` and must still decode.
-    @Test func aRegistrationStoredBeforeTheAppSpokeLanguagesReadsWithoutOneAndIsNotCurrent() throws {
+    /// rows stored by older builds have no `locale` or `mutedKinds` and must still decode.
+    @Test func aRegistrationStoredByAnOlderBuildReadsWithoutItsNewFields() throws {
         let stored = try JSONDecoder().decode(LastDeviceRegistration.self, from: Data("""
         {"token":"t","userID":"u","registeredAt":780000000}
         """.utf8))
-        #expect(stored.locale == nil)
+        #expect(stored.locale == nil && stored.mutedKinds == nil)
         #expect(stored.registeredAt == Date(timeIntervalSinceReferenceDate: 780_000_000))
-        #expect(!stored.isCurrent(token: "t", userID: "u", locale: "en", now: stored.registeredAt, within: 3_600))
+        #expect(!stored.isCurrent(for: payload(), userID: "u", now: stored.registeredAt, within: 3_600),
+                "no stored locale never matches one")
+
+        let spoken = try JSONDecoder().decode(LastDeviceRegistration.self, from: Data("""
+        {"token":"t","userID":"u","locale":"en","registeredAt":780000000}
+        """.utf8))
+        #expect(spoken.isCurrent(for: payload(), userID: "u", now: spoken.registeredAt, within: 3_600),
+                "a pre-mutes row reads as nothing muted")
     }
 
     @Test func aStoredRegistrationRoundTripsThroughTheCoordinatorsCoding() throws {
         let registration = LastDeviceRegistration(token: "t",
                                                   userID: "u",
                                                   locale: "en",
+                                                  mutedKinds: ["event_reminder"],
                                                   registeredAt: Date(timeIntervalSinceReferenceDate: 780_000_000))
         let data = try JSONEncoder().encode(registration)
         let json = try #require(String(data: data, encoding: .utf8))
@@ -77,13 +98,15 @@ struct PushModelsTests {
                                                 platform: "ios",
                                                 environment: .sandbox,
                                                 appVersion: "1.0 (42)",
-                                                locale: "ru")
+                                                locale: "ru",
+                                                mutedKinds: ["event_reminder"])
         let json = try #require(String(data: APIJSONCoding.makeEncoder().encode(payload), encoding: .utf8))
         #expect(json.contains("\"token\":\"ab\""))
         #expect(json.contains("\"platform\":\"ios\""))
         #expect(json.contains("\"environment\":\"sandbox\""))
         #expect(json.contains("\"appVersion\":\"1.0 (42)\""))
         #expect(json.contains("\"locale\":\"ru\""))
+        #expect(json.contains("\"mutedKinds\":[\"event_reminder\"]"))
     }
 
     /// The API client reads the backend's ISO-8601 instants, with or without fractional seconds.

@@ -11,15 +11,20 @@ notification's payload. Every type is `nonisolated` and `Sendable`; none perform
 ## Interface
 
 - `nonisolated struct DeviceRegistrationPayload: Encodable, Equatable, Sendable`: `token`, `platform`,
-  `environment: PushEnvironment`, `appVersion`, `locale` (all `String` but the environment); the body of
+  `environment: PushEnvironment`, `appVersion`, `locale` (all `String` but the environment) and
+  `mutedKinds: [String]` (sorted, empty when everything may come, 2026-11-26); the body of
   `PUT /api/me/devices` per its doc comment [`lily/Core/Push/Models/DeviceRegistration.swift:DeviceRegistrationPayload`].
 - `nonisolated struct DeviceRegistration: Decodable, Equatable, Sendable`: `token`, `environment: PushEnvironment`,
   `registeredAt: Date` [`lily/Core/Push/Models/DeviceRegistration.swift:DeviceRegistration`].
 - `nonisolated struct DeviceRemoval: Decodable, Equatable, Sendable`: `token`, `removed: Bool`
   [`lily/Core/Push/Models/DeviceRegistration.swift:DeviceRemoval`].
 - `nonisolated struct LastDeviceRegistration: Codable, Equatable, Sendable`: `token`, `userID`, `locale: String?`,
-  `registeredAt: Date`; `func isCurrent(token:userID:locale:now:within interval: TimeInterval) -> Bool`
+  `mutedKinds: [String]?` (2026-11-26), `registeredAt: Date`;
+  `func isCurrent(for payload: DeviceRegistrationPayload, userID:now:within interval: TimeInterval) -> Bool`
   [`lily/Core/Push/Models/DeviceRegistration.swift:LastDeviceRegistration`].
+- `nonisolated enum NotificationKind: String, CaseIterable, Sendable` (2026-11-26): `.eventReminder`,
+  `.matchReminder`, `.eventCancelled`; `wireName` = the raw value, Laurel's payload kinds
+  [`lily/Core/Push/Models/NotificationKind.swift:NotificationKind`].
 - `nonisolated enum PushAuthorization: Sendable`: `.notDetermined`, `.denied`, `.authorized`
   [`lily/Core/Push/Models/PushAuthorization.swift:PushAuthorization`].
 - `nonisolated enum PushRegistrationError: Error, Equatable, Sendable`: `.refused(String)`, `.timedOut`
@@ -34,10 +39,11 @@ notification's payload. Every type is `nonisolated` and `Sendable`; none perform
 
 ## Invariants
 
-- `LastDeviceRegistration.isCurrent` is true only when `token`, `userID` and `locale` all equal the arguments and
-  `now - registeredAt < interval`; `locale` is optional because registrations stored before the app spoke more than
-  one language have none, and a `nil` stored locale never compares equal to a current one
-  [`DeviceRegistration.swift:LastDeviceRegistration.isCurrent(token:userID:locale:now:within:)`].
+- `LastDeviceRegistration.isCurrent` is true only when the stored `token`, `locale` and mutes equal the payload's,
+  `userID` equals the argument and `now - registeredAt < interval`; `locale` and `mutedKinds` are optional because
+  rows stored by older builds lack them — a `nil` locale never compares equal to a current one, while `nil` mutes
+  read as none (2026-11-26)
+  [`DeviceRegistration.swift:LastDeviceRegistration.isCurrent(for:userID:now:within:)`].
 - `PushEnvironment.forBuild` is `.production` for `.release` alone and `.sandbox` for `.debug` and `.staging` (every
   build run from Xcode is development-signed and holds a sandbox token); `current` is
   `forBuild(AppConfig.Build.configuration)` [`PushEnvironment.swift:PushEnvironment.forBuild(_:)`].

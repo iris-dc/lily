@@ -10,6 +10,7 @@ struct SettingsScreen: View {
     /// The language the copy is in; a change re-runs this body and, through it, every row's.
     let language: AppLanguage
     @State private var isFeedbackPresented = false
+    @State private var isNotificationsPresented = false
     @State private var isDeletePresented = false
     @State private var isPrivacyPresented = false
     @State private var isTermsPresented = false
@@ -23,6 +24,7 @@ struct SettingsScreen: View {
                     LanguageRow(language: dependencies.language)
                     CurrencyRow(currency: dependencies.currency)
                     // Its only input is a closure, which SwiftUI does not count as a change, so it would keep the old copy.
+                    notificationsRow
                     FeedbackRow { isFeedbackPresented = true }
                         .id(language)
                     privacyRow
@@ -36,6 +38,9 @@ struct SettingsScreen: View {
             .scrollBounceBehavior(.basedOnSize)
         }
         .navigationTitle(AppBranding.Settings.title)
+        .navigationDestination(isPresented: $isNotificationsPresented) {
+            NotificationsScreen(viewModel: dependencies.makeNotificationsViewModel())
+        }
         .navigationDestination(isPresented: $isPrivacyPresented) {
             PrivacyPolicyScreen(language: language)
         }
@@ -48,6 +53,14 @@ struct SettingsScreen: View {
         .sheet(isPresented: $isDeletePresented) {
             DeleteAccountSheet(viewModel: dependencies.makeDeleteAccountViewModel(), errorCenter: dependencies.errorCenter)
         }
+    }
+
+    /// Which reminders reach this device: the permission's state and the per-kind switches, read in place.
+    private var notificationsRow: some View {
+        SettingsLinkRow(title: AppBranding.Notifications.title,
+                        subtitle: AppBranding.Notifications.rowSubtitle,
+                        systemImage: DesignTokens.Symbols.notifications,
+                        identifier: AccessibilityIdentifiers.settingsNotifications) { isNotificationsPresented = true }
     }
 
     /// The policy itself, read in place (owner correction 2026-11-08): no browser round trip for reading it.

@@ -131,3 +131,24 @@ Every person the app names can be opened (2026-09-29): roster rows, event partic
   gains the event invite as its newest item (the repository now sorts its fixtures by id, so the builder order stops
   mattering); `LilyChatTests`' inbox-preview pin moved with it on purpose, and `MockInboxRepositoryTests`' paging pins
   were rewritten around the new first page.
+
+- **Notification management in Settings (2026-11-26, on the user's "add an ability to manage notifications in the
+  settings").** Settings gains a "Notifications" link row (`settings-notifications`, `Symbols.notifications =
+  "bell.badge"`) pushing `NotificationsScreen`: the system permission's state first — not-determined offers "Enable
+  notifications" through the existing opt-in; denied explains and opens the system settings
+  (`UIApplication.openSettingsURLString`); the status is re-read whenever the app returns active — then, once granted,
+  one switch per push kind (`NotificationKind`: `event_reminder`, `match_reminder`, `event_cancelled`) and the footnote
+  that invites and messages stay in the app's inbox. A mute is **per device**, like the permission it refines:
+  `NotificationPreferences` keeps the muted kinds in `UserDefaults` (`push.mutedKinds`, unknown kinds dropped on read)
+  and every device registration now carries them (`DeviceRegistrationPayload.mutedKinds`, sorted;
+  `LastDeviceRegistration` compares them, so a flip makes the stored registration stale and the flip's
+  `PushSyncing.sync()` — the coordinator — re-registers at once). Laurel stores them on the device row (`mutedKinds`
+  string set, request-validated as kind names, at most 8) and `DefaultPushNotifier` filters the user's devices by the
+  template's new `kind()` before rendering: the push is skipped per muted device, the inbox item is written as ever
+  (the mute silences the banner, never the record). Tests: `NotificationPreferencesTests`,
+  `NotificationsViewModelTests`, `PushCoordinatorTests.aChangedMuteRepeatsTheRegistrationWithIt`, the payload coding in
+  `PushModelsTests`/`DeviceRepositoryTests`; Laurel `DeviceControllerIt.register_carriesTheMutedKinds`,
+  `DeviceItemMapperTest` round trip, `DefaultPushNotifierTest` mute skips; UI
+  `LilySettingsTests.testNotificationSwitchesFlipInSettings` (the mock grants on entering the app, so the switches
+  show; the test flips a switch and back, since the mutes persist in the simulator's defaults). The seven new catalog
+  keys owe a native read like the rest.

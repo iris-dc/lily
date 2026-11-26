@@ -18,6 +18,7 @@ final class LilySettingsTests: LilyUITestCase {
         XCTAssertTrue(app.buttons["profile-language"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["profile-currency"].exists)
         XCTAssertTrue(app.buttons["profile-feedback"].exists)
+        XCTAssertTrue(app.buttons["settings-notifications"].exists)
         XCTAssertTrue(app.buttons["settings-privacy"].exists)
         XCTAssertTrue(app.buttons["settings-terms"].exists)
         XCTAssertTrue(app.buttons["settings-sign-out"].exists, "Sign out ends the list")
@@ -153,5 +154,27 @@ final class LilySettingsTests: LilyUITestCase {
         tapAfterScrolling(app.buttons["settings-sign-out"])
         XCTAssertTrue(app.buttons["Explore events"].waitForExistence(timeout: 10), "a sign-out returns to the landing")
         XCTAssertTrue(app.tabBars.firstMatch.waitForNonExistence(timeout: 5), "the shell's bar goes once the landing covers it")
+    }
+
+    /// The Notifications screen: the mock run grants the permission on entering the app, so the switches show; a flip
+    /// sticks and is flipped back, so no later run inherits it (the mutes persist in the simulator's defaults).
+    @MainActor
+    func testNotificationSwitchesFlipInSettings() {
+        tapSignInWithApple()
+        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10))
+        openProfileSheet()
+        openSettings()
+        let row = app.buttons["settings-notifications"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Notifications"].waitForExistence(timeout: 5))
+        let toggle = app.switches["notifications-toggle-event_reminder"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5), "granted, so the switches show")
+        let before = toggle.value as? String ?? "1"
+        let flipped = before == "1" ? "0" : "1"
+        toggle.tap()
+        XCTAssertTrue(waitUntil(toggle, holds: "value == %@", flipped), "the switch flips: \(String(describing: toggle.value))")
+        toggle.tap()
+        XCTAssertTrue(waitUntil(toggle, holds: "value == %@", before), "and back")
     }
 }

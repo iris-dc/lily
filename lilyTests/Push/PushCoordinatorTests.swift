@@ -12,7 +12,8 @@ struct PushCoordinatorTests {
                                   platform: "ios",
                                   environment: .current,
                                   appVersion: "1.0 (42)",
-                                  locale: harness.languageCode)
+                                  locale: harness.languageCode,
+                                  mutedKinds: [])
     }
 
     @Test func syncRegistersAnAuthorizedDeviceOnceAndRemembersIt() async {
@@ -201,6 +202,18 @@ struct PushCoordinatorTests {
         let coordinator = harness.makeCoordinator(relay: relay)
 
         #expect(coordinator.pendingTap == .event(id: "e9"))
+    }
+
+    /// A flipped mute makes the stored registration stale, so the next sync repeats with the new mutes and a sync
+    /// after that is again a no-op.
+    @Test func aChangedMuteRepeatsTheRegistrationWithIt() async {
+        await harness.coordinator.sync()
+        harness.preferences.set(.eventReminder, enabled: false)
+        await harness.coordinator.sync()
+        await harness.coordinator.sync()
+
+        #expect(harness.devices.registrations.map(\.mutedKinds) == [[], ["event_reminder"]])
+        #expect(harness.coordinator.registered?.mutedKinds == ["event_reminder"])
     }
 }
 

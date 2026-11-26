@@ -14,6 +14,8 @@ nonisolated extension AppConfig {
         static let platform = "ios"
         /// `UserDefaults` key of the last registration (token, user, date), so a launch skips an unchanged one.
         static let lastRegistrationKey = "push.lastRegistration"
+        /// Where `NotificationPreferences` keeps the kinds this device muted.
+        static let mutedKindsKey = "push.mutedKinds"
         /// The token the mock registrar answers: 64 hex characters, like a real one.
         static let mockToken = String(repeating: "ab", count: 32)
         /// Stands in for the device token in log lines: not a credential, but an identifier that should not sit in a

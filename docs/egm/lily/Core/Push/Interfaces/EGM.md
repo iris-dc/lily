@@ -15,6 +15,8 @@ so they are main-actor under the app target's default.
   `func unregister(token: String) async throws -> DeviceRemoval`
   [`lily/Core/Push/Interfaces/DeviceRepository.swift:DeviceRepository`].
 - `protocol PushOptIn`: `func offerReminders() async` [`lily/Core/Push/Interfaces/PushOptIn.swift:PushOptIn`].
+- `protocol PushSyncing`: `func sync() async` (2026-11-26) — where a screen asks the device registration to be brought
+  up to date now, after a mute flipped [`lily/Core/Push/Interfaces/PushSyncing.swift:PushSyncing`].
 - `protocol PushRegistrar`: `func authorization() async -> PushAuthorization`,
   `func requestAuthorization() async -> Bool` (shows the system prompt; `true` when granted),
   `func deviceToken() async throws -> String` (the APNs token as hex; throws when the system refused or stayed silent)

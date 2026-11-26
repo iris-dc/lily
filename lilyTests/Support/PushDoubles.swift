@@ -70,6 +70,8 @@ final class PushHarness {
     let sleep: HeldSleep
     let relay: PushEventRelay
     let defaults = makeTestDefaults()
+    /// This device's mutes, over the same defaults the coordinator stores its registration in.
+    private(set) lazy var preferences = NotificationPreferences(defaults: defaults)
     let logger = SpyLogger()
     let clock = DateClock(PushHarness.now)
     /// What the coordinator registers as the device's language; a test changes it to see a registration repeated.
@@ -96,6 +98,7 @@ final class PushHarness {
     func makeCoordinator(relay: PushEventRelay? = nil, devices: (any DeviceRepository)? = nil) -> PushCoordinator {
         PushCoordinator(registrar: registrar,
                         devices: devices ?? self.devices,
+                        preferences: preferences,
                         identity: identity,
                         opener: makeOpener(),
                         tournamentOpener: makeTournamentOpener(),
@@ -139,5 +142,25 @@ final class SpyPushOptIn: PushOptIn, HoldsRequests {
         onOffer()
         offerCount += 1
         await hold.wait()
+    }
+}
+
+/// Records the syncs a flipped mute asks for.
+@MainActor
+final class FakePushSyncing: PushSyncing {
+    private(set) var syncCount = 0
+
+    func sync() async {
+        syncCount += 1
+    }
+}
+
+/// Records the permission offers the screen's enable button makes.
+@MainActor
+final class FakePushOptIn: PushOptIn {
+    private(set) var offerCount = 0
+
+    func offerReminders() async {
+        offerCount += 1
     }
 }

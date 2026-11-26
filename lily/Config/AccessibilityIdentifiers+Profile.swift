@@ -24,6 +24,13 @@ nonisolated extension AccessibilityIdentifiers {
     /// The Settings link row on the profile root, and the Settings screen's own rows.
     static let profileSettings = "profile-settings"
     static let settingsSignOut = "settings-sign-out"
+    /// The Notifications link row on Settings, its screen's two permission actions, and the per-kind switches.
+    static let settingsNotifications = "settings-notifications"
+    static let notificationsEnable = "notifications-enable"
+    static let notificationsOpenSettings = "notifications-open-settings"
+    static func notificationToggle(_ kind: NotificationKind) -> String {
+        "notifications-toggle-\(kind.wireName)"
+    }
     static let settingsPrivacy = "settings-privacy"
     static let settingsTerms = "settings-terms"
     /// The pushed privacy policy screen (its content container; the sections are plain text).

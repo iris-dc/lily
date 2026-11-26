@@ -7,6 +7,8 @@ struct PushDependencies {
     let registrar: any PushRegistrar
     let devices: any DeviceRepository
     let opener: EventOpener
+    /// The per-device mutes the coordinator registers and Settings' Notifications screen flips.
+    let notificationPreferences: NotificationPreferences
     let coordinator: PushCoordinator
 
     init(registrar: any PushRegistrar,
@@ -30,8 +32,11 @@ struct PushDependencies {
         self.opener = opener
         self.registrar = registrar
         self.devices = devices
+        let preferences = NotificationPreferences(defaults: defaults)
+        notificationPreferences = preferences
         coordinator = PushCoordinator(registrar: registrar,
                                       devices: devices,
+                                      preferences: preferences,
                                       identity: identity,
                                       opener: opener,
                                       tournamentOpener: tournamentOpener,
@@ -44,4 +49,14 @@ struct PushDependencies {
 extension AppDependencies {
     var pushCoordinator: PushCoordinator { push.coordinator }
     var eventOpener: EventOpener { push.opener }
+    var notificationPreferences: NotificationPreferences { push.notificationPreferences }
+
+    /// Settings' Notifications screen over the registrar's status, this device's mutes and the coordinator's sync.
+    func makeNotificationsViewModel() -> NotificationsViewModel {
+        NotificationsViewModel(registrar: push.registrar,
+                               preferences: push.notificationPreferences,
+                               optIn: pushCoordinator,
+                               pushSync: pushCoordinator,
+                               logger: logger)
+    }
 }

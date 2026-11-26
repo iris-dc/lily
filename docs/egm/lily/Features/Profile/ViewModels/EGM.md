@@ -12,7 +12,8 @@ refusal reaches the popup and keeps the draft for a repeat; a cancellation stays
 and routes to the store. `DeleteAccountViewModel` (2026-11-07) is the delete flow's state machine behind
 `DeleteAccountSheet`: the advisory plan, the confirm, the inverted-check poll and the one-time acknowledgment. `ActivityViewModel`
 (2026-11-25) loads the caller's own history for `ActivityScreen`: the started games (`EventScope.past`) and the
-completed tournaments out of `.mine`.
+completed tournaments out of `.mine`. `NotificationsViewModel` (2026-11-26) is the Notifications screen's state:
+the system permission re-read on demand and the per-kind mutes, each flip re-registering the device.
 
 ## Interface
 
@@ -50,6 +51,13 @@ completed tournaments out of `.mine`.
   `load() async`; `visibleGames` / `visibleTournaments`, `hasMoreGames` / `hasMoreTournaments`,
   `showMoreGames()` / `showMoreTournaments()` and the counts behind them (2026-11-25, the fold).
 
+- `@Observable final class NotificationsViewModel`
+  `[lily/Features/Profile/ViewModels/NotificationsViewModel.swift:NotificationsViewModel]` (2026-11-26):
+  `init(registrar: any PushRegistrar, preferences: NotificationPreferences, optIn: any PushOptIn,
+  pushSync: any PushSyncing, logger: any Logging)`; `private(set) var authorization: PushAuthorization?`,
+  `private(set) var syncTask: Task<Void, Never>?`; `refresh() async`, `enable() async`, `isEnabled(_:)`,
+  `set(_:enabled:)`.
+
 ## Invariants
 
 - The draft starts from the store's value of the field, or empty while it is unknown; `prepare()` loads the store and
@@ -76,6 +84,11 @@ completed tournaments out of `.mine`.
   counts (seeded `AppConfig.Activity.visibleBatch` = 5), `hasMore*` compares the full count, and `showMore*()` grows a
   count by one batch; the counts live for the screen instance, so a reload keeps what was revealed
   `[lily/Features/Profile/ViewModels/ActivityViewModel.swift:visibleGames]`.
+- `NotificationsViewModel.set(_:enabled:)` drops a repeat of the current value (a settling `Toggle` binding never
+  syncs twice), else persists through `NotificationPreferences`, logs at info under `.push` ("<wire> muted" /
+  "enabled") and starts `syncTask` over `PushSyncing.sync()`, so the backend's device row learns before the next
+  sweep; `enable()` runs the opt-in once and re-reads the status
+  `[lily/Features/Profile/ViewModels/NotificationsViewModel.swift:set]`.
 - `DeleteAccountViewModel`: `prepare()` loads the plan once and only while unlocked; a failure reports the popup and
   leaves `plan` nil, blocking nothing (the preview is advisory and must never stand between the caller and erasure) —
   except locked or landed (`DeletionSettle.isLanded`), which reports nothing and logs at debug: the account-deleted

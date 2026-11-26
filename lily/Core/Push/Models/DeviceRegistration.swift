@@ -8,6 +8,8 @@ nonisolated struct DeviceRegistrationPayload: Encodable, Equatable, Sendable {
     let environment: PushEnvironment
     let appVersion: String
     let locale: String
+    /// The push kinds this device muted, sorted; empty when everything may come.
+    let mutedKinds: [String]
 }
 
 /// The registration as the backend stored it; the token comes back in lower case.
@@ -29,11 +31,17 @@ nonisolated struct LastDeviceRegistration: Codable, Equatable, Sendable {
     let token: String
     let userID: String
     let locale: String?
+    /// Optional like `locale`: registrations stored before the mutes existed have none, and read as none muted.
+    let mutedKinds: [String]?
     let registeredAt: Date
 
-    /// Whether a registration of `token` for `userID` in `locale` made at `now` would tell the backend nothing new.
-    func isCurrent(token: String, userID: String, locale: String, now: Date, within interval: TimeInterval) -> Bool {
-        self.token == token && self.userID == userID && self.locale == locale
+    /// Whether registering `payload` for `userID` at `now` would tell the backend nothing new.
+    func isCurrent(for payload: DeviceRegistrationPayload,
+                   userID: String,
+                   now: Date,
+                   within interval: TimeInterval) -> Bool {
+        token == payload.token && self.userID == userID && locale == payload.locale
+            && (mutedKinds ?? []) == payload.mutedKinds
             && now.timeIntervalSince(registeredAt) < interval
     }
 }

@@ -4,7 +4,7 @@ import Foundation
 /// opens the game or the match behind a tapped reminder. The registration is repeated when the token, the user or the
 /// app's language changed or the last one is a day old, and undone before a sign-out while the Bearer is still there.
 /// Failures are logged, never shown: a reminder that does not arrive is not worth a popup.
-final class PushCoordinator: SessionObserver, PushOptIn {
+final class PushCoordinator: SessionObserver, PushOptIn, PushSyncing {
     private(set) var registered: LastDeviceRegistration?
     /// A notification tapped before the session was restored; opened once a user is known.
     private(set) var pendingTap: PushTap?
@@ -16,6 +16,8 @@ final class PushCoordinator: SessionObserver, PushOptIn {
 
     private let registrar: any PushRegistrar
     private let devices: any DeviceRepository
+    /// The kinds this device muted; read at each registration, which a flip repeats (`PushSyncing`).
+    private let preferences: NotificationPreferences
     private let identity: any IdentityProvider
     private let opener: EventOpener
     private let tournamentOpener: TournamentOpener
@@ -29,6 +31,7 @@ final class PushCoordinator: SessionObserver, PushOptIn {
 
     init(registrar: any PushRegistrar,
          devices: any DeviceRepository,
+         preferences: NotificationPreferences,
          identity: any IdentityProvider,
          opener: EventOpener,
          tournamentOpener: TournamentOpener,
@@ -41,6 +44,7 @@ final class PushCoordinator: SessionObserver, PushOptIn {
          now: @escaping () -> Date = { .now }) {
         self.registrar = registrar
         self.devices = devices
+        self.preferences = preferences
         self.identity = identity
         self.opener = opener
         self.tournamentOpener = tournamentOpener
@@ -145,23 +149,26 @@ final class PushCoordinator: SessionObserver, PushOptIn {
 
     private func performRegistration(for userID: String) async {
         do {
-            let token = try await registrar.deviceToken()
-            let locale = languageCode()
-            let interval = AppConfig.Push.reregisterInterval
-            if let registered,
-               registered.isCurrent(token: token, userID: userID, locale: locale, now: now(), within: interval) {
-                logger.debug(.push, "Device registration still current")
-                return
-            }
-            let payload = DeviceRegistrationPayload(token: token,
+            let payload = DeviceRegistrationPayload(token: try await registrar.deviceToken(),
                                                     platform: AppConfig.Push.platform,
                                                     environment: .current,
                                                     appVersion: appVersion.headerValue,
-                                                    locale: locale)
+                                                    locale: languageCode(),
+                                                    mutedKinds: preferences.mutedWireNames)
+            let interval = AppConfig.Push.reregisterInterval
+            if let registered,
+               registered.isCurrent(for: payload, userID: userID, now: now(), within: interval) {
+                logger.debug(.push, "Device registration still current")
+                return
+            }
             let registration = try await devices.register(payload)
             guard identity.isStillCaller(userID, orDrop: "Device registration", logger: logger) else { return }
-            store(LastDeviceRegistration(token: registration.token, userID: userID, locale: locale, registeredAt: now()))
-            logger.info(.push, "Device registered for push (\(registration.environment.rawValue), \(locale))")
+            store(LastDeviceRegistration(token: registration.token,
+                                         userID: userID,
+                                         locale: payload.locale,
+                                         mutedKinds: payload.mutedKinds,
+                                         registeredAt: now()))
+            logger.info(.push, "Device registered for push (\(registration.environment.rawValue), \(payload.locale))")
         } catch {
             guard !AppError.isCancellation(error) else { return }
             if case PushRegistrationError.refused = error { tokenRefused = true }

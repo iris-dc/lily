@@ -98,7 +98,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - Smaller areas: `Inbox.pageSize = 50`; `Shell` (`lily/Config/AppConfig+Shell.swift`, returned 2026-11-22): `tabBarFindAttempts = 20`, `tabBarFindRetryDelay = 0.1` (the circle guard's bounded find of the bar and its circle: a pane churn re-runs the full search with a fresh budget once a bar is observed, and the SwiftUI update re-arms a guard whose adopted bar died — no observation outlives its hierarchy), `tabBarCircleMaxWidth = 64` (only a pane no wider than this is a swap candidate, judged on model bounds that the collapse morph never moves; the expanded platter and the ~100 pt tab-switch transient never qualify), `tabBarDrawableAlphaMinimum = 0.01` (the condemnation walk's floor: an ancestor below it reads as hiding the mirror); `Moderation` (`commentMaxLength = 500`, `maxBlocks = 500`,
   `supportEmail = "support@iskra.red"`, `termsURL` and `privacyURL` = `API.productionBaseURL.appending(path:)` `terms` / `privacy`); `People.maxConversations = 200`, `People.maxSharedHistory = 20` (Laurel's `profile.max-shared-history`); `Activity.visibleBatch = 5` (how many rows an Activity section opens with and grows by, 2026-11-25); `Feedback`
   (`messageMaxLength = 2000`, `replyEmailMaxLength = 254`, `detailMaxLength = 80`); `Currency` (`defaultCode = "EUR"`,
-  `offered`, 14 codes); `Push` (`reregisterInterval = 24 * 60 * 60`, `tokenTimeout = .seconds(10)`, `platform = "ios"`,
+  `offered`, 14 codes); `Push` (`reregisterInterval = 24 * 60 * 60`, `tokenTimeout = .seconds(10)`, `platform = "ios"`, `mutedKindsKey = "push.mutedKinds"` (2026-11-26),
   `redactedToken = "<token>"`, `Payload` keys `kind`, `eventId`, `event_reminder`, `match_reminder`, `tournamentId`,
   `matchId`); `Realtime` (`productionEndpoint: URL? = nil`, `reconnectBackoffSeconds = [1, 2, 4, 8, 16, 30]`,
   `maxReconnectsWithoutToken = 8`, `maxRoomSubscriptions = 10`, `maxConnectionAge = 21_600`, `mockEndpoint = mock://realtime`,
@@ -127,7 +127,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `Groups` (+ `Create`, `Invite`), `Chats`, `Inbox`, `Intro` (+ `Chat`), `Feedback`, `DisplayName`, `About`
   (`lily/Config/AppBranding+Profile.swift`: `title`, `subtitle`, `defaultSubtitle`, `placeholder`, `footer`, `save`,
   `tooLong(limit:)`), `DeletedUser` (same file, 2026-11-07: `name`, the localized "Deleted user" the `Tombstone`
-  helper shows over a deleted account's snapshots), `History` (same file, 2026-11-25: the history row and screen's copy — `title`, `rowSubtitle`, `pastGamesTitle`,
+  helper shows over a deleted account's snapshots), `Notifications` (`AppBranding+Notifications.swift`, 2026-11-26: the Settings row, the permission states, the
+  per-kind switch titles and captions and the inbox footnote), `History` (same file, 2026-11-25: the history row and screen's copy — `title`, `rowSubtitle`, `pastGamesTitle`,
   `noPastGames`, `pastTournamentsTitle`, `noPastTournaments`, `loadFailedTitle`), `DeleteAccount` (same file, 2026-11-07: the delete flow's copy —
   `title`, `approximate`, `messagesSentence` (the always-true "Your messages will show as Deleted user."),
   `irreversible`, `dialogTitle`, `confirmAction`, `deleting`, `deletedTitle`, `deletedMessage`, `acknowledgeAction`
@@ -240,6 +241,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   (`lily/Config/DesignTokens+SportMarks.swift:DesignTokens.Layout`). The Settings screen's glyphs (2026-11-07,
   `lily/Config/DesignTokens+Settings.swift`): `Symbols.settings = "gearshape"` (the profile root's link row),
   `Symbols.activity = "clock.arrow.circlepath"` (the history row, 2026-11-25),
+  `Symbols.notifications = "bell.badge"` (the Notifications row, 2026-11-26),
   `Symbols.privacy = "lock.shield"` and `Symbols.terms = "doc.text"` (the legal rows), beside that file's dropdown tokens;
   `Spacing.accountActions` 0 joined it 2026-11-08 (owner correction): Sign out and Delete account stack flush
   at the settings list's end, with `Spacing.accountActionsFoldClearance` 16 padding the group's top on regular
@@ -278,7 +280,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   button; 2026-11-14), +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
   +Profile (`profile-corner` and `profile-sheet` — the corner control on every tab root and the profile sheet's root
   container, 2026-11-07 — `profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
-  `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-activity`, `activity-more-games`, `activity-more-tournaments` (2026-11-25), `profile-settings`, `settings-sign-out`,
+  `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-activity`, `activity-more-games`, `activity-more-tournaments` (2026-11-25), `profile-settings`, `settings-notifications`, `notifications-enable`, `notifications-open-settings`, `notificationToggle(_:)` = `notifications-toggle-<wire>` (2026-11-26), `settings-sign-out`,
   `settings-privacy`, `settings-terms`, `settings-privacy-policy` and `settings-terms-of-use` (the pushed policy
   and terms screens, 2026-11-08), `legal-close` (Close on the legal sheets the sign-up footnote presents, 2026-11-08), and the
   delete flow's `settings-delete-account`,

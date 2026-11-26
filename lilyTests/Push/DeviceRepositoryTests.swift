@@ -14,7 +14,8 @@ struct DeviceRepositoryTests {
                                                 platform: "ios",
                                                 environment: .sandbox,
                                                 appVersion: "1.0 (42)",
-                                                locale: "en")
+                                                locale: "en",
+                                                mutedKinds: ["event_reminder"])
         let stored = DeviceRegistration(token: token, environment: .sandbox, registeredAt: .now)
         client.responses = [stored]
 
@@ -35,7 +36,12 @@ struct DeviceRepositoryTests {
     /// Only the route's own fallback; the shared mapping of `send(_:failingWith:)` has tests of its own.
     @Test func unnamedFailuresFallBackToUnknown() async {
         client.error = APIError.http(status: 400, body: APIErrorBody(code: "VALIDATION_FAILED", message: "m"))
-        let payload = DeviceRegistrationPayload(token: "x", platform: "ios", environment: .sandbox, appVersion: "1", locale: "en")
+        let payload = DeviceRegistrationPayload(token: "x",
+                                                platform: "ios",
+                                                environment: .sandbox,
+                                                appVersion: "1",
+                                                locale: "en",
+                                                mutedKinds: [])
 
         await #expect(throws: AppError.unknown) { try await remote.register(payload) }
     }
@@ -47,7 +53,8 @@ struct DeviceRepositoryTests {
                                                 platform: "ios",
                                                 environment: .sandbox,
                                                 appVersion: "1",
-                                                locale: "en")
+                                                locale: "en",
+                                                mutedKinds: [])
         await #expect(throws: AppError.sessionExpired) { try await mock.register(payload) }
 
         identity.currentUserID = TestFixtures.user.id

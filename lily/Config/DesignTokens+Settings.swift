@@ -11,6 +11,8 @@ nonisolated extension DesignTokens.Symbols {
     static let chosen = "checkmark"
     /// The Settings link row on the profile root.
     static let settings = "gearshape"
+    /// The Notifications row's mark on Settings.
+    static let notifications = "bell.badge"
     /// The "Activity" row's mark on Profile.
     static let activity = "clock.arrow.circlepath"
     /// The privacy policy link on the Settings screen.

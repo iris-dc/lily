@@ -14,13 +14,19 @@ the `-mock-events` run never meets the permission alert.
 
 ## Interface
 
-- Children: [Interfaces](./Interfaces/EGM.md) (`DeviceRepository`, `PushRegistrar`, `PushOptIn`),
+- Children: [Interfaces](./Interfaces/EGM.md) (`DeviceRepository`, `PushRegistrar`, `PushOptIn`, `PushSyncing`),
   [Models](./Models/EGM.md) (`DeviceRegistrationPayload`, `LastDeviceRegistration`, `PushAuthorization`,
   `PushRegistrationError`, `PushEnvironment`, `PushTap`, `PushPayload`), [Implementations](./Implementations/EGM.md)
   (`SystemPushRegistrar`, `RemoteDeviceRepository`, `PushEventRelay`, the mocks).
-- `final class PushCoordinator: SessionObserver, PushOptIn` (main-actor): `private(set) var registered: LastDeviceRegistration?`,
+- `@Observable final class NotificationPreferences` (main-actor,
+  `lily/Core/Push/NotificationPreferences.swift:NotificationPreferences`, 2026-11-26): the push kinds this device
+  muted — `private(set) var mutedKinds: Set<NotificationKind>`, `init(defaults: UserDefaults)` (reads
+  `AppConfig.Push.mutedKindsKey`, unknown kinds dropped), `isEnabled(_:)`, `set(_:enabled:)` (persists),
+  `mutedWireNames: [String]` (sorted, what the registration payload carries). The mute is per device, like the system
+  permission; the backend stores it on the device row and its push sender honours it, so the inbox item still lands.
+- `final class PushCoordinator: SessionObserver, PushOptIn, PushSyncing` (main-actor): `private(set) var registered: LastDeviceRegistration?`,
   `private(set) var pendingTap: PushTap?`;
-  `init(registrar: any PushRegistrar, devices: any DeviceRepository, identity: any IdentityProvider, opener: EventOpener, tournamentOpener: TournamentOpener, relay: PushEventRelay = .shared, defaults: UserDefaults, appVersion: AppVersion = .current(), languageCode: @escaping () -> String, sleep: @escaping Sleep = systemSleep, logger: any Logging, now: @escaping () -> Date = { .now })`
+  `init(registrar: any PushRegistrar, devices: any DeviceRepository, preferences: NotificationPreferences, identity: any IdentityProvider, opener: EventOpener, tournamentOpener: TournamentOpener, relay: PushEventRelay = .shared, defaults: UserDefaults, appVersion: AppVersion = .current(), languageCode: @escaping () -> String, sleep: @escaping Sleep = systemSleep, logger: any Logging, now: @escaping () -> Date = { .now })`
   [`lily/Core/Push/PushCoordinator.swift:PushCoordinator`].
 - `func sync() async` (every shell sync for a signed-in user), `func offerReminders() async`,
   `func handleTap(_ tap: PushTap)`, `func openPendingTap() async`, `func sessionWillEnd() async`,
