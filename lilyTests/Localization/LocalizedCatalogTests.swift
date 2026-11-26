@@ -52,19 +52,18 @@ struct LocalizedCatalogTests {
     @Test func aRoleKeyShowsItsEnglishValueAndItsOwnTranslation() {
         let english = AppLocale.Context(language: .english)
         #expect(String(localized: "Message (verb)", bundle: english.bundle, locale: english.locale) == "Message")
-        #expect(String(localized: "Any (price)", bundle: english.bundle, locale: english.locale) == "Any")
+        #expect(String(localized: "Any (attendees)", bundle: english.bundle, locale: english.locale) == "Any")
         #expect(String(localized: "Not allowed (draws)", bundle: english.bundle, locale: english.locale) == "Not allowed")
         let russian = AppLocale.Context(language: .russian)
         #expect(String(localized: "Message (verb)", bundle: russian.bundle, locale: russian.locale) == "Написать")
-        #expect(String(localized: "Any (price)", bundle: russian.bundle, locale: russian.locale) == "Любая")
+        #expect(String(localized: "Any (attendees)", bundle: russian.bundle, locale: russian.locale) == "Неважно")
         #expect(String(localized: "Not allowed (draws)", bundle: russian.bundle, locale: russian.locale) == "Не разрешены")
     }
 
-    /// The bare keys are the nouns: "Message" is the composer's placeholder, "Any" the distance menu's neuter.
+    /// The bare key is the noun: "Message" is the composer's placeholder, apart from "Message (verb)" above.
     @Test func theNounKeysKeptTheirTranslations() {
         let russian = AppLocale.Context(language: .russian)
         #expect(String(localized: "Message", bundle: russian.bundle, locale: russian.locale) == "Сообщение")
-        #expect(String(localized: "Any", bundle: russian.bundle, locale: russian.locale) == "Любое")
     }
 
     /// One key for the whole toggle, so a language orders the question and the action its own way.

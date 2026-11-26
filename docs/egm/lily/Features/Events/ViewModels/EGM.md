@@ -16,15 +16,15 @@ to `EventDraftEditing` ([Interfaces](../Interfaces/EGM.md)) for the shared form.
 ## Interface
 
 - `EventListViewModel` (`lily/Features/Events/ViewModels/EventListViewModel.swift`):
-  `init(scope:repository:identity:locationService:changes:errorCenter:recorder:logger:now:sleep:currencyCode:
-  initialFilter:filterStore:snapshots:)` with defaults `now = { .now }`, `sleep = systemSleep`,
+  `init(scope:repository:identity:locationService:changes:errorCenter:recorder:logger:now:sleep:
+  initialFilter:filterStore:snapshots:)` (2026-11-26: the filter lost its price cap, so the currency closure left) with defaults `now = { .now }`, `sleep = systemSleep`,
   `initialFilter = EventFilter()`, `NoOpEventFilterStore()`, `NoOpListSnapshotStore()`. State: `private(set)`
   `events`, `filter`, `isLoading`, `userLocation`; observation-ignored `startedFromSnapshot`,
   `filterWhenPanelOpened`; `freshness: ContentFreshness`. Derived: `visibleEvents`. Methods:
   `updateFilter(_ change: (inout EventFilter) -> Void)`, `loadIfStale()`, `load()`, `loadIfStaleNearTheUser()`,
   `loadUserLocation()`, `refreshUserLocation()`, `replace(_:)`, `add(_:)`, `clear()`.
-- `EventListViewModel+Filter.swift`: `isEverythingFilteredOut`, `awaitsAnswerForPosition`, `priceCurrencyCode`,
-  `toggleType(_:)`, `clearFilter()`, `showEverything()`, `distanceText(for:) -> String?`, `filterPanelOpened()`,
+- `EventListViewModel+Filter.swift`: `isEverythingFilteredOut`, `awaitsAnswerForPosition`,
+  `toggleType(_:)`, `toggleTime(_:)` (2026-11-26), `clearFilter()`, `showEverything()`, `distanceText(for:) -> String?`, `filterPanelOpened()`,
   `filterPanelClosed()`, `presentationChanged(to:)`.
 - `EventListViewModel+Freshness.swift`: `isInitialLoad`, `listState: ListState`, `screenState: EventListScreenState`
   (`EventListScreenState.resolve` over `isInitialLoad`, `loadFailed`, `events`, `isEverythingFilteredOut` and

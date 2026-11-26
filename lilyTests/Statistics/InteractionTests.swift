@@ -33,7 +33,8 @@ struct InteractionTests {
     @Test func filterSummaryCarriesTheShapeNotTheValues() throws {
         var filter = EventFilter()
         filter.types = [.tennis, .football]
-        filter.maxPrice = 12.5
+        filter.minAttendees = 10
+        filter.timesOfDay = [.evening, .morning]
         filter.skillLevel = .advanced
         filter.dateWindow = .proposal()
         filter.openSpotsOnly = true
@@ -43,14 +44,16 @@ struct InteractionTests {
         let summary = try #require(interaction.filter)
         #expect(summary.types == ["football", "tennis"], "wire names in a fixed order")
         #expect(summary.maxDistanceMeters == AppConfig.Events.defaultFilterRadiusMeters)
-        #expect(summary.hasMaxPrice && summary.hasDateWindow && summary.openSpotsOnly)
+        #expect(summary.minAttendees == 10 && summary.hasDateWindow && summary.openSpotsOnly)
+        #expect(summary.timesOfDay == ["morning", "evening"], "the cases' order, not the selection's")
         #expect(summary.skillLevel == .advanced)
         let encoded = try ContractSamples.jsonObject(of: summary)
         #expect(Set(encoded.keys)
-                == ["types", "maxDistanceMeters", "hasMaxPrice", "skillLevel", "hasDateWindow", "openSpotsOnly"])
-        #expect(encoded["hasMaxPrice"] as? Bool == true)
+                == ["types", "maxDistanceMeters", "minAttendees", "timesOfDay", "skillLevel",
+                    "hasDateWindow", "openSpotsOnly"])
+        #expect(encoded["minAttendees"] as? Int == 10)
         let text = try #require(String(bytes: APIJSONCoding.makeEncoder().encode(summary), encoding: .utf8))
-        #expect(!text.contains("12.5"))
+        #expect(!text.contains("2026"), "the window's dates stay out")
     }
 
     /// Laurel's `FilterSummaryDto.MAX_TYPES`: a change on one side must be repeated on the other.
@@ -91,7 +94,7 @@ struct InteractionTests {
 
         #expect(Set(encoded.keys) == ["kind", "occurredAt", "filter"])
         let filter = try #require(encoded["filter"] as? [String: Any])
-        #expect(Set(filter.keys) == ["types", "hasMaxPrice", "hasDateWindow", "openSpotsOnly"])
+        #expect(Set(filter.keys) == ["types", "timesOfDay", "hasDateWindow", "openSpotsOnly"])
         #expect((filter["types"] as? [String])?.isEmpty == true)
     }
 

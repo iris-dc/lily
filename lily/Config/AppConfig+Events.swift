@@ -1,6 +1,15 @@
 import Foundation
 
 nonisolated extension AppConfig.Events {
+    /// The distance slider's reach, in kilometres, and the notch it moves by.
+    static let filterRadiusRangeKilometers: ClosedRange<Double> = 5...150
+    static let filterRadiusStepKilometers: Double = 5
+    /// The attendee floors the filter offers: "at least this many already in".
+    static let filterAttendeeChoices = [2, 5, 10, 20]
+    /// Where the filter's afternoon begins and where its evening begins, in the user's calendar.
+    static let afternoonStartHour = 12
+    static let eveningStartHour = 18
+
     /// How close to a stack's first spot an event must stand to join its pin, since overlapping pins left the one
     /// behind unselectable; geocoding one typed name twice lands at zero.
     static let mapStackRadiusMeters = 11.0

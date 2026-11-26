@@ -6,14 +6,17 @@ struct EventFilterTests {
     private let events = MockEventFixtures.make(now: .now, count: AppConfig.Events.mockFeedSize)
     private let center = AppConfig.Location.mockCenter
 
-    private static let euro = "EUR"
-
     private func matching(_ filter: EventFilter, from origin: Coordinate? = nil) -> [SportEvent] {
-        events.filter { filter.matches($0, from: origin, currencyCode: Self.euro) }
+        events.filter { filter.matches($0, from: origin) }
     }
 
-    private func matches(_ filter: EventFilter, _ event: SportEvent, currencyCode: String = euro) -> Bool {
-        filter.matches(event, from: nil, currencyCode: currencyCode)
+    private func matches(_ filter: EventFilter, _ event: SportEvent) -> Bool {
+        filter.matches(event, from: nil)
+    }
+
+    /// A start at the given hour today, in the calendar the filter judges with.
+    private func start(hour: Int) -> Date {
+        Calendar.current.date(bySettingHour: hour, minute: 30, second: 0, of: .now)!
     }
 
     @Test func defaultFilterLimitsDistanceOnlyAndCountsAsInactive() {
@@ -86,36 +89,48 @@ struct EventFilterTests {
         #expect(near.allSatisfy { $0.location.coordinate.distance(to: center) <= 2_500 })
     }
 
-    @Test func maxPriceTreatsMissingPriceAsFreeAndZeroAsFreeOnly() {
-        let free = SportEvent.fixture()
-        let cheap = SportEvent.fixture(price: Price(amount: 5, currencyCode: "EUR"))
-        let dear = SportEvent.fixture(price: Price(amount: 12, currencyCode: "EUR"))
+    /// The floor counts who is already in, host included: at it passes, under it is out, and no floor is no criterion.
+    @Test func minAttendeesIsAFloorOnWhoIsAlreadyIn() {
+        let quiet = SportEvent.fixture(id: "quiet", participants: 2)
+        let busy = SportEvent.fixture(id: "busy", participants: 10)
         var filter = EventFilter()
-        #expect(matches(filter, dear))
+        #expect(matches(filter, quiet) && matches(filter, busy))
 
-        filter.maxPrice = 0
-        #expect(matches(filter, free) && !matches(filter, cheap))
+        filter.minAttendees = 10
+        #expect(!matches(filter, quiet) && matches(filter, busy))
+        #expect(filter.isActive)
 
-        filter.maxPrice = 5
-        #expect(matches(filter, free) && matches(filter, cheap) && !matches(filter, dear))
+        filter.minAttendees = 2
+        #expect(matches(filter, quiet) && matches(filter, busy))
     }
 
-    /// The cap is in the user's currency and nothing is converted: a game priced in another currency is left out while
-    /// a cap is set, a free one or a zero-priced one passes whatever its currency says, and no cap shows everything.
-    @Test func maxPriceJudgesOnlyGamesPricedInTheUsersCurrency() {
-        let zloty = SportEvent.fixture(id: "pln", price: Price(amount: 20, currencyCode: "PLN"))
-        let euro = SportEvent.fixture(id: "eur", price: Price(amount: 5, currencyCode: "EUR"))
-        let freeInDollars = SportEvent.fixture(id: "usd", price: Price(amount: 0, currencyCode: "USD"))
+    /// Morning ends at noon, the afternoon at six; the buckets follow the user's calendar, and a selection is
+    /// multi-select like the types.
+    @Test func timesOfDayBucketTheStartHour() {
+        let dawn = SportEvent.fixture(id: "dawn", startsAt: start(hour: 7))
+        let noonish = SportEvent.fixture(id: "noon", startsAt: start(hour: 12))
+        let late = SportEvent.fixture(id: "late", startsAt: start(hour: 20))
         var filter = EventFilter()
-        #expect(matches(filter, zloty, currencyCode: "EUR"))
+        #expect(matches(filter, dawn) && matches(filter, late), "no selection is no criterion")
 
-        filter.maxPrice = 30
-        #expect(matches(filter, zloty, currencyCode: "PLN") && !matches(filter, euro, currencyCode: "PLN"))
-        #expect(matches(filter, euro, currencyCode: "EUR") && !matches(filter, zloty, currencyCode: "EUR"))
-        #expect(matches(filter, freeInDollars, currencyCode: "PLN"))
+        filter.toggle(TimeOfDay.morning)
+        #expect(matches(filter, dawn) && !matches(filter, noonish) && !matches(filter, late))
 
-        filter.maxPrice = 0
-        #expect(matches(filter, freeInDollars, currencyCode: "PLN") && !matches(filter, zloty, currencyCode: "PLN"))
+        filter.toggle(TimeOfDay.afternoon)
+        #expect(matches(filter, noonish) && !matches(filter, late))
+
+        filter.toggle(TimeOfDay.morning)
+        filter.toggle(TimeOfDay.evening)
+        #expect(!matches(filter, dawn) && matches(filter, noonish) && matches(filter, late))
+    }
+
+    @Test func theBucketBoundariesAreTheConfiguredHours() {
+        #expect(TimeOfDay.of(start(hour: AppConfig.Events.afternoonStartHour - 1)) == .morning)
+        #expect(TimeOfDay.of(start(hour: AppConfig.Events.afternoonStartHour)) == .afternoon)
+        #expect(TimeOfDay.of(start(hour: AppConfig.Events.eveningStartHour - 1)) == .afternoon)
+        #expect(TimeOfDay.of(start(hour: AppConfig.Events.eveningStartHour)) == .evening)
+        #expect(TimeOfDay.of(start(hour: 23)) == .evening)
+        #expect(TimeOfDay.of(start(hour: 0)) == .morning)
     }
 
     @Test func levelAndOpenSpotsCriteria() {
@@ -165,9 +180,9 @@ struct EventFilterTests {
     @Test func criteriaCombineWithAnd() {
         var filter = EventFilter()
         filter.toggle(.football)
-        filter.maxPrice = 0
-        #expect(matching(filter).isEmpty, "the only football fixture costs money")
-        filter.maxPrice = 5
+        filter.minAttendees = 10
+        #expect(matching(filter).isEmpty, "the football fixture has six people in")
+        filter.minAttendees = 5
         #expect(matching(filter).map(\.type) == [.football])
     }
 
@@ -182,7 +197,8 @@ struct EventFilterTests {
         var filter = EventFilter()
         filter.toggle(.running)
         filter.maxDistanceMeters = nil
-        filter.maxPrice = 0
+        filter.minAttendees = 5
+        filter.toggle(TimeOfDay.evening)
         filter.skillLevel = .beginner
         filter.dateWindow = .proposal()
         filter.openSpotsOnly = true

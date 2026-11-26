@@ -134,8 +134,8 @@ final class LilySmokeTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts[title].waitForNonExistence(timeout: 10), "a left game must drop out of Home")
     }
 
-    /// The one tennis game in the fixtures costs money, so tennis plus "Free only" matches nothing: the map must stay
-    /// on screen (on the user's position) instead of giving way to the "Nothing matches" state the list shows.
+    /// The one tennis game in the fixtures has a single attendee, so tennis plus "20+" matches nothing: the map must
+    /// stay on screen (on the user's position) instead of giving way to the "Nothing matches" state the list shows.
     @MainActor
     func testMapStaysWhenTheFilterHidesEveryGame() {
         relaunchAsGuest()
@@ -145,8 +145,8 @@ final class LilySmokeTests: LilyUITestCase {
         let tennis = app.buttons["filter-type-tennis"]
         XCTAssertTrue(tennis.waitForExistence(timeout: 5), "the filter panel should drop down")
         tennis.tap()
-        // The full type list pushes the price row below the fold, where it is not in the accessibility tree.
-        tapAfterScrolling(app.buttons["filter-free-only"])
+        // The full type list pushes the attendee row below the fold, where it is not in the accessibility tree.
+        tapAfterScrolling(app.buttons["filter-attendees-20"])
         app.buttons["Done"].tap()
 
         XCTAssertTrue(app.maps.firstMatch.waitForExistence(timeout: 5), "the map stays whatever the criteria match")
@@ -259,4 +259,5 @@ final class LilySmokeTests: LilyUITestCase {
         tapWizardBack(from: "When", to: "Type")
         tapWizardBack(from: "Type", to: "Name")
         XCTAssertEqual(app.textFields["create-title"].value as? String, title, "back must preserve the typed title")
-    }}
+    }
+}

@@ -44,14 +44,14 @@ struct AppDependenciesCurrencyTests {
         let dependencies = AppDependencies.makeDefault(arguments: [AppConfig.LaunchArguments.mockEvents], defaults: defaults)
 
         #expect(dependencies.currency.currencyCode == "CHF")
-        #expect(dependencies.makeEventListViewModel(scope: .upcoming).priceCurrencyCode == "CHF")
         #expect(dependencies.makeCreateEventViewModel(onCreated: { _ in }).draft.currencyCode == "CHF")
         let free = SportEvent.fixture()
         #expect(dependencies.makeEditEventViewModel(for: free, onChange: { _ in }).draft.currencyCode == "CHF")
 
         dependencies.currency.select(.fixed("GBP"))
 
-        #expect(dependencies.makeEventListViewModel(scope: .upcoming).priceCurrencyCode == "GBP", "a change applies at once")
+        #expect(dependencies.makeCreateEventViewModel(onCreated: { _ in }).draft.currencyCode == "GBP",
+                "a change applies at once")
     }
 
     @Test func theMockWiringFollowsTheRegion() {

@@ -1,14 +1,11 @@
 import SwiftUI
 
-/// Every filter criterion as a full-screen form, like the create forms: type chips, distance, a price input, level,
-/// dates and open spots, with Reset in the bar while anything is active and Done closing the sheet. Every change
-/// applies at once; Done only closes.
+/// Every filter criterion as a full-screen form, like the create forms: type chips, a distance slider, attendee and
+/// time-of-day chips, level, dates and open spots, with Reset in the bar while anything is active and Done closing the
+/// sheet. Every change applies at once; Done only closes.
 struct EventFilterSheet: View {
     let viewModel: EventListViewModel
     let onDone: () -> Void
-    /// The field edits text and parses on every change, so Reset, "Free only" and Done never race a pending commit.
-    @State private var priceText = ""
-    @FocusState private var isPriceFocused: Bool
 
     private typealias Copy = AppBranding.Events.Filter
 
@@ -39,7 +36,8 @@ struct EventFilterSheet: View {
         Form {
             Section(Copy.eventType) { typeChips }
             Section(Copy.distance) { distanceChoice }
-            Section(Copy.maxPrice) { priceRow }
+            Section(Copy.attendees) { attendeeChips }
+            Section(Copy.timeOfDay) { timeChips }
             Section {
                 levelRow
                 datesSection
@@ -65,72 +63,71 @@ struct EventFilterSheet: View {
                        identifier: AccessibilityIdentifiers.filterType)
     }
 
-    /// Distance from the user's position. Without a position the criterion cannot be judged, so the choice is replaced
-    /// by a note.
+    /// Distance from the user's position, as a slider over the offered reach. Without a position the criterion cannot
+    /// be judged, so the slider is replaced by a note.
     @ViewBuilder private var distanceChoice: some View {
         if viewModel.userLocation == nil {
             Text(Copy.locationUnavailable)
                 .font(LilyTheme.Fonts.caption)
                 .foregroundStyle(.secondary)
         } else {
-            Picker(Copy.distance, selection: binding(\.maxDistanceMeters)) {
-                ForEach(AppConfig.Events.filterRadiiMeters, id: \.self) { meters in
-                    Text(Measurement(value: meters, unit: UnitLength.meters).roadText()).tag(Double?.some(meters))
+            HStack(spacing: DesignTokens.Spacing.md) {
+                Slider(value: distanceKilometers,
+                       in: AppConfig.Events.filterRadiusRangeKilometers,
+                       step: AppConfig.Events.filterRadiusStepKilometers)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.filterDistance)
+                Text(Measurement(value: distanceMeters, unit: UnitLength.meters).roadText())
+                    .font(LilyTheme.Fonts.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .fixedSize()
+            }
+        }
+    }
+
+    /// What the slider shows: the filter's radius, or its far end standing in for "anywhere" (a kept older filter).
+    private var distanceMeters: Double {
+        viewModel.filter.maxDistanceMeters ?? AppConfig.Events.filterRadiusRangeKilometers.upperBound * 1_000
+    }
+
+    private var distanceKilometers: Binding<Double> {
+        Binding(get: { distanceMeters / 1_000 },
+                set: { kilometers in viewModel.updateFilter { $0.maxDistanceMeters = kilometers * 1_000 } })
+    }
+
+    /// One floor at a time: how many people are already in; "Any" lifts it, as does tapping the chosen floor again.
+    private var attendeeChips: some View {
+        FlowLayout(spacing: DesignTokens.Spacing.md, rowSpacing: 0) {
+            ChoiceChip(title: Copy.anyAttendees, isSelected: viewModel.filter.minAttendees == nil) {
+                viewModel.updateFilter { $0.minAttendees = nil }
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.filterAttendeesAny)
+            ForEach(AppConfig.Events.filterAttendeeChoices, id: \.self) { floor in
+                ChoiceChip(title: Copy.atLeast(floor), isSelected: viewModel.filter.minAttendees == floor) {
+                    viewModel.updateFilter { $0.minAttendees = $0.minAttendees == floor ? nil : floor }
                 }
-                Text(Copy.anywhere).tag(Double?.none)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-        }
-    }
-
-    /// Free-form cap: empty means any price, zero means free games only (the chip sets and shows that zero).
-    private var priceRow: some View {
-        HStack(spacing: DesignTokens.Spacing.md) {
-            ChoiceChip(title: Copy.freeOnly, isSelected: viewModel.filter.maxPrice == 0) {
-                viewModel.updateFilter { $0.maxPrice = $0.maxPrice == 0 ? nil : 0 }
-            }
-            .accessibilityIdentifier(AccessibilityIdentifiers.filterFreeOnly)
-            Spacer()
-            priceField
-        }
-    }
-
-    /// Drawn like the compact date pickers' capsule, so the trailing controls read as one family. The text is the
-    /// source while typing (`applyTypedCap`); only a value set elsewhere (Reset, the chip) rewrites it.
-    private var priceField: some View {
-        PriceAmountField(text: $priceText,
-                         placeholder: Copy.anyPrice,
-                         currencyCode: viewModel.priceCurrencyCode,
-                         label: Copy.maxPrice,
-                         identifier: AccessibilityIdentifiers.filterMaxPrice,
-                         currencyIdentifier: AccessibilityIdentifiers.filterPriceCurrency,
-                         focus: $isPriceFocused)
-        .padding(.horizontal, DesignTokens.Spacing.md)
-        .padding(.vertical, DesignTokens.Layout.chipVerticalPadding)
-        .glassEffect(.regular, in: .capsule)
-        .contentShape(.capsule)
-        .onTapGesture { isPriceFocused = true }
-        .onChange(of: priceText) { applyTypedCap() }
-        .onChange(of: viewModel.filter.maxPrice, initial: true) {
-            if Price.parseAmount(priceText) != viewModel.filter.maxPrice {
-                priceText = viewModel.filter.maxPrice.map { Price.inputText($0) } ?? ""
+                .accessibilityIdentifier(AccessibilityIdentifiers.filterAttendees(floor))
             }
         }
     }
 
-    /// An empty text clears the cap, a readable one sets it, an unreadable one leaves the cap as it was, so the
-    /// filter never holds a misread amount and the seeding `onChange` above never rewrites what is being typed.
-    private func applyTypedCap() {
-        let typed = priceText.trimmed
-        if typed.isEmpty, viewModel.filter.maxPrice != nil {
-            viewModel.updateFilter { $0.maxPrice = nil }
-        } else if let amount = Price.parseAmount(typed), amount != viewModel.filter.maxPrice {
-            viewModel.updateFilter { $0.maxPrice = amount }
+    /// Multi-select like the types; "Any" is on while nothing is chosen.
+    private var timeChips: some View {
+        FlowLayout(spacing: DesignTokens.Spacing.md, rowSpacing: 0) {
+            ChoiceChip(title: Copy.anyTime, isSelected: viewModel.filter.timesOfDay.isEmpty) {
+                viewModel.updateFilter { $0.timesOfDay = [] }
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.filterTimeAny)
+            ForEach(TimeOfDay.allCases, id: \.self) { time in
+                ChoiceChip(title: time.displayName, isSelected: viewModel.filter.timesOfDay.contains(time)) {
+                    viewModel.toggleTime(time)
+                }
+                .accessibilityIdentifier(AccessibilityIdentifiers.filterTime(time))
+            }
         }
     }
 
-    /// A menu picker shows only its selection, so the title sits on the left like the price row's.
+    /// A menu picker shows only its selection, so the title sits on the left like the date rows'.
     private var levelRow: some View {
         HStack {
             Text(AppBranding.Events.levelLabel)

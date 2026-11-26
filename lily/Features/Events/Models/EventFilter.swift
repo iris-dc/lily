@@ -6,9 +6,10 @@ nonisolated struct EventFilter: Hashable, Sendable {
     var types: Set<EventType> = []
     /// Radius around the reference point; `nil` means anywhere.
     var maxDistanceMeters: Double? = AppConfig.Events.defaultFilterRadiusMeters
-    /// Per-person price cap in the user's currency (the one `matches(_:from:currencyCode:)` is given); `nil` means any
-    /// price, zero means free games only.
-    var maxPrice: Decimal?
+    /// At least this many people already in; `nil` means any number.
+    var minAttendees: Int?
+    /// Parts of the day the game may start in; empty means any time.
+    var timesOfDay: Set<TimeOfDay> = []
     /// `nil` means any level. Games that welcome any level (no `skillLevel`, or one this build does not know) match
     /// every choice.
     var skillLevel: SkillLevel?
@@ -24,16 +25,20 @@ nonisolated struct EventFilter: Hashable, Sendable {
     func includes(_ type: EventType) -> Bool { types.contains(type) }
 
     /// `origin` is the reference point for the distance criterion. Without one (location denied or not yet known)
-    /// distance cannot be judged, so that criterion is skipped rather than hiding every event. `currencyCode` is the
-    /// currency the price cap is in: the user's.
-    func matches(_ event: SportEvent, from origin: Coordinate?, currencyCode: String) -> Bool {
-        matchesType(event) && matchesDistance(event, from: origin) && matchesPrice(event, currencyCode: currencyCode)
-            && matchesLevel(event) && matchesDate(event) && (!openSpotsOnly || !event.isFull)
+    /// distance cannot be judged, so that criterion is skipped rather than hiding every event.
+    func matches(_ event: SportEvent, from origin: Coordinate?) -> Bool {
+        matchesType(event) && matchesDistance(event, from: origin) && matchesAttendees(event)
+            && matchesTime(event) && matchesLevel(event) && matchesDate(event) && (!openSpotsOnly || !event.isFull)
     }
 
     /// Adds the type to the selection, or removes it when it is already selected.
     mutating func toggle(_ type: EventType) {
         if types.remove(type) == nil { types.insert(type) }
+    }
+
+    /// Adds the part of the day to the selection, or removes it when it is already selected.
+    mutating func toggle(_ time: TimeOfDay) {
+        if timesOfDay.remove(time) == nil { timesOfDay.insert(time) }
     }
 
     mutating func clear() { self = EventFilter() }
@@ -47,12 +52,13 @@ nonisolated struct EventFilter: Hashable, Sendable {
         return event.location.coordinate.distance(to: origin) <= maxDistanceMeters
     }
 
-    /// A free game always passes a cap; a priced one passes only in the cap's currency and at or under it. Nothing is
-    /// converted, so a game priced in another currency stays out while a cap is set rather than being misjudged.
-    private func matchesPrice(_ event: SportEvent, currencyCode: String) -> Bool {
-        guard let maxPrice else { return true }
-        guard let price = event.price, !price.isFree else { return true }
-        return price.currencyCode == currencyCode && price.amount <= maxPrice
+    private func matchesAttendees(_ event: SportEvent) -> Bool {
+        guard let minAttendees else { return true }
+        return event.participantCount >= minAttendees
+    }
+
+    private func matchesTime(_ event: SportEvent) -> Bool {
+        timesOfDay.isEmpty || timesOfDay.contains(.of(event.startsAt))
     }
 
     private func matchesLevel(_ event: SportEvent) -> Bool {

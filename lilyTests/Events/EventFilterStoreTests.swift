@@ -15,7 +15,8 @@ struct EventFilterStoreTests {
         filter.toggle(.tennis)
         filter.toggle(.football)
         filter.maxDistanceMeters = 25_000
-        filter.maxPrice = 12.5
+        filter.minAttendees = 5
+        filter.toggle(TimeOfDay.evening)
         filter.skillLevel = .intermediate
         filter.openSpotsOnly = true
         return filter
@@ -65,11 +66,13 @@ struct EventFilterStoreTests {
     /// A filter kept by a newer build may name a type or a level this one does not know; the panel could neither show
     /// nor clear such a criterion, so it is left out and the rest of the filter comes back, without a warning.
     @Test func aStoredTypeOrLevelThisBuildDoesNotKnowIsLeftOut() throws {
-        let stored = #"{"types":["quidditch","tennis"],"skillLevel":"pro","openSpotsOnly":true}"#
+        let stored = #"{"types":["quidditch","tennis"],"skillLevel":"pro","#
+            + #""timesOfDay":["nightish","morning"],"openSpotsOnly":true}"#
         defaults.set(Data(stored.utf8), forKey: AppConfig.Storage.Keys.eventFilter)
 
         let filter = try #require(store.load())
         #expect(filter.types == [.tennis])
+        #expect(filter.timesOfDay == [.morning], "a part of the day from a newer build is left out the same way")
         #expect(filter.skillLevel == nil && filter.openSpotsOnly)
         #expect(logger.messages(in: .cache, at: .warning).isEmpty)
     }
@@ -90,6 +93,6 @@ struct EventFilterStoreTests {
 
         let json = try #require(try JSONSerialization.jsonObject(with: JSONEncoder().encode(PersistedEventFilter(.everything)))
                                 as? [String: Any])
-        #expect(Set(json.keys) == ["types", "openSpotsOnly"])
+        #expect(Set(json.keys) == ["types", "timesOfDay", "openSpotsOnly"])
     }
 }

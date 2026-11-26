@@ -64,7 +64,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 - `Storage.Keys`: `lily.session.stored`, `lily.language.preference`, `lily.events.filter`, `lily.currency.preference`;
   `previewSuitePrefix = "lily.preview."`. `Logging.subsystem = Bundle.main.bundleIdentifier ?? "iris.lily"`. `Version`:
   `CFBundleShortVersionString`, `CFBundleVersion`. `Launch.animationsResumeFallback = 3`. `ErrorPopup.autoDismissDelay = .seconds(4)`.
-- `Events`: `filterRadiiMeters = [2_000, 5_000, 10_000, 25_000]`, `defaultFilterRadiusMeters = 10_000`,
+- `Events`: `filterRadiusRangeKilometers = 5...150` and `filterRadiusStepKilometers = 5` (the distance slider),
+  `filterAttendeeChoices = [2, 5, 10, 20]`, `afternoonStartHour = 12`, `eveningStartHour = 18` (all 2026-11-26, in
+  `AppConfig+Events.swift`), `defaultFilterRadiusMeters = 10_000`,
   `defaultFilterDateSpanDays = 7`, `positionPrecision = 2`, `nearlyFullRatio = 0.75`. `Creation`: `titleMaxLength = 80`,
   `locationNameMaxLength = 120` (judged on the composed name: the address plus the optional detail line, 2026-11-12),
   `locationNameSpotReserve = 24` (the room the detail must leave for the reverse-geocoded address when only the spot

@@ -10,8 +10,12 @@ nonisolated enum AccessibilityIdentifiers {
     static let eventsFilter = "events-filter"
     /// The "Any type" chip in the filter sheet; the per-type chips come from `filterType(_:)`.
     static let filterTypeAny = "filter-type-any"
-    static let filterFreeOnly = "filter-free-only"
-    static let filterMaxPrice = "filter-max-price"
+    /// The distance slider in the filter sheet.
+    static let filterDistance = "filter-distance"
+    /// The attendee-floor chips in the filter sheet: "Any", then one per offered floor.
+    static let filterAttendeesAny = "filter-attendees-any"
+    /// The time-of-day chips in the filter sheet: "Any", then one per part of the day.
+    static let filterTimeAny = "filter-time-any"
     static let eventsMap = "events-map"
     /// Preview card shown above the map for the selected pin.
     static let mapSelectedCard = "map-selected-card"
@@ -71,5 +75,15 @@ nonisolated enum AccessibilityIdentifiers {
     /// One chip per event type in the filter sheet, e.g. `filter-type-football`.
     static func filterType(_ type: EventType) -> String {
         "filter-type-\(type.wireName)"
+    }
+
+    /// One chip per offered attendee floor, e.g. `filter-attendees-5`.
+    static func filterAttendees(_ floor: Int) -> String {
+        "filter-attendees-\(floor)"
+    }
+
+    /// One chip per part of the day, e.g. `filter-time-morning`.
+    static func filterTime(_ time: TimeOfDay) -> String {
+        "filter-time-\(time.rawValue)"
     }
 }

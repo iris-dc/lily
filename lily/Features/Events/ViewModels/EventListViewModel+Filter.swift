@@ -13,11 +13,12 @@ extension EventListViewModel {
         requestPosition != nil && !loadFailed && (!hasLoaded || positionReason != nil)
     }
 
-    /// The currency the panel's price cap is in: the user's, so its symbol follows the Profile choice.
-    var priceCurrencyCode: String { currencyCode() }
-
     func toggleType(_ type: EventType) {
         updateFilter { $0.toggle(type) }
+    }
+
+    func toggleTime(_ time: TimeOfDay) {
+        updateFilter { $0.toggle(time) }
     }
 
     /// Back to the defaults (which still limit distance).

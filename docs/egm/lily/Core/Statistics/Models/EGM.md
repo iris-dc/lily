@@ -22,7 +22,8 @@ and `Sendable`; none performs I/O.
   `chatOpened(groupID:at:)`, `tournamentViewed(_ tournament: Tournament, at:)`
   [`lily/Core/Statistics/Models/Interaction.swift:Interaction`].
 - `nonisolated struct FilterSummary: Encodable, Equatable, Sendable`: `types: [String]`, `maxDistanceMeters: Double?`,
-  `hasMaxPrice: Bool`, `skillLevel: SkillLevel?`, `hasDateWindow: Bool`, `openSpotsOnly: Bool`;
+  `minAttendees: Int?`, `timesOfDay: [String]` (the cases' order; both 2026-11-26, when `hasMaxPrice` left with the
+  price criterion), `skillLevel: SkillLevel?`, `hasDateWindow: Bool`, `openSpotsOnly: Bool`;
   `init(_ filter: EventFilter)` [`lily/Core/Statistics/Models/FilterSummary.swift:FilterSummary`].
 - `nonisolated struct InteractionBatch: Encodable, Equatable, Sendable { let interactions: [Interaction] }` (the body
   of `POST /api/interactions` per its doc comment) and

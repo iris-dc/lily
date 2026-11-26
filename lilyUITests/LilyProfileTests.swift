@@ -38,12 +38,6 @@ final class LilyProfileTests: LilyUITestCase {
         scrollUntilHittable(symbol)
         XCTAssertTrue(Self.zlotySymbols.contains(symbol.label), "the price field is in złoty now: \(symbol.label)")
         discardWizard()
-
-        app.buttons["events-filter"].tap()
-        // The full type list pushes the price row below the fold, where it is not in the accessibility tree.
-        let capSymbol = app.staticTexts["filter-price-currency"]
-        scrollUntilHittable(capSymbol, "the price cap row scrolls into the filter sheet")
-        XCTAssertTrue(Self.zlotySymbols.contains(capSymbol.label), "the price cap too: \(capSymbol.label)")
     }
 
     @MainActor

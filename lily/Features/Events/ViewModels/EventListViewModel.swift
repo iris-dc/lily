@@ -27,9 +27,6 @@ final class EventListViewModel {
     private let logger: any Logging
     /// What the wait for the first fix sleeps on; injected so a test moves it by hand.
     private let sleep: Sleep
-    /// The user's currency (`CurrencyStore.currencyCode`): what the price cap is typed and judged in.
-    let currencyCode: () -> String
-
     let scope: EventScope
     private let repository: any EventRepository
     let identity: any IdentityProvider
@@ -54,13 +51,11 @@ final class EventListViewModel {
          logger: any Logging,
          now: @escaping () -> Date = { .now },
          sleep: @escaping Sleep = systemSleep,
-         currencyCode: @escaping () -> String,
          initialFilter: EventFilter = EventFilter(),
          filterStore: any EventFilterStore = NoOpEventFilterStore(),
          snapshots: any ListSnapshotStore = NoOpListSnapshotStore()) {
         self.filter = initialFilter
         self.sleep = sleep
-        self.currencyCode = currencyCode
         self.scope = scope
         self.repository = repository
         self.identity = identity
@@ -90,8 +85,7 @@ final class EventListViewModel {
     /// Distance is judged from the user's position; while that is unknown the distance criterion is skipped. The price
     /// cap is judged in the user's currency, read on every pass so a change on Profile applies at once.
     var visibleEvents: [SportEvent] {
-        let currency = currencyCode()
-        return events.filter { filter.matches($0, from: userLocation, currencyCode: currency) }
+        events.filter { filter.matches($0, from: userLocation) }
     }
 
     /// The one way views change the filter, so every change is logged, kept for the next launch and the filter stays

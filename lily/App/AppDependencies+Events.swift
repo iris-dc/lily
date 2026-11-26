@@ -16,7 +16,6 @@ extension AppDependencies {
                            errorCenter: errorCenter,
                            recorder: interactionRecorder,
                            logger: logger,
-                           currencyCode: { [currency] in currency.currencyCode },
                            initialFilter: scope == .upcoming ? eventFilterStore.load() ?? EventFilter() : .everything,
                            filterStore: scope == .upcoming ? eventFilterStore : NoOpEventFilterStore(),
                            snapshots: snapshots)

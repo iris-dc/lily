@@ -431,3 +431,21 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   `EventListViewModel.add` and `listsByStart` (a game just created or joined is never history). The mock serves
   `MockEventFixtures.pastGames(now:)` plus any held started game, so the feed, the rooms and the other scopes stay
   untouched.
+
+- **The filter reworked (2026-11-26, on the user's "add number of attendees, time of a day, make distance a slide bar
+  5-150 km, remove price").** `EventFilter` lost `maxPrice` (and with it the sheet's price section, `applyTypedCap`,
+  the `filter-free-only`/`filter-max-price`/`filter-price-currency` identifiers, the Max price/Any (price)/Free
+  only/Any catalog keys and `EventListViewModel`'s `currencyCode` closure — `matches(_:from:)` now) and gained
+  `minAttendees: Int?` (chips over `AppConfig.Events.filterAttendeeChoices` 2/5/10/20, one floor at a time, judged on
+  `participantCount`) and `timesOfDay: Set<TimeOfDay>` (multi-select morning/afternoon/evening chips; buckets split at
+  `afternoonStartHour` 12 and `eveningStartHour` 18 in the user's calendar, `TimeOfDay.of(_:calendar:)`). Distance
+  became a `Slider` over `filterRadiusRangeKilometers` 5...150 in 5 km steps (the app's first slider; value labelled
+  via `roadText()`, accent tint from the sheet): there is no "Any" any more, a kept `nil` radius draws at the far end
+  until moved, and `.everything` still lifts it for the lists without a filter button. Persistence keeps the new
+  criteria (times as raw strings, unknown dropped); `FilterSummary` sends `minAttendees`/`timesOfDay` instead of
+  `hasMaxPrice`, and Laurel's `FilterSummaryDto` tolerates old builds (`hasMaxPrice` nullable) while validating the
+  new fields — **deploy Laurel before this build goes live** or `filter_applied` batches 400. Tests reworked across
+  `EventFilterTests` (attendee floor, time buckets and boundaries), `EventFilterStoreTests` (new persisted shape,
+  unknown time dropped), `EventListFilteringTests`, `InteractionTests`; UI smoke tests narrow by `filter-attendees-20`
+  where "Free only" used to, and the Profile currency test ends at the wizard's field. The new catalog keys owe a
+  native read.

@@ -6,5 +6,4 @@ nonisolated extension AccessibilityIdentifiers {
     /// The currency symbol beside the price field of the create and edit form.
     static let createPriceCurrency = "create-price-currency"
     /// The currency symbol beside the price cap of the filter sheet.
-    static let filterPriceCurrency = "filter-price-currency"
 }

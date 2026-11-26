@@ -23,14 +23,16 @@ nonisolated enum AppBranding {
             static var eventType: String { localized("Event type") }
             static var anyType: String { localized("Any type") }
             static var distance: String { localized("Distance from me") }
-            static var anywhere: String { localized("Any") }
             /// Shown while the user's position is unknown: still pending, timed out or denied.
             static var locationUnavailable: String { localized("Distance needs your location") }
-            static var maxPrice: String { localized("Max price") }
-            /// The price field's placeholder; its own key because `anywhere` agrees with distance and this with price in
-            /// the gendered languages.
-            static var anyPrice: String { localized("Any (price)") }
-            static var freeOnly: String { localized("Free only") }
+            static var attendees: String { localized("Attendees") }
+            /// Its own key: "any" agrees with the attendee count in the gendered languages.
+            static var anyAttendees: String { localized("Any (attendees)") }
+            /// An attendee floor's chip: at least this many already in.
+            static func atLeast(_ count: Int) -> String { localized("\(count)+") }
+            static var timeOfDay: String { localized("Time of day") }
+            /// Its own key: "any" agrees with the time in the gendered languages.
+            static var anyTime: String { localized("Any (time)") }
             static var dates: String { localized("Specific dates") }
             static var from: String { localized("From") }
             static var until: String { localized("Until") }

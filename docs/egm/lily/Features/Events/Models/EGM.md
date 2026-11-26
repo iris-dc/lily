@@ -112,11 +112,15 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
   `lookingFor?`, `skillLevel?`, `price?`, `groupId?`; `init?(draft:)`. `UpdateEventPayload`
   (`UpdateEventPayload.swift`): the same minus `clientEventId` and `groupId` (an absent `endsAt` clears it on the
   backend); `init?(draft:)`.
-- `EventFilter` (`EventFilter.swift`): `types: Set<EventType>`, `maxDistanceMeters: Double?` (default
-  `AppConfig.Events.defaultFilterRadiusMeters` = 10,000), `maxPrice: Decimal?`, `skillLevel?`,
-  `dateWindow: DateWindow?`, `openSpotsOnly`; `everything`, `isActive`, `includes(_:)`,
-  `matches(_:from:currencyCode:)`, `toggle(_:)`, `clear()`. `PersistedEventFilter` (`PersistedEventFilter.swift`):
-  `Codable` mirror without the date window; `init(_ filter:)`, `filter`. `DateWindow` (`DateWindow.swift`): `start`,
+- `EventFilter` (`EventFilter.swift`, reworked 2026-11-26: the price cap left, attendees and time of day arrived):
+  `types: Set<EventType>`, `maxDistanceMeters: Double?` (default `AppConfig.Events.defaultFilterRadiusMeters` =
+  10,000), `minAttendees: Int?`, `timesOfDay: Set<TimeOfDay>`, `skillLevel?`, `dateWindow: DateWindow?`,
+  `openSpotsOnly`; `everything`, `isActive`, `includes(_:)`, `matches(_:from:)`, `toggle(_: EventType)`,
+  `toggle(_: TimeOfDay)`, `clear()`. `TimeOfDay` (`TimeOfDay.swift`): `morning | afternoon | evening`,
+  `of(_ date:calendar:)` bucketing the start hour at `AppConfig.Events.afternoonStartHour` (12) and
+  `eveningStartHour` (18), `displayName` through `localized(_:)`. `PersistedEventFilter`
+  (`PersistedEventFilter.swift`): `Codable` mirror without the date window (`timesOfDay` kept as raw strings, an
+  unknown one dropped on read); `init(_ filter:)`, `filter`. `DateWindow` (`DateWindow.swift`): `start`,
   `end`; `contains(_:)`, `days(from:to:calendar:)`, `proposal(from:calendar:)`.
 - Decision types: `EventListScreenState` (`loading`, `failed`, `empty`, `filteredOut`, `list`;
   `resolve(isInitialLoad:loadFailed:hasEvents:isEverythingFilteredOut:awaitsAnswerForPosition:)`), `Participation`
@@ -168,9 +172,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - `CreateEventPayload.init?(draft:)` and `UpdateEventPayload.init?(draft:)` return `nil` without a coordinate;
   `capacity` is `draft.capacityIfLimited` (`nil` lifts the limit), `groupId = draft.group?.id`.
 - `EventFilter.matches` requires all of: type in `types` (or none chosen); distance `<= maxDistanceMeters` from the
-  origin, skipped when either is `nil`; `price.amount <= maxPrice` in the same `currencyCode` (another currency is
-  excluded, free events pass); `skillLevel` equal when both known; `dateWindow.contains(startsAt)`;
-  `!openSpotsOnly || !isFull`. `isActive = self != EventFilter()`, so the default radius alone is inactive and
+  origin, skipped when either is `nil`; `participantCount >= minAttendees` when a floor is set;
+  `TimeOfDay.of(startsAt)` in `timesOfDay` (or none chosen); `skillLevel` equal when both known;
+  `dateWindow.contains(startsAt)`; `!openSpotsOnly || !isFull` (2026-11-26; the price criterion is gone). `isActive = self != EventFilter()`, so the default radius alone is inactive and
   `everything` (radius `nil`) is active; `clear()` restores the default radius.
 - `PersistedEventFilter` sorts `types` by `wireName` so equal selections encode identically and never stores the date
   window. `DateWindow.days` starts at the start of `first`, ends one second before the day after `last` (a last before
