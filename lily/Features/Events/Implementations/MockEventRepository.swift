@@ -6,12 +6,12 @@ import Foundation
 final class MockEventRepository: EventRepository {
     private var events: [SportEvent]
     /// The group mock the rooms live in; wired right after construction (`GroupRepositories.mock`), absent in tests
-    /// that need no rooms. Wiring registers a room for any held event the group fixtures do not ship (the appended
-    /// deleted-host game): every event has a room, as on the backend.
+    /// that need no rooms. Wiring registers a room for any event the group fixtures do not ship (the appended
+    /// deleted-host game, the history fixtures): every event has a room, as on the backend.
     var rooms: MockGroupRepository? {
         didSet {
             guard let rooms else { return }
-            for event in events where rooms.find(event.id) == nil {
+            for event in events + MockEventFixtures.pastGames(now: now) where rooms.find(event.id) == nil {
                 rooms.registerEventRoom(for: event, role: event.participates ? .member : nil)
             }
         }
@@ -46,7 +46,7 @@ final class MockEventRepository: EventRepository {
 
     /// The position is ignored: the fixtures keep their start order. Like the backend, Explore never lists a private
     /// group's game; its group's scope and Home do. `.past` adds the dedicated history fixtures, which live outside
-    /// the feed: a finished game gets no room and no detail, only its history row.
+    /// the feed but resolve by id and keep a room, so a history row opens the detail as on the backend.
     func events(in scope: EventScope, near position: Coordinate?) async throws -> [SportEvent] {
         if failsNextLoad {
             failsNextLoad = false
@@ -153,8 +153,11 @@ final class MockEventRepository: EventRepository {
         try find(eventId)
     }
 
+    /// The feed and the history fixtures both resolve: a history row's detail fetches by id like any other.
     private func find(_ eventId: String) throws -> SportEvent {
-        guard let event = events.first(where: { $0.id == eventId }) else { throw AppError.eventNotFound }
+        guard let event = (events + MockEventFixtures.pastGames(now: now)).first(where: { $0.id == eventId }) else {
+            throw AppError.eventNotFound
+        }
         return event
     }
 

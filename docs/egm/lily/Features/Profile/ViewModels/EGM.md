@@ -49,7 +49,9 @@ the system permission re-read on demand and the per-kind mutes, each flip re-reg
   logger: any Logging)`; `enum State { loading, loaded(Activity), failed }`, `nonisolated struct Activity
   { events: [EventSummary], tournaments: [TournamentSummary] }`, `private(set) var state`, `var activity: Activity?`;
   `load() async`; `visibleGames` / `visibleTournaments`, `hasMoreGames` / `hasMoreTournaments`,
-  `showMoreGames()` / `showMoreTournaments()` and the counts behind them (2026-11-25, the fold).
+  `canShowLessGames` / `canShowLessTournaments`, `showMoreGames()` / `showMoreTournaments()`,
+  `showLessGames()` / `showLessTournaments()` and the counts behind them (2026-11-25, the fold; the way back
+  2026-11-26).
 
 - `@Observable final class NotificationsViewModel`
   `[lily/Features/Profile/ViewModels/NotificationsViewModel.swift:NotificationsViewModel]` (2026-11-26):
@@ -81,8 +83,9 @@ the system permission re-read on demand and the per-kind mutes, each flip re-reg
   `[lily/Features/Profile/ViewModels/ActivityViewModel.swift:load]`,
   `[lily/Features/Profile/ViewModels/ActivityViewModel.swift:reduce]`.
 - The sections open folded: `visibleGames` / `visibleTournaments` are the reduced lists' prefixes at the visible
-  counts (seeded `AppConfig.Activity.visibleBatch` = 5), `hasMore*` compares the full count, and `showMore*()` grows a
-  count by one batch; the counts live for the screen instance, so a reload keeps what was revealed
+  counts (seeded `AppConfig.Activity.visibleBatch` = 5), `hasMore*` compares the full count, `showMore*()` grows a
+  count by one batch, and `showLess*()` folds it back to one (`canShowLess*` while grown, 2026-11-26); the counts live
+  for the screen instance, so a reload keeps what was revealed
   `[lily/Features/Profile/ViewModels/ActivityViewModel.swift:visibleGames]`.
 - `NotificationsViewModel.set(_:enabled:)` drops a repeat of the current value (a settling `Toggle` binding never
   syncs twice), else persists through `NotificationPreferences`, logs at info under `.push` ("<wire> muted" /

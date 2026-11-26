@@ -29,7 +29,7 @@ extension SportEvent {
                         capacity: Int? = 4,
                         allowsExtraParticipants: Bool = false,
                         participants: Int = 1,
-                        startsAt: Date = .now,
+                        startsAt: Date = .now.addingTimeInterval(3_600),
                         hostUserId: String? = nil,
                         isJoined: Bool? = nil,
                         description: String? = nil,

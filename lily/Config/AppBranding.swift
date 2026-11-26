@@ -37,6 +37,8 @@ nonisolated enum AppBranding {
             static var from: String { localized("From") }
             static var until: String { localized("Until") }
             static var openSpotsOnly: String { localized("Open spots only") }
+            /// Under the switch: what it hides.
+            static var openSpotsFootnote: String { localized("Hides games that are already full") }
             static var reset: String { localized("Reset") }
             static var done: String { AppBranding.done }
             static var emptyTitle: String { localized("Nothing matches") }
@@ -50,6 +52,8 @@ nonisolated enum AppBranding {
         /// Optional event details on the detail screen. `free` is the model fallback in `SportEvent.priceText` and
         /// `Price.text`; cards and the detail screen check `isFree` first and never render it.
         static var free: String { localized("Free") }
+        /// Leads a history row's caption: the game is over.
+        static var ended: String { localized("Ended") }
         /// The dot between caption parts. `EventCard` draws it as its own view; `captionSeparator` pads it for
         /// `Groups.caption`, the one joiner ("in 3 hours · 4 spots left · €5").
         static let separatorGlyph = "·"

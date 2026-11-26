@@ -40,7 +40,7 @@ classes carry no `nonisolated` marker and so run on the main actor by the target
   registered with a member row when `rooms` is wired);
   `static func pastGames(now:) -> [SportEvent]` (2026-11-25: three joined, started games — ids
   `mock-event-past-0/1/2`, 2, 9 and 30 days back, so the latest leads — served for `.past` alone and outside the
-  feed, so they get no room and no detail);
+  feed, yet resolving by id with rooms registered on wiring, so an Activity row opens the detail, 2026-11-26);
   `static let participantNames` (11 names), `hostJoinLead: TimeInterval` (7 days), `joinSpacing` (1 hour); the
   fixtures start `firstStartHours` (3) plus `hoursBetweenEvents` (7) per index after `now`, in `TimeInterval.hour`;
   `static func participantNames(for: SportEvent, count: Int) -> [String]`.

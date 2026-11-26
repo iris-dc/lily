@@ -145,7 +145,13 @@ final class LilySmokeTests: LilyUITestCase {
         let tennis = app.buttons["filter-type-tennis"]
         XCTAssertTrue(tennis.waitForExistence(timeout: 5), "the filter panel should drop down")
         tennis.tap()
-        // The full type list pushes the attendee row below the fold, where it is not in the accessibility tree.
+        let expander = app.buttons["filter-type-expand"]
+        XCTAssertTrue(expander.exists, "the type wall folds behind See all")
+        expander.tap()
+        XCTAssertTrue(app.buttons["filter-type-yoga"].waitForExistence(timeout: 5), "See all reveals every type")
+        expander.tap()
+        XCTAssertTrue(app.buttons["filter-type-yoga"].waitForNonExistence(timeout: 5), "Show less folds the wall back")
+        // The attendee row can still sit below the fold, where it is not in the accessibility tree.
         tapAfterScrolling(app.buttons["filter-attendees-20"])
         app.buttons["Done"].tap()
 

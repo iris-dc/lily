@@ -13,7 +13,8 @@ iPad sidebar) are subtracted; `FlowArrangement` is the pure row-packing arithmet
 [Components](../Components/EGM.md)); the grids (`AdaptiveCardGrid`, `TileGrid`), the readable column and the form-sheet
 sizing shape the regular widths; and the tab bar's hide-and-show across a `NavigationStack` is owned by `TabBarHiding`
 (`animatesTabBar(depth:)`, `hidesTabBarOnCompact()`). Two UIKit seams: `onArrival` (a screen's navigation transition
-has finished) and `KeyboardDismissal` (end editing and wait for the keyboard to be gone). Nothing here looks at the
+has finished) and `KeyboardDismissal` (end editing and wait for the keyboard to be gone). `withoutAnimation(_:)`
+runs a state change with implicit animations disabled (2026-11-26). Nothing here looks at the
 device; the mode is the only switch. Widths, counts and durations come from `DesignTokens` in `lily/Config`.
 
 ## Interface
@@ -95,6 +96,9 @@ device; the mode is the only switch. Widths, counts and durations come from `Des
   `static func dismissAndWait(atMost timeout: Duration) async`, ends editing on the key window and, if a hide began,
   waits for `keyboardDidHideNotification` bounded by `Deadline.within` (`lily/Core/Concurrency`); `static func
   dismiss()` (2026-11-13) ends editing at once with no wait, the chat transcript's tap-to-dismiss.
+- `func withoutAnimation(_ change: () -> Void)` [`lily/Core/UI/Layout/WithoutAnimation.swift:withoutAnimation`]
+  (2026-11-26): runs the change in a `Transaction` with `disablesAnimations` set, so everything it moves lands in the
+  same frame (Activity's fold, the compact type pickers' expand and collapse).
 
 ## Invariants
 

@@ -6,8 +6,9 @@ import Foundation
 /// default argument would run off the actor.
 @MainActor
 final class EventDetailHarness {
-    /// `nonisolated`: read by `@Test(arguments:)` and stored-property initialisers off the actor.
-    nonisolated static let now = Date(timeIntervalSince1970: 1_800_000_000)
+    /// `nonisolated`: read by `@Test(arguments:)` and stored-property initialisers off the actor. Fixed well before
+    /// the fixtures' wall-clock starts, so a default fixture game reads as upcoming (participation judges the start).
+    nonisolated static let now = Date(timeIntervalSince1970: 1_700_000_000)
 
     let repository = FakeEventRepository()
     let groupRepository = FakeGroupRepository()

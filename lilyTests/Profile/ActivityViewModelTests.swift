@@ -111,12 +111,24 @@ struct ActivityViewModelTests {
 
         #expect(viewModel.visibleGames.map(\.id) == ["g-0", "g-1", "g-2", "g-3", "g-4"])
         #expect(viewModel.hasMoreGames && viewModel.hasMoreTournaments)
+        #expect(!viewModel.canShowLessGames && !viewModel.canShowLessTournaments, "nothing to fold yet")
         viewModel.showMoreGames()
-        #expect(viewModel.visibleGames.count == 10 && viewModel.hasMoreGames)
+        #expect(viewModel.visibleGames.count == 10 && viewModel.hasMoreGames && viewModel.canShowLessGames)
         viewModel.showMoreGames()
         #expect(viewModel.visibleGames.count == 12 && !viewModel.hasMoreGames)
+        viewModel.showLessGames()
+        #expect(viewModel.visibleGames.count == 5 && viewModel.hasMoreGames && !viewModel.canShowLessGames)
         viewModel.showMoreTournaments()
         #expect(viewModel.visibleTournaments.count == 7 && !viewModel.hasMoreTournaments)
+        #expect(viewModel.canShowLessTournaments)
+        viewModel.showLessTournaments()
+        #expect(viewModel.visibleTournaments.count == 5 && !viewModel.canShowLessTournaments)
+    }
+
+    /// Activity's rows say the game is over; the marker leads the caption so the row still reads type, date, place.
+    @Test func theEndedCaptionLeadsWithTheMarker() {
+        let summary = EventSummary(.fixture(title: "Thursday futsal"))
+        #expect(summary.endedCaption == AppBranding.Events.ended + AppBranding.Events.captionSeparator + summary.caption)
     }
 
     @Test func aShortSectionShowsWholeWithNothingMoreToReveal() async {

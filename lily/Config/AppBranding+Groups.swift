@@ -7,6 +7,8 @@ nonisolated extension AppBranding {
         static var discover: String { localized("Discover") }
         static var discoverTitle: String { localized("Discover groups") }
         static var seeAll: String { localized("See all") }
+        /// Folds what "See all" expanded, and Activity's grown sections.
+        static var showLess: String { localized("Show less") }
         static var publicVisibility: String { localized("Public") }
         static var privateVisibility: String { localized("Private") }
         static var publicFooter: String { localized("Anyone can find and join") }

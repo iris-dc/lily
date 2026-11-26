@@ -1,14 +1,15 @@
 import SwiftUI
 
-/// A game two people both joined, on a profile: the sport in the mark, the title, and when and where it was. A row,
-/// not a link, since the summary is not the whole event and a past game has no detail to open.
+/// A game two people both joined: the sport in the mark, the title, and when and where it was. A profile shows it as
+/// a row alone; Activity wraps it in a link to the detail and marks the caption "Ended", everything there being over.
 struct SharedEventRow: View {
     let event: EventSummary
+    var marksEnded = false
 
     var body: some View {
         GroupRowContent(name: event.title,
                         visibility: nil,
-                        caption: event.caption,
+                        caption: marksEnded ? event.endedCaption : event.caption,
                         hasUnread: false,
                         avatarSymbol: event.type.symbolName,
                         markTint: .sport)

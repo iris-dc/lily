@@ -193,7 +193,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `tournamentFormatCaption`, `tournamentScheduleCaption`, `tournamentGroupCaption`, `tournamentPlaceCaption`,
   `tournamentEntriesCaption`, `tournamentWhoCaption`, `tournamentDetailsCaption` — plain sentences in the app's
   voice, no jargon and no semicolons, each in all seven languages), `tournamentFollowsGroup`, `typeSearch`, `typeSearchNoMatch`
-  ("Search types", the type grid's field; the edit form's expander chip reads `Groups.seeAll` directly — its
+  ("Search types", the type grid's field; the edit form's expander chip reads `Groups.seeAll` and `Groups.showLess` directly — its
   `typeShowAll` wrapper, a duplicate of the same key, removed 2026-11-15), `next` ("Next"), `step(_:of:)` ("Step %lld of %lld",
   plain string units in every language — identical across plural categories by design, so xcstringstool's two-`%lld`
   pivot warning never fires; see `docs/notes/localization.md` 2026-11-10; since the second round the progress mark's

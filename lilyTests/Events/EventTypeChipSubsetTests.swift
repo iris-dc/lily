@@ -16,6 +16,7 @@ struct EventTypeChipSubsetTests {
         #expect(visible.types == [.football, .basketball, .tennis])
         #expect(visible.types == topOfTheList)
         #expect(visible.showsExpander)
+        #expect(!visible.showsCollapser)
     }
 
     @Test func aSelectionBeyondTheHeadIsAppendedSoTheChoiceIsNeverHidden() {
@@ -32,16 +33,17 @@ struct EventTypeChipSubsetTests {
         #expect(visible.showsExpander)
     }
 
-    @Test func expandedShowsEveryKnownTypeWithNoExpander() {
+    @Test func expandedShowsEveryKnownTypeWithTheCollapserInsteadOfTheExpander() {
         let visible = EventTypeChipSubset.visible(matching: "", expanded: true, selected: .yoga)
         #expect(visible.types == EventType.known)
         #expect(!visible.showsExpander)
+        #expect(visible.showsCollapser, "Show less trails the expanded flow, so the wall folds back")
     }
 
     @Test func aSearchReachesEveryTypeRegardlessOfExpansion() {
         let collapsed = EventTypeChipSubset.visible(matching: "yoga", expanded: false, selected: .football)
         #expect(collapsed.types == [.yoga])
-        #expect(!collapsed.showsExpander)
+        #expect(!collapsed.showsExpander && !collapsed.showsCollapser, "a search needs neither control")
         #expect(collapsed == EventTypeChipSubset.visible(matching: "yoga", expanded: true, selected: .football))
     }
 

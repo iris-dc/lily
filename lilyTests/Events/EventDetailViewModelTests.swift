@@ -32,6 +32,14 @@ struct EventDetailViewModelTests {
         #expect(Participation(event: Self.makeEvent(capacity: 4, participants: 4, hostUserId: "u-1", isJoined: true),
                               userID: "u-1") == .hosting)
         #expect(Participation(event: Self.makeEvent(capacity: 4, participants: 1, hostUserId: nil), userID: nil) == .hidden)
+
+        let ended = SportEvent.fixture(participants: 2, startsAt: .now.addingTimeInterval(-60), isJoined: true)
+        #expect(Participation(event: ended, userID: "u-1") == .hidden, "a started game offers nothing to join or leave")
+        let hostedEnded = SportEvent.fixture(participants: 2,
+                                             startsAt: .now.addingTimeInterval(-60),
+                                             hostUserId: "u-1",
+                                             isJoined: true)
+        #expect(Participation(event: hostedEnded, userID: "u-1") == .hosting, "the host keeps their quiet notice")
     }
 
     @Test func viewModelReadsTheIdentityLive() {

@@ -59,7 +59,7 @@ final class EventDetailViewModel {
     }
 
     var participation: Participation {
-        Participation(event: event, userID: identity.currentUserID)
+        Participation(event: event, userID: identity.currentUserID, now: now())
     }
 
     /// Chat and invite on this detail, from the event on screen and the caller.

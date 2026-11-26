@@ -14,14 +14,14 @@ struct ProfileView: View {
     @State private var isSignInPresented = false
     @State private var isNamePresented = false
     @State private var isAboutPresented = false
-    @State private var isSettingsPresented = false
-    @State private var isActivityPresented = false
+    /// The sheet's own pushes ride this path as values (`ProfileDestinations`).
+    @State private var path = NavigationPath()
 
     private var session: SessionController { dependencies.sessionController }
     private var profile: ProfileStore { dependencies.profile }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ContentScreen {
                 VStack(spacing: DesignTokens.Spacing.xl) {
                     if let user = session.state.user {
@@ -50,14 +50,14 @@ struct ProfileView: View {
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(AccessibilityIdentifiers.profileSheet)
             .navigationTitle(AppBranding.profileTitle)
-            .navigationDestination(isPresented: $isSettingsPresented) {
+            .navigationDestination(for: SettingsDestination.self) { _ in
                 SettingsScreen(dependencies: dependencies, language: language)
             }
-            .navigationDestination(isPresented: $isActivityPresented) {
+            .navigationDestination(for: ActivityDestination.self) { _ in
                 ActivityScreen(viewModel: dependencies.makeActivityViewModel())
             }
-            // The history's tournament rows push `TournamentDestination`; the sheet's own stack registers the shared
-            // destinations for them, as every tab root does.
+            // The history's rows push the shared destinations, which the sheet's stack registers like every tab root.
+            // Settings and Activity ride the path as values: a value link never resolves inside an `isPresented` push.
             .groupDestinations(dependencies: dependencies)
         }
         .errorPopup(dependencies.errorCenter)
@@ -85,7 +85,7 @@ struct ProfileView: View {
         SettingsLinkRow(title: AppBranding.Settings.title,
                         subtitle: AppBranding.Settings.rowSubtitle,
                         systemImage: DesignTokens.Symbols.settings,
-                        identifier: AccessibilityIdentifiers.profileSettings) { isSettingsPresented = true }
+                        identifier: AccessibilityIdentifiers.profileSettings) { path.append(SettingsDestination()) }
     }
 
     /// The way into the caller's own history; like the Settings row, its inputs are recomputed on a language change.
@@ -93,7 +93,7 @@ struct ProfileView: View {
         SettingsLinkRow(title: AppBranding.Activity.title,
                         subtitle: AppBranding.Activity.rowSubtitle,
                         systemImage: DesignTokens.Symbols.activity,
-                        identifier: AccessibilityIdentifiers.profileActivity) { isActivityPresented = true }
+                        identifier: AccessibilityIdentifiers.profileActivity) { path.append(ActivityDestination()) }
     }
 
     /// The name is the backend's, or the last one shown while the load runs: a glyph and a spinner stand in only for a

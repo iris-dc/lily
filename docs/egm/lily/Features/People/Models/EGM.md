@@ -21,7 +21,8 @@ All are `nonisolated`, `Sendable` values that keep the backend's key names.
 - `EventSummary: Identifiable, Hashable, Codable, Sendable` `[lily/Features/People/Models/EventSummary.swift:EventSummary]`:
   `id`, `title`, `type: EventType`, `startsAt: Date`, `locationName`; `init(_ event: SportEvent)`; `caption`
   ("Football · 2 Oct 2026 · Tempelhofer Feld": the type, the day in `LilyTheme.DateStyles.date`, the place, joined by
-  `AppBranding.Groups.caption`).
+  `AppBranding.Groups.caption`); `endedCaption` (the same led by `AppBranding.Events.ended`, Activity's rows,
+  2026-11-26).
 - `TournamentSummary: Identifiable, Hashable, Codable, Sendable`
   `[lily/Features/People/Models/TournamentSummary.swift:TournamentSummary]`: `id`, `name`, `type: EventType`,
   `status: TournamentStatus`, `startsAt: Date`; `init(_ tournament: Tournament)`; `caption` ("Football · Completed ·

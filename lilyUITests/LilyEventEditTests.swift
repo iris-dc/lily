@@ -98,7 +98,7 @@ final class LilyEventEditTests: LilyUITestCase {
 
     /// The edit form's type control is compact: the head of the list plus "See all", a search that
     /// reaches every type, and the current choice never hidden. The walk searches out a type beyond the top three,
-    /// takes it, then expands the full flow. Identifiers mirror the draft-type literals by hand.
+    /// takes it, then expands the full flow and folds it back. Identifiers mirror the draft-type literals by hand.
     @MainActor
     func testEditTypePickerSearchesTheFullListAndExpands() {
         startCreating("Type picker check")
@@ -131,7 +131,10 @@ final class LilyEventEditTests: LilyUITestCase {
         XCTAssertTrue(expander.waitForExistence(timeout: 5))
         expander.tap()
         XCTAssertTrue(app.buttons["draft-type-hockey"].waitForExistence(timeout: 5), "See all reveals the full flow")
-        XCTAssertTrue(expander.waitForNonExistence(timeout: 5), "once expanded there is no way back")
+        XCTAssertTrue(expander.exists, "the trailing chip turns into Show less")
+        expander.tap()
+        XCTAssertTrue(app.buttons["draft-type-hockey"].waitForNonExistence(timeout: 5), "Show less folds the wall back")
+        XCTAssertTrue(yoga.waitForExistence(timeout: 5), "the current choice is never hidden when folded")
     }
 
     /// Signs in, opens the wizard through the "+" menu's "New event" and walks to its Players step (the spot comes

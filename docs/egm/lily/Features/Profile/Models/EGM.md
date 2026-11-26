@@ -8,6 +8,7 @@ The backend's `Profile` and the body of a profile update, as `nonisolated` `Coda
 names, and the two drafts, `DisplayNameDraft` and `AboutDraft`: a text as typed with its validation against
 `AppConfig.DisplayName` or `AppConfig.About`, measured in code points as Laurel measures it, so a text that passes here
 is stored as typed, never cut. Both drafts conform to `ProfileFieldDraft` ([Interfaces](../Interfaces/EGM.md)).
+`ProfileDestinations` holds the profile sheet's own push values.
 
 ## Interface
 
@@ -16,6 +17,10 @@ is stored as typed, never cut. Both drafts conform to `ProfileFieldDraft` ([Inte
 - `ProfileUpdateRequest: Codable, Hashable, Sendable` `[lily/Features/Profile/Models/Profile.swift:ProfileUpdateRequest]`:
   `displayName: String?`, `bio: String?`; `init(displayName:)` and `init(bio:)`, one field each; the body of
   `PUT /api/profile`.
+- `SettingsDestination: Hashable` and `ActivityDestination: Hashable`
+  `[lily/Features/Profile/Models/ProfileDestinations.swift:SettingsDestination]` (2026-11-26): empty value types the
+  profile sheet appends to its `NavigationPath` — a value link never resolves inside a screen pushed through
+  `navigationDestination(isPresented:)`, so the sheet pushes by value like the tab stacks.
 - `DisplayNameDraft: ProfileFieldDraft` `[lily/Features/Profile/Models/DisplayNameDraft.swift:DisplayNameDraft]`:
   `var text` (`init(text: = "")`), `trimmedText`, `issues: [Issue]`, `isValid`, `hint: String?`; nested
   `Issue: Equatable, Sendable` with `nameMissing`, `nameTooLong`.

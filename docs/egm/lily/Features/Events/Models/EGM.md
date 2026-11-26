@@ -183,8 +183,9 @@ decision types the view models and views switch on (`EventScope`, `EventListScre
 - `EventListScreenState.resolve`: the no-content cases are `ListState(isInitialLoad:isEmpty: !hasEvents, loadFailed:)`'s
   (`loading`, `failed`, `empty`, each mapped to its own case); `ListState.content` → `list` while any event is visible,
   else `loading` while `awaitsAnswerForPosition`, else `filteredOut`.
-- `Participation.init` precedence: `userID == nil` → `hidden`; hosted by the user → `hosting`; `participates` →
-  `leave`; `isFull` → `full`; else `join`.
+- `Participation.init` precedence: `userID == nil` → `hidden`; hosted by the user → `hosting`; `startsAt <= now` →
+  `hidden` (2026-11-26: a started game offers nothing to join or leave; the signature gained `now: Date = .now`);
+  `participates` → `leave`; `isFull` → `full`; else `join`.
 - `EventPermissions.init` (2026-11-15): involved = a signed-in caller hosting or joined; `canOpenChat = chatEnabled
   && involved && context == .standalone` (2026-11-23: from the room's own chat there is no chat to open — the path
   would cycle), `canInvite = involved && startsAt > now`; `showsActionRow = canOpenChat || canInvite`; `.none` is

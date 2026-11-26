@@ -457,3 +457,14 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   join the collapsed head in the known order, so a choice never hides. New identifiers `filter-type-search` and
   `filter-type-expand`; no new copy (See all, the search placeholder and the no-match line are the creation ones).
   The two filter smoke tests pass unchanged: football and tennis both sit in the head of the list.
+
+- **The filter's fold got a way back, and the expand stopped jumping (2026-11-26, the user's bug round).**
+  `EventTypeChipSubset.Visible` gained `showsCollapser`: once expanded, the trailing chip turns into "Show less"
+  (`AppBranding.Groups.showLess`, the same `filter-type-expand` / `draft-type-expand` identifiers) and folds the wall
+  back; a search still offers neither control. Both toggles run through `withoutAnimation` (`Core/UI/Layout`): the
+  user saw "See all" after a small scroll slide the default chips around while the new rows landed at once, so the
+  swap is one frame now — the same fix as Activity's fold. "Open spots only" carries a footnote
+  (`Filter.openSpotsFootnote`, "Hides games that are already full"). `SportEvent.fixture` starts an hour ahead now,
+  since `Participation` judges the start (a fixture at `.now` would read as begun). Tests:
+  `EventTypeChipSubsetTests`, the edit-form picker walk folds back (`LilyEventEditTests`), and
+  `testMapStaysWhenTheFilterHidesEveryGame` expands and folds the filter's wall. The two new keys owe a native read.

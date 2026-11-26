@@ -71,7 +71,8 @@ struct AppDependenciesTests {
         let dependencies = await makeSignedInMockDependencies()
         await dependencies.myGroups.reload()
         await dependencies.me.loadIfNeeded()
-        #expect(dependencies.myGroups.groups.count == 9 && dependencies.me.account != nil)
+        #expect(dependencies.myGroups.groups.count == 12 && dependencies.me.account != nil,
+                "the fixtures' rooms, the past games' included")
 
         await dependencies.sessionController.signOut()
 

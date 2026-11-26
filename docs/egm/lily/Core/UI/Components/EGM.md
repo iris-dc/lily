@@ -77,7 +77,9 @@ use the generated `Color.lily*` asset symbols.
   `EventTypeChipSubset.visible(matching:expanded:selected:)` — the first `collapsedTypeChipCount` (3) of
   `EventType.known` plus every selected known type not among them in the known order (a `Set` since 2026-11-26, with
   a delegating single-select overload), the "See all" expander chip
-  (`AppBranding.Groups.seeAll`, `draft-type-expand`) until expanded for the view's life, every match while the
+  (`AppBranding.Groups.seeAll`, `draft-type-expand`) while collapsed and the "Show less" collapser
+  (`AppBranding.Groups.showLess`, the same identifier) once expanded — the toggle runs through `withoutAnimation`
+  so the whole flow swaps in one frame (2026-11-26) — every match while the
   query is non-empty, and `AppBranding.Create.typeSearchNoMatch` when nothing matches; and
   `EventTypeMultiCompactPicker(anyTitle:anyIdentifier:selected: Set<EventType>, onSelectAny:, onToggle:)`
   [`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeMultiCompactPicker`] (2026-11-26), the filter's
@@ -222,8 +224,8 @@ use the generated `Color.lily*` asset symbols.
   `EventTypeChips` shows the "any" chip only `if let anyTitle`, iterates exactly `types` (`EventType.known` unless a
   caller narrows it; only the compact picker does) and shows the expander chip only `if let expandTitle`
   [`lily/Core/UI/Components/EventTypeChips.swift:EventTypeChips`]; `EventTypeChipSubset.visible` never offers an
-  unknown type and appends a known selection so the choice is never hidden, and once `expanded` the compact picker
-  never collapses (plain `@State`, reset only with the view's identity; pinned by
+  unknown type and appends a known selection so the choice is never hidden; `Visible.showsCollapser` offers the way
+  back once expanded (2026-11-26: "Show less" folds the wall, a search needs neither control; pinned by
   `lilyTests/Events/EventTypeChipSubsetTests.swift`)
   [`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeChipSubset`].
 - `FlowLayout`: line width `proposal.width ?? .infinity`; a subview is measured at `.unspecified` and re-measured at the

@@ -22,12 +22,15 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   profile name's initials (a glyph while the name is unknown), the name from `dependencies.profile` (a small spinner
   while the first load runs) and the email, then `DisplayNameRow(store:action:)`, `AboutRow(store:action:)`, the
   history link row (2026-11-25: a `SettingsLinkRow` titled `AppBranding.Activity.title` with `Activity.rowSubtitle`,
-  `DesignTokens.Symbols.activity` and identifier `AccessibilityIdentifiers.profileActivity`) pushing
-  `ActivityScreen(viewModel: dependencies.makeActivityViewModel())` through `navigationDestination(isPresented:)`, and the
+  `DesignTokens.Symbols.activity` and identifier `AccessibilityIdentifiers.profileActivity`) appending
+  `ActivityDestination()` to the sheet's `NavigationPath`, and the
   Settings link row (a `SettingsLinkRow` titled `AppBranding.Settings.title` with `AppBranding.Settings.rowSubtitle`,
-  `DesignTokens.Symbols.settings` and identifier `AccessibilityIdentifiers.profileSettings`) pushing `SettingsScreen`
-  through `navigationDestination(isPresented:)`; the stack's root also registers `.groupDestinations(dependencies:)`
-  (2026-11-25), so the history's tournament rows push `TournamentDestination` in place; guest: `AppBranding.guestProfileTitle`, `guestProfileMessage` and a
+  `DesignTokens.Symbols.settings` and identifier `AccessibilityIdentifiers.profileSettings`) appending
+  `SettingsDestination()` (2026-11-26: both rode `navigationDestination(isPresented:)` before, but a value link —
+  Activity's event and tournament rows — never resolves inside an `isPresented` push, so the sheet pushes by value on
+  an explicit path now, `navigationDestination(for:)` each); the stack's root also registers
+  `.groupDestinations(dependencies:)` (2026-11-25), so the history's rows push `EventDestination` and
+  `TournamentDestination` in place; guest: `AppBranding.guestProfileTitle`, `guestProfileMessage` and a
   prominent Sign in, then `LanguageRow`, `CurrencyRow` and `FeedbackRow(action:)` inline; sheets
   `SignInSheet(session:errorCenter:)`, `DisplayNameSheet(viewModel:errorCenter:)` over
   `dependencies.makeDisplayNameViewModel()` and `AboutSheet(viewModel:errorCenter:)` over `dependencies.makeAboutViewModel()`.
@@ -35,11 +38,14 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   (2026-11-25): the caller's own history pushed from the profile root — inline title `AppBranding.Activity.title`, a
   `ContentScreen` `ScrollView` whose content follows the view model's state (one spinner; one retry with
   `SectionNote(text: History.loadFailedTitle)` and `AppBranding.Groups.tryAgain`; loaded: two `RowsSection`s,
-  `Activity.pastGamesTitle` over `SharedEventRow`s — rows alone, a past game has no detail to open — and
+  `Activity.pastGamesTitle` over `SharedEventRow`s, each in a `NavigationLink` to `EventDestination(id:name:)` with
+  the "Ended" caption marker (`marksEnded`, 2026-11-26), and
   `Activity.pastTournamentsTitle` over `SharedTournamentRow`s, each a `NavigationLink` to `TournamentDestination`,
   with `Activity.noPastGames` / `noPastTournaments` when empty; each section folded to the view model's visible rows,
-  an ink `Activity.showMore` text button — `activity-more-games` / `activity-more-tournaments` — revealing the next
-  batch while more remain, 2026-11-25); `.task { await viewModel.load() }`.
+  the private `FoldControls` under it — an ink `Activity.showMore` (`activity-more-games` /
+  `activity-more-tournaments`) while more remain and `Groups.showLess` (`activity-less-games` /
+  `activity-less-tournaments`) once grown, both through `withoutAnimation` so rows and buttons land in one frame,
+  2026-11-26); `.task { await viewModel.load() }`.
 - `NotificationsScreen(viewModel: NotificationsViewModel)`
   `[lily/Features/Profile/Views/NotificationsScreen.swift:NotificationsScreen]` (2026-11-26): which notifications
   reach this device, pushed from Settings — one spinner until the permission's state answers; not-determined shows

@@ -41,7 +41,7 @@ struct EventFilterSheet: View {
             Section {
                 levelRow
                 datesSection
-                Toggle(Copy.openSpotsOnly, isOn: binding(\.openSpotsOnly))
+                openSpotsRow
             }
         }
         .scrollContentBackground(.hidden)
@@ -118,6 +118,16 @@ struct EventFilterSheet: View {
                 }
                 .accessibilityIdentifier(AccessibilityIdentifiers.filterTime(time))
             }
+        }
+    }
+
+    /// The switch with the line saying what it hides; the title alone read as a riddle.
+    private var openSpotsRow: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+            Toggle(Copy.openSpotsOnly, isOn: binding(\.openSpotsOnly))
+            Text(Copy.openSpotsFootnote)
+                .font(LilyTheme.Fonts.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

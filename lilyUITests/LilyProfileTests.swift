@@ -159,6 +159,12 @@ final class LilyProfileTests: LilyUITestCase {
         let game = app.descendants(matching: .any)["shared-event-row-mock-event-past-0"]
         XCTAssertTrue(game.waitForExistence(timeout: 5), "the latest past game leads the list")
         XCTAssertTrue(game.label.contains("Thursday futsal"), "the row shows the game: \(game.label)")
+        XCTAssertTrue(game.label.contains("Ended"), "a history row says the game is over: \(game.label)")
         XCTAssertTrue(app.staticTexts["No past tournaments yet"].waitForExistence(timeout: 5))
+
+        game.tap()
+        XCTAssertTrue(app.buttons["Open chat"].waitForExistence(timeout: 5), "a past game opens its full detail")
+        XCTAssertFalse(app.buttons["Join"].exists, "an ended game offers nothing to join")
+        XCTAssertFalse(app.buttons["Leave"].exists, "an ended game offers nothing to leave")
     }
 }

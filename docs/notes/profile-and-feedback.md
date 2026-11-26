@@ -187,3 +187,22 @@
   folds. The mock ships three past games, so the fold is pinned by
   `ActivityViewModelTests.sectionsShowTheLatestFiveAndGrowByFive`, not by a UI test; the demo capture recipe (inject
   demo data into the view model, screenshot, revert) stays out of the tree.
+
+- **Activity rows open the details, say "Ended", and fold both ways (2026-11-26, the user's bug round).** The game
+  rows are `NavigationLink`s to `EventDestination` now (the profile stack already registered `.groupDestinations`),
+  the caption led by the new "Ended" marker (`EventSummary.endedCaption`); the mock's history fixtures resolve by id
+  and get rooms on wiring, so the detail opens on the simulator too. A started game's detail offers no join/leave
+  any more (`Participation` gained `now: Date = .now`; the host keeps the hosting notice) — before, a month-old game
+  still showed "Leave". Each section's `FoldControls` pair "Show more" with the new "Show less" (`activity-less-games`
+  / `activity-less-tournaments`, `ActivityViewModel.showLess*` / `canShowLess*`), and both run through the new
+  `withoutAnimation` (`Core/UI/Layout`): the user filmed the revealed rows landing at once while the button drifted
+  after them. Tests: `ActivityViewModelTests` (the fold both ways, the caption), `EventDetailViewModelTests` (started
+  participation), `MockEventRepositoryParticipationTests` (a past fixture resolves),
+  `LilyProfileTests.testActivityOnProfileListsPastGames` (the row opens the detail; no Join or Leave there). The
+  "Show less" and "Ended" keys owe a native read. Finding the push took three probes: the row's `NavigationLink`
+  silently did nothing (no SwiftUI warning, screen pixel-identical after the tap), because **a value link never
+  resolves inside a screen pushed through `navigationDestination(isPresented:)`** — registering the destinations on
+  the pushed leaf is ignored too ("declared closest to the root will be used"). The profile sheet now pushes Settings
+  and Activity as values on an explicit `NavigationPath` (`ProfileDestinations.swift`: `SettingsDestination`,
+  `ActivityDestination`), like the tab stacks; `isPresented` chains (Settings → Notifications) keep working inside a
+  value push.

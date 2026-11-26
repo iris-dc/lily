@@ -18,9 +18,11 @@ nonisolated extension AccessibilityIdentifiers {
     static let profileAboutCancel = "profile-about-cancel"
     /// The "Activity" link row on the profile root; its screen reuses the shared-history row identifiers.
     static let profileActivity = "profile-activity"
-    /// The "Show more" actions under the Activity screen's folded sections.
+    /// The "Show more" / "Show less" actions under the Activity screen's folded sections.
     static let activityMoreGames = "activity-more-games"
     static let activityMoreTournaments = "activity-more-tournaments"
+    static let activityLessGames = "activity-less-games"
+    static let activityLessTournaments = "activity-less-tournaments"
     /// The Settings link row on the profile root, and the Settings screen's own rows.
     static let profileSettings = "profile-settings"
     static let settingsSignOut = "settings-sign-out"

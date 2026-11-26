@@ -13,6 +13,17 @@ struct MockEventRepositoryParticipationTests {
         #expect(joined.allSatisfy { $0.participates && $0.participantCount >= 1 })
     }
 
+    /// The history fixtures resolve by id, so an Activity row opens the detail as on the backend.
+    @Test func aPastFixtureResolvesByIdWithItsParticipants() async throws {
+        let past = try await repository.events(in: .past, near: nil)
+        let game = try #require(past.first { $0.id == "mock-event-past-0" })
+
+        let fetched = try await repository.event(id: game.id)
+        #expect(fetched == game)
+        let participants = try await repository.participants(eventId: game.id)
+        #expect(!participants.isEmpty)
+    }
+
     @Test func joinAddsTheCallerAndLeaveRemovesThem() async throws {
         let events = try await repository.events(in: .upcoming, near: nil)
         let open = try #require(events.first { !$0.participates && !$0.isFull })
