@@ -56,7 +56,6 @@ struct NotificationsScreen: View {
             ForEach(NotificationKind.allCases, id: \.self) { kind in
                 toggleRow(kind)
             }
-            note(Copy.inboxFootnote)
         }
     }
 
