@@ -75,9 +75,14 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeCompactPicker`], the edit form's compact type choice
   (2026-11-15): `TypeSearchField` (`draft-type-search`) over `EventTypeChips` narrowed by the pure
   `EventTypeChipSubset.visible(matching:expanded:selected:)` — the first `collapsedTypeChipCount` (3) of
-  `EventType.known` plus a known selection not among them, the "See all" expander chip
+  `EventType.known` plus every selected known type not among them in the known order (a `Set` since 2026-11-26, with
+  a delegating single-select overload), the "See all" expander chip
   (`AppBranding.Groups.seeAll`, `draft-type-expand`) until expanded for the view's life, every match while the
-  query is non-empty, and `AppBranding.Create.typeSearchNoMatch` when nothing matches.
+  query is non-empty, and `AppBranding.Create.typeSearchNoMatch` when nothing matches; and
+  `EventTypeMultiCompactPicker(anyTitle:anyIdentifier:selected: Set<EventType>, onSelectAny:, onToggle:)`
+  [`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeMultiCompactPicker`] (2026-11-26), the filter's
+  multi-select over the same rule and search (`filter-type-search`, expander `filter-type-expand`), led by the
+  "Any type" chip that clears the selection.
 - Layout pieces: `FlowLayout: Layout` (`spacing`, `rowSpacing`, both `DesignTokens.Spacing.sm`)
   [`lily/Core/UI/Components/FlowLayout.swift:FlowLayout`]; `GlassCard<Content>(content:)`
   [`lily/Core/UI/Components/GlassCard.swift:GlassCard`] (`DesignTokens.Spacing.lg` padding, glass rect of

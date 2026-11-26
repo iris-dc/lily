@@ -449,3 +449,11 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   unknown time dropped), `EventListFilteringTests`, `InteractionTests`; UI smoke tests narrow by `filter-attendees-20`
   where "Free only" used to, and the Profile currency test ends at the wizard's field. The new catalog keys owe a
   native read.
+
+- **The filter's type wall folded (2026-11-26, later the same day, on the user's "do we hide most of the event types
+  by default by analogy with event creation?").** The filter's type section is `EventTypeMultiCompactPicker` now:
+  the creation picker's search + head-of-the-list + "See all" flow (`EventTypeChipSubset.visible`, generalized to a
+  `Set` with a delegating single-select overload), multi-select, led by the "Any type" chip; selected known types
+  join the collapsed head in the known order, so a choice never hides. New identifiers `filter-type-search` and
+  `filter-type-expand`; no new copy (See all, the search placeholder and the no-match line are the creation ones).
+  The two filter smoke tests pass unchanged: football and tennis both sit in the head of the list.

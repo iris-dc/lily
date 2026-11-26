@@ -10,6 +10,9 @@ nonisolated enum AccessibilityIdentifiers {
     static let eventsFilter = "events-filter"
     /// The "Any type" chip in the filter sheet; the per-type chips come from `filterType(_:)`.
     static let filterTypeAny = "filter-type-any"
+    /// The filter's type search field and its "See all" expander chip.
+    static let filterTypeSearch = "filter-type-search"
+    static let filterTypeExpand = "filter-type-expand"
     /// The distance slider in the filter sheet.
     static let filterDistance = "filter-distance"
     /// The attendee-floor chips in the filter sheet: "Any", then one per offered floor.

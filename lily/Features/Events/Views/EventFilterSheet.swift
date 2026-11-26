@@ -48,19 +48,13 @@ struct EventFilterSheet: View {
         .readableColumn()
     }
 
-    /// Multi-select; "Any type" is on while nothing is chosen.
+    /// Multi-select behind the compact head-of-list flow; "Any type" is on while nothing is chosen.
     private var typeChips: some View {
-        EventTypeChips(anyTitle: Copy.anyType,
-                       anyIdentifier: AccessibilityIdentifiers.filterTypeAny,
-                       isSelected: { type in type.map(viewModel.filter.includes) ?? viewModel.filter.types.isEmpty },
-                       onSelect: { type in
-                           if let type {
-                               viewModel.toggleType(type)
-                           } else {
-                               viewModel.updateFilter { $0.types = [] }
-                           }
-                       },
-                       identifier: AccessibilityIdentifiers.filterType)
+        EventTypeMultiCompactPicker(anyTitle: Copy.anyType,
+                                    anyIdentifier: AccessibilityIdentifiers.filterTypeAny,
+                                    selected: viewModel.filter.types,
+                                    onSelectAny: { viewModel.updateFilter { $0.types = [] } },
+                                    onToggle: { viewModel.toggleType($0) })
     }
 
     /// Distance from the user's position, as a slider over the offered reach. Without a position the criterion cannot

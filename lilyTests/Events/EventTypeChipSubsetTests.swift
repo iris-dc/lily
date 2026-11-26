@@ -2,9 +2,10 @@ import Foundation
 import Testing
 @testable import lily
 
-/// The edit form's compact type picker rule: the head of the list plus the selection while collapsed, the whole list
-/// once expanded, and a search that reaches every type whatever the expansion — one pure function
-/// (`EventTypeChipSubset.visible`) over the shared `String.matchesSearch`, tested as one.
+/// The compact type picker rule the edit form and the filter share: the head of the list plus the selection while
+/// collapsed, the whole list once expanded, and a search that reaches every type whatever the expansion — one pure
+/// function (`EventTypeChipSubset.visible`) over the shared `String.matchesSearch`, tested as one. The filter hands
+/// it a set; the edit form's single selection goes through the delegating overload.
 struct EventTypeChipSubsetTests {
     /// The top three is the product decision, so the number is pinned, not just read back from the constant.
     private let topOfTheList = Array(EventType.known.prefix(3))
@@ -48,6 +49,25 @@ struct EventTypeChipSubsetTests {
         let visible = EventTypeChipSubset.visible(matching: "zzz", expanded: false, selected: .football)
         #expect(visible.types.isEmpty)
         #expect(!visible.showsExpander)
+    }
+
+    /// The filter's multi-select: every chosen known type joins the head, in the known list's order, not the pick's.
+    @Test func aSelectedSetJoinsTheHeadInTheKnownOrder() {
+        let visible = EventTypeChipSubset.visible(matching: "",
+                                                  expanded: false,
+                                                  selected: Set([EventType.yoga, .padel, .football]))
+        #expect(visible.types == topOfTheList + [.padel, .yoga])
+        #expect(visible.showsExpander)
+
+        let unknownOnly = EventTypeChipSubset.visible(matching: "",
+                                                      expanded: false,
+                                                      selected: Set([EventType.unknown("cricket")]))
+        #expect(unknownOnly.types == topOfTheList, "an unknown selection is never offered")
+
+        let searching = EventTypeChipSubset.visible(matching: "yoga",
+                                                    expanded: false,
+                                                    selected: Set([EventType.football]))
+        #expect(searching.types == [.yoga] && !searching.showsExpander, "a query ignores the selection")
     }
 
     @Test func theMatchIsCaseAndDiacriticInsensitiveAndABlankQueryCollapses() {
