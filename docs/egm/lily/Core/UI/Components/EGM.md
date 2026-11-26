@@ -71,16 +71,22 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/EventTypeChips.swift:EventTypeChips`];
   `TypeSearchField(query: Binding<String>, identifier:)` [`lily/Core/UI/Components/TypeSearchField.swift:TypeSearchField`],
   the type pickers' one search field — the magnifier, `AppBranding.Create.typeSearch`, `lilyField()` glass (2026-11-15,
-  extracted from `WizardTypePicker`); `EventTypeCompactPicker(selected: EventType, onSelect: (EventType) -> Void)`
+  extracted from `WizardTypePicker`); `EventTypeCompactPicker(caption: String, selected: EventType, onSelect:
+  (EventType) -> Void)` (the caption drawn in its first row since 2026-11-26)
   [`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeCompactPicker`], the edit form's compact type choice
   (2026-11-15): `TypeSearchField` (`draft-type-search`) over `EventTypeChips` narrowed by the pure
   `EventTypeChipSubset.visible(matching:expanded:selected:)` — the first `collapsedTypeChipCount` (3) of
   `EventType.known` plus every selected known type not among them in the known order (a `Set` since 2026-11-26, with
   a delegating single-select overload), the "See all" expander chip
   (`AppBranding.Groups.seeAll`, `draft-type-expand`) while collapsed and the "Show less" collapser
-  (`AppBranding.Groups.showLess`, the same identifier) once expanded — the toggle runs through `withoutAnimation`
-  so the whole flow swaps in one frame (2026-11-26) — every match while the
-  query is non-empty, and `AppBranding.Create.typeSearchNoMatch` when nothing matches; and
+  (`AppBranding.Groups.showLess`, the same identifier) under the rest once expanded, every match while the
+  query is non-empty, and `AppBranding.Create.typeSearchNoMatch` when nothing matches. In a `Form` each picker is
+  two rows (2026-11-26, from the owner's phone video): the first (search and `Visible.types`) never changes height on
+  a fold — once expanded it keeps the See all chip hidden in place (`EventTypeChips.expanderHidden`, no identifier)
+  and its composition pinned to the selection at the unfold — and the rest (`Visible.rest`) is a second row inserted
+  under it, drawn up over the first row's bottom inset (`Spacing.md`) with the separator between them hidden; the
+  toggle runs through `withoutAnimation`. A resizing `Form` row slides its own content whatever the transaction says,
+  which a disabled transaction and then an explicit animation both failed to stop on the phone. And
   `EventTypeMultiCompactPicker(anyTitle:anyIdentifier:selected: Set<EventType>, onSelectAny:, onToggle:)`
   [`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeMultiCompactPicker`] (2026-11-26), the filter's
   multi-select over the same rule and search (`filter-type-search`, expander `filter-type-expand`), led by the
@@ -222,10 +228,12 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/ChipModifiers.swift:View.lilyChip`, `View.tappableLabel`]; `ChoiceChip` is
   `.buttonStyle(.plain)` with the `.isSelected` trait when selected [`lily/Core/UI/Components/ChoiceChip.swift:ChoiceChip`];
   `EventTypeChips` shows the "any" chip only `if let anyTitle`, iterates exactly `types` (`EventType.known` unless a
-  caller narrows it; only the compact picker does) and shows the expander chip only `if let expandTitle`
+  caller narrows it; only the compact picker does) and shows the expander chip only `if let expandTitle`, invisible
+  and identifier-less while `expanderHidden`
   [`lily/Core/UI/Components/EventTypeChips.swift:EventTypeChips`]; `EventTypeChipSubset.visible` never offers an
-  unknown type and appends a known selection so the choice is never hidden; `Visible.showsCollapser` offers the way
-  back once expanded (2026-11-26: "Show less" folds the wall, a search needs neither control; pinned by
+  unknown type and appends a known selection so the choice is never hidden; expanded, `types` equals the collapsed
+  first row and `rest` is every other known type in the known order, `Visible.showsCollapser` offering the way back
+  (2026-11-26: "Show less" folds the wall, a search needs neither control; pinned by
   `lilyTests/Events/EventTypeChipSubsetTests.swift`)
   [`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeChipSubset`].
 - `FlowLayout`: line width `proposal.width ?? .infinity`; a subview is measured at `.unspecified` and re-measured at the

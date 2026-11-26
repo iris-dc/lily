@@ -16,7 +16,7 @@ struct EventTypeChipSubsetTests {
         #expect(visible.types == [.football, .basketball, .tennis])
         #expect(visible.types == topOfTheList)
         #expect(visible.showsExpander)
-        #expect(!visible.showsCollapser)
+        #expect(!visible.showsCollapser && visible.rest.isEmpty)
     }
 
     @Test func aSelectionBeyondTheHeadIsAppendedSoTheChoiceIsNeverHidden() {
@@ -33,11 +33,17 @@ struct EventTypeChipSubsetTests {
         #expect(visible.showsExpander)
     }
 
-    @Test func expandedShowsEveryKnownTypeWithTheCollapserInsteadOfTheExpander() {
+    /// Unfolding never touches the first row: in a `Form` a row that resizes slides its chips around, so the rest of
+    /// the list comes as a second row, every known type exactly once across the two, Show less trailing.
+    @Test func expandedKeepsTheFirstRowAndListsTheRestUnderIt() {
+        let collapsed = EventTypeChipSubset.visible(matching: "", expanded: false, selected: .yoga)
         let visible = EventTypeChipSubset.visible(matching: "", expanded: true, selected: .yoga)
-        #expect(visible.types == EventType.known)
+        #expect(visible.types == collapsed.types && visible.types == topOfTheList + [.yoga])
+        #expect(visible.rest == EventType.known.filter { !visible.types.contains($0) }, "the rest keeps the known order")
+        #expect((visible.types + visible.rest).sorted { $0.wireName < $1.wireName }
+                    == EventType.known.sorted { $0.wireName < $1.wireName })
         #expect(!visible.showsExpander)
-        #expect(visible.showsCollapser, "Show less trails the expanded flow, so the wall folds back")
+        #expect(visible.showsCollapser, "Show less trails the rest, so the wall folds back")
     }
 
     @Test func aSearchReachesEveryTypeRegardlessOfExpansion() {

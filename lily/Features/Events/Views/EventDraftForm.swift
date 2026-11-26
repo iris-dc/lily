@@ -63,11 +63,10 @@ struct EventDraftForm<Model: EventDraftEditing>: View {
     }
 
     /// Single choice in the compact picker: a search, the head of the type list and "See all"; one type is always
-    /// selected, and the current choice is never hidden.
+    /// selected, and the current choice is never hidden. The picker draws its own caption: unfolded it is two rows of
+    /// this section, which a wrapping stack would fuse back into one resizing row.
     private var typeChips: some View {
-        CaptionedControl(Copy.eventType) {
-            EventTypeCompactPicker(selected: viewModel.draft.type) { viewModel.draft.type = $0 }
-        }
+        EventTypeCompactPicker(caption: Copy.eventType, selected: viewModel.draft.type) { viewModel.draft.type = $0 }
     }
 
     private var playersSection: some View {

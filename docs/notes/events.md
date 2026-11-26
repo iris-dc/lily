@@ -463,8 +463,24 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   (`AppBranding.Groups.showLess`, the same `filter-type-expand` / `draft-type-expand` identifiers) and folds the wall
   back; a search still offers neither control. Both toggles run through `withoutAnimation` (`Core/UI/Layout`): the
   user saw "See all" after a small scroll slide the default chips around while the new rows landed at once, so the
-  swap is one frame now — the same fix as Activity's fold. "Open spots only" carries a footnote
+  swap is one frame now — the same fix as Activity's fold (not enough on the phone; superseded the same evening,
+  see below). "Open spots only" carries a footnote
   (`Filter.openSpotsFootnote`, "Hides games that are already full"). `SportEvent.fixture` starts an hour ahead now,
   since `Participation` judges the start (a fixture at `.now` would read as begun). Tests:
   `EventTypeChipSubsetTests`, the edit-form picker walk folds back (`LilyEventEditTests`), and
   `testMapStaysWhenTheFilterHidesEveryGame` expands and folds the filter's wall. The two new keys owe a native read.
+
+- **The type fold stopped resizing a Form row (2026-11-26, evening, from the owner's phone recording).** The phone
+  still slid the four top chips in from mid-list for about half a second after See all, while the new chips popped in
+  at once; the simulator showed a one-frame swap even with the same small scroll first, so it could not reproduce it.
+  The cause is the `Form` row resizing: the cell's content is re-placed as the row grows, whatever the transaction
+  says. An explicit `.smooth` animation was tried and made it worse on the simulator (the head chips travelled and
+  the collapse blanked the wall), so each compact picker is now two rows: the first (search plus the head and the
+  selection) keeps its height through a fold — See all stays in it hidden (`EventTypeChips.expanderHidden`, no
+  identifier) and its composition is pinned to the selection at the unfold, so a pick in the wall moves nothing — and
+  the rest of the list is a second row inserted under it (`EventTypeChipSubset.Visible.rest`), pulled up over the
+  first row's `Spacing.md` bottom inset so the wall reads as one flow. The edit form's picker carries its own caption
+  now, since a wrapping `CaptionedControl` would fuse the two rows back into one. Evidence: the simulator films of
+  the old swap, of the explicit animation and of the two rows (`/tmp/ownervid`), one-frame expand and fold in the
+  last; `EventTypeChipSubsetTests.expandedKeepsTheFirstRowAndListsTheRestUnderIt`, the edit-form walk and
+  `testMapStaysWhenTheFilterHidesEveryGame` green. The phone has to confirm it: the simulator never showed the slide.

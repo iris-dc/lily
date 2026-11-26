@@ -12,9 +12,13 @@ struct EventTypeChips: View {
     let isSelected: (EventType?) -> Bool
     let onSelect: (EventType?) -> Void
     var identifier: ((EventType) -> String)?
-    /// The trailing expander chip ("See all"), shown while set; it widens the offer instead of choosing.
+    /// The trailing expander chip ("See all", or "Show less" under the rest), shown while set; it changes the offer
+    /// instead of choosing.
     var expandTitle: String?
     var expandIdentifier: String?
+    /// Draws the expander invisible but keeps its place, so a row that hands the control to another row keeps its
+    /// height (the compact pickers' first row while unfolded).
+    var expanderHidden = false
     var onExpand: (() -> Void)?
 
     var body: some View {
@@ -30,8 +34,15 @@ struct EventTypeChips: View {
                 .accessibilityIdentifier(identifier?(type) ?? "")
             }
             if let expandTitle {
-                ChoiceChip(title: expandTitle, isSelected: false) { onExpand?() }
-                    .accessibilityIdentifier(expandIdentifier ?? "")
+                if expanderHidden {
+                    // Only its place: no identifier, so the live control another row draws is the one a query finds.
+                    ChoiceChip(title: expandTitle, isSelected: false) {}
+                        .hidden()
+                        .accessibilityHidden(true)
+                } else {
+                    ChoiceChip(title: expandTitle, isSelected: false) { onExpand?() }
+                        .accessibilityIdentifier(expandIdentifier ?? "")
+                }
             }
         }
     }
