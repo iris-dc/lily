@@ -36683,46 +36683,6 @@
         }
       }
     },
-    "Get a reminder an hour before your games and tournament matches.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Получайте напоминание за час до ваших игр и турнирных матчей."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recibe un recordatorio una hora antes de tus partidos y partidos de torneo."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recevez un rappel une heure avant vos parties et vos matchs de tournoi."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Отримуйте нагадування за годину до ваших ігор і турнірних матчів."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Otrzymuj przypomnienie godzinę przed grami i meczami turniejowymi."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Receba um lembrete uma hora antes dos seus jogos e partidas de torneio."
-          }
-        }
-      }
-    },
     "Enable notifications": {
       "localizations": {
         "ru": {
@@ -36843,86 +36803,6 @@
         }
       }
     },
-    "Invites and new messages appear in the app's inbox.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Приглашения и новые сообщения появляются во входящих приложения."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Las invitaciones y los mensajes nuevos aparecen en la bandeja de entrada de la app."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les invitations et les nouveaux messages apparaissent dans la boîte de réception de l'app."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Запрошення та нові повідомлення з'являються у вхідних застосунку."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zaproszenia i nowe wiadomości pojawiają się w skrzynce aplikacji."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Convites e mensagens novas aparecem na caixa de entrada da app."
-          }
-        }
-      }
-    },
-    "Game reminders": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Напоминания об играх"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recordatorios de partidos"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rappels de parties"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Нагадування про ігри"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Przypomnienia o grach"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lembretes de jogos"
-          }
-        }
-      }
-    },
     "Match reminders": {
       "localizations": {
         "ru": {
@@ -36959,86 +36839,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lembretes de partidas"
-          }
-        }
-      }
-    },
-    "Cancelled games": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Отменённые игры"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partidos cancelados"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Parties annulées"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Скасовані ігри"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Odwołane gry"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jogos cancelados"
-          }
-        }
-      }
-    },
-    "An hour before a game you joined": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "За час до игры, в которую вы записались"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Una hora antes de un partido al que te uniste"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Une heure avant une partie que vous avez rejointe"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "За годину до гри, до якої ви приєдналися"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Godzinę przed grą, do której dołączysz"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Uma hora antes de um jogo em que entrou"
           }
         }
       }
@@ -37083,42 +36883,202 @@
         }
       }
     },
-    "When a game you joined is cancelled": {
+    "Get a reminder an hour before your events and tournament matches.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Когда игра, в которую вы записались, отменена"
+            "value": "Получайте напоминание за час до ваших событий и турнирных матчей."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cuando se cancela un partido al que te uniste"
+            "value": "Recibe un recordatorio una hora antes de tus eventos y partidos de torneo."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quand une partie que vous avez rejointe est annulée"
+            "value": "Recevez un rappel une heure avant vos événements et vos matchs de tournoi."
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Коли гру, до якої ви приєдналися, скасовано"
+            "value": "Отримуйте нагадування за годину до ваших подій і турнірних матчів."
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gdy Twoja gra zostanie odwołana"
+            "value": "Otrzymuj przypomnienie godzinę przed wydarzeniami i meczami turniejowymi."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quando um jogo em que entrou é cancelado"
+            "value": "Receba um lembrete uma hora antes dos seus eventos e partidas de torneio."
+          }
+        }
+      }
+    },
+    "Event reminders": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напоминания о событиях"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordatorios de eventos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappels d'événements"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нагадування про події"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Przypomnienia o wydarzeniach"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lembretes de eventos"
+          }
+        }
+      }
+    },
+    "An hour before an event you joined": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "За час до события, к которому вы присоединились"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una hora antes de un evento al que te uniste"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une heure avant un événement que vous avez rejoint"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "За годину до події, до якої ви приєдналися"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Godzinę przed wydarzeniem, do którego dołączysz"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma hora antes de um evento em que entrou"
+          }
+        }
+      }
+    },
+    "Cancelled events": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отменённые события"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eventos cancelados"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Événements annulés"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скасовані події"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odwołane wydarzenia"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eventos cancelados"
+          }
+        }
+      }
+    },
+    "When an event you joined is cancelled": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда событие, к которому вы присоединились, отменено"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando se cancela un evento al que te uniste"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand un événement que vous avez rejoint est annulé"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Коли подію, до якої ви приєдналися, скасовано"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gdy Twoje wydarzenie zostanie odwołane"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quando um evento em que entrou é cancelado"
           }
         }
       }

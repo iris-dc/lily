@@ -3,7 +3,7 @@ import UIKit
 
 /// Which notifications reach this device, pushed from Settings: the system permission's state first (ask, or the way
 /// to the system settings once declined), then one switch per push kind once granted. A mute silences the banner
-/// alone; the item still lands in the app's inbox, as the footnote says.
+/// alone; the item still lands in the app's inbox.
 struct NotificationsScreen: View {
     @State private var viewModel: NotificationsViewModel
     @Environment(\.openURL) private var openURL

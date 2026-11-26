@@ -47,7 +47,8 @@ changes rather than being rebuilt like the other tabs, whose rebuild would cross
   opt-in; denied shows `deniedMessage` and a glass `openSettingsAction` button (`notifications-open-settings`) opening
   `UIApplication.openSettingsURLString`; authorized shows one `GlassCard` `Toggle` per `NotificationKind` (accent
   tint, title and caption from `AppBranding.Notifications`, the identifier `notifications-toggle-<wire>` on the
-  `Toggle` itself so a test finds the switch) and the `inboxFootnote`. The state re-reads on `.task` and whenever
+  `Toggle` itself so a test finds the switch; the inbox footnote under them was removed the same day, owner's
+  call). The state re-reads on `.task` and whenever
   `scenePhase` returns `.active` (back from the system settings).
 - `SettingsScreen(dependencies: AppDependencies, language: AppLanguage)`
   `[lily/Features/Profile/Views/SettingsScreen.swift:SettingsScreen]`: the signed-in settings pushed from the profile

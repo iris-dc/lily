@@ -128,7 +128,7 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   (`lily/Config/AppBranding+Profile.swift`: `title`, `subtitle`, `defaultSubtitle`, `placeholder`, `footer`, `save`,
   `tooLong(limit:)`), `DeletedUser` (same file, 2026-11-07: `name`, the localized "Deleted user" the `Tombstone`
   helper shows over a deleted account's snapshots), `Notifications` (`AppBranding+Notifications.swift`, 2026-11-26: the Settings row, the permission states, the
-  per-kind switch titles and captions and the inbox footnote), `History` (same file, 2026-11-25: the history row and screen's copy — `title`, `rowSubtitle`, `pastGamesTitle`,
+  per-kind switch titles and captions), `History` (same file, 2026-11-25: the history row and screen's copy — `title`, `rowSubtitle`, `pastGamesTitle`,
   `noPastGames`, `pastTournamentsTitle`, `noPastTournaments`, `loadFailedTitle`), `DeleteAccount` (same file, 2026-11-07: the delete flow's copy —
   `title`, `approximate`, `messagesSentence` (the always-true "Your messages will show as Deleted user."),
   `irreversible`, `dialogTitle`, `confirmAction`, `deleting`, `deletedTitle`, `deletedMessage`, `acknowledgeAction`

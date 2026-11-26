@@ -137,8 +137,8 @@ Every person the app names can be opened (2026-09-29): roster rows, event partic
   "bell.badge"`) pushing `NotificationsScreen`: the system permission's state first — not-determined offers "Enable
   notifications" through the existing opt-in; denied explains and opens the system settings
   (`UIApplication.openSettingsURLString`); the status is re-read whenever the app returns active — then, once granted,
-  one switch per push kind (`NotificationKind`: `event_reminder`, `match_reminder`, `event_cancelled`) and the footnote
-  that invites and messages stay in the app's inbox. A mute is **per device**, like the permission it refines:
+  one switch per push kind (`NotificationKind`: `event_reminder`, `match_reminder`, `event_cancelled`) and a footnote
+  that invites and messages stay in the app's inbox (the footnote removed the same day, owner's call). A mute is **per device**, like the permission it refines:
   `NotificationPreferences` keeps the muted kinds in `UserDefaults` (`push.mutedKinds`, unknown kinds dropped on read)
   and every device registration now carries them (`DeviceRegistrationPayload.mutedKinds`, sorted;
   `LastDeviceRegistration` compares them, so a flip makes the stored registration stale and the flip's
