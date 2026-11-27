@@ -111,3 +111,13 @@ account out of that simulator).
   through a predicate expectation — can "fail to determine hittability (activation point invalid)", which XCTest
   records as a test failure instead of answering false. Both shapes were caught in the same round, the direct read
   on the SE and the predicate on the Pro, before the keyboard gate landed.
+- 2026-11-24 — **xcodebuild stops seeing every simulator while `simctl` still lists them booted.** `ci.sh build`
+  failed with "Unable to find a device matching the provided destination specifier" four times in a row; the
+  destinations list held only the placeholders, and a generic-destination build failed in `actool` with "Unable to
+  discover any Simulator runtimes" from `SimServiceContext`. A device shutdown and boot, quitting Simulator.app and
+  `xcodebuild -runFirstLaunch` did not help; a Mac reboot did. Diagnose with
+  `xcodebuild -showdestinations -project lily.xcodeproj -scheme lily | grep 26.` (no lines = this state).
+- 2026-11-25 — **A ⌘-shortcut typed while a push or pop settles is dropped.** With detail screens hiding the tab bar,
+  walks that switch tabs from a detail use the shell's ⌘1–⌘3; `typeKey` right after a transition did nothing
+  (the failure's hierarchy still showed the detail), so `selectTabByShortcut(_:until:)` repeats it up to three times
+  until the target shows.

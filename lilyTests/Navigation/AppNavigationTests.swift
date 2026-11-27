@@ -117,10 +117,11 @@ struct AppNavigationTests {
     }
 
     /// The pushed screens were the previous user's; the next one starts where a guest does.
-    @Test func signOutResetsTheTabAndBothStacks() {
+    @Test func signOutResetsTheTabAndTheStacks() {
         let navigation = AppNavigation()
         navigation.open(group: .fixture(id: "a"))
         navigation.open(chat: .fixture(id: "a"))
+        navigation.explorePath.append("event")
 
         navigation.usesSplitChats = true
         navigation.open(chat: .fixture(id: "b"))
@@ -130,7 +131,7 @@ struct AppNavigationTests {
         navigation.sessionDidEnd()
 
         #expect(navigation.selectedTab == .explore)
-        #expect(navigation.homePath.isEmpty && navigation.chatPath.isEmpty)
+        #expect(navigation.homePath.isEmpty && navigation.chatPath.isEmpty && navigation.explorePath.isEmpty)
         #expect(navigation.selectedConversation == nil && navigation.pendingCreate == nil)
         #expect(!navigation.isProfilePresented, "the profile sheet never survives into the next session")
     }

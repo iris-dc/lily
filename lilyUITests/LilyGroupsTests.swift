@@ -65,6 +65,9 @@ final class LilyGroupsTests: LilyUITestCase {
         let openChat = app.buttons["group-open-chat"]
         XCTAssertTrue(openChat.waitForExistence(timeout: 10), "a join must turn the actions into a member's")
 
+        // The detail hides the tab bar on compact, so Home is reached from Discover, where the bar is back.
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 5), "Back to Discover brings the bar back")
         openHomeTab()
         selectHomeSegment("Groups")
         XCTAssertTrue(app.buttons[MockIDs.basketballRow].waitForExistence(timeout: 10), "the joined group must be listed on Home")
@@ -218,8 +221,8 @@ final class LilyGroupsTests: LilyUITestCase {
     }
 
     /// "Open chat" on a group's detail opens the room in place, on the same stack, so Back returns to the detail
-    /// rather than to the Chats root; the room hides the tab bar, Back restores it, and the Chats tab still lists
-    /// the room.
+    /// rather than to the Chats root; the room hides the tab bar and the detail keeps it hidden (2026-11-24), so the
+    /// bar returns at Home's root, and the Chats tab still lists the room.
     @MainActor
     func testOpenChatFromGroupDetailComesBackToTheDetail() {
         tapSignInWithApple()
@@ -234,7 +237,9 @@ final class LilyGroupsTests: LilyUITestCase {
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(openChat.waitForExistence(timeout: 5), "Back returns to the group's detail, not the Chats root")
         XCTAssertTrue(labelled("Kreuzberg Kickers").exists, "the header still names the group")
-        XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 5), "the bar returns with the detail")
+        XCTAssertTrue(app.tabBars.buttons["Home"].waitForNonExistence(timeout: 5), "the detail keeps the bar away")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5), "Back again lands on Home's root")
 
         chatsRow(MockIDs.kickersRow)
     }

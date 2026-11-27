@@ -44,6 +44,7 @@ struct EventLoaderView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .hidesTabBarOnCompact()
         .task { await viewModel.loadIfNeeded() }
     }
 }

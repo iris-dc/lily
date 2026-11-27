@@ -19,7 +19,9 @@ extension LilyTournamentTests {
         XCTAssertTrue(app.staticTexts["You organise this tournament"].waitForExistence(timeout: 10),
                       "Back returns to the tournament's detail, not to the Chats list")
 
-        let room = chatsRow(MockIDs.kickersCupRoomRow)
+        // The detail hides the tab bar (2026-11-24), so Chats is reached by its shortcut; the detail stays up on Home.
+        let room = app.buttons[MockIDs.kickersCupRoomRow]
+        selectTabByShortcut(3, until: room)
         XCTAssertTrue(room.label.contains("Tournament"), "the Chats tab lists the room: \(room.label)")
 
         selectTab("Home")

@@ -142,9 +142,8 @@ final class LilyTournamentTests: LilyUITestCase {
         acceptPadelOpenInvite()
         XCTAssertTrue(app.staticTexts["Organised by Noor"].exists)
 
-        // The Chats stack still shows the inbox (which hides the tab bar), so the tab alone brings it back.
-        selectTab("Chats")
-        XCTAssertTrue(app.navigationBars["iskra"].waitForExistence(timeout: 5))
+        // The detail hides the tab bar (2026-11-24), so Chats is reached by its shortcut; its stack still shows the inbox.
+        selectTabByShortcut(3, until: app.navigationBars["iskra"])
         XCTAssertTrue(app.staticTexts["You joined"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["inbox-accept-\(tournamentInviteID)"].exists, "an answered invite offers no Accept")
     }
@@ -185,8 +184,8 @@ final class LilyTournamentTests: LilyUITestCase {
     func testLeavingATournamentFromTheDetailRemovesItsRoomFromChats() {
         tapSignInWithApple()
         acceptPadelOpenInvite()
-        selectTab("Chats")
-        XCTAssertTrue(app.navigationBars["iskra"].waitForExistence(timeout: 5))
+        // The detail hides the tab bar (2026-11-24), so Chats is reached by its shortcut.
+        selectTabByShortcut(3, until: app.navigationBars["iskra"])
         app.navigationBars.buttons.firstMatch.tap()
         let room = app.buttons[MockIDs.padelOpenRoomRow]
         XCTAssertTrue(room.waitForExistence(timeout: 10), "the accept put the room on Chats")
@@ -199,8 +198,8 @@ final class LilyTournamentTests: LilyUITestCase {
         confirm("Leave tournament")
         XCTAssertTrue(app.buttons["tournament-join"].waitForExistence(timeout: 10), "the caller is out")
 
-        // The scroll down to Leave minimised the tab bar; `openChatsTab()` expands it again before it looks for the tab.
-        openChatsTab()
+        // The detail hides the tab bar, so Chats is reached by its shortcut; the stack was left at its root above.
+        selectTabByShortcut(3, until: app.navigationBars["Chats"])
         XCTAssertTrue(room.waitForNonExistence(timeout: 10), "the room left Chats with the entry")
     }
 

@@ -72,6 +72,7 @@ struct GroupDetailView: View {
             .refreshable { await refresh() }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .hidesTabBarOnCompact()
         .chatDestination(item: $viewModel.openedChat, dependencies: dependencies)
         .toolbar {
             if viewModel.showsMenu {

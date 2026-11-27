@@ -4,7 +4,8 @@ import XCTest
 /// the type-body limit, like the event and tournament classes.
 extension LilyGroupsTests {
     /// A tab switch is no pop: with the chat open in place, leaving for Explore (⌘2 — the hidden bar offers no tap
-    /// target) and coming back finds the chat still covering the bar; only Back brings the bar back.
+    /// target) and coming back finds the chat still covering the bar; the detail hides the bar itself (2026-11-24),
+    /// so only the pop to the stack's root brings it back.
     @MainActor
     func testTabSwitchKeepsTheBarHiddenOverTheChatOpenedInPlace() {
         tapSignInWithApple()
@@ -16,8 +17,7 @@ extension LilyGroupsTests {
         XCTAssertTrue(app.tabBars.buttons["Home"].waitForNonExistence(timeout: 5),
                       "the chat pushed in place hides the bar")
 
-        app.typeKey("2", modifierFlags: .command)
-        XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 10), "the shortcut selects Explore")
+        selectTabByShortcut(2, until: app.navigationBars["Explore"])
         let homeTab = app.tabBars.buttons["Home"]
         XCTAssertTrue(homeTab.waitForExistence(timeout: 5), "Explore shows the bar")
         homeTab.tap()
@@ -27,6 +27,9 @@ extension LilyGroupsTests {
         XCTAssertTrue(homeTab.waitForNonExistence(timeout: 5), "the tab switch freed no hide: the bar stays away")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.buttons["group-open-chat"].waitForExistence(timeout: 5), "Back returns to the detail")
-        XCTAssertTrue(homeTab.waitForExistence(timeout: 5), "the pop frees the hide and the bar returns")
+        XCTAssertTrue(homeTab.waitForNonExistence(timeout: 5), "the detail hides the bar itself")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5), "Back again lands on Home's root")
+        XCTAssertTrue(homeTab.waitForExistence(timeout: 5), "the pop to the root frees every hide and the bar returns")
     }
 }

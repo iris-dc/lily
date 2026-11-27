@@ -50,6 +50,7 @@ struct EventDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .hidesTabBarOnCompact()
         .toolbar {
             if viewModel.canEdit {
                 ToolbarItem(placement: .topBarTrailing) { editButton }

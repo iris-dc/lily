@@ -41,7 +41,8 @@ struct EventListView<Header: View>: View {
     }
 
     var body: some View {
-        NavigationStack {
+        @Bindable var navigation = dependencies.navigation
+        return NavigationStack(path: $navigation.explorePath) {
             ContentScreen {
                 screen
             }
@@ -64,6 +65,8 @@ struct EventListView<Header: View>: View {
                 }
             }
         }
+        // The root owns the bar's visibility, so a pushed detail that hides it slides it away instead of popping it.
+        .animatesTabBar(depth: navigation.explorePath.count)
         // Re-runs when a game changes anywhere (a create from a group's detail pushed on this stack), so the list behind
         // the detail is right on return, not only on the next appearance.
         .task(id: dependencies.eventChanges.version) { await viewModel.loadIfStaleNearTheUser() }

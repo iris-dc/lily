@@ -30,6 +30,7 @@ struct UserProfileView: View {
         }
         .navigationTitle(viewModel.displayName)
         .navigationBarTitleDisplayMode(.inline)
+        .hidesTabBarOnCompact()
         .chatDestination(item: $viewModel.openedConversation, dependencies: dependencies)
         .task { await viewModel.load() }
     }
@@ -75,51 +76,27 @@ struct UserProfileView: View {
                 .padding(.horizontal, DesignTokens.Layout.screenMargin)
                 .accessibilityIdentifier(AccessibilityIdentifiers.profileBio)
         }
-        section(Copy.sharedGroupsTitle, orElse: Copy.noSharedGroups, profile.sharedGroups) { SharedGroupRow(group: $0) }
-        section(Copy.sharedEventsTitle, orElse: Copy.noSharedEvents, profile.sharedEvents) { SharedEventRow(event: $0) }
-        section(Copy.sharedTournamentsTitle, orElse: Copy.noSharedTournaments, profile.sharedTournaments) {
-            SharedTournamentRow(tournament: $0)
+        RowsSection(title: Copy.sharedGroupsTitle, emptyNote: Copy.noSharedGroups, items: profile.sharedGroups) {
+            SharedGroupRow(group: $0)
         }
-    }
-
-    /// A title over the rows, or over a line saying there are none yet.
-    private func section<Item: Identifiable, Row: View>(
-        _ title: String,
-        orElse empty: String,
-        _ items: [Item],
-        @ViewBuilder row: @escaping (Item) -> Row
-    ) -> some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-            SectionTitle(text: title)
-            if items.isEmpty {
-                note(empty)
-            } else {
-                LazyVStack(spacing: 0) {
-                    ForEach(items) { item in
-                        row(item)
-                        AvatarRowDivider()
-                    }
-                }
-                .padding(.horizontal, DesignTokens.Layout.screenMargin)
-            }
+        RowsSection(title: Copy.sharedEventsTitle, emptyNote: Copy.noSharedEvents, items: profile.sharedEvents) {
+            SharedEventRow(event: $0)
+        }
+        RowsSection(title: Copy.sharedTournamentsTitle,
+                    emptyNote: Copy.noSharedTournaments,
+                    items: profile.sharedTournaments) {
+            SharedTournamentRow(tournament: $0)
         }
     }
 
     /// The popup said what went wrong; the screen offers the retry.
     private var loadFailed: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-            note(Copy.loadFailedTitle)
+            SectionNote(text: Copy.loadFailedTitle)
             Button(AppBranding.Groups.tryAgain) { Task { await viewModel.load() } }
                 .lilyGlassButton(sizing: .fitted, controlSize: .regular, labelColor: .lilyInk)
                 .padding(.horizontal, DesignTokens.Layout.screenMargin)
         }
-    }
-
-    private func note(_ text: String) -> some View {
-        Text(text)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, DesignTokens.Layout.screenMargin)
     }
 }
 

@@ -25,7 +25,10 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   AppCreationWizardModel?` (made once per presentation in `GroupDetailView+Create.swift`'s `presentWizard`, owned
   above both presenters), `confirmation: GroupConfirmation?`; reads `@Environment(\.dismiss)` and `\.layoutMode`; binds
   `$viewModel.openedChat` into the shared `chatDestination(item:dependencies:)`
-  (`lily/Features/Chat/Views/ChatDestinations.swift`, 2026-11-15); stamps `AccessibilityIdentifiers.groupSection`
+  (`lily/Features/Chat/Views/ChatDestinations.swift`, 2026-11-15); wears `.hidesTabBarOnCompact()` after its inline
+  title (2026-11-24, the detail-subpage rule: on a compact width the floating tab bar slides away with the push and
+  back with the pop, the stack root's `animatesTabBar` owning the animation; nothing changes on a regular width);
+  stamps `AccessibilityIdentifiers.groupSection`
   [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
 - `GroupActionRow(viewModel:, onOpenChat:, onInvite:, onCreateEvent:, onSignIn:)` (identifiers `groupJoin`,
   `groupOpenChat`, `groupInvite`, `groupCreateEvent`) [`lily/Features/Groups/Views/GroupActionRow.swift`:`GroupActionRow`];
@@ -33,7 +36,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   (identifiers `groupLeave`, `groupReport`, `groupMore`) [`lily/Features/Groups/Views/GroupDetailMenu.swift`:`GroupDetailMenu`];
   `GroupHeader(group:, distance:)` [`lily/Features/Groups/Views/GroupHeader.swift`:`GroupHeader`];
   `GroupEventsSegment(viewModel: EventListViewModel)` [`lily/Features/Groups/Views/GroupEventsSegment.swift`:`GroupEventsSegment`].
-- `GroupLoaderView(viewModel: GroupLoaderViewModel, dependencies:)` switching on `GroupLoaderViewModel.State`
+- `GroupLoaderView(viewModel: GroupLoaderViewModel, dependencies:)` switching on `GroupLoaderViewModel.State`,
+  wearing `.hidesTabBarOnCompact()` like the detail (2026-11-24)
   [`lily/Features/Groups/Views/GroupLoaderView.swift`:`GroupLoaderView`].
 - `DiscoverGroupsView(dependencies:)` owning a `DiscoverGroupsViewModel` from `makeDiscoverGroupsViewModel()`, binding
   `$viewModel.query` (searchable) and `$viewModel.typeFilter` (identifier `groupsTypeFilter`)
@@ -112,9 +116,10 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
 - Open chat never switches tabs: the action row's `onOpenChat` calls `viewModel.openChat()` and the chat is pushed on
   the detail's own stack through the shared `chatDestination(item: $viewModel.openedChat, dependencies:)`
   (`lily/Features/Chat/Views/ChatDestinations.swift`, extracted 2026-11-15 from the three identical pushes), so Back
-  returns to the group (the 2026-11-05 profile rule, adopted 2026-11-15); the helper gives the pushed chat
-  `\.tabBarHiding` nil — an item push never moves the stack's bound path, so the root would never prune the chat's
-  hide after the pop — and the chat sets the bar's visibility itself, so the bar returns with the screen; a room deleted while open is covered by `ChatView`'s own
+  returns to the group (the 2026-11-05 profile rule, adopted 2026-11-15); the helper registers the pushed chat's
+  hide under its own token (`\.tabBarHideToken`) and releases it when the item binding clears (2026-11-19) — an
+  item push never moves the stack's bound path, so no prune would free the hide after the pop — and since the
+  detail hides the bar too (2026-11-24) the pop lands with it still away; a room deleted while open is covered by `ChatView`'s own
   `isGone` dismissal [`lily/Features/Groups/Views/GroupDetailView.swift`:`GroupDetailView`].
 - `GroupDestinations` never opens `GroupDetailView` for a conversation or a room: a `counterpart` goes to
   `UserProfileView`, `isTournamentRoom` to `TournamentDetailView`, `isEventRoom` to `EventLoaderView` over its

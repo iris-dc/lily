@@ -46,6 +46,7 @@ struct TournamentDetailView: View {
         }
         .navigationTitle(viewModel.name)
         .navigationBarTitleDisplayMode(.inline)
+        .hidesTabBarOnCompact()
         .toolbar {
             if viewModel.permissions.showsMenu {
                 ToolbarItem(placement: .topBarTrailing) {

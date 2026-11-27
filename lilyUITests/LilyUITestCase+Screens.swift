@@ -11,6 +11,19 @@ enum HomeIDs {
 /// with its email form. The base file holds the launch and the gesture primitives; the helpers here are built on them
 /// and shared by every test class.
 extension LilyUITestCase {
+    /// Selects a tab by its ⌘ shortcut (mirroring `ShellCommands`: ⌘1 Home, ⌘2 Explore, ⌘3 Chats) from a screen that
+    /// hides the tab bar — a detail or a room — until `arrival` shows. A keystroke typed while a push or pop is still
+    /// settling is dropped, so it is repeated, bounded, as the context-menu primitive repeats its press.
+    @MainActor
+    func selectTabByShortcut(_ number: Int, until arrival: XCUIElement) {
+        var attempts = 0
+        repeat {
+            app.typeKey(String(number), modifierFlags: .command)
+            attempts += 1
+        } while !arrival.waitForExistence(timeout: 3) && attempts < 3
+        XCTAssertTrue(arrival.exists, "⌘\(number) must select its tab")
+    }
+
     /// Opens the Chats tab and pushes the inbox from its pinned row; the inbox is titled with the app's name.
     @MainActor
     func openInbox() {

@@ -51,8 +51,11 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   `loadingSlot` (`tournamentLoading` on an `.accessibilityElement(children: .contain)` container, so Try again keeps
   its own element; in the shared `TournamentSegmentSlot`), `bracketInset`; the shared
   `chatDestination(item: $viewModel.openedRoom, dependencies:)` (`lily/Features/Chat/Views/ChatDestinations.swift`,
-  extracted in the round's review pass from the three identical pushes) pushes `ChatView` in place with
-  `\.tabBarHiding` cleared, so Back returns to the detail (the profile precedent, 2026-11-15).
+  extracted in the round's review pass from the three identical pushes) pushes `ChatView` in place under the
+  presenter's `\.tabBarHideToken`, released when the item binding clears (2026-11-19), so Back returns to the
+  detail (the profile precedent, 2026-11-15). Wears `.hidesTabBarOnCompact()` after its inline title (2026-11-24,
+  the detail-subpage rule): on a compact width the floating tab bar slides away with the push and back with the
+  pop — the stack root's `animatesTabBar` owns the animation — and nothing changes on a regular width.
 - `[lily/Features/Tournaments/Views/TournamentHeader.swift:TournamentHeader]`: `(tournament, organizerProfile:
   UserProfileDestination?, winnerName: String?)`: chips (type, format, status), `OwnerTitleBlock` — the organizer
   line maps the stored name through `Tombstone.displayName(tournament.organizerName, deleted: tournament.deleted)`

@@ -11,6 +11,9 @@ final class AppNavigation: SessionObserver {
     var selectedTab: AppTab = .explore
     var homePath = NavigationPath()
     var chatPath = NavigationPath()
+    /// Explore's stack, bound so its root can slide the tab bar with a detail's push (`animatesTabBar`); nothing
+    /// routes here from elsewhere — Explore pushes value links only.
+    var explorePath = NavigationPath()
     /// Whether the Chats tab draws the split view (regular width), where a room is selected rather than pushed. The
     /// shell keeps it in step with the window's layout; the model stays ignorant of size classes.
     var usesSplitChats = false
@@ -90,6 +93,10 @@ final class AppNavigation: SessionObserver {
         chatPath = NavigationPath()
     }
 
+    func popExploreToRoot() {
+        explorePath = NavigationPath()
+    }
+
     /// Where a launch lands once the session is restored: a signed-in user on Home, their groups and games; everyone
     /// else on Explore, which is what the landing's button promises.
     static func startTab(for state: SessionState) -> AppTab {
@@ -123,6 +130,7 @@ final class AppNavigation: SessionObserver {
         isProfilePresented = false
         popHomeToRoot()
         popChatToRoot()
+        popExploreToRoot()
     }
 
     /// Shows the Chats tab with the detail column at its root on `selection`; a screen pushed over the previous

@@ -28,12 +28,17 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `sheetContent(for:)` (sign-in only since 2026-11-14 — the shared presenter hosts the wizard itself),
   `wizardDismissed()`, `consumePendingCreate()`, `presentForUser(_:)`,
   `presentationPicker`, `content`, `listContent`, `eventList`, `filteredOutState`, `loadFailedState`,
-  `emptyState`, `stateSlot`, `refreshableScroll`.
+  `emptyState`, `stateSlot`, `refreshableScroll`. Its `NavigationStack` is bound to `AppNavigation.explorePath`
+  (`@Bindable`) and wears `.animatesTabBar(depth: navigation.explorePath.count)`, so Explore's pushed details
+  slide the bar like Home's and Chats' do (2026-11-24; before, the stack had no bound path and a pushed screen's
+  hide would have popped the bar in one frame).
 - `EventDetailView` (`lily/Features/Events/Views/EventDetailView.swift`): `init(viewModel: EventDetailViewModel,
   dependencies: AppDependencies)`; hosts `EditEventSheet` and the invite sheet (`InvitePeopleSheet` over
   `makeEventInvitePeopleViewModel(for: event.id)`) in `.sheet(isPresented:)`, draws `EventActionRow` after the facts
   card and pushes `viewModel.openedRoom`'s chat in place through the shared `chatDestination(item:dependencies:)`
-  (2026-11-15).
+  (2026-11-15); wears `.hidesTabBarOnCompact()` right after its inline title (2026-11-24, the detail-subpage rule):
+  on a compact width the floating tab bar slides away with the push and back with the pop — the stack root's
+  `animatesTabBar` owns the animation — and nothing changes on a regular width.
 - `EventActionRow(permissions: EventPermissions, onOpenChat:onInvite:)`
   (`lily/Features/Events/Views/EventActionRow.swift`, 2026-11-15): the tournament row's shape over the permissions
   value the detail passes — Open chat `lilyProminentButton()` under `canOpenChat` (identifier `event-action-chat`),
@@ -44,7 +49,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `EventDestination` — a spinner, the detail (`makeEventDetailViewModel`, its `onChange` recording `eventChanges`),
   an `EmptyStateView` for a gone event ("This event is no longer available"), `loadFailed` with Try again; inline
   title, the destination's name on the loading and gone states (2026-11-23; the loaded detail keeps its own look),
-  and the destination's `context` handed to the detail, so a loader behind a room's info button offers no Open chat. The host line (2026-11-07) maps
+  and the destination's `context` handed to the detail, so a loader behind a room's info button offers no Open chat.
+  Wears `.hidesTabBarOnCompact()` like the detail (2026-11-24). The host line (2026-11-07) maps
   the stored name through `Tombstone.displayName(event.hostName, deleted: event.deleted)` and passes
   `Tombstone.symbol` as `OwnerTitleBlock`'s `subtitleMark` for a deleted host; the view model's `hostProfile` is nil
   then, so the line is plain, never a link.
@@ -69,7 +75,9 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   2026-11-11) — the shared `OptionalMarker` below the add row (2026-11-13, the seventh round), the
   "Finish time" picker `create-ends-at` floored at the start, the clear button `create-ends-at-remove`; the
   wizard's When page composes the same control, so edit parity holds); headers and first-issue footers stay in the
-  form. The game section's type control (2026-11-15) is `CaptionedControl` over the compact `EventTypeCompactPicker`
+  form. The game section's type control (2026-11-15) is the compact `EventTypeCompactPicker`, captioned by itself
+  since 2026-11-26 (it was `CaptionedControl` over it; the picker owns its whole `Form` row, whose identity folds
+  with it — `Core/UI/Components`)
   (`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeCompactPicker`): the `draft-type-search` field, the
   top three types plus the current choice, and the `draft-type-expand` "See all" chip — the flat 34-chip flow stays
   with the other `EventTypeChips` callers (the filter sheet, the group form, Discover's panel); walked by
@@ -257,15 +265,20 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   price row (no focus binding) and the filter sheet's cap (focused by the capsule's tap through `isPriceFocused`).
 - `CreateButton`: the menu's items come from `CreationWizardPolicy.kindsOffered` — never this view's own flag
   logic beyond that call; one offered kind draws the plain one-tap button (2026-11-11).
-- Filter (`EventFilterSheet`): a `NavigationStack` over a `Form` (sections: type, distance, price; level, dates and
-  open spots), title "Filters" inline, Done in `confirmationAction` (closes only; every change applies at once); every
-  change goes through `viewModel.updateFilter`, `toggleType` or `clearFilter`;
-  Reset (`lilyToolbarTextButton()`, top bar leading) shows only while `filter.isActive`; distance offers
-  `AppConfig.Events.filterRadiiMeters` (2, 5, 10, 25 km)
-  plus "anywhere" (`nil`), replaced by a note while `userLocation == nil`; "Free only" toggles `maxPrice` between
-  `0` and `nil`; typed text clears the cap when empty, sets it when parseable and leaves it when not
-  (`applyTypedCap`); dates on proposes `DateWindow.proposal()`, each end edited as whole days through
-  `DateWindow.days(from:to:)`. `EventFilterButton` reports the sheet's presentation as `filterPanelOpened()` /
+- Filter (`EventFilterSheet`, reworked 2026-11-26): a `NavigationStack` over a `Form` (sections: type, distance,
+  attendees, time of day; level, dates and open spots — the price section is gone), title "Filters" inline, Done in
+  `confirmationAction` (closes only; every change applies at once); every change goes through
+  `viewModel.updateFilter`, `toggleType`, `toggleTime` or `clearFilter`;
+  Reset (`lilyToolbarTextButton()`, top bar leading) shows only while `filter.isActive`; the type section is
+  `EventTypeMultiCompactPicker` (2026-11-26: search, the head of the list plus the selection, "See all" and "Show
+  less" — `Core/UI/Components`), so the 34 chips no longer open as a wall; the open-spots `Toggle` carries
+  `Filter.openSpotsFootnote` under it (`openSpotsRow`, 2026-11-26: what the switch hides); distance is a `Slider`
+  (`filter-distance`) over `AppConfig.Events.filterRadiusRangeKilometers` (5...150 km) stepping
+  `filterRadiusStepKilometers` (5), its value labelled through `roadText()` beside it, a kept "anywhere" (`nil`)
+  shown at the far end, and the whole row replaced by a note while `userLocation == nil`; attendees are one-floor
+  chips over `filterAttendeeChoices` (2, 5, 10, 20; `filter-attendees-any` / `filter-attendees-<n>`, re-tapping the
+  chosen floor lifts it); times of day are multi-select chips (`filter-time-any` / `filter-time-<raw>`); dates on
+  proposes `DateWindow.proposal()`, each end edited as whole days through `DateWindow.days(from:to:)`. `EventFilterButton` reports the sheet's presentation as `filterPanelOpened()` /
   `filterPanelClosed()`.
 - Map (`EventsMapView`): opens on `MapFraming.initialRegion(userLocation:radiusMeters: filter.maxDistanceMeters)` or
   `.userLocation(fallback: .automatic)`; a later position recentres once unless the user panned (`hasCenteredOnUser`,

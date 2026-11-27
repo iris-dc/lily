@@ -38,6 +38,7 @@ struct GroupLoaderView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .hidesTabBarOnCompact()
         .task { await viewModel.loadIfNeeded() }
     }
 }
