@@ -84,7 +84,8 @@ use the generated `Color.lily*` asset symbols.
   two rows (2026-11-26, from the owner's phone video): the first (search and `Visible.types`) never changes height on
   a fold — once expanded it keeps the See all chip hidden in place (`EventTypeChips.expanderHidden`, no identifier)
   and its composition pinned to the selection at the unfold — and the rest (`Visible.rest`) is a second row inserted
-  under it, drawn up over the first row's bottom inset (`Spacing.md`) with the separator between them hidden; the
+  flush under it (the facing insets zero, the separator hidden; nothing draws outside its own row, since a device
+  cell clips what a simulator cell lets through — owner report 2026-11-27); the
   toggle runs through `withoutAnimation`. A resizing `Form` row slides its own content whatever the transaction says,
   which a disabled transaction and then an explicit animation both failed to stop on the phone. And
   `EventTypeMultiCompactPicker(anyTitle:anyIdentifier:selected: Set<EventType>, onSelectAny:, onToggle:)`

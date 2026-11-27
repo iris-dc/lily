@@ -192,17 +192,16 @@ private extension EventTypeChipSubset.Visible {
 }
 
 private extension View {
-    /// The first row: a known bottom inset the rest can overlap, and no separator under it while the rest hangs from it.
+    /// The first row: flush bottom while the rest hangs under it, and no separator between the two. Everything stays
+    /// inside each row's own bounds: a cell clips on the device, so nothing may draw over the neighbouring row.
     func typeFoldHeadRow(hasRest: Bool) -> some View {
-        listRowInsets(.bottom, DesignTokens.Spacing.md)
+        listRowInsets(.bottom, hasRest ? 0 : nil)
             .listRowSeparator(hasRest ? .hidden : .automatic, edges: .bottom)
     }
 
-    /// The rest of the list, a row of its own: drawn up over the first row's bottom inset so its first line keeps the
-    /// flow's own line spacing, with no separator between the two.
+    /// The rest of the list, a row of its own, flush under the first.
     func typeFoldRestRow() -> some View {
-        padding(.top, -DesignTokens.Spacing.md)
-            .listRowInsets(.top, 0)
+        listRowInsets(.top, 0)
             .listRowSeparator(.hidden, edges: .top)
     }
 }

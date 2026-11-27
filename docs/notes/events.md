@@ -484,3 +484,10 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   the old swap, of the explicit animation and of the two rows (`/tmp/ownervid`), one-frame expand and fold in the
   last; `EventTypeChipSubsetTests.expandedKeepsTheFirstRowAndListsTheRestUnderIt`, the edit-form walk and
   `testMapStaysWhenTheFilterHidesEveryGame` green. The phone has to confirm it: the simulator never showed the slide.
+
+- **The seam hack clipped on the device (2026-11-27, owner report on the two-row fold).** The rest row was pulled up
+  over the head row's bottom inset with negative padding; the simulator let the overdraw through, the device's cell
+  clipped it — the rest's first chip line was cut away and the missing line read as a gap splitting the list in two.
+  Replaced with flush insets: the head row's bottom and the rest row's top are zero while unfolded, nothing draws
+  outside its own row, so there is nothing left for a cell to clip. Lesson for this file: a `Form` cell clips its
+  content on the device but not reliably on the simulator — never draw row content outside the row.
