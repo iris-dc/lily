@@ -12,6 +12,8 @@ struct CreateButton: View {
     var body: some View {
         Group {
             if kinds.count > 1 {
+                // The automatic menu style: `.button` recolored the whole open menu accent-red the moment an outside
+                // tap dismissed it, before the platter shrank; the default crossfades the menu out in place instead.
                 Menu {
                     ForEach(kinds, id: \.self) { kind in
                         Button(title(for: kind), systemImage: symbol(for: kind)) { onCreate(kind) }
@@ -19,7 +21,6 @@ struct CreateButton: View {
                 } label: {
                     plus
                 }
-                .menuStyle(.button)
             } else {
                 // The policy's offer is never empty (events always ship); the one kind is whatever it names.
                 Button {

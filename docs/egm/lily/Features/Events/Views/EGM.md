@@ -264,7 +264,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `$draft.currencyCode`, the filter's cap stays the read-only fact. The one decimal-pad price field: the form's
   price row (no focus binding) and the filter sheet's cap (focused by the capsule's tap through `isPriceFocused`).
 - `CreateButton`: the menu's items come from `CreationWizardPolicy.kindsOffered` — never this view's own flag
-  logic beyond that call; one offered kind draws the plain one-tap button (2026-11-11).
+  logic beyond that call; one offered kind draws the plain one-tap button (2026-11-11). The `Menu` wears the
+  automatic menu style (2026-11-27: `.menuStyle(.button)` washed the whole open platter accent-red the instant an
+  outside tap dismissed it, before it shrank — the owner's report; the default fades the menu out in place while the
+  red circle fades back, both directions smooth on film).
 - Filter (`EventFilterSheet`, reworked 2026-11-26): a `NavigationStack` over a `Form` (sections: type, distance,
   attendees, time of day; level, dates and open spots — the price section is gone), title "Filters" inline, Done in
   `confirmationAction` (closes only; every change applies at once); every change goes through

@@ -502,3 +502,12 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   chip-sized hit area but no capsule. Evidence: simulator film `/tmp/ownervid/onerow.mov` — the expand and the fold
   are each a single frame (93.94 s and 99.59 s, scene scan) — stills of all four states, the edit-form walk, both
   filter smoke tests and the unit gate green. The phone check is still the decisive one.
+
+- **The "+" menu's dismissal stopped flashing red (2026-11-27, owner report).** Tapping outside the open create menu
+  turned the whole three-item platter accent-red at full size before it shrank back into the circle; opening was
+  smooth. Cause: `.menuStyle(.button)` on the `Menu` under `lilyFloatingActionButton()`'s `.glassProminent` +
+  accent tint — at dismissal the platter adopts the button's prominent tint first, then morphs. Fix: the automatic
+  menu style (the one-line override removed); the menu now crossfades out in place while the red circle fades back.
+  The simulator reproduced this one faithfully: the baseline film shows the red wash (`/tmp/ownervid/menu-dismiss.png`
+  strip), the fixed film none (`v1-dismiss.png`), open unchanged. The attach menu and the match sheet keep
+  `.menuStyle(.button)`: their buttons are glass-tinted, so the wash is invisible there.
