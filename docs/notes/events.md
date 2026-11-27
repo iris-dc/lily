@@ -491,3 +491,14 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   Replaced with flush insets: the head row's bottom and the rest row's top are zero while unfolded, nothing draws
   outside its own row, so there is nothing left for a cell to clip. Lesson for this file: a `Form` cell clips its
   content on the device but not reliably on the simulator — never draw row content outside the row.
+
+- **The two-row fold replaced by one identity-folding row (2026-11-27, owner's iPhone 15 Pro Max report: the two rows
+  drew as two separate components, See all blinked and lagged the fold, and it should not look like a type chip).**
+  Each compact picker is one `Form` row again, one flow (`Visible.types + rest`, the head pinned at the unfold so a
+  pick in the rest moves no chip), and the fold changes the row's identity (`.id(expanded)` inside `withoutAnimation`):
+  the `Form` replaces the cell at its new height in one non-animated update instead of self-size-animating it — one
+  cell cannot seam, clip against a neighbour, or update in two passes. The toggle is `TypeFoldToggle` now: secondary
+  text beside an accent chevron (down for See all, up for Show less, `DesignTokens.Symbols.chevronDown/Up`), a
+  chip-sized hit area but no capsule. Evidence: simulator film `/tmp/ownervid/onerow.mov` — the expand and the fold
+  are each a single frame (93.94 s and 99.59 s, scene scan) — stills of all four states, the edit-form walk, both
+  filter smoke tests and the unit gate green. The phone check is still the decisive one.

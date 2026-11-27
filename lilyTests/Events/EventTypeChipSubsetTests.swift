@@ -33,9 +33,9 @@ struct EventTypeChipSubsetTests {
         #expect(visible.showsExpander)
     }
 
-    /// Unfolding never touches the first row: in a `Form` a row that resizes slides its chips around, so the rest of
-    /// the list comes as a second row, every known type exactly once across the two, Show less trailing.
-    @Test func expandedKeepsTheFirstRowAndListsTheRestUnderIt() {
+    /// Unfolding never reorders the head: the rest is appended after it in the same flow, every known type exactly
+    /// once across the two lists, Show less trailing, so no chip relocates when the fold swaps.
+    @Test func expandedKeepsTheHeadAndAppendsTheRest() {
         let collapsed = EventTypeChipSubset.visible(matching: "", expanded: false, selected: .yoga)
         let visible = EventTypeChipSubset.visible(matching: "", expanded: true, selected: .yoga)
         #expect(visible.types == collapsed.types && visible.types == topOfTheList + [.yoga])

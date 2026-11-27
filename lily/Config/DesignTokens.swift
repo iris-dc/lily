@@ -184,6 +184,9 @@ nonisolated enum DesignTokens {
         static let error = "exclamationmark.circle.fill"
         static let dismiss = "xmark"
         static let back = "chevron.backward"
+        /// The compact type pickers' fold toggle: offer more, offer less.
+        static let chevronDown = "chevron.down"
+        static let chevronUp = "chevron.up"
         static let apple = "apple.logo"
         static let email = "envelope.fill"
         static let home = "house"

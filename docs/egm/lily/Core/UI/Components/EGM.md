@@ -78,16 +78,17 @@ use the generated `Color.lily*` asset symbols.
   `EventTypeChipSubset.visible(matching:expanded:selected:)` — the first `collapsedTypeChipCount` (3) of
   `EventType.known` plus every selected known type not among them in the known order (a `Set` since 2026-11-26, with
   a delegating single-select overload), the "See all" expander chip
-  (`AppBranding.Groups.seeAll`, `draft-type-expand`) while collapsed and the "Show less" collapser
-  (`AppBranding.Groups.showLess`, the same identifier) under the rest once expanded, every match while the
-  query is non-empty, and `AppBranding.Create.typeSearchNoMatch` when nothing matches. In a `Form` each picker is
-  two rows (2026-11-26, from the owner's phone video): the first (search and `Visible.types`) never changes height on
-  a fold — once expanded it keeps the See all chip hidden in place (`EventTypeChips.expanderHidden`, no identifier)
-  and its composition pinned to the selection at the unfold — and the rest (`Visible.rest`) is a second row inserted
-  flush under it (the facing insets zero, the separator hidden; nothing draws outside its own row, since a device
-  cell clips what a simulator cell lets through — owner report 2026-11-27); the
-  toggle runs through `withoutAnimation`. A resizing `Form` row slides its own content whatever the transaction says,
-  which a disabled transaction and then an explicit animation both failed to stop on the phone. And
+  (`AppBranding.Groups.seeAll`, `draft-type-expand`, an accent down-chevron) while collapsed and the "Show less"
+  collapser (`AppBranding.Groups.showLess`, the same identifier, an up-chevron) once expanded — both drawn by
+  `TypeFoldToggle` (secondary text beside an accent chevron, `tappableLabel()` hit area, deliberately not a chip;
+  owner call 2026-11-27) — every match while the
+  query is non-empty, and `AppBranding.Create.typeSearchNoMatch` when nothing matches. Each picker is ONE `Form` row
+  in one flow (`Visible.types + rest`, the head's composition pinned to the selection at the unfold so a pick in the
+  rest moves no chip), and the fold changes the row's identity (`typeFold`, `.id(expanded)` inside
+  `withoutAnimation`): the `Form` replaces the cell at its new height in one non-animated update instead of
+  self-size-animating it, which slid the chips on the device whatever the transaction said (2026-11-27, after a
+  two-cell split drew as two components with a blinking See all on the owner's iPhone 15 Pro Max; one cell cannot
+  seam or update late). And
   `EventTypeMultiCompactPicker(anyTitle:anyIdentifier:selected: Set<EventType>, onSelectAny:, onToggle:)`
   [`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeMultiCompactPicker`] (2026-11-26), the filter's
   multi-select over the same rule and search (`filter-type-search`, expander `filter-type-expand`), led by the
@@ -229,11 +230,11 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/ChipModifiers.swift:View.lilyChip`, `View.tappableLabel`]; `ChoiceChip` is
   `.buttonStyle(.plain)` with the `.isSelected` trait when selected [`lily/Core/UI/Components/ChoiceChip.swift:ChoiceChip`];
   `EventTypeChips` shows the "any" chip only `if let anyTitle`, iterates exactly `types` (`EventType.known` unless a
-  caller narrows it; only the compact picker does) and shows the expander chip only `if let expandTitle`, invisible
-  and identifier-less while `expanderHidden`
-  [`lily/Core/UI/Components/EventTypeChips.swift:EventTypeChips`]; `EventTypeChipSubset.visible` never offers an
-  unknown type and appends a known selection so the choice is never hidden; expanded, `types` equals the collapsed
-  first row and `rest` is every other known type in the known order, `Visible.showsCollapser` offering the way back
+  caller narrows it; only the compact picker does) and shows the fold toggle only `if let expandTitle`
+  [`lily/Core/UI/Components/EventTypeChips.swift:EventTypeChips`, `TypeFoldToggle`]; `EventTypeChipSubset.visible`
+  never offers an unknown type and appends a known selection so the choice is never hidden; expanded, `types` equals
+  the collapsed head and `rest` is every other known type in the known order, `Visible.showsCollapser` offering the
+  way back
   (2026-11-26: "Show less" folds the wall, a search needs neither control; pinned by
   `lilyTests/Events/EventTypeChipSubsetTests.swift`)
   [`lily/Core/UI/Components/EventTypeCompactPicker.swift:EventTypeChipSubset`].
