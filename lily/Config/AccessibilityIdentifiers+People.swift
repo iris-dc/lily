@@ -16,4 +16,8 @@ nonisolated extension AccessibilityIdentifiers {
     static func participantRow(_ userID: String) -> String {
         "participant-row-\(userID)"
     }
+
+    /// The People card's rows on a detail screen; each opens the full list when the caller may see it.
+    static let peopleHostingRow = "people-hosting-row"
+    static let peopleGoingRow = "people-going-row"
 }

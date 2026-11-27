@@ -11,7 +11,7 @@ nonisolated struct EventPermissions: Equatable, Sendable {
 
     static let none = EventPermissions(canOpenChat: false, canInvite: false)
 
-    /// The in-body action row under the facts: chat and invite, drawn only when it has something to offer.
+    /// The pinned bar's chat and invite circles, drawn only when either has something to offer.
     var showsActionRow: Bool { canOpenChat || canInvite }
 }
 

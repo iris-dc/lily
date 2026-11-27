@@ -1,32 +1,32 @@
 import SwiftUI
 
-/// The sheets the detail hosts; at file scope so the view's type body stays under the length limit.
-private enum DetailSheet: Hashable, Identifiable {
-    case edit, teamName, invite, report
-    case match(id: String)
-
-    var id: Self { self }
-}
-
-/// A tournament: chips, name and organiser, the winner once it is over, where it is hosted, its facts, the entries,
-/// the bracket or the standings and the matches once it started, and the control the caller has. Fetched by id; an
-/// opener that holds the tournament (a card, a tile) hands it over as the preview and the header, facts and control
-/// draw at once, the rest (a room row, the chat's info button, a match reminder) shows the name until the detail
-/// answers; a system row or a reminder about a match opens it with that match's sheet up. An involved caller gets
-/// Open chat and Invite under the facts, like a group's action row; the chat is pushed on this stack, so Back
-/// returns here. The view model decides what the caller may do; this
-/// draws it and hosts the sheets (edit, team name, match, invite, report) and confirmations.
+/// A tournament: its sport, name, format and status centered on top, the winner once it is over, the facts, the
+/// People card (who organises it and who entered, the entries row opening the full list), the description, and the
+/// bracket or the standings with the matches once it started. The join/leave control sits in the pinned bottom bar
+/// with the chat and invite shortcuts. Fetched by id; an opener that holds the tournament (a card, a tile) hands it
+/// over as the preview and the header, facts and control draw at once, the rest (a room row, the chat's info button,
+/// a match reminder) shows the name until the detail answers; a system row or a reminder about a match opens it with
+/// that match's sheet up. The chat is pushed on this stack, so Back returns here. The view model decides what the
+/// caller may do; this draws it and hosts the sheets (edit, team name, match, invite, report) and confirmations.
 struct TournamentDetailView: View {
-    @State private var viewModel: TournamentDetailViewModel
-    @State private var section: TournamentDetailSection = .entries
-    @State private var presentedSheet: DetailSheet?
-    @State private var confirmation: TournamentConfirmation?
+    @State var viewModel: TournamentDetailViewModel
+    @State var section: TournamentDetailSection = .results
+    @State var presentedSheet: Sheet?
+    @State var confirmation: TournamentConfirmation?
     /// The scroll view's width, for the bracket's inset: the readable column's edge on a wide screen.
-    @State private var contentWidth: CGFloat = 0
+    @State var contentWidth: CGFloat = 0
     @Environment(\.dismiss) private var dismiss
-    private let dependencies: AppDependencies
+    let dependencies: AppDependencies
 
-    private typealias Copy = AppBranding.Tournaments
+    typealias Copy = AppBranding.Tournaments
+
+    /// The sheets the detail hosts.
+    enum Sheet: Hashable, Identifiable {
+        case edit, teamName, invite, report
+        case match(id: String)
+
+        var id: Self { self }
+    }
 
     init(viewModel: TournamentDetailViewModel, dependencies: AppDependencies) {
         _viewModel = State(initialValue: viewModel)
@@ -47,12 +47,22 @@ struct TournamentDetailView: View {
         .navigationTitle(viewModel.name)
         .navigationBarTitleDisplayMode(.inline)
         .hidesTabBarOnCompact()
+        .safeAreaInset(edge: .bottom) { actionBar }
+        // This detail's entries ride its own view model, so an entry or removal made there reaches the People card
+        // at once; another tournament's push (two details on one stack) builds a fresh one from the value.
+        .navigationDestination(for: TournamentPeopleDestination.self) { people in
+            if people.destination.id == viewModel.destination.id {
+                TournamentPeopleView(viewModel: viewModel)
+            } else {
+                TournamentPeopleView(viewModel: dependencies.makeTournamentDetailViewModel(for: people.destination) { _ in
+                    dependencies.tournamentChanges.recordChange()
+                })
+            }
+        }
         .toolbar {
             if viewModel.permissions.showsMenu {
                 ToolbarItem(placement: .topBarTrailing) {
                     TournamentMenu(viewModel: viewModel,
-                                   onOpenChat: { Task { await viewModel.openChat() } },
-                                   onInvite: { presentedSheet = .invite },
                                    onStart: { confirmation = .start },
                                    onEdit: { presentedSheet = .edit },
                                    onCancel: { confirmation = .cancel },
@@ -91,7 +101,7 @@ struct TournamentDetailView: View {
         }
     }
 
-    @ViewBuilder private func sheet(_ sheet: DetailSheet) -> some View {
+    @ViewBuilder private func sheet(_ sheet: Sheet) -> some View {
         switch sheet {
         case .edit:
             if let tournament = viewModel.tournament {
@@ -109,48 +119,6 @@ struct TournamentDetailView: View {
             ReportSheet(viewModel: dependencies.makeReportViewModel(for: viewModel.reportTarget, title: Copy.report),
                         errorCenter: dependencies.errorCenter)
         }
-    }
-
-    /// Everything sits in the readable column except a bracket, which keeps the whole width and scrolls under both
-    /// screen edges, its first column lined up with the text above it. A preview (the opener's copy, the fetch still
-    /// out) draws the header, the facts and the control, and a spinner where the entries and matches will be.
-    private func content(_ detail: TournamentDetail, isPreview: Bool) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                    TournamentHeader(tournament: detail.tournament,
-                                     organizerProfile: viewModel.permissions.organizerProfile,
-                                     winnerName: viewModel.winnerName)
-                    if let description = detail.tournament.description {
-                        Text(description).font(.body)
-                    }
-                    TournamentFacts(tournament: detail.tournament)
-                    if viewModel.permissions.showsActionRow {
-                        TournamentActionRow(viewModel: viewModel,
-                                            onOpenChat: { Task { await viewModel.openChat() } },
-                                            onInvite: { presentedSheet = .invite })
-                    }
-                    if viewModel.permissions.showsEntries {
-                        sectionPicker(detail.tournament)
-                    }
-                }
-                .inReadableColumn()
-                if viewModel.permissions.showsEntries {
-                    if isPreview {
-                        loadingSlot
-                    } else {
-                        segment(detail)
-                    }
-                }
-                TournamentParticipationControl(viewModel: viewModel,
-                                               onCreateTeam: { presentedSheet = .teamName },
-                                               onLeave: { confirmation = .leave })
-                    .inReadableColumn()
-            }
-            .padding(.vertical, DesignTokens.Layout.detailMargin)
-        }
-        .onGeometryChange(for: CGFloat.self, of: \.size.width) { contentWidth = $0 }
-        .refreshable { await viewModel.load() }
     }
 
     /// The states with nothing to draw yet: the spinner before an id-only open answers, "no longer available" and the
@@ -172,57 +140,6 @@ struct TournamentDetailView: View {
         case .previewing, .loaded:
             EmptyView()
         }
-    }
-
-    /// Where the entries and matches will be while the fetch is out: a spinner, or Try again once the fetch failed,
-    /// in the shared slot so the control below keeps its place when the empty entries line takes over.
-    @ViewBuilder private var loadingSlot: some View {
-        TournamentSegmentSlot {
-            if viewModel.previewLoadFailed {
-                Button(AppBranding.Groups.tryAgain) { Task { await viewModel.load() } }
-                    .lilyGlassButton(sizing: .fitted)
-            } else {
-                ProgressView()
-            }
-        }
-        // A container's identifier would otherwise stamp every child; Try again keeps its own element.
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(AccessibilityIdentifiers.tournamentLoading)
-    }
-
-    /// The bracket's columns start where the readable column does: the detail's margin on a phone, further in on a
-    /// wide screen.
-    private var bracketInset: CGFloat {
-        let margin = DesignTokens.Layout.detailMargin
-        return max(margin, (contentWidth - DesignTokens.Layout.readableWidth) / 2 + margin)
-    }
-
-    private func sectionPicker(_ tournament: Tournament) -> some View {
-        Picker(Copy.tournament, selection: $section) {
-            ForEach(TournamentDetailSection.allCases, id: \.self) { Text($0.title(for: tournament)).tag($0) }
-        }
-        .pickerStyle(.segmented)
-        .accessibilityIdentifier(AccessibilityIdentifiers.tournamentSection)
-    }
-
-    @ViewBuilder private func segment(_ detail: TournamentDetail) -> some View {
-        switch section {
-        case .entries:
-            TournamentEntriesSegment(viewModel: viewModel, detail: detail) { confirmation = .removeEntry($0) }
-                .inReadableColumn()
-        case .results where detail.tournament.format.drawsBracket && !detail.matches.isEmpty:
-            // `BracketView` undoes the margin itself and scrolls edge to edge; only its inset follows the column.
-            results(detail).padding(.horizontal, DesignTokens.Layout.detailMargin)
-        case .results, .matches:
-            results(detail).inReadableColumn()
-        }
-    }
-
-    private func results(_ detail: TournamentDetail) -> some View {
-        TournamentResultsSegment(showsMatches: section == .matches,
-                                 detail: detail,
-                                 onSelect: { presentedSheet = .match(id: $0.id) },
-                                 bracketInset: bracketInset)
     }
 
     private func confirmationTitle(for confirmation: TournamentConfirmation) -> String {

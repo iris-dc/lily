@@ -54,6 +54,15 @@ extension AppDependencies {
                              onChange: onChange)
     }
 
+    /// The pushed "Who's in" list behind the detail's People card; its own fetch, so any stack can push it by value.
+    func makeEventPeopleViewModel(for event: SportEvent) -> EventPeopleViewModel {
+        EventPeopleViewModel(event: event,
+                             repository: eventRepository,
+                             identity: identity,
+                             errorCenter: errorCenter,
+                             logger: logger)
+    }
+
     /// The loader behind an event room's info button and row: fetches the event by id, then shows the detail.
     func makeEventLoaderViewModel(for destination: EventDestination) -> EventLoaderViewModel {
         EventLoaderViewModel(destination: destination, repository: eventRepository, errorCenter: errorCenter, logger: logger)

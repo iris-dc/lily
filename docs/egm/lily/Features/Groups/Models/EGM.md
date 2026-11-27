@@ -78,7 +78,8 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   `room`; `init(group:userID:)`; `isMember`, `canChat`, `canLeave`, `canEdit`, `canDelete`, `canChangeRoles`,
   `canSeeMembers(in:)`, `canReport(in:)`, `canCreateEvents(in:)`, `canInvite(in:)`, `canRemove(_:)`, `canBan(_:)`,
   `canCreatePolls(in:)`, `canPin(in:)` [`lily/Features/Groups/Models/GroupAccess.swift`:`GroupAccess`].
-- Detail and dialogs: `GroupDetailSection` (`events`, `tournaments`, `members`; `static available(for:in:tournamentsEnabled:)`,
+- Detail and dialogs: `GroupDetailSection` (`events`, `tournaments` — `members` left 2026-11-27, the roster pushed
+  from the People card onto `GroupMembersView`; `static available(for:in:tournamentsEnabled:)`,
   `title`) [`lily/Features/Groups/Models/GroupDetailSection.swift`:`GroupDetailSection`]; `GroupConfirmation`
   (`leave`, `delete`, `remove(GroupMember)`, `ban(GroupMember)`; `id`, `title(groupName:)`, `buttonTitle`)
   [`lily/Features/Groups/Models/GroupConfirmation.swift`:`GroupConfirmation`]; `GroupDetailContext` (`standalone`,
@@ -152,8 +153,9 @@ types decoded from Laurel's group, member, account, invite and moderation answer
   `canCreatePolls` for members of a non-direct, known kind; `canPin` for either side of a conversation or an admin of a
   known kind [`lily/Features/Groups/Models/GroupAccess.swift`:`GroupAccess.canRemove`].
 - `GroupDetailSection.available`: `events` always, `tournaments` while `tournamentsEnabled` (default
-  `AppConfig.FeatureFlags.tournaments`) and the group is public or the caller is in it, `members` when
-  `access.canSeeMembers(in:)` [`lily/Features/Groups/Models/GroupDetailSection.swift`:`GroupDetailSection.available`].
+  `AppConfig.FeatureFlags.tournaments`) and the group is public or the caller is in it; who may see the roster stays
+  `access.canSeeMembers(in:)`, read by the detail's `showsRoster` rather than by a segment (2026-11-27)
+  [`lily/Features/Groups/Models/GroupDetailSection.swift`:`GroupDetailSection.available`].
 - `GroupScope.wireName` is `"mine"` or `"public"`; `searchPrefix` trims and is `nil` for `.mine` and for a blank
   query, which is a browse [`lily/Features/Groups/Models/GroupScope.swift`:`GroupScope.searchPrefix`].
 - `MemberRole.isAdmin` is `owner || admin` [`lily/Features/Groups/Models/MemberRole.swift`:`MemberRole.isAdmin`];

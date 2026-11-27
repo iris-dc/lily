@@ -128,3 +128,4 @@ The app ships in English (the source language and the fallback), Russian, Spanis
   so the setting only ever produced the regeneration. If a GUI build still dirties the catalog after this, discard
   that diff (a backup of the 2026-11-22 regeneration sits in the badge evidence folder as
   `fix13-revert/xcode-regenerated-catalog.patch`) and investigate the editor's own catalog-sync behaviour next.
+- 2026-11-27 — Six new keys for the detail redesign (People, About, Hosting, Going, Organised by, Nobody has joined yet), machine-translated into all six languages; a native read is owed. "Hosted by %@", "Run by %@" and "Organised by %@" left the catalog with their last users.

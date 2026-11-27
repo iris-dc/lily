@@ -5,7 +5,7 @@ Source: `lily/Features/Events/Views/`
 ## Overview
 
 The SwiftUI screens and components of the Events feature: the Explore screen (`EventListView` with its `+Content`
-extension), the event detail, the shared event form and its edit sheet (creating walks the wizard since slice 3 of
+extension), the event detail with its pushed "Who's in" list (`EventPeopleView`, 2026-11-27), the shared event form and its edit sheet (creating walks the wizard since slice 3 of
 the creation-wizard plan, 2026-11-11), the filter button and sheet, the events
 map and the location picker, and the cards and rows other features reuse (`EventCard`, `EventCardList`,
 `EventPreviewCard`, `EventMapCardList`,
@@ -32,28 +32,35 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   (`@Bindable`) and wears `.animatesTabBar(depth: navigation.explorePath.count)`, so Explore's pushed details
   slide the bar like Home's and Chats' do (2026-11-24; before, the stack had no bound path and a pushed screen's
   hide would have popped the bar in one frame).
-- `EventDetailView` (`lily/Features/Events/Views/EventDetailView.swift`): `init(viewModel: EventDetailViewModel,
-  dependencies: AppDependencies)`; hosts `EditEventSheet` and the invite sheet (`InvitePeopleSheet` over
-  `makeEventInvitePeopleViewModel(for: event.id)`) in `.sheet(isPresented:)`, draws `EventActionRow` after the facts
-  card and pushes `viewModel.openedRoom`'s chat in place through the shared `chatDestination(item:dependencies:)`
-  (2026-11-15); wears `.hidesTabBarOnCompact()` right after its inline title (2026-11-24, the detail-subpage rule):
+- `EventDetailView` (`lily/Features/Events/Views/EventDetailView.swift`, rewritten 2026-11-27, the detail redesign):
+  `init(viewModel: EventDetailViewModel, dependencies: AppDependencies)`; a `ContentScreen { ScrollView }` of
+  `DetailHeader` (the sport's mark, the title, and the start — joined with "Until …" when the finish is known — as
+  the caption), the Details section (`EventFactsCard`), the People card, the About section and `EventLocationMap`,
+  under `detailMargin` padding and `readableColumn()`; hosts `EditEventSheet` and the invite sheet
+  (`InvitePeopleSheet` over `makeEventInvitePeopleViewModel(for: event.id)`) in `.sheet(isPresented:)`, registers
+  `navigationDestination(for: EventPeopleDestination.self)` (the pushed `EventPeopleView` reads the same view model)
+  and pushes `viewModel.openedRoom`'s chat in place through the shared `chatDestination(item:dependencies:)`
+  (2026-11-15); the join/leave control sits in the pinned `DetailActionBar` (`safeAreaInset(edge: .bottom)`) beside
+  the chat and invite icon shortcuts, and Edit stays a `lilyToolbarTextButton()` toolbar item under `canEdit`
+  (`eventEdit`); wears `.hidesTabBarOnCompact()` right after its inline title (2026-11-24, the detail-subpage rule):
   on a compact width the floating tab bar slides away with the push and back with the pop — the stack root's
   `animatesTabBar` owns the animation — and nothing changes on a regular width.
-- `EventActionRow(permissions: EventPermissions, onOpenChat:onInvite:)`
-  (`lily/Features/Events/Views/EventActionRow.swift`, 2026-11-15): the tournament row's shape over the permissions
-  value the detail passes — Open chat `lilyProminentButton()` under `canOpenChat` (identifier `event-action-chat`),
-  Invite `lilyGlassButton(labelColor: .lilyInk)` under `canInvite` (`event-action-invite`); the copy is the group
-  row's (`AppBranding.Groups.openChat`, `.invite`).
+- `EventPeopleView(viewModel: EventDetailViewModel)` and the navigation value `EventPeopleDestination { eventId }`
+  (`lily/Features/Events/Views/EventPeopleView.swift`, 2026-11-27): the full "Who's in" list the People card's rows
+  push — Hosting (`participants.filter(\.isHost)`) then Going as `DetailSection`s of
+  `ParticipantRow(participant:isSelf:)`, `AppBranding.People.nobodyGoingYet` when nobody joined, a spinner only while
+  the first load is out (`isLoadingParticipants` with no participants); titled
+  `AppBranding.Events.participantsTitle`, wearing `.hidesTabBarOnCompact()`, loading through the detail's own view
+  model (`.task { await loadParticipants() }`), so a join or leave made on the detail is already in the list.
+  (`EventActionRow` deleted the same day: the pinned bar carries chat and invite under the same `event-action-chat` /
+  `event-action-invite` identifiers.)
 - `EventLoaderView(viewModel: EventLoaderViewModel, dependencies:)`
   (`lily/Features/Events/Views/EventLoaderView.swift`, 2026-11-15): the state ladder behind a pushed
   `EventDestination` — a spinner, the detail (`makeEventDetailViewModel`, its `onChange` recording `eventChanges`),
   an `EmptyStateView` for a gone event ("This event is no longer available"), `loadFailed` with Try again; inline
   title, the destination's name on the loading and gone states (2026-11-23; the loaded detail keeps its own look),
   and the destination's `context` handed to the detail, so a loader behind a room's info button offers no Open chat.
-  Wears `.hidesTabBarOnCompact()` like the detail (2026-11-24). The host line (2026-11-07) maps
-  the stored name through `Tombstone.displayName(event.hostName, deleted: event.deleted)` and passes
-  `Tombstone.symbol` as `OwnerTitleBlock`'s `subtitleMark` for a deleted host; the view model's `hostProfile` is nil
-  then, so the line is plain, never a link.
+  Wears `.hidesTabBarOnCompact()` like the detail (2026-11-24).
 - `EventDraftForm<Model: EventDraftEditing>` (`lily/Features/Events/Views/EventDraftForm.swift`):
   `@Bindable var viewModel: Model`; a `Form` with game, where, players and details sections, whose contents are
   standalone views the sections recompose (2026-11-10, creation-wizard slice 1):
@@ -233,13 +240,22 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `wizardDismissed()` only when `presentedSheet` is nil, never on a re-host), which also books the flow's close
   (`noteClosed()`, the abandoned log, before the model is dropped), and the wizard mounts its own popup and
   dismissal rules, so the presenter adds sizing only. The detail destination is built with `onChange: viewModel.replace`.
-- Detail (`EventDetailView.participationControl`) switches on `viewModel.participation`: `.hidden` nothing, `.join` a
-  prominent `BusyButton` → `join()`, `.leave` a glass `BusyButton` → `leave()`, `.full` a prominent `BusyButton`
-  with no action, `.hosting` a caption. The Edit toolbar item (`lilyToolbarTextButton()`) shows only when `canEdit`;
-  the roster only when
-  `showsParticipants`; `.task` calls `recordViewed()` then `loadParticipants()`. The action row shows only when
-  `permissions.showsActionRow` (the view computes `viewModel.permissions` once per body pass and hands the value to
-  the row): Open chat runs `openChat()` in a `Task`, Invite presents the invite sheet (2026-11-15).
+- Detail (`EventDetailView`, 2026-11-27): the pinned bar mounts only when `permissions.showsActionRow ||
+  participation != .hidden` (a guest on a started game gets none); in it the chat icon shows under `canOpenChat`
+  (`event-action-chat`, running `openChat()` in a `Task`), the invite icon under `canInvite` (`event-action-invite`,
+  presenting the invite sheet), both `lilyGlassIconButton()`, and `participationControl` switches on
+  `viewModel.participation`: `.hidden` nothing, `.join` a prominent `BusyButton` → `join()`, `.leave` a glass
+  `BusyButton` → `leave()`, `.full` a prominent `BusyButton` with no action, `.hosting` a `DetailBarNotice`
+  (`AppBranding.hostingNotice`). The header's caption is the start in `LilyTheme.DateStyles.dateTime`, joined with
+  `AppBranding.Events.until(_:)` when `endsAt` is set (the time alone on the start's own day, the full date
+  otherwise; the facts card's line until 2026-11-27). The People card's two `PeopleSummaryRow`s (`people-hosting-row`,
+  `people-going-row`) open `EventPeopleDestination` only while `showsParticipants` (names are members-level
+  information, so a guest's rows are plain); the Hosting row maps the stored name through
+  `Tombstone.displayName(event.hostName, deleted: event.deleted)` (2026-11-07), and the Going stack draws the joined
+  non-host names while the count is `max(event.participantCount - 1, 0)` — the event's own count minus the host, so
+  it matches the pushed Going section and is right before the roster has answered. The Edit
+  toolbar item (`lilyToolbarTextButton()`) shows only when `canEdit`; `.task` calls `recordViewed()` then
+  `loadParticipants()`.
 - Form (`EventDraftForm`): each section footer shows the first matching `viewModel.issue(for:)`: game
   `.titleMissing` / `.titleTooLong` / `.startsAtTooSoon` / `.endsBeforeStart`, where `.locationNameMissing` / `.locationNameTooLong` /
   `.coordinateMissing`, players `.capacityOutOfRange` / `.capacityBelowParticipants`, details
@@ -324,10 +340,10 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `.onMapCameraChange(frequency: .onEnd)` and writes `coordinate` only when
   `PickerSettlePolicy.isAChoice(spot, current:, isFirstSettle:)`; a chosen spot opens at
   `AppConfig.Location.pickerRegionMeters` (1,500 m), none follows the user.
-- Components: `EventFactsCard` shows the price only when `!event.isFree`, the level only when
-  `event.skillLevel?.ifKnown` is set, and a secondary "Until …" line under the start when `event.endsAt` is set
-  (the time alone on the start's own day, the full date otherwise — `AppBranding.Events.until(_:)` over
-  `LilyTheme.DateStyles.time`/`dateTime`; 2026-11-11); `EventCard` adds a price chip when not free and a `GroupBadge` when hosted in
+- Components: `EventFactsCard` leads with the place, adds the shared `HostedInLine` row when the game is hosted in a
+  group (2026-11-27; its time and "Until …" rows left for the detail header's caption the same day), shows the price
+  only when `!event.isFree` and the level only when `event.skillLevel?.ifKnown` is set, over the `EntriesBar`;
+  `EventCard` adds a price chip when not free and a `GroupBadge` when hosted in
   a group; `EventPreviewCard` turns each of its two rows into a column at accessibility type sizes (lines up to
   `Layout.accessibilityPreviewLines`, one otherwise) and draws its `detail` (the distance) in `.secondary` like every
   other distance; `SkillLevelPicker` offers
@@ -342,7 +358,9 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   `refreshHeader()`), `presentationChanged`, `showEverything`, `updateFilter` / `toggleType` / `clearFilter`,
   `filterPanelOpened` / `filterPanelClosed`, `distanceText`, `recordViewed`, `loadParticipants`, `join`, `leave`,
   `accept`; the form writes `viewModel.draft` through bindings.
-- Navigation: `navigationDestination(for: SportEvent.self)` pushes `EventDetailView`;
+- Navigation: `navigationDestination(for: SportEvent.self)` pushes `EventDetailView`, whose own
+  `navigationDestination(for: EventPeopleDestination.self)` pushes `EventPeopleView` over the same view model
+  (2026-11-27);
   `.groupDestinations(dependencies:)`; `PlacePickerRow` pushes `LocationPickerView`;
   `dependencies.navigation.open(group:)` / `open(event:)` / `open(tournament:)` after a create from Explore;
   `navigation.pendingCreate = nil` when consumed; `LocationPickerView` calls `dismiss()` on Done.

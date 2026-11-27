@@ -116,7 +116,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 
 - Root: `static let name = "iskra"`, the shared actions `done` and `remove`, the landing, sign-in, tab-title and
   event-detail strings (`landingPrimaryAction`, `signInAction`, `homeTitle`, `exploreTitle`, `profileTitle`, `joinAction`,
-  ...); `signInButtonTitle(for:)`, `passwordHint(minimumLength:)`, `confirmEmailSubtitle(email:)`, `hostedByTitle(for:)`;
+  ...); `signInButtonTitle(for:)`, `passwordHint(minimumLength:)`, `confirmEmailSubtitle(email:)` (`hostedByTitle(for:)`
+  left 2026-11-27 with the detail redesign, as did `Groups.ownedBy(name:)` and `Tournaments.organizedBy(name:)` —
+  the detail screens' People card names the host and the organiser);
   `chatsTitle` lives in `AppBranding+Inbox.swift`.
 - Nested namespaces: `Home` (the root file keeps `noGames`, `guestMessage`, `groupsLoadFailed` and
   `gamesLoadFailed`; the segmented Home's copy — `segmentPicker`, `eventsSegment`/`tournamentsSegment`/`groupsSegment`,
@@ -137,7 +139,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   (reuses the "Done" key) and the five `%lld` plural lines `groupsTransferring(_:)`, `groupsDeleted(_:)`,
   `eventsCancelled(_:)`, `entriesWithdrawn(_:)`, `tournamentsCancelled(_:)`, one per non-zero count of the deletion
   plan), `Moderation`, `Forms` (`close`,
-  `back`, `cancel`, `optional` — the shared one-word marker on every optional field, 2026-11-11), `People`, `Legal` (the shared `Section` and `Paragraph` structs of the legal reading screens and
+  `back`, `cancel`, `optional` — the shared one-word marker on every optional field, 2026-11-11), `People` (since 2026-11-27 also the detail
+  screens' People-card copy: `peopleSection`, `aboutSection`, `detailsSection` aliasing `Create.eventDetails`,
+  `hostingRow`, `goingRow`, `organisedByRow`, `nobodyGoingYet`), `Legal` (the shared `Section` and `Paragraph` structs of the legal reading screens and
   the shared `changesTitle`; 2026-11-08), `Privacy` and `Terms` (the data-driven policy and terms over `Legal`'s
   types; 2026-11-08), `Settings`, `Tournaments` (+ `Create`, `Schedule`, `Match`, `Standings`).
 - Representative functions: `Events.spotsLeft(_:)`, `Events.joined(_:of:)`, `Events.Create.capacity(_:needed:)`,
@@ -265,7 +269,10 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   fix pass (2026-11-12), `Layout.wizardBarClearance` 76 (the step content's own bottom clearance for the transparent
   bottom bar, whose inset the keyboard's safe area swallows). In `DesignTokens.swift`,
   `Layout.mapCardListMaxHeight` is 400 (about three and a half of the two-row cards; 352, about five one-row cards,
-  until 2026-11-06) beside `mapSelectedCardWidth 340` and `pressedCardScale 0.97`.
+  until 2026-11-06) beside `mapSelectedCardWidth 340` and `pressedCardScale 0.97`. The People card's avatar stack
+  (2026-11-27, `lily/Config/DesignTokens+Groups.swift`): `Layout.peopleStackCount` 3, `avatarStackOverlap` 0.33,
+  `avatarStackRimWidth` 1.5 and `Opacity.avatarStackRim` 0.6 — `AvatarStack`'s circles, their overlap and the dark
+  rim that parts them.
 - Non-scalar members: `Symbols.fileGlyphs: [(type: UTType, symbol: String)]` (8 entries),
   `Duration.viewerFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)`,
   `Duration.viewerTransitionCurve` and `viewerThrowCurve: UnitCurve` (`lily/Config/DesignTokens+Attachments.swift`),
@@ -275,11 +282,13 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
 ### `AccessibilityIdentifiers` (`lily/Config/AccessibilityIdentifiers.swift:AccessibilityIdentifiers`)
 
 - Kebab-case, area-prefixed `static let` literals: root (`events-filter`, `create-submit`, `auth-email`, `event-action-chat` and `event-action-invite` — the event
-  detail's in-body action row, 2026-11-15 — ...),
-  +Groups (`chat-list`, `chat-composer`, `create-group`, ...), +Tournaments (47 literals and 6 builders, e.g. `match-score-a`; `tournament-action-chat` and
-  `tournament-action-invite`, the detail's in-body action row, 2026-11-15), +Polls,
+  detail's chat and invite shortcuts, in its pinned bar since 2026-11-27 (the in-body row of 2026-11-15) — ...),
+  +Groups (`chat-list`, `chat-composer`, `create-group`, ...), +Tournaments (45 literals and 6 builders, e.g. `match-score-a`; `tournament-action-chat` and
+  `tournament-action-invite`, the detail's pinned-bar shortcuts since 2026-11-27 (the in-body row of 2026-11-15);
+  the menu-era `tournament-open-chat` and `tournament-invite` left with their items), +Polls,
   +Attachments, +Home (`home-segment` and `home-create` — the segmented Home's picker and its per-segment create
-  button; 2026-11-14), +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`),
+  button; 2026-11-14), +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`; `people-hosting-row` and
+  `people-going-row`, the detail screens' People-card rows, 2026-11-27),
   +Profile (`profile-corner` and `profile-sheet` — the corner control on every tab root and the profile sheet's root
   container, 2026-11-07 — `profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
   `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-activity`, `activity-more-games`, `activity-more-tournaments` (2026-11-25), `profile-settings`, `settings-notifications`, `notifications-enable`, `notifications-open-settings`, `notificationToggle(_:)` = `notifications-toggle-<wire>` (2026-11-26), `settings-sign-out`,
@@ -368,8 +377,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   here must be repeated there (`lily/Config/AccessibilityIdentifiers.swift:AccessibilityIdentifiers`). Only `introPager`
   is mirrored from +Landing, plus the segmented Home's `home-segment` and `home-create` from +Home (the Home walks
   switch the segment and open the wizard by them; 2026-11-14); the report sheet's reason rows and the feedback kind picker carry no identifiers and are
-  found by label; the inbox's "Load earlier" button, the profile's shared-group rows container and the owner line of an
-  event's and a tournament's title carry none either (no test read them); the event Edit sheet reuses the create identifiers and mirrors its compact type picker's `draft-type-*` ids in `LilyEventEditTests` (2026-11-15), whose `+Rooms` walks also mirror `event-action-chat`,
+  found by label; the inbox's "Load earlier" button and the profile's shared-group rows container carry none (no
+  test read them); the People card's `people-hosting-row` / `people-going-row` are mirrored by `LilyRosterTests`,
+  `LilyPeopleTests` and `LilyTournamentTests` (2026-11-27, the detail redesign); the event Edit sheet reuses the create identifiers and mirrors its compact type picker's `draft-type-*` ids in `LilyEventEditTests` (2026-11-15), whose `+Rooms` walks also mirror `event-action-chat`,
   `event-action-invite` and the sunset event room's row id (the same day); `createGroup` is the group row of both the event
   and the tournament form; `message(clientID:)` is stable across the optimistic-to-stored swap.
 

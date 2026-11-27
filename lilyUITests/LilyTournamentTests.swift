@@ -27,8 +27,8 @@ final class LilyTournamentTests: LilyUITestCase {
         submitTournamentWizard()
 
         XCTAssertTrue(app.navigationBars[name].waitForExistence(timeout: 10), "the organiser lands on the new tournament")
-        XCTAssertTrue(app.staticTexts["You organise this tournament"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["tournament-join"].exists, "an individual tournament offers Join to its organiser too")
+        XCTAssertTrue(app.buttons["tournament-join"].waitForExistence(timeout: 5),
+                      "an individual tournament offers Join to its organiser too")
 
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5))
@@ -45,8 +45,11 @@ final class LilyTournamentTests: LilyUITestCase {
 
         createTeam(named: "Late Bloomers")
 
-        XCTAssertTrue(labelled("Late Bloomers").exists, "the Teams segment lists the new team")
-        XCTAssertTrue(labelled("5 of 8 teams").exists, "the count moved")
+        XCTAssertTrue(labelled("5 of 8 teams").waitForExistence(timeout: 10), "the count moved")
+        let entries = app.buttons["people-going-row"]
+        scrollUntilHittable(entries)
+        entries.tap()
+        XCTAssertTrue(labelled("Late Bloomers").waitForExistence(timeout: 10), "the Teams screen lists the new team")
     }
 
     /// The organiser enters a fifth team and starts the Kickers Cup from its menu, after the confirmation that names
@@ -140,7 +143,9 @@ final class LilyTournamentTests: LilyUITestCase {
     func testAcceptingATournamentInviteOpensTheDetail() {
         tapSignInWithApple()
         acceptPadelOpenInvite()
-        XCTAssertTrue(app.staticTexts["Organised by Noor"].exists)
+        let organiser = app.descendants(matching: .any)["people-hosting-row"]
+        XCTAssertTrue(organiser.waitForExistence(timeout: 5) && organiser.label.contains("Noor"),
+                      "the card names the organiser: \(organiser.label)")
 
         // The detail hides the tab bar (2026-11-24), so Chats is reached by its shortcut; its stack still shows the inbox.
         selectTabByShortcut(3, until: app.navigationBars["iskra"])
@@ -218,7 +223,9 @@ final class LilyTournamentTests: LilyUITestCase {
         XCTAssertTrue(info.waitForExistence(timeout: 5))
         info.tap()
 
-        XCTAssertTrue(app.staticTexts["Organised by Marta"].waitForExistence(timeout: 10), "the info button leads to it")
+        let organiser = app.descendants(matching: .any)["people-hosting-row"]
+        XCTAssertTrue(organiser.waitForExistence(timeout: 10), "the info button leads to it")
+        XCTAssertTrue(organiser.label.contains("Marta"), "the card names the organiser: \(organiser.label)")
         XCTAssertTrue(app.segmentedControls["tournament-section"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["You're in"].exists, "the caller plays in it")
         XCTAssertFalse(app.buttons["tournament-action-chat"].waitForExistence(timeout: 1),

@@ -90,7 +90,10 @@ final class LilyGroupsTests: LilyUITestCase {
         XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 5), "the detail was pushed on Home")
 
         selectTab("Explore")
-        XCTAssertTrue(labelled(title).waitForExistence(timeout: 10), "the group's Events segment must list the new game")
+        // The redesigned detail's cards sit above the segment, so the new game's card starts below the fold.
+        let listed = labelled(title)
+        dragUpUntilExists(listed)
+        XCTAssertTrue(listed.exists, "the group's Events segment must list the new game")
 
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Explore"].waitForExistence(timeout: 5))

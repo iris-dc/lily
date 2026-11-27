@@ -56,7 +56,8 @@ final class LilyRosterTests: LilyUITestCase {
         confirm("Remove")
 
         XCTAssertTrue(luca.waitForNonExistence(timeout: 10), "the row is gone")
-        XCTAssertTrue(labelled("5 members").waitForExistence(timeout: 10), "the header counts one fewer")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(labelled("5 members").waitForExistence(timeout: 10), "back on the detail, the header counts one fewer")
     }
 
     /// A plain member's long press on a row offers nothing: no menu is attached where the caller has no action, so
@@ -93,7 +94,7 @@ final class LilyRosterTests: LilyUITestCase {
 
         let picker = app.segmentedControls["group-section"]
         XCTAssertTrue(picker.waitForExistence(timeout: 10), "a public group offers a guest Events | Tournaments")
-        XCTAssertFalse(picker.buttons["Members"].exists, "the roster is for signed-in callers")
+        XCTAssertFalse(app.buttons["people-going-row"].exists, "the roster is for signed-in callers")
         picker.buttons["Tournaments"].tap()
         XCTAssertTrue(app.buttons[MockIDs.kickersCupRow].waitForExistence(timeout: 10), "the segment lists the Kickers Cup")
     }
@@ -127,8 +128,8 @@ final class LilyRosterTests: LilyUITestCase {
 
     @MainActor
     private func openMembers() {
-        let picker = app.segmentedControls["group-section"]
-        XCTAssertTrue(picker.waitForExistence(timeout: 10))
-        picker.buttons["Members"].tap()
+        let members = app.buttons["people-going-row"]
+        XCTAssertTrue(members.waitForExistence(timeout: 10))
+        members.tap()
     }
 }

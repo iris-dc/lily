@@ -39,8 +39,9 @@ nonisolated struct TournamentPermissions: Equatable, Sendable {
                                             organizerProfile: nil,
                                             canJoinTeams: false)
 
-    var showsMenu: Bool { canOpenChat || canEdit || canCancel || canInvite || canReport }
-    /// The in-body action row under the facts: chat and invite, drawn only when it has something to offer.
+    /// Chat and invite live in the pinned bar, so the menu shows only when one of its own items does.
+    var showsMenu: Bool { showsStart || canEdit || canCancel || canReport }
+    /// The pinned bar's chat and invite circles, drawn only when either has something to offer.
     var showsActionRow: Bool { canOpenChat || canInvite }
 }
 

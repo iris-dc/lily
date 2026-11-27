@@ -53,10 +53,6 @@ nonisolated extension AppBranding {
         static var semiFinals: String { localized("Semi-finals") }
         static var quarterFinals: String { localized("Quarter-finals") }
 
-        static func organizedBy(name: String) -> String {
-            localized("Organised by \(name)")
-        }
-
         /// "3 of 8 teams" or "6 of 12 players", on cards and under the entries bar.
         static func entries(_ count: Int, of maxEntries: Int, teamSize: Int) -> String {
             teamSize > 1 ? localized("\(count) of \(maxEntries) teams") : players(count, of: maxEntries)

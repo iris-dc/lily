@@ -24,6 +24,15 @@ nonisolated extension AppBranding {
             guard isSelf, displayName != youLabel else { return displayName }
             return Groups.caption([displayName, youLabel])
         }
+
+        /// The detail screens' sections and their People card: the rows that lead to the full list.
+        static var peopleSection: String { localized("People") }
+        static var aboutSection: String { localized("About") }
+        static var detailsSection: String { AppBranding.Create.eventDetails }
+        static var hostingRow: String { localized("Hosting") }
+        static var goingRow: String { localized("Going") }
+        static var organisedByRow: String { localized("Organised by") }
+        static var nobodyGoingYet: String { localized("Nobody has joined yet") }
     }
 }
 

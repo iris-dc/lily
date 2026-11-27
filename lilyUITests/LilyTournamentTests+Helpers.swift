@@ -6,7 +6,8 @@ extension LilyTournamentTests {
     @MainActor
     func openKickersCup() {
         openTournament(row: MockIDs.kickersCupRow, titled: "Kickers Cup")
-        XCTAssertTrue(app.staticTexts["You organise this tournament"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.descendants(matching: .any)["people-hosting-row"].waitForExistence(timeout: 10),
+                      "the detail is up once its People card drew")
     }
 
     /// Opens Tuesday Table Tennis from Home; the caller plays in it, so it is listed first (in progress).
@@ -42,7 +43,8 @@ extension LilyTournamentTests {
         start.tap()
         XCTAssertTrue(app.staticTexts["Start Kickers Cup?"].waitForExistence(timeout: 5), "the confirmation names it")
         confirm("Start tournament")
-        XCTAssertTrue(app.staticTexts["In progress"].waitForExistence(timeout: 10), "the status moved")
+        // The status lives in the header's one caption line ("Single elimination · In progress").
+        XCTAssertTrue(labelled("In progress").waitForExistence(timeout: 10), "the status moved")
     }
 
     /// Accepts Noor's invite into the Padel Open from the inbox and waits for its detail with the caller entered.

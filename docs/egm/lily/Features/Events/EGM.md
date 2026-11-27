@@ -35,6 +35,7 @@ by every layer. Contracts live out of tree under `docs/egm/` because `lily/` may
   also the room seams — `openChat`, Mine kept in step — beside `EventLoaderViewModel`, an event behind an
   id-and-name push),
   `CreateEventViewModel` (`CreateFlow` keyed on `clientId`) and `EditEventViewModel` (`WriteGate`).
-- Views: [./Views/EGM.md](./Views/EGM.md) - the Explore screen and its states, the detail with its participation
-  control and in-body action row (2026-11-15), the generic `EventDraftForm` and sheets, the filter sheet, the events map and location picker, and the
+- Views: [./Views/EGM.md](./Views/EGM.md) - the Explore screen and its states, the detail with its centered header,
+  People card and pinned action bar (join/leave beside the chat and invite shortcuts; redesigned 2026-11-27) and the
+  pushed "Who's in" list (`EventPeopleView`), the generic `EventDraftForm` and sheets, the filter sheet, the events map and location picker, and the
   cards and rows reused by Groups and Tournaments.

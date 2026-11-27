@@ -1,14 +1,17 @@
 import SwiftUI
 
-/// Event detail with the join/leave control and, for signed-in callers, who is in. The view model decides what the
-/// control is, whose profiles may open and whether the caller may edit; this only draws it and hosts the sheets. An
-/// involved caller gets Open chat and Invite under the facts, like a group's action row; the chat is pushed on this
-/// stack, so Back returns here.
+/// Event detail, meetup-like: the sport, the title and the date centered on top, then the facts, the People card
+/// (who hosts and who is going, each row opening the full list), what the host wrote, and the map. The join/leave
+/// control sits in the pinned bottom bar with the chat and invite shortcuts, so the one thing to do is always in
+/// reach. The view model decides what the control is, whose names show and whether the caller may edit; this only
+/// draws it and hosts the sheets. The chat is pushed on this stack, so Back returns here.
 struct EventDetailView: View {
     @State private var viewModel: EventDetailViewModel
     @State private var isEditing = false
     @State private var isInviting = false
     private let dependencies: AppDependencies
+
+    private typealias Copy = AppBranding.People
 
     init(viewModel: EventDetailViewModel, dependencies: AppDependencies) {
         _viewModel = State(initialValue: viewModel)
@@ -22,35 +25,24 @@ struct EventDetailView: View {
         return ContentScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                    EventTypeChip(type: event.type)
-                    OwnerTitleBlock(title: event.title,
-                                    subtitle: AppBranding.hostedByTitle(for: Tombstone.displayName(event.hostName,
-                                                                                                   deleted: event.deleted)),
-                                    destination: viewModel.hostProfile,
-                                    subtitleMark: event.deleted == true ? Tombstone.symbol : nil)
-                    if let group = event.group {
-                        HostedInLine(group: group)
+                    DetailHeader(symbolName: event.type.symbolName,
+                                 title: event.title,
+                                 caption: headerCaption)
+                    DetailSection(title: Copy.detailsSection) {
+                        EventFactsCard(event: event)
                     }
-                    if let description = event.description {
-                        Text(description).font(.body)
-                    }
-                    EventFactsCard(event: event)
-                    actionRow
+                    peopleSection
+                    aboutSection
                     EventLocationMap(event: event)
-                    if viewModel.showsParticipants {
-                        participantsSection
-                    }
-                    if let lookingFor = event.lookingFor {
-                        lookingForCard(lookingFor)
-                    }
-                    participationControl
                 }
                 .padding(DesignTokens.Layout.detailMargin)
                 .readableColumn()
             }
         }
+        .navigationTitle(event.title)
         .navigationBarTitleDisplayMode(.inline)
         .hidesTabBarOnCompact()
+        .safeAreaInset(edge: .bottom) { actionBar }
         .toolbar {
             if viewModel.canEdit {
                 ToolbarItem(placement: .topBarTrailing) { editButton }
@@ -69,13 +61,107 @@ struct EventDetailView: View {
         .sheet(isPresented: $isInviting) { inviteSheet }
     }
 
-    /// Open chat and Invite for the host and participants; nothing for everyone else.
-    @ViewBuilder private var actionRow: some View {
+    /// When it starts and, when known, when it ends: the line under the title.
+    private var headerCaption: String {
+        let start = event.startsAt.formatted(LilyTheme.DateStyles.dateTime)
+        guard let untilText else { return start }
+        return AppBranding.Groups.caption([start, untilText])
+    }
+
+    /// "Until 20:30" when the game ends on the start's own day, the full date otherwise; nothing without a finish.
+    private var untilText: String? {
+        guard let endsAt = event.endsAt else { return nil }
+        let sameDay = Calendar.current.isDate(endsAt, inSameDayAs: event.startsAt)
+        return AppBranding.Events.until(endsAt.formatted(sameDay ? LilyTheme.DateStyles.time : LilyTheme.DateStyles.dateTime))
+    }
+
+    /// Hosting and Going as two rows of one card: the host's circle and name, then the first avatars and the count;
+    /// each opens the full list for signed-in callers (names are members-level information, so guests get the facts
+    /// alone).
+    private var peopleSection: some View {
+        let host = Tombstone.displayName(event.hostName, deleted: event.deleted)
+        return DetailSection(title: Copy.peopleSection) {
+            GlassCard {
+                VStack(spacing: 0) {
+                    PeopleSummaryRow(title: Copy.hostingRow,
+                                     names: [host],
+                                     detail: host,
+                                     detailMark: event.deleted == true ? Tombstone.symbol : nil,
+                                     destination: peopleDestination,
+                                     identifier: AccessibilityIdentifiers.peopleHostingRow)
+                    Divider()
+                    PeopleSummaryRow(title: Copy.goingRow,
+                                     names: goingNames,
+                                     detail: "\(max(event.participantCount - 1, 0))",
+                                     destination: peopleDestination,
+                                     identifier: AccessibilityIdentifiers.peopleGoingRow)
+                }
+            }
+        }
+    }
+
+    private var peopleDestination: EventPeopleDestination? {
+        viewModel.showsParticipants ? EventPeopleDestination(event: event) : nil
+    }
+
+    /// The first joined players for the Going stack; the host leads their own row. The count is the event's own minus
+    /// the host, so it matches the pushed Going section and is right before the roster has answered.
+    private var goingNames: [String] {
+        viewModel.participants.filter { !$0.isHost }.map(\.displayName)
+    }
+
+    /// What the host wrote: the description and who they are looking for; nothing draws without either.
+    @ViewBuilder private var aboutSection: some View {
+        if event.description != nil || event.lookingFor != nil {
+            DetailSection(title: Copy.aboutSection) {
+                GlassCard {
+                    VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+                        if let description = event.description {
+                            Text(description).font(.body)
+                        }
+                        if let lookingFor = event.lookingFor {
+                            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                                Text(AppBranding.Events.lookingForTitle)
+                                    .font(LilyTheme.Fonts.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(lookingFor).font(.body)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Chat and invite as quiet circles, the join/leave control as the primary; nothing mounts when the caller has
+    /// nothing to do here (a guest on a started game).
+    @ViewBuilder private var actionBar: some View {
         let permissions = viewModel.permissions
-        if permissions.showsActionRow {
-            EventActionRow(permissions: permissions,
-                           onOpenChat: { Task { await viewModel.openChat() } },
-                           onInvite: { isInviting = true })
+        if permissions.showsActionRow || viewModel.participation != .hidden {
+            DetailActionBar {
+                if permissions.canOpenChat {
+                    Button {
+                        Task { await viewModel.openChat() }
+                    } label: {
+                        Image(systemName: DesignTokens.Symbols.chat)
+                    }
+                    .lilyGlassIconButton()
+                    .accessibilityLabel(AppBranding.Groups.openChat)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.eventActionChat)
+                }
+                if permissions.canInvite {
+                    Button {
+                        isInviting = true
+                    } label: {
+                        Image(systemName: DesignTokens.Symbols.invite)
+                    }
+                    .lilyGlassIconButton()
+                    .accessibilityLabel(AppBranding.Groups.invite)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.eventActionInvite)
+                }
+            } primary: {
+                participationControl
+            }
         }
     }
 
@@ -91,34 +177,7 @@ struct EventDetailView: View {
             .accessibilityIdentifier(AccessibilityIdentifiers.eventEdit)
     }
 
-    /// "Who's in": the host first, then everyone else, each row opening the person's profile except the caller's own.
-    private var participantsSection: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-            Text(AppBranding.Events.participantsTitle)
-                .font(LilyTheme.Fonts.cardTitle)
-            if viewModel.isLoadingParticipants, viewModel.participants.isEmpty {
-                ProgressView().frame(maxWidth: .infinity)
-            }
-            ForEach(viewModel.participants) { participant in
-                ParticipantRow(participant: participant, isSelf: viewModel.isSelf(participant))
-            }
-        }
-    }
-
-    private func lookingForCard(_ text: String) -> some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-                Label(AppBranding.Events.lookingForTitle, systemImage: DesignTokens.Symbols.lookingFor)
-                    .labelStyle(.iconColumn)
-                    .font(LilyTheme.Fonts.caption)
-                    .foregroundStyle(.secondary)
-                Text(text).font(.body)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var participationControl: some View {
+    @ViewBuilder private var participationControl: some View {
         switch viewModel.participation {
         case .hidden:
             EmptyView()
@@ -132,9 +191,7 @@ struct EventDetailView: View {
             BusyButton(AppBranding.eventFullAction, isBusy: viewModel.isBusy)
                 .lilyProminentButton()
         case .hosting:
-            Text(AppBranding.hostingNotice)
-                .font(LilyTheme.Fonts.caption)
-                .foregroundStyle(.secondary)
+            DetailBarNotice(text: AppBranding.hostingNotice)
         }
     }
 }

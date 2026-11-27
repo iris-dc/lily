@@ -8,19 +8,10 @@ struct EventFactsCard: View {
     var body: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                Label {
-                    VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
-                        Text(event.startsAt, format: LilyTheme.DateStyles.dateTime)
-                        if let untilText {
-                            Text(untilText)
-                                .font(LilyTheme.Fonts.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                } icon: {
-                    Image(systemName: DesignTokens.Symbols.time)
-                }
                 Label(event.locationName, systemImage: DesignTokens.Symbols.location)
+                if let group = event.group {
+                    HostedInLine(group: group)
+                }
                 if !event.isFree {
                     Label(AppBranding.Events.perPerson(event.priceText), systemImage: DesignTokens.Symbols.price)
                 }
@@ -32,12 +23,5 @@ struct EventFactsCard: View {
             }
             .labelStyle(.iconColumn)
         }
-    }
-
-    /// "Until 20:30" when the game ends on the start's own day, the full date otherwise; nothing without a finish.
-    private var untilText: String? {
-        guard let endsAt = event.endsAt else { return nil }
-        let sameDay = Calendar.current.isDate(endsAt, inSameDayAs: event.startsAt)
-        return AppBranding.Events.until(endsAt.formatted(sameDay ? LilyTheme.DateStyles.time : LilyTheme.DateStyles.dateTime))
     }
 }

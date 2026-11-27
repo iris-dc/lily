@@ -26,8 +26,7 @@ struct TournamentDetailModelTests {
         #expect(TournamentDetailSection.results.title(for: knockout) == AppBranding.Tournaments.bracketSection,
                 "the title reads by format before the start, not once a match exists")
         #expect(TournamentDetailSection.results.title(for: league) == AppBranding.Tournaments.standingsSection)
-        for section in [TournamentDetailSection.entries, .matches] {
-            #expect(section.title(for: knockout) == section.title(for: league), "only the results title follows the format")
-        }
+        let matches = TournamentDetailSection.matches
+        #expect(matches.title(for: knockout) == matches.title(for: league), "only the results title follows the format")
     }
 }

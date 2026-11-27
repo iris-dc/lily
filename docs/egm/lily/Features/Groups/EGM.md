@@ -43,6 +43,7 @@ live under `lilyTests/Groups` (`./scripts/ci.sh unit`).
   the detail's join/leave/delete with refetch on an unknown outcome, the loader behind an event badge, the roster's
   role-gated actions, the invite and report sheets.
 - Views: [`./Views/EGM.md`](./Views/EGM.md) - the Discover screen, cards, carousel and tiles; the group detail with
-  its access-driven action row, menu, segments and single confirmation dialog; the shared draft form and sheets; the
+  its centered header, People card, access-driven pinned action bar, menu and segments (redesigned 2026-11-27) and
+  the pushed `GroupMembersView`, which owns the remove/ban dialog; the shared draft form and sheets; the
   invite and report sheets; rows; and `View.groupDestinations(dependencies:onTournamentChange:)`, which routes a
   conversation to the profile and a room to the tournament, never to `GroupDetailView`.

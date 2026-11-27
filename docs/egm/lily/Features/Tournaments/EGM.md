@@ -48,7 +48,7 @@ reading `AppConfig.FeatureFlags.chat`). Unit tests live under `lilyTests/Tournam
   and the `CreateTournamentViewModel` and `EditTournamentViewModel` draft sheets (`CreateFlow`, `WriteGate`). Every
   dependency is a protocol or a shared store.
 - Views: [`./Views/EGM.md`](./Views/EGM.md) - the carousel, Discover, group segment and cards; the detail screen with
-  header, facts, the in-body action row (chat and invite, 2026-11-15), entries, bracket or standings, matches,
-  participation control and menu; the match, schedule and
+  its centered header, facts and People cards, bracket or standings and matches, the pinned action bar (chat and
+  invite beside the join/create-team/leave control; redesigned 2026-11-27), the pushed entries list and the menu; the match, schedule and
   team-name sheets; and the generic `TournamentDraftForm` behind the create and edit sheets. Permissions and
   participation gate every control; sheets mount their own `.errorPopup`.

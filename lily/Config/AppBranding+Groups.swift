@@ -60,10 +60,6 @@ nonisolated extension AppBranding {
             localized("Hosted in \(groupName)")
         }
 
-        static func ownedBy(name: String) -> String {
-            localized("Run by \(name)")
-        }
-
         /// The confirmations the destructive toolbar and member actions ask for.
         static func leaveConfirmation(groupName: String) -> String {
             localized("Leave \(groupName)?")

@@ -17,11 +17,9 @@ nonisolated extension AccessibilityIdentifiers {
     static let tournamentMore = "tournament-more"
     static let tournamentEdit = "tournament-edit"
     static let tournamentCancel = "tournament-cancel"
-    static let tournamentOpenChat = "tournament-open-chat"
     static let tournamentStart = "tournament-start"
-    static let tournamentInvite = "tournament-invite"
     static let tournamentReport = "tournament-report"
-    /// The in-body action row under the facts; the menu keeps `tournamentOpenChat` and `tournamentInvite`.
+    /// The pinned bar's chat and invite circles.
     static let tournamentActionChat = "tournament-action-chat"
     static let tournamentActionInvite = "tournament-action-invite"
     /// The bracket, the standings table and the matches list, each containing its cells or rows.

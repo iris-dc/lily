@@ -29,6 +29,11 @@ nonisolated extension DesignTokens.Symbols {
 nonisolated extension DesignTokens.Layout {
     static let avatarSmall: CGFloat = 28
     static let avatarMedium: CGFloat = 40
+    /// The People card's stack (`AvatarStack`): how many circles stand for the list, how far each overlaps the one
+    /// before it (a share of the diameter), and the dark rim that separates them.
+    static let peopleStackCount = 3
+    static let avatarStackOverlap: CGFloat = 0.33
+    static let avatarStackRimWidth: CGFloat = 1.5
     /// Initials in an avatar are this share of its diameter, so every size reads the same.
     static let avatarInitialsFraction: CGFloat = 0.4
     /// A chat bubble grows to this share of the list's width before it wraps.
@@ -66,6 +71,8 @@ nonisolated extension DesignTokens.Radius {
 }
 
 nonisolated extension DesignTokens.Opacity {
+    /// The rim between overlapping avatars in a stack, dark enough to part two glass circles over the aurora.
+    static let avatarStackRim: Double = 0.6
     /// The quote block's fill inside a bubble (white on the accent, ink on the surface), faint so the bubble stays one.
     static let quoteFill: Double = 0.16
     /// The accent wash on a message a tapped quote scrolled to.

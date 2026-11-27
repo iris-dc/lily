@@ -4,10 +4,11 @@ Source: `lily/Core/UI/Components/`
 
 ## Overview
 
-The reusable SwiftUI pieces every feature screen is built from, 47 files with no subfolders: the screen scaffold and
+The reusable SwiftUI pieces every feature screen is built from, 52 files with no subfolders: the screen scaffold and
 its aurora (`ContentScreen`, `AuroraBackground`, `FilmGrainOverlay`), the button, chip, picker and field modifiers that give
 the app its one look, the cards, titles, rows, avatars, sport marks (`sportFill`)
-and tiles, the list and empty states, the filter dropdowns, the
+and tiles, the detail screens' shared pieces (`DetailHeader`, `DetailSection`, `AvatarStack`, `PeopleSummaryRow`,
+`DetailActionBar`; 2026-11-27, the event/group/tournament detail redesign), the list and empty states, the filter dropdowns, the
 shared error popup (`errorPopup`), the create-or-edit sheet (`DraftSheet`) and the UIKit-backed growing text field
 (`GrowingTextView`). The arithmetic behind the aurora is in [Effects](../Effects/EGM.md), fonts and colors in
 [Theme](../Theme/EGM.md), row packing and the layout mode in [Layout](../Layout/EGM.md), and `DraftSheet`'s model
@@ -107,11 +108,9 @@ use the generated `Color.lily*` asset symbols.
   `LazyVStack` of rows each followed by `AvatarRowDivider()`, or over the empty `SectionNote`, and
   `SectionNote(text:)`, the quiet secondary line at the section margin (both 2026-11-25, extracted from
   `UserProfileView` for Profile's Activity screen)
-  [`lily/Core/UI/Components/RowsSection.swift:RowsSection`, `SectionNote`];
-  `OwnerTitleBlock<Destination: Hashable>(title:, subtitle:, destination: Destination?, subtitleMark: String? = nil)`
-  [`lily/Core/UI/Components/OwnerTitleBlock.swift:OwnerTitleBlock`] (its link is a `ChevronLink`; `subtitleMark`, an
-  optional SF Symbol drawn before the subtitle in its secondary style, carries the deleted account's tombstone mark,
-  2026-11-07);
+  [`lily/Core/UI/Components/RowsSection.swift:RowsSection`, `SectionNote`]
+  (`OwnerTitleBlock` was deleted 2026-11-27 with the detail redesign: the centered `DetailHeader` and the People
+  card's rows replaced the owner title and its tombstone mark);
   `ChevronLink<Value: Hashable, Label>(value:, label:)` [`lily/Core/UI/Components/ChevronLink.swift:ChevronLink`], a
   `.plain` `NavigationLink(value:)` whose label and `.caption2` `DesignTokens.Symbols.chevron` read `.secondary`;
   `ValidationHint(_ message: String)` [`lily/Core/UI/Components/ValidationHint.swift:ValidationHint`], a `Label` of the
@@ -163,6 +162,25 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/CapacityMeter.swift:CapacityMeter`], the how-full capsule alone (full width in
   `EntriesBar`, `DesignTokens.Layout.mapCardMeterWidth` on the map's `EventPreviewCard`); its height is
   `DesignTokens.Layout.capacityBarHeight`.
+- Detail screens (2026-11-27, the event/group/tournament detail redesign): `DetailHeader(symbolName:, tint:
+  AvatarCircle.Tint = .sport, title:, caption: String? = nil)`
+  [`lily/Core/UI/Components/DetailHeader.swift:DetailHeader`], the centered top of a detail screen — the subject's
+  mark as an `AvatarCircle(systemImage:, size: Layout.avatarSize, tint:)` over the title in
+  `LilyTheme.Fonts.screenTitle` with `Typography.titleTracking` and an optional `.subheadline` `.secondary` caption,
+  centered in a `.frame(maxWidth: .infinity)`; `DetailSection<Content>(title:, content:)`
+  [`lily/Core/UI/Components/DetailSection.swift:DetailSection`], the quiet caption-font `.secondary` title over the
+  card or text it names; `AvatarStack(names: [String], size: CGFloat = Layout.avatarSmall)`
+  [`lily/Core/UI/Components/AvatarStack.swift:AvatarStack`], the first few people of a list as overlapping initials
+  circles; `PeopleSummaryRow<Destination: Hashable>(title:, names: [String] = [], detail: String? = nil,
+  destination: Destination? = nil, identifier:)` [`lily/Core/UI/Components/PeopleSummaryRow.swift:PeopleSummaryRow`],
+  one line of a detail's People card — the role title in `Fonts.itemTitle`, the `AvatarStack`, the name or count in
+  `.body` `.secondary` and the chevron when the row opens the full list — generic over the destination so Core/UI
+  stays free of the feature models; `DetailActionBar<Icons, Primary>(icons:, primary:)`
+  [`lily/Core/UI/Components/DetailActionBar.swift:DetailActionBar`], the pinned bottom bar a detail mounts via
+  `safeAreaInset(edge: .bottom)` — the quiet icon actions leading, the primary control trailing in a
+  `.frame(maxWidth: .infinity)` slot, `Layout.detailMargin`/`Spacing.md` padding under `readableColumn()`,
+  transparent over the content — and `DetailBarNotice(text:)` (same file), the caption-on-glass state line standing
+  where a button would be ("You're in", "Invite only").
 - Carousel: `TileCarousel<Item: Identifiable, SeeAll: Hashable, Tile>(items:, title:, seeAll:, seeAllIdentifier:, identifier:, rows: Int = 1, tileHeight: CGFloat, tile: (Item, _ fillsWidth: Bool) -> Tile)`,
   `TileLink<Value: Hashable, Tile>(value:, identifier:, tile:)`, `TileContent(avatar: AvatarCircle, title:, lines: [String])` (an `HStack` of the avatar, a `CaptionedTitle` and a spacer)
   [`lily/Core/UI/Components/TileCarousel.swift:TileCarousel`, `TileLink`, `TileContent`].
@@ -283,6 +301,19 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/AvatarCircle.swift:AvatarCircle`, `AvatarSurface`].
   `String.initials` takes the first character of the first two space-separated words, uppercased
   [`lily/Core/UI/Components/String+Initials.swift:String.initials`].
+- Detail pieces: `AvatarStack` draws at most `DesignTokens.Layout.peopleStackCount` (3) circles, each pulled over
+  the one before it by `size * Layout.avatarStackOverlap` and backed by a `Color.black` rim at
+  `Opacity.avatarStackRim` padded out `Layout.avatarStackRimWidth`, and is `.accessibilityHidden(true)` (the text
+  beside it carries the facts) [`lily/Core/UI/Components/AvatarStack.swift:AvatarStack`]. `PeopleSummaryRow` is a
+  `.plain` `NavigationLink(value: destination)` under `lilyHoverable()` when `destination` is non-nil and the same
+  content as a plain row otherwise (a caller who may not open the list gets the facts alone); only the linked shape
+  draws the chevron; either shape is one combined accessibility element carrying `identifier`, at least
+  `Layout.controlHeight` tall [`lily/Core/UI/Components/PeopleSummaryRow.swift:PeopleSummaryRow`]. `DetailHeader`
+  draws the caption line only `if let caption` [`lily/Core/UI/Components/DetailHeader.swift:DetailHeader`];
+  `DetailActionBar` fixes no slot's content — the detail decides what stands in each, and an empty icons builder
+  leaves the primary alone [`lily/Core/UI/Components/DetailActionBar.swift:DetailActionBar`]; `DetailBarNotice`
+  reads `LilyTheme.Fonts.caption` in `.secondary` on `lilyChip(.regular)` glass, so it stays legible over whatever
+  scrolled under the transparent bar [`lily/Core/UI/Components/DetailActionBar.swift:DetailBarNotice`].
 - `FilterDropdownButton` stays a popover on compact widths (`presentationCompactAdaptation(.popover)`); since
   2026-11-05 only the Discover type filters use it (Explore's events filter is a form sheet, `EventFilterSheet`);
   `DropdownPanel`
@@ -314,7 +345,8 @@ use the generated `Color.lily*` asset symbols.
   `PlaceholderTextView.init` adds the placeholder label and a `NotificationCenter` observer for
   `UITextView.textDidChangeNotification` (object `self`, no explicit `removeObserver`); `takeFocus()` calls
   `becomeFirstResponder()` [`lily/Core/UI/Components/GrowingTextView.swift:GrowingTextView.Coordinator`, `PlaceholderTextView`].
-- Navigation and bindings: `TileCarousel`, `TileLink`, `ChevronLink` and (through it) `OwnerTitleBlock`, and
+- Navigation and bindings: `TileCarousel`, `TileLink`, `ChevronLink`, `PeopleSummaryRow` (only with a non-nil
+  destination) and
   `GlassNavigationRow(value:identifier:label:)` push through `NavigationLink(value:)`; `GlassNavigationRow`'s action
   init, and `SettingsLinkRow` through it, call the caller's closure;
   `FilterDropdownButton` reports `onPresentedChange?(isPresented)` on every change (the events filter button reports

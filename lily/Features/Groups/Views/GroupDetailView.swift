@@ -1,18 +1,22 @@
 import SwiftUI
 
-/// A group: header, the actions the caller has, and the Events | Tournaments | Members segments the caller's access
-/// allows (`GroupDetailSection.available`). The view model decides what the caller may do; this draws it and hosts the
-/// sheets and confirmations. Never shown for a direct conversation: `GroupDestinations` shows the person instead.
+/// A group: its mark, name and size centered on top, where it plays, the People card (who runs it and who is in, each
+/// row opening the roster), the description, and the Events | Tournaments segments the caller's access allows
+/// (`GroupDetailSection.available`). Join or Open chat sits in the pinned bottom bar with the invite and create-event
+/// shortcuts. The view model decides what the caller may do; this draws it and hosts the sheets and confirmations
+/// (the roster's own questions moved with it to `GroupMembersView`). Never shown for a direct conversation:
+/// `GroupDestinations` shows the person instead.
 struct GroupDetailView: View {
-    @State private var viewModel: GroupDetailViewModel
+    @State var viewModel: GroupDetailViewModel
     @State private var section: GroupDetailSection = .events
     /// The group's upcoming games; a game created from here lands in it through `add`.
     @State var events: EventListViewModel
     /// The group's tournaments; one created from here lands in it the same way.
     @State var tournaments: TournamentListViewModel
     /// Built for whoever may see the roster and rebuilt when the caller's access changes (a role, a sign-in), since
-    /// its menus follow it; a change to the group itself reaches it through `update(group:)`.
-    @State private var members: MembersViewModel?
+    /// its menus follow it; a change to the group itself reaches it through `update(group:)`. The People card reads
+    /// its first names, the pushed members screen the rest.
+    @State var members: MembersViewModel?
     @State var presentedSheet: DetailSheet?
     /// The wizard behind the two create cases, made once per presentation in `presentWizard(_:kind:)` and owned
     /// above both presenters, so a mid-flow width-class change re-hosts the same flow (`GroupDetailView+Create`).
@@ -22,7 +26,7 @@ struct GroupDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.layoutMode) var layoutMode
 
-    private typealias Copy = AppBranding.Groups
+    typealias Copy = AppBranding.Groups
 
     enum DetailSheet: String, Identifiable {
         case invite, edit, createEvent, createTournament, signIn, report
@@ -51,16 +55,13 @@ struct GroupDetailView: View {
     private var sections: [GroupDetailSection] { GroupDetailSection.available(for: viewModel.access, in: group) }
 
     var body: some View {
-        @Bindable var viewModel = viewModel
-        return ContentScreen {
+        ContentScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
-                    GroupHeader(group: group, distance: group.distance(from: events.userLocation)?.roadText())
-                    GroupActionRow(viewModel: viewModel,
-                                   onOpenChat: { viewModel.openChat() },
-                                   onInvite: { presentedSheet = .invite },
-                                   onCreateEvent: { presentCreateEvent() },
-                                   onSignIn: { presentedSheet = .signIn })
+                    header
+                    detailsSection
+                    peopleSection
+                    aboutSection
                     if sections.count > 1 {
                         sectionPicker
                     }
@@ -71,8 +72,21 @@ struct GroupDetailView: View {
             }
             .refreshable { await refresh() }
         }
+        .navigationTitle(group.name)
         .navigationBarTitleDisplayMode(.inline)
         .hidesTabBarOnCompact()
+        .safeAreaInset(edge: .bottom) { actionBar }
+        // This detail's roster rides its own view model, so a change made there reaches the People card and the
+        // header count at once; another group's push (two details on one stack) builds a fresh one from the value.
+        .navigationDestination(for: GroupMembersDestination.self) { destination in
+            if destination.group.id == group.id, let members {
+                GroupMembersView(viewModel: members)
+            } else {
+                GroupMembersView(viewModel: dependencies.makeMembersViewModel(for: destination.group) { _ in
+                    dependencies.groupChanges.recordChange()
+                })
+            }
+        }
         .chatDestination(item: $viewModel.openedChat, dependencies: dependencies)
         .toolbar {
             if viewModel.showsMenu {
@@ -93,9 +107,11 @@ struct GroupDetailView: View {
             await events.loadUserLocation()
             if AppConfig.FeatureFlags.tournaments { await tournaments.loadUserLocation() }
         }
+        // The People card's stack needs the first names, so the roster loads with the detail, not with a segment.
+        .task(id: members.map(ObjectIdentifier.init)) { await members?.load() }
         .onChange(of: viewModel.access, initial: true) { rebuildMembers() }
         .onChange(of: viewModel.group) { _, group in members?.update(group: group) }
-        // A segment that disappears (a sign-out while on Members) must not leave the picker without a selection.
+        // A segment that disappears (a sign-out while on Tournaments) must not leave the picker without a selection.
         .onChange(of: sections) { _, sections in
             if !sections.contains(section) { section = .events }
         }
@@ -142,22 +158,14 @@ struct GroupDetailView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.groupSection)
     }
 
-    /// Which segment is on screen: the roster and the tournaments only for those offered them, whatever the picker says
-    /// (`members` is rebuilt a frame after `sections` changes, hence the nil test). Events for everyone who can see the group.
+    /// Which segment is on screen: tournaments only for those offered them, whatever the picker says; events for
+    /// everyone who can see the group.
     private var shownSection: GroupDetailSection {
-        switch section {
-        case .members where members != nil: .members
-        case .tournaments where sections.contains(.tournaments): .tournaments
-        default: .events
-        }
+        section == .tournaments && sections.contains(.tournaments) ? .tournaments : .events
     }
 
     @ViewBuilder private var segment: some View {
         switch shownSection {
-        case .members:
-            if let members {
-                MembersList(viewModel: members) { confirmation = $0 }
-            }
         case .tournaments: GroupTournamentsSegment(viewModel: tournaments)
         case .events: GroupEventsSegment(viewModel: events)
         }
@@ -181,8 +189,7 @@ struct GroupDetailView: View {
         }
     }
 
-    /// The roster's actions go through the one `MembersViewModel` the Members segment draws, so a confirmed removal
-    /// moves the row there.
+    /// Leaving and deleting are the detail's; the roster's removals moved to `GroupMembersView` with its list.
     private func run(_ confirmation: GroupConfirmation) async {
         switch confirmation {
         case .leave: await viewModel.leave()
@@ -198,13 +205,13 @@ struct GroupDetailView: View {
             : nil
     }
 
-    /// Pull-to-refresh reloads what the open segment shows.
+    /// Pull-to-refresh reloads what the open segment shows, and the roster behind the People card.
     private func refresh() async {
         switch shownSection {
-        case .members: await members?.load()
         case .tournaments: await tournaments.load()
         case .events: await events.load()
         }
+        await members?.load()
     }
 }
 

@@ -8,7 +8,8 @@ The first screen: a vertical, page-snapping intro of full-page slides over the a
 app screen (Explore's cards, an event detail down to Join, a group room, a tournament bracket) with a two-line caption,
 a trailing page indicator and the two entry buttons pinned under every slide. The miniatures are pictures (fixed type
 size, no hit testing, hidden from VoiceOver); the real views they reuse (`EventCard`, `EventFactsCard`, `BracketView`,
-`AvatarCircle`, `ScreenTitle`) live in other features and `Core/UI`.
+`AvatarCircle`, `ScreenTitle`, and since 2026-11-27 `DetailHeader` — the join and tournament slides' centered
+headers, as on the real details) live in other features and `Core/UI`.
 
 Files: `lily/Features/Landing/Views/LandingView.swift`, `lily/Features/Landing/Views/IntroPager.swift`,
 `lily/Features/Landing/Views/IntroSlideView.swift`, `lily/Features/Landing/Views/IntroScreenFrame.swift`,
@@ -49,15 +50,18 @@ Files: `lily/Features/Landing/Views/LandingView.swift`, `lily/Features/Landing/V
   `.allowsHitTesting(false)` and `.accessibilityHidden(true)`.
 - `[IntroScreens.swift:IntroExploreScreen]`: `events: [SportEvent]`; `ScreenTitle(text: AppBranding.exploreTitle)` and
   an `EventCard` per event.
-- `[IntroScreens.swift:IntroDetailScreen]`: `event: SportEvent`; `EventTypeChip`, `ScreenTitle(text: event.title,
-  subtitle: AppBranding.hostedByTitle(for: event.hostName))`, `EventFactsCard` with `.frame(maxHeight: .infinity)`, and
+- `[IntroScreens.swift:IntroDetailScreen]`: `event: SportEvent`; `DetailHeader(symbolName: event.type.symbolName,
+  title: event.title, caption:)` with the start in `LilyTheme.DateStyles.dateTime` (the real detail's header since
+  2026-11-27; the chip, `ScreenTitle` and the removed `AppBranding.hostedByTitle` left with it), `EventFactsCard`
+  with `.frame(maxHeight: .infinity)`, and
   `Button(AppBranding.joinAction) {}` with `lilyProminentButton()` overlaid by the private `TapPulse`.
 - `[IntroScreens.swift:IntroChatScreen]`: `eventTitle: String`; a header (`AvatarCircle`, `IntroFixtures.groupName`,
   `AppBranding.Groups.members(IntroFixtures.memberCount)`), bubbles for `AppBranding.Intro.Chat.question`, `.answer`
   and `.followUp` through `bubbleFill(own:)`, the system line `AppBranding.Chat.eventCreated(by:title:)`, and a
   composer (`AppBranding.Chat.placeholder` in `lilyMultilineField()`, `DesignTokens.Symbols.send` in `lilyIconButton()`).
-- `[IntroScreens.swift:IntroTournamentScreen]`: `detail: TournamentDetail`; `EventTypeChip`, `TournamentStatusChip`,
-  `ScreenTitle(text: detail.tournament.name, subtitle: AppBranding.Tournaments.organizedBy(name:))` and
+- `[IntroScreens.swift:IntroTournamentScreen]`: `detail: TournamentDetail`; `DetailHeader(symbolName:, title:
+  detail.tournament.name, caption:)` with format · status as the caption (the real detail's header since 2026-11-27;
+  the chips, `ScreenTitle` and the removed `AppBranding.Tournaments.organizedBy` left with it) and
   `BracketView(detail:) { _ in }`.
 - `[IntroScreens.swift:TapPulse]`: `private`; reads `\.motion` and `\.auroraFrozen`, `@State
   startedAt: Date?`; a `TimelineView(.animation(minimumInterval: DesignTokens.Aurora.frameInterval, paused: startedAt ==

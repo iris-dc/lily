@@ -24,6 +24,8 @@ main-actor isolated, so the arithmetic that must run anywhere (`Effects`, `Layou
   `ChoiceChip`, `lilyField`, `GlassCard`, `FlowLayout`, titles, `ChevronLink`, `ValidationHint`, `AvatarCircle`
   (accent, secondary or sport tint; the sport mark a maroon-to-accent `sportFill` with a white glyph),
   `ConversationRow`, `TileCarousel`,
+  the detail screens' shared pieces (`DetailHeader`, `DetailSection`, `AvatarStack`, `PeopleSummaryRow`,
+  `DetailActionBar` with `DetailBarNotice`; 2026-11-27),
   `EntriesBar` over `CapacityMeter`,
   `EmptyStateView`, `ListSegment`, `FilterDropdownButton`, `ErrorPopupView` and `errorPopup(_:)`
   (the topmost mount draws, auto- and swipe-dismiss), `DraftSheet`, `GrowingTextView` with `PlaceholderTextView`.

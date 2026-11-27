@@ -265,8 +265,4 @@ nonisolated enum AppBranding {
     static var leaveAction: String { localized("Leave") }
     static var eventFullAction: String { localized("Event is full") }
     static var hostingNotice: String { localized("You host this event") }
-
-    static func hostedByTitle(for hostName: String) -> String {
-        localized("Hosted by \(hostName)")
-    }
 }

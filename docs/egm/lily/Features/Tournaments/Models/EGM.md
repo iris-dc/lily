@@ -38,8 +38,9 @@ nothing here performs I/O or touches shared state. Limits come from
   `standings` (all `private(set)`); `registeredEntries`, `entry(id:)`, `match(id:)`, `entryName(_:)`, `isMine(_:)`,
   `entry(containing:)`, `opponent(in:of:)`; copy-returning `replacing(...)` variants, `starting(at:)`,
   `settling(_:at:)`.
-- `[lily/Features/Tournaments/Models/TournamentDetailSection.swift:TournamentDetailSection]`: `enum { entries,
-  results, matches }`, `title(for:)`, `symbolName`.
+- `[lily/Features/Tournaments/Models/TournamentDetailSection.swift:TournamentDetailSection]`: `enum { results,
+  matches }` (`entries` left 2026-11-27: the People card's row pushes the full list, `TournamentPeopleView`),
+  `title(for:)`, `symbolName`.
   `[lily/Features/Tournaments/Models/TournamentChange.swift:TournamentChange]`: `(tournamentId, status, entryCount,
   channelEpoch, updatedAt?)`, the room channel's `tournament_changed` payload.
 - `[lily/Features/Tournaments/Models/TournamentEntry.swift:TournamentEntry]`: `(id, tournamentId, name,
@@ -190,8 +191,8 @@ nothing here performs I/O or touches shared state. Limits come from
   seed N, byes fall to top seeds and advance at once); round robin is the circle method, no `nextMatchId`.
 - `[lily/Features/Tournaments/Models/TeamNameIssue.swift:TeamNameIssue.issue(in:)]`: trimmed `wireLength` against
   `AppConfig.Tournaments.teamNameLength` (`2...40`). `TournamentConfirmation`: every case but `.start` is destructive
-  and only `.start` has a message. `TournamentDetailSection.title(for:)` reads teams or players by `isTeam`, bracket
-  or standings by `format.drawsBracket`.
+  and only `.start` has a message. `TournamentDetailSection.title(for:)` reads bracket or standings by
+  `format.drawsBracket` (the teams-or-players title is the pushed entries list's, 2026-11-27).
 
 ## Side Effects
 

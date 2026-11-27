@@ -6,11 +6,13 @@ import Foundation
 /// write mirrors the event's count and epoch into the room, as the backend's transaction does.
 extension MockGroupRepository {
     /// The room of an event the group fixtures do not ship: the caller owns the one they just created; in an event
-    /// appended to the fixtures they are a member at most (`role` nil when they never joined).
+    /// appended to the fixtures they are a member at most (`role` nil when they never joined). The room is dated no
+    /// later than its event's start, as on the backend: a history fixture's room stamped "now" outranked every real
+    /// room on Chats, which orders by last activity.
     func registerEventRoom(for event: SportEvent, role: MemberRole? = .owner) {
         guard find(event.id) == nil else { return }
         let membership = role.map { GroupMembership(role: $0, joinedAt: now()) }
-        groups.append(MockEventFixtures.room(for: event, membership: membership, createdAt: now()))
+        groups.append(MockEventFixtures.room(for: event, membership: membership, createdAt: min(event.startsAt, now())))
         rosters[event.id] = []
         logger.info(.groups, "Mock room registered for event \(event.id)")
     }

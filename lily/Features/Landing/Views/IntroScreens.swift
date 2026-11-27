@@ -24,8 +24,9 @@ struct IntroDetailScreen: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
-            EventTypeChip(type: event.type)
-            ScreenTitle(text: event.title, subtitle: AppBranding.hostedByTitle(for: event.hostName))
+            DetailHeader(symbolName: event.type.symbolName,
+                         title: event.title,
+                         caption: event.startsAt.formatted(LilyTheme.DateStyles.dateTime))
             EventFactsCard(event: event)
                 .frame(maxHeight: .infinity, alignment: .top)
             Button(AppBranding.joinAction) {}
@@ -108,20 +109,18 @@ struct IntroChatScreen: View {
 }
 
 /// The tournaments slide's screen: the top of a tournament's detail and its bracket, drawn the way the detail draws it
-/// (the first round in full, the next column peeking in at the edge as on a phone). Two chips rather than the detail's
-/// three and no segment picker, so the bracket stays within the frame on a 6.3-inch phone; a shorter phone fades the
+/// (the centered header, then the first round in full with the next column peeking in at the edge as on a phone). No
+/// cards or segment picker, so the bracket stays within the frame on a 6.3-inch phone; a shorter phone fades the
 /// bracket's bottom like the list's.
 struct IntroTournamentScreen: View {
     let detail: TournamentDetail
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
-            HStack(spacing: DesignTokens.Spacing.sm) {
-                EventTypeChip(type: detail.tournament.type)
-                TournamentStatusChip(status: detail.tournament.status)
-            }
-            ScreenTitle(text: detail.tournament.name,
-                        subtitle: AppBranding.Tournaments.organizedBy(name: detail.tournament.organizerName))
+            DetailHeader(symbolName: detail.tournament.type.symbolName,
+                         title: detail.tournament.name,
+                         caption: AppBranding.Groups.caption([detail.tournament.format.displayName,
+                                                              detail.tournament.status.displayName]))
             BracketView(detail: detail) { _ in }
         }
     }

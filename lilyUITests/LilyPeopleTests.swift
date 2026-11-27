@@ -49,9 +49,9 @@ final class LilyPeopleTests: LilyUITestCase {
         basketball.tap()
 
         XCTAssertTrue(app.buttons["group-join"].waitForExistence(timeout: 5), "the caller is not a member")
-        let picker = app.segmentedControls["group-section"]
-        XCTAssertTrue(picker.waitForExistence(timeout: 5), "a public roster is offered to a signed-in outsider")
-        picker.buttons["Members"].tap()
+        let membersRow = app.buttons["people-going-row"]
+        XCTAssertTrue(membersRow.waitForExistence(timeout: 5), "a public roster is offered to a signed-in outsider")
+        membersRow.tap()
 
         let dev = app.buttons[MockIDs.devMemberRow]
         XCTAssertTrue(dev.waitForExistence(timeout: 10), "Dev owns Berlin Basketball")
@@ -83,7 +83,9 @@ final class LilyPeopleTests: LilyUITestCase {
         XCTAssertTrue(app.staticTexts["Groups in common"].exists)
         XCTAssertTrue(app.tabBars.buttons["Chats"].waitForNonExistence(timeout: 5), "the profile hides the bar itself")
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["Who's in"].waitForExistence(timeout: 10), "Back lands on the event detail")
+        XCTAssertTrue(app.navigationBars["Who's in"].waitForExistence(timeout: 10), "Back lands on the Who's in list")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.buttons["people-going-row"].waitForExistence(timeout: 10), "Back again lands on the event detail")
         app.navigationBars.buttons.firstMatch.tap()
         openChatsTab()
         let row = chatsRow(MockIDs.jonasConversationRow)
@@ -124,6 +126,9 @@ final class LilyPeopleTests: LilyUITestCase {
         let sunset = card(containing: "Sunset 5-a-side")
         XCTAssertTrue(sunset.waitForExistence(timeout: 10))
         sunset.tap()
-        XCTAssertTrue(app.staticTexts["Who's in"].waitForExistence(timeout: 10), "a signed-in caller sees who is in")
+        let going = app.buttons["people-going-row"]
+        XCTAssertTrue(going.waitForExistence(timeout: 10), "a signed-in caller may open who is in")
+        going.tap()
+        XCTAssertTrue(app.navigationBars["Who's in"].waitForExistence(timeout: 10), "the Going row opens the full list")
     }
 }

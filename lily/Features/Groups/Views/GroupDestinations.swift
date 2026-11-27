@@ -36,6 +36,9 @@ private struct GroupDestinations: ViewModifier {
             .navigationDestination(for: DiscoverTournamentsDestination.self) { _ in
                 DiscoverTournamentsView(dependencies: dependencies)
             }
+            .navigationDestination(for: EventPeopleDestination.self) { destination in
+                EventPeopleView(viewModel: dependencies.makeEventPeopleViewModel(for: destination.event))
+            }
     }
 
     private func tournamentDetail(for destination: TournamentDestination) -> some View {

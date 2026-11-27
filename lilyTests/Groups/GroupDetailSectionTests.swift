@@ -37,7 +37,7 @@ struct GroupDetailSectionTests {
 
     @Test func withTheFlagOffNobodyGetsTournaments() {
         let group = SportGroup.fixture(role: .member)
-        #expect(sections(of: group, userID: "u", tournamentsEnabled: false) == [.events, .members])
+        #expect(sections(of: group, userID: "u", tournamentsEnabled: false) == [.events])
     }
 
     /// The view shows the picker for more than one segment; a guest of a private group has one and gets none.
