@@ -4,7 +4,7 @@ import Foundation
 /// (`TournamentParticipation`), decided in one place so the menu, the header and the entries segment agree. Guests get
 /// nothing. The organiser edits and cancels until the tournament is over, removes entries and is offered Start while
 /// registration is open; the organiser and every entrant chat (while the flag is on) and invite until the deadline;
-/// anyone signed in but the organiser reports and opens the organiser's profile; anyone signed in and not yet in may
+/// anyone signed in but the organiser reports; anyone signed in and not yet in may
 /// join a team while registration is open, whatever the entry count, because joining a team adds no entry. A detail
 /// reached from the room's own chat (`.fromChat`) offers no Open chat: the path would only cycle.
 nonisolated struct TournamentPermissions: Equatable, Sendable {
@@ -21,9 +21,6 @@ nonisolated struct TournamentPermissions: Equatable, Sendable {
     let canStart: Bool
     /// Why Start is disabled, for the menu item's subtitle; `nil` while it is enabled or not offered.
     let startBlockedReason: String?
-    /// The organiser's profile, when the caller may open it: signed in, not the organiser themselves, and the
-    /// organiser's account not deleted (a tombstone opens no profile).
-    let organizerProfile: UserProfileDestination?
     let canJoinTeams: Bool
 
     static let none = TournamentPermissions(canEdit: false,
@@ -36,7 +33,6 @@ nonisolated struct TournamentPermissions: Equatable, Sendable {
                                             showsStart: false,
                                             canStart: false,
                                             startBlockedReason: nil,
-                                            organizerProfile: nil,
                                             canJoinTeams: false)
 
     /// Chat and invite live in the pinned bar, so the menu shows only when one of its own items does.
@@ -62,9 +58,6 @@ nonisolated extension TournamentPermissions {
         let startBlockedReason: String? = showsStart && !tournament.canStart
             ? AppBranding.Tournaments.startNeeds(tournament.format.minimumEntriesToStart, teamSize: tournament.teamSize)
             : nil
-        let organizerProfile: UserProfileDestination? = signedIn && !role.isOrganizer && tournament.deleted != true
-            ? UserProfileDestination(userId: tournament.organizerUserId, displayName: tournament.organizerName)
-            : nil
         self.init(canEdit: canEdit,
                   canCancel: canEdit,
                   canRemoveEntries: role.isOrganizer && tournament.status == .registration,
@@ -75,7 +68,6 @@ nonisolated extension TournamentPermissions {
                   showsStart: showsStart,
                   canStart: showsStart && tournament.canStart,
                   startBlockedReason: startBlockedReason,
-                  organizerProfile: organizerProfile,
                   canJoinTeams: signedIn && !tournament.hasEntered && open && tournament.isTeam)
     }
 }

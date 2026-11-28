@@ -7,7 +7,8 @@ Source: `lily/Features/People/Views/`
 Five views: `PersonRow` (a roster or participant row that links to a person's profile unless it is the caller),
 `SharedGroupRow` (a "Groups in common" row linking to the group's detail), `SharedEventRow` (a "Games together" row, a
 row alone on a profile; Activity links it to the detail and marks it "Ended", 2026-11-26), `SharedTournamentRow` (a "Tournaments together" row linking to the tournament's detail) and `UserProfileView`
-(the profile screen: avatar, name, Message when allowed, the bio, the three shared sections). Loading and writes belong to
+(the profile screen: avatar, name, the bio and the three shared sections, with Message pinned in a bottom
+`DetailActionBar` when allowed, 2026-11-28). Loading and writes belong to
 [ViewModels](../ViewModels/EGM.md); the views log nothing, report nothing and mutate no store.
 
 ## Interface
@@ -42,8 +43,11 @@ row alone on a profile; Activity links it to the detail and marks it "Ended", 20
   list); the helper registers the chat's hide under its own token (`\.tabBarHideToken`), released when the item
   binding clears (2026-11-19) — an item push never moves the bound path, so no prune would free the hide (the
   group detail's lesson); private `header`,
-  `messageButton` (a `BusyButton` with `lilyProminentButton()`, identifier `AccessibilityIdentifiers.profileMessage`,
-  `profile-message`), `content` (the state switch), `loaded(_:)` (the bio `Text`, identifier
+  `messageButton` (a spinnerless `BusyButton` — `showsSpinner: false`, busy only guards the second tap — with
+  `lilyProminentButton()`, identifier `AccessibilityIdentifiers.profileMessage`,
+  `profile-message`, standing in the primary slot of a `DetailActionBar` pinned with `safeAreaInset(edge: .bottom)`
+  and mounted only while `canMessage`, its icons slot empty; in the content column until 2026-11-28),
+  `content` (the state switch), `loaded(_:)` (the bio `Text`, identifier
   `AccessibilityIdentifiers.profileBio`, then the three sections), the three sections drawn with the shared `RowsSection`
   (`lily/Core/UI/Components/RowsSection.swift`, extracted 2026-11-25 for Profile's Activity screen: a `SectionTitle`
   over a `LazyVStack` of rows each followed by `AvatarRowDivider()`, or over the empty `SectionNote`; no container
@@ -62,7 +66,8 @@ row alone on a profile; Activity links it to the detail and marks it "Ended", 20
   `[lily/Features/People/Views/PersonRow.swift:content]`.
 - `SharedGroupRow` always passes `hasUnread: false` and links to `group.ref` (`isDeleted: false`)
   `[lily/Features/People/Views/SharedGroupRow.swift:body]`, `[lily/Features/People/Models/GroupSummary.swift:ref]`.
-- The Message button renders only `if viewModel.canMessage`; its spinner follows `viewModel.isStartingConversation`
+- The Message bar renders only `if viewModel.canMessage` (the bottom inset adds nothing otherwise); while
+  `viewModel.isStartingConversation` the button only disables, drawing no spinner (`showsSpinner: false`, 2026-11-28)
   `[lily/Features/People/Views/UserProfileView.swift:body]`, `[lily/Features/People/Views/UserProfileView.swift:messageButton]`.
 - State to content: `.loading` one spinner under the header (no section titles yet); `.failed` the failed state with
   Try again; `.loaded` the bio when there is one, then the three sections in the order groups, games, tournaments, each

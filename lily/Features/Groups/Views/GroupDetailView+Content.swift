@@ -26,24 +26,16 @@ extension GroupDetailView {
         }
     }
 
-    /// Who runs the group and who is in: the first members' circles and the count; each row opens the roster for
-    /// whoever may see it.
+    /// One card, one row: who runs the group over its size, the first members' circles beside it (the owner leads the
+    /// roster); it opens the roster for whoever may see it.
     var peopleSection: some View {
         DetailSection(title: People.peopleSection) {
             GlassCard {
-                VStack(spacing: 0) {
-                    PeopleSummaryRow(title: People.organisedByRow,
-                                     names: [group.ownerName],
-                                     detail: group.ownerName,
-                                     destination: membersDestination,
-                                     identifier: AccessibilityIdentifiers.peopleHostingRow)
-                    Divider()
-                    PeopleSummaryRow(title: Copy.membersSection,
-                                     names: members?.members.map(\.displayName) ?? [],
-                                     detail: "\(group.memberCount)",
-                                     destination: membersDestination,
-                                     identifier: AccessibilityIdentifiers.peopleGoingRow)
-                }
+                PeopleSummaryRow(title: People.organisedBy(name: group.ownerName),
+                                 caption: Copy.members(group.memberCount),
+                                 names: members?.members.map(\.displayName) ?? [],
+                                 destination: membersDestination,
+                                 identifier: AccessibilityIdentifiers.peopleRow)
             }
         }
     }
@@ -104,7 +96,7 @@ extension GroupDetailView {
                 .accessibilityIdentifier(AccessibilityIdentifiers.groupOpenChat)
             }
         case .canJoin:
-            BusyButton(Copy.joinGroup, isBusy: viewModel.isBusy) { await viewModel.join() }
+            BusyButton(Copy.joinGroup, isBusy: viewModel.isBusy, showsSpinner: false) { await viewModel.join() }
                 .lilyProminentButton()
                 .accessibilityIdentifier(AccessibilityIdentifiers.groupJoin)
         case .guest:
@@ -114,7 +106,7 @@ extension GroupDetailView {
         case .inviteOnly:
             DetailBarNotice(text: Copy.inviteOnly)
         case .full:
-            BusyButton(Copy.groupFull, isBusy: viewModel.isBusy)
+            BusyButton(Copy.groupFull, isBusy: viewModel.isBusy, showsSpinner: false)
                 .lilyProminentButton()
                 .accessibilityIdentifier(AccessibilityIdentifiers.groupJoin)
         }

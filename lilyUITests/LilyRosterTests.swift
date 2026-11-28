@@ -94,7 +94,7 @@ final class LilyRosterTests: LilyUITestCase {
 
         let picker = app.segmentedControls["group-section"]
         XCTAssertTrue(picker.waitForExistence(timeout: 10), "a public group offers a guest Events | Tournaments")
-        XCTAssertFalse(app.buttons["people-going-row"].exists, "the roster is for signed-in callers")
+        XCTAssertFalse(app.buttons["people-row"].exists, "the roster is for signed-in callers")
         picker.buttons["Tournaments"].tap()
         XCTAssertTrue(app.buttons[MockIDs.kickersCupRow].waitForExistence(timeout: 10), "the segment lists the Kickers Cup")
     }
@@ -128,7 +128,7 @@ final class LilyRosterTests: LilyUITestCase {
 
     @MainActor
     private func openMembers() {
-        let members = app.buttons["people-going-row"]
+        let members = app.buttons["people-row"]
         XCTAssertTrue(members.waitForExistence(timeout: 10))
         members.tap()
     }

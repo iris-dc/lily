@@ -512,3 +512,7 @@ Every price is stored with its currency (`Price {amount, currencyCode}`, an ISO 
   strip), the fixed film none (`v1-dismiss.png`), open unchanged. The attach menu and the match sheet keep
   `.menuStyle(.button)`: their buttons are glass-tinted, so the wash is invisible there.
 - 2026-11-27 — Event detail redesigned (the dated entry in `design-and-ui.md`): the header caption owns the date and "Until …", so `EventFactsCard` lost its time row and gained the "Hosted in" line; the People card's Hosting/Going rows push `EventPeopleView` (participants split by `isHost`; `showsParticipants` unchanged, so guests get rows without names or links, and the Going count is the event's own `participantCount`, right before the roster answers); About merges the description and "Looking for"; join/leave/hosting moved into the pinned bar; the detail now sets `navigationTitle`, so the name rides the bar when scrolled. The intro's detail miniature draws the same header.
+- 2026-11-28 — The People card is one row (`design-and-ui.md`, same date): "Hosted by <host>" over "%lld going" (the count excludes the host), the host's circle leading the stack; Join and Leave act without the spinner.
+- 2026-11-28 — A filter kept by a build from before the 2026-11-26 rework failed to decode (`timesOfDay` was a new
+  required key) and silently reset to defaults; `PersistedEventFilter` now defaults the missing key in a hand-written
+  `init(from:)`, so the kept types, radius, level and open-spots choice survive the update. Found twice by review.

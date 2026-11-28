@@ -81,9 +81,10 @@ nothing here performs I/O or touches shared state. Limits come from
   leave, entered, registrationClosed, full }` from `(tournament, userID, now)`.
 - `[lily/Features/Tournaments/Models/TournamentPermissions.swift:TournamentPermissions]`: `canEdit`, `canCancel`,
   `canRemoveEntries`, `canOpenChat`, `canInvite`, `canReport`, `showsEntries`, `showsStart`, `canStart`,
-  `canJoinTeams`, `startBlockedReason?`, `organizerProfile: UserProfileDestination?`, `showsMenu`, `showsActionRow`
-  (the in-body action row, 2026-11-15), `static none`;
-  `init(tournament:userID:now:chatEnabled:)`.
+  `canJoinTeams`, `startBlockedReason?`, `showsMenu`, `showsActionRow`
+  (the pinned bar's chat and invite since 2026-11-27; the in-body row of 2026-11-15), `static none`;
+  `init(tournament:userID:now:chatEnabled:)`. (`organizerProfile` removed 2026-11-28: the pushed entries list's
+  organiser `PersonRow` owns the profile link and its self/tombstone refusals.)
 - `[lily/Features/Tournaments/Models/MatchActions.swift:MatchActions]`: `canReport`, `canConfirm`, `canDispute`,
   `canRecord`, `canWalkover`, `canSchedule`, `awaitsOtherSide`; `none`, `isEmpty`, `takesScore`;
   `init(detail:match:userID:)`.
@@ -163,10 +164,10 @@ nothing here performs I/O or touches shared state. Limits come from
   organiser && !isOver`; `canRemoveEntries = organiser && .registration`; `canOpenChat = chatEnabled && involved && context ==
   .standalone` (2026-11-23: from the room's own chat there is no chat to open); `canInvite = involved && registration
   open`; `canReport = signed in && !organiser`; `canStart = showsStart &&
-  tournament.canStart`, else `startBlockedReason` from `AppBranding.Tournaments.startNeeds`; `organizerProfile` only
-  for a signed-in non-organiser and never for a tombstoned organiser (`tournament.deleted == true`: a deleted
-  account's name opens no profile); `showsMenu` ignores `showsStart`, `canRemoveEntries`, `canJoinTeams`;
-  `showsActionRow = canOpenChat || canInvite` (2026-11-15).
+  tournament.canStart`, else `startBlockedReason` from `AppBranding.Tournaments.startNeeds`;
+  `showsMenu = showsStart || canEdit || canCancel || canReport` (2026-11-27: chat and invite live in the pinned bar,
+  so they open no menu);
+  `showsActionRow = canOpenChat || canInvite` (the bar's circles; the in-body row of 2026-11-15).
 - `[lily/Features/Tournaments/Models/MatchActions.swift:MatchActions.init]`: `.none` unless the tournament is
   `.inProgress` and the user is known; an entrant acts only on a match containing their entry; the organiser may
   confirm a reported match, record or give a walkover while `isReadyForResult`, and schedule while undecided; a side

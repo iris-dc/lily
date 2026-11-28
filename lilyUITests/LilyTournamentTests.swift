@@ -46,7 +46,7 @@ final class LilyTournamentTests: LilyUITestCase {
         createTeam(named: "Late Bloomers")
 
         XCTAssertTrue(labelled("5 of 8 teams").waitForExistence(timeout: 10), "the count moved")
-        let entries = app.buttons["people-going-row"]
+        let entries = app.buttons["people-row"]
         scrollUntilHittable(entries)
         entries.tap()
         XCTAssertTrue(labelled("Late Bloomers").waitForExistence(timeout: 10), "the Teams screen lists the new team")
@@ -143,7 +143,7 @@ final class LilyTournamentTests: LilyUITestCase {
     func testAcceptingATournamentInviteOpensTheDetail() {
         tapSignInWithApple()
         acceptPadelOpenInvite()
-        let organiser = app.descendants(matching: .any)["people-hosting-row"]
+        let organiser = app.descendants(matching: .any)["people-row"]
         XCTAssertTrue(organiser.waitForExistence(timeout: 5) && organiser.label.contains("Noor"),
                       "the card names the organiser: \(organiser.label)")
 
@@ -223,7 +223,7 @@ final class LilyTournamentTests: LilyUITestCase {
         XCTAssertTrue(info.waitForExistence(timeout: 5))
         info.tap()
 
-        let organiser = app.descendants(matching: .any)["people-hosting-row"]
+        let organiser = app.descendants(matching: .any)["people-row"]
         XCTAssertTrue(organiser.waitForExistence(timeout: 10), "the info button leads to it")
         XCTAssertTrue(organiser.label.contains("Marta"), "the card names the organiser: \(organiser.label)")
         XCTAssertTrue(app.segmentedControls["tournament-section"].waitForExistence(timeout: 5))

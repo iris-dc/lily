@@ -49,28 +49,21 @@ extension TournamentDetailView {
         }
     }
 
-    /// Who organises the tournament and who entered: the first entries' circles and the count; the entries row opens
-    /// the full list once the detail answered, the organiser their profile when the caller may see it.
+    /// One card, one row: who organises the tournament over how many entries are in, the first entries' circles
+    /// beside it; it opens the full list once the detail answered (where the organiser's row opens their profile).
     private func peopleSection(_ detail: TournamentDetail, isPreview: Bool) -> some View {
         let tournament = detail.tournament
         let organiser = Tombstone.displayName(tournament.organizerName, deleted: tournament.deleted)
+        // The loaded roster's registered count; the preview's own count stands in until the fetch answers.
+        let count = isPreview ? tournament.entryCount : detail.registeredEntries.count
         return DetailSection(title: People.peopleSection) {
             GlassCard {
-                VStack(spacing: 0) {
-                    PeopleSummaryRow(title: People.organisedByRow,
-                                     names: [organiser],
-                                     detail: organiser,
-                                     detailMark: tournament.deleted == true ? Tombstone.symbol : nil,
-                                     destination: viewModel.permissions.organizerProfile,
-                                     identifier: AccessibilityIdentifiers.peopleHostingRow)
-                    Divider()
-                    // The loaded roster's registered count; the preview's own count stands in until the fetch answers.
-                    PeopleSummaryRow(title: tournament.isTeam ? Copy.teamsSection : Copy.playersSection,
-                                     names: detail.registeredEntries.map(\.name),
-                                     detail: "\(isPreview ? tournament.entryCount : detail.registeredEntries.count)",
-                                     destination: entriesDestination(tournament, isPreview: isPreview),
-                                     identifier: AccessibilityIdentifiers.peopleGoingRow)
-                }
+                PeopleSummaryRow(title: People.organisedBy(name: organiser),
+                                 caption: Copy.entries(count, of: tournament.maxEntries, teamSize: tournament.teamSize),
+                                 names: detail.registeredEntries.map(\.name),
+                                 titleMark: tournament.deleted == true ? Tombstone.symbol : nil,
+                                 destination: entriesDestination(tournament, isPreview: isPreview),
+                                 identifier: AccessibilityIdentifiers.peopleRow)
             }
         }
     }
@@ -130,7 +123,7 @@ extension TournamentDetailView {
         case .hidden:
             EmptyView()
         case .join:
-            BusyButton(Copy.join, isBusy: viewModel.isBusy) { await viewModel.join() }
+            BusyButton(Copy.join, isBusy: viewModel.isBusy, showsSpinner: false) { await viewModel.join() }
                 .lilyProminentButton()
                 .accessibilityIdentifier(AccessibilityIdentifiers.tournamentJoin)
         case .createTeam:
@@ -148,7 +141,7 @@ extension TournamentDetailView {
         case .registrationClosed:
             DetailBarNotice(text: viewModel.role.isOrganizer ? Copy.organizingNotice : Copy.registrationClosed)
         case .full:
-            BusyButton(Copy.full, isBusy: viewModel.isBusy)
+            BusyButton(Copy.full, isBusy: viewModel.isBusy, showsSpinner: false)
                 .lilyProminentButton()
                 .accessibilityIdentifier(AccessibilityIdentifiers.tournamentJoin)
         }

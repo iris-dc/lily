@@ -46,8 +46,8 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   on a compact width the floating tab bar slides away with the push and back with the pop — the stack root's
   `animatesTabBar` owns the animation — and nothing changes on a regular width.
 - `EventPeopleView(viewModel: EventDetailViewModel)` and the navigation value `EventPeopleDestination { eventId }`
-  (`lily/Features/Events/Views/EventPeopleView.swift`, 2026-11-27): the full "Who's in" list the People card's rows
-  push — Hosting (`participants.filter(\.isHost)`) then Going as `DetailSection`s of
+  (`lily/Features/Events/Views/EventPeopleView.swift`, 2026-11-27): the full "Who's in" list the People card's row
+  pushes — Hosting (`participants.filter(\.isHost)`) then Going as `DetailSection`s of
   `ParticipantRow(participant:isSelf:)`, `AppBranding.People.nobodyGoingYet` when nobody joined, a spinner only while
   the first load is out (`isLoadingParticipants` with no participants); titled
   `AppBranding.Events.participantsTitle`, wearing `.hidesTabBarOnCompact()`, loading through the detail's own view
@@ -245,15 +245,18 @@ sizes from `DesignTokens`, identifiers from `AccessibilityIdentifiers`, decision
   (`event-action-chat`, running `openChat()` in a `Task`), the invite icon under `canInvite` (`event-action-invite`,
   presenting the invite sheet), both `lilyGlassIconButton()`, and `participationControl` switches on
   `viewModel.participation`: `.hidden` nothing, `.join` a prominent `BusyButton` → `join()`, `.leave` a glass
-  `BusyButton` → `leave()`, `.full` a prominent `BusyButton` with no action, `.hosting` a `DetailBarNotice`
+  `BusyButton` → `leave()`, `.full` a prominent `BusyButton` with no action (all three spinnerless —
+  `showsSpinner: false`, busy only guards the second tap, 2026-11-28), `.hosting` a `DetailBarNotice`
   (`AppBranding.hostingNotice`). The header's caption is the start in `LilyTheme.DateStyles.dateTime`, joined with
   `AppBranding.Events.until(_:)` when `endsAt` is set (the time alone on the start's own day, the full date
-  otherwise; the facts card's line until 2026-11-27). The People card's two `PeopleSummaryRow`s (`people-hosting-row`,
-  `people-going-row`) open `EventPeopleDestination` only while `showsParticipants` (names are members-level
-  information, so a guest's rows are plain); the Hosting row maps the stored name through
-  `Tombstone.displayName(event.hostName, deleted: event.deleted)` (2026-11-07), and the Going stack draws the joined
-  non-host names while the count is `max(event.participantCount - 1, 0)` — the event's own count minus the host, so
-  it matches the pushed Going section and is right before the roster has answered. The Edit
+  otherwise; the facts card's line until 2026-11-27). The People card is one `PeopleSummaryRow` (`people-row`;
+  the Hosting and Going pair until 2026-11-28) opening `EventPeopleDestination` only while `showsParticipants` (names are
+  members-level information, so a guest's row is plain); its title is `AppBranding.People.hostedBy(name:)` over the
+  host's name through
+  `Tombstone.displayName(event.hostName, deleted: event.deleted)` (2026-11-07) with the tombstone as `titleMark`
+  for a deleted host, its caption `People.going(_:)` of `max(event.participantCount - 1, 0)` — the event's own
+  count minus the host, so it matches the pushed Going section and is right before the roster has answered — and
+  its stack `[host] + goingNames`, the joined non-host names behind the host. The Edit
   toolbar item (`lilyToolbarTextButton()`) shows only when `canEdit`; `.task` calls `recordViewed()` then
   `loadParticipants()`.
 - Form (`EventDraftForm`): each section footer shows the first matching `viewModel.issue(for:)`: game

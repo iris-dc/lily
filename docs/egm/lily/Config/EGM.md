@@ -141,7 +141,10 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   plan), `Moderation`, `Forms` (`close`,
   `back`, `cancel`, `optional` — the shared one-word marker on every optional field, 2026-11-11), `People` (since 2026-11-27 also the detail
   screens' People-card copy: `peopleSection`, `aboutSection`, `detailsSection` aliasing `Create.eventDetails`,
-  `hostingRow`, `goingRow`, `organisedByRow`, `nobodyGoingYet`), `Legal` (the shared `Section` and `Paragraph` structs of the legal reading screens and
+  `hostingRow`, `goingRow`, `organisedByRow` and `nobodyGoingYet` — since 2026-11-28 the pushed people screens'
+  section titles and empty note, the card no longer using them — plus, the same day with the one-row card,
+  `hostedBy(name:)`, `organisedBy(name:)` and the `%lld` plural `going(_:)`),
+  `Legal` (the shared `Section` and `Paragraph` structs of the legal reading screens and
   the shared `changesTitle`; 2026-11-08), `Privacy` and `Terms` (the data-driven policy and terms over `Legal`'s
   types; 2026-11-08), `Settings`, `Tournaments` (+ `Create`, `Schedule`, `Match`, `Standings`).
 - Representative functions: `Events.spotsLeft(_:)`, `Events.joined(_:of:)`, `Events.Create.capacity(_:needed:)`,
@@ -287,8 +290,9 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   `tournament-action-invite`, the detail's pinned-bar shortcuts since 2026-11-27 (the in-body row of 2026-11-15);
   the menu-era `tournament-open-chat` and `tournament-invite` left with their items), +Polls,
   +Attachments, +Home (`home-segment` and `home-create` — the segmented Home's picker and its per-segment create
-  button; 2026-11-14), +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`, `sharedEventRow(_:)`; `people-hosting-row` and
-  `people-going-row`, the detail screens' People-card rows, 2026-11-27),
+  button; 2026-11-14), +Inbox, +Feedback, +Moderation, +People (`profile-message`, `profile-bio`,
+  `sharedEventRow(_:)`; `peopleRow` = `people-row`, the detail screens' one People-card row, 2026-11-28 —
+  replacing the 2026-11-27 redesign's `people-hosting-row` / `people-going-row` pair),
   +Profile (`profile-corner` and `profile-sheet` — the corner control on every tab root and the profile sheet's root
   container, 2026-11-07 — `profile-name`, `profile-name-field`, `profile-name-save`, `profile-name-cancel`, `profile-about`,
   `profile-about-field`, `profile-about-save`, `profile-about-cancel`, `profile-activity`, `activity-more-games`, `activity-more-tournaments` (2026-11-25), `profile-settings`, `settings-notifications`, `notifications-enable`, `notifications-open-settings`, `notificationToggle(_:)` = `notifications-toggle-<wire>` (2026-11-26), `settings-sign-out`,
@@ -378,8 +382,8 @@ the only runtime read is `Bundle.main.bundleIdentifier`. Every feature reads the
   is mirrored from +Landing, plus the segmented Home's `home-segment` and `home-create` from +Home (the Home walks
   switch the segment and open the wizard by them; 2026-11-14); the report sheet's reason rows and the feedback kind picker carry no identifiers and are
   found by label; the inbox's "Load earlier" button and the profile's shared-group rows container carry none (no
-  test read them); the People card's `people-hosting-row` / `people-going-row` are mirrored by `LilyRosterTests`,
-  `LilyPeopleTests` and `LilyTournamentTests` (2026-11-27, the detail redesign); the event Edit sheet reuses the create identifiers and mirrors its compact type picker's `draft-type-*` ids in `LilyEventEditTests` (2026-11-15), whose `+Rooms` walks also mirror `event-action-chat`,
+  test read them); the People card's `people-row` is mirrored by `LilyRosterTests`,
+  `LilyPeopleTests` and `LilyTournamentTests` (the detail redesign 2026-11-27; the one row 2026-11-28); the event Edit sheet reuses the create identifiers and mirrors its compact type picker's `draft-type-*` ids in `LilyEventEditTests` (2026-11-15), whose `+Rooms` walks also mirror `event-action-chat`,
   `event-action-invite` and the sunset event room's row id (the same day); `createGroup` is the group row of both the event
   and the tournament form; `message(clientID:)` is stable across the optimistic-to-stored swap.
 

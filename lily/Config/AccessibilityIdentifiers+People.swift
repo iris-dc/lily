@@ -17,7 +17,6 @@ nonisolated extension AccessibilityIdentifiers {
         "participant-row-\(userID)"
     }
 
-    /// The People card's rows on a detail screen; each opens the full list when the caller may see it.
-    static let peopleHostingRow = "people-hosting-row"
-    static let peopleGoingRow = "people-going-row"
+    /// The People card's one row on a detail screen; it opens the full list when the caller may see it.
+    static let peopleRow = "people-row"
 }

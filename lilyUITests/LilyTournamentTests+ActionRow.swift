@@ -16,7 +16,7 @@ extension LilyTournamentTests {
         chat.tap()
         XCTAssertTrue(app.descendants(matching: .any)["chat-composer"].waitForExistence(timeout: 10), "the room opens")
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["people-hosting-row"].waitForExistence(timeout: 10),
+        XCTAssertTrue(app.descendants(matching: .any)["people-row"].waitForExistence(timeout: 10),
                       "Back returns to the tournament's detail, not to the Chats list")
 
         // The detail hides the tab bar (2026-11-24), so Chats is reached by its shortcut; the detail stays up on Home.

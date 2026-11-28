@@ -94,7 +94,7 @@ struct EntryRow: View {
     }
 
     private var joinButton: some View {
-        BusyButton(Copy.joinTeam, isBusy: viewModel.isBusy) { await viewModel.joinTeam(entry) }
+        BusyButton(Copy.joinTeam, isBusy: viewModel.isBusy, showsSpinner: false) { await viewModel.joinTeam(entry) }
             .lilyGlassButton(sizing: .fitted, controlSize: .regular, labelColor: .lilyInk)
             .accessibilityIdentifier(AccessibilityIdentifiers.tournamentJoinTeam(entry.id))
     }

@@ -6,7 +6,7 @@ extension LilyTournamentTests {
     @MainActor
     func openKickersCup() {
         openTournament(row: MockIDs.kickersCupRow, titled: "Kickers Cup")
-        XCTAssertTrue(app.descendants(matching: .any)["people-hosting-row"].waitForExistence(timeout: 10),
+        XCTAssertTrue(app.descendants(matching: .any)["people-row"].waitForExistence(timeout: 10),
                       "the detail is up once its People card drew")
     }
 

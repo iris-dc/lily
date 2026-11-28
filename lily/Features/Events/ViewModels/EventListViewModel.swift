@@ -82,8 +82,7 @@ final class EventListViewModel {
         snapshots.save(next, for: ListSnapshotKey(list: scope.snapshotList, userID: userID))
     }
 
-    /// Distance is judged from the user's position; while that is unknown the distance criterion is skipped. The price
-    /// cap is judged in the user's currency, read on every pass so a change on Profile applies at once.
+    /// Distance is judged from the user's position; while that is unknown the distance criterion is skipped.
     var visibleEvents: [SportEvent] {
         events.filter { filter.matches($0, from: userLocation) }
     }

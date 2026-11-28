@@ -121,3 +121,4 @@ account out of that simulator).
   walks that switch tabs from a detail use the shell's ⌘1–⌘3; `typeKey` right after a transition did nothing
   (the failure's hierarchy still showed the detail), so `selectTabByShortcut(_:until:)` repeats it up to three times
   until the target shows.
+- **`LilyGroupsTests.testOpenChatSendShowsOwnBubble` failed once in a local `ci.sh all` (2026-11-28), "the sent message shows as a bubble", and passed alone right after (25 s).** The change under test touched no chat code (the People-card fold and the spinner flag); the shape matches the 2026-10-21/23 one-off send/typing flakes. Nothing changed in the test.

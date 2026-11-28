@@ -71,7 +71,7 @@ final class ActivityViewModel {
             state = .loaded(Self.reduce(games: try await pastGames, rooms: try await mine))
         } catch {
             guard !AppError.isCancellation(error) else { return }
-            logger.error(.events, "Loading history failed: \(error)")
+            logger.warning(.events, "Loading history failed: \(error)")
             if activity == nil { state = .failed }
             errorCenter.report(error)
         }

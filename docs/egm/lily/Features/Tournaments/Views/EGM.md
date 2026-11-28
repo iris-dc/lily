@@ -12,8 +12,8 @@ reading a `TournamentListViewModel`. The detail (redesigned 2026-11-27): `Tourna
 `TournamentFacts`, the People card, the About card, a results | matches picker over `TournamentResultsSegment`
 (bracket, standings or matches) and the pinned `DetailActionBar` (chat and invite icons beside the
 join/create-team/leave control) — hosting the edit, team-name, match, invite and report sheets and the confirmation
-dialogs, around a `TournamentDetailViewModel`; who entered is the pushed `TournamentPeopleView`
-(`TournamentEntriesSegment`), and `TournamentMenu` keeps the organiser's Start, Edit, Cancel and Report
+dialogs, around a `TournamentDetailViewModel`; who entered is the pushed `TournamentPeopleView` (an "Organised by"
+row over `TournamentEntriesSegment`, 2026-11-28), and `TournamentMenu` keeps the organiser's Start, Edit, Cancel and Report
 (`TournamentHeader`, `TournamentActionRow` and `TournamentParticipationControl` deleted that day). Writes: `MatchSheet`
 with its pushed `MatchScheduleView`, and `TeamNameSheet`. The draft form `TournamentDraftForm<Model:
 TournamentDraftEditing>` (+Schedule) recomposes its standalone section contents (`TournamentScheduleFields` and
@@ -63,11 +63,13 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
 - `[lily/Features/Tournaments/Views/TournamentDetailView+Content.swift:TournamentDetailView.content]` (2026-11-27,
   replacing `TournamentHeader`): the detail's blocks as an extension — `header` (`DetailHeader` with the sport's
   mark, the name and format · status as the caption, over `TournamentOutcomeLine`), the Details section
-  (`TournamentFacts`), `peopleSection` (the People card: an "Organised by" `PeopleSummaryRow` whose name maps through
-  `Tombstone.displayName(tournament.organizerName, deleted: tournament.deleted)` (2026-11-07) and whose destination
-  is `permissions.organizerProfile` — already nil for a tombstoned organizer — and a teams-or-players row (by
-  `isTeam`) with the registered entries' names and `entryCount`, opening `TournamentPeopleDestination` only while
-  `permissions.showsEntries && !isPreview`; identifiers `peopleHostingRow` / `peopleGoingRow`), `aboutSection` (the
+  (`TournamentFacts`), `peopleSection` (the People card: one `PeopleSummaryRow` since 2026-11-28 — title
+  `AppBranding.People.organisedBy(name:)` over the organiser's name through
+  `Tombstone.displayName(tournament.organizerName, deleted: tournament.deleted)` (2026-11-07) with the tombstone as
+  `titleMark` for a deleted account, caption `AppBranding.Tournaments.entries(_:of:teamSize:)` of the loaded
+  roster's `registeredEntries.count` (the preview's own `entryCount` until the fetch answers), the stack the
+  registered entries' names — identifier `peopleRow`, opening `TournamentPeopleDestination` only while
+  `permissions.showsEntries && !isPreview`; the organiser's profile link lives in the pushed list now), `aboutSection` (the
   description card, only when one exists), `sectionPicker` (`tournamentSection`), `segment`, `loadingSlot`
   (`tournamentLoading` on an `.accessibilityElement(children: .contain)` container, so Try again keeps its own
   element; in the shared `TournamentSegmentSlot`), `bracketInset` and `actionBar`.
@@ -83,14 +85,19 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   (each member's `PersonRow` takes the per-member `deleted` flag, so a deleted player shows the tombstone and opens
   no profile, 2026-11-07):
   a `PersonRow` for singles, a `GlassCard` team with seed chip, members, captain chip and a Join team `BusyButton`
-  (`tournamentJoinTeam(id)`); identifiers `entryRow(id)`, `participantRow(userId)`.
+  (`tournamentJoinTeam(id)`; spinnerless — `showsSpinner: false`, 2026-11-28); identifiers `entryRow(id)`,
+  `participantRow(userId)`.
   `TournamentSegmentSlot(alignment:content:)` (same file) fixes one vertical footprint — hidden copies of the
   spinner, the empty entries line and the failed preview's Try again button (the tallest) under the content,
   `Spacing.xl` vertical padding — shared by the empty entries line and the detail's `loadingSlot`, so the content
   around it keeps its place when the fetch answers or the preview's load fails (2026-11-15).
 - `[lily/Features/Tournaments/Views/TournamentPeopleView.swift:TournamentPeopleView]` (2026-11-27): `(viewModel:
   TournamentDetailViewModel)` plus the navigation value `TournamentPeopleDestination { tournamentId }` — the full
-  entries list the People card's row pushes: `TournamentEntriesSegment` over `viewModel.shownDetail` in a
+  entries list the People card's row pushes: an "Organised by" `DetailSection` (`AppBranding.People.organisedByRow`)
+  of the organiser's `PersonRow` — identifier `participantRow(organizerUserId)`, `isSelf` by `viewModel.isSelf`,
+  the tournament's `deleted` flag, so it opens the organiser's profile and never the caller's own row (2026-11-28,
+  where the card's separate organiser link went) — over `TournamentEntriesSegment`, both reading
+  `viewModel.shownDetail` in a
   `ContentScreen { ScrollView }` under the detail's margins, titled teams or players by `isTeam`, wearing
   `.hidesTabBarOnCompact()`; it owns the organiser's remove-entry `.confirmationDialog(item:)` (its `run` handles
   `.removeEntry` alone — cancel, leave and start stay with the detail) and reads the detail's own view model, so an
@@ -114,7 +121,9 @@ screens are handled with `readableColumn()`, `inReadableColumn()` and the bracke
   literals stay declared in `AccessibilityIdentifiers+Tournaments`, unused). The bar's `primaryControl`
   (`TournamentDetailView+Content.swift`, replacing `TournamentParticipationControl`) switches
   `viewModel.participation` into Join (`tournamentJoin`), Create team (`tournamentCreateTeam`), Leave
-  (`tournamentLeave`, asking the leave confirmation), `DetailBarNotice`s or a disabled Full button (`tournamentJoin`).
+  (`tournamentLeave`, asking the leave confirmation), `DetailBarNotice`s or a disabled Full button (`tournamentJoin`);
+  the Join and Full `BusyButton`s are spinnerless (`showsSpinner: false`, busy only guards the second tap,
+  2026-11-28).
 - `[lily/Features/Tournaments/Views/MatchSheet.swift:MatchSheet]`: `(viewModel, matchID, errorCenter)` in its own
   `NavigationStack`; `MatchCell`, a notice, two score `TextField`s (`matchScoreA`, `matchScoreB`; titled "0", the
   placeholder, with `.accessibilityLabel` the entry's name, so VoiceOver says whose score each takes), a

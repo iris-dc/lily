@@ -129,3 +129,4 @@ The app ships in English (the source language and the fallback), Russian, Spanis
   that diff (a backup of the 2026-11-22 regeneration sits in the badge evidence folder as
   `fix13-revert/xcode-regenerated-catalog.patch`) and investigate the editor's own catalog-sync behaviour next.
 - 2026-11-27 — Six new keys for the detail redesign (People, About, Hosting, Going, Organised by, Nobody has joined yet), machine-translated into all six languages; a native read is owed. "Hosted by %@", "Run by %@" and "Organised by %@" left the catalog with their last users.
+- 2026-11-28 — Three more keys for the one-row People card ("Hosted by %@" and "Organised by %@" back with their pre-redesign translations, "%lld going" new with plural variations in all six languages); the native read owed since 2026-11-27 covers these too.

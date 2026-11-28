@@ -25,7 +25,7 @@ nonisolated extension AppBranding {
             return Groups.caption([displayName, youLabel])
         }
 
-        /// The detail screens' sections and their People card: the rows that lead to the full list.
+        /// The detail screens' sections and their People card: the one row that leads to the full list.
         static var peopleSection: String { localized("People") }
         static var aboutSection: String { localized("About") }
         static var detailsSection: String { AppBranding.Create.eventDetails }
@@ -33,6 +33,19 @@ nonisolated extension AppBranding {
         static var goingRow: String { localized("Going") }
         static var organisedByRow: String { localized("Organised by") }
         static var nobodyGoingYet: String { localized("Nobody has joined yet") }
+
+        static func hostedBy(name: String) -> String {
+            localized("Hosted by \(name)")
+        }
+
+        static func organisedBy(name: String) -> String {
+            localized("Organised by \(name)")
+        }
+
+        /// The People card's count line on an event: who is in besides the host.
+        static func going(_ count: Int) -> String {
+            localized("\(count) going")
+        }
     }
 }
 

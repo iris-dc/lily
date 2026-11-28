@@ -75,27 +75,18 @@ struct EventDetailView: View {
         return AppBranding.Events.until(endsAt.formatted(sameDay ? LilyTheme.DateStyles.time : LilyTheme.DateStyles.dateTime))
     }
 
-    /// Hosting and Going as two rows of one card: the host's circle and name, then the first avatars and the count;
-    /// each opens the full list for signed-in callers (names are members-level information, so guests get the facts
-    /// alone).
+    /// One card, one row: who hosts over how many are going, the first circles beside it; it opens the full list for
+    /// signed-in callers (names are members-level information, so guests get the facts alone).
     private var peopleSection: some View {
         let host = Tombstone.displayName(event.hostName, deleted: event.deleted)
         return DetailSection(title: Copy.peopleSection) {
             GlassCard {
-                VStack(spacing: 0) {
-                    PeopleSummaryRow(title: Copy.hostingRow,
-                                     names: [host],
-                                     detail: host,
-                                     detailMark: event.deleted == true ? Tombstone.symbol : nil,
-                                     destination: peopleDestination,
-                                     identifier: AccessibilityIdentifiers.peopleHostingRow)
-                    Divider()
-                    PeopleSummaryRow(title: Copy.goingRow,
-                                     names: goingNames,
-                                     detail: "\(max(event.participantCount - 1, 0))",
-                                     destination: peopleDestination,
-                                     identifier: AccessibilityIdentifiers.peopleGoingRow)
-                }
+                PeopleSummaryRow(title: Copy.hostedBy(name: host),
+                                 caption: Copy.going(max(event.participantCount - 1, 0)),
+                                 names: [host] + goingNames,
+                                 titleMark: event.deleted == true ? Tombstone.symbol : nil,
+                                 destination: peopleDestination,
+                                 identifier: AccessibilityIdentifiers.peopleRow)
             }
         }
     }
@@ -182,13 +173,13 @@ struct EventDetailView: View {
         case .hidden:
             EmptyView()
         case .join:
-            BusyButton(AppBranding.joinAction, isBusy: viewModel.isBusy) { await viewModel.join() }
+            BusyButton(AppBranding.joinAction, isBusy: viewModel.isBusy, showsSpinner: false) { await viewModel.join() }
                 .lilyProminentButton()
         case .leave:
-            BusyButton(AppBranding.leaveAction, isBusy: viewModel.isBusy) { await viewModel.leave() }
+            BusyButton(AppBranding.leaveAction, isBusy: viewModel.isBusy, showsSpinner: false) { await viewModel.leave() }
                 .lilyGlassButton()
         case .full:
-            BusyButton(AppBranding.eventFullAction, isBusy: viewModel.isBusy)
+            BusyButton(AppBranding.eventFullAction, isBusy: viewModel.isBusy, showsSpinner: false)
                 .lilyProminentButton()
         case .hosting:
             DetailBarNotice(text: AppBranding.hostingNotice)

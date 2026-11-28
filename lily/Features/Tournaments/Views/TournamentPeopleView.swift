@@ -19,9 +19,12 @@ struct TournamentPeopleView: View {
         ContentScreen {
             ScrollView {
                 if let detail = viewModel.shownDetail, !viewModel.isPreviewing {
-                    TournamentEntriesSegment(viewModel: viewModel, detail: detail) { confirmation = .removeEntry($0) }
-                        .padding(DesignTokens.Layout.detailMargin)
-                        .readableColumn()
+                    VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
+                        organiserSection(detail.tournament)
+                        TournamentEntriesSegment(viewModel: viewModel, detail: detail) { confirmation = .removeEntry($0) }
+                    }
+                    .padding(DesignTokens.Layout.detailMargin)
+                    .readableColumn()
                 } else {
                     ProgressView()
                         .frame(maxWidth: .infinity)
@@ -36,6 +39,19 @@ struct TournamentPeopleView: View {
         .confirmationDialog(item: $confirmation,
                             title: { $0.title(name: viewModel.name) },
                             actions: { confirmationButton(for: $0) })
+    }
+
+    /// The organiser leads the list, like an event's host: their row opens their profile (never the caller's own).
+    private func organiserSection(_ tournament: Tournament) -> some View {
+        DetailSection(title: AppBranding.People.organisedByRow) {
+            PersonRow(userID: tournament.organizerUserId,
+                      displayName: Tombstone.displayName(tournament.organizerName, deleted: tournament.deleted),
+                      isSelf: viewModel.isSelf(tournament.organizerUserId),
+                      identifier: AccessibilityIdentifiers.participantRow(tournament.organizerUserId),
+                      deleted: tournament.deleted) {
+                EmptyView()
+            }
+        }
     }
 
     private func confirmationButton(for confirmation: TournamentConfirmation) -> some View {

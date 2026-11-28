@@ -48,8 +48,10 @@ use the generated `Color.lily*` asset symbols.
   menu picker too): the control colours its value and chevron from the tint, which is the accent in every form sheet
   and reads at about 3:1 as small text, so the recipe puts them in `.secondary` while the row's title stays primary and
   the menu's items keep the system look.
-  `BusyLabel<Content>(isBusy:, spinnerSize: ControlSize = .regular, content:)` and
-  `BusyButton<Label>(isBusy:, action: (() async -> Void)?, label:)`, each with a `Text` convenience and
+  `BusyLabel<Content>(isBusy:, spinnerSize: ControlSize = .regular, showsSpinner: Bool = true, content:)` and
+  `BusyButton<Label>(isBusy:, showsSpinner: Bool = true, action: (() async -> Void)?, label:)`, each with a `Text`
+  convenience (the button's takes `showsSpinner` too; with `false` the busy state only disables, no spinner — the
+  one-tap joins and the profile's Message, the owner's call 2026-11-28 — while the form sheets' submits keep it) and
   `BusyButton.init(_ title:, isBusy:, write: () async -> Bool, onSuccess: () -> Void)`
   [`lily/Core/UI/Components/BusyButton.swift:BusyLabel`, `BusyButton`].
   `DraftSubmitButton(title:, isSubmitting:, isEnabled:, sizing: ButtonSizing = .fitted, controlSize: ControlSize? = nil,
@@ -110,7 +112,7 @@ use the generated `Color.lily*` asset symbols.
   `UserProfileView` for Profile's Activity screen)
   [`lily/Core/UI/Components/RowsSection.swift:RowsSection`, `SectionNote`]
   (`OwnerTitleBlock` was deleted 2026-11-27 with the detail redesign: the centered `DetailHeader` and the People
-  card's rows replaced the owner title and its tombstone mark);
+  card replaced the owner title and its tombstone mark);
   `ChevronLink<Value: Hashable, Label>(value:, label:)` [`lily/Core/UI/Components/ChevronLink.swift:ChevronLink`], a
   `.plain` `NavigationLink(value:)` whose label and `.caption2` `DesignTokens.Symbols.chevron` read `.secondary`;
   `ValidationHint(_ message: String)` [`lily/Core/UI/Components/ValidationHint.swift:ValidationHint`], a `Label` of the
@@ -171,10 +173,14 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/DetailSection.swift:DetailSection`], the quiet caption-font `.secondary` title over the
   card or text it names; `AvatarStack(names: [String], size: CGFloat = Layout.avatarSmall)`
   [`lily/Core/UI/Components/AvatarStack.swift:AvatarStack`], the first few people of a list as overlapping initials
-  circles; `PeopleSummaryRow<Destination: Hashable>(title:, names: [String] = [], detail: String? = nil,
-  destination: Destination? = nil, identifier:)` [`lily/Core/UI/Components/PeopleSummaryRow.swift:PeopleSummaryRow`],
-  one line of a detail's People card — the role title in `Fonts.itemTitle`, the `AvatarStack`, the name or count in
-  `.body` `.secondary` and the chevron when the row opens the full list — generic over the destination so Core/UI
+  circles; `PeopleSummaryRow<Destination: Hashable>(title:, caption: String? = nil, names: [String] = [],
+  titleMark: String? = nil, destination: Destination? = nil, identifier:)`
+  [`lily/Core/UI/Components/PeopleSummaryRow.swift:PeopleSummaryRow`],
+  the one line of a detail's People card (2026-11-28; two per card before) — the title in `Fonts.itemTitle`
+  ("Hosted by Marta"), led by the optional `titleMark` SF Symbol in `.subheadline` `.secondary` (the deleted
+  account's tombstone), over the optional `caption` count line in `Fonts.caption` `.secondary` ("5 going"), with
+  the `AvatarStack` trailing and the chevron when the row opens the full list (the trailing `detail`/`detailMark`
+  text pair left with the one-row card) — generic over the destination so Core/UI
   stays free of the feature models; `DetailActionBar<Icons, Primary>(icons:, primary:)`
   [`lily/Core/UI/Components/DetailActionBar.swift:DetailActionBar`], the pinned bottom bar a detail mounts via
   `safeAreaInset(edge: .bottom)` — the quiet icon actions leading, the primary control trailing in a
@@ -239,7 +245,9 @@ use the generated `Color.lily*` asset symbols.
   [`lily/Core/UI/Components/ValidationHint.swift:ValidationHint`, `lily/Core/UI/Components/ChevronLink.swift:ChevronLink`,
   `lily/Core/UI/Components/GlassNavigationRow.swift:GlassNavigationRow`].
   `BusyButton` is
-  `.disabled(action == nil || isBusy)` and unstyled [`lily/Core/UI/Components/BusyButton.swift:BusyButton`];
+  `.disabled(action == nil || isBusy)` and unstyled, and its label draws the spinner only while `isBusy &&
+  showsSpinner` — passed `false`, a busy button only guards against a second tap
+  [`lily/Core/UI/Components/BusyButton.swift:BusyButton`];
   `DraftSubmitButton` is `.disabled(!isEnabled)`, shows a small `ProgressView` labelled `title` while submitting and is
   `lilyProminentButton(sizing:controlSize:)` with the toolbar defaults `.fitted`/`nil` (the creation wizard's bottom
   bar passes `.flexible`/`.large`, 2026-11-10) [`lily/Core/UI/Components/DraftSubmitButton.swift:DraftSubmitButton`];
@@ -307,7 +315,8 @@ use the generated `Color.lily*` asset symbols.
   beside it carries the facts) [`lily/Core/UI/Components/AvatarStack.swift:AvatarStack`]. `PeopleSummaryRow` is a
   `.plain` `NavigationLink(value: destination)` under `lilyHoverable()` when `destination` is non-nil and the same
   content as a plain row otherwise (a caller who may not open the list gets the facts alone); only the linked shape
-  draws the chevron; either shape is one combined accessibility element carrying `identifier`, at least
+  draws the chevron, and the caption line and the title's mark draw only when set; either shape is one combined
+  accessibility element carrying `identifier`, at least
   `Layout.controlHeight` tall [`lily/Core/UI/Components/PeopleSummaryRow.swift:PeopleSummaryRow`]. `DetailHeader`
   draws the caption line only `if let caption` [`lily/Core/UI/Components/DetailHeader.swift:DetailHeader`];
   `DetailActionBar` fixes no slot's content — the detail decides what stands in each, and an empty icons builder

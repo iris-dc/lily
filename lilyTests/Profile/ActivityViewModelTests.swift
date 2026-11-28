@@ -51,7 +51,8 @@ struct ActivityViewModelTests {
 
         #expect(viewModel.state == .failed)
         #expect(errorCenter.current?.error == .eventsUnavailable)
-        #expect(logger.messages(in: .events, at: .error).count == 1)
+        // A refusal the screen expects (it shows the retry) logs at warning, not error.
+        #expect(logger.messages(in: .events, at: .warning).count == 1)
     }
 
     /// A reload over a loaded history keeps it on screen while the popup reports the failure.

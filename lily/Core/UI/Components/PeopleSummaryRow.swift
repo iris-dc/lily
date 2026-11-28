@@ -1,16 +1,16 @@
 import SwiftUI
 
-/// One line of a detail's People card: who hosts, who is going, the members. The role leading, then the first few
-/// avatars, the name or count, and the chevron when the row opens the full list; a row with nowhere to go (a guest's
-/// view) draws the facts alone. Generic over the destination so Core/UI stays free of the feature models.
+/// The one line of a detail's People card: who runs it and how many are in ("Hosted by Marta" over "5 going"), the
+/// first few avatars, and the chevron when the row opens the full list; a row with nowhere to go (a guest's view)
+/// draws the facts alone. Generic over the destination so Core/UI stays free of the feature models.
 struct PeopleSummaryRow<Destination: Hashable>: View {
     let title: String
-    /// Whose circles to stack; empty draws none (a count without names, or a single named person in `detail`).
+    /// The count line under the title ("5 going", "34 members", "4 of 8 teams").
+    var caption: String?
+    /// Whose circles to stack; empty draws none (a guest's count without names).
     var names: [String] = []
-    /// The name or the count after the stack.
-    var detail: String?
-    /// An SF Symbol drawn before `detail` in its own secondary style (the deleted account's tombstone); `nil` for none.
-    var detailMark: String?
+    /// An SF Symbol drawn before the title in its own secondary style (the deleted account's tombstone); `nil` for none.
+    var titleMark: String?
     /// Where the full list is; `nil` for a caller who may not open it.
     var destination: Destination?
     let identifier: String
@@ -29,21 +29,24 @@ struct PeopleSummaryRow<Destination: Hashable>: View {
 
     private func content(linked: Bool) -> some View {
         HStack(spacing: DesignTokens.Spacing.sm) {
-            Text(title)
-                .font(LilyTheme.Fonts.itemTitle)
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.xs) {
+                HStack(spacing: DesignTokens.Spacing.xs) {
+                    if let titleMark {
+                        Image(systemName: titleMark)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(title)
+                        .font(LilyTheme.Fonts.itemTitle)
+                }
+                if let caption {
+                    Text(caption)
+                        .font(LilyTheme.Fonts.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Spacer(minLength: DesignTokens.Spacing.sm)
             AvatarStack(names: names)
-            if let detailMark {
-                Image(systemName: detailMark)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            if let detail {
-                Text(detail)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
             if linked {
                 Image(systemName: DesignTokens.Symbols.chevron)
                     .font(.caption2)
@@ -60,15 +63,11 @@ struct PeopleSummaryRow<Destination: Hashable>: View {
     NavigationStack {
         ContentScreen {
             GlassCard {
-                VStack(spacing: 0) {
-                    PeopleSummaryRow(title: "Hosting", detail: "Marta", destination: "people", identifier: "hosting")
-                    Divider()
-                    PeopleSummaryRow(title: "Going",
-                                     names: ["Anna K", "Piotr N", "Jan W", "Ola Z"],
-                                     detail: "9",
-                                     destination: "people",
-                                     identifier: "going")
-                }
+                PeopleSummaryRow(title: "Hosted by Marta",
+                                 caption: "5 going",
+                                 names: ["Marta L", "Anna K", "Piotr N", "Jan W"],
+                                 destination: "people",
+                                 identifier: "people-row")
             }
             .padding()
         }

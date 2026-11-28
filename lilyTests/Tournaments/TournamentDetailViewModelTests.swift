@@ -22,7 +22,7 @@ struct TournamentDetailViewModelTests {
         #expect(interaction?.tournamentId == "t" && interaction?.tournamentFormat == .roundRobin)
         #expect(interaction?.eventType == .tableTennis)
         let permissions = viewModel.permissions
-        #expect(permissions.organizerProfile?.userId == "seed-marta" && permissions.showsEntries)
+        #expect(permissions.showsEntries)
         #expect(!permissions.canEdit && !permissions.canInvite && permissions.canReport, "an outsider may report")
         #expect(permissions.showsMenu)
         #expect(viewModel.reportTarget == .tournament(id: "t") && viewModel.winnerName == nil)
@@ -146,7 +146,7 @@ struct TournamentDetailViewModelTests {
         await viewModel.load()
         let permissions = viewModel.permissions
         #expect(viewModel.role == .organizer && permissions.canEdit && permissions.canCancel && permissions.canRemoveEntries)
-        #expect(permissions.canOpenChat && permissions.showsMenu && permissions.organizerProfile == nil)
+        #expect(permissions.canOpenChat && permissions.showsMenu)
 
         await viewModel.cancel()
         let afterCancel = viewModel.permissions
@@ -191,7 +191,7 @@ struct TournamentDetailViewModelTests {
         #expect(viewModel.role == .guest && viewModel.participation == .hidden && !viewModel.permissions.showsEntries)
 
         await viewModel.join()
-        #expect(harness.repository.joins.isEmpty && viewModel.permissions.organizerProfile == nil)
+        #expect(harness.repository.joins.isEmpty)
     }
 
     @Test func aTermsRefusalReachesThePopup() async {

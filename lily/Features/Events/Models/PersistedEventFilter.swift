@@ -23,6 +23,22 @@ nonisolated struct PersistedEventFilter: Codable, Equatable, Sendable {
         openSpotsOnly = filter.openSpotsOnly
     }
 
+    /// A filter kept by a build from before the parts of the day (2026-11-26) has no such key; it reads as none
+    /// chosen, so the rest of the kept filter survives the update instead of being dropped by a decode failure.
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        types = try container.decode([EventType].self, forKey: .types)
+        maxDistanceMeters = try container.decodeIfPresent(Double.self, forKey: .maxDistanceMeters)
+        minAttendees = try container.decodeIfPresent(Int.self, forKey: .minAttendees)
+        timesOfDay = try container.decodeIfPresent([String].self, forKey: .timesOfDay) ?? []
+        skillLevel = try container.decodeIfPresent(SkillLevel.self, forKey: .skillLevel)
+        openSpotsOnly = try container.decode(Bool.self, forKey: .openSpotsOnly)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case types, maxDistanceMeters, minAttendees, timesOfDay, skillLevel, openSpotsOnly
+    }
+
     /// The filter as the list applies it; no date window. A type, level or part of the day this build does not know
     /// (a filter kept by a newer build) is left out: the panel could neither show it nor clear it.
     var filter: EventFilter {

@@ -28,6 +28,25 @@ struct EventFilterStoreTests {
         #expect(logger.hasLine(in: .cache, at: .debug, mentioning: "defaults"))
     }
 
+    /// A filter kept by a build from before the parts of the day (2026-11-26): no `timesOfDay` key, a `maxPrice` the
+    /// rework dropped. It reads with none chosen instead of being discarded, so the kept choices survive the update.
+    @Test func aFilterFromBeforeTheTimesOfDayKeyStillReads() throws {
+        let legacy = """
+        {"types":["padel"],"maxDistanceMeters":10000,"skillLevel":"beginner","openSpotsOnly":true,"maxPrice":12}
+        """
+        defaults.set(Data(legacy.utf8), forKey: AppConfig.Storage.Keys.eventFilter)
+
+        let loaded = try #require(store.load())
+
+        var expected = EventFilter()
+        expected.toggle(.padel)
+        expected.maxDistanceMeters = 10_000
+        expected.skillLevel = .beginner
+        expected.openSpotsOnly = true
+        #expect(loaded == expected, "the kept types, radius, level and open-spots choice survive")
+        #expect(loaded.timesOfDay.isEmpty)
+    }
+
     /// Every criterion but the date window comes back; the window would be stale within days. The save and the hit
     /// are logged with whether the filter narrows anything, never with its criteria.
     @Test func aSavedFilterComesBackWithoutItsDateWindow() throws {

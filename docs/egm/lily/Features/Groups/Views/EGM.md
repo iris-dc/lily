@@ -38,9 +38,11 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   an extension — `header` (`DetailHeader`: the sport's mark, or the generic groups mark in the `.secondary` tint for
   a group without a type, the name, and visibility · member count as the caption), `detailsSection` (a `GlassCard`
   `PlaceLine` with the distance from `events.userLocation`, only when the group has a location), `peopleSection`
-  (the People card: an "Organised by" `PeopleSummaryRow` with the owner's name and a Members row with the roster's
-  first names and `group.memberCount` — identifiers `peopleHostingRow` / `peopleGoingRow`, each opening
-  `GroupMembersDestination` only while `viewModel.showsRoster`), `aboutSection` (the description card, only when one
+  (the People card: one `PeopleSummaryRow` since 2026-11-28 — title `AppBranding.People.organisedBy(name:
+  group.ownerName)`, caption `AppBranding.Groups.members(group.memberCount)`, the stack the roster's first names,
+  which the owner leads — identifier `peopleRow`, opening
+  `GroupMembersDestination` only while `viewModel.showsRoster`; the Organised-by and Members row pair until
+  then), `aboutSection` (the description card, only when one
   exists) and `actionBar` (the pinned `DetailActionBar`)
   [`lily/Features/Groups/Views/GroupDetailView+Content.swift`:`GroupDetailView.header`];
   `GroupDetailMenu(viewModel:, onInvite:, onCreateTournament:, onEdit:, onLeave:, onReport:, onDelete:)`
@@ -84,7 +86,7 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   `MemberRow(member:, isSelf:)` (identifier `memberRow(id)`) [`lily/Features/Groups/Views/MembersList.swift`:`MembersList`]
   [`lily/Features/Groups/Views/MemberRow.swift`:`MemberRow`].
 - `GroupMembersView(viewModel: MembersViewModel)` and the navigation value `GroupMembersDestination { groupId }`
-  (`lily/Features/Groups/Views/GroupMembersView.swift`, 2026-11-27): the members screen the People card's rows push —
+  (`lily/Features/Groups/Views/GroupMembersView.swift`, 2026-11-27): the members screen the People card's row pushes —
   `MembersList` in a `ContentScreen { ScrollView }` under the detail's margins, titled
   `AppBranding.Groups.membersSection`, wearing `.hidesTabBarOnCompact()`; it owns the remove/ban
   `.confirmationDialog(item:)` (its `run` ignores `.leave` and `.delete`, which stay with the detail) and reads the
@@ -110,7 +112,8 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   exhaustively on `access` — `.member`/`.conversation`/`.room` draw the prominent Open chat (`groupOpenChat`) only
   while `showsOpenChat`, `.canJoin` a `BusyButton` (join) and `.guest` a sign-in button, both
   `lilyProminentButton()`, `.inviteOnly` a `DetailBarNotice`, `.full` a `BusyButton` reading "Group is full" in the
-  prominent style; the join, sign-in and full buttons share `groupJoin`
+  prominent style (the join and full `BusyButton`s spinnerless — `showsSpinner: false`, busy only guards the
+  second tap, 2026-11-28); the join, sign-in and full buttons share `groupJoin`
   [`lily/Features/Groups/Views/GroupDetailView+Content.swift`:`GroupDetailView.actionBar`].
 - `GroupDetailMenu` items are gated: Invite by `canInvite`, Create tournament by `AppConfig.FeatureFlags.tournaments
   && canCreateEvents`, Edit by `canEdit`, Leave (destructive) by `canLeave`, Report by `viewModel.canReport`, Delete
@@ -197,7 +200,7 @@ call them from `task`, `refreshable`, `onChange` and button actions; role gating
   identity on the detail (the People card's stack), `unban(_:)` and `perform(_:on:)` from the roster menu
   [`lily/Features/Groups/Views/MembersList.swift`:`MembersList`].
 - Navigation: `NavigationLink(value:)`/`TileLink(value:)` push a `SportGroup`, "See all" a `DiscoverGroupsDestination`,
-  `HostedInLine` an `EventGroupRef`, the People card's rows a `GroupMembersDestination` (2026-11-27); Open chat sets `viewModel.openedChat`, pushed in place through the shared `chatDestination` (2026-11-15);
+  `HostedInLine` an `EventGroupRef`, the People card's row a `GroupMembersDestination` (2026-11-27); Open chat sets `viewModel.openedChat`, pushed in place through the shared `chatDestination` (2026-11-15);
   `GroupDestinations`
   builds the destination view models through `AppDependencies` (`makeGroupDetailViewModel`, `makeGroupLoaderViewModel`,
   `makeChatViewModel`, `makeUserProfileViewModel`, `makeTournamentDetailViewModel`)

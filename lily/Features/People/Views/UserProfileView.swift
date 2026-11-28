@@ -19,9 +19,6 @@ struct UserProfileView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.xl) {
                     header
-                    if viewModel.canMessage {
-                        messageButton
-                    }
                     content
                 }
                 .padding(.vertical, DesignTokens.Spacing.xl)
@@ -31,6 +28,15 @@ struct UserProfileView: View {
         .navigationTitle(viewModel.displayName)
         .navigationBarTitleDisplayMode(.inline)
         .hidesTabBarOnCompact()
+        .safeAreaInset(edge: .bottom) {
+            if viewModel.canMessage {
+                DetailActionBar {
+                    EmptyView()
+                } primary: {
+                    messageButton
+                }
+            }
+        }
         .chatDestination(item: $viewModel.openedConversation, dependencies: dependencies)
         .task { await viewModel.load() }
     }
@@ -43,16 +49,17 @@ struct UserProfileView: View {
         .padding(.horizontal, DesignTokens.Layout.screenMargin)
     }
 
-    /// Opens (or reopens) the direct conversation; a spinner beside the title while the request runs.
+    /// Opens (or reopens) the direct conversation from the pinned bar, like a detail's primary action; no spinner,
+    /// only the second tap is guarded.
     private var messageButton: some View {
         BusyButton(
             isBusy: viewModel.isStartingConversation,
+            showsSpinner: false,
             action: { await viewModel.message() },
             label: { Label(Copy.message, systemImage: DesignTokens.Symbols.chat) }
         )
         .lilyProminentButton()
         .accessibilityIdentifier(AccessibilityIdentifiers.profileMessage)
-        .padding(.horizontal, DesignTokens.Layout.screenMargin)
     }
 
     /// The bio and what the two share, once the profile answered: one spinner, or one retry, for all of it.

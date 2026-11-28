@@ -26,4 +26,4 @@ on the stack the profile is on, so Back returns to the profile. No source files 
   `canMessage` (chat on, signed in, not yourself, standalone context), single-flight `message()` through a `WriteGate`
   whose success the view pushes as the chat on the profile's own stack (`openedConversation`).
 - Views: [./Views/EGM.md](./Views/EGM.md) - `PersonRow`, `SharedGroupRow`, `SharedEventRow`, `SharedTournamentRow`,
-  `UserProfileView` with the Message `BusyButton`, the bio and the three shared sections.
+  `UserProfileView` with the pinned Message bar, the bio and the three shared sections.
